@@ -360,8 +360,32 @@ Adopted properties, each load-bearing:
 - **Two layers.** The count is the primary guard; `restrictOnDelete()` on
   `shipping_rates.shipping_zone_id` is the last word and closes the check-then-act race
   ([signed-link-verification.md](../../docs/security/signed-link-verification.md#a-pre-flight-check-is-not-a-race-guard--re-check-under-a-lock-and-let-the-unique-index-have-the-last-word)).
-- **`QueryException` code `23000` is caught and re-thrown as the *same* human message**, re-counting
-  at that point so the loser of the race sees an accurate number — never a 500.
+- **A `QueryException` narrowed to MySQL error `1451` is caught and re-thrown as the *same* human
+  message**, re-counting at that point so the loser of the race sees an accurate number — never a
+  500.
+
+  > **Correction, 2026-09-09 (Phase 2 review finding B2).** This bullet originally read
+  > *"**`QueryException` code `23000` is caught and re-thrown as the same human message**"*, and the
+  > pseudocode under *Files to create/modify* wrote it as `$e->getCode() === '23000'` — quoted here
+  > rather than silently rewritten, per this project's audit-authored-page convention. That
+  > **contradicts the very precedent this decision claims to mirror exactly**:
+  > [`App\Actions\ProductCategories\DeleteProductCategory`](../../app/Actions/ProductCategories/DeleteProductCategory.php)
+  > narrows on `($e->errorInfo[1] ?? null) === 1451` (`ER_ROW_IS_REFERENCED_2`), **deliberately not**
+  > the whole `23000` SQLSTATE class — and that narrowing was itself a Phase 4 audit fix in story
+  > 0024b (its finding **F-2**), because `23000` also covers `1062` (duplicate entry) and `1452`
+  > (FK insert failure), so a future model-event listener raising either *inside the same
+  > transaction* would be caught here and misreported to the administrator as a shipping-rate count.
+  > The already-shipped `app/Actions/Shipping/DeleteShippingZone.php` docblock says *"a
+  > QueryException **1451** catch"*, and
+  > [schema.md](../../docs/database/schema.md#shipping_zone_geography_entry) already documents *"a
+  > matching `23000`→`1451` catch"* for this exact guard — **this task file was the only artifact
+  > still saying `23000`**. Narrow on `errorInfo[1] === 1451`, never on `getCode()`.
+  >
+  > One consequence worth stating so Phase 3 does not copy the wrong number sideways: **`1451` is
+  > the zone-delete guard's code only.** The *rate* actions' own FK race (`CreateShippingRate` /
+  > `UpdateShippingRate` inserting a rate whose carrier or zone id vanished after
+  > `Rule::exists(...)` passed) surfaces as **`1452`** (`ER_NO_REFERENCED_ROW_2`) — a different code
+  > in the same `23000` class, which is precisely why narrowing matters rather than being pedantry.
 - **`ValidationException`, not a domain exception**, for 0024's decisive reason: it is the one
   exception Livewire already routes into the component's error bag with no plumbing, so 0037's
   delete-confirmation modal renders it with an `@error` block and catches nothing.
@@ -463,7 +487,15 @@ invents a second shipping route nobody asked for.
 claimed a *free* route with no other owner, exactly as 0004 did before it. Story 0037 is the named
 consumer, and it owns the whole screen including the carrier cards 0035 stubbed.
 
-### D-11 — Ship `ShippingRatePolicy`, with zero call sites.
+### D-11 — Ship `ShippingRatePolicy`, and have **all three** rate actions self-authorize against it.
+
+> **Heading corrected 2026-09-09 (Phase 2 review finding B1).** It originally read *"Ship
+> `ShippingRatePolicy`, with zero call sites."* — quoted rather than silently rewritten, per this
+> project's audit-authored-page convention. That was already contradicted by the correction
+> blockquote immediately below it, which this file added before Phase 2 but then propagated to only
+> **one** of the three rate-action entries under *Files to create/modify*. The policy ships with
+> **three** call sites, one per write action; the four `Gate::forUser()` policy tests remain, but
+> they are no longer the *only* thing exercising it.
 
 > **Corrected before this story reaches Phase 3 — the citation below is FALSE and is quoted rather
 > than silently rewritten, per this project's audit-authored-page convention.** 0033's own **D-9**
@@ -479,15 +511,54 @@ consumer, and it owns the whole screen including the carrier cards 0035 stubbed.
 > cited. See the same correction under **File to create/modify**'s `CreateShippingRate.php` entry
 > below.
 
-Same reasoning as 0033 **D-9**: this story ships no component, so without a policy this story would
-have no `Gate::authorize()`-reachable ability for the shipping rate catalog at all — and
+**Made normative, 2026-09-09 (Phase 2 review finding B1).** The blockquote above said the actions
+*"should follow that corrected precedent when debated"* and then propagated that correction to only
+`CreateShippingRate.php`'s entry — `UpdateShippingRate.php` and `DeleteShippingRate.php` were left
+with **no authorization statement of any kind**, which is precisely the gap 0033's Phase 4 audit
+caught (its **F-1**) and precisely what this file was supposed to have pre-empted. It is now a
+requirement, not a recommendation:
+
+**All three write actions self-authorize as their own first statement — before validation, before
+any transaction, before any read that discloses data** — via the injected
+`App\Actions\Auth\LogRefusedPrivilegedAttempt`, mirroring 0033's own corrected
+`CreateShippingZone` / `DeleteShippingZone` and `App\Actions\ProductCategories\*` (story 0025):
+
+| Action | Call |
+| --- | --- |
+| `CreateShippingRate` | `$this->logRefusedPrivilegedAttempt->authorize('create', ShippingRate::class, targetType: 'shipping_rate');` |
+| `UpdateShippingRate` | `$this->logRefusedPrivilegedAttempt->authorize('update', $shippingRate, targetType: 'shipping_rate', targetId: $shippingRate->id);` |
+| `DeleteShippingRate` | `$this->logRefusedPrivilegedAttempt->authorize('delete', $shippingRate, targetType: 'shipping_rate', targetId: $shippingRate->id);` |
+
+Three properties, each load-bearing rather than stylistic:
+
+- **`targetType: 'shipping_rate'` is passed explicitly**, always. `LogRefusedPrivilegedAttempt::resolveTarget()`
+  auto-resolves only `User` and `Role` instances/classes, so an omitted `targetType` silently
+  degrades the audit line — the same explicit-argument rule `CreateShippingZone` and
+  `DeleteProductCategory` already follow.
+- **`targetId` is passed on the two instance-scoped calls and omitted on the class-scoped `create`**,
+  matching `CreateProductCategory`'s and `CreateShippingZone`'s own class-level create-time calls:
+  there is no row yet to identify.
+- **`LogRefusedPrivilegedAttempt` is constructor-injected**, not method-injected, because each
+  action's `__invoke()` signature is a public contract every direct-call test matches verbatim —
+  [code-style.md](../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)'s
+  recorded constructor-injection exception, and the shape all four of 0033's zone actions use.
+
+Same reasoning as 0033 **D-9** for shipping the policy at all: this story ships no component, so
+without a policy this story would have no `Gate::authorize()`-reachable ability for the shipping rate
+catalog —
 [livewire-authorization.md](../../docs/security/livewire-authorization.md#authorization-that-lives-only-in-the-component-is-bypassed-by-every-other-call-site-of-the-action)
 says the policy is the right home regardless of which consumer arrives first.
 
-**The cost, stated rather than hidden:** until the actions are corrected to self-authorize (per the
-note above, mirroring 0033's own Phase 4 fix), nothing in this story can regress if the policy is
-wrong. Mitigated by direct `Gate::forUser()` tests, and carried as an explicit Definition-of-Done
-hand-off to 0037.
+**What this changes about the story's own risk profile.** This paragraph previously read: *"**The
+cost, stated rather than hidden:** until the actions are corrected to self-authorize (per the note
+above, mirroring 0033's own Phase 4 fix), nothing in this story can regress if the policy is wrong.
+Mitigated by direct `Gate::forUser()` tests, and carried as an explicit Definition-of-Done hand-off
+to 0037."* — quoted rather than silently rewritten. It is no longer true, and that is the point of
+the correction: with all three actions self-authorizing, **a wrong policy now regresses this story's
+own tests**, through the three refusal tests the Gherkin block already specifies (see *Tests to
+perform*). The `Gate::forUser()` policy tests stay as the direct, per-ability net; 0037's own
+`Gate::authorize()` calls become defence in depth on top of a rule that already exists, rather than
+the only place it exists.
 
 ### D-12 — **FK indexes only.** No composite index on `shipping_rates`.
 
@@ -499,11 +570,33 @@ rate edit and buy a sub-millisecond scan that is already sub-millisecond. This i
 [schema.md](../../docs/database/schema.md#users) records for `users.status` and 0035 records for
 `shipping_carriers.is_active`.
 
-**Do not hand-write `$table->index('shipping_zone_id')`.** InnoDB creates an index for each FK
-column automatically, and 0033's **R-1** already suspects this repo's be-explicit-about-FK-indexes
-convention of producing *duplicate* indexes — the `users_uuid_unique` shape in
-[errors-log.md](../../docs/errors-log.md). **Verify the resulting index list with
-`php artisan db:table shipping_rates` in Phase 3**, not by reading this file.
+**Do not hand-write `$table->index('shipping_zone_id')` or `$table->index('shipping_carrier_id')`.**
+This is [migrations.md](../../docs/database/migrations.md#an-fk-column-does-not-also-get-an-explicit-index-here)'s
+own "an FK column does not also get an explicit index here" rule, which has **ten** confirming
+instances in this schema, 0033's `shipping_zone_geography_entry` being the tenth. `constrained()`
+alone always leaves the column indexed. **Verify the resulting index list with
+`php artisan db:table shipping_rates` in Phase 3** — expect exactly `primary` on `id`,
+`shipping_rates_shipping_carrier_id_foreign` and `shipping_rates_shipping_zone_id_foreign`, and
+nothing else. Verify by running it, never by reading this file or the migration, which cannot show
+you an index nobody wrote.
+
+> **Citation corrected 2026-09-09 (Phase 2 review, non-blocking finding).** This paragraph
+> originally justified the rule as: *"InnoDB creates an index for each FK column automatically, and
+> 0033's **R-1** already suspects this repo's be-explicit-about-FK-indexes convention of producing
+> *duplicate* indexes — the `users_uuid_unique` shape in
+> [errors-log.md](../../docs/errors-log.md)."* — quoted rather than silently rewritten, per this
+> project's audit-authored-page convention. **That suspicion was investigated and disproven**, by
+> 0033's own Phase 6 docs pass on 2026-09-07: `docs/database/migrations.md` now carries a dated
+> correction recording that `create_passkeys_table`'s hand-written `$table->index('user_id')` is
+> **not** a duplicate at all — InnoDB auto-creates an FK-support index *only when no suitable index
+> already exists*, so a hand-written one satisfies the requirement itself and merely changes the
+> resulting index's name. Measured with `php artisan db:table passkeys` against a live instance,
+> not reasoned about.
+>
+> **The instruction is unchanged and still correct** — don't hand-write it, and verify the result —
+> but it now rests on the plain convention rather than on a predicted defect. Consequently the
+> `db:table` check in Phase 3 is a **confirmation, and no finding is expected**; see the Definition
+> of Done, where the corresponding errors-log item is softened to match.
 
 ### D-13 — The resolver returns a **result object**, never a bare `null`.
 
@@ -578,9 +671,11 @@ absence of the trait.
       // duplicates. It would be a real restriction bought for a false sense of
       // enforcement. See D-9 before "improving" this.
       //
-      // NO hand-written index() on either FK column: InnoDB creates one per FK,
-      // and 0033 R-1 suspects the repo's explicit-FK-index convention of
-      // shipping duplicates. Verify with `php artisan db:table shipping_rates`.
+      // NO hand-written index() on either FK column: constrained() already
+      // leaves each column indexed, per migrations.md's "an FK column does not
+      // also get an explicit index here" rule (ten confirming instances in this
+      // schema). Verify with `php artisan db:table shipping_rates` -- expect
+      // three indexes and no more.
   });
   ```
 
@@ -699,62 +794,193 @@ absence of the trait.
   rate**, `max:99999999.99`), `deliveryEstimateRules()` (`required`, `string`, `max:50`),
   `shippingCarrierIdRules()` and `shippingZoneIdRules()` (`required`, `uuid`,
   `Rule::exists(...)` — a pre-flight check, not a race guard; the FK has the last word, which is why
-  the actions catch `23000`).
+  the rate actions catch a **narrowed `1452`** (`ER_NO_REFERENCED_ROW_2` — a parent row that vanished
+  between the `exists` check and the insert), never the whole `23000` class. See **D-5**'s 2026-09-09
+  correction for why the class-wide catch is wrong, and note the code differs from the zone-delete
+  guard's `1451`: these are two different races, in the same SQLSTATE class, in opposite directions).
+
+> **All three rate actions self-authorize. This is D-11's table, restated at each entry rather than
+> cited once, deliberately** — a reviewer auditing one action file must not have to open D-11 to
+> learn whether it is supposed to have a gate, which is the same duplication rule
+> `routes/roles.php`'s and `routes/sales-regions.php`'s inline `can:`-not-`permission:` comments
+> already follow.
 
 - `app/Actions/Shipping/CreateShippingRate.php` — **new**.
   `__invoke(array $attributes): ShippingRate`. Trims before validating.
+
+  **Self-authorizes as its own first statement**, before the trim and before `Validator::make(...)`:
+  `$this->logRefusedPrivilegedAttempt->authorize('create', ShippingRate::class, targetType: 'shipping_rate');`
+  Class-scoped, so no `targetId` — matching `CreateShippingZone` / `CreateProductCategory`.
 
   > **Corrected — see D-11's own correction above.** This entry originally read *"Performs **no**
   > authorization, matching `CreateUser` / `UpdateUser`: the caller gates first"* — the same false
   > citation D-11 makes, quoted rather than silently rewritten. Should self-authorize `create` on
   > `ShippingRate::class` against `ShippingRatePolicy` as its own first statement when this story
   > is implemented, mirroring 0033's corrected `App\Actions\Shipping\CreateShippingZone`.
+  >
+  > **Upgraded 2026-09-09 (Phase 2 review finding B1):** *"should ... when this story is
+  > implemented"* is now **must**, and the requirement is stated above the blockquote rather than
+  > only inside it, so it is not read as historical commentary.
 
 - `app/Actions/Shipping/UpdateShippingRate.php` — **new**.
-  `__invoke(ShippingRate $rate, array $attributes): ShippingRate`.
+  `__invoke(ShippingRate $shippingRate, array $attributes): ShippingRate`.
+
+  **Self-authorizes as its own first statement**, before validation and before any write:
+  `$this->logRefusedPrivilegedAttempt->authorize('update', $shippingRate, targetType: 'shipping_rate', targetId: $shippingRate->id);`
+
+  > **Correction, 2026-09-09 (Phase 2 review finding B1).** This entry originally carried **no
+  > authorization statement at all** — just the signature line — quoted rather than silently
+  > rewritten, per this project's audit-authored-page convention. D-11's own correction blockquote
+  > (added before Phase 2) named all three rate actions, but was propagated to `CreateShippingRate`'s
+  > entry only, leaving this one and `DeleteShippingRate`'s reading as though no gate were expected.
+  > That is exactly the shape 0033's Phase 4 security audit caught as its finding **F-1**, and the
+  > entire reason D-11 carries a correction in the first place; a silent omission here would have
+  > reproduced it one story later, in the same folder.
 
 - `app/Actions/Shipping/DeleteShippingRate.php` — **new**.
-  `__invoke(ShippingRate $rate): bool`. A plain instance `->delete()` — through the **model**, never
-  the query builder
+  `__invoke(ShippingRate $shippingRate): bool`. A plain instance `->delete()` — through the **model**,
+  never the query builder
   ([base-standards.md](../../docs/conventions/base-standards.md#deleting-a-user-goes-through-the-model-not-the-query-builder)).
+
+  **Self-authorizes as its own first statement**, above the delete:
+  `$this->logRefusedPrivilegedAttempt->authorize('delete', $shippingRate, targetType: 'shipping_rate', targetId: $shippingRate->id);`
+
+  **No in-use guard, and no count of any kind** — deleting a *rate* blocks on nothing. The guard in
+  this story belongs to `DeleteShippingZone` (**D-5**), and this action must not grow a sibling of
+  it: that is the misattribution D-5's 2026-08-19 correction already records from the other
+  direction.
+
+  > **Correction, 2026-09-09 (Phase 2 review finding B1).** Same omission as `UpdateShippingRate`
+  > above: this entry originally carried **no authorization statement at all**. Same reasoning, same
+  > fix.
 
 - `app/Actions/Shipping/DeleteShippingZone.php` — **MODIFY** (0033's file, pre-shaped for exactly
   this). The guard 0033 deferred, in the shape 0024 **D-10** established:
 
   ```php
-  public function __invoke(ShippingZone $zone): bool
+  public function __invoke(ShippingZone $shippingZone): bool
   {
-      return DB::transaction(function () use ($zone): bool {
-          $this->guardAgainstReferencingRates($zone->shippingRates()->count());
+      // UNCHANGED and NOT OPTIONAL: this call already ships in 0033's file
+      // (its Phase 4 finding F-1) and MUST remain the FIRST statement, above
+      // both the count below and the transaction. The shipped docblock says so
+      // in as many words: it "MUST stay above wherever story 0036 adds its own
+      // in-use-by-a-rate-rule count guard". A reversed order leaks the rate
+      // count to an actor who does not even hold `shipping.delete` -- the
+      // identical ordering rule DeleteProductCategory's own docblock states.
+      $this->logRefusedPrivilegedAttempt->authorize(
+          'delete',
+          $shippingZone,
+          targetType: 'shipping_zone',
+          targetId: $shippingZone->id,
+      );
+
+      return DB::transaction(function () use ($shippingZone): bool {
+          // Inside the transaction, deliberately -- this is the count-and-delete
+          // atomicity 0033 pre-shaped the DB::transaction() wrapper for. It is a
+          // knowing divergence from DeleteProductCategory, which counts outside
+          // any transaction of its own; do not "align" it back.
+          $inUseCount = $shippingZone->shippingRates()->count();
+
+          if ($inUseCount > 0) {
+              throw $this->blockedByRates($shippingZone, $inUseCount);
+          }
 
           try {
-              return (bool) $zone->delete();
+              // deleteOrFail(), NEVER delete(). Larastan level 7 flags a plain
+              // ->delete() in this position as a dead catch: Eloquent's
+              // Model::delete() carries no @throws annotation Larastan can
+              // trace, so the QueryException branch below is statically
+              // unreachable. deleteOrFail() is Laravel's own documented
+              // `@throws \Throwable` sibling with no behavioural difference.
+              // This is DeleteProductCategory's exact, already-shipped fix.
+              return (bool) $shippingZone->deleteOrFail();
           } catch (QueryException $e) {
-              // 23000 here is shipping_rates.shipping_zone_id refusing under
-              // restrictOnDelete(): a rate was created for this zone between the
-              // count above and this delete. The count is the primary guard; the
-              // FK is the last word -- the same relationship CreateUser has with
-              // the users.email unique index. Re-count so the loser of the race
-              // sees an accurate number, never a 500.
-              if ($e->getCode() === '23000') {
-                  $this->guardAgainstReferencingRates($zone->shippingRates()->count());
+              // Narrowed to 1451 (ER_ROW_IS_REFERENCED_2), NOT the whole 23000
+              // SQLSTATE class -- see D-5's 2026-09-09 correction. 1451 here is
+              // shipping_rates.shipping_zone_id refusing under
+              // restrictOnDelete(): a rate was created for this zone between
+              // the count above and this delete. The count is the primary
+              // guard; the FK is the last word.
+              if (($e->errorInfo[1] ?? null) !== 1451) {
+                  throw $e;
               }
 
-              throw $e;
+              // ALWAYS throws a ValidationException on this branch -- never
+              // falls through to a bare `throw $e`. Re-counting inside a
+              // rolled-back transaction can legitimately read 0 (deleteOrFail()
+              // wraps its DELETE in a transaction, so the 1451 rolls back the
+              // racing writer's view), and a 0 that reached a `$count > 0`
+              // test would fall through and surface the raw QueryException as a
+              // 500 -- the exact outcome D-5 says must never happen. The floor
+              // lives in blockedByRates(); this branch just always throws it.
+              throw $this->blockedByRates($shippingZone, $shippingZone->shippingRates()->count());
           }
       });
   }
 
   /**
-   * @throws ValidationException  keyed on 'shippingZoneId' -- a hand-off
-   *                              contract story 0037's @error block binds to.
+   * Build (never throw) the refusal, so both call sites above are a bare
+   * `throw $this->blockedByRates(...)` and neither can forget to throw.
+   *
+   * Mirrors DeleteProductCategory::blockedByProducts() property for property:
+   *
+   * - `max(1, $count)` is a PRESENTATION floor, not a correctness claim about
+   *   how many rates reference the row. It is what turns an always-0 recount
+   *   on the rolled-back race path into a coherent "used by 1 shipping rate"
+   *   instead of a 500. The primary call site never needs it -- it only runs
+   *   once the count is already positive.
+   * - The domain refusal is LOGGED via LogRefusedPrivilegedAttempt::log()
+   *   (never ->authorize(), which would re-run the already-passed Gate check
+   *   above) with the snake_case reason 'zone_in_use', matching the non-Gate
+   *   refusal convention DeleteProductCategory's 'category_in_use' and
+   *   SetSalesRegionActive's own domain-invariant refusals established. This
+   *   is a domain-invariant refusal, not an authorization one: the actor may
+   *   hold shipping.delete and the answer is still no.
+   *
+   * @return ValidationException  keyed on 'shippingZoneId' -- a hand-off
+   *                              contract story 0034's zone-delete modal
+   *                              @error block binds to (NOT 0037's; see the
+   *                              2026-08-19 correction under D-5).
    */
-  private function guardAgainstReferencingRates(int $count): void
+  private function blockedByRates(ShippingZone $shippingZone, int $count): ValidationException
   ```
 
   The count is **unfiltered by carrier and by carrier state** (**D-5**), and `trans_choice` produces
   the message. The `DB::transaction()` wrapper 0033 added for a single statement is now doing the
   job it was added for.
+
+  > **Correction, 2026-09-09 (Phase 2 review findings B2, B3 and B4).** The pseudocode above was
+  > rewritten; the original is quoted here rather than silently replaced, per this project's
+  > audit-authored-page convention. It had four defects, all of which would have been implemented
+  > verbatim in Phase 3:
+  >
+  > 1. **It silently dropped the shipped `Gate` call.** The original `__invoke()` opened directly
+  >    with `return DB::transaction(...)`, omitting the
+  >    `$this->logRefusedPrivilegedAttempt->authorize('delete', ...)` statement that **already
+  >    exists** in `app/Actions/Shipping/DeleteShippingZone.php` (0033's Phase 4 finding F-1) and
+  >    whose own docblock states it "MUST stay above wherever story 0036 adds its own
+  >    in-use-by-a-rate-rule count guard". Read as a drop-in replacement — which is how a
+  >    *"MODIFY, here is the new `__invoke()`"* block reads — it would have **removed the
+  >    authorization check from a delete action** while adding a guard. (B3)
+  > 2. **It caught the whole `23000` class** (`$e->getCode() === '23000'`) rather than narrowing on
+  >    `errorInfo[1] === 1451`. See D-5's own correction above. (B2)
+  > 3. **It wrapped a `bool`-returning `->delete()` in a `try`/`catch (QueryException)`**, which
+  >    Larastan level 7 flags as a dead catch — the precedent it claims to mirror uses
+  >    `deleteOrFail()` for precisely this reason, as that file's own inline comment records. (B4a)
+  > 4. **Its race path could reach a bare `throw $e`.** The original re-called
+  >    `guardAgainstReferencingRates($count)` — a guard that throws only when the count is positive —
+  >    and then fell through to `throw $e` unconditionally. Because a 1451 rolls its own transaction
+  >    back, that recount can legitimately read **0**, so the guard would not fire and the raw
+  >    `QueryException` would surface as a **500** — the exact outcome D-5's own bullet says must
+  >    never happen. Closed by the `max(1, ...)` floor plus an always-throwing branch. (B4b)
+  >
+  > The helper was also renamed `guardAgainstReferencingRates(int $count): void` →
+  > `blockedByRates(ShippingZone $shippingZone, int $count): ValidationException` — it now *builds*
+  > the exception rather than conditionally throwing one, so neither call site can forget to throw,
+  > and it needs the model in hand to log the refusal (B4c) and to key the message. Its `@throws`
+  > line also still credited **0037** with binding the `'shippingZoneId'` error bag; that is the same
+  > misattribution D-5's 2026-08-19 correction already recorded — the zone-delete modal is
+  > [0034](done/0034-shipping-zones-ui.md)'s — and is corrected here too.
 
 - `app/Actions/Shipping/ResolveApplicableShippingRate.php` — **new**. The **D-1** algorithm.
 
@@ -838,6 +1064,19 @@ actions (0033). `shipping_carriers`' migration, seeder, `ToggleShippingCarrier` 
       onboarding order the PRD never states and an implementation could plausibly forbid.
 - [ ] A **malformed, non-UUID** `shipping_carrier_id` / `shipping_zone_id` is refused as a validation
       failure, not as a 500 — distinct from a well-formed id that simply does not exist.
+- [ ] **A signed-in user without `shipping.create` is refused, and no row is created** — the Gherkin
+      *A user without the shipping create permission cannot create a rate rule*, asserted by calling
+      the action **directly** (`app(CreateShippingRate::class)(...)`) as an `actingAs()` user holding
+      every *other* `shipping.*` permission. There is no route and no component in this story, so
+      the action is the only reachable enforcement point, which is the whole reason **D-11** requires
+      it to self-authorize. Assert **both** halves: an `AuthorizationException`, **and**
+      `assertDatabaseCount('shipping_rates', 0)` — a gate that throws *after* the insert passes a
+      one-assertion test.
+- [ ] **A refusal is logged** via `LogRefusedPrivilegedAttempt` with `target_type: 'shipping_rate'`
+      — `Log::spy()`, matching `tests/Feature/ShippingZones/`'s own refusal-logging precedent. An
+      omitted `targetType` degrades the audit line silently and is invisible to the test above.
+- [ ] **A holder of `shipping.create` succeeds** — the allow half of the pair, without which the
+      refusal test above passes against an action that refuses *everyone*.
 
 ### `tests/Feature/ShippingRates/ShippingRateValidationTest.php`
 One **dataset** (`invalid_rate_attributes`) driving the PRD's `Scenario Outline`, named cases:
@@ -867,6 +1106,25 @@ Separate tests, because their assertion is acceptance rather than rejection:
       `count()` — 0033's rule: a count passes if rows were deleted and recreated).
 - [ ] An unknown or malformed-UUID rate id fails cleanly (`ModelNotFoundException` / 404), not as a
       silent no-op.
+- [ ] **A signed-in user without `shipping.edit` is refused, and the rate keeps its price** — the
+      Gherkin *A user without the shipping edit permission cannot change a rate rule*. Assert the
+      `AuthorizationException` **and** re-read the row to prove the price is unchanged; a gate placed
+      after the write throws and still persists.
+- [ ] **A signed-in user without `shipping.delete` is refused, and the rate still exists** — the
+      Gherkin *A user without the shipping delete permission cannot delete a rate rule*, with
+      `assertDatabaseHas` on the exact id.
+- [ ] **Each refusal is logged** with `target_type: 'shipping_rate'` and the row's own `target_id`
+      (`Log::spy()`). `targetId` is the argument most likely to be dropped on the two instance-scoped
+      calls, and nothing else in the suite would notice.
+- [ ] **The matching allow half for each**: a holder of `shipping.edit` updates, a holder of
+      `shipping.delete` deletes. Per **D-11**, each refusal test is written as an allow-and-deny
+      **pair**, the shape `tests/Feature/Products/VariantBuilderAuthorizationTest.php` already uses.
+
+> **Added 2026-09-09 (Phase 2 review finding B1).** The three authorization scenarios in the
+> `Feature: Shipping rate rules` Gherkin block above (*A user without the shipping
+> create/edit/delete permission…*) had **no corresponding entries anywhere in this section** — a
+> Gherkin scenario with no test bullet is a scenario Phase 3 has no obligation to satisfy, and these
+> three are the only executable proof of the self-authorization D-11 now requires.
 
 ### `tests/Feature/ShippingRates/ListShippingRatesByCarrierTest.php`
 - [ ] Rates are returned grouped under their own carrier, carriers ordered by name.
@@ -901,27 +1159,53 @@ Separate tests, because their assertion is acceptance rather than rejection:
       reassignment is the path the error message actually instructs the administrator to take.
 - [ ] The zone's **geography membership rows survive** a blocked delete (a guard that half-executes
       would be worse than one that fails).
-- [ ] **The `23000` path, split into the two halves that are genuinely reproducible** — real
-      two-connection concurrency is not, and is explicitly not attempted:
+- [ ] **The `1451` path, split into the three parts that are genuinely reproducible** — real
+      two-connection concurrency is not, and is explicitly not attempted. (Two, until the 2026-09-09
+      correction below added part 3.):
       1. **The constraint fires.** Bypass the application entirely with
          `DB::table('shipping_zones')->where('id', $zone->id)->delete()` while a rate references it,
          and assert a `QueryException`. This proves `restrictOnDelete` exists and is enforced, and
          it doubles as the regression test for anyone "simplifying" the FK to `cascade`.
-      2. **The action translates it.** Pass the action a partial double whose `delete()` throws a
-         `23000` `QueryException`, and assert it surfaces the **same** `ValidationException` message
-         the count guard produces — never a 500. The action is a plain `__invoke(ShippingZone $zone)`,
-         so this needs no HTTP layer.
+      2. **The action translates it.** Pass the action a partial double whose `deleteOrFail()` throws
+         a `QueryException` carrying `errorInfo[1] === 1451`, and assert it surfaces the **same**
+         `ValidationException` message the count guard produces — never a 500. The action is a plain
+         `__invoke(ShippingZone $shippingZone)`, so this needs no HTTP layer.
+      3. **The narrowing is real, not incidental** — the assertion the `23000`-era draft could not
+         express: feed the same double a `QueryException` carrying `errorInfo[1] === 1062` (a
+         duplicate-entry error, same `23000` SQLSTATE class) and assert it **propagates unchanged**
+         rather than being misreported as a shipping-rate count. Without this, a catch written back
+         as `getCode() === '23000'` passes every other bullet in this section.
 
-      **Connection caveat, verified rather than assumed:** `phpunit.xml` pins `DB_DATABASE=testing`
-      but **not** `DB_CONNECTION`, and `.github/workflows/tests.yml` copies `.env.example` verbatim,
-      which pins `DB_CONNECTION=sqlite` — so **CI runs this entire suite on SQLite and never on
-      MySQL**, while production is `mysql:8.4`. SQLite's FK enforcement *is* genuinely on
-      (`config/database.php`'s `'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true)`), so
-      half 1 is real rather than vacuous — but MySQL's exact SQLSTATE surfacing for this FK is never
-      verified by CI. **Assert on the thrown `ValidationException` and its message, never on a
-      driver code string**, and record the engine the suite actually ran under. This is 0033
-      **R-9**'s finding, reconfirmed here for this story's own FKs. See **R-4** and
-      [`ci-database-connection-gap.md`](ci-database-connection-gap.md).
+      **Connection note — CI runs on the production engine.** `phpunit.xml` pins
+      `DB_CONNECTION=mysql` and `DB_DATABASE=testing`; `.env.example` pins `DB_CONNECTION=mysql`; and
+      `.github/workflows/tests.yml` provisions a real `mysql:8.4` service container and runs the
+      suite against it with `DB_CONNECTION: mysql` / `DB_DATABASE: testing`. So MySQL's exact
+      SQLSTATE surfacing for these FKs **is** exercised in CI, and the `errorInfo[1] === 1451` /
+      `1062` distinction half 3 asserts is genuinely testable rather than a claim CI cannot reach.
+      **Assert on the thrown `ValidationException` and its message for the user-facing halves** —
+      that advice stands on its own merits, since the message is the contract 0034's `@error` block
+      binds to and a driver code is not — while half 3 asserts the code deliberately, because the
+      *narrowing* is the behaviour under test there.
+
+      > **Correction, 2026-09-09 (Phase 2 review finding B5).** This paragraph was headed
+      > *"Connection caveat, verified rather than assumed"* and read: *"`phpunit.xml` pins
+      > `DB_DATABASE=testing` but **not** `DB_CONNECTION`, and `.github/workflows/tests.yml` copies
+      > `.env.example` verbatim, which pins `DB_CONNECTION=sqlite` — so **CI runs this entire suite
+      > on SQLite and never on MySQL**, while production is `mysql:8.4`. SQLite's FK enforcement *is*
+      > genuinely on (`config/database.php`'s `'foreign_key_constraints' => env('DB_FOREIGN_KEYS',
+      > true)`), so half 1 is real rather than vacuous — but MySQL's exact SQLSTATE surfacing for
+      > this FK is never verified by CI."* — quoted rather than silently rewritten, per this
+      > project's audit-authored-page convention. **Every factual claim in it is false against the
+      > current tree**, and it was inherited from 0033 **R-9** rather than re-verified here. The gap
+      > it describes was real when 0033 debated it and was **fixed on 2026-08-26** — see
+      > [`ci-database-connection-gap.md`](ci-database-connection-gap.md), whose own status line reads
+      > *"Status: fixed and fully documented — 2026-08-26"*. Re-verified by reading the three files
+      > directly for this correction, not taken from that status line: `phpunit.xml` line 29
+      > (`<env name="DB_CONNECTION" value="mysql"/>`), `.env.example` line 28
+      > (`DB_CONNECTION=mysql`), and `.github/workflows/tests.yml` (a `mysql:8.4` service with a
+      > `mysqladmin ping` health check, plus `DB_CONNECTION: mysql` / `DB_DATABASE: testing` in the
+      > job env). Half 3 above is **new**, and exists only because the corrected premise makes it
+      > worth writing. See **R-4**, corrected the same day.
 
 ### `tests/Feature/ShippingRates/ResolveApplicableShippingRateTest.php`
 The story's densest file. Structured as a few datasets plus the cases whose assertions genuinely
@@ -987,8 +1271,18 @@ Carrier interaction:
 
 ### `tests/Feature/Policies/ShippingRatePolicyTest.php`
 - [ ] Each of `viewAny` / `create` / `update` / `delete` granted with, and refused without, its
-      `shipping.*` permission — driven directly through `Gate::forUser()`, since **D-11** ships the
-      policy with no caller.
+      `shipping.*` permission — driven directly through `Gate::forUser()`, because that is the only
+      way to reach **`viewAny`**, which genuinely has no caller in this story (nothing here lists
+      rates behind a gate; `ListShippingRatesByCarrier` is a plain query and 0037 is its gating
+      consumer), and because a per-ability unit net is sharper than an action test that happens to
+      exercise one ability incidentally.
+
+  > **Rationale corrected 2026-09-09 (Phase 2 review finding B1).** This bullet originally justified
+  > `Gate::forUser()` with *"since **D-11** ships the policy with no caller"* — quoted rather than
+  > silently rewritten, per this project's audit-authored-page convention. That is false as of D-11's
+  > own correction: `create` / `update` / `delete` each have a real call site in
+  > `CreateShippingRate` / `UpdateShippingRate` / `DeleteShippingRate`. `viewAny` is the only
+  > callerless ability, and the direct tests are kept for the reason above, not the stale one.
 - [ ] A Super Admin holding **no** explicit `shipping.*` grant passes all four, exercising the
       documented `Gate::before` bypass — and, read together with **D-5**, documenting that the same
       Super Admin still **cannot** delete an in-use zone, because that guard is deliberately not in
@@ -1039,7 +1333,10 @@ the screen on top of this.
       cannot bypass it (**D-5**; 0033 **D-1**).
 - [ ] The guard's count is **unfiltered** — every carrier's rates, including a disabled carrier's.
 - [ ] `restrictOnDelete()` on **both** FKs, making the block a database invariant and closing the
-      check-then-act race; a caught `23000` renders the **same** human message, never a 500.
+      check-then-act race; a caught `QueryException` **narrowed to `errorInfo[1] === 1451`** (never
+      the whole `23000` SQLSTATE class — **D-5**'s 2026-09-09 correction) renders the **same** human
+      message, and that branch **always** throws a `ValidationException` rather than ever falling
+      through to a raw driver exception, never a 500.
 - [ ] **Rate precedence on overlap is deterministic**: most specific tier wins, the tier is selected
       by the presence of rate rules under the active carrier filter, the tier does **not** reopen on
       weight, and same-level ties break on price → `created_at` → `id` (**D-1**).
@@ -1057,6 +1354,13 @@ the screen on top of this.
       parents.
 - [ ] `ShippingRatePolicy` gates the four abilities on the already-seeded `shipping.*` permissions;
       **no new permission and no `RolePermissionSeeder` change**.
+- [ ] **`CreateShippingRate`, `UpdateShippingRate` and `DeleteShippingRate` each self-authorize
+      against `ShippingRatePolicy` as their own first statement** — before validation, before any
+      transaction, before any read that discloses data — via `LogRefusedPrivilegedAttempt` with an
+      explicit `targetType: 'shipping_rate'` (**D-11**). A refusal is an `AuthorizationException`
+      that writes nothing, and it is logged. *(Added 2026-09-09, Phase 2 review finding B1: this is
+      the exact obligation 0033's Phase 4 security audit had to raise as its finding **F-1** after
+      the fact, and it was missing from this list.)*
 - [ ] **No route, Livewire component or Blade view is added** (**D-10**), and the only files owned by
       other stories that this one edits are the four named in *Files to create/modify*.
 - [ ] `down()` is the exact inverse of `up()`.
@@ -1069,18 +1373,33 @@ the screen on top of this.
 - [ ] No security findings (appsec-auditor).
 - [ ] Documentation updated (docs-keeper) — [`docs/database/schema.md`](../../docs/database/schema.md)
       (new table + ER diagram), [`docs/architecture/`](../../docs/architecture/) for the resolution
-      rule (it is domain behaviour Epic 3 will consume and must not re-derive), and
+      rule (it is domain behaviour Epic 3 will consume and must not re-derive).
+- [ ] **`php artisan db:table shipping_rates` run in Phase 3 and its real index list recorded** —
+      expect exactly three (`primary`, plus one auto-created FK index per FK column) and **no
+      finding**. *(Softened 2026-09-09, Phase 2 review non-blocking finding. This read: "and
       [`docs/errors-log.md`](../../docs/errors-log.md) if the FK-index duplication 0033 **R-1**
-      predicts is confirmed by this story's `php artisan db:table shipping_rates` check.
+      predicts is confirmed by this story's `php artisan db:table shipping_rates` check." — quoted
+      rather than silently rewritten. 0033's own Phase 6 pass **disproved** that prediction on
+      2026-09-07; see **D-12**'s correction. The verification stays because an index nobody wrote is
+      invisible in a migration; the anticipated errors-log entry is now very unlikely, and writing
+      one is only warranted if the run genuinely shows a fourth index.)*
 - [ ] **0033's deferred obligations discharged, each verifiable**: its delete stub un-skipped; the
       count guard implemented in `DeleteShippingZone`; `restrictOnDelete` on
-      `shipping_rates.shipping_zone_id`; `23000` caught and converted; the count asserted for **≥ 2
+      `shipping_rates.shipping_zone_id`; a **`1451`-narrowed** `QueryException` caught and converted
+      (**not** the `23000` class — D-5's 2026-09-09 correction); the count asserted for **≥ 2
       distinct reference counts**; and the overlap-precedence rule owned and decided (**D-1**).
 - [ ] **0035's deferred decision D discharged** — disabling a carrier with rate rules (**D-6**).
 - [ ] **`shipping.zones.delete_blocked` added to both locales**, with Spanish pluralisation written
       by hand (**R-6**).
-- [ ] **Hand-off to 0037 recorded** — the policy ships with zero call sites, so this is the only
-      thing making it real. 0037 must (a) `Gate::authorize()` before invoking **every** rate action,
+- [ ] **All three rate actions self-authorize** (`create` / `update` / `delete` against
+      `ShippingRatePolicy`) as their own first statement, via `LogRefusedPrivilegedAttempt` with an
+      explicit `targetType: 'shipping_rate'`, each pinned by an allow-and-deny test pair (**D-11**).
+      This is the item 0033's Phase 4 audit had to add as finding **F-1**; it is a checklist item
+      here so it cannot be added late a second time.
+- [ ] **Hand-off to 0037 recorded.** 0037 must (a) `Gate::authorize()` before invoking **every** rate
+      action — **defence in depth on top of each action's own gate, never the only place the rule
+      exists**, matching how `App\Livewire\ProductCategories\Index` re-checks abilities its actions
+      already enforce,
       (b) bind `@error('shippingZoneId')` on the **rate create/edit modal's zone select** — the
       field-level failure `shippingZoneIdRules()`'s `Rule::exists(...)` raises, i.e. this story's
       `unknown_zone` case in the `invalid_rate_attributes` dataset — alongside the rate form's other
@@ -1126,16 +1445,42 @@ the screen on top of this.
 - **R-3 — the guard's count filtered by carrier state.** `->whereHas('carrier', fn ($q) => $q->where('is_active', true))`
   reads as a sensible refinement and quietly permits destroying a disabled carrier's whole rate set.
   Guarded by a dedicated test (**D-5**).
-- **R-4 — the `23000` path is engine-dependent, and CI does not run the engine production uses.**
-  Verified, not suspected: `phpunit.xml` pins `DB_DATABASE=testing` but not `DB_CONNECTION`;
-  `.github/workflows/tests.yml` copies `.env.example` verbatim, which pins `DB_CONNECTION=sqlite`;
-  production is `mysql:8.4`. SQLite FK enforcement is genuinely on
+- **R-4 — ⚠️ RETIRED, CORRECTED 2026-09-09 (Phase 2 review finding B5). The risk this named no longer
+  exists: CI runs on real MySQL.** It read: *"**the `23000` path is engine-dependent, and CI does not
+  run the engine production uses.** Verified, not suspected: `phpunit.xml` pins `DB_DATABASE=testing`
+  but not `DB_CONNECTION`; `.github/workflows/tests.yml` copies `.env.example` verbatim, which pins
+  `DB_CONNECTION=sqlite`; production is `mysql:8.4`. SQLite FK enforcement is genuinely on
   (`'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true)`), so restrict *semantics* are
   exercised — but MySQL's SQLSTATE surfacing for these FKs is never verified by CI, and a
-  MySQL-specific divergence would ship fully green. Assert on the surfaced `ValidationException`,
-  never on a driver code string, and record which engine the suite ran under. Same finding as 0033
-  **R-9**. Tracked independently by [`ci-database-connection-gap.md`](ci-database-connection-gap.md),
-  which is **not** a blocker for this story but does bound what its FK tests prove.
+  MySQL-specific divergence would ship fully green."* — quoted rather than silently rewritten, per
+  this project's audit-authored-page convention.
+
+  **Every factual claim in that text is false against the current tree.** It was inherited verbatim
+  from 0033 **R-9**, where it was accurate at the time, and carried here without re-verification —
+  the *"Verified, not suspected"* framing is what made it survive Phase 1 unchallenged, which is
+  itself an instance of [errors-log.md](../../docs/errors-log.md#one-docs-pass-reported-two-gaps-that-were-not-there-both-marked-verified--2026-08-29)'s
+  recorded failure mode: a confident method claim attached to a stale conclusion forecloses the
+  check. Re-verified by reading the three files directly for this correction:
+
+  | Claim | Reality |
+  | --- | --- |
+  | `phpunit.xml` does not pin `DB_CONNECTION` | It does — line 29, `<env name="DB_CONNECTION" value="mysql"/>` |
+  | `.env.example` pins `DB_CONNECTION=sqlite` | It pins `DB_CONNECTION=mysql` (line 28) |
+  | CI never runs MySQL | `.github/workflows/tests.yml` provisions a `mysql:8.4` service container with a `mysqladmin ping` health check and runs the suite with `DB_CONNECTION: mysql` / `DB_DATABASE: testing` |
+
+  The gap was real when 0033 debated it and was **fixed on 2026-08-26** —
+  [`ci-database-connection-gap.md`](ci-database-connection-gap.md) is marked *"Status: fixed and
+  fully documented — 2026-08-26"*, ahead of this story rather than after it.
+
+  **What survives, and it is not nothing.** *"Assert on the surfaced `ValidationException` and its
+  message, never on a driver code string"* is still the right rule for every user-facing assertion —
+  but on its own merits, not because CI cannot see MySQL: the message is the contract
+  [0034](done/0034-shipping-zones-ui.md)'s `@error('shippingZoneId')` block binds to, and a driver
+  code is an implementation detail no consumer reads. The **one** deliberate exception is the new
+  half 3 under *`tests/Feature/ShippingZones/DeleteShippingZoneTest.php`*, which asserts on the code
+  precisely because **B2**'s `errorInfo[1] === 1451`-not-`23000` narrowing is the behaviour under
+  test there — and that assertion is only worth writing **because** CI now runs the engine whose
+  codes it names. The corrected premise strengthens **D-5**'s fix rather than merely deleting a risk.
 - **R-5 — a fourth geography level would invalidate the fixed three-hop walk.** 0032's **OQ-5**
   keeps province as a *column*, not a level, precisely so the depth stays three. If that is ever
   revisited, **D-1**'s "no `WITH RECURSIVE`" reasoning must be revisited with it. Named so the two
@@ -1213,9 +1558,20 @@ Three notes on how this debate actually ran, recorded for honesty:
   and that a suite written against one would show green against an implementation of another —
   is what forced **D-1** step 2 to be written as an explicit predicate rather than as the phrase
   "most specific wins". It also contributed the cross-tier price-inversion test (**R-11**), the
-  global-count-scope test (**R-10**), the two-half `23000` technique, the verified
-  CI-runs-SQLite-only finding in **R-4**, and the open question about creating a rate for a disabled
-  carrier, which **D-6**'s corollary now answers.
+  global-count-scope test (**R-10**), the two-half FK-race technique, the CI-runs-SQLite-only
+  finding in **R-4**, and the open question about creating a rate for a disabled carrier, which
+  **D-6**'s corollary now answers.
+
+  > **Note added 2026-09-09 (Phase 2 review finding B5).** One of those contributions did not hold.
+  > The CI-runs-SQLite-only finding was labelled *"the verified ... finding"* in this paragraph and
+  > *"Verified, not suspected"* in **R-4** itself; it was in fact **inherited from 0033 R-9 and never
+  > re-verified against this tree**, and it had been false since 2026-08-26. See **R-4**, now
+  > retired and corrected. Recorded here rather than quietly dropped from the provenance list,
+  > because the failure mode — a stale claim carried forward under a confidence marker that stops
+  > anyone re-checking it — is one
+  > [errors-log.md](../../docs/errors-log.md#one-docs-pass-reported-two-gaps-that-were-not-there-both-marked-verified--2026-08-29)
+  > already documents, and this is a second instance of it. The rest of `backend-qa`'s contributions
+  > above were re-checked in the same pass and stand.
 
 - **`backend-expert`'s contribution came from an earlier debate attempt that was interrupted before
   synthesis.** It was re-read and evaluated rather than adopted wholesale: its schema shape,
