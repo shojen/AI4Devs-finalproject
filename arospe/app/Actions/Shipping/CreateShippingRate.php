@@ -82,7 +82,14 @@ class CreateShippingRate
                 throw $e;
             }
 
-            $field = str_contains($e->getMessage(), 'shipping_carrier_id')
+            // Phase 4 security-audit finding F-5: discriminate on the CONSTRAINT NAME, never
+            // the column name -- QueryException::formatMessage() appends the WHOLE INSERT
+            // statement to the message, which mentions 'shipping_carrier_id' as a column name
+            // in every insert regardless of which FK actually failed, making a
+            // str_contains($e->getMessage(), 'shipping_carrier_id') check wrong whenever the
+            // ZONE fk is the one that failed. The constraint name is unambiguous and always
+            // present in the message.
+            $field = str_contains($e->getMessage(), 'shipping_rates_shipping_carrier_id_foreign')
                 ? 'shipping_carrier_id'
                 : 'shipping_zone_id';
 

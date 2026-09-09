@@ -39,11 +39,38 @@ class ResolveApplicableShippingRate
      */
     public const REASON_NO_MATCHING_WEIGHT_BRACKET = 'no_matching_weight_bracket';
 
+    /**
+     * Phase 4 security-audit finding F-4: `$weightKg` was malformed --
+     * non-numeric, or negative. Named as a THIRD reason on this same
+     * unresolved-result shape, matching the two existing reasons above,
+     * rather than an `InvalidArgumentException` -- no precedent for that
+     * exception exists anywhere under app/Actions/ in this codebase, and
+     * every existing caller of this action already pattern-matches on
+     * `$resolution->reason`, so a third named reason keeps the one return
+     * shape uniform instead of forcing every caller to also catch a second,
+     * incompatible exception type for what is still, from the caller's
+     * point of view, "no rate could be resolved for this input."
+     */
+    public const REASON_INVALID_WEIGHT = 'invalid_weight';
+
     public function __invoke(
         GeographyEntry $destination,
         float|string $weightKg,
         ?string $shippingCarrierId = null,
     ): ShippingRateResolution {
+        // Phase 4 security-audit finding F-4: reject a non-numeric, empty, or negative
+        // $weightKg as this action's own first statement -- BEFORE it ever reaches
+        // scopeCoveringWeight()'s raw DECIMAL comparison. `is_numeric()` runs before any cast:
+        // narrowing the parameter type to `float` alone would NOT fix this, since PHP's
+        // (float) cast silently coerces a non-numeric string to 0.0 ((float) 'abc' === 0.0),
+        // which would then silently match the lightest bracket and return a real (wrong)
+        // price instead of refusing. A negative weight must not be misdiagnosed as an
+        // ordinary coverage gap (REASON_NO_COVERING_ZONE/REASON_NO_MATCHING_WEIGHT_BRACKET) --
+        // it is a caller input error, named as its own reason.
+        if (! is_numeric($weightKg) || (float) $weightKg < 0) {
+            return ShippingRateResolution::unresolved(self::REASON_INVALID_WEIGHT);
+        }
+
         // ONE eager load for the whole chain, not three lazy hops.
         $destination->load('parent.parent');
 
@@ -89,8 +116,21 @@ class ResolveApplicableShippingRate
 
             // Winning tier found -- stop walking regardless of what
             // happens next (D-1 step 4).
+            //
+            // Phase 4 security-audit finding F-6: the active-carrier and optional
+            // carrier-id filters are re-applied HERE too, not merely inherited from
+            // $tierRates' own id list above -- a TOCTOU window between the two queries
+            // (a carrier disabled between them) would otherwise let this second query
+            // resolve a rate whose carrier no longer qualifies, since whereKey() alone
+            // re-reads nothing about carrier state. The guarantee now lives in the
+            // query that actually produces the answer, not one query away from it.
             $coveringRates = ShippingRate::query()
                 ->whereKey($tierRates->pluck('id'))
+                ->whereHas('carrier', fn ($carrierQuery) => $carrierQuery->where('is_active', true))
+                ->when(
+                    $shippingCarrierId !== null,
+                    fn ($query) => $query->where('shipping_carrier_id', $shippingCarrierId),
+                )
                 ->coveringWeight($weightKg)
                 ->with(['zone', 'carrier'])
                 ->orderBy('price')

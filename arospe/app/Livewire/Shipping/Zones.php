@@ -86,6 +86,21 @@ class Zones extends Component
     public string $deletingZoneName = '';
 
     /**
+     * Story 0036, Phase 4 security-audit findings F-2/F-3: exists solely
+     * so DeleteShippingZone's `ValidationException::withMessages(['shippingZoneId' => ...])`
+     * (the in-use-by-a-rate-rule guard) survives past the request that
+     * throws it. Livewire's SupportValidation::dehydrate() filters the
+     * persisted error bag through Utils::hasProperty(), so an error keyed
+     * on a name this class does not declare as a real property renders
+     * once and silently vanishes on the next round trip -- exactly the gap
+     * story 0034's own Phase 4 audit (its finding F-4) flagged and handed
+     * off here. Never written to directly; it exists only to give the
+     * error bag a property to survive against.
+     */
+    #[Locked]
+    public ?string $shippingZoneId = null;
+
+    /**
      * `viewAny` is authorized here in addition to the route's `can:`
      * middleware because Livewire's `/livewire/update` endpoint never runs
      * route middleware -- mounting the component directly (as every

@@ -32,6 +32,23 @@ class UpdateShippingRate
      * threaded through CreateShippingRate is threaded through here too
      * (0033 R-7).
      *
+     * Phase 4 security-audit finding F-1: unlike CreateShippingRate,
+     * this action does NOT default an omitted `min_weight_kg` to '0'.
+     * CreateShippingRate's default is correct because an omitted min on a
+     * brand-new rate genuinely means "from 0 kg" (D-7, matching the
+     * column's own `default(0)`). On an UPDATE, an omitted key means "not
+     * being touched", never "reset to 0" -- every caller of this action
+     * (App\Livewire\Shipping\* and every test in
+     * tests/Feature/ShippingRates/UpdateShippingRateTest.php) already
+     * submits the FULL attribute set on every save, matching
+     * App\Actions\Products\UpdateProduct's own full-payload convention, so
+     * `minWeightRules()`'s pre-existing `required` rule is what now
+     * correctly rejects a payload that omits it, as a field-level
+     * validation error, instead of the value being silently reset to 0 --
+     * which, under D-1's cheapest-wins tiebreak, could make a narrow
+     * promotional rate silently widen to cover parcels it was never
+     * configured for (a real undercharging bug).
+     *
      * @param  array<string, mixed>  $attributes
      */
     public function __invoke(ShippingRate $shippingRate, array $attributes): ShippingRate
@@ -44,7 +61,6 @@ class UpdateShippingRate
         );
 
         $attributes['name'] = trim((string) ($attributes['name'] ?? ''));
-        $attributes['min_weight_kg'] = $attributes['min_weight_kg'] ?? '0';
 
         Validator::make($attributes, [
             'name' => $this->shippingRateNameRules(),
@@ -67,7 +83,12 @@ class UpdateShippingRate
                 throw $e;
             }
 
-            $field = str_contains($e->getMessage(), 'shipping_carrier_id')
+            // Phase 4 security-audit finding F-5: discriminate on the CONSTRAINT NAME, never
+            // the column name -- see CreateShippingRate's identical catch for the full
+            // reasoning. QueryException::formatMessage() appends the whole UPDATE statement
+            // to the message, which mentions 'shipping_carrier_id' as a column name
+            // regardless of which FK actually failed.
+            $field = str_contains($e->getMessage(), 'shipping_rates_shipping_carrier_id_foreign')
                 ? 'shipping_carrier_id'
                 : 'shipping_zone_id';
 
