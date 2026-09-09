@@ -4,15 +4,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Shipping zones (story 0033)
+    | Shipping zones (story 0033) and carriers (story 0035)
     |--------------------------------------------------------------------------
     |
-    | This file is CREATED here even though story 0035 (shipping carriers) is
-    | its nominal owner going forward -- 0035 has not landed yet in this
-    | worktree, so per contracts.md's Parallel Agent File-Ownership Rule
-    | (0033 and 0035 must never be implemented concurrently), this story
-    | creates the file with only the `zones.*` group it needs. 0035 adds its
-    | own top-level groups alongside this one when it lands.
+    | This file was originally created by story 0033 with only the `zones.*`
+    | group it needed, ahead of story 0035 (shipping carriers) landing --
+    | per contracts.md's Parallel Agent File-Ownership Rule, 0033 and 0035
+    | were never implemented concurrently. Story 0035 now adds its own
+    | `carriers` top-level group alongside `zones` below.
     |
     | No `zones.delete_blocked` key here -- deliberately deferred to story
     | 0036, which owns the in-use-by-a-rate-rule count guard (D-1). A
@@ -26,6 +25,17 @@ return [
     | needing a key of its own.
     |
     */
+
+    'carriers' => [
+        'statuses' => [
+            'active' => 'Active',
+            'inactive' => 'Inactive',
+        ],
+
+        'index' => [
+            'heading' => 'Shipping carriers',
+        ],
+    ],
 
     'zones' => [
         'fields' => [

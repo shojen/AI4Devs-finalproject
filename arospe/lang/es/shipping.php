@@ -4,16 +4,15 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Zonas de envío (historia 0033)
+    | Zonas de envío (historia 0033) y transportistas (historia 0035)
     |--------------------------------------------------------------------------
     |
-    | Este archivo se CREA aquí aunque la historia 0035 (transportistas de
-    | envío) sea su propietaria nominal en adelante -- 0035 todavía no ha
-    | aterrizado en este worktree, así que según la Parallel Agent
-    | File-Ownership Rule de contracts.md (0033 y 0035 nunca deben
-    | implementarse de forma concurrente), esta historia crea el archivo solo
-    | con el grupo `zones.*` que necesita. 0035 añadirá sus propios grupos de
-    | nivel superior junto a este cuando aterrice.
+    | Este archivo lo creó originalmente la historia 0033 con solo el grupo
+    | `zones.*` que necesitaba, antes de que aterrizara la historia 0035
+    | (transportistas de envío) -- según la Parallel Agent File-Ownership
+    | Rule de contracts.md, 0033 y 0035 nunca se implementaron de forma
+    | concurrente. La historia 0035 añade ahora su propio grupo de nivel
+    | superior `carriers` junto a `zones` más abajo.
     |
     | Sin clave `zones.delete_blocked` aquí -- diferida deliberadamente a la
     | historia 0036, que posee el guard de bloqueo por uso en una regla de
@@ -28,6 +27,17 @@ return [
     | una clave propia.
     |
     */
+
+    'carriers' => [
+        'statuses' => [
+            'active' => 'Activo',
+            'inactive' => 'Inactivo',
+        ],
+
+        'index' => [
+            'heading' => 'Transportistas',
+        ],
+    ],
 
     'zones' => [
         'fields' => [
