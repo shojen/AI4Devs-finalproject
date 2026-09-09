@@ -7,6 +7,7 @@ use App\Models\ShippingZone;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\PermissionRegistrar;
@@ -31,6 +32,13 @@ use Spatie\Permission\PermissionRegistrar;
 beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
+});
+
+afterEach(function () {
+    // Phase 4 security-audit finding F-5's regression test below registers a `creating`
+    // listener on ShippingRate to simulate a race -- flush it so it cannot leak into a later
+    // test, matching tests/Feature/Products/ProductSkuUniquenessTest.php's identical shape.
+    ShippingRate::flushEventListeners();
 });
 
 function actingShippingRateCreator(): User
@@ -346,4 +354,44 @@ test('a holder of shipping.create succeeds, as the control', function () {
 
     expect(ShippingRate::count())->toBe(1)
         ->and($rate->fresh())->not->toBeNull();
+});
+
+// Phase 4 security-audit finding F-5: QueryException::formatMessage() appends the WHOLE INSERT
+// statement to the message, which mentions 'shipping_carrier_id' as a column name in EVERY
+// insert regardless of which FK actually failed -- so a str_contains() check keyed on the column
+// name mis-attributed a ZONE fk failure to shipping_carrier_id. Reproduced here for real: the
+// zone row is deleted from inside ShippingRate's own `creating` event -- which fires AFTER
+// Rule::exists() validation has already passed against it, but immediately BEFORE the INSERT
+// statement runs -- so the resulting 1452 is a genuine zone-FK failure, never a carrier-FK one,
+// and the assertion below would fail against the pre-fix column-name heuristic.
+test('a shipping zone deleted between validation and the insert is attributed to shipping_zone_id, not shipping_carrier_id', function () {
+    actingShippingRateCreator();
+
+    $carrier = ShippingCarrier::factory()->create();
+    $zone = ShippingZone::factory()->create();
+
+    ShippingRate::creating(function () use ($zone): void {
+        DB::table('shipping_zones')->where('id', $zone->id)->delete();
+    });
+
+    $caught = null;
+
+    try {
+        app(CreateShippingRate::class)([
+            'name' => 'Estándar',
+            'shipping_carrier_id' => $carrier->id,
+            'shipping_zone_id' => $zone->id,
+            'min_weight_kg' => '0',
+            'max_weight_kg' => '2',
+            'price' => '4.95',
+            'delivery_estimate' => '24-48h',
+        ]);
+    } catch (Throwable $e) {
+        $caught = $e;
+    }
+
+    expect($caught)->toBeInstanceOf(ValidationException::class);
+    expect($caught->errors())->toHaveKey('shipping_zone_id')
+        ->and($caught->errors())->not->toHaveKey('shipping_carrier_id');
+    expect(ShippingRate::count())->toBe(0);
 });

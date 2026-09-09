@@ -9,6 +9,7 @@ use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -30,6 +31,13 @@ use Spatie\Permission\PermissionRegistrar;
 beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
+});
+
+afterEach(function () {
+    // Phase 4 security-audit finding F-5's regression test below registers an `updating`
+    // listener on ShippingRate to simulate a race -- flush it so it cannot leak into a later
+    // test, matching tests/Feature/Products/ProductSkuUniquenessTest.php's identical shape.
+    ShippingRate::flushEventListeners();
 });
 
 function createBaselineShippingRateAsPrivilegedCreator(): ShippingRate
@@ -215,4 +223,112 @@ test('a holder of shipping.edit updates the rate, as the control', function () {
     ]);
 
     expect($updated->fresh()->price)->toBe('7.00');
+});
+
+// =====================================================================
+// Phase 4 security-audit finding F-1: UpdateShippingRate must NOT default an omitted
+// min_weight_kg to '0' the way CreateShippingRate does -- on an update, an omitted key means
+// "not being touched", never "reset to 0". Every caller submits the full attribute set (per this
+// file's own convention above), so minWeightRules()'s pre-existing `required` rule is what must
+// now reject the omission as a field-level error.
+// =====================================================================
+
+test('omitting min_weight_kg from an update payload fails validation instead of silently resetting it to 0', function () {
+    $editor = User::factory()->create();
+    $editor->givePermissionTo(['shipping.create', 'shipping.edit']);
+    $this->actingAs($editor);
+
+    $carrier = ShippingCarrier::factory()->create();
+    $zone = ShippingZone::factory()->create();
+
+    // A non-zero min_weight_kg (a second-tier bracket) makes a silent reset-to-0 observable --
+    // the baseline helper's rate already starts at 0, which would hide this exact bug.
+    $rate = app(CreateShippingRate::class)([
+        'name' => 'Tier 2',
+        'shipping_carrier_id' => $carrier->id,
+        'shipping_zone_id' => $zone->id,
+        'min_weight_kg' => '2',
+        'max_weight_kg' => '5',
+        'price' => '6.00',
+        'delivery_estimate' => '24-48h',
+    ]);
+
+    $caught = null;
+
+    try {
+        app(UpdateShippingRate::class)($rate, [
+            'name' => $rate->name,
+            'shipping_carrier_id' => $rate->shipping_carrier_id,
+            'shipping_zone_id' => $rate->shipping_zone_id,
+            // min_weight_kg deliberately OMITTED.
+            'max_weight_kg' => (string) $rate->max_weight_kg,
+            'price' => '9.99',
+            'delivery_estimate' => $rate->delivery_estimate,
+        ]);
+    } catch (Throwable $e) {
+        $caught = $e;
+    }
+
+    expect($caught)->toBeInstanceOf(ValidationException::class)
+        ->and($caught->errors())->toHaveKey('min_weight_kg');
+
+    // The row is byte-identical to before the refused attempt -- min_weight_kg was never
+    // silently widened to 0, and max_weight_kg (the sibling field the widening would have
+    // exposed via D-1's cheapest-wins tiebreak) is untouched too.
+    $fresh = $rate->fresh();
+    expect((string) $fresh->min_weight_kg)->toBe('2.000')
+        ->and((string) $fresh->max_weight_kg)->toBe('5.000')
+        ->and($fresh->price)->toBe('6.00');
+});
+
+// =====================================================================
+// Phase 4 security-audit finding F-5: QueryException::formatMessage() appends the WHOLE UPDATE
+// statement to the message, which mentions 'shipping_carrier_id' as a column name in EVERY
+// update regardless of which FK actually failed -- so a str_contains() check keyed on the column
+// name mis-attributed a ZONE fk failure to shipping_carrier_id. Reproduced here for real: the
+// REPLACEMENT zone row is deleted from inside ShippingRate's own `updating` event -- which fires
+// AFTER Rule::exists() validation has already passed against it, but immediately BEFORE the
+// UPDATE statement runs -- so the resulting 1452 is a genuine zone-FK failure, never a
+// carrier-FK one.
+// =====================================================================
+
+test('a shipping zone deleted between validation and the update is attributed to shipping_zone_id, not shipping_carrier_id', function () {
+    $rate = createBaselineShippingRateAsPrivilegedCreator();
+    $originalZoneId = $rate->shipping_zone_id;
+    $newZone = ShippingZone::factory()->create();
+
+    $editor = User::factory()->create();
+    $editor->givePermissionTo('shipping.edit');
+    $this->actingAs($editor);
+
+    ShippingRate::updating(function () use ($newZone): void {
+        DB::table('shipping_zones')->where('id', $newZone->id)->delete();
+    });
+
+    $caught = null;
+
+    try {
+        app(UpdateShippingRate::class)($rate, [
+            'name' => $rate->name,
+            'shipping_carrier_id' => $rate->shipping_carrier_id,
+            'shipping_zone_id' => $newZone->id,
+            'min_weight_kg' => (string) $rate->min_weight_kg,
+            'max_weight_kg' => (string) $rate->max_weight_kg,
+            'price' => $rate->price,
+            'delivery_estimate' => $rate->delivery_estimate,
+        ]);
+    } catch (Throwable $e) {
+        $caught = $e;
+    }
+
+    expect($caught)->toBeInstanceOf(ValidationException::class);
+    expect($caught->errors())->toHaveKey('shipping_zone_id')
+        ->and($caught->errors())->not->toHaveKey('shipping_carrier_id');
+
+    // $rate->shipping_zone_id itself is NOT the right comparison here: Eloquent's update()
+    // calls fill() (mutating the in-memory instance to the new, now-deleted zone id) BEFORE the
+    // failed UPDATE statement even runs, so the in-memory instance no longer reflects what
+    // persisted. $originalZoneId, captured before the attempt, is the row's true un-persisted
+    // value.
+    expect($rate->fresh()->shipping_zone_id)->toBe($originalZoneId);
 });

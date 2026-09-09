@@ -13,6 +13,7 @@ use App\Livewire\SalesRegions\Index as SalesRegionsIndex;
 use App\Livewire\Shipping\Zones;
 use App\Models\GeographyEntry;
 use App\Models\SalesRegion;
+use App\Models\ShippingRate;
 use App\Models\ShippingZone;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
@@ -444,10 +445,34 @@ test('deleteZone is refused directly for an actor lacking shipping.delete, and t
 // if this skip is ever moved or copied.
 // =====================================================================
 
+// Un-skipped by story 0036 (Phase 4 security-audit finding F-3), which ships the
+// in-use-by-a-rate-rule count guard on DeleteShippingZone (0033 D-1) this test exercises. Also
+// the regression test for finding F-2: App\Livewire\Shipping\Zones now declares a real
+// #[Locked] public ?string $shippingZoneId property, so the assertion below issues a SECOND
+// component call after the throwing one, proving the message survives past the request that
+// raised it rather than only rendering once.
 test('the delete modal renders the in-use hard-block message when DeleteShippingZone raises a ValidationException', function () {
-    // shipping_rates does not exist yet -- story 0036 must un-skip this once it ships the
-    // in-use-by-a-rate-rule count guard on DeleteShippingZone (0033 D-1).
-})->skip('shipping_rates does not exist yet -- story 0036 must un-skip this');
+    $actor = shippingZonesFullActor();
+    $actor->givePermissionTo('shipping.create');
+    $this->actingAs($actor);
+
+    $zone = ShippingZone::factory()->create();
+    ShippingRate::factory()->for($zone, 'zone')->create();
+
+    $component = Livewire::test(Zones::class)
+        ->call('confirmDelete', $zone->id)
+        ->call('deleteZone')
+        ->assertHasErrors('shippingZoneId');
+
+    expect($component->get('showDeleteModal'))->toBeTrue();
+    expect(ShippingZone::find($zone->id))->not->toBeNull();
+
+    // F-2's own regression: a fresh render (the next Livewire round trip) must still carry the
+    // error -- without a real declared `shippingZoneId` property, Livewire's
+    // SupportValidation::dehydrate() would have silently dropped it by now.
+    $component->assertHasErrors('shippingZoneId')
+        ->assertSee(trans_choice('shipping.zones.delete_blocked', 1, ['count' => 1]));
+});
 
 // Un-skipped: task 0018 shipped the Sales Regions screen (App\Livewire\SalesRegions\Index,
 // route sales-regions.index) the original skip reason named as still missing -- the "UI-driven

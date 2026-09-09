@@ -42,6 +42,13 @@ use App\Models\ShippingZone;
 // REASON_NO_MATCHING_WEIGHT_BRACKET) below.
 // ================================================================================================
 
+afterEach(function () {
+    // Phase 4 security-audit finding F-6's regression test below registers a `retrieved`
+    // listener on ShippingRate to simulate a race -- flush it so it cannot leak into a later
+    // test, matching tests/Feature/Products/ProductSkuUniquenessTest.php's identical shape.
+    ShippingRate::flushEventListeners();
+});
+
 // No custom names passed to create() -- GeographyEntryFactory computes `normalized_name` from
 // each state's OWN internally-generated fake name, and overriding `name` afterward without also
 // overriding `normalized_name` would leave the latter stale (see docs/errors-log.md's
@@ -476,4 +483,83 @@ test('a destination no zone covers has no applicable rate, and the reason is dis
         ->and($result->rate)->toBeNull()
         ->and($result->reason)->toBe(ResolveApplicableShippingRate::REASON_NO_COVERING_ZONE)
         ->and($result->reason)->not->toBe(ResolveApplicableShippingRate::REASON_NO_MATCHING_WEIGHT_BRACKET);
+});
+
+// =====================================================================
+// Phase 4 security-audit finding F-4: $weightKg is used raw in scopeCoveringWeight()'s MySQL
+// DECIMAL comparison with no validation of its own. A non-numeric string, an empty string, or a
+// negative weight must be refused as its own distinguishable reason -- never silently coerced by
+// a `(float)` cast (which turns 'abc' into 0.0, matching the lightest bracket and returning a
+// real, wrong price) and never misdiagnosed as an ordinary coverage gap.
+// =====================================================================
+
+dataset('invalid_weights', function () {
+    return [
+        'a non-numeric string' => ['not-a-number'],
+        'an empty string' => [''],
+        'a negative weight' => ['-1'],
+        'a negative float' => [-0.5],
+    ];
+});
+
+test('a malformed or negative weight is refused with REASON_INVALID_WEIGHT, never silently coerced to 0', function (float|string $weightKg) {
+    [, , $municipality] = shippingRateFixtureAncestry();
+    $carrier = ShippingCarrier::factory()->create();
+    $zone = shippingRateZoneCovering([$municipality->id], 'Municipio');
+
+    // The lightest bracket -- if $weightKg were silently coerced to 0.0 (PHP's own (float) cast
+    // on a non-numeric string), this rate would incorrectly resolve as a match.
+    shippingRateFor($carrier, $zone, ['min_weight_kg' => '0', 'max_weight_kg' => '2']);
+
+    $result = app(ResolveApplicableShippingRate::class)($municipality, $weightKg);
+
+    expect($result->isResolved())->toBeFalse()
+        ->and($result->rate)->toBeNull()
+        ->and($result->reason)->toBe(ResolveApplicableShippingRate::REASON_INVALID_WEIGHT)
+        ->and($result->reason)->not->toBe(ResolveApplicableShippingRate::REASON_NO_COVERING_ZONE)
+        ->and($result->reason)->not->toBe(ResolveApplicableShippingRate::REASON_NO_MATCHING_WEIGHT_BRACKET);
+})->with('invalid_weights');
+
+test('a genuine zero weight is accepted -- it is a valid boundary, not an invalid one', function () {
+    [, , $municipality] = shippingRateFixtureAncestry();
+    $carrier = ShippingCarrier::factory()->create();
+    $zone = shippingRateZoneCovering([$municipality->id], 'Municipio');
+    $rate = shippingRateFor($carrier, $zone, ['min_weight_kg' => '0', 'max_weight_kg' => '2']);
+
+    $result = app(ResolveApplicableShippingRate::class)($municipality, '0');
+
+    expect($result->isResolved())->toBeTrue()
+        ->and($result->rate->id)->toBe($rate->id);
+});
+
+// =====================================================================
+// Phase 4 security-audit finding F-6: the second (tier-narrowing, weight-covering) query must
+// re-apply the active-carrier filter itself, rather than relying solely on the first query having
+// already filtered it -- closing a TOCTOU window where a carrier is disabled between the two
+// queries. Reproduced here by disabling the carrier from inside ShippingRate's own `retrieved`
+// event, which fires while the FIRST query's ->get() is hydrating its results -- i.e. genuinely
+// BETWEEN the two queries, after the first one already matched the carrier as active.
+// =====================================================================
+
+test('a carrier disabled between the tier-selection and weight-covering queries is excluded from the result', function () {
+    [, , $municipality] = shippingRateFixtureAncestry();
+    $carrier = ShippingCarrier::factory()->create();
+    $zone = shippingRateZoneCovering([$municipality->id], 'Municipio');
+    shippingRateFor($carrier, $zone, ['min_weight_kg' => '0', 'max_weight_kg' => '2']);
+
+    ShippingRate::retrieved(function (ShippingRate $retrieved) use ($carrier): void {
+        if ($retrieved->shipping_carrier_id === $carrier->id && $carrier->fresh()->is_active) {
+            $carrier->forceFill(['is_active' => false])->save();
+        }
+    });
+
+    $result = app(ResolveApplicableShippingRate::class)($municipality, '1.0');
+
+    // Without the fix, the second query would still return this rate (it only filtered by id,
+    // never re-checking carrier state), incorrectly resolving to a now-inactive carrier's rate.
+    // With the fix, the tier is still selected (the first query saw an active carrier), but its
+    // own ladder now covers nothing once the carrier's disablement is honoured -- D-1 step 4
+    // forbids falling back to a broader tier, so the correct outcome is unresolved.
+    expect($result->isResolved())->toBeFalse()
+        ->and($result->reason)->toBe(ResolveApplicableShippingRate::REASON_NO_MATCHING_WEIGHT_BRACKET);
 });
