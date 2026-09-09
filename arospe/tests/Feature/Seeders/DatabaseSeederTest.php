@@ -2,6 +2,7 @@
 
 use App\Enums\SalesRegionKind;
 use App\Models\SalesRegion;
+use App\Models\ShippingCarrier;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\ProductionSeeder;
@@ -60,6 +61,21 @@ test('seeding a production environment through DatabaseSeeder still populates th
 
     expect(SalesRegion::where('kind', SalesRegionKind::Country)->count())->toBeGreaterThanOrEqual(200)
         ->and(SalesRegion::where('is_active', true)->count())->toBe(6);
+});
+
+// Phase 5 code-review finding M1: neither DatabaseSeeder's nor ProductionSeeder's own
+// `$this->call(ShippingCarrierSeeder::class)` line was pinned by any test -- deleting
+// either left the whole suite green, since tests/Feature/Seeders/ShippingCarrierSeederTest.php
+// drives the seeder class directly rather than through its composed callers. Mirrors the
+// identical Sales Region test immediately above, one level down.
+
+test('seeding a production environment through DatabaseSeeder still populates the shipping carrier catalog', function () {
+    app()->instance('env', 'production');
+    config(['auth.super_admin.email' => null]);
+
+    (new DatabaseSeeder)();
+
+    expect(ShippingCarrier::count())->toBe(4);
 });
 
 test('seeding the default non-production test environment still creates the test@example.com fixture user', function () {
@@ -137,4 +153,16 @@ test('seeding a staging environment through the production seeder still populate
 
     expect(SalesRegion::where('kind', SalesRegionKind::Country)->count())->toBeGreaterThanOrEqual(200)
         ->and(SalesRegion::where('is_active', true)->count())->toBe(6);
+});
+
+// Phase 5 code-review finding M1 -- see the identical note above DatabaseSeeder's own
+// shipping-carrier test.
+
+test('seeding a production environment populates the shipping carrier catalog', function () {
+    app()->instance('env', 'production');
+    config(['auth.super_admin.email' => null]);
+
+    (new ProductionSeeder)();
+
+    expect(ShippingCarrier::count())->toBe(4);
 });
