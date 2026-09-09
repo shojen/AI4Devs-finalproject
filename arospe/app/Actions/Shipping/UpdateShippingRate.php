@@ -27,7 +27,7 @@ class UpdateShippingRate
      * statement, before validation and before any write (D-11, Phase 2
      * review finding B1).
      *
-     * The whole `invalid_rate_attributes` dataset (ShippingRateValidationTest.php)
+     * The whole `invalid_rate_attributes` dataset (tests/Feature/ShippingRates/Datasets.php)
      * is re-run against this action via ->with(), so every validation rule
      * threaded through CreateShippingRate is threaded through here too
      * (0033 R-7).

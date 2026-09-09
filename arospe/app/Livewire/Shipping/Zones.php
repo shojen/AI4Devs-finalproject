@@ -373,7 +373,7 @@ class Zones extends Component
     {
         $this->showDeleteModal = false;
         $this->reset(['deletingZoneId', 'deletingZoneName']);
-
+        $this->resetErrorBag('shippingZoneId');
     }
 
     /**
