@@ -3,6 +3,7 @@
 use App\Actions\Shipping\CreateShippingRate;
 use App\Actions\Shipping\ListShippingRatesByCarrier;
 use App\Models\ShippingCarrier;
+use App\Models\ShippingRate;
 use App\Models\ShippingZone;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
@@ -105,6 +106,14 @@ test('the query count is bounded -- no N+1 across carriers, rates or zones', fun
     ShippingCarrier::query()->delete();
 
     $queryCountFor = function (int $carrierCount): int {
+        // Phase 3 GREEN-step fix: rates MUST be deleted before their carrier/zone
+        // parents -- both FKs are restrictOnDelete() (D-5/D-7), by design, so the
+        // second invocation of this closure previously failed with a real
+        // SQLSTATE 1451 the moment the FIRST invocation's rate (still referencing
+        // its carrier and zone) was left behind. This is not a case for weakening
+        // either FK: restrictOnDelete() is D-5's whole point, so the fixture's own
+        // cleanup order has to respect it instead.
+        ShippingRate::query()->delete();
         ShippingCarrier::query()->delete();
         ShippingZone::query()->delete();
 

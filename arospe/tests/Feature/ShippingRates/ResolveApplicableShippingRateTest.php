@@ -423,7 +423,14 @@ test('re-enabling a disabled carrier makes its rate win again, proving disabling
     $unresolvedWhileDisabled = app(ResolveApplicableShippingRate::class)($municipality, '1.0');
     expect($unresolvedWhileDisabled->isResolved())->toBeFalse();
 
-    $mrw->update(['is_active' => true]);
+    // Phase 3 GREEN-step fix: `is_active` is deliberately OMITTED from
+    // ShippingCarrier's #[Fillable] (App\Actions\Shipping\ToggleShippingCarrier
+    // is its documented single writer, via forceFill()) -- a plain ->update()
+    // here silently no-ops on that column (confirmed by execution: `update()`
+    // leaves `is_active` false in the database, exactly as the model's own
+    // mass-assignment guard intends), which is what made this test fail
+    // against a correctly-behaving resolver rather than a caching bug.
+    $mrw->forceFill(['is_active' => true])->save();
 
     $resolvedAfterReenable = app(ResolveApplicableShippingRate::class)($municipality, '1.0');
 
