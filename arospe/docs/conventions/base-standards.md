@@ -107,6 +107,12 @@ app/
   Actions/SalesRegions/ Domain actions for the Sales Regions area (UpdateSalesRegion,
                        SetDefaultSalesRegion, SetSalesRegionActive — each the single named writer
                        of the columns it owns; all three authorize their own operation)
+  Actions/Shipping/    Domain actions for the Shipping area (CreateShippingZone,
+                       RenameShippingZone, DeleteShippingZone, SyncShippingZoneGeography,
+                       SearchGeographyEntries — story 0033; ToggleShippingCarrier — story 0035,
+                       the single named writer of `shipping_carriers.is_active`, taking the
+                       DESIRED state and re-reading its row under `lockForUpdate()` inside its
+                       own transaction rather than trusting a caller-supplied instance)
   Actions/Users/       Domain actions for the Users area (RequestEmailChange, ConfirmEmailChange,
                        CreateUser, UpdateUser — the last two authorize their own operation)
   Concerns/            Shared traits (validation rule sets)
@@ -126,7 +132,10 @@ app/
   Listeners/           Event listeners (ActivateVerifiedUser), registered in AppServiceProvider
   Livewire/            Livewire components, grouped by area (Users/, Roles/, SalesRegions/,
                        Media/, ProductCategories/, Products/, Products/AttributeTypes/, Components/,
-                       Settings/, Settings/TwoFactor/, Actions/). Dev/ (story 0020, the media-gallery-harness
+                       Settings/, Settings/TwoFactor/, Actions/, Shipping/ — Zones.php (story 0033/
+                       0034), Index.php (story 0035, a real routed screen shipped with a
+                       placeholder view, mirroring Users/Index.php's own 0004→0006 split)).
+                       Dev/ (story 0020, the media-gallery-harness
                        scaffolding) was RETIRED by story 0027 once Products/Editor supplied a real
                        host page — see below. Components/ (story 0021, extended by 0022) is not a module area
                        like the others — it holds reusable, content-agnostic components a screen
@@ -142,7 +151,10 @@ app/
                        architecture/authorization.md for why it needs no `ProductVariantPolicy`
   Models/              Eloquent models (User, SalesRegion, Media, ProductCategory, Product,
                        ProductAttributeType, ProductAttributeValue, ProductVariant, GeographyEntry
-                       — story 0032, the only bigint-PK model in this app; Role, which subclasses
+                       — story 0032, the only bigint-PK model in this app; ShippingZone — story
+                       0033; ShippingCarrier — story 0035, a second standalone catalog with no
+                       relationships at all, the identical starting shape ProductCategory shipped
+                       in; Role, which subclasses
                        the package's role model). product_media, product_sales_region and
                        (story 0029) product_variant_values all have no model class of their own —
                        each reached only through the owning models' BelongsToMany (e.g.
@@ -249,7 +261,7 @@ tests/
 
 **`app/Livewire/Dev/` (story 0020) was retired by story 0027, and this paragraph now records the retirement rather than the folder it used to describe.** It held `MediaGalleryHarness`, a throwaway host page whose only purpose was to give `App\Livewire\Media\Gallery` and (since story 0021) `App\Livewire\Components\WysiwygEditor` — both modal/embedded components with no route of their own — a URL a browser test could `visit()`. The four rules that separated that scaffolding from surface (a *registration*-time environment gate rather than middleware; `auth`+`verified` kept anyway as defence in depth; a test asserting absence from the route *collection*, not a 404; a named deletion trigger in every file it occupied) are recorded in this project's history rather than repeated here, since there is no longer a live instance to point them at. Story 0027's `App\Livewire\Products\Editor` — a real, routed page (`products.create`/`products.edit`) — turned out to be a strict superset of the harness (it embeds two `Gallery` instances and one `WysiwygEditor`, exactly the shape the harness mounted for its own tests), so both harness browser test files were re-pointed at it and made green **before** `App\Livewire\Dev\MediaGalleryHarness`, its view, its `routes/web.php` registration block and `tests/Feature/Dev/MediaGalleryHarnessRouteTest.php` were all deleted. **The scaffolding's own text said "if 0027 has shipped and this section still exists, it was not removed" — it does not, and it was.** See [api/routes.md](../api/routes.md#productsindex-productscreate-and-productsedit--the-fifth-permission-gated-route-family) for the migration itself.
 
-`routes/` follows the same one-per-area shape: `web.php` declares only the app-wide routes (`home`, `dashboard`) and then `require`s one file per functional area — `settings.php`, `roles.php`, and `users.php` since task 0040, which moved `users.index` out of `web.php` so it stops being the one route that didn't follow the pattern, plus `sales-regions.php` since task 0017, `product-categories.php` since story 0025, `product-attribute-types.php` since story 0028, and `products.php` since story 0027 (the first area file to register **two** routes, `products.create`/`products.edit`, onto one component). A new area's routes go in a new `routes/<area>.php` with its own middleware group, appended as another `require` line rather than inlined into `web.php`; what each route contract actually is belongs to [api/routes.md](../api/routes.md).
+`routes/` follows the same one-per-area shape: `web.php` declares only the app-wide routes (`home`, `dashboard`) and then `require`s one file per functional area — `settings.php`, `roles.php`, and `users.php` since task 0040, which moved `users.index` out of `web.php` so it stops being the one route that didn't follow the pattern, plus `sales-regions.php` since task 0017, `product-categories.php` since story 0025, `product-attribute-types.php` since story 0028, `products.php` since story 0027 (the first area file to register **two** routes, `products.create`/`products.edit`, onto one component), and `shipping.php` since story 0033 (extended by story 0035 to a second route on the same file, `shipping.index` alongside `shipping.zones.index`). A new area's routes go in a new `routes/<area>.php` with its own middleware group, appended as another `require` line rather than inlined into `web.php`; what each route contract actually is belongs to [api/routes.md](../api/routes.md).
 
 Task 0017 is the first area file written *from* this convention rather than into it, and it is worth reading as the copyable case: [`routes/sales-regions.php`](../../routes/sales-regions.php) is [`routes/roles.php`](../../routes/roles.php) with three strings changed, `web.php`'s entire diff is one `require` line, and and the `Index` class is imported **aliased** (`use App\Livewire\SalesRegions\Index as SalesRegionsIndex;`), matching what both existing area files already do: each file's own `use` statements can't actually collide, but `Index::class` read on its own line says nothing about which of the three areas it belongs to, and these files are read one at a time.
 
@@ -580,7 +592,9 @@ Use the scoped forms freely while iterating; the unscoped runs are what counts a
 
 **`php artisan test --parallel` is an equally valid unscoped record, and the faster one** (measured on this repo's own 950-test suite: ~2.6x on this project's dev container — see [testing/ci/commands.md#run-in-parallel](../testing/ci/commands.md#run-in-parallel)). It runs every test in every suite exactly like the plain unscoped form; `--parallel` changes how the work is distributed across processes, not what gets checked. CI runs it this way since the test-performance review that measured it. The one thing `--parallel` needs that the sequential form doesn't: `storage/framework/views` must sit on a filesystem that tolerates concurrent writes — see the ⚠️ in the linked section if you rebuild the Sail image and hit `tempnam()` errors under load.
 
-_Last updated: 2026-09-06 — Story 0032 (Shipping geography catalog seed). Added `GeographyEntry`/`GeographyLevel`/`GeographyCatalogSeeder` to the directory-structure listing (`app/Models/`, `app/Enums/`, `database/data/`, `tests/Unit/`, `tests/Support/`), including the new `tests/Fixtures/geography/` sibling to `tests/Browser/Fixtures/`. No convention rule changed — every addition follows an existing pattern (the `Index`-in-a-subfolder-adjacent bigint-PK exception is ADR 0001's, not a new rule here; the deferred-`label()` and `app()`-resolution shapes are naming.md's/code-style.md's existing rules applied, not extended)._
+_Last updated: 2026-09-09 — Story 0035 (Shipping carriers — backend). Closed a pre-existing directory-listing gap left by stories 0033/0034 (Shipping never appeared in `app/Actions/`, `app/Livewire/`, `app/Models/` or `routes/`), adding `Actions/Shipping/` (CreateShippingZone through ToggleShippingCarrier), `Livewire/Shipping/` (Zones.php, Index.php), `ShippingZone`/`ShippingCarrier` to the `Models/` list, and `shipping.php` to the `routes/` paragraph. No convention rule changed — this story introduces no new type, brace, PHPDoc, validation-trait, action-injection or authorization-placement shape beyond what `SetSalesRegionActive`'s existing `bool $active` + `lockForUpdate()` pattern and `SalesRegion`'s existing non-fillable-idempotency-key pattern already establish._
+
+_Previously: 2026-09-06 — Story 0032 (Shipping geography catalog seed). Added `GeographyEntry`/`GeographyLevel`/`GeographyCatalogSeeder` to the directory-structure listing (`app/Models/`, `app/Enums/`, `database/data/`, `tests/Unit/`, `tests/Support/`), including the new `tests/Fixtures/geography/` sibling to `tests/Browser/Fixtures/`. No convention rule changed — every addition follows an existing pattern (the `Index`-in-a-subfolder-adjacent bigint-PK exception is ADR 0001's, not a new rule here; the deferred-`label()` and `app()`-resolution shapes are naming.md's/code-style.md's existing rules applied, not extended)._
 
 _Previously: 2026-09-06 — Story 0031 (Product variants — the variant builder inside the product editor, UI). Added `Products/VariantBuilder.php` (a third class in `Actions/Products/`'s sibling `Livewire/Products/`, and this app's first Livewire component nested inside another module's own routed page) and its mirrored `resources/views/livewire/products/variant-builder.blade.php` to the directory-structure listing, plus story 0031's five new `tests/Feature/Products/VariantBuilder*Test.php` files. No convention content changed beyond these listing entries this pass._
 
