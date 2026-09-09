@@ -415,7 +415,28 @@ repo must follow — always with a real code example pulled from this repository
   `attempts` on a nested transaction is inert, so the deadlock window the retries were added for is
   still open on `Editor::save()`, and R-1 is precisely why moving `attempts` up there is not the fix.
 
-_Last updated: 2026-09-04 — Story 0029 (Product variants — core backend), **Phase 4 re-audit**: no new
+- [Livewire error-bag persistence](livewire-error-bag-persistence.md) — the **sixteenth** page: how long
+  a `ValidationException` message lives inside a Livewire component, and the obligation that comes with
+  making one live longer. `SupportValidation::dehydrate()` filters the persisted error bag through
+  `Utils::hasProperty()`, so an error keyed on an undeclared property renders once and is then silently
+  dropped — and **declaring the property to close that immediately opens the opposite bug**, a persisted
+  refusal about row A rendering inside the confirmation modal for row B. The page states both failure
+  modes, the `#[Locked]` persistence-anchor shape, the rule that persistence and reset are one change
+  rather than two (every *opener* resets, not only the closers, which are the paths a reviewer happens to
+  walk by hand), and the two-target regression test that is the only kind able to tell a persisted
+  message from a leaked one. Added by story 0036's Phase 4 re-audit; both failure modes are now
+  **closed** — `App\Livewire\Shipping\Zones::confirmDelete()` gained `resetErrorBag('shippingZoneId')`
+  within the same re-audit round that found its absence (finding R-1), verified by reverting the line
+  and confirming the leak reproduces. `App\Livewire\ProductCategories\Index` is recorded there as the
+  live example of the *first* failure mode, not as a pattern to copy.
+
+_Last updated: 2026-09-10 — Story 0036 (Shipping rate rules — backend), **Phase 4 re-audit, round 2**:
+[livewire-error-bag-persistence.md](livewire-error-bag-persistence.md)'s own ❌ (Failure mode 2,
+`Zones::confirmDelete()` missing a reset) closed within the same audit pass that raised it, per
+[errors-log.md](../errors-log.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
+rule for audit-authored pages — corrected in place rather than left open once the fix landed.
+
+_Previously: 2026-09-04 — Story 0029 (Product variants — core backend), **Phase 4 re-audit**: no new
 page. Closed both of [derived-column-invariants.md](derived-column-invariants.md)'s original ❌ sections
 (re-verified by enumerating the three writers of `product_variants.sku` and by reading the two variant
 actions' statement order, not by trusting the fix) and added two sections to it — one ❌ **OPEN**
