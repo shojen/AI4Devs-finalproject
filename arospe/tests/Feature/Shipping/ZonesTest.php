@@ -503,6 +503,27 @@ test('a blocked delete on one zone does not leak its error into a different zone
         ->assertHasNoErrors('shippingZoneId');
 });
 
+// Phase 4 RE-audit round 3 finding F-A: R-1's fix MOVED closeDeleteModal()'s own
+// resetErrorBag('shippingZoneId') call to confirmDelete() instead of adding a new one, silently
+// deleting the reset story 0034's Phase 5 finding H-1 shipped. Cancelling out of a blocked
+// delete's modal left the "used by N shipping rates" message stuck in the bag; a naive test
+// against confirmDelete() alone (as above) would pass regardless, since it never calls
+// closeDeleteModal() at all -- this test targets that exact call.
+test('cancelling a blocked delete clears its error, so a later unrelated modal open stays clean', function () {
+    $actor = shippingZonesFullActor();
+    $this->actingAs($actor);
+
+    $blockedZone = ShippingZone::factory()->create();
+    ShippingRate::factory()->for($blockedZone, 'zone')->create();
+
+    Livewire::test(Zones::class)
+        ->call('confirmDelete', $blockedZone->id)
+        ->call('deleteZone')
+        ->assertHasErrors('shippingZoneId')
+        ->call('closeDeleteModal')
+        ->assertHasNoErrors('shippingZoneId');
+});
+
 // Un-skipped: task 0018 shipped the Sales Regions screen (App\Livewire\SalesRegions\Index,
 // route sales-regions.index) the original skip reason named as still missing -- the "UI-driven
 // comparison this story cannot exercise alone" is now buildable. Read through the REAL
