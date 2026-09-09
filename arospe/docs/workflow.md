@@ -325,6 +325,20 @@ with the changes made.
 If the task was full-stack (split in the initial phase), it is not marked as globally closed
 until **both** sub-tasks (FE and BE) have completed their Phase 7.
 
+**The task's branch ships as a Pull Request against the branch its worktree was created
+from — an agent never merges it directly.** Once the task file has moved to `done/` and every
+layered commit for the story (code, tests, docs, per
+[contracts.md](contracts.md#commit-granularity-rule)) is made, push the branch and open a PR
+titled `[{task number}] {task title}` (e.g. `[0036] Shipping rate rules`), with a description
+carrying exactly the three sections [contracts.md](contracts.md#pull-request-closure-rule)
+specifies — pushing the branch and opening the PR are ordinary steps here, taken without
+stopping to ask first. Invoke `/watch-ci after-push` immediately after the push and again
+after opening the PR; Phase 7 is not complete while the pipeline it triggered is red —
+diagnose and fix per [contracts.md](contracts.md#ci--github-actions-review-protocol), push
+the fix, and re-watch, repeating until green. The PR then goes to the project owner for
+review and merge — no agent merges, approves, or closes its own PR, under any circumstance;
+see [contracts.md](contracts.md#pull-request-closure-rule) for the full protocol.
+
 ---
 
 ## User Story template (mandatory output of Phase 1)
@@ -393,45 +407,20 @@ What should be observable/working once done.
 - Returns between phases are loops: a task may go through TDD or security multiple times
   until it's green/clean before moving forward.
 
-_Last updated: 2026-09-01 — Added the "Decision digest per epic" section (`./ai-spec/tasks/_digests/epic-<n>.md`,
-written by `docs-keeper` at each story's Phase 6/7 and read by `product-owner` before Phase 0/1
-of a later story in the same epic) and a note under Phase 1 pointing at
-[contracts.md](contracts.md#token-efficient-reading-and-dispatch-rule)'s new Token-Efficient
-Reading and Dispatch Rule — read `docs/README.md`'s index and scope reads to the task's domain
-instead of "read all of `docs/`", and have the facilitator distill a shared brief once rather
-than have every Three Amigos participant re-read the same sources independently. Prompted by a
-direct request to apply [workflow-token-efficiency.md](workflow-token-efficiency.md)'s
-recommendations as binding process rather than leaving them as a standalone analysis._
-
-_Previously, 2026-08-21 — Task 0010 closure: split "Link-integrity check on every stage move"
-into **two directions** and added the second one. The section previously covered only the moved
-file's own *outbound* links; it now also requires grepping the repository for the moved file's
-basename and re-pointing every **inbound** reference from files that never moved — computed from
-each citing file's own directory depth (a citer in `ai-spec/tasks/` needs a `done/` segment
-inserted, while one already in `done/` needs its `../` prefix removed), and verified by resolving
-the path against the filesystem rather than by pattern-matching. Also recorded that
-`in-progress/` → `done/` is a same-depth move, so Direction 1 is a no-op at Phase 7 while
-Direction 2 is not — which is why the inbound sweep must not be folded into a "did the depth
-change?" shortcut. Prompted by ten stale inbound links found across four files (`0011`, `0012`,
-`0035`, `done/0009`) at story 0010's closure, broken since its Phase 3 move._
-
-_Previously, 2026-08-17 — Added the "Link-integrity check on every stage move" section and
-`docs-keeper` responsibility: a task file's relative links are written for its current directory
-depth, and `in-progress/`/`done/` sit one level deeper than the root `new` stage, so a link that
-resolved correctly before a move (e.g. `../../docs/PRD/PRD.md`) silently breaks after it. Found
-and fixed the real break across six already-`done` task files (`0002`–`0006b`); recorded as a new
-[errors-log.md](errors-log.md) entry. Cross-referenced from Phase 3 step 0 and Phase 7._
-
-_Previously, 2026-08-09 — Added the "Task ordering rule" section: for a full-stack task split
-into a backend/frontend pair (or any hard-dependency pair), the depended-upon task is numbered
-and sequenced before its dependent. Applied it by renumbering the ten pending Epic 1 tasks in
-`./ai-spec/tasks/` (backend now precedes its paired frontend in all three FE/BE pairs: Users,
-Roles & Permissions, module/sidebar gating), and documented the range-notation pitfall found
-while updating the still-in-progress `0002` task's cross-references to those ids._
-
-_Previously, 2026-08-07 — Split the task-storage convention into three stages: Phase 1 now
-writes the User Story to `./ai-spec/tasks/<id>-<slug>.md` (new), and the file only moves to
-`./ai-spec/tasks/in-progress/` at the start of Phase 3 (TDD), when implementation actually
-begins; `./ai-spec/tasks/done/` on Phase 7 closure is unchanged. Updated the responsibility
-table, flow diagram, and Phase 1/3 sections accordingly. Also cross-referenced the new
-`three-amigos-debate` skill from Phase 1, which automates that phase (and only that phase)._
+_Last updated: 2026-09-09 — Added Phase 7's PR-based closure step: once the task file has
+moved to `done/` and every layered commit for the story is made, the branch is pushed and a
+Pull Request opened against the branch its worktree was created from — never merged directly
+by an agent — titled `[{task number}] {task title}`, gated on `/watch-ci after-push` reaching
+green, and handed to the project owner for review and merge. Same-day follow-up, also
+requested directly by the project owner: pushing the branch and opening the PR are ordinary
+steps taken as part of finishing the task, with no approval gate before either one — the one
+action reserved for the project owner alone, with zero exception, is approving, closing, or
+merging the PR itself. Full protocol (title/description format, the CI-green gate, the
+never-merge-your-own-PR rule) lives in
+[contracts.md](contracts.md#pull-request-closure-rule); this section only states where it
+plugs into the phase sequence. Requested directly by the project owner as a process-policy
+change, replacing this project's prior direct-merge-back closure practice. Folded the four-block
+`_Previously:` footer chain this file had carried since 2026-08-07 into this single line, per
+[contracts.md](contracts.md#doc-growth-management-rule)'s doc-growth-management rule — no
+content from those entries was changed or lost; see git history for the full prior chain if
+needed._

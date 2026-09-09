@@ -20,19 +20,16 @@ Follow this protocol:
 
 Your goal is to maximize correctness rather than speed. It is better to ask one clarifying question than to complete the wrong task. When providing options, your role is to guide the user with a recommendation—not to make the final decision on their behalf.
 
-### Commit Approval Rule
+### Commit Practice Rule
 
-You must **never commit anything on behalf of the user**. Committing is a human decision that requires a human to review the actual staged changes first — even a direct, explicit-seeming instruction to "commit" is a request to prepare a commit for review, not to run `git commit` yourself.
+Committing is an ordinary part of finishing a unit of work in this repository — the agent commits as part of completing a task, without stopping to ask for approval first. This rule governs *how* a commit is prepared, not whether one may run.
 
-Follow this protocol:
+Follow this practice:
 
 1. **Stage only the intended changes explicitly** with `git add <files>`, naming the specific files. Never stage with `git add -A`, `git add .`, or any other bulk/catch-all form.
-2. **Prepare a draft commit message** for the staged changes.
-3. **Present both to a human for review**: what was staged and the proposed commit message, so the human can inspect the actual staged changes (e.g. via `git diff --staged` / `git status`) before deciding.
-4. **Wait for explicit human approval before running `git commit`.** Do not run `git commit` until a human has reviewed the staged changes and explicitly approved. Absent that approval, stop at staging plus a proposed message.
-5. **Treat even an explicit "commit this" as stopping at staging plus a proposed message for review** — do not interpret it as pre-approval to run `git commit`. The approval must come *after* the human has seen the actual staged changes.
+2. **Write a clear, specific commit message** for the staged changes, describing what changed and why — see the Commit Granularity Rule below for how commits are split by layer and formatted in this repo.
 
-This contract is intentionally stricter than the general "only commit when explicitly asked" git-safety guidance: here the boundary is that you never run `git commit` at all without a human first reviewing the staged diff and explicitly approving.
+The one git action that remains reserved for the project owner alone, with no exception, is approving, closing, or merging a pull request — see the Pull Request Closure Rule below, which has no approval override the way this rule's predecessor once did.
 
 ### Destructive Database Command Rule
 
@@ -130,13 +127,13 @@ Follow this protocol:
    See [testing/ci/commands.md](testing/ci/commands.md) for the full local command reference (single test, single file, coverage, parallel run) and [conventions/base-standards.md](conventions/base-standards.md#quality-gates) for which of the three quality gates a given failure belongs to.
 
 4. **Fix the real cause, not the test — unless the test itself is what's wrong.** Apply the same distinction [workflow.md](workflow.md) Phase 3 already draws between a "Test issue" and a "Code issue": a test asserting a genuinely wrong expectation is fixed as a test change; application code that violates a real, correctly-asserted contract is fixed as an application change. Don't default to loosening, skipping, or deleting an inconvenient assertion just because that's the faster way to turn CI green — this is the same bias the Full Test Suite Gate Rule above already states as "a failing test blocks closure regardless of whose it is."
-5. **Never push or re-trigger a workflow run without being asked first.** `git push`, `gh run rerun <run-id>`, and `gh workflow run <workflow>` are all treated the way the Commit Approval Rule above treats `git commit`: diagnosing and preparing a fix does not carry implicit authorization to make it visible on the remote or to consume CI minutes re-running it. Stop once the fix is staged and proposed, and wait for explicit approval before pushing or re-triggering anything — a direct, explicit-seeming instruction to "fix the pipeline" is authorization to diagnose and prepare the fix, not to push it.
+5. **Push the fix once it's genuinely ready, and re-invoke `/watch-ci after-push`.** Once a real cause has been diagnosed (steps 1-3) and fixed for the right reason (step 4), pushing it and re-triggering the pipeline are ordinary next steps, not actions that require asking first. Re-run `/watch-ci after-push` after every push until the pipeline is green — the diagnostic discipline in steps 1-4 is what earns the push, not a separate approval.
 
 This protocol is diagnostic-first by design: steps 1–3 exist to establish, cheaply and locally, exactly what is broken before any code changes are made — the same "verify before acting" instinct behind the Destructive Database Command Rule and the Full Test Suite Gate Rule above, applied here to a CI run instead of to the database or to task closure.
 
 ### Commit Granularity Rule
 
-When preparing commits under the Commit Approval Rule above, split them **by layer** — production code, tests, and documentation each get their own commit — instead of bundling a change into one. This is not a new practice being introduced; it is what this project's own `git log` already shows for every story landed so far, made explicit so it keeps happening deliberately rather than by habit.
+When preparing commits per the Commit Practice Rule above, split them **by layer** — production code, tests, and documentation each get their own commit — instead of bundling a change into one. This is not a new practice being introduced; it is what this project's own `git log` already shows for every story landed so far, made explicit so it keeps happening deliberately rather than by habit.
 
 Follow this protocol:
 
@@ -144,8 +141,61 @@ Follow this protocol:
 2. **Use Conventional Commits, matching this repo's real history**: `type(scope): summary`. Types actually in use here: `feat`, `fix`, `test`, `docs`, `chore`, `refactor`, `style`. `scope` is the feature/module area the change touches (`products`, `sales-regions`, `wysiwyg`, `deps`, `tasks`) — never the task/story id, and never generic (`app`, `misc`).
 3. **Name the story/task in the message.** By default this goes in the body (e.g. "Story 0029 landed...", "Moves `ai-spec/tasks/0029-....md` to `done/`"). Add a `-- story NNNN` / `-- task NNNN` suffix to the title itself when the title alone would otherwise be ambiguous about which story it belongs to — this repo's history does that mainly for `chore(deps):` and `chore(tasks):` commits (e.g. `chore(deps): add symfony/html-sanitizer -- story 0024a`).
 4. **`docs(tasks):`** is for task-file lifecycle work specifically — moving `ai-spec/tasks/in-progress/*.md` to `done/`, the two-direction link-integrity fix-up, Phase 7 closure corrections. **`docs(<feature>):`** is for syncing `docs/` content (schema, routes, architecture, conventions) to what actually shipped. This repo's history shows both a single combined `docs(<feature>):` commit doing both, and two separate commits (`docs(<feature>):` then `docs(tasks):`) — either is acceptable; what must not happen is folding either `docs` commit into the `feat`/`test` commits.
-5. **Order the commits `feat`/`fix` → `test` → `docs`** (interleaved per TDD cycle when a story lands as several small feat→test pairs is fine), stopping at `docs(tasks)` last since it closes the story. Stage, draft, and present each one individually per the Commit Approval Rule — do not batch all layers into a single review-and-approve step.
+5. **Order the commits `feat`/`fix` → `test` → `docs`** (interleaved per TDD cycle when a story lands as several small feat→test pairs is fine), stopping at `docs(tasks)` last since it closes the story. Stage and commit each layer individually per the Commit Practice Rule above — do not batch all layers into a single commit.
 
-This composes with, and does not relax, the Commit Approval Rule: splitting by layer changes how many commits get proposed, not whether each one is staged, drafted, and explicitly approved by a human before `git commit` runs. The point is traceability — a reviewer (human or a later `code-reviewer`/`docs-keeper` pass) can inspect, discuss, or revert what changed in the app, in its test coverage, and in its documentation as three separate, independently reviewable units, instead of one commit conflating all three.
+This composes with, and does not relax, the Commit Practice Rule: splitting by layer changes how many commits get made, not how carefully each one is staged and described — every commit is still staged explicitly and carries its own clear message. The point is traceability — a reviewer (human or a later `code-reviewer`/`docs-keeper` pass) can inspect, discuss, or revert what changed in the app, in its test coverage, and in its documentation as three separate, independently reviewable units, instead of one commit conflating all three.
 
-_Last updated: 2026-09-07 — Added the CI / GitHub Actions Review Protocol: a new agent-behavior contract for CI triage (list recent runs for the current branch, view only the failed step's log, reproduce locally before touching code using this project's real Pest/Pint/Larastan commands, fix the real cause rather than the test unless the test is wrong, never push or re-trigger a workflow without being asked first). No prior story or task triggered this — this repository had no documented procedure at all for how an agent should behave when asked to review CI, unlike its already-documented pipeline *configuration* ([testing/ci/pipeline-integration.md](testing/ci/pipeline-integration.md)) and local test *commands* ([testing/ci/commands.md](testing/ci/commands.md)), neither of which governs agent behavior. Also carries the 2026-09-05 addition of the Commit Granularity Rule (split commits by layer: code/tests/docs, per this repo's own established `git log` convention) and the Doc Growth Management Rule (no accumulating footer changelogs — codifying the fix applied that day to six files found trending toward this project's 150k-char hard limit; see the mirrored checklist item in `.claude/skills/docs-maintainer/SKILL.md`'s Definition of Done).
+### Pull Request Closure Rule
+
+A finished task's work reaches the branch it was branched from as a **Pull Request — never a
+direct merge.** This binds every task worked in its own `git worktree` per
+[workflow.md](workflow.md#phase-7--closure)'s Phase 7 closure step. An agent never runs `git
+merge`, fast-forwards the base branch, or lands the task's commits on the branch it was
+branched from by any other means that skips a PR and a human review.
+
+Follow this protocol:
+
+1. **PR title**: `[{task number}] {task title}` — e.g. `[0036] Shipping rate rules`.
+2. **PR description carries exactly these three sections, in this order, with these exact
+   headings**, written in Spanish to match how the project owner communicates about process —
+   a deliberate exception scoped to this one template, not a change to `CLAUDE.md`'s
+   English-content rule, which names code, comments, docs, tests and commit messages and does
+   not name a PR description:
+   ```markdown
+   ## Qué cambia
+
+   ## Porqué
+
+   ## Qué impacto tiene
+   ```
+   Summarize concisely under each — what changed, why, and what it affects — drawing on the
+   task file's own Description/Acceptance Criteria/Definition of Done rather than repeating it
+   verbatim. End the description with the attribution line the session's system reminder gives
+   for pull requests, when one is present.
+3. **`/watch-ci after-push` gates the push/PR step, every time.** Immediately after pushing
+   the branch, and again after opening the PR, invoke the `watch-ci` skill with the
+   `after-push` argument and wait for its report (see
+   [`.claude/skills/watch-ci/SKILL.md`](../.claude/skills/watch-ci/SKILL.md), which delegates
+   its own diagnosis to the CI / GitHub Actions Review Protocol above). The push/PR step is not
+   done while the pipeline it triggered is red.
+4. **A red pipeline is fixed before the PR is handed to the owner, following the CI / GitHub
+   Actions Review Protocol above** — reproduce locally, fix the real cause in application code,
+   or in the test only if the test itself is wrong — then push the fix and re-invoke
+   `/watch-ci after-push`. Repeat until green; the task is not complete while its branch's
+   pipeline is red.
+5. **No agent merges, approves, or closes its own PR, under any circumstance — this is the one
+   action in this whole workflow that has no exception, no override, and no shortcut.** Opening
+   a green, described, correctly-titled PR is the last git action an agent takes on a task. The
+   project owner reviews and merges it themselves; never run `gh pr merge`, `gh pr review
+   --approve`, `gh pr close`, or any equivalent — even if directly asked to "merge it," "cierra
+   el PR," or anything that reads as authorization to finish the job, treat that only as
+   confirmation that the PR is ready (green CI, complete description), never as authorization to
+   run the merge, approval, or close yourself. When in doubt, this is the one rule in this
+   document with zero tolerance for a judgment call: stop, and leave the PR open for the owner.
+
+This is where the Commit Practice Rule, the Commit Granularity Rule and the CI / GitHub
+Actions Review Protocol above all meet: a task's layered commits are staged and described per
+those rules, its PR is gated on the identical CI protocol a mid-task failure would use, and the
+merge itself is the one git action in this whole lifecycle reserved for the human alone.
+
+_Last updated: 2026-09-09 — Added the Pull Request Closure Rule: a finished task ships as a PR against the branch its worktree was created from (never a direct merge), titled `[{task number}] {task title}`, with a three-section Spanish description (`## Qué cambia` / `## Porqué` / `## Qué impacto tiene`), gated on `/watch-ci after-push` reaching green before and after every push, and merged only by the project owner — no agent ever merges, approves, or closes its own PR. Same-day follow-up, also requested directly by the project owner: removed the explicit-approval gate on `git commit`, `git push`, and opening a PR — these are now ordinary steps in finishing a task, taken without stopping to ask first. Renamed the Commit Approval Rule to the **Commit Practice Rule** (still: stage explicitly, never `git add -A`/`git add .`, write a clear message — just no review-and-wait step), and reworded the CI Review Protocol's push step and the Pull Request Closure Rule's opening point accordingly. The one action still reserved for the project owner alone, with zero exception, is approving, closing, or merging a pull request. See the matching update to [workflow.md](workflow.md#phase-7--closure)'s Phase 7._

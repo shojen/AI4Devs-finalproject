@@ -139,8 +139,8 @@ Full index: [`docs/README.md`](docs/README.md).
 **Read regardless of the task:**
 
 - [`docs/contracts.md`](docs/contracts.md) — behavioral contracts governing what an AI agent may and
-  may not do here (notably: ask instead of assuming, and never run `git commit` without a human
-  reviewing the staged diff first).
+  may not do here (notably: ask instead of assuming, and never approve, close, or merge a pull
+  request — that action is reserved for the project owner alone).
 - [`docs/workflow.md`](docs/workflow.md) — the multi-agent Three Amigos + TDD + security + review +
   docs process, phase by phase.
 - [`docs/architecture/`](docs/architecture/) — overview, authentication, authorization.
