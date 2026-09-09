@@ -58,16 +58,29 @@ class ResolveApplicableShippingRate
         float|string $weightKg,
         ?string $shippingCarrierId = null,
     ): ShippingRateResolution {
-        // Phase 4 security-audit finding F-4: reject a non-numeric, empty, or negative
-        // $weightKg as this action's own first statement -- BEFORE it ever reaches
-        // scopeCoveringWeight()'s raw DECIMAL comparison. `is_numeric()` runs before any cast:
-        // narrowing the parameter type to `float` alone would NOT fix this, since PHP's
-        // (float) cast silently coerces a non-numeric string to 0.0 ((float) 'abc' === 0.0),
-        // which would then silently match the lightest bracket and return a real (wrong)
-        // price instead of refusing. A negative weight must not be misdiagnosed as an
-        // ordinary coverage gap (REASON_NO_COVERING_ZONE/REASON_NO_MATCHING_WEIGHT_BRACKET) --
-        // it is a caller input error, named as its own reason.
-        if (! is_numeric($weightKg) || (float) $weightKg < 0) {
+        // Phase 4 security-audit finding F-4, hardened at Phase 4 RE-audit finding R-2: reject a
+        // non-numeric, non-finite, empty, or negative $weightKg as this action's own first
+        // statement -- BEFORE it ever reaches scopeCoveringWeight()'s raw DECIMAL comparison.
+        // `is_numeric()` runs before any cast: narrowing the parameter type to `float` alone
+        // would NOT fix this, since PHP's (float) cast silently coerces a non-numeric string to
+        // 0.0 ((float) 'abc' === 0.0), which would then silently match the lightest bracket and
+        // return a real (wrong) price instead of refusing.
+        //
+        // R-2: `is_numeric()` ALONE is not enough -- `is_numeric(INF)` is TRUE (the float INF is
+        // itself a valid float, so passing float INF directly skips the string-parsing path
+        // is_numeric() otherwise applies), so an infinite weight sailed straight past this guard
+        // and into scopeCoveringWeight()'s raw comparison, silently matching the lightest
+        // bracket and returning a real (wrong) price -- reproduced live before this fix. NAN is
+        // also `is_numeric() === true`, but every comparison against NAN is false, including
+        // `NAN < 0`, so it passed this guard too and reached the database as a raw DECIMAL bind
+        // value MySQL cannot represent, surfacing as an unhandled QueryException (a 500) rather
+        // than a clean refusal. `is_finite((float) $weightKg)` rejects both INF/-INF and NAN in
+        // one call, and must run BEFORE `(float) $weightKg < 0` is trusted for the identical
+        // reason `is_numeric()` must run before any cast at all. A negative or non-finite weight
+        // must not be misdiagnosed as an ordinary coverage gap
+        // (REASON_NO_COVERING_ZONE/REASON_NO_MATCHING_WEIGHT_BRACKET) -- it is a caller input
+        // error, named as its own reason.
+        if (! is_numeric($weightKg) || ! is_finite((float) $weightKg) || (float) $weightKg < 0) {
             return ShippingRateResolution::unresolved(self::REASON_INVALID_WEIGHT);
         }
 

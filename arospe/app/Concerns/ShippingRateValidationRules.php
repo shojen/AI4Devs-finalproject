@@ -41,11 +41,24 @@ trait ShippingRateValidationRules
      * 3 places, matching `decimal(8,3)`; without it 2.0001 reaches MySQL and
      * is silently truncated or errors depending on strict mode.
      *
-     * `min_weight_kg` defaults to '0' in the calling action when omitted
-     * from the submitted payload (matching the column's own `default(0)`,
-     * D-7) -- so by the time this rule runs the value is never genuinely
-     * absent, and `required` is safe rather than a trap for the
-     * "min_weight_kg defaults to 0 when omitted" scenario.
+     * Story 0036 Phase 4 RE-audit finding N-2: the split below is real and
+     * differs by caller -- this comment previously described only the
+     * CREATE side as if it were the whole story.
+     *
+     * On CREATE, `min_weight_kg` defaults to '0' in the calling action
+     * (CreateShippingRate) when omitted from the submitted payload
+     * (matching the column's own `default(0)`, D-7) BEFORE this rule ever
+     * runs -- so on that path the value is never genuinely absent by the
+     * time `required` is checked, and `required` is a redundant safety net
+     * rather than the actual enforcement mechanism.
+     *
+     * On UPDATE, `UpdateShippingRate` (Phase 4 finding F-1) deliberately
+     * does NOT apply that default -- an omitted key on an update means
+     * "not being touched", never "reset to 0". `required` is what does the
+     * real work there: it is what makes an omitted `min_weight_kg` fail as
+     * a field-level validation error instead of silently resetting the row
+     * to a 0 minimum (see UpdateShippingRate's own docblock for the
+     * undercharging bug this closes).
      *
      * @return array<int, ValidationRule|array<mixed>|string>
      */

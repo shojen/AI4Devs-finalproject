@@ -291,6 +291,19 @@ class Zones extends Component
 
     /**
      * Open the delete-confirmation modal for the target zone.
+     *
+     * Story 0036 Phase 4 RE-audit finding R-1: resetErrorBag('shippingZoneId')
+     * as this method's own last statement -- without it, a stale
+     * "used by N shipping rates" error left over from a PREVIOUSLY blocked
+     * delete attempt (on a DIFFERENT zone) survives Livewire's error-bag
+     * persistence and renders in THIS zone's own delete-confirmation modal,
+     * even when this zone has zero referencing rates. openCreateModal()/
+     * openEditModal()/closeModal() already call resetValidation() (Phase 5
+     * finding H-1) and closeDeleteModal() already resets this same key, but
+     * this method -- the one that actually SHOWS the modal a stale error
+     * could leak into -- was never one of those callers, because nothing
+     * could reach 'shippingZoneId' before this story made it reachable at
+     * all (see the property's own docblock above).
      */
     public function confirmDelete(string $zoneId, LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt): void
     {
@@ -306,6 +319,7 @@ class Zones extends Component
         $this->deletingZoneId = $target->id;
         $this->deletingZoneName = $target->name;
         $this->showDeleteModal = true;
+        $this->resetErrorBag('shippingZoneId');
     }
 
     /**
@@ -359,7 +373,7 @@ class Zones extends Component
     {
         $this->showDeleteModal = false;
         $this->reset(['deletingZoneId', 'deletingZoneName']);
-        $this->resetErrorBag('shippingZoneId');
+
     }
 
     /**

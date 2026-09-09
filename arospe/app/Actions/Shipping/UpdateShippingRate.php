@@ -88,7 +88,15 @@ class UpdateShippingRate
             // reasoning. QueryException::formatMessage() appends the whole UPDATE statement
             // to the message, which mentions 'shipping_carrier_id' as a column name
             // regardless of which FK actually failed.
-            $field = str_contains($e->getMessage(), 'shipping_rates_shipping_carrier_id_foreign')
+            //
+            // Phase 4 RE-audit finding R-3: check $e->getPrevious()?->getMessage() -- the raw
+            // PDOException -- NEVER $e->getMessage() itself, which interpolates the query's
+            // BOUND VALUES into the formatted SQL. A rate whose `name` is set to the literal
+            // string 'shipping_rates_shipping_carrier_id_foreign' would otherwise make a
+            // genuine ZONE-fk failure get misattributed to shipping_carrier_id, since that
+            // string appears in the formatted message as data. See CreateShippingRate's
+            // identical catch for the full reasoning.
+            $field = str_contains($e->getPrevious()?->getMessage() ?? '', 'shipping_rates_shipping_carrier_id_foreign')
                 ? 'shipping_carrier_id'
                 : 'shipping_zone_id';
 

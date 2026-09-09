@@ -89,7 +89,19 @@ class CreateShippingRate
             // str_contains($e->getMessage(), 'shipping_carrier_id') check wrong whenever the
             // ZONE fk is the one that failed. The constraint name is unambiguous and always
             // present in the message.
-            $field = str_contains($e->getMessage(), 'shipping_rates_shipping_carrier_id_foreign')
+            //
+            // Phase 4 RE-audit finding R-3: check $e->getPrevious()?->getMessage() -- the raw
+            // PDOException -- NEVER $e->getMessage() itself. QueryException::getMessage()
+            // includes the WHOLE FORMATTED SQL WITH BOUND VALUES interpolated in (via
+            // Str::replaceArray('?', $bindings, $sql)), so a rate whose submitted `name` is the
+            // literal string 'shipping_rates_shipping_carrier_id_foreign' made a genuine
+            // ZONE-fk failure get misattributed to shipping_carrier_id, because that string then
+            // appears in the formatted message as DATA rather than as the real constraint name
+            // -- reproduced live before this fix. The raw PDOException's own message carries
+            // only MySQL's driver text (the real constraint name), with no query bindings
+            // interpolated in at all, so it cannot be poisoned by attacker-controlled field
+            // values.
+            $field = str_contains($e->getPrevious()?->getMessage() ?? '', 'shipping_rates_shipping_carrier_id_foreign')
                 ? 'shipping_carrier_id'
                 : 'shipping_zone_id';
 
