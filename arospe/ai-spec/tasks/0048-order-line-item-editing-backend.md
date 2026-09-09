@@ -15,7 +15,7 @@ no Livewire component, no Blade markup, no status transition, no refund, no tax 
 > [0045](0045-orders-core-crud-backend.md) is `done` — and 0045 is itself blocked on five PRD Epic 2
 > stories:** [0024](done/0024-products-core-crud-backend.md) (Products),
 > [0029](done/0029-product-variants-backend.md) (Product Variants),
-> [0035](0035-shipping-carriers-backend.md) (Shipping Carriers),
+> [0035](done/0035-shipping-carriers-backend.md) (Shipping Carriers),
 > [0036](0036-shipping-rate-rules-backend.md) (Shipping Rates) and
 > [0038](0038-payment-methods-bank-transfer-backend.md) (Payment Methods).
 >

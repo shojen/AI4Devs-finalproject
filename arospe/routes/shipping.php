@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Shipping\Index as ShippingIndex;
 use App\Livewire\Shipping\Zones;
 use Illuminate\Support\Facades\Route;
 
@@ -8,7 +9,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // gated route in this app: Livewire 4's PersistentMiddleware allowlist carries
     // Laravel's Authorize (`can:`) but not Spatie's PermissionMiddleware, so a
     // `permission:`-gated route would protect the initial GET only, leaving every
-    // save()/deleteZone() /livewire/update round-trip unauthorized. See
+    // save()/deleteZone()/toggleCarrier() /livewire/update round-trip unauthorized. See
     // docs/architecture/authorization.md.
     //
     // Story 0034 (D-1): its own route rather than a tab inside a future `/shipping`
@@ -16,4 +17,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('shipping/zones', Zones::class)
         ->middleware(['can:shipping.view'])
         ->name('shipping.zones.index');
+
+    // Story 0035: the carrier catalog screen (list + enable/disable toggle). A
+    // sibling route to shipping.zones.index above, not a tab inside it -- both
+    // screens gate on the same shipping.view/shipping.edit permissions but manage
+    // independent catalogs that do not meet until a future rate-rules story.
+    Route::livewire('shipping', ShippingIndex::class)
+        ->middleware(['can:shipping.view'])
+        ->name('shipping.index');
 });

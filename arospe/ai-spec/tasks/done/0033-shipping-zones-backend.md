@@ -74,7 +74,7 @@ It does **not** own: the picker's search/filter/empty-state scenarios (0022 + 00
   `geography_entries` entirely: its **bigint** PK (the one confirmed exception to the UUIDv7
   policy), the `level` discriminator, the self-referencing `parent_id`, the model, the factory,
   the CSV fixtures and the seeder. **This story adds nothing to it and changes nothing in it.**
-- **0035 — shipping carriers** ([`0035-shipping-carriers-backend.md`](../0035-shipping-carriers-backend.md)).
+- **0035 — shipping carriers** ([`0035-shipping-carriers-backend.md`](0035-shipping-carriers-backend.md)).
   Owns `/shipping`, `App\Livewire\Shipping\Index`, `resources/views/livewire/shipping.blade.php`,
   `app/Actions/Shipping/ToggleShippingCarrier.php`, and **creates** `lang/en|es/shipping.php`.
 - **0036 — rate rules.** Owns `shipping_rates`, its `foreignUuid('shipping_zone_id')`, the FK's
@@ -434,7 +434,7 @@ squat its name forever. Deletes here are hard deletes, and a test pins the absen
 ### D-8 — This story ships **no route, no Livewire component and no Blade view**.
 
 It follows [0023](../done/0023-product-categories-backend.md)'s pure-domain-layer shape, **not**
-[0035](../0035-shipping-carriers-backend.md)'s. Four reasons, in descending strength:
+[0035](0035-shipping-carriers-backend.md)'s. Four reasons, in descending strength:
 
 1. **The route and the view path are already taken.** 0035 ships
    `Route::livewire('shipping', ShippingIndex::class)->name('shipping.index')` and

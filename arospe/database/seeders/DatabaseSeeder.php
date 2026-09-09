@@ -35,5 +35,10 @@ class DatabaseSeeder extends Seeder
         // Story 0032: the shipping geography catalog. Also required application data,
         // physically independent of SalesRegionSeeder above -- no shared table, no FK.
         $this->call(GeographyCatalogSeeder::class);
+
+        // Story 0035: the four prototype-integrated shipping carriers. Required
+        // application data, independent of GeographyCatalogSeeder above -- carriers and
+        // zones do not meet until a future rate-rules story.
+        $this->call(ShippingCarrierSeeder::class);
     }
 }
