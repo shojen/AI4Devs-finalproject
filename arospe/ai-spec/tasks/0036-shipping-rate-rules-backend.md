@@ -37,7 +37,7 @@ place they are formalised, and the scenarios below are written from scratch:
   `ShippingZonePolicy`, and the four zone actions. This story **modifies exactly one of its files**,
   `app/Actions/Shipping/DeleteShippingZone.php`, which 0033 pre-shaped as this story's extension
   point.
-- **0035 — shipping carriers** ([`0035-shipping-carriers-backend.md`](0035-shipping-carriers-backend.md)).
+- **0035 — shipping carriers** ([`0035-shipping-carriers-backend.md`](done/0035-shipping-carriers-backend.md)).
   Owns `shipping_carriers`, `ShippingCarrier`, `ToggleShippingCarrier`, `/shipping`,
   `App\Livewire\Shipping\Index` and `resources/views/livewire/shipping.blade.php`. This story adds
   **one relation method** to `ShippingCarrier` and resolves that story's deferred decision **D**.
@@ -224,7 +224,7 @@ Feature: Choosing which rate applies when zones overlap
 ## Documented functional decisions
 
 **D-1** and **D-2** resolve the two questions the prior debate attempt left open, and **D-6**
-resolves the one [0035](0035-shipping-carriers-backend.md) deferred here. None is to be reopened in
+resolves the one [0035](done/0035-shipping-carriers-backend.md) deferred here. None is to be reopened in
 Phase 2 or Phase 3 except on new evidence.
 
 ---
@@ -392,7 +392,7 @@ there is no coherent "proceed", and `restrictOnDelete` would refuse regardless.
 
 ### D-6 — **Disabling a carrier that still has rate rules is allowed, unconditionally.** CONFIRMED.
 
-[0035](0035-shipping-carriers-backend.md)'s decision **D** deferred this here, correctly — there was
+[0035](done/0035-shipping-carriers-backend.md)'s decision **D** deferred this here, correctly — there was
 no `shipping_rates` table to reason about. Resolved: **no block, no warning, no data change.** The
 rates survive untouched, stop being selected by the resolver while the carrier is inactive
 (**D-1** step 2), and become selectable again the instant the carrier is re-enabled.

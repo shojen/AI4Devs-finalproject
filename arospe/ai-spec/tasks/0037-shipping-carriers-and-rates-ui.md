@@ -1,7 +1,7 @@
 # [0037] Shipping carriers and rates — UI (carrier cards, grouped rate table, rate modal)
 
 ## Description
-Build the real Shipping screen on top of the placeholder [0035](0035-shipping-carriers-backend.md)
+Build the real Shipping screen on top of the placeholder [0035](done/0035-shipping-carriers-backend.md)
 left at `/shipping`: carrier cards with an enable/disable toggle and an Activo/Inactivo state, and
 below them a rate table grouped by carrier showing each rate's name, zone badge, weight range (kg),
 price (€) and delivery estimate — plus a create/edit rate modal and a delete-confirmation modal.

@@ -13,8 +13,8 @@ backend | includes database-expert: **yes**
 Paired frontend sibling: the Shipping screen's Blade/Flux markup (carrier cards, toggle control,
 ACTIVO/INACTIVO badge) is **not** in this story — it belongs to the Epic 2 frontend story that
 owns the full Shipping screen. This story ships the component's public surface plus a placeholder
-view, mirroring exactly how [0004](done/0004-users-list-editor-backend.md) shipped
-`App\Livewire\Users\Index` ahead of [0006](done/0006-users-list-editor-ui.md)'s real markup.
+view, mirroring exactly how [0004](0004-users-list-editor-backend.md) shipped
+`App\Livewire\Users\Index` ahead of [0006](0006-users-list-editor-ui.md)'s real markup.
 
 Boundaries with siblings, referenced and never redefined here:
 - **0032 / 0033** (shipping geography catalog and zones) — independent of this story; carriers and
@@ -80,7 +80,7 @@ Feature: Shipping carriers
 ### Database
 - `database/migrations/<timestamp>_create_shipping_carriers_table.php` — **new**. First real use of
   the greenfield UUID pattern documented in
-  [`docs/database/migrations.md`](../../docs/database/migrations.md#uuid-primary-keys):
+  [`docs/database/migrations.md`](../../../docs/database/migrations.md#uuid-primary-keys):
 
   ```php
   Schema::create('shipping_carriers', function (Blueprint $table): void {
@@ -98,7 +98,7 @@ Feature: Shipping carriers
   a column, not a table).
 
   Why each column, and why this is wider than "name + `is_active`": the PRD states carriers "match
-  the prototype **almost as-is**" ([§2.4](../../docs/PRD/PRD.md#24-shipping)), and the prototype's
+  the prototype **almost as-is**" ([§2.4](../../../docs/PRD/PRD.md#24-shipping)), and the prototype's
   own carrier record — verified in `docs/arospe-handoff/project/js/envios.js`, not inferred from
   the screenshot — is `{ name, tag, desc, enabled, hue }`:
 
@@ -115,14 +115,14 @@ Feature: Shipping carriers
   a second alteration migration the moment that story starts.
 
   **No index on `is_active`** — the same reasoning
-  [`docs/database/schema.md`](../../docs/database/schema.md#users) already records for
+  [`docs/database/schema.md`](../../../docs/database/schema.md#users) already records for
   `users.status`: four rows resolve in a sub-millisecond clustered scan while an index costs a
   write on every update. If one is ever needed it must be composite, never bare `is_active`.
 
 - `app/Models/ShippingCarrier.php` — **new**. `use HasFactory, HasUuids;`,
   `#[Fillable(['code', 'name', 'description'])]` with **`is_active` deliberately omitted**, which is
   this codebase's mass-assignment guard (see
-  [`docs/conventions/base-standards.md`](../../docs/conventions/base-standards.md#model-conventions)) —
+  [`docs/conventions/base-standards.md`](../../../docs/conventions/base-standards.md#model-conventions)) —
   the toggle action below is the column's single writer. `casts()` returns
   `['is_active' => 'boolean']`. `@property` PHPDoc block with `@property string $id`, no
   `$keyType`/`$incrementing` properties.
@@ -144,18 +144,18 @@ Feature: Shipping carriers
 
   Two properties of this shape are load-bearing and must not be "simplified":
   - **`firstOrCreate`, never `updateOrCreate`.** Seeding is a required deployment step here (see
-    [`docs/architecture/authorization.md`](../../docs/architecture/authorization.md)), so the seeder
+    [`docs/architecture/authorization.md`](../../../docs/architecture/authorization.md)), so the seeder
     runs again after go-live. An `updateOrCreate` carrying `is_active` would silently re-enable a
     carrier an administrator disabled, on every deploy — the seeder undoing an admin's own decision.
   - **Match on `code`, not `name`.** `name` is editable display text; if an admin renames
     "DHL Express" → "DHL", a `name`-keyed match misses and the next reseed inserts a duplicate row.
     `code` never changes after seeding, so it is the only safe idempotency key. (This is the same
     class of bug as the string-keyed `password_reset_tokens` incident in
-    [`docs/errors-log.md`](../../docs/errors-log.md) — match on the stable key, not the mutable one.)
+    [`docs/errors-log.md`](../../../docs/errors-log.md) — match on the stable key, not the mutable one.)
 
 ### Application
 - `app/Actions/Shipping/ToggleShippingCarrier.php` — **new**. Single-purpose invokable action per
-  [`docs/conventions/naming.md`](../../docs/conventions/naming.md#classes) (imperative verb phrase,
+  [`docs/conventions/naming.md`](../../../docs/conventions/naming.md#classes) (imperative verb phrase,
   no `Action` suffix): `__invoke(ShippingCarrier $carrier): ShippingCarrier`, flipping `is_active`
   via `forceFill()->save()`. Being an action rather than an inline component method makes it the one
   call site any future screen reuses, and keeps the domain rule testable without a UI.
@@ -163,14 +163,14 @@ Feature: Shipping carriers
 - `app/Livewire/Shipping/Index.php` — **new**. `#[Title('Shipping')]`, `#[Locked]` where applicable,
   a `carriers` list and a `toggleCarrier(string $carrierId, ToggleShippingCarrier $toggle)` method
   taking the action as a trailing container-resolved parameter (per-method action injection, per
-  [`docs/conventions/code-style.md`](../../docs/conventions/code-style.md#inject-single-purpose-actions-per-method)).
+  [`docs/conventions/code-style.md`](../../../docs/conventions/code-style.md#inject-single-purpose-actions-per-method)).
   Authorizes `shipping.view` in `mount()` and `shipping.edit` as the **first statement** of
   `toggleCarrier()` — route middleware alone does not protect `/livewire/update`, per
-  [`docs/security/livewire-authorization.md`](../../docs/security/livewire-authorization.md).
+  [`docs/security/livewire-authorization.md`](../../../docs/security/livewire-authorization.md).
 
 - `resources/views/livewire/shipping.blade.php` — **new placeholder**. Note the *flat* path: Livewire
   resolves `App\Livewire\Shipping\Index` to `livewire/shipping`, per the
-  [`Index`-in-a-subfolder exception](../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name).
+  [`Index`-in-a-subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name).
   Real markup belongs to the paired frontend story.
 
 - `routes/web.php` — **modify**. Inside the existing `auth` + `verified` group:
@@ -185,12 +185,12 @@ Feature: Shipping carriers
   `can:`, never `permission:` — Livewire 4's `PersistentMiddleware` allow-list carries Laravel's
   `Authorize` but not Spatie's middleware, so `permission:` would leave every `/livewire/update`
   round-trip ungated at the route layer. This is a correctness rule, not a style choice; see
-  [`docs/api/routes.md`](../../docs/api/routes.md#usersindex--the-first-permission-gated-route).
+  [`docs/api/routes.md`](../../../docs/api/routes.md#usersindex--the-first-permission-gated-route).
 
 - `lang/en/shipping.php` + `lang/es/shipping.php` — **new**, key-for-key identical. Carrier state
   labels (`statuses.active` / `statuses.inactive`) and screen copy. Keys from the start rather than
   literal strings, for the reason recorded in
-  [0010's open question A](done/0010-role-permission-management-backend.md): PRD assumption 14 requires an
+  [0010's open question A](0010-role-permission-management-backend.md): PRD assumption 14 requires an
   admin UI language switcher, and retrofitting keys module-by-module later costs far more.
 
 - **No policy.** `ShippingCarrierPolicy` would only re-wrap `hasPermissionTo('shipping.edit')`.
@@ -201,44 +201,55 @@ Feature: Shipping carriers
 ## Tests to perform
 
 ### Unit — `tests/Unit/Models/ShippingCarrierTest.php`
-- [ ] `is_active` casts to a real `bool`, not `0`/`1`.
-- [ ] A factory-created carrier gets a UUID `id` the factory never sets (the `HasUuids` convention).
+- [x] `is_active` casts to a real `bool`, not `0`/`1`.
+- [x] A factory-created carrier gets a UUID `id` the factory never sets (the `HasUuids` convention) —
+      relocated to `ToggleShippingCarrierTest.php`, where a persisted row already exists (Unit/Models
+      tests in this repo carry no `RefreshDatabase`, matching `SalesRegionTest.php`/`UserTest.php`).
 
 ### Integration — `tests/Feature/Shipping/ToggleShippingCarrierTest.php`
-- [ ] A shipping administrator enables a disabled carrier → `is_active` becomes `true`.
-- [ ] A shipping administrator disables an active carrier → `is_active` becomes `false`.
-- [ ] The new state is read back from the database after a fresh mount — guards against a toggle
+- [x] A shipping administrator enables a disabled carrier → `is_active` becomes `true`.
+- [x] A shipping administrator disables an active carrier → `is_active` becomes `false`.
+- [x] The new state is read back from the database after a fresh mount — guards against a toggle
       that only mutates the in-memory public property.
-- [ ] Toggling an already-active carrier to active again is a no-op, not an error.
-- [ ] **No outbound HTTP request is made.** `Http::preventStrayRequests()` in the file's
+- [x] Setting an already-active carrier to active again is a no-op, not an error — literally true
+      after post-implementation correction H (explicit `bool $active`, not a flip).
+- [x] **No outbound HTTP request is made.** `Http::preventStrayRequests()` in the file's
       `beforeEach`, then toggle in both directions. This belongs in the feature suite rather than as
       an `arch()` test: `preventStrayRequests()` proves *this action makes no call*, whereas an arch
       test could only assert "no `Http::` facade import", which a direct Guzzle/cURL call bypasses.
 
 ### Integration — `tests/Feature/Seeders/ShippingCarrierSeederTest.php`
-- [ ] After seeding, exactly four carriers exist with exactly the expected `code`/`name` pairs
-      (order-independent, one dataset-driven assertion — not four near-identical tests).
-- [ ] Seeding twice leaves the count at four (idempotency).
-- [ ] Seed → disable a carrier → seed again → it is **still disabled**. This is the sharpest risk in
-      the story; it fails loudly against any `updateOrCreate` implementation.
-- [ ] Seed → rename a carrier's `name` → seed again → **no duplicate row** is created (proves the
+- [x] After seeding, exactly four carriers exist with exactly the expected `code`/`name` pairs, one
+      assertion comparing the whole set rather than four near-identical tests.
+- [x] Seeding twice leaves the count at four (idempotency).
+- [x] Seed → disable a carrier → seed again → it is **still disabled**. Code-review finding L1: as
+      shipped, `is_active` is doubly protected (never in the seeder's own insert payload, and not
+      mass-assignable), so this specific test does not itself distinguish every possible
+      `updateOrCreate`-shaped regression — its two neighbours (rename/description-preservation) are
+      what actually fail against a naive rewrite. Recorded rather than over-claimed.
+- [x] Seed → rename a carrier's `name` → seed again → **no duplicate row** is created (proves the
       match key is `code`, not `name`).
-- [ ] The test neutralises any ambient config it depends on rather than inheriting the developer's
-      `.env`, per the [`docs/errors-log.md`](../../docs/errors-log.md) entry on the seeder test that
+- [x] The test neutralises any ambient config it depends on rather than inheriting the developer's
+      `.env`, per the [`docs/errors-log.md`](../../../docs/errors-log.md) entry on the seeder test that
       passed in CI and failed locally.
+- [x] (Added, code-review finding M1) `DatabaseSeeder`'s and `ProductionSeeder`'s own
+      `$this->call(ShippingCarrierSeeder::class)` wiring is pinned directly in
+      `tests/Feature/Seeders/DatabaseSeederTest.php`, mirroring its existing `SalesRegionSeeder` tests.
 
 ### Negative / authorization — `tests/Feature/Shipping/CarrierAuthorizationTest.php`
-- [ ] A user without `shipping.view` gets 403 from `GET route('shipping.index')` (**HTTP layer**).
-- [ ] A user without `shipping.edit` is refused by `toggleCarrier()` via `Livewire::test()`
+- [x] A user without `shipping.view` gets 403 from `GET route('shipping.index')` (**HTTP layer**).
+- [x] A user without `shipping.edit` is refused by `toggleCarrier()` via `Livewire::test()`
       (**component layer**), and the carrier's state is unchanged afterwards.
       These are two tests on purpose, not one — per
-      [`docs/security/livewire-authorization.md`](../../docs/security/livewire-authorization.md),
+      [`docs/security/livewire-authorization.md`](../../../docs/security/livewire-authorization.md),
       an HTTP test and a `Livewire::test()` test cover different entry points and neither
       substitutes for the other.
-- [ ] A Super Admin holding no explicit `shipping.edit` grant can still toggle, exercising the
+- [x] A Super Admin holding no explicit `shipping.edit` grant can still toggle, exercising the
       documented `Gate::before` bypass.
-- [ ] Toggling a non-existent carrier id is refused (404 / `ModelNotFoundException`), not a silent
+- [x] Toggling a non-existent carrier id is refused (404 / `ModelNotFoundException`), not a silent
       no-op.
+- [x] (Added, code-review finding L4) Mounting the component directly without `shipping.view` is
+      refused — pinned so the HTTP test above cannot stay green after `mount()`'s own gate is deleted.
 
 ### Not worth writing
 - Migration `up()`/`down()` mechanics — `RefreshDatabase` already exercises them every run.
@@ -252,29 +263,56 @@ it never re-enables a carrier an administrator disabled and never duplicates one
 code path in the story reaches the network.
 
 ## Acceptance criteria
-- [ ] Carriers can be enabled and disabled, and each carrier exposes an active/inactive state
-      (PRD [§2.4](../../docs/PRD/PRD.md#24-shipping) AC 1).
-- [ ] **No external carrier API is called, stubbed, or configured** — proven by a test, not by
+- [x] Carriers can be enabled and disabled, and each carrier exposes an active/inactive state
+      (PRD [§2.4](../../../docs/PRD/PRD.md#24-shipping) AC 1).
+- [x] **No external carrier API is called, stubbed, or configured** — proven by a test, not by
       inspection (PRD §2.4 AC 5; reinforced by the PRD's
-      [Out of scope](../../docs/PRD/PRD.md#out-of-scope) entry "Real carrier API integration").
-- [ ] The four prototype carriers are seeded with distinct `code` and `name` values.
-- [ ] `is_active` is not mass-assignable; `ToggleShippingCarrier` is its only writer.
-- [ ] Re-seeding is idempotent and never overwrites an administrator's toggle decision.
-- [ ] The screen is gated on `shipping.view` at the route with `can:` (never `permission:`), and
-      `toggleCarrier()` re-authorizes `shipping.edit` as its first statement.
-- [ ] `down()` is the exact inverse of `up()`.
-- [ ] No zone, geography-catalog, or rate-rule logic is introduced by this story.
+      [Out of scope](../../../docs/PRD/PRD.md#out-of-scope) entry "Real carrier API integration").
+- [x] The four prototype carriers are seeded with distinct `code` and `name` values.
+- [x] `is_active` is not mass-assignable; `ToggleShippingCarrier` is its only writer.
+- [x] Re-seeding is idempotent and never overwrites an administrator's toggle decision.
+- [x] The screen is gated on `shipping.view` at the route with `can:` (never `permission:`), and
+      `toggleCarrier()` authorizes `shipping.edit` as its first statement (moved before `findOrFail()`
+      per post-implementation correction — see Phase 4 finding F-3 below).
+- [x] `down()` is the exact inverse of `up()`.
+- [x] No zone, geography-catalog, or rate-rule logic is introduced by this story.
 
 ## Definition of Done
-- [ ] Tests written and green, plus the full existing suite
-      ([`contracts.md`](../../docs/contracts.md) Full Test Suite Gate Rule).
-- [ ] Code reviewed (code-reviewer).
-- [ ] No security findings (appsec-auditor).
-- [ ] Documentation updated (docs-keeper) — `docs/database/schema.md` (new table + ER diagram),
-      `docs/api/routes.md` (the `shipping.index` route), `docs/architecture/authorization.md` (the
-      second permission-gated route), `docs/conventions/base-standards.md` if the greenfield UUID
-      pattern's first real use warrants a note.
-- [ ] Acceptance criteria met.
+- [x] Tests written and green, plus the full existing suite
+      ([`contracts.md`](../../../docs/contracts.md) Full Test Suite Gate Rule) — re-verified unscoped
+      after the Phase 4/5 fixes (`php artisan test --parallel`, `vendor/bin/pint --format agent`,
+      `vendor/bin/phpstan analyse` all clean).
+- [x] Code reviewed (code-reviewer) — approved with findings, all applied; see Post-implementation
+      corrections above and the findings list below.
+- [x] No security findings (appsec-auditor) — PASS with findings (1 Medium, 2 Low), all applied.
+- [x] Documentation updated (docs-keeper) — `docs/database/schema.md` (new table, no ER-diagram entry
+      per the file's own rule for a standalone catalog with no FK yet — matching `product_categories`'
+      identical starting shape), `docs/api/routes.md` (the `shipping.index` route),
+      `docs/architecture/authorization.md` (confirming the pre-existing D-9 prediction), and
+      `docs/conventions/base-standards.md` (closed a pre-existing 0033/0034 directory-listing gap).
+- [x] Acceptance criteria met.
+
+### Security audit findings (appsec-auditor, 2026-09-09) — all applied
+- **F-1 (Medium):** `code` was mass-assignable, breaking seeder idempotency on edit — see correction G.
+- **F-2 (Low):** `ToggleShippingCarrier` flipped in place with no lock — see correction H.
+- **F-3 (Low):** `toggleCarrier()` resolved before authorizing, a minor 404-vs-403 oracle — fixed by
+  reordering to authorize first (the ability is target-independent, so this costs nothing).
+
+### Code review findings (code-reviewer, 2026-09-09) — Medium/Low applied, nits recorded
+- **M1:** neither `DatabaseSeeder`'s nor `ProductionSeeder`'s seeder wiring was pinned by a test —
+  fixed, two tests added to `tests/Feature/Seeders/DatabaseSeederTest.php`.
+- **M2:** same root cause as F-1 above (`code` mass-assignable) — fixed together.
+- **L1:** the "still disabled" seeder test doesn't itself fail against every `updateOrCreate` shape —
+  recorded as an over-claim correction in the checklist above; the property is genuinely protected by
+  two independent mechanisms.
+- **L2:** the "no-op" checklist item was unsatisfiable under a flip-only action — fixed together with
+  F-2/correction H, and the checklist item is now literally true.
+- **L3:** permission-name literals were repeated at four call sites — fixed, named once as
+  `ShippingCarrier::VIEW_PERMISSION`/`EDIT_PERMISSION`.
+- **L4:** `mount()`'s gate was unpinned by any test — fixed, one test added.
+- **L5, L6, N1–N6:** L5 self-heals when the paired frontend story adds a sidebar entry (no action
+  needed now); L6 (stale `base-standards.md` directory listing) closed in the same pass; N1–N6 are
+  accepted nits, not applied (see the review's own reasoning for each — none change behavior).
 
 ## Dependencies and related work
 - **Depends on 0002** (seeded role/permission catalog) — `shipping.view` / `shipping.edit` already
@@ -329,14 +367,45 @@ no model change. This story ships no such UI either way.
 **F. UUID v7 primary key via `HasUuids`.** Project-wide policy is UUID v7 for all new Epic 2 business
 entities, the shipping geography catalog (story 0032) being the single exception — so this table
 follows it, which also keeps 0036's `foreignUuid` FK matched on both sides.
-[ADR 0001](../../docs/decisions/0001-uuid-primary-keys.md) enumerates only `users` plus six Epic 2/4
+[ADR 0001](../../../docs/decisions/0001-uuid-primary-keys.md) enumerates only `users` plus six Epic 2/4
 entities and does not name this table; amending it to record that the list was illustrative rather
 than exhaustive is a **follow-up task, not blocking** this story.
 
+## Post-implementation corrections (Phase 4/5, 2026-09-09)
+
+Two deviations from this task file's own "Files to create/modify" and "Tests to perform" sections,
+found by `appsec-auditor` and `code-reviewer` after Phase 3 implementation. Both were applied; neither
+reopens Phase 1 — recorded here so the deviation is a decision, not a silent rewrite.
+
+**G. `code` is NOT mass-assignable, contradicting this file's own worked `#[Fillable]` example.** The
+"Files to create/modify" section above specifies `#[Fillable(['code', 'name', 'description'])]`. Phase
+4 security-audit finding F-1 proved by execution that this is unsafe: `code` is Confirmed decision A's
+own stated seeder idempotency key, so a mass-assigned `code` edit silently duplicates the row on the
+next `db:seed` — measured, a 4-row catalog became 5, with the resurrected row landing **active** via
+the column's default, undoing an administrator's disable decision. This is the identical shape
+`App\Models\SalesRegion` already avoids by omitting its own `slug` (`docs/conventions/base-standards.md`).
+Shipped: `#[Fillable(['name', 'description'])]`, with `ShippingCarrierSeeder` rewritten as a manual
+lookup + `forceFill()` (mirroring `SalesRegionSeeder::writeRegion()`) rather than `firstOrCreate()`,
+since `firstOrCreate()`'s internal `fill()` would otherwise silently drop `code` on the insert branch
+and violate the column's `NOT NULL` constraint.
+
+**H. `ToggleShippingCarrier` takes the desired `bool $active` state, not a blind flip — reconciling the
+"Tests to perform" checklist item "Toggling an already-active carrier to active again is a no-op, not
+an error".** As originally specified (`__invoke(ShippingCarrier $carrier): ShippingCarrier`, flipping
+via `forceFill()`), that checklist item was unsatisfiable: a flip of an already-active carrier
+*disables* it, it does not no-op. Phase 4 security-audit finding F-2 also identified a correctness gap
+independent of the checklist wording: a flip computed from a caller-supplied instance cannot distinguish
+"the operator clicked disable" from "the operator clicked disable against a row someone else already
+disabled a moment earlier", and would silently re-enable it. Shipped: `__invoke(ShippingCarrier
+$carrier, bool $active): ShippingCarrier`, matching `App\Actions\SalesRegions\SetSalesRegionActive`'s
+own shape, re-reading its target under `lockForUpdate()` inside its own transaction rather than
+trusting the caller's instance. The checklist item is now literally satisfied: setting an
+already-active carrier to `true` again is a genuine no-op.
+
 ## Provenance
 Phase 1 Three Amigos debate, 2026-08-17: `product-owner` + `backend-expert` + `backend-qa` +
-`database-expert`, per [`docs/workflow.md`](../../docs/workflow.md#phase-1--three-amigos-debate)'s
+`database-expert`, per [`docs/workflow.md`](../../../docs/workflow.md#phase-1--three-amigos-debate)'s
 classification rule (backend, touches the data model). Story scope derives from PRD
-[§2.4 Shipping](../../docs/PRD/PRD.md#24-shipping) — the Gherkin scenarios "Enable a carrier" and
+[§2.4 Shipping](../../../docs/PRD/PRD.md#24-shipping) — the Gherkin scenarios "Enable a carrier" and
 "Disable a carrier", acceptance criteria 1 and 5 — which that section confirms is the **unchanged**,
 prototype-faithful part of Shipping; only the zone catalog diverges.
