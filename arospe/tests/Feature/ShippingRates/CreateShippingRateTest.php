@@ -395,3 +395,49 @@ test('a shipping zone deleted between validation and the insert is attributed to
         ->and($caught->errors())->not->toHaveKey('shipping_carrier_id');
     expect(ShippingRate::count())->toBe(0);
 });
+
+// Phase 4 RE-audit finding R-3: the F-5 fix above discriminates on the CONSTRAINT NAME rather
+// than the column name -- but the FIRST version of that fix read the constraint name out of
+// QueryException::getMessage(), which includes the WHOLE FORMATTED SQL WITH BOUND VALUES
+// interpolated in. A rate submitted with `name` set to the literal string
+// 'shipping_rates_shipping_carrier_id_foreign' (well within the 150-char limit) made that
+// literal string appear in the formatted INSERT statement as DATA, which the str_contains()
+// check could not tell apart from the real constraint name appearing there as SCHEMA -- so a
+// genuine ZONE-fk failure was misattributed to shipping_carrier_id. Reproduced here with the
+// identical creating() race the F-5 test above uses, PLUS a poisoned name, and the fix (reading
+// $e->getPrevious()?->getMessage() -- the raw PDOException, which carries no interpolated
+// bindings) must still attribute this correctly to shipping_zone_id.
+test('a poisoned name equal to the FK constraint name does not defeat the F-5 field-attribution fix', function () {
+    actingShippingRateCreator();
+
+    $carrier = ShippingCarrier::factory()->create();
+    $zone = ShippingZone::factory()->create();
+
+    ShippingRate::creating(function () use ($zone): void {
+        DB::table('shipping_zones')->where('id', $zone->id)->delete();
+    });
+
+    $caught = null;
+
+    try {
+        app(CreateShippingRate::class)([
+            // The poison: this string, if the fix ever regresses to matching against
+            // $e->getMessage() (which interpolates bound values), makes the misattribution
+            // reproduce even though the FK that actually failed is the ZONE one.
+            'name' => 'shipping_rates_shipping_carrier_id_foreign',
+            'shipping_carrier_id' => $carrier->id,
+            'shipping_zone_id' => $zone->id,
+            'min_weight_kg' => '0',
+            'max_weight_kg' => '2',
+            'price' => '4.95',
+            'delivery_estimate' => '24-48h',
+        ]);
+    } catch (Throwable $e) {
+        $caught = $e;
+    }
+
+    expect($caught)->toBeInstanceOf(ValidationException::class);
+    expect($caught->errors())->toHaveKey('shipping_zone_id')
+        ->and($caught->errors())->not->toHaveKey('shipping_carrier_id');
+    expect(ShippingRate::count())->toBe(0);
+});

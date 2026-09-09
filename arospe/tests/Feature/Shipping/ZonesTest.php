@@ -474,6 +474,35 @@ test('the delete modal renders the in-use hard-block message when DeleteShipping
         ->assertSee(trans_choice('shipping.zones.delete_blocked', 1, ['count' => 1]));
 });
 
+// Phase 4 RE-audit finding R-1: F-2's own fix (declaring a real #[Locked] $shippingZoneId
+// property so the in-use error survives past the request that raised it) introduced a
+// cross-ZONE leak, reproduced live before this fix -- block-deleting zone A left the error
+// bag's 'shippingZoneId' entry populated, and NOTHING in confirmDelete() ever cleared it, so
+// opening the delete-confirmation modal for a completely different, zero-rate zone B rendered
+// zone A's stale "used by N shipping rates" message even though zone B is legitimately
+// deletable. A single-target test cannot catch this -- it would pass whether or not
+// confirmDelete() resets the bag -- so this test deliberately targets TWO different zones.
+test('a blocked delete on one zone does not leak its error into a different zone\'s delete modal', function () {
+    $actor = shippingZonesFullActor();
+    $actor->givePermissionTo('shipping.create');
+    $this->actingAs($actor);
+
+    $blockedZone = ShippingZone::factory()->create();
+    ShippingRate::factory()->for($blockedZone, 'zone')->create();
+
+    $freeZone = ShippingZone::factory()->create();
+
+    $component = Livewire::test(Zones::class)
+        ->call('confirmDelete', $blockedZone->id)
+        ->call('deleteZone')
+        ->assertHasErrors('shippingZoneId');
+
+    // Without R-1's fix, opening the delete modal for a DIFFERENT, zero-rate zone still carries
+    // the previous zone's stale error.
+    $component->call('confirmDelete', $freeZone->id)
+        ->assertHasNoErrors('shippingZoneId');
+});
+
 // Un-skipped: task 0018 shipped the Sales Regions screen (App\Livewire\SalesRegions\Index,
 // route sales-regions.index) the original skip reason named as still missing -- the "UI-driven
 // comparison this story cannot exercise alone" is now buildable. Read through the REAL

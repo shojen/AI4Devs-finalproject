@@ -499,6 +499,17 @@ dataset('invalid_weights', function () {
         'an empty string' => [''],
         'a negative weight' => ['-1'],
         'a negative float' => [-0.5],
+        // Phase 4 RE-audit finding R-2: is_numeric(INF) === true and is_numeric(NAN) === true
+        // (both are already valid PHP floats, so the string-parsing path is_numeric() otherwise
+        // guards is never even reached), so the ORIGINAL is_numeric()-only guard let all three
+        // straight through -- INF/-INF resolved successfully against the lightest bracket and
+        // returned a real, wrong price (the exact "an infinite/garbage weight silently matches
+        // the lightest bracket" harm this whole guard exists to prevent), and NAN caused an
+        // unhandled QueryException (a 500) instead of a clean refusal, since `NAN < 0` is FALSE
+        // (every comparison against NAN is false) so it passed the negative-number check too.
+        'positive infinity' => [INF],
+        'negative infinity' => [-INF],
+        'not a number (NAN)' => [NAN],
     ];
 });
 

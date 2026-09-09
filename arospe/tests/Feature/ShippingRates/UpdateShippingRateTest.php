@@ -23,10 +23,18 @@ use Spatie\Permission\PermissionRegistrar;
 // LogRefusedPrivilegedAttempt. Every positive test below runs actingAs() an actor holding
 // `shipping.edit`.
 //
-// Reuses ShippingRateValidationTest.php's `invalid_rate_attributes` dataset via
+// Reuses this directory's own `Datasets.php` `invalid_rate_attributes` dataset via
 // ->with('invalid_rate_attributes') rather than copy-pasting it (0033 R-7): a validation rule
 // threaded through one call site and not the other fails silently in one direction only, and
 // update is the direction nobody writes a bespoke test for.
+//
+// Corrected at Phase 4 RE-audit (finding N-1): this dataset used to be defined inline inside
+// ShippingRateValidationTest.php, and a bare, same-file-scoped dataset() call can NEVER be
+// resolved from a different file -- Pest scopes it to the exact declaring file, not "the whole
+// suite" -- so this test's own ->with('invalid_rate_attributes') below silently failed to
+// resolve at all, surfacing only as a top-level PHPUnit ERROR with zero named tests run, never as
+// a counted pass or fail. See tests/Feature/ShippingRates/Datasets.php for the real, working
+// cross-file mechanism and the full explanation.
 
 beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
@@ -331,4 +339,52 @@ test('a shipping zone deleted between validation and the update is attributed to
     // persisted. $originalZoneId, captured before the attempt, is the row's true un-persisted
     // value.
     expect($rate->fresh()->shipping_zone_id)->toBe($originalZoneId);
+});
+
+// =====================================================================
+// Phase 4 RE-audit finding R-3: the F-5 fix above discriminates on the CONSTRAINT NAME rather
+// than the column name -- but the FIRST version of that fix read the constraint name out of
+// QueryException::getMessage(), which includes the WHOLE FORMATTED SQL WITH BOUND VALUES
+// interpolated in. A rate whose `name` is set to the literal string
+// 'shipping_rates_shipping_carrier_id_foreign' (well within the 150-char limit) made that literal
+// string appear in the formatted UPDATE statement as DATA, indistinguishable to a str_contains()
+// check from the real constraint name appearing there as SCHEMA -- so a genuine ZONE-fk failure
+// was misattributed to shipping_carrier_id. Reproduced here with the identical updating() race
+// the F-5 test above uses, PLUS a poisoned name.
+// =====================================================================
+
+test('a poisoned name equal to the FK constraint name does not defeat the F-5 field-attribution fix', function () {
+    $rate = createBaselineShippingRateAsPrivilegedCreator();
+    $newZone = ShippingZone::factory()->create();
+
+    $editor = User::factory()->create();
+    $editor->givePermissionTo('shipping.edit');
+    $this->actingAs($editor);
+
+    ShippingRate::updating(function () use ($newZone): void {
+        DB::table('shipping_zones')->where('id', $newZone->id)->delete();
+    });
+
+    $caught = null;
+
+    try {
+        app(UpdateShippingRate::class)($rate, [
+            // The poison: this string, if the fix ever regresses to matching against
+            // $e->getMessage() (which interpolates bound values), makes the misattribution
+            // reproduce even though the FK that actually failed is the ZONE one.
+            'name' => 'shipping_rates_shipping_carrier_id_foreign',
+            'shipping_carrier_id' => $rate->shipping_carrier_id,
+            'shipping_zone_id' => $newZone->id,
+            'min_weight_kg' => (string) $rate->min_weight_kg,
+            'max_weight_kg' => (string) $rate->max_weight_kg,
+            'price' => $rate->price,
+            'delivery_estimate' => $rate->delivery_estimate,
+        ]);
+    } catch (Throwable $e) {
+        $caught = $e;
+    }
+
+    expect($caught)->toBeInstanceOf(ValidationException::class);
+    expect($caught->errors())->toHaveKey('shipping_zone_id')
+        ->and($caught->errors())->not->toHaveKey('shipping_carrier_id');
 });
