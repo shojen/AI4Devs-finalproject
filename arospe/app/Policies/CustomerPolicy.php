@@ -16,10 +16,14 @@ use App\Models\User;
  * hold customers.<action>" with zero row-level nuance -- that is what makes
  * the ability bodies trivial, not a reason to skip the class (D-12).
  *
- * Only the abilities something actually calls are defined: this story's own
+ * Only the abilities something actually calls are defined: story 0041's own
  * two actions call `create`/`update`, and 0044's mount() is `viewAny`'s
- * first and only caller. `delete()` is deliberately absent -- 0042 adds it
- * to this same file.
+ * first and only caller. `delete()` (story 0042) is a fourth flat, tier-free
+ * ability -- any holder of `customers.delete` may delete any customer, since
+ * a customer is a passive record with no privileges to escalate through
+ * (0042, D-3). No Administrator-tier branch, no ownership check, no
+ * self-target guard -- unlike UserPolicy::delete(), which needs all three
+ * because a User row IS an actor.
  *
  * hasPermissionTo() inside a policy body is correct here, even though it
  * does not itself reach Gate::before -- a policy method is only ever
@@ -37,6 +41,8 @@ class CustomerPolicy
     public const CREATE_PERMISSION = 'customers.create';
 
     public const EDIT_PERMISSION = 'customers.edit';
+
+    public const DELETE_PERMISSION = 'customers.delete';
 
     /**
      * Determine whether the user can view the Customers screen.
@@ -70,5 +76,18 @@ class CustomerPolicy
     public function update(User $actor, Customer $target): bool
     {
         return $actor->hasPermissionTo(self::EDIT_PERMISSION);
+    }
+
+    /**
+     * Determine whether the user can delete a customer.
+     *
+     * Flat permission check with no privilege-tier logic (0042, D-3): any
+     * holder of `customers.delete` may delete any customer. $target is
+     * ignored for the same reason update() ignores it -- see that method's
+     * docblock.
+     */
+    public function delete(User $actor, Customer $target): bool
+    {
+        return $actor->hasPermissionTo(self::DELETE_PERMISSION);
     }
 }
