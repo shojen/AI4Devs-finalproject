@@ -1,0 +1,949 @@
+{
+  "generated_at": "2026-09-10T00:00:00Z",
+  "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
+  "tasks": [
+    {
+      "id": "0037",
+      "slug": "0037-shipping-carriers-and-rates-ui",
+      "title": "Shipping carriers and rates — UI (carrier cards, grouped rate table, rate modal)",
+      "depends_on": [],
+      "status": "claimed",
+      "claimed_by": "external-session (reported by user, label not specified)",
+      "claimed_at": "2026-09-10T00:00:00Z",
+      "touches": [
+        "routes/shipping.php",
+        "app/Livewire/Shipping/Index.php",
+        "resources/views/livewire/shipping.blade.php",
+        "app/Actions/Shipping/ListShippingRatesByCarrier.php",
+        "lang/en/shipping.php",
+        "lang/es/shipping.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0038",
+      "slug": "0038-payment-methods-bank-transfer-backend",
+      "title": "Payment methods — bank transfer with a validated IBAN (backend)",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/migrations/*_create_payment_methods_table.php",
+        "app/Models/PaymentMethod.php",
+        "app/Policies/PaymentMethodPolicy.php",
+        "app/Concerns/PaymentMethodValidationRules.php",
+        "routes/payment-methods.php",
+        "lang/en/payment-methods.php",
+        "lang/es/payment-methods.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0039",
+      "slug": "0039-payment-methods-ui",
+      "title": "Payment methods — store-settings screen (UI)",
+      "depends_on": [
+        "0038"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/PaymentMethods/Index.php",
+        "resources/views/livewire/payment-methods.blade.php",
+        "config/modules.php",
+        "lang/en/payment-methods.php",
+        "lang/es/payment-methods.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0041",
+      "slug": "0041-customers-crud-backend",
+      "title": "Customers CRUD backend",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/migrations/*_create_customers_table.php",
+        "app/Models/Customer.php",
+        "app/Policies/CustomerPolicy.php",
+        "app/Concerns/CustomerValidationRules.php",
+        "app/Actions/Customers/CreateCustomer.php",
+        "app/Actions/Customers/UpdateCustomer.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0042",
+      "slug": "0042-customers-soft-delete-backend",
+      "title": "Customers — soft delete (backend)",
+      "depends_on": [
+        "0041"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/migrations/*_add_soft_deletes_to_customers_table.php",
+        "app/Models/Customer.php",
+        "app/Policies/CustomerPolicy.php",
+        "app/Actions/Customers/DeleteCustomer.php"
+      ],
+      "conflict_risk_with": [
+        "0045"
+      ]
+    },
+    {
+      "id": "0043",
+      "slug": "0043-customers-new-customer-notification-backend",
+      "title": "Customers — \"new customer\" notification (backend)",
+      "depends_on": [
+        "0041"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/migrations/*_create_notifications_table.php",
+        "app/Notifications/CustomerCreated.php",
+        "app/Actions/Customers/NotifyCustomerCreated.php",
+        "app/Actions/Customers/CreateCustomer.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0044",
+      "slug": "0044-customers-list-create-edit-ui",
+      "title": "Customers — list + create/edit UI",
+      "depends_on": [
+        "0041",
+        "0042",
+        "0043"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/Customers/Index.php",
+        "resources/views/livewire/customers.blade.php",
+        "routes/customers.php",
+        "lang/en/customers.php",
+        "lang/es/customers.php",
+        "config/modules.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0045",
+      "slug": "0045-orders-core-crud-backend",
+      "title": "Orders core CRUD backend",
+      "depends_on": [
+        "0041",
+        "0038"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/migrations/*_create_orders_table.php",
+        "database/migrations/*_create_order_items_table.php",
+        "app/Models/Order.php",
+        "app/Models/OrderItem.php",
+        "app/Enums/OrderStatus.php",
+        "app/Enums/PaymentStatus.php",
+        "app/Concerns/OrderValidationRules.php",
+        "app/Actions/Orders/CreateOrder.php",
+        "lang/en/orders.php",
+        "lang/es/orders.php"
+      ],
+      "conflict_risk_with": [
+        "0042"
+      ]
+    },
+    {
+      "id": "0046",
+      "slug": "0046-orders-new-order-notification-backend",
+      "title": "Orders — \"new order\" notification (backend)",
+      "depends_on": [
+        "0045",
+        "0043"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Notifications/OrderCreated.php",
+        "app/Actions/Orders/NotifyOrderCreated.php",
+        "app/Actions/Orders/CreateOrder.php"
+      ],
+      "conflict_risk_with": [
+        "0056",
+        "0057"
+      ]
+    },
+    {
+      "id": "0047",
+      "slug": "0047-customer-order-history-view-ui",
+      "title": "Customer detail — order history view UI",
+      "depends_on": [
+        "0041",
+        "0042",
+        "0044",
+        "0045"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Models/Customer.php",
+        "routes/customers.php",
+        "resources/views/livewire/customers.blade.php",
+        "resources/views/livewire/customers/show.blade.php",
+        "lang/en/customers.php",
+        "lang/es/customers.php"
+      ],
+      "conflict_risk_with": [
+        "0055"
+      ]
+    },
+    {
+      "id": "0048",
+      "slug": "0048-order-line-item-editing-backend",
+      "title": "Order line-item editing backend",
+      "depends_on": [
+        "0045"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Actions/Orders/AddOrderItem.php",
+        "app/Actions/Orders/RemoveOrderItem.php",
+        "app/Actions/Orders/UpdateOrderItemQuantity.php",
+        "app/Exceptions/OrderNotEditableException.php",
+        "app/Concerns/OrderValidationRules.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0049",
+      "slug": "0049-order-status-transition-backend",
+      "title": "Order status transition backend",
+      "depends_on": [
+        "0045"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Policies/OrderPolicy.php",
+        "app/Actions/Orders/TransitionOrderStatus.php",
+        "app/Enums/OrderStatus.php",
+        "app/Exceptions/OrderStatusRegressionRequiresConfirmationException.php",
+        "lang/en/orders.php",
+        "lang/es/orders.php"
+      ],
+      "conflict_risk_with": [
+        "0051",
+        "0052",
+        "0054"
+      ]
+    },
+    {
+      "id": "0050",
+      "slug": "0050-order-manual-cancellation-backend",
+      "title": "Order manual cancellation backend",
+      "depends_on": [
+        "0045",
+        "0049",
+        "0051"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Actions/Orders/CancelOrder.php",
+        "app/Policies/OrderPolicy.php",
+        "app/Exceptions/OrderCancellationBlockedException.php",
+        "lang/en/orders.php",
+        "lang/es/orders.php"
+      ],
+      "conflict_risk_with": [
+        "0052",
+        "0054"
+      ]
+    },
+    {
+      "id": "0051",
+      "slug": "0051-order-payment-refund-state-backend",
+      "title": "Order payment/refund state backend",
+      "depends_on": [
+        "0045"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/migrations/*_create_refunds_table.php",
+        "database/migrations/*_add_refunded_quantity_to_order_items_table.php",
+        "app/Models/Refund.php",
+        "app/Actions/Orders/RecordRefund.php",
+        "database/seeders/RolePermissionSeeder.php",
+        "lang/en/roles.php",
+        "lang/es/roles.php"
+      ],
+      "conflict_risk_with": [
+        "0049"
+      ]
+    },
+    {
+      "id": "0052",
+      "slug": "0052-order-auto-cancel-full-refund-backend",
+      "title": "Order auto-cancel on full refund backend",
+      "depends_on": [
+        "0051"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Actions/Orders/AutoCancelFullyRefundedOrder.php",
+        "app/Events/OrderFullyRefunded.php",
+        "app/Listeners/",
+        "app/Providers/AppServiceProvider.php",
+        "app/Actions/Orders/RecordRefund.php"
+      ],
+      "conflict_risk_with": [
+        "0049",
+        "0050"
+      ]
+    },
+    {
+      "id": "0053",
+      "slug": "0053-order-tax-region-resolution-physical-backend",
+      "title": "Order tax Sales-Region resolution — physical products (backend)",
+      "depends_on": [
+        "0045"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Concerns/ResolvesSalesRegionFromAddress.php",
+        "app/Actions/Orders/ResolveOrderTaxRegion.php"
+      ],
+      "conflict_risk_with": [
+        "0054"
+      ]
+    },
+    {
+      "id": "0054",
+      "slug": "0054-order-tax-region-resolution-virtual-backend",
+      "title": "Order tax Sales-Region resolution — virtual products (backend)",
+      "depends_on": [
+        "0045"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Concerns/ResolvesSalesRegionFromAddress.php",
+        "database/migrations/*_add_ip_derived_country_to_orders_table.php",
+        "app/Actions/Orders/ResolveOrderTaxRegion.php",
+        "lang/en/orders.php",
+        "lang/es/orders.php"
+      ],
+      "conflict_risk_with": [
+        "0053",
+        "0049",
+        "0050"
+      ]
+    },
+    {
+      "id": "0055",
+      "slug": "0055-orders-list-detail-editor-ui",
+      "title": "Orders list + detail/editor UI",
+      "depends_on": [
+        "0045",
+        "0048",
+        "0049",
+        "0050",
+        "0051",
+        "0052",
+        "0053",
+        "0054"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/Orders/Index.php",
+        "app/Livewire/Orders/Show.php",
+        "resources/views/livewire/orders.blade.php",
+        "resources/views/livewire/orders/show.blade.php",
+        "routes/orders.php",
+        "lang/en/orders.php",
+        "lang/es/orders.php",
+        "config/modules.php",
+        "lang/en/navigation.php",
+        "lang/es/navigation.php",
+        "resources/views/livewire/customers/show.blade.php"
+      ],
+      "conflict_risk_with": [
+        "0047"
+      ]
+    },
+    {
+      "id": "0056",
+      "slug": "0056-notification-viewing-backend",
+      "title": "Notification viewing — unread count, recent list, mark-as-read (backend)",
+      "depends_on": [
+        "0043"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Models/User.php",
+        "app/Actions/Notifications/"
+      ],
+      "conflict_risk_with": [
+        "0046"
+      ]
+    },
+    {
+      "id": "0057",
+      "slug": "0057-notification-bell-ui",
+      "title": "Notification bell UI — topbar dropdown, unread indicator, generic per-type rendering",
+      "depends_on": [
+        "0056"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/Notifications/Bell.php",
+        "resources/views/livewire/notifications/bell.blade.php",
+        "resources/views/components/desktop-user-menu.blade.php",
+        "resources/views/layouts/app/sidebar.blade.php"
+      ],
+      "conflict_risk_with": [
+        "0046"
+      ]
+    },
+    {
+      "id": "0058",
+      "slug": "0058-blog-categories-backend",
+      "title": "Blog categories — backend (table, model, create/rename/delete, name validation)",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/migrations/*_create_blog_categories_table.php",
+        "app/Models/BlogCategory.php",
+        "app/Policies/BlogCategoryPolicy.php",
+        "app/Concerns/BlogCategoryValidationRules.php",
+        "app/Actions/Blog/CreateBlogCategory.php",
+        "app/Actions/Blog/RenameBlogCategory.php",
+        "app/Actions/Blog/DeleteBlogCategory.php"
+      ],
+      "conflict_risk_with": [
+        "0059"
+      ]
+    },
+    {
+      "id": "0059",
+      "slug": "0059-blog-tags-backend",
+      "title": "Blog tags — backend (table, model, create/rename/delete, find-or-create, name validation)",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/migrations/*_create_blog_tags_table.php",
+        "app/Models/BlogTag.php",
+        "app/Policies/BlogTagPolicy.php",
+        "app/Concerns/BlogTagValidationRules.php",
+        "app/Actions/Blog/CreateBlogTag.php",
+        "app/Actions/Blog/RenameBlogTag.php",
+        "app/Actions/Blog/DeleteBlogTag.php",
+        "app/Actions/Blog/FindOrCreateBlogTag.php"
+      ],
+      "conflict_risk_with": [
+        "0058"
+      ]
+    },
+    {
+      "id": "0060",
+      "slug": "0060-blog-tags-ui",
+      "title": "Blog tags — management screen (list, create/edit modal, unconditional delete)",
+      "depends_on": [
+        "0059"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/BlogTags/Index.php",
+        "resources/views/livewire/blog-tags.blade.php",
+        "routes/blog-tags.php",
+        "lang/en/blog.php",
+        "lang/es/blog.php",
+        "config/modules.php"
+      ],
+      "conflict_risk_with": [
+        "0062",
+        "0063"
+      ]
+    },
+    {
+      "id": "0061",
+      "slug": "0061-blog-posts-core-crud-backend",
+      "title": "Blog posts — core CRUD backend (+ the blog-category in-use delete guard)",
+      "depends_on": [
+        "0058",
+        "0059"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/migrations/*_create_blog_posts_table.php",
+        "app/Models/BlogPost.php",
+        "app/Enums/BlogPostStatus.php",
+        "app/Policies/BlogPostPolicy.php",
+        "app/Concerns/BlogPostValidationRules.php",
+        "app/Actions/Blog/CreateBlogPost.php",
+        "app/Actions/Blog/UpdateBlogPost.php",
+        "app/Actions/Blog/DeleteBlogCategory.php",
+        "app/Actions/Blog/RestoreBlogPost.php",
+        "app/Actions/Blog/SyncBlogPostTags.php",
+        "lang/en/blog.php",
+        "lang/es/blog.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0062",
+      "slug": "0062-blog-categories-ui",
+      "title": "Blog categories — management screen (list, create/edit modal, blocked delete)",
+      "depends_on": [
+        "0058",
+        "0061"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/BlogCategories/Index.php",
+        "resources/views/livewire/blog-categories.blade.php",
+        "routes/blog-categories.php",
+        "lang/en/blog.php",
+        "lang/es/blog.php",
+        "config/modules.php"
+      ],
+      "conflict_risk_with": [
+        "0060",
+        "0063"
+      ]
+    },
+    {
+      "id": "0063",
+      "slug": "0063-blog-posts-list-editor-ui",
+      "title": "Blog posts — list + editor UI",
+      "depends_on": [
+        "0058",
+        "0059",
+        "0061"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/BlogPosts/Index.php",
+        "app/Livewire/BlogPosts/Editor.php",
+        "resources/views/livewire/blog-posts.blade.php",
+        "resources/views/livewire/blog-posts/editor.blade.php",
+        "routes/blog-posts.php",
+        "lang/en/blog.php",
+        "lang/es/blog.php",
+        "config/modules.php"
+      ],
+      "conflict_risk_with": [
+        "0060",
+        "0062",
+        "0072",
+        "0074",
+        "0078"
+      ]
+    },
+    {
+      "id": "0064",
+      "slug": "0064-scheduled-post-auto-publish-backend",
+      "title": "Scheduled post auto-publish — backend (the app's first scheduled command)",
+      "depends_on": [
+        "0061"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "routes/console.php",
+        "app/Console/Commands/PublishScheduledBlogPosts.php",
+        "app/Events/Blog/ScheduledBlogPostPublished.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0065",
+      "slug": "0065-blog-post-published-notification-backend",
+      "title": "Blog post published — notification (backend)",
+      "depends_on": [
+        "0043",
+        "0061",
+        "0064"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Notifications/BlogPostPublished.php",
+        "app/Actions/Blog/NotifyBlogPostPublished.php",
+        "app/Providers/AppServiceProvider.php",
+        "app/Actions/Blog/UpdateBlogPost.php",
+        "app/Actions/Blog/CreateBlogPost.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0066",
+      "slug": "0066-admin-ui-locale-preference-backend",
+      "title": "Admin UI locale preference & resolution — backend",
+      "depends_on": [
+        "0068"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/migrations/*_add_ui_locale_to_users_table.php",
+        "app/Enums/UiLocale.php",
+        "app/Models/User.php",
+        "app/Concerns/UserValidationRules.php",
+        "app/Actions/Users/SetUserUiLocale.php",
+        "app/Http/Middleware/SetUiLocale.php",
+        "bootstrap/app.php",
+        "database/factories/UserFactory.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0067",
+      "slug": "0067-admin-ui-language-switcher-ui",
+      "title": "Admin UI language switcher — frontend",
+      "depends_on": [
+        "0066",
+        "0068"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Enums/UiLocale.php",
+        "app/Concerns/InteractsWithUiLocale.php",
+        "lang/en/localization.php",
+        "lang/es/localization.php",
+        "app/Livewire/Settings/LanguageSwitcher.php",
+        "resources/views/livewire/settings/language-switcher.blade.php",
+        "app/Livewire/Settings/Language.php",
+        "resources/views/livewire/settings/language.blade.php",
+        "resources/views/components/desktop-user-menu.blade.php",
+        "resources/views/layouts/app/sidebar.blade.php",
+        "routes/settings.php",
+        "resources/views/components/settings/layout.blade.php"
+      ],
+      "conflict_risk_with": [
+        "0069"
+      ]
+    },
+    {
+      "id": "0068",
+      "slug": "0068-store-languages-catalog-backend",
+      "title": "Store Languages catalog + the app's two default-locale settings",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/migrations/*_create_store_languages_table.php",
+        "database/migrations/*_create_locale_settings_table.php",
+        "database/migrations/*_create_translation_relations_table.php",
+        "app/Models/StoreLanguage.php",
+        "app/Models/LocaleSetting.php",
+        "database/data/iso-639-1-languages.json",
+        "app/Policies/StoreLanguagePolicy.php",
+        "app/Actions/StoreLanguages/",
+        "database/seeders/LocaleSettingSeeder.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0069",
+      "slug": "0069-store-languages-settings-ui",
+      "title": "Store Languages settings screen — frontend",
+      "depends_on": [
+        "0066",
+        "0068"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/Settings/StoreLanguages.php",
+        "resources/views/livewire/settings/store-languages.blade.php",
+        "routes/settings.php",
+        "lang/en/store-languages.php",
+        "lang/es/store-languages.php"
+      ],
+      "conflict_risk_with": [
+        "0067"
+      ]
+    },
+    {
+      "id": "0070",
+      "slug": "0070-translatable-content-mechanism-product-categories-backend",
+      "title": "Translatable content mechanism — backend, piloted on Product Categories",
+      "depends_on": [
+        "0068"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Concerns/HasTranslations.php",
+        "app/Actions/SetTranslation.php",
+        "database/migrations/*_create_product_category_translations_table.php",
+        "database/migrations/*_drop_name_from_product_categories_table.php",
+        "app/Models/ProductCategory.php",
+        "app/Models/StoreLanguage.php",
+        "app/Concerns/ProductCategoryValidationRules.php",
+        "app/Actions/ProductCategories/CreateProductCategory.php",
+        "app/Actions/ProductCategories/RenameProductCategory.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0071",
+      "slug": "0071-product-categories-language-tabs-ui",
+      "title": "Product Categories taxonomy screen — language tabs (frontend)",
+      "depends_on": [
+        "0068",
+        "0070"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "resources/views/components/language-tab-strip.blade.php",
+        "app/Livewire/ProductCategories/Index.php",
+        "resources/views/livewire/product-categories.blade.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0072",
+      "slug": "0072-translatable-content-retrofit-blog-categories-backend",
+      "title": "Translatable content retrofit — Blog Categories backend",
+      "depends_on": [
+        "0058",
+        "0068",
+        "0070"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/migrations/*_create_blog_category_translations_table.php",
+        "database/migrations/*_drop_name_from_blog_categories_table.php",
+        "app/Models/BlogCategory.php",
+        "app/Concerns/BlogCategoryValidationRules.php",
+        "app/Actions/Blog/CreateBlogCategory.php",
+        "app/Actions/Blog/RenameBlogCategory.php"
+      ],
+      "conflict_risk_with": [
+        "0063",
+        "0074",
+        "0076",
+        "0078"
+      ]
+    },
+    {
+      "id": "0073",
+      "slug": "0073-blog-categories-language-tabs-ui",
+      "title": "Blog Categories screen — language tabs",
+      "depends_on": [
+        "0062",
+        "0068",
+        "0070",
+        "0071",
+        "0072"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/BlogCategories/Index.php",
+        "resources/views/livewire/blog-categories.blade.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0074",
+      "slug": "0074-translatable-content-retrofit-blog-tags-backend",
+      "title": "Translatable content retrofit — Blog Tags backend",
+      "depends_on": [
+        "0059",
+        "0068",
+        "0070"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/migrations/*_create_blog_tag_translations_table.php",
+        "database/migrations/*_drop_name_from_blog_tags_table.php",
+        "app/Models/BlogTag.php",
+        "app/Concerns/BlogTagValidationRules.php",
+        "app/Actions/Blog/CreateBlogTag.php",
+        "app/Actions/Blog/RenameBlogTag.php",
+        "app/Actions/Blog/FindOrCreateBlogTag.php"
+      ],
+      "conflict_risk_with": [
+        "0063",
+        "0072",
+        "0076",
+        "0078"
+      ]
+    },
+    {
+      "id": "0075",
+      "slug": "0075-blog-tags-language-tabs-ui",
+      "title": "Blog Tags screen — language tabs",
+      "depends_on": [
+        "0060",
+        "0068",
+        "0070",
+        "0071",
+        "0074"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/BlogTags/Index.php",
+        "resources/views/livewire/blog-tags.blade.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0076",
+      "slug": "0076-translatable-content-retrofit-products-backend",
+      "title": "Translatable content retrofit — Products backend",
+      "depends_on": [
+        "0068",
+        "0070"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/migrations/*_create_product_translations_table.php",
+        "database/migrations/*_drop_name_from_products_table.php",
+        "app/Models/Product.php",
+        "app/Concerns/ProductValidationRules.php",
+        "app/Actions/Products/CreateProduct.php",
+        "app/Actions/Products/UpdateProduct.php"
+      ],
+      "conflict_risk_with": [
+        "0072",
+        "0074",
+        "0078"
+      ]
+    },
+    {
+      "id": "0077",
+      "slug": "0077-product-editor-language-tabs-ui",
+      "title": "Product editor — language tabs (UI)",
+      "depends_on": [
+        "0068",
+        "0070",
+        "0076"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/Products/Editor.php",
+        "resources/views/livewire/products/editor.blade.php"
+      ],
+      "conflict_risk_with": [
+        "0079"
+      ]
+    },
+    {
+      "id": "0078",
+      "slug": "0078-translatable-content-retrofit-blog-posts-backend",
+      "title": "Translatable content retrofit — Blog Posts backend",
+      "depends_on": [
+        "0061",
+        "0068",
+        "0070"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/migrations/*_create_blog_post_translations_table.php",
+        "database/migrations/*_drop_title_body_slug_from_blog_posts_table.php",
+        "app/Models/BlogPost.php",
+        "app/Concerns/BlogPostValidationRules.php",
+        "app/Actions/Blog/CreateBlogPost.php",
+        "app/Actions/Blog/UpdateBlogPost.php"
+      ],
+      "conflict_risk_with": [
+        "0063",
+        "0072",
+        "0074",
+        "0076"
+      ]
+    },
+    {
+      "id": "0079",
+      "slug": "0079-blog-post-editor-language-tabs-ui",
+      "title": "Blog post editor — language tabs (frontend)",
+      "depends_on": [
+        "0063",
+        "0068",
+        "0070",
+        "0071",
+        "0078"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/BlogPosts/Editor.php",
+        "resources/views/livewire/blog-posts/editor.blade.php",
+        "lang/en/blog.php",
+        "lang/es/blog.php"
+      ],
+      "conflict_risk_with": [
+        "0077"
+      ]
+    }
+  ]
+}

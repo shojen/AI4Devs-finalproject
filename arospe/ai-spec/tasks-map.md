@@ -1,0 +1,505 @@
+# Task Map — `ai-spec/tasks/` Inventory and Dependency Graph
+
+**This file maps parallelization risk for pending work only.** `done/` tasks are intentionally
+left out of the dependency graph below — a merged, closed task can only ever be a *satisfied*
+dependency for something still pending, never a source of conflict for work still being
+implemented, so drawing it as a node would only add clutter with no decision value.
+
+Aggregated view of every task file under `ai-spec/tasks/` (the three-stage `ai-spec/tasks/` →
+`ai-spec/tasks/in-progress/` → `ai-spec/tasks/done/` convention documented in
+[`docs/workflow.md`](../docs/workflow.md)). **This file was originally a point-in-time,
+manually-regenerated snapshot; it no longer is.** Per
+[`docs/workflow.md`'s task-coordination-file regeneration step](../docs/workflow.md#regenerating-the-task-coordination-files),
+`docs-keeper` now updates the affected part of this file on the same pass as the mandatory
+link-integrity check, every time a task file is created, moves to `in-progress/`/`done/`, or has
+its own "Dependencies" section edited — so it should reflect the real backlog rather than
+needing a manual "is this stale" check. `docs/workflow.md`'s per-story `ai-spec/tasks/` files
+remain the source of truth for any individual story's dependencies; this file only aggregates
+and cross-references what those files already state — if the two ever disagree, the individual
+task file is correct and this one needs a refresh.
+
+As of this snapshot, `ai-spec/tasks/in-progress/` does not exist (no story is currently checked
+out into that stage), so every task is either `done/` (closed, merged) or still sitting directly
+in `ai-spec/tasks/` (not started). One additional file, `ci-database-connection-gap.md`, lives
+outside the `00XX-` numbering — it is an infrastructure fix (not a PRD-derived user story) and is
+already marked `Status: fixed and fully documented` inside its own file, so it is listed for
+completeness but excluded from the dependency graph and from the parallelization analysis below.
+
+- **95 files total**: 94 numbered user stories (52 `done/`, 42 still in `ai-spec/tasks/`) + 1
+  non-numbered infrastructure doc (already resolved).
+- For a machine-readable, per-task claim registry that two parallel Claude Code sessions can use
+  to coordinate against this same dependency data, see
+  [`ai-spec/tasks-status.json`](tasks-status.json) and its companion protocol,
+  [`ai-spec/tasks-coordination.md`](tasks-coordination.md). **As of this snapshot, `0037` is
+  already `claimed` in that registry** — a second session picked it up after this file's own
+  dependency (`0036`) closed, before this file was regenerated; see the note next to `0037` in
+  the graph and analysis below.
+
+## Table of contents
+
+- [Inventory](#inventory)
+  - [Done (52) — shipped, out of scope for this graph](#done-52--shipped-out-of-scope-for-this-graph)
+  - [Pending — not started (42 numbered + 1 infra doc)](#pending--not-started-42-numbered--1-infra-doc)
+- [Dependency graph (pending tasks only)](#dependency-graph-pending-tasks-only)
+- [Analysis](#analysis)
+  - [Pending tasks that are independent of each other and safe to parallelize](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
+  - [Pending tasks that must be sequenced](#pending-tasks-that-must-be-sequenced)
+  - [File/merge-conflict risk even where no formal dependency exists](#filemerge-conflict-risk-even-where-no-formal-dependency-exists)
+  - [Scope and known limitations of this map](#scope-and-known-limitations-of-this-map)
+
+## Inventory
+
+### Done (52) — shipped, out of scope for this graph
+
+Already merged into `main`/`finalproject-ARP` and closed via the workflow's Phase 7; see
+[`ai-spec/tasks/done/`](tasks/done/) for each story's full file. Listed here only as IDs, grouped
+by the epic area they belong to, since — per the note at the top of this file — none of them
+appears as a node in the dependency graph below:
+
+- **Epic 1 — Users, Roles & Auth (20):** 0001, 0002, 0003, 0004, 0005, 0006, 0006b, 0007, 0008,
+  0008a, 0009, 0010, 0011, 0012, 0013, 0014, 0015, 0015a, 0015b, 0040.
+- **Epic 2 — Products, Taxes, Media, Shipping (32):** 0016, 0017, 0018, 0019, 0019a, 0019b,
+  0019c, 0019d, 0020, 0021, 0022, 0023, 0024, 0024a, 0024b, 0025, 0026, 0027, 0028, 0029, 0029a,
+  0029b, 0030, 0030a, 0031, 0031a, 0032, 0033, 0034, 0035, 0036, 0080.
+
+### Pending — not started (42 numbered + 1 infra doc)
+
+| ID | Title | Epic area |
+| --- | --- | --- |
+| 0037 | Shipping carriers and rates — UI (carrier cards, grouped rate table, rate modal) — **already `claimed` in [`tasks-status.json`](tasks-status.json)**, see below | Epic 2 — Shipping |
+| 0038 | Payment methods — bank transfer with a validated IBAN (backend) | Epic 2 — Payment methods |
+| 0039 | Payment methods — store-settings screen (UI) | Epic 2 — Payment methods |
+| 0041 | Customers CRUD backend | Epic 3 — Customers |
+| 0042 | Customers — soft delete (backend) | Epic 3 — Customers |
+| 0043 | Customers — "new customer" notification (backend) | Epic 3 — Customers |
+| 0044 | Customers — list + create/edit UI | Epic 3 — Customers |
+| 0045 | Orders core CRUD backend | Epic 3 — Orders |
+| 0046 | Orders — "new order" notification (backend) | Epic 3 — Orders |
+| 0047 | Customer detail — order history view UI | Epic 3 — Orders/Customers |
+| 0048 | Order line-item editing backend | Epic 3 — Orders |
+| 0049 | Order status transition backend | Epic 3 — Orders |
+| 0050 | Order manual cancellation backend | Epic 3 — Orders |
+| 0051 | Order payment/refund state backend | Epic 3 — Orders |
+| 0052 | Order auto-cancel on full refund backend | Epic 3 — Orders |
+| 0053 | Order tax Sales-Region resolution — physical products (backend) | Epic 3 — Orders |
+| 0054 | Order tax Sales-Region resolution — virtual products (backend) | Epic 3 — Orders |
+| 0055 | Orders list + detail/editor UI | Epic 3 — Orders |
+| 0056 | Notification viewing — unread count, recent list, mark-as-read (backend) | Epic 3 — Notifications |
+| 0057 | Notification bell UI — topbar dropdown, unread indicator, generic per-type rendering | Epic 3 — Notifications |
+| 0058 | Blog categories — backend (table, model, create/rename/delete, name validation) | Epic 4 — Blog |
+| 0059 | Blog tags — backend (table, model, create/rename/delete, find-or-create, name validation) | Epic 4 — Blog |
+| 0060 | Blog tags — management screen (list, create/edit modal, unconditional delete) | Epic 4 — Blog |
+| 0061 | Blog posts — core CRUD backend (+ the blog-category in-use delete guard) | Epic 4 — Blog |
+| 0062 | Blog categories — management screen (list, create/edit modal, blocked delete) | Epic 4 — Blog |
+| 0063 | Blog posts — list + editor UI | Epic 4 — Blog |
+| 0064 | Scheduled post auto-publish — backend (the app's first scheduled command) | Epic 4 — Blog |
+| 0065 | Blog post published — notification (backend) | Epic 4 — Blog |
+| 0066 | Admin UI locale preference & resolution — backend | Epic 5 — i18n |
+| 0067 | Admin UI language switcher — frontend | Epic 5 — i18n |
+| 0068 | Store Languages catalog + the app's two default-locale settings | Epic 5 — i18n |
+| 0069 | Store Languages settings screen — frontend | Epic 5 — i18n |
+| 0070 | Translatable content mechanism — backend, piloted on Product Categories | Epic 5 — i18n |
+| 0071 | Product Categories taxonomy screen — language tabs (frontend) | Epic 5 — i18n |
+| 0072 | Translatable content retrofit — Blog Categories backend | Epic 5 — i18n |
+| 0073 | Blog Categories screen — language tabs | Epic 5 — i18n |
+| 0074 | Translatable content retrofit — Blog Tags backend | Epic 5 — i18n |
+| 0075 | Blog Tags screen — language tabs | Epic 5 — i18n |
+| 0076 | Translatable content retrofit — Products backend | Epic 5 — i18n |
+| 0077 | Product editor — language tabs (UI) | Epic 5 — i18n |
+| 0078 | Translatable content retrofit — Blog Posts backend | Epic 5 — i18n |
+| 0079 | Blog post editor — language tabs (frontend) | Epic 5 — i18n |
+| _(no number)_ | Infrastructure fix: no test suite can open a database connection (local fresh setup or CI) — **status: already fixed and documented**, kept out of the numbering and out of the dependency graph below | Infrastructure |
+
+## Dependency graph (pending tasks only)
+
+Edges were derived from each task file's own **"Dependencies"** (or, for Epic 5 files, **"5.
+Dependencies, risks, open technical questions"**) section — hard/blocking dependencies, explicit
+"depends on story NNNN" statements, and file-relative links to sibling task files. No dependency
+below is inferred purely from task numbering; every edge quotes or paraphrases language the
+source task file states about itself. A dependency on an already-`done` task (e.g. `0045`'s
+mention of `done/0024`, `done/0029` and `done/0035`) is **not** drawn — it is already satisfied
+and contributes nothing to a parallelization decision — which is why several nodes below have no
+incoming edge at all even though their own task file lists real prerequisites: those
+prerequisites are simply already shipped.
+
+Two edge styles:
+
+- **Solid arrow (`-->`)** — a hard/blocking dependency: the task file itself says Phase 3 cannot
+  start, or a specific class/table/contract is consumed, before the upstream task is `done`.
+- **Dashed arrow (`-.->`)** — a soft, informational, sibling, or "shares one file/artifact"
+  relationship: explicitly called out in the task file, but not stated as blocking.
+
+Nodes with **no incoming edge at all** (green, `ready` style) have every one of their real
+prerequisites already in `done/` — nothing pending stands between them and Phase 3.
+
+```mermaid
+flowchart LR
+    classDef pending fill:#fef9c3,stroke:#ca8a04,color:#713f12,stroke-width:1px;
+    classDef ready fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:1px;
+    classDef claimed fill:#dbeafe,stroke:#2563eb,color:#1e3a8a,stroke-width:1px;
+
+    subgraph PEND_SHIP["Epic 2 cont. — Shipping / Payment"]
+        direction TB
+        P0037["0037 Shipping carriers+rates UI\n(claimed — 0036 is done)"]
+        P0038["0038 Payment methods BE"]
+        P0039["0039 Payment methods UI"]
+    end
+
+    subgraph PEND_CUST["Epic 3 — Customers"]
+        direction TB
+        P0041["0041 Customers CRUD BE"]
+        P0042["0042 Customers soft delete BE"]
+        P0043["0043 New-customer notif BE"]
+        P0044["0044 Customers list/UI"]
+    end
+
+    subgraph PEND_ORD["Epic 3 — Orders"]
+        direction TB
+        P0045["0045 Orders core CRUD BE"]
+        P0046["0046 New-order notif BE"]
+        P0047["0047 Customer order history UI"]
+        P0048["0048 Line-item editing BE"]
+        P0049["0049 Status transition BE"]
+        P0050["0050 Manual cancellation BE"]
+        P0051["0051 Payment/refund state BE"]
+        P0052["0052 Auto-cancel full refund BE"]
+        P0053["0053 Tax region — physical BE"]
+        P0054["0054 Tax region — virtual BE"]
+        P0055["0055 Orders list/detail UI"]
+    end
+
+    subgraph PEND_NOTIF["Epic 3 — Notifications"]
+        direction TB
+        P0056["0056 Notification viewing BE"]
+        P0057["0057 Notification bell UI"]
+    end
+
+    subgraph PEND_BLOG["Epic 4 — Blog"]
+        direction TB
+        P0058["0058 Blog categories BE"]
+        P0059["0059 Blog tags BE"]
+        P0060["0060 Blog tags UI"]
+        P0061["0061 Blog posts core CRUD BE"]
+        P0062["0062 Blog categories UI"]
+        P0063["0063 Blog posts list/editor UI"]
+        P0064["0064 Scheduled auto-publish BE"]
+        P0065["0065 Post published notif BE"]
+    end
+
+    subgraph PEND_I18N["Epic 5 — Internationalization"]
+        direction TB
+        P0066["0066 Admin UI locale pref BE"]
+        P0067["0067 Admin UI language switcher"]
+        P0068["0068 Store Languages catalog BE"]
+        P0069["0069 Store Languages UI"]
+        P0070["0070 Translatable content mechanism"]
+        P0071["0071 Product Categories i18n UI"]
+        P0072["0072 Blog Categories retrofit BE"]
+        P0073["0073 Blog Categories i18n UI"]
+        P0074["0074 Blog Tags retrofit BE"]
+        P0075["0075 Blog Tags i18n UI"]
+        P0076["0076 Products retrofit BE"]
+        P0077["0077 Product editor i18n UI"]
+        P0078["0078 Blog Posts retrofit BE"]
+        P0079["0079 Blog post editor i18n UI"]
+    end
+
+    %% Shipping / Payment
+    P0038 --> P0039
+
+    %% Customers
+    P0041 --> P0042
+    P0041 --> P0043
+    P0041 --> P0044
+    P0042 --> P0044
+    P0043 --> P0044
+
+    %% Orders core + siblings
+    P0041 --> P0045
+    P0038 --> P0045
+    P0042 -.-> P0045
+    P0045 --> P0046
+    P0043 --> P0046
+    P0041 --> P0047
+    P0042 --> P0047
+    P0044 --> P0047
+    P0045 --> P0047
+    P0045 --> P0048
+    P0045 --> P0049
+    P0045 --> P0050
+    P0049 --> P0050
+    P0051 --> P0050
+    P0045 --> P0051
+    P0051 --> P0052
+    P0050 -.-> P0052
+    P0045 --> P0053
+    P0045 --> P0054
+    P0053 -.-> P0054
+    P0045 --> P0055
+    P0048 --> P0055
+    P0049 --> P0055
+    P0050 --> P0055
+    P0051 --> P0055
+    P0052 --> P0055
+    P0053 --> P0055
+    P0054 --> P0055
+    P0047 -.-> P0055
+
+    %% Notifications
+    P0043 --> P0056
+    P0046 -.-> P0056
+    P0056 --> P0057
+    P0046 -.-> P0057
+
+    %% Blog
+    P0059 --> P0060
+    P0058 --> P0061
+    P0059 --> P0061
+    P0058 --> P0062
+    P0061 --> P0062
+    P0060 -.-> P0062
+    P0058 --> P0063
+    P0059 --> P0063
+    P0061 --> P0063
+    P0060 -.-> P0063
+    P0061 --> P0064
+    P0043 --> P0065
+    P0061 --> P0065
+    P0064 --> P0065
+
+    %% i18n
+    P0068 --> P0066
+    P0066 --> P0067
+    P0068 --> P0067
+    P0066 --> P0069
+    P0068 --> P0069
+    P0067 -.-> P0069
+    P0068 --> P0070
+    P0068 --> P0071
+    P0070 --> P0071
+    P0058 --> P0072
+    P0070 --> P0072
+    P0068 --> P0072
+    P0063 -.-> P0072
+    P0072 --> P0073
+    P0071 --> P0073
+    P0062 --> P0073
+    P0070 --> P0073
+    P0068 --> P0073
+    P0059 --> P0074
+    P0070 --> P0074
+    P0068 --> P0074
+    P0063 -.-> P0074
+    P0074 --> P0075
+    P0060 --> P0075
+    P0070 --> P0075
+    P0068 --> P0075
+    P0071 --> P0075
+    P0070 --> P0076
+    P0068 --> P0076
+    P0076 --> P0077
+    P0070 --> P0077
+    P0068 --> P0077
+    P0061 --> P0078
+    P0070 --> P0078
+    P0068 --> P0078
+    P0063 -.-> P0078
+    P0078 --> P0079
+    P0063 --> P0079
+    P0071 --> P0079
+    P0077 -.-> P0079
+    P0070 --> P0079
+    P0068 --> P0079
+
+    class P0039,P0042,P0043,P0044,P0045,P0046,P0047,P0048,P0049,P0050,P0051,P0052,P0053,P0054,P0055,P0056,P0057,P0060,P0061,P0062,P0063,P0064,P0065,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
+    class P0038,P0041,P0058,P0059,P0068 ready;
+    class P0037 claimed;
+```
+
+Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
+(`claimed`) = unblocked but a session already has it (per
+[`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first;
+yellow (`pending`) = still blocked on at least one open pending dependency.
+
+## Analysis
+
+### Pending tasks that are independent of each other and safe to parallelize
+
+These are the tasks whose **entire dependency chain is already `done/`** — nothing pending blocks
+them — the five green `ready` nodes in the diagram above (a sixth, `0037`, meets the same
+dependency test now that `0036` has closed, but is shown `claimed` instead of `ready` because
+[`tasks-status.json`](tasks-status.json) already records a session working on it — see the note
+right after this list):
+
+- **0038 — Payment methods (backend).** Depends only on `done/0002`. A brand-new domain
+  (`payment_methods` table, its own model/policy/routes) with no overlap with any other pending
+  story. Ready now.
+- **0041 — Customers CRUD (backend).** "This story depends on no other Epic 3 story… it can start
+  immediately." A brand-new domain (`customers` table). Ready now.
+- **0058 — Blog categories (backend).** "None inside Epic 4 for its schema, model, actions or
+  policy… the foundational story the other blog stories build on." Ready now.
+- **0059 — Blog tags (backend).** No hard dependency on 0058 in either direction (both depend only
+  on already-shipped work plus `done/0022`'s `NormalizeForSearch`). Ready now.
+- **0068 — Store Languages catalog (backend).** Depends only on `done/0002` (the
+  `store-languages.*` permissions) and cites `done/0016`/`0017`/`0018` only as a *precedent*, not a
+  code dependency. Ready now — and, being the root of the entire Epic 5 chain (every i18n story
+  ultimately depends on it), it is also the single highest-leverage task to start first if only
+  one of the five can be picked up immediately.
+
+**0038, 0041 and 0068 are fully independent of each other and of 0058/0059** — three separate
+domains (payment methods, customers, the store-languages catalog), no shared files, no shared
+tables, and none of them appears in the other's `conflict_risk_with` set in
+[`ai-spec/tasks-status.json`](tasks-status.json). All three can be dispatched to parallel
+agents/worktrees today with no coordination needed beyond the project's usual per-branch worktree
+isolation (see [`docs/testing/worktree-databases.md`](../docs/testing/worktree-databases.md)).
+
+**0037 is a worked example of why the JSON registry exists rather than only this diagram.**
+`0036` closed, which satisfies `0037`'s only dependency and would make it read as a sixth
+"ready, dispatch freely" node in a purely dependency-based view — but a second session had
+already picked it up by the time this snapshot was regenerated. `tasks-status.json` records that
+claim (`status: "claimed"`), which is why it is drawn blue here rather than green: a task can be
+dependency-ready and still not be safe to hand to a *third* session. Always check the JSON's live
+`status`/`claimed_by` before dispatching a "ready" node from this diagram — this file is a
+point-in-time snapshot and can lag behind real claims exactly like this.
+
+**0058 and 0059 are a softer case.** Neither blocks the other and both are ready today, but both
+land inside `app/Actions/Blog/` (different files — `CreateBlogCategory`/`RenameBlogCategory`/
+`DeleteBlogCategory` vs. `CreateBlogTag`/`RenameBlogTag`/`DeleteBlogTag`/`FindOrCreateBlogTag` —
+so a git merge between them is mechanically safe) and both extend the same seeded `blog.*`
+permission module and the same kind of `lang/en|es/blog.php` file. This is low risk (see
+[File/merge-conflict risk](#filemerge-conflict-risk-even-where-no-formal-dependency-exists)) but
+worth a quick coordination check (e.g. who creates `lang/{en,es}/blog.php` first) rather than
+treating it as zero-risk parallelism.
+
+Once those land, the same "ready" property propagates outward in a few places — **0037** already
+did (it became dependency-ready the moment `0036` closed, and is now `claimed` per
+[`tasks-status.json`](tasks-status.json)); the same will happen for **0060** the moment **0059**
+closes, **0066**/**0070**/**0071** the moment **0068** closes, and **0061** the moment **both 0058
+and 0059** close — none of those is parallel-safe to a *third* session today, only sequential (or,
+for `0037`, already spoken for).
+
+### Pending tasks that must be sequenced
+
+The dependency graph above makes most of the backlog a strict sequencing problem rather than a
+parallelization one. The major chains, in the order they must be executed:
+
+1. **Customers → Orders (Epic 3).** `0041 → {0042, 0043} → 0044`. Then `0045` depends on `0041`
+   plus the still-pending payment story `0038` (`0036`, its former third blocker, is now `done`,
+   alongside its other already-shipped prerequisites `done/0024`/`done/0029`/`done/0035` — see the
+   graph note above). `0045` is
+   the single biggest hub in the backlog: it gates `0046`, `0047` (also needs `0042`+`0044`),
+   `0048`, `0049`, `0050` (also needs `0049` and `0051`), `0051`, `0052` (via `0051`), `0053`, and
+   `0054`. **`0055` (the Orders UI) is the epic's terminal node** — its own task file states Phase
+   3 cannot begin until **all eight** of `0045`, `0048`, `0049`, `0050`, `0051`, `0052`, `0053` and
+   `0054` are `done`.
+2. **Notifications (Epic 3).** `0043 → 0056 → 0057`, with `0046` as a soft/informational
+   (non-blocking) dependency of both `0056` and `0057` — it only makes their "two distinct
+   notification types" test meaningful, it does not gate them.
+3. **Blog (Epic 4).** `{0058, 0059} → 0061 → {0062, 0063, 0064 → 0065}`, with `0059 → 0060` running
+   in parallel to `0061` (0060 only needs 0059) and `0062`/`0063` each also softly preferring
+   `0060` to land first (it creates the `groups.blog` sidebar entry both reuse).
+4. **Internationalization (Epic 5).** This is the most heavily sequenced part of the backlog, and
+   it is **cross-epic**: every retrofit story blocks on `0068` (Store Languages catalog) and
+   `0070` (the translatable-content mechanism, itself gated on `0068`), and each UI-facing i18n
+   story additionally blocks on the Epic 4 backend story whose table it retrofits. The full
+   strict order, as stated across several of these task files' own "Dependencies" sections:
+
+   ```text
+   0068 → 0066 → 0067          (admin UI locale preference, note the inverted numbering — 0066 needs
+                                 0068's LocaleSetting piece even though 0066 < 0068 numerically)
+   0068 → 0069                 (Store Languages settings UI)
+   0068 → 0070 → 0071          (translatable-content mechanism, piloted + UI'd on Product Categories)
+   0058 → 0061 → 0062 → 0068 → 0070 → 0071 → 0072 → 0073   (Blog Categories retrofit + i18n UI)
+   0059 → 0061 → 0063 → 0068 → 0070 → 0074 → 0075          (Blog Tags retrofit + i18n UI, 0075 also
+                                                              needs 0071's shared <x-language-tab-strip>)
+   0068 → 0070 → 0076 → 0077                                (Products retrofit + i18n UI — 0024, the
+                                                              table itself, is already done)
+   0058 → 0059 → 0061 → 0063 → 0068 → 0070 → 0074 → 0078 → 0079   (Blog Posts retrofit + i18n UI)
+   ```
+
+   Two things worth calling out explicitly because they are easy to misread from the numbering
+   alone: **(a)** `0066` genuinely depends on `0068` despite being numbered lower — this is a
+   documented, deliberate exception to the project's usual "dependency is numbered below its
+   dependent" convention, not an error in this map; **(b)** `0063` is listed as a (dashed, soft)
+   dependency *of* `0072`/`0074`/`0078` in those files' own tables, but the direction that actually
+   matters for scheduling is the reverse — `0063` must ship **before** those retrofit stories, so
+   they have something to retrofit, and then `0063`'s own queries need a follow-up correction once
+   each retrofit lands. It is drawn dashed in the graph to reflect that it is a "will need
+   revisiting" relationship, not a blocking prerequisite.
+
+### File/merge-conflict risk even where no formal dependency exists
+
+Flagged explicitly in the source task files, even though no hard dependency edge connects the two
+sides. Every pair below is also recorded, symmetrically, in each task's `conflict_risk_with` array
+in [`ai-spec/tasks-status.json`](tasks-status.json):
+
+- **`app/Policies/OrderPolicy.php` is written by five different Epic 3 stories** —
+  `0049` (creates it), `0050`, `0051` (adds no ability per its own decision, but was in scope
+  before that), `0052`, and `0055`. `0050`'s own file states in an explicit warning block: *"This
+  story is not parallel-safe with 0049, 0051, 0052 or 0055 — they all write
+  `app/Policies/OrderPolicy.php`."* Most of that cluster is already sequenced by a hard dependency
+  edge (`0049 → 0050 → {0051, 0052} → 0055`), so the residual, *undeclared* risk is narrower than
+  the whole five-way cluster: **`0049` ~ `0051`**, **`0049` ~ `0052`** and **`0050` ~ `0052`** are
+  the pairs with no direct dependency edge between them, which is what the project's own
+  [Parallel Agent File-Ownership Rule](../docs/contracts.md#parallel-agent-file-ownership-rule)
+  exists to prevent two sessions from hitting at once.
+- **`lang/{en,es}/orders.php` is written by `0045`, `0049`, `0050`, `0054` and `0055`** — different
+  key groups in the same file each time, which is ordinary sequential maintenance where a hard
+  dependency already orders the pair, and a real (if minor) conflict risk for the two pairs that
+  are *not* already sequenced: **`0049` ~ `0054`** and **`0050` ~ `0054`**.
+- **`App\Concerns\ResolvesSalesRegionFromAddress` is a create-if-absent shared trait between `0053`
+  and `0054`.** Neither depends on the other, but whichever implementation phase runs first creates
+  the file and the second must `use` it unchanged rather than duplicating it.
+- **`app/Actions/Blog/` is shared by `0058` and `0059`** (see above) — different files, low risk,
+  but worth a quick check on shared conventions (permission-constant naming, lang-file key groups)
+  before dispatching both at once.
+- **`0060` and `0062`/`0063` (Blog Tags UI vs. Blog Categories UI / Blog Posts list+editor UI)**
+  each touch the shared blog sidebar registry (`config/modules.php`'s `groups.blog`) and
+  `lang/{en,es}/blog.php` around the same point in the roadmap, without a formal dependency
+  forcing an order.
+- **`0062` and `0063` are also an explicit parallel-write hazard against each other**, per `0063`'s
+  own dependency notes, for the same registry/lang-file reason.
+- **The Epic 5 retrofit stories (`0072`, `0074`, `0076`, `0078`) all depend on the same pair,
+  `0068` and `0070`**, and each also touches `config/modules.php` / `lang/{en,es}/*.php` for its
+  own domain. They do not depend on each other and their tables are disjoint (blog categories vs.
+  blog tags vs. products vs. blog posts), so once `0068`/`0070` are both closed, **these four
+  retrofit stories are themselves a second, smaller "independent and parallelizable" cluster** —
+  with the same caveat as 0058/0059 above about shared registry/lang files, all six pairs among
+  them (`0072`~`0074`, `0072`~`0076`, `0072`~`0078`, `0074`~`0076`, `0074`~`0078`, `0076`~`0078`)
+  recorded in the JSON registry.
+- **`0067` and `0069` collide on the same rendered page** — the personal language switcher (0067)
+  renders in the chrome of the Store Languages settings screen (0069), which the source task file
+  calls out as *"a real assertion collision (R-3)"* even though 0069 does not depend on 0067's
+  code.
+- **`0046`/`0056`/`0057` and `0077`/`0079`** each carry one softer, non-file-overlap "informational"
+  pairing already shown dashed in the graph (a shared-type test-realism concern for the first
+  group, a "worked out the UI shape first" precedent for the second) — included in the JSON
+  registry's `conflict_risk_with` for completeness, even though the practical collision risk is
+  lower than the file-sharing cases above.
+
+### Scope and known limitations of this map
+
+- **The `done/` tasks are omitted from the graph entirely, on purpose** (see the note at the top of
+  this file). They are still listed as flat IDs in the [inventory](#done-52--shipped-out-of-scope-for-this-graph)
+  above and are still referenced by ID in this analysis' prose where they explain *why* a pending
+  task has no incoming edge (i.e. all its real prerequisites already shipped) — but re-deriving a
+  full internal dependency graph for 52 already-merged stories would not change anything actionable
+  today, so it was not attempted.
+- **Several pending task files themselves warn that their own dependency sections may be stale.**
+  Many Epic 3/4/5 stories were composed before their prerequisites shipped, and each carries a
+  self-aware note along the lines of *"this document goes stale while it waits… every name in this
+  file is a reading aid, not a locator"* (a rule this project's own
+  [`docs/errors-log.md`](../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+  states explicitly). This map inherits that caveat: **before actually starting a pending story,
+  re-verify its own "Dependencies" section against `HEAD` rather than trusting this snapshot**,
+  especially for any story more than a few positions deep in a chain (0055, 0073, 0079 in
+  particular chain through seven or more prerequisites each).
+- **One dependency in this map is already stale as written and is called out here rather than
+  silently "corrected."** Story `0055`'s own file lists `done/0022` (the searchable multi-select
+  component) as an unresolved *"soft dependency, worked around rather than waited on"* — but
+  `0022` has since shipped and is in `done/`. No edge was ever drawn for it (it was never a hard
+  blocker), but a Phase 2 re-read of `0055` should drop the interim workaround its `D-1` describes
+  and use the real component instead.
+- **The infra fix `ci-database-connection-gap.md`** is intentionally excluded from the graph — its
+  own file's status banner confirms it was fixed and fully documented on 2026-08-26, so it blocks
+  nothing today.
