@@ -45,9 +45,9 @@
       "slug": "0041-customers-crud-backend",
       "title": "Customers CRUD backend",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree-0041-customers-crud-backend",
+      "claimed_at": "2026-09-10T00:00:00Z",
       "touches": [
         "database/migrations/*_create_customers_table.php",
         "app/Models/Customer.php",
