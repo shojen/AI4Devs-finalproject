@@ -1361,8 +1361,19 @@ the screen on top of this.
       that writes nothing, and it is logged. *(Added 2026-09-09, Phase 2 review finding B1: this is
       the exact obligation 0033's Phase 4 security audit had to raise as its finding **F-1** after
       the fact, and it was missing from this list.)*
-- [ ] **No route, Livewire component or Blade view is added** (**D-10**), and the only files owned by
-      other stories that this one edits are the four named in *Files to create/modify*.
+- [ ] **No route, Livewire component or Blade view is added** (**D-10**).
+
+      > **Corrected 2026-09-10, Phase 5 code review.** This item originally continued *"...and the
+      > only files owned by other stories that this one edits are the four named in Files to
+      > create/modify"* — quoted here rather than silently rewritten, per this project's
+      > audit-authored-page convention. That undercounted by three: closing 0034's own Phase 4
+      > finding F-4 (which named this story by number as the one that must declare
+      > `#[Locked] public ?string $shippingZoneId` on `App\Livewire\Shipping\Zones`, or the D-5
+      > guard's message renders once and vanishes) also touches `app/Livewire/Shipping/Zones.php`
+      > itself (a real behavioural change), `resources/views/livewire/shipping/zones.blade.php`
+      > (comment-only — D-5's "no markup change there" claim holds literally) and
+      > `tests/Feature/Shipping/ZonesTest.php`. This is correct engineering discharging a
+      > previously-recorded hand-off, not scope creep — the AC simply predates it being acted on.
 - [ ] `down()` is the exact inverse of `up()`.
 - [ ] No external carrier API is called, stubbed or configured *(PRD §2.4 AC 9)*.
 
