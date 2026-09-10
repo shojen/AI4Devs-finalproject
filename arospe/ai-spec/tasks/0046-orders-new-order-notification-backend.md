@@ -397,7 +397,7 @@ and no more.
 | --- | --- | --- |
 | [0045](0045-orders-core-crud-backend.md) — Orders core CRUD | **hard dependency, and itself ⛔ BLOCKED** | The dispatch call lands inside its `CreateOrder`; every Feature test here needs `Order`, `OrderItem` and `OrderFactory`. **Inherits 0045's full block** on [0024](done/0024-products-core-crud-backend.md), [0029](done/0029-product-variants-backend.md), [0035](done/0035-shipping-carriers-backend.md), [0036](done/0036-shipping-rate-rules-backend.md) and [0038](0038-payment-methods-bank-transfer-backend.md) |
 | [0043](0043-customers-new-customer-notification-backend.md) — new-customer notification | **hard dependency** | Owns the `notifications` table and its `uuidMorphs('notifiable')` correction. This story adds **no** migration and cannot run a single Feature test without it |
-| [0041](0041-customers-crud-backend.md) — Customers CRUD | **transitive, via 0045** | `customer_name` is read off the order's `customer` relation; `Customer` must exist with a resolvable display name |
+| [0041](in-progress/0041-customers-crud-backend.md) — Customers CRUD | **transitive, via 0045** | `customer_name` is read off the order's `customer` relation; `Customer` must exist with a resolvable display name |
 | `orders.view` in the seeded catalog | **shipped** | `RolePermissionSeeder::MODULES` carries `orders` (verified) — no seeder change needed |
 | `App\Models\User` `Notifiable` + `SoftDeletes` | **shipped** (Epic 1) | Verified; no model change in this story |
 

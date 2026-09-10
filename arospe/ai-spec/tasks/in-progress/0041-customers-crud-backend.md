@@ -1,7 +1,7 @@
 # [0041] Customers CRUD backend
 
 ## Description
-Introduce the `customers` table and the write path behind PRD [§3.1 Customers](../../docs/PRD/PRD.md#31-customers):
+Introduce the `customers` table and the write path behind PRD [§3.1 Customers](../../../docs/PRD/PRD.md#31-customers):
 a store end-customer is an admin-managed record (name, email, contact info, shipping/billing
 address) that is **entirely separate from the Users/Roles/Permissions system** and can never
 authenticate into the dashboard. This story owns the greenfield UUID migration, the `Customer`
@@ -195,7 +195,7 @@ Feature: Customer records (backend)
 
 `database/migrations/<ts>_create_customers_table.php` — **new**. Shape confirmed by
 `database-expert` against this repo's greenfield-UUID precedent,
-[`create_sales_regions_table`](../../docs/database/migrations.md#uuid-primary-keys).
+[`create_sales_regions_table`](../../../docs/database/migrations.md#uuid-primary-keys).
 
 ```php
 public function up(): void
@@ -237,12 +237,12 @@ Non-negotiable properties of this file, each with its reasoning in
   country column, or on anything else (**D-10**).
 - Every string column is **length-capped**; a bare `string()` is `VARCHAR(255)` and this project
   treats that as a defect on short tokens — see
-  [migrations.md](../../docs/database/migrations.md#adding-a-column-to-an-existing-table).
+  [migrations.md](../../../docs/database/migrations.md#adding-a-column-to-an-existing-table).
 
 ### Model — `app/Models/Customer.php` (new)
 
 Scaffolded with `php artisan make:model Customer -m -f --no-interaction`. Follows the repo's
-attribute-based conventions ([base-standards.md](../../docs/conventions/base-standards.md#model-conventions)):
+attribute-based conventions ([base-standards.md](../../../docs/conventions/base-standards.md#model-conventions)):
 
 - `use HasFactory, HasUuids;` — UUID v7 per this project's Epic 2+ policy, `@property string $id`,
   and **no** `$keyType` / `$incrementing` properties (the trait already overrides both as methods).
@@ -265,10 +265,10 @@ addresses). Two named states for the cases the tests need repeatedly:
 
 ### Validation trait — `app/Concerns/CustomerValidationRules.php` (new)
 
-Mirrors [`UserValidationRules`](../../app/Concerns/UserValidationRules.php) /
-[`ProfileValidationRules`](../../app/Concerns/ProfileValidationRules.php) exactly — `<Noun>ValidationRules`
+Mirrors [`UserValidationRules`](../../../app/Concerns/UserValidationRules.php) /
+[`ProfileValidationRules`](../../../app/Concerns/ProfileValidationRules.php) exactly — `<Noun>ValidationRules`
 trait, `<noun>Rules()` methods returning rule arrays, flat and single-concern
-([naming.md](../../docs/conventions/naming.md#traits-and-their-methods)):
+([naming.md](../../../docs/conventions/naming.md#traits-and-their-methods)):
 
 ```php
 protected function customerRules(?string $customerId = null): array;   // the whole payload
@@ -301,18 +301,18 @@ free-text columns and `['nullable','string','size:2','regex:/^[A-Za-z]{2}$/']` f
 - `UpdateCustomer.php` — `__invoke(Customer $customer, array $attributes): Customer`
 
 Both are invokable, imperative-verb-phrase classes with no `Action` suffix, resolved from the
-container and never `new`-ed ([code-style.md](../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)).
+container and never `new`-ed ([code-style.md](../../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)).
 Each performs, in this order:
 
 1. `Gate::authorize('create', Customer::class)` / `Gate::authorize('update', $customer)` as its
    **first** statement — routed through `App\Policies\CustomerPolicy` (**D-12**), and living in the
    class that performs the operation rather than in a caller that does not exist yet
-   ([base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
+   ([base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
    Note `create` is asked **class-level** (no instance exists yet) while `update` takes the resolved
    `Customer`, exactly as `SalesRegionPolicy`'s own two abilities are asked.
 2. Normalise the email with `Str::lower()` **before** validating, so the rule and the write see the
-   same bytes — the shape [`CreateUser`](../../app/Actions/Users/CreateUser.php) and
-   [`UpdateUser`](../../app/Actions/Users/UpdateUser.php) already use (**D-5**).
+   same bytes — the shape [`CreateUser`](../../../app/Actions/Users/CreateUser.php) and
+   [`UpdateUser`](../../../app/Actions/Users/UpdateUser.php) already use (**D-5**).
 3. Validate the whole payload through the trait, passing `$customer->id` to
    `customerEmailRules()` on the update path so `->ignore()` cannot false-positive on the record's
    own address.
@@ -326,11 +326,11 @@ data, not an authentication identifier.
 
 Scaffolded with `php artisan make:policy CustomerPolicy --model=Customer --no-interaction`.
 Auto-discovered by name, with no `AuthServiceProvider`
-([base-standards.md](../../docs/conventions/base-standards.md#directory-structure)). Modelled
-directly on the shipped [`SalesRegionPolicy`](../../app/Policies/SalesRegionPolicy.php) (story 0017)
+([base-standards.md](../../../docs/conventions/base-standards.md#directory-structure)). Modelled
+directly on the shipped [`SalesRegionPolicy`](../../../app/Policies/SalesRegionPolicy.php) (story 0017)
 — flat, tier-free abilities delegating straight to `hasPermissionTo()`, with the permission names
 declared as constants on the class that owns the rule
-([naming.md](../../docs/conventions/naming.md#permission-names)):
+([naming.md](../../../docs/conventions/naming.md#permission-names)):
 
 ```php
 class CustomerPolicy
@@ -396,7 +396,7 @@ Four properties, each copied from the precedent rather than re-derived (**D-12**
 
 All Feature tests unless marked otherwise; new folders `tests/Feature/Customers/` and
 `tests/Unit/Models/` (the latter already exists). Per
-[testing/README.md](../../docs/testing/README.md), an authorization test at the action layer and an
+[testing/README.md](../../../docs/testing/README.md), an authorization test at the action layer and an
 HTTP one are not substitutes — this story ships no route, so **every** authorization test here is
 action-level, and 0044 owns the HTTP-level ones.
 
@@ -474,7 +474,7 @@ action-level, and 0044 owns the HTTP-level ones.
       by `UpdateCustomer`, and the row is unchanged.
 - [ ] Integration test: an administrator holding the relevant permission succeeds — the positive
       200-beside-the-403 case a mistyped ability would otherwise pass silently
-      ([authorization.md](../../docs/architecture/authorization.md)).
+      ([authorization.md](../../../docs/architecture/authorization.md)).
 - [ ] Integration test: a Super Admin holding no individual customers permission succeeds on both
       actions, via the `Gate::before` bypass.
 - [ ] Negative test: the permission strings `CustomerPolicy::VIEW_PERMISSION` /
@@ -542,9 +542,9 @@ cannot authenticate, hold a role, or hold a permission.
 
 ## Definition of Done
 - [ ] Tests written and green, plus the full existing suite (per
-      [contracts.md](../../docs/contracts.md)'s Full Test Suite Gate Rule) — run **unscoped**
+      [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule) — run **unscoped**
       (`php artisan test`, not `--filter`), per
-      [base-standards.md](../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
+      [base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
 - [ ] `vendor/bin/pint --format agent` clean (unscoped, **not** `--dirty`) and Larastan level 7
       passing.
 - [ ] Code reviewed (code-reviewer).
@@ -560,14 +560,14 @@ cannot authenticate, hold a role, or hold a permission.
       them rather than by an ordinal, which this doc set's own naming.md has already had to correct
       twice for going stale; `docs/database/schema.md`'s UUID-status Notes bullet ("beyond ADR 0001's
       original seven") gains `customers` as another table under
-      [ADR 0001 Amendment 1](../../docs/decisions/0001-uuid-primary-keys.md#amendment-1-2026-08-27--the-scope-is-the-policy-not-the-list-of-seven)'s
+      [ADR 0001 Amendment 1](../../../docs/decisions/0001-uuid-primary-keys.md#amendment-1-2026-08-27--the-scope-is-the-policy-not-the-list-of-seven)'s
       already-general policy — **no new ADR amendment is needed**, since Amendment 1 was written
       precisely so a later UUID table would not require one; only the running table count in that
       bullet needs incrementing.
 - [ ] **Hand-off notes recorded for 0042, 0043 and 0044** (real gaps, not formalities) — see
       [Dependencies](#dependencies). In particular 0042 must decide what a trashed customer's email
       does to `Rule::unique()`, which does **not** apply the soft-delete scope
-      ([schema.md](../../docs/database/schema.md#soft-deletes)).
+      ([schema.md](../../../docs/database/schema.md#soft-deletes)).
 - [ ] Acceptance criteria met.
 
 ## Documented functional decisions
@@ -607,15 +607,15 @@ decision rather than a rediscovery.
   "never SQLite"), so the suite already runs on the same MySQL connection production does, and
   there is no CI-vs-production engine mismatch to guard against here. The real reason to normalise
   in PHP is the connection's own collation: `email` sits under `utf8mb4_unicode_ci`
-  ([config/database.php](../../config/database.php)), which folds case *and* accent, so a bare
+  ([config/database.php](../../../config/database.php)), which folds case *and* accent, so a bare
   `UNIQUE` index alone would refuse a legitimate pair only as a raw `23000` `QueryException` with
-  no field-level message — the same reasoning [`product_categories.name`](../../docs/database/schema.md#product_categories)
-  and [`shipping_zones.name`](../../docs/database/schema.md#shipping_zones) already establish for
+  no field-level message — the same reasoning [`product_categories.name`](../../../docs/database/schema.md#product_categories)
+  and [`shipping_zones.name`](../../../docs/database/schema.md#shipping_zones) already establish for
   their own PHP-side normalised-comparison guards. Lowercasing at every write site — exactly what
   `App\Actions\Users\CreateUser` / `UpdateUser` / `RequestEmailChange` already do for `users.email`
   — is what makes creation refuse a mixed-case duplicate with a clean validation message rather than
   an unhandled database error, and the UNIQUE index sits behind it as the last-word race guard, the
-  same relationship [schema.md](../../docs/database/schema.md#users) documents for `pending_email`.
+  same relationship [schema.md](../../../docs/database/schema.md#users) documents for `pending_email`.
   A `23000` `QueryException` is converted to a `ValidationException` on `email`. **Not a model
   accessor/mutator**: the normalisation must happen before validation runs, and a mutator fires
   after it — which would let a rule and a write see different bytes.
@@ -646,7 +646,7 @@ decision rather than a rediscovery.
   customer may legitimately live in a country the tax catalog has not activated — refusing the
   address would block a record for a reason the administrator cannot fix from the Customers screen.
   Second, and decisively, `sales_regions.code` is **administrator-editable and nullable**
-  ([schema.md](../../docs/database/schema.md#sales_regions)), so validating against it would make
+  ([schema.md](../../../docs/database/schema.md#sales_regions)), so validating against it would make
   customer creation fail whenever an administrator blanks a code — a coupling with a silent,
   unrelated trigger. Stored uppercase for a canonical form; tightening to an FK against the catalog
   is an additive migration once Orders decides how a country maps to a region.
@@ -656,7 +656,7 @@ decision rather than a rediscovery.
   customer table is 10²–10⁴ rows, both a name lookup and a country filter resolve in a
   sub-millisecond scan, and each index costs a write on every insert and update. Verify the result
   with `php artisan db:table customers` after migrating, never by reading the migration
-  ([migrations.md](../../docs/database/migrations.md#an-fk-column-does-not-also-get-an-explicit-index-here)).
+  ([migrations.md](../../../docs/database/migrations.md#an-fk-column-does-not-also-get-an-explicit-index-here)).
 - **D-11 — Structured address columns, duplicated for shipping and billing; no JSON blob, and no
   implicit "billing = shipping" fallback.** Structured because a later tax-resolution story must
   read `country` **per row** to resolve a region, and a JSON blob is unindexable and unqueryable for
@@ -672,7 +672,7 @@ decision rather than a rediscovery.
   tier-free abilities.** The actions authorize through the policy (`Gate::authorize('create',
   Customer::class)` / `Gate::authorize('update', $customer)`), never against a raw permission string.
   **The `SalesRegion` precedent is what settles this, and it settles it the opposite way to a first
-  reading:** the shipped [`app/Policies/SalesRegionPolicy.php`](../../app/Policies/SalesRegionPolicy.php)
+  reading:** the shipped [`app/Policies/SalesRegionPolicy.php`](../../../app/Policies/SalesRegionPolicy.php)
   (story 0017) **is** a policy — a no-policy domain entity is not a pattern this repo has. What that
   file establishes is not "skip the policy" but **what a policy looks like when the entity has no
   privilege tier**: flat ability methods delegating straight to `hasPermissionTo()`, permission names
@@ -697,7 +697,7 @@ decision rather than a rediscovery.
 - **D-13 — Changing a customer's email needs no verification link.** `users` parks an email change
   in `pending_email` behind a signed link because that address is an **authentication identifier**;
   a customer's is contact data and the customer has no account to take over
-  ([assumption 16](../../docs/PRD/PRD.md#assumptions--confirmed-decisions): no customer portal this
+  ([assumption 16](../../../docs/PRD/PRD.md#assumptions--confirmed-decisions): no customer portal this
   phase). Building a pending-email flow here would ship a mailbox-confirmation UX for a mailbox that
   logs into nothing. Tested negatively (`Notification::fake()`), so the absence is asserted rather
   than assumed.
@@ -747,7 +747,7 @@ on, and it can start immediately. What it depends on is already shipped and veri
 - **0042 (soft delete)** inherits a table with no `deleted_at` and must add it in its own migration.
   **The trap it must decide on, flagged here rather than discovered there:** `Rule::unique()` does
   **not** apply the soft-delete scope (verified on `users` —
-  [schema.md](../../docs/database/schema.md#soft-deletes)), so a trashed customer's email stays
+  [schema.md](../../../docs/database/schema.md#soft-deletes)), so a trashed customer's email stays
   taken forever unless 0042 either makes the uniqueness check trashed-aware or obfuscates the
   address on delete the way `User::delete()` does. It must also delete this story's
   "`Customer` does not use `SoftDeletes`" structural assertion rather than work around it.
@@ -798,7 +798,7 @@ on, and it can start immediately. What it depends on is already shipped and veri
   than disappearing: `Gate::authorize('creat', Customer::class)` finds no policy method and denies
   everyone, and a typo inside `CustomerPolicy::CREATE_PERMISSION` denies everyone too. Either way,
   denial looks exactly like a correct refusal
-  ([authorization.md](../../docs/architecture/authorization.md)). Mitigated by requiring a **positive**
+  ([authorization.md](../../../docs/architecture/authorization.md)). Mitigated by requiring a **positive**
   success test beside every 403 test, plus the literal-ability assertion against the seeded catalog.
 - **R-5 — No customer seeder means no local data to click on** once 0044 lands. Accepted: customers
   are user data, and `DatabaseSeeder`'s `['local','testing']` fixture gate is where a demo dataset
@@ -833,19 +833,19 @@ the debate as having neither an action class nor a policy. The facilitator overr
 reasoning is recorded so it can be reversed knowingly.
 
 > **The premise was checked against the real tree afterwards and does not hold.** `SalesRegion` has
-> **both**: [`app/Policies/SalesRegionPolicy.php`](../../app/Policies/SalesRegionPolicy.php) and
+> **both**: [`app/Policies/SalesRegionPolicy.php`](../../../app/Policies/SalesRegionPolicy.php) and
 > `app/Actions/SalesRegions/` (`UpdateSalesRegion`, `SetSalesRegionActive`, `SetDefaultSalesRegion`),
 > all from story 0017. So the recommendation rested on a property the precedent does not have — which
 > strengthens the overrule below rather than weakening it, and independently overturns this story's
 > original **D-12**. Recorded rather than deleted, per the rule that a re-verified finding's
 > disposition is written down instead of quietly dropped
-> ([errors-log.md](../../docs/errors-log.md)).
+> ([errors-log.md](../../../docs/errors-log.md)).
 
 1. **Two behaviours in this story need a single named home, and a component is not one.** Email
    lowercasing must happen at *every* write site (**D-5**), and the `23000` → `ValidationException`
    conversion must too. With no action, "every write site" means 0044's component plus every future
    caller — precisely the drift
-   [base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+   [base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
    exists to prevent, and precisely the gap task 0008a had to close retroactively for `CreateUser` /
    `UpdateUser`.
 2. **`SalesRegion` is not a parallel case.** It has no create path at all — the catalog is seeded,
@@ -888,25 +888,25 @@ re-debate or a scope change) — story approved to proceed to Phase 3.**
   billing = 15, not 16. Corrected everywhere it appeared (model section, acceptance criteria, test
   plan).
 - **Minor — the DoD's ADR-reconciliation line described a still-open deferral that Amendment 1
-  already closed.** Corrected to cite [ADR 0001 Amendment 1](../../docs/decisions/0001-uuid-primary-keys.md#amendment-1-2026-08-27--the-scope-is-the-policy-not-the-list-of-seven)
+  already closed.** Corrected to cite [ADR 0001 Amendment 1](../../../docs/decisions/0001-uuid-primary-keys.md#amendment-1-2026-08-27--the-scope-is-the-policy-not-the-list-of-seven)
   directly — `customers` needs only a `schema.md` count bump, no new amendment.
 
 ## Provenance
 
-- **PRD source:** [§3.1 Customers](../../docs/PRD/PRD.md#31-customers), plus
-  [assumption 16](../../docs/PRD/PRD.md#assumptions--confirmed-decisions) (customers are backoffice-managed
-  and cannot log in) and [assumption 19](../../docs/PRD/PRD.md#assumptions--confirmed-decisions) (UUID PKs).
-- **Process:** [workflow.md](../../docs/workflow.md) Phase 1 — Three Amigos debate, run via the
+- **PRD source:** [§3.1 Customers](../../../docs/PRD/PRD.md#31-customers), plus
+  [assumption 16](../../../docs/PRD/PRD.md#assumptions--confirmed-decisions) (customers are backoffice-managed
+  and cannot log in) and [assumption 19](../../../docs/PRD/PRD.md#assumptions--confirmed-decisions) (UUID PKs).
+- **Process:** [workflow.md](../../../docs/workflow.md) Phase 1 — Three Amigos debate, run via the
   `three-amigos-debate` skill. Contributions from `backend-expert`, `backend-qa` and
   `database-expert`, composed by `product-owner` as facilitator.
 - **Gherkin conventions:** every scenario opens with a named business-role actor and carries exactly
   one `When`, per
-  [gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 —
+  [gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 —
   mandatory across all Gherkin in this project, per the incident recorded in
-  [errors-log.md](../../docs/errors-log.md).
+  [errors-log.md](../../../docs/errors-log.md).
 - **Stage:** `new`. Moves to `ai-spec/tasks/in-progress/` at the start of Phase 3, and to
   `ai-spec/tasks/done/` at Phase 7 — both moves change this file's directory depth, so every
   relative link above must be re-resolved on each move (both directions), per
-  [workflow.md](../../docs/workflow.md#link-integrity-check-on-every-stage-move).
+  [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move).
 - **Epic 3 decomposition:** story 1 of 15. Siblings referenced by number only (0042 soft delete,
   0043 notification, 0044 UI, 0047 order history) because their files may not exist yet.

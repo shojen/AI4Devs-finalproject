@@ -5,7 +5,7 @@ Build the customer **detail** screen of PRD [§3.1 Customers](../../docs/PRD/PRD
 permission-gated `customers.show` route, the `App\Livewire\Customers\Show` component behind it, and the
 Blade/Flux view that renders a compact read-only identity header plus that customer's **read-only order
 history**. It also adds the `App\Models\Customer::orders()` relation that stories
-[0041](0041-customers-crud-backend.md) and [0045](0045-orders-core-crud-backend.md) both deliberately
+[0041](in-progress/0041-customers-crud-backend.md) and [0045](0045-orders-core-crud-backend.md) both deliberately
 omitted and named this story as the owner of, and the "view detail" row affordance that
 [0044](0044-customers-list-create-edit-ui.md)'s list does not yet carry — without which the screen is
 unreachable.
@@ -748,7 +748,7 @@ names the customer. Reversible in one line if the product asks.
 
 | Depends on | State | Verified how |
 | --- | --- | --- |
-| `customers` table + `App\Models\Customer` | story [0041](0041-customers-crud-backend.md) — **hard dependency** | the relation is declared on that model; the header reads its `name`/`email`/`phone` |
+| `customers` table + `App\Models\Customer` | story [0041](in-progress/0041-customers-crud-backend.md) — **hard dependency** | the relation is declared on that model; the header reads its `name`/`email`/`phone` |
 | `customers.deleted_at` (soft delete) | story [0042](0042-customers-soft-delete-backend.md) — **hard dependency** | the 404-for-a-trashed-customer test asserts behaviour that only exists once `SoftDeletes` is on the model |
 | The Customers screen: route file, list view, lang files, registry entry | story [0044](0044-customers-list-create-edit-ui.md) — **hard dependency**, and this story **edits three of its files** (**D-6**) | `routes/customers.php`, `resources/views/livewire/customers.blade.php`, `lang/{en,es}/customers.php` |
 | `orders` table, `App\Models\Order`, `App\Enums\OrderStatus`, `orders.statuses.*` lang keys | story [0045](0045-orders-core-crud-backend.md) — **hard dependency, itself ⛔ blocked** | every order row column, the status badge label, and the `hasMany` target |

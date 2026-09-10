@@ -18,9 +18,10 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
-As of this snapshot, `ai-spec/tasks/in-progress/` does not exist (no story is currently checked
-out into that stage), so every task is either `done/` (closed, merged) or still sitting directly
-in `ai-spec/tasks/` (not started). One additional file, `ci-database-connection-gap.md`, lives
+As of this snapshot, `ai-spec/tasks/in-progress/` holds one file: `0041-customers-crud-backend.md`,
+checked out for Phase 3 (claimed via `tasks-status.json`, see the legend below). Every other task
+is either `done/` (closed, merged) or still sitting directly in `ai-spec/tasks/` (not started). One
+additional file, `ci-database-connection-gap.md`, lives
 outside the `00XX-` numbering — it is an infrastructure fix (not a PRD-derived user story) and is
 already marked `Status: fixed and fully documented` inside its own file, so it is listed for
 completeness but excluded from the dependency graph and from the parallelization analysis below.
@@ -307,7 +308,8 @@ flowchart LR
     P0068 --> P0079
 
     class P0039,P0042,P0043,P0044,P0045,P0046,P0047,P0048,P0049,P0050,P0051,P0052,P0053,P0054,P0055,P0056,P0057,P0060,P0061,P0062,P0063,P0064,P0065,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0038,P0041,P0058,P0059,P0068 ready;
+    class P0038,P0058,P0059,P0068 ready;
+    class P0041 claimed;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
@@ -320,13 +322,16 @@ yellow (`pending`) = still blocked on at least one open pending dependency.
 ### Pending tasks that are independent of each other and safe to parallelize
 
 These are the tasks whose **entire dependency chain is already `done/`** — nothing pending blocks
-them — the five green `ready` nodes in the diagram above:
+them — the four green `ready` nodes in the diagram above, plus 0041 (now blue `claimed`, checked
+out into `in-progress/` for Phase 3 — see below):
 
 - **0038 — Payment methods (backend).** Depends only on `done/0002`. A brand-new domain
   (`payment_methods` table, its own model/policy/routes) with no overlap with any other pending
   story. Ready now.
 - **0041 — Customers CRUD (backend).** "This story depends on no other Epic 3 story… it can start
-  immediately." A brand-new domain (`customers` table). Ready now.
+  immediately." A brand-new domain (`customers` table). **Claimed** (`worktree-0041-customers-crud-backend`,
+  per [`tasks-status.json`](tasks-status.json)) and moved to `in-progress/` — no longer available to
+  pick up.
 - **0058 — Blog categories (backend).** "None inside Epic 4 for its schema, model, actions or
   policy… the foundational story the other blog stories build on." Ready now.
 - **0059 — Blog tags (backend).** No hard dependency on 0058 in either direction (both depend only
