@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Shipping\ResolveApplicableShippingRate;
 use Spatie\Permission\Models\Role;
 
 // Story 0008 (re-audit F1): App\Models\Role is the only role model class application code may
@@ -113,3 +114,15 @@ arch('App\Livewire\Products does not reference any blog taxonomy namespace')
 arch('App\Models\ProductVariant does not reference any blog taxonomy namespace')
     ->expect('App\Models\ProductVariant')
     ->not->toUse('App\Models\Blog');
+
+// Story 0037 (D-9): App\Livewire\Shipping\Index must never reference the rate-precedence
+// resolver -- 0036 built it for PRD Epic 3's checkout consumption, and nothing on this admin
+// screen quotes a rate for a destination. Normally this project rejects "assert the absence of a
+// thing nobody proposed" tests (0034 D-1 rejects exactly that shape for its own screen); this one
+// is the narrow, named exception, because ResolveApplicableShippingRate is a real,
+// directly-importable class in the same namespace as every action this screen DOES call, and
+// 0036's own D-13 invites "a future admin screen [to] surface coverage gaps from the same shape"
+// -- a concrete, named temptation this line fences off.
+arch('App\Livewire\Shipping\Index does not use the rate-precedence resolver')
+    ->expect('App\Livewire\Shipping\Index')
+    ->not->toUse(ResolveApplicableShippingRate::class);

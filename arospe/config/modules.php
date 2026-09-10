@@ -207,5 +207,21 @@ return [
             'current_when' => 'shipping.zones.*',
             'permissions' => ['shipping.view'],
         ],
+        // Story 0037 -- the Shipping screen (carrier cards + grouped rate table),
+        // completing the hand-off routes.md's own `shipping.index` subsection
+        // names ("the paired frontend story adds items.shipping_carriers ...
+        // alongside items.shipping_zones in the same store_settings cluster").
+        // 'current_when' is the EXACT route name, never 'shipping.*' -- that
+        // wildcard would also match shipping.zones.index and wrongly highlight
+        // this item while on the zones screen (and vice versa).
+        'shipping_carriers' => [
+            'group' => null,
+            'cluster' => 'store_settings',
+            'label' => 'navigation.items.shipping_carriers',
+            'icon' => 'currency-euro',
+            'route' => 'shipping.index',
+            'current_when' => 'shipping.index',
+            'permissions' => ['shipping.view'],
+        ],
     ],
 ];

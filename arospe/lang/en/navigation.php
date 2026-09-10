@@ -32,6 +32,7 @@ return [
         'products' => 'Products',
         'product_attribute_types' => 'Attribute types',
         'shipping_zones' => 'Shipping zones',
+        'shipping_carriers' => 'Carriers & rates',
     ],
 
 ];
