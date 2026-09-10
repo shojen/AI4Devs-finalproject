@@ -415,7 +415,7 @@ repo must follow — always with a real code example pulled from this repository
   `attempts` on a nested transaction is inert, so the deadlock window the retries were added for is
   still open on `Editor::save()`, and R-1 is precisely why moving `attempts` up there is not the fix.
 
-- [Livewire error-bag persistence](livewire-error-bag-persistence.md) — the **sixteenth** page: how long
+- [Livewire error-bag persistence](livewire-error-bag-persistence.md) — the **fifteenth** page: how long
   a `ValidationException` message lives inside a Livewire component, and the obligation that comes with
   making one live longer. `SupportValidation::dehydrate()` filters the persisted error bag through
   `Utils::hasProperty()`, so an error keyed on an undeclared property renders once and is then silently
