@@ -34,6 +34,7 @@ return [
         'product_attribute_types' => 'Tipos de atributos',
         'shipping_zones' => 'Zonas de envío',
         'shipping_carriers' => 'Transportistas y tarifas',
+        'payment_methods' => 'Métodos de pago',
     ],
 
 ];
