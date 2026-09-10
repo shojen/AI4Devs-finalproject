@@ -7,7 +7,6 @@ use App\Concerns\CustomerValidationRules;
 use App\Models\Customer;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class UpdateCustomer
@@ -43,7 +42,7 @@ class UpdateCustomer
             targetId: $customer->id,
         );
 
-        $attributes = $this->normalizeAttributes($attributes);
+        $attributes = $this->normalizeCustomerAttributes($attributes);
 
         $validated = Validator::make($attributes, $this->customerRules($customer->id))->validate();
 
@@ -62,36 +61,5 @@ class UpdateCustomer
         }
 
         return $customer;
-    }
-
-    /**
-     * Lowercase the email, blank-to-null every optional column, and
-     * uppercase the two country codes BEFORE validation runs (D-5, D-9) --
-     * see CreateCustomer's identical helper and
-     * App\Concerns\CustomerValidationRules::OPTIONAL_FIELDS for why the
-     * blank-to-null pass must run before the uppercasing pass.
-     *
-     * @param  array<string, mixed>  $attributes
-     * @return array<string, mixed>
-     */
-    private function normalizeAttributes(array $attributes): array
-    {
-        if (array_key_exists('email', $attributes) && is_string($attributes['email'])) {
-            $attributes['email'] = Str::lower($attributes['email']);
-        }
-
-        foreach (self::OPTIONAL_FIELDS as $field) {
-            if (array_key_exists($field, $attributes) && is_string($attributes[$field]) && trim($attributes[$field]) === '') {
-                $attributes[$field] = null;
-            }
-        }
-
-        foreach (['shipping_country', 'billing_country'] as $countryField) {
-            if (array_key_exists($countryField, $attributes) && is_string($attributes[$countryField])) {
-                $attributes[$countryField] = Str::upper($attributes[$countryField]);
-            }
-        }
-
-        return $attributes;
     }
 }

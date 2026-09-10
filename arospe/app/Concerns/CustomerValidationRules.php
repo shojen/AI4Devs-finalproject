@@ -4,6 +4,7 @@ namespace App\Concerns;
 
 use App\Models\Customer;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 /**
@@ -25,8 +26,17 @@ trait CustomerValidationRules
      * (`string`/`size`/`regex`/`max` included) once a field's submitted value is a blank string --
      * see docs/errors-log.md's "Livewire skips ConvertEmptyStringsToNull ... and Laravel skips
      * non-implicit rules for a blank string" entry for the exact mechanism. So normalising a blank
-     * optional field to a real `null` must happen in the action, BEFORE `Validator::make()` ever
-     * runs -- it cannot be delegated to a validation rule.
+     * optional field to a real `null` must happen BEFORE `Validator::make()` ever runs -- it cannot
+     * be delegated to a validation rule. See normalizeCustomerAttributes() below, this list's single
+     * consumer.
+     *
+     * A trait constant cannot be read as `CustomerValidationRules::OPTIONAL_FIELDS` directly -- PHP
+     * throws "Cannot access trait constant ... directly" -- only through a class that `use`s the
+     * trait, e.g. `App\Actions\Customers\CreateCustomer::OPTIONAL_FIELDS` (both
+     * `App\Actions\Customers\CreateCustomer` and `UpdateCustomer` compose this trait, so either
+     * class name resolves the same constant). See
+     * App\Actions\Media\GenerateImageConversions::class's own docblock for the identical note
+     * against MediaValidationRules::MAX_DIMENSION.
      *
      * @var array<int, string>
      */
@@ -118,7 +128,7 @@ trait CustomerValidationRules
             // D-9: ISO 3166-1 alpha-2 shape only, never membership in the
             // seeded sales_regions catalog. No 'filled' rule here (Phase 4
             // audit F-1): a blank submitted value is normalised to a real
-            // `null` by CreateCustomer/UpdateCustomer's normalizeAttributes()
+            // `null` by this trait's own normalizeCustomerAttributes()
             // BEFORE this rule set ever runs -- see OPTIONAL_FIELDS above --
             // so by the time this rule sees the field it has already been
             // reduced to either `null` (accepted, 'nullable' short-circuits)
@@ -129,5 +139,60 @@ trait CustomerValidationRules
             // only" flow.
             "{$prefix}_country" => ['nullable', 'string', 'size:2', 'regex:/^[A-Za-z]{2}$/'],
         ];
+    }
+
+    /**
+     * Lowercase the email, blank-to-null every OPTIONAL_FIELDS column (trimming whatever string
+     * survives), and uppercase the two country codes -- all BEFORE validation runs (D-5, D-9),
+     * never as a model mutator (a mutator fires after save() and would let the uniqueness rule and
+     * the write see different bytes). Shared by `App\Actions\Customers\CreateCustomer` and
+     * `UpdateCustomer` (Phase 5 code-review finding F-6) rather than duplicated verbatim in each --
+     * see docs/conventions/base-standards.md's "Move the rule, never copy it" rule.
+     *
+     * The blank-to-null pass must run before the country-uppercasing pass below it: an
+     * un-trimmed/un-nulled '  es  ' would fail `size:2` with a confusing message rather than
+     * either clearing to `null` or normalising to `'ES'`, and `'nullable'` only short-circuits the
+     * shape rules for a genuine `null` -- see OPTIONAL_FIELDS above.
+     *
+     * The blank-to-null pass also TRIMS whatever non-blank string survives (Phase 5 code-review
+     * finding F-5): every OPTIONAL_FIELDS column is `nullable`+`string`, never `nullable`+`trim`,
+     * so a submitted `'  Madrid  '` would otherwise persist with its surrounding whitespace intact,
+     * and a submitted `' ES '` would reach the country-uppercase pass un-trimmed and fail `size:2`
+     * for a reason invisible in the rendered message.
+     *
+     * The two country columns deliberately use `strtoupper()`, never `Str::upper()` (Phase 5
+     * code-review finding F-4): `Str::upper()` performs Unicode FULL case mapping via
+     * `mb_strtoupper()`, under which the single German character `'ß'` -- one character, so it
+     * fails `size:2` on its own -- maps to the TWO-character string `'SS'` BEFORE validation ever
+     * sees it (this method runs first), so the value validation actually checks is `'SS'`, a real
+     * seeded ISO 3166-1 alpha-2 code (South Sudan) the actor never typed, and it passes `size:2`
+     * and the `[A-Za-z]{2}` shape regex cleanly. `strtoupper()` is byte-wise and ASCII-only, so
+     * `'ß'` (outside `A-Z`/`a-z`) is left untouched and the one-character value is correctly
+     * rejected by `size:2` instead of silently expanding into a different country. No other
+     * OPTIONAL_FIELDS column is uppercased.
+     *
+     * @param  array<string, mixed>  $attributes
+     * @return array<string, mixed>
+     */
+    protected function normalizeCustomerAttributes(array $attributes): array
+    {
+        if (array_key_exists('email', $attributes) && is_string($attributes['email'])) {
+            $attributes['email'] = Str::lower($attributes['email']);
+        }
+
+        foreach (self::OPTIONAL_FIELDS as $field) {
+            if (array_key_exists($field, $attributes) && is_string($attributes[$field])) {
+                $trimmed = trim($attributes[$field]);
+                $attributes[$field] = $trimmed === '' ? null : $trimmed;
+            }
+        }
+
+        foreach (['shipping_country', 'billing_country'] as $countryField) {
+            if (array_key_exists($countryField, $attributes) && is_string($attributes[$countryField])) {
+                $attributes[$countryField] = strtoupper($attributes[$countryField]);
+            }
+        }
+
+        return $attributes;
     }
 }
