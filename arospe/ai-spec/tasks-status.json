@@ -3,24 +3,6 @@
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
     {
-      "id": "0037",
-      "slug": "0037-shipping-carriers-and-rates-ui",
-      "title": "Shipping carriers and rates — UI (carrier cards, grouped rate table, rate modal)",
-      "depends_on": [],
-      "status": "claimed",
-      "claimed_by": "external-session (reported by user, label not specified)",
-      "claimed_at": "2026-09-10T00:00:00Z",
-      "touches": [
-        "routes/shipping.php",
-        "app/Livewire/Shipping/Index.php",
-        "resources/views/livewire/shipping.blade.php",
-        "app/Actions/Shipping/ListShippingRatesByCarrier.php",
-        "lang/en/shipping.php",
-        "lang/es/shipping.php"
-      ],
-      "conflict_risk_with": []
-    },
-    {
       "id": "0038",
       "slug": "0038-payment-methods-bank-transfer-backend",
       "title": "Payment methods — bank transfer with a validated IBAN (backend)",
