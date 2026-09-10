@@ -79,13 +79,38 @@ trait ShippingRateValidationRules
      * Get the validation rules used to validate a shipping rate's maximum
      * weight (kg) -- nullable, meaning "and above" (D-4).
      *
+     * Corrected 2026-09-10 (story 0037, D-2) -- the inline comment below
+     * previously read: "'nullable' FIRST and it short-circuits: an absent
+     * max means 'and above' (D-4), so gte must not run against a null."
+     * That is true only for a genuine PHP `null` -- a caller of THIS trait
+     * alone gets no protection against a raw blank string: `''` never
+     * reaches `Validator::isNotNullIfMarkedAsNullable()`'s `is_null()`
+     * check at all, because Laravel's own `isValidatable()` tests
+     * `presentOrRuleIsImplicit()` FIRST and, for a blank string, skips
+     * every rule below that is not itself implicit (`numeric`, `decimal`,
+     * `min`, `max`, `gte` all qualify) -- a coincidentally identical
+     * outcome reached through a DIFFERENT mechanism than "nullable short-
+     * circuits", verified against installed vendor source
+     * (`Validator.php:819,839,886`). Story 0037's own D-2 is what found
+     * this: Livewire's `/livewire/update` requests skip
+     * `ConvertEmptyStringsToNull` entirely, so a blank `max_weight_kg`
+     * field never becomes `null` on its own -- the caller (this trait's
+     * one Livewire consumer, `App\Livewire\Shipping\Index::saveRate()`)
+     * MUST normalise a blank string to a real `null` itself, before this
+     * rule set ever runs, or the value reaches `DECIMAL(8,3)` as a raw
+     * `''` (a 500 under MySQL's strict mode, silently accepted only on a
+     * looser engine -- see docs/errors-log.md's D-2 entry). This trait's
+     * own `'nullable'` rule is correct and unchanged; only the comment's
+     * claim about WHY it protects a blank input has been corrected.
+     *
      * @return array<int, ValidationRule|array<mixed>|string>
      */
     protected function maxWeightRules(): array
     {
         return [
-            // 'nullable' FIRST and it short-circuits: an absent max means "and
-            // above" (D-4), so gte must not run against a null.
+            // 'nullable' FIRST: a genuine null max means "and above" (D-4),
+            // so gte must not run against it. This does NOT by itself
+            // protect a raw blank string -- see this method's own docblock.
             'nullable',
             'numeric',
             // 'decimal:0,3' not a bare 'numeric': Validator::validateDecimal()
