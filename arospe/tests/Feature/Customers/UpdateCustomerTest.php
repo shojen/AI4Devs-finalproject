@@ -142,8 +142,13 @@ test('a rejected edit leaves every column of the stored row unchanged', function
 // Editing — blank-to-null normalisation (D-9, Phase 4 audit F-1/F-2): starting from a customer
 // with every optional column already populated, submitting a single one of them back as an
 // explicit '' must clear it to a real database null rather than persist a literal empty string.
-// One dataset entry per App\Concerns\CustomerValidationRules::OPTIONAL_FIELDS member (via
-// UpdateCustomer::OPTIONAL_FIELDS), matching CreateCustomerTest.php's identical dataset.
+// One dataset entry per App\Actions\Customers\UpdateCustomer::OPTIONAL_FIELDS member (the trait
+// constant read through the composing class), matching CreateCustomerTest.php's identical dataset.
+//
+// Note this dataset is DERIVED FROM OPTIONAL_FIELDS itself, so it can never catch OPTIONAL_FIELDS
+// drifting out of sync with customerRules()'s own nullable keys -- see
+// tests/Unit/Concerns/CustomerValidationRulesTest.php's dedicated drift guard (Phase 5 code-review
+// finding F-3), and CreateCustomerTest.php's identical note.
 // =====================================================================
 
 test('an optional column submitted as a blank string is cleared to null on update, starting from a populated value', function (string $field) {

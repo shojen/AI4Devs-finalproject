@@ -312,15 +312,27 @@ test('the shipping/billing country accepts a two-letter code and rejects anythin
     'a letter plus a digit is rejected' => ['E1', false],
     'the upper-case alpha-2 code is accepted' => ['ES', true],
     'the lower-case alpha-2 code is accepted, stored canonically upper-case' => ['es', true],
+    // Phase 5 code-review finding F-4: Str::upper()'s full Unicode case mapping turns the single
+    // character 'ss-sharp' (U+00DF) into the TWO-character string 'SS' -- a real seeded country
+    // code (South Sudan) the actor never typed -- which would then pass size:2/the alpha-2 shape
+    // regex. The action normalises country codes with strtoupper() (byte-wise, ASCII-only)
+    // specifically so this single character is left untouched and rejected cleanly by size:2.
+    'a single character that Unicode-uppercases to two ASCII letters is rejected, never silently expanded into a real country code' => ["\u{00DF}", false],
 ]);
 
 // =====================================================================
 // Creation — blank-to-null normalisation (D-9, Phase 4 audit F-1/F-2): every one of the thirteen
 // optional columns, submitted as an explicit '' (the shape a real form submits for an untouched
 // optional field), must persist as a real database null rather than a literal empty string. One
-// dataset entry per App\Concerns\CustomerValidationRules::OPTIONAL_FIELDS member, so a future
-// column added to that list without a matching case here is caught by an under-count rather than
-// silently skipped.
+// dataset entry per App\Actions\Customers\CreateCustomer::OPTIONAL_FIELDS member (the trait
+// constant read through the composing class, per its own docblock).
+//
+// Note this dataset is DERIVED FROM OPTIONAL_FIELDS itself, so it can never catch OPTIONAL_FIELDS
+// drifting out of sync with customerRules()'s own nullable keys -- a member added to one list
+// without the other would simply never be exercised here rather than fail loudly. That drift guard
+// is a separate, dedicated test: see
+// tests/Unit/Concerns/CustomerValidationRulesTest.php's "OPTIONAL_FIELDS covers exactly the
+// nullable keys of customerRules()" case (Phase 5 code-review finding F-3).
 // =====================================================================
 
 test('an optional column submitted as a blank string persists as null on create', function (string $field) {
@@ -333,6 +345,36 @@ test('an optional column submitted as a blank string persists as null on create'
 
     expect($customer->fresh()->{$field})->toBeNull();
 })->with(CreateCustomer::OPTIONAL_FIELDS);
+
+// =====================================================================
+// Creation — surrounding-whitespace trimming (Phase 5 code-review finding F-5): the blank-to-null
+// pass above only ever checked whether a submitted string, once trimmed, was empty -- it never
+// persisted the TRIMMED value itself, so a non-blank string with surrounding whitespace kept its
+// whitespace verbatim in the database. normalizeCustomerAttributes() now trims every surviving
+// non-blank OPTIONAL_FIELDS value before persistence.
+// =====================================================================
+
+test('an optional column with surrounding whitespace is trimmed before persisting', function () {
+    $customer = app(CreateCustomer::class)(customerFullPayload([
+        'email' => 'trim-'.Str::random(6).'@example.com',
+        'shipping_city' => '  Madrid  ',
+    ]));
+
+    expect($customer->fresh()->shipping_city)->toBe('Madrid');
+});
+
+test('a country code with surrounding whitespace is trimmed before the uppercase pass runs', function () {
+    // Trimming must run BEFORE strtoupper(): an un-trimmed ' es ' has mb_strlen 4 and would fail
+    // size:2 with a confusing message, rather than either clearing to null or normalising to 'ES'.
+    $customer = app(CreateCustomer::class)(customerFullPayload([
+        'email' => 'trim-country-'.Str::random(6).'@example.com',
+        'shipping_country' => ' es ',
+        'billing_country' => ' es ',
+    ]));
+
+    expect($customer->fresh()->shipping_country)->toBe('ES')
+        ->and($customer->fresh()->billing_country)->toBe('ES');
+});
 
 // =====================================================================
 // Duplicate email
