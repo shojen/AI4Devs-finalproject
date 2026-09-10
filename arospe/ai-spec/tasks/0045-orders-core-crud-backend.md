@@ -16,7 +16,7 @@ Blade markup, no notification, no status transitions, no refunds, no tax resolut
 > stories [0024](done/0024-products-core-crud-backend.md) (Products), [0029](done/0029-product-variants-backend.md)
 > (Product Variants), [0035](done/0035-shipping-carriers-backend.md) (Shipping Carriers),
 > [0036](done/0036-shipping-rate-rules-backend.md) (Shipping Rates) and
-> [0038](0038-payment-methods-bank-transfer-backend.md) (Payment Methods) are all `done`.**
+> [0038](in-progress/0038-payment-methods-bank-transfer-backend.md) (Payment Methods) are all `done`.**
 >
 > `orders` and `order_items` carry foreign keys into `products`, `product_variants`, `shipping_rates`
 > and `payment_methods` — four tables that **do not exist in code yet**. Every FK in this repository,
@@ -968,7 +968,7 @@ rediscovery.
 | [0029](done/0029-product-variants-backend.md) — Product Variants | `product_variants` table, `ProductVariantFactory` | `order_items.product_variant_id`; the variant line-item scenario |
 | [0035](done/0035-shipping-carriers-backend.md) — Shipping Carriers | `shipping_carriers` | transitively, via `shipping_rates` |
 | [0036](done/0036-shipping-rate-rules-backend.md) — Shipping Rates | `shipping_rates` table | `orders.shipping_rate_id` |
-| [0038](0038-payment-methods-bank-transfer-backend.md) — Payment Methods | `payment_methods` table, the seeded bank-transfer row | `orders.payment_method_id` (NOT NULL — no order can be created without it) |
+| [0038](in-progress/0038-payment-methods-bank-transfer-backend.md) — Payment Methods | `payment_methods` table, the seeded bank-transfer row | `orders.payment_method_id` (NOT NULL — no order can be created without it) |
 
 The reasoning is [**DR-1**](#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns).
 **If any of the five is missing when Phase 3 starts, the story is not ready.** Do not stub a table, stub

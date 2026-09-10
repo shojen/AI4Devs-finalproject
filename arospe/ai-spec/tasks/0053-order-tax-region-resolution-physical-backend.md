@@ -28,7 +28,7 @@ returns. No route, no Livewire component, no Blade markup, no migration and no n
 > stories [0024](done/0024-products-core-crud-backend.md) (Products),
 > [0029](done/0029-product-variants-backend.md) (Product Variants),
 > [0035](done/0035-shipping-carriers-backend.md), [0036](done/0036-shipping-rate-rules-backend.md) and
-> [0038](0038-payment-methods-bank-transfer-backend.md).
+> [0038](in-progress/0038-payment-methods-bank-transfer-backend.md).
 >
 > This story writes to `orders.sales_region_id`, `orders.tax_rate`, `orders.tax_amount`, `orders.total`
 > and `orders.flagged_for_review`, and reads `orders.subtotal`, `orders.shipping_amount`,

@@ -18,9 +18,10 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
-As of this snapshot, `ai-spec/tasks/in-progress/` does not exist (no story is currently checked
-out into that stage), so every task is either `done/` (closed, merged) or still sitting directly
-in `ai-spec/tasks/` (not started). One additional file, `ci-database-connection-gap.md`, lives
+As of this snapshot, `ai-spec/tasks/in-progress/` holds one file — `0038` (Payment methods
+backend), checked out and claimed per [`tasks-status.json`](tasks-status.json). Every other task
+is either `done/` (closed, merged) or still sitting directly in `ai-spec/tasks/` (not started).
+One additional file, `ci-database-connection-gap.md`, lives
 outside the `00XX-` numbering — it is an infrastructure fix (not a PRD-derived user story) and is
 already marked `Status: fixed and fully documented` inside its own file, so it is listed for
 completeness but excluded from the dependency graph and from the parallelization analysis below.
@@ -307,7 +308,8 @@ flowchart LR
     P0068 --> P0079
 
     class P0039,P0042,P0043,P0044,P0045,P0046,P0047,P0048,P0049,P0050,P0051,P0052,P0053,P0054,P0055,P0056,P0057,P0060,P0061,P0062,P0063,P0064,P0065,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0038,P0041,P0058,P0059,P0068 ready;
+    class P0041,P0058,P0059,P0068 ready;
+    class P0038 claimed;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue

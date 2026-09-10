@@ -17,7 +17,7 @@ no Livewire component, no Blade markup, no status transition, no refund, no tax 
 > [0029](done/0029-product-variants-backend.md) (Product Variants),
 > [0035](done/0035-shipping-carriers-backend.md) (Shipping Carriers),
 > [0036](done/0036-shipping-rate-rules-backend.md) (Shipping Rates) and
-> [0038](0038-payment-methods-bank-transfer-backend.md) (Payment Methods).
+> [0038](in-progress/0038-payment-methods-bank-transfer-backend.md) (Payment Methods).
 >
 > This story writes to `orders` and `order_items`, resolves a **live product/variant** when a line item
 > is added, and reads `orders.status` — none of which exist in code. **The block is inherited whole

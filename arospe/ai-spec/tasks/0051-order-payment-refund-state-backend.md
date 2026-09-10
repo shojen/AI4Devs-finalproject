@@ -16,7 +16,7 @@ markup, no auto-cancel.
 > [0045](0045-orders-core-crud-backend.md) is `done`** — and 0045 is itself blocked on five Epic 2
 > stories ([0024](done/0024-products-core-crud-backend.md), [0029](done/0029-product-variants-backend.md),
 > [0035](done/0035-shipping-carriers-backend.md), [0036](done/0036-shipping-rate-rules-backend.md),
-> [0038](0038-payment-methods-bank-transfer-backend.md)).
+> [0038](in-progress/0038-payment-methods-bank-transfer-backend.md)).
 >
 > Every column this story reads — `orders.payment_status`, `order_items.quantity`,
 > `order_items.unit_price`, `order_items.refunded_quantity` — is created by 0045. `refunds.order_item_id`
