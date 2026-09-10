@@ -784,6 +784,17 @@ on, and it can start immediately. What it depends on is already shipped and veri
   `Gate::allows('update', $customer)` / `Gate::allows('delete', $customer)` so a hint asks the same
   question as the call it guards, keeps the id fed to `Rule::unique()->ignore()` server-authoritative
   (`#[Locked]` / re-read from the model), and adds `lang/{en,es}/customers.php`.
+  **Real gap found and recorded during this story's own Phase 6 docs pass (M-1):** `App\Concerns\CustomerValidationRules`
+  shipped from this story with two members beyond what this file's own trait spec originally listed —
+  `public const OPTIONAL_FIELDS` and `protected function normalizeCustomerAttributes(array $attributes): array`
+  (both added at Phase 4/5, closing a security-audit finding on blank-optional-field handling — see the
+  amended **D-9** above). **0044 must call `normalizeCustomerAttributes()` on its submitted payload
+  before validating**, exactly as `CreateCustomer`/`UpdateCustomer` both already do, or its component-level
+  validation will silently diverge from the actions' own (a blank optional field, or an un-trimmed/
+  lowercase-typed country code, would be accepted or rejected differently by the two layers). This note
+  has been added to 0044's own task file in the same pass, at its "Validation reuses 0041's
+  `CustomerValidationRules`" bullet — this hand-off is not merely a reminder for a future reader of this
+  file, it is a correction already applied to 0044's plan.
 - **Orders (0045+)** adds `orders.customer_id` as a `foreignUuid` against this table. The delete
   behaviour it chooses is constrained by PRD §3.1's "orders are never orphaned" — which is what
   0042's soft delete exists to satisfy, so Orders must **not** add a `cascadeOnDelete`.
@@ -909,6 +920,47 @@ re-debate or a scope change) — story approved to proceed to Phase 3.**
 - **Minor — the DoD's ADR-reconciliation line described a still-open deferral that Amendment 1
   already closed.** Corrected to cite [ADR 0001 Amendment 1](../../../docs/decisions/0001-uuid-primary-keys.md#amendment-1-2026-08-27--the-scope-is-the-policy-not-the-list-of-seven)
   directly — `customers` needs only a `schema.md` count bump, no new amendment.
+
+## Phase 4 — Security audit record
+
+`appsec-auditor` audited the Phase 3 implementation; `code-reviewer` followed with two rounds of its
+own findings against the audited code. Per [contracts.md](../../../docs/contracts.md)'s doc-growth-management
+rule, this is a summary of disposition, not the full finding text — see the commits cited for the
+complete before/after.
+
+- **F-1/F-2 (Phase 4 security audit, `appsec-auditor`)** — a real contradiction between this story's
+  own Gherkin (which listed a blank country `""` among the *rejected* examples) and **D-3**/the
+  acceptance criteria (which require every optional column, country columns included, to persist as
+  `null` when left blank). The shipped `filled` rule on `*_country` rejected exactly the input D-3
+  exists to accept. Resolved as the audit's own recommended option A: every one of the thirteen
+  optional columns — not only the two country ones — is normalised blank-to-`null` **before**
+  `Validator::make()` ever runs, via the new `App\Concerns\CustomerValidationRules::normalizeCustomerAttributes()`
+  and its `OPTIONAL_FIELDS` list. **D-9 was amended in place** to record this (see above). Commits
+  `c681280` (the task-file amendment) and `196d145` (the fix).
+- **F-3 through F-7 (Phase 5 code review, `code-reviewer`, two follow-up rounds)** — found against the
+  F-1/F-2 fix itself, treating it as new code rather than assuming it correct: **F-3** — no test
+  asserted `CreateCustomer::OPTIONAL_FIELDS` stays in lockstep with `customerRules()`'s own `nullable`
+  keys, so the two lists could silently drift apart with nothing to catch it; closed with a reflection-based
+  drift-guard unit test. **F-4** — `Str::upper()`'s full Unicode case mapping expanded the single German
+  character `'ß'` into the two-character string `'SS'`, a real seeded country code the actor never
+  typed, *before* the `size:2` shape rule ever saw it; fixed by uppercasing the two country columns with
+  the byte-wise, ASCII-only `strtoupper()` instead. **F-5** — a non-blank optional value survived
+  normalisation with its surrounding whitespace intact (`'  Madrid  '` persisted verbatim); fixed by
+  trimming every `OPTIONAL_FIELDS` value the blank-to-`null` pass does not null out. **F-6** — the
+  normalisation logic was duplicated verbatim inside both `CreateCustomer` and `UpdateCustomer`; moved
+  into the single shared `CustomerValidationRules::normalizeCustomerAttributes()` both actions compose,
+  per [base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+  "move the rule, never copy it" rule. **F-7** — two docblocks cited the trait constant as the invalid
+  `CustomerValidationRules::OPTIONAL_FIELDS` form (PHP refuses a direct trait-constant reference);
+  corrected to the `App\Actions\Customers\CreateCustomer::OPTIONAL_FIELDS` form, matching the
+  `GenerateImageConversions`/`MediaValidationRules::MAX_DIMENSION` precedent. Commits `ff6c53c` (tests
+  for the F-1/F-2 fix), `dd189e3` (F-4/F-5/F-6/F-7 fixes) and `20eea79` (F-3's drift guard plus tests for
+  F-4/F-5), with `befbc71` closing two stale comment references the round found while reviewing its own
+  fix.
+- **Verdict:** all seven findings (F-1 through F-7) closed within the story; no finding deferred to a
+  later story. `code-reviewer` approved the Phase 5 round with the full unscoped test/Pint/Larastan
+  gate reported green (per this story's own closing record — not re-run by this docs pass, which
+  touched no application code).
 
 ## Provenance
 
