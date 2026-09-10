@@ -11,11 +11,17 @@
 // tests/Feature/Customers/PersistenceTest.php instead, where a real INSERT already happens for
 // other reasons.
 //
-// "A customer is not a dashboard user" (D-11) is asserted here in its four STRUCTURAL forms --
-// no HasRoles, no Authenticatable, no PasskeyUser, no SoftDeletes -- all class-shape checks with
-// no DB involved. The one INTEGRATION half of that same acceptance criterion (a created customer
-// leaves model_has_roles / model_has_permissions at zero rows) lives in
+// "A customer is not a dashboard user" (D-11) is asserted here in its three STRUCTURAL forms --
+// no HasRoles, no Authenticatable, no PasskeyUser -- all class-shape checks with no DB involved.
+// The one INTEGRATION half of that same acceptance criterion (a created customer leaves
+// model_has_roles / model_has_permissions at zero rows) lives in
 // tests/Feature/Customers/NotADashboardUserTest.php, since it requires a real persisted row.
+//
+// Story 0042 removed a fourth structural form this file used to carry here -- "does not use
+// SoftDeletes" -- per this file's own original comment naming that removal as the explicit
+// trigger the moment SoftDeletes lands on Customer, rather than leaving it to bit-rot into a
+// false claim. See the new SoftDeletes test near the bottom of this file, and 0042's own D-2/D-3
+// for why the trait is correct here and carries no authentication weight.
 
 use App\Models\Customer;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -66,13 +72,23 @@ test('the customer model does not implement Authenticatable and does not extend 
         ->and(is_subclass_of(Customer::class, User::class))->toBeFalse();
 });
 
-// D-11, structural half 3 of 3: no passkey login either, and (per 0042's own hand-off note in
-// this story's task file) no SoftDeletes yet -- that trait belongs to 0042's own migration. This
-// assertion is DELETED, not worked around, the moment 0042 adds SoftDeletes to this model --
-// see that story's task file for the explicit instruction to remove this half of the test.
-test('the customer model does not implement PasskeyUser and does not use SoftDeletes', function () {
+// D-11, structural half 3 of 3: no passkey login, ever -- unaffected by story 0042.
+test('the customer model does not implement PasskeyUser', function () {
     $customer = new Customer;
 
-    expect($customer)->not->toBeInstanceOf(PasskeyUser::class)
-        ->and(class_uses_recursive(Customer::class))->not->toContain(SoftDeletes::class);
+    expect($customer)->not->toBeInstanceOf(PasskeyUser::class);
+});
+
+// Story 0042: Customer DOES use SoftDeletes now, with no delete() override -- the inverse of the
+// assertion this test replaces. Deleting a customer is a data-visibility concern (it disappears
+// from the active list, from counts, from route-model binding), never an authentication control
+// like it is for `users` -- a customer cannot authenticate at all (D-11 above), so this trait
+// carries no authentication weight the way it does on App\Models\User.
+test('the customer model uses SoftDeletes and defines no delete() override', function () {
+    // getDeclaringClass() rather than hasMethod() -- delete() is always "present" via inheritance
+    // from Model/SoftDeletes; what must be false is Customer itself declaring one.
+    $declaringClass = (new ReflectionClass(Customer::class))->getMethod('delete')->getDeclaringClass()->getName();
+
+    expect(class_uses_recursive(Customer::class))->toContain(SoftDeletes::class)
+        ->and($declaringClass)->not->toBe(Customer::class);
 });
