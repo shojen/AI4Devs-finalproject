@@ -149,6 +149,54 @@ and fixed. Direction 2: closing story `0010` surfaced ten stale inbound links ac
 `ai-spec/tasks/` path — broken since its *Phase 3* move, and only noticed three phases later at
 closure. See [errors-log.md](errors-log.md) for the first incident and the concrete fix pattern.
 
+### Regenerating the task-coordination files
+
+Two more files derive from the same `ai-spec/tasks/` tree this section governs, and
+`docs-keeper` regenerates the affected part of both in the same pass as the link-integrity
+check above — never as a separate, later pass that could be skipped independently of the
+mandatory check: [`ai-spec/tasks-map.md`](../ai-spec/tasks-map.md) (the pending-task dependency
+graph and flat `done/` inventory) and [`ai-spec/tasks-status.json`](../ai-spec/tasks-status.json)
+(the machine-readable claim registry two parallel sessions coordinate against —
+[`ai-spec/tasks-coordination.md`](../ai-spec/tasks-coordination.md) owns the claim protocol
+itself; this step owns keeping the data both files describe true, not the protocol).
+
+Four events trigger it — the three stage moves this section already covers, plus one that is
+not a move at all:
+
+- **A new task file is created** (Phase 1, including a Three Amigos decomposition adding
+  several at once): add a row to `tasks-map.md`'s pending inventory table and a node to its
+  Mermaid graph, with edges derived the way the file's own "Dependency graph" section already
+  documents — quote or paraphrase the task file's own stated dependencies, never infer one from
+  numbering alone, and drop any dependency already in `done/` (it contributes no edge, exactly
+  like every other satisfied dependency already excluded from the graph). Add a matching entry
+  to `tasks-status.json` (`id`, `slug`, `title`, `depends_on`, `touches`, `conflict_risk_with`,
+  `claimed_by`/`claimed_at` both `null`), with `status` derived fresh from `depends_on` —
+  `"ready"` if every listed dependency is already `done/`, `"blocked"` otherwise.
+- **A task moves to `./ai-spec/tasks/in-progress/`** (Phase 3 step 0): it is still pending work,
+  only checked out — it keeps its node in the graph and its entry in the JSON. Correct
+  `tasks-map.md`'s own note about which of the three stages currently hold files. No fourth
+  graph style is needed for "in-progress" specifically: a task reaching this stage will already
+  be `"claimed"` in the JSON per the coordination protocol's own step 3, and the existing blue
+  `claimed` style already signals "a session has this checked out" — a text note is enough.
+- **A task moves to `./ai-spec/tasks/done/`** (Phase 7): remove its node and every edge
+  touching it from the graph, move its id into the flat `done/` inventory list (updating that
+  epic area's count), and **delete its entry from `tasks-status.json` entirely** — a `done/`
+  task is never listed there. Recompute `status` for every remaining task that named it as a
+  dependency: an entry whose `depends_on` is now empty moves to `"ready"` in the JSON and to the
+  green `ready` style in the graph (unless another session has since claimed it, in which case
+  it stays `claimed`/blue).
+- **An existing pending task's own "Dependencies" section is edited** — a prerequisite shipped
+  out of numeric order, or the story was re-scoped and no longer needs a sibling it used to
+  cite: recompute that task's edges in the graph and its `depends_on` array in the JSON from the
+  real, current section. A dependency only ever growing is not a safe assumption — re-derive the
+  full set, don't diff it.
+
+In every case, derive `status` fresh from `depends_on` rather than trusting whatever value the
+files already held before the regeneration, and **never silently reset a live `"claimed"` entry
+to `null`** while regenerating — carry a claim (`status`, `claimed_by`, `claimed_at`) forward
+unchanged unless the task itself just moved to `done/`, in which case the whole entry is dropped
+regardless of its claim state.
+
 ## Task classification rule
 
 When a task comes in, `product-owner` classifies it into one of these categories **before**
@@ -240,6 +288,8 @@ Each participant must contribute:
 
 **Output of phase 1:** `product-owner` writes the User Story (see template below) and saves
 it as a file at `./ai-spec/tasks/<id>-<slug>.md` (**new** stage — not yet in progress).
+`docs-keeper` regenerates `ai-spec/tasks-map.md` and `ai-spec/tasks-status.json` for it in the
+same pass — see [Regenerating the task-coordination files](#regenerating-the-task-coordination-files).
 
 > **Automated by a skill.** This phase — and only this phase — is automated by the
 > [`three-amigos-debate`](../.claude/skills/three-amigos-debate/SKILL.md) skill, invoked as
@@ -407,20 +457,15 @@ What should be observable/working once done.
 - Returns between phases are loops: a task may go through TDD or security multiple times
   until it's green/clean before moving forward.
 
-_Last updated: 2026-09-09 — Added Phase 7's PR-based closure step: once the task file has
-moved to `done/` and every layered commit for the story is made, the branch is pushed and a
-Pull Request opened against the branch its worktree was created from — never merged directly
-by an agent — titled `[{task number}] {task title}`, gated on `/watch-ci after-push` reaching
-green, and handed to the project owner for review and merge. Same-day follow-up, also
-requested directly by the project owner: pushing the branch and opening the PR are ordinary
-steps taken as part of finishing the task, with no approval gate before either one — the one
-action reserved for the project owner alone, with zero exception, is approving, closing, or
-merging the PR itself. Full protocol (title/description format, the CI-green gate, the
-never-merge-your-own-PR rule) lives in
-[contracts.md](contracts.md#pull-request-closure-rule); this section only states where it
-plugs into the phase sequence. Requested directly by the project owner as a process-policy
-change, replacing this project's prior direct-merge-back closure practice. Folded the four-block
-`_Previously:` footer chain this file had carried since 2026-08-07 into this single line, per
-[contracts.md](contracts.md#doc-growth-management-rule)'s doc-growth-management rule — no
-content from those entries was changed or lost; see git history for the full prior chain if
-needed._
+_Last updated: 2026-09-10 — Extended the link-integrity-check step with a new
+[Regenerating the task-coordination files](#regenerating-the-task-coordination-files)
+subsection: a task file being created in `ai-spec/tasks/`, moved to `in-progress/`/`done/`, or
+having its own "Dependencies" section edited now also requires `docs-keeper` to regenerate
+`ai-spec/tasks-map.md` and `ai-spec/tasks-status.json` in the same pass, with a per-event
+breakdown of what "update" means and the rule to never silently drop a live `"claimed"` entry.
+Added a matching pointer from Phase 1's "Output of phase 1" line. Matching trigger conditions
+added to the `docs-maintainer` skill and the `docs-keeper` agent; `docs/README.md`'s Workflow
+entry now points at the two `ai-spec/` files. Requested directly by the project owner after the
+two files drifted stale within one session (a closed task and a new claim, neither reflected
+back into them) with no process keeping them current. Prior footer content (Phase 7's PR-based
+closure step, 2026-09-09) is unchanged by this pass; see git history for it._

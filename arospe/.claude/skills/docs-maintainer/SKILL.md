@@ -8,6 +8,17 @@ license: MIT
 
 Keeps `docs/` truthful to the current code — not a changelog, not aspirational design. Every fact, code sample, and diagram must be verifiable by reading the repository right now. If a document contradicts the code, the code wins: fix the document.
 
+## Also triggers on `ai-spec/` task-file lifecycle events (not owned by this skill)
+
+A task file being created in `ai-spec/tasks/`, moved to `ai-spec/tasks/in-progress/` or
+`ai-spec/tasks/done/`, or having its own "Dependencies" section edited, is an equally real
+trigger — for `ai-spec/tasks-map.md` and `ai-spec/tasks-status.json`, neither of which lives
+under `docs/`. This skill's own scope stays `docs/` plus `CLAUDE.md`'s pointer section (see the
+Documentation tree below); the `docs-keeper` agent regenerates those two `ai-spec/` files
+directly, per its own ["Task coordination files"](../../agents/docs-keeper.md#task-coordination-files)
+section, on the same pass as the mandatory link-integrity check documented in
+[`docs/workflow.md`](../../../docs/workflow.md#regenerating-the-task-coordination-files).
+
 ## When NOT to run
 
 Skip trivial changes: formatting/Pint-only diffs, renamed local variables, comment-only edits, dependency patch bumps that don't change config or behavior. If nothing observable changed (schema, contract, public API, architecture, convention), there is nothing to document.

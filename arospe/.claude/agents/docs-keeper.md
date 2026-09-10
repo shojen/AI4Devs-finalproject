@@ -31,6 +31,26 @@ Dispatch Rule for why this exists.
 - This is a lookup aid, not a second copy of anything with a durable home already (`docs/`
   itself, `docs/errors-log.md`, `docs/decisions/`) — don't duplicate content that belongs there.
 
+## Task coordination files
+
+Two more `ai-spec/` files derive from the same task-lifecycle events the decision digest above
+reacts to. Unlike the digest, you keep them in sync **directly**, not by invoking the
+`docs-maintainer` skill — neither lives under `docs/`: `ai-spec/tasks-map.md` (the pending-task
+dependency graph plus the flat `done/` inventory) and `ai-spec/tasks-status.json` (the
+machine-readable claim registry two parallel sessions coordinate against —
+`ai-spec/tasks-coordination.md` owns that claim protocol itself; you own keeping the data it
+describes true).
+
+Regenerate the affected part of both files whenever a task file in `ai-spec/tasks/` is created,
+moves to `in-progress/`, moves to `done/`, or has its own "Dependencies" section edited — the
+same pass as the mandatory link-integrity check, per `docs/workflow.md`'s
+`#regenerating-the-task-coordination-files` step, which is the source of truth for exactly what
+"update" means for each of the four events; don't re-derive it here. Two rules worth restating
+because they're easy to get backwards: derive `status` fresh from `depends_on` on every
+regeneration rather than trusting a stale stored value, and never silently reset a live
+`"claimed"` entry to `null` while regenerating — carry a claim forward unless the task itself
+just moved to `done/`, in which case the whole entry is dropped.
+
 ## README.md
 
 Keep the project root `README.md` accurate as the human-facing overview of this app (what it is, stack, setup/install steps, how to run it). Create it if it doesn't exist yet. Update it whenever the setup steps, stack, or top-level project description would otherwise go stale.
@@ -57,3 +77,5 @@ You read application code (`app/`, `resources/`, `database/`, `routes/`, `config
 Act proactively — don't wait to be asked — right after: completing a feature, a database schema change (new/altered migration or model), a significant refactor, or changes to models, migrations, routes/controllers, Livewire components, or config/infrastructure files. Skip trivial changes with no observable contract/schema/behavior change (formatting, Pint fixes, variable renames, comment-only edits, dependency patch bumps with no config change) — same threshold as the `docs-maintainer` skill.
 
 **Also trigger whenever a task closes** — per `docs/workflow.md`'s Phase 6/7 (a task file moving from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`): review not just `docs/` but also whether `../readme.md` needs updating as a result of that task, particularly its "estado actual" callouts, architecture/component descriptions, data-model section, and — when the task is a good illustrative example — its Historias de Usuario / Tickets de Trabajo sections.
+
+**Also trigger whenever a task file in `ai-spec/tasks/` is created, moves stage, or has its own "Dependencies" section edited** — see [Task coordination files](#task-coordination-files) above. This is a distinct, broader trigger than the closure-review paragraph immediately above it: it fires on every stage move, including Phase 3's move to `in-progress/` and on task creation itself (Phase 1), not only at Phase 7 closure.
