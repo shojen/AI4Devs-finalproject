@@ -325,6 +325,38 @@ test('the count includes a disabled carriers rates too', function () {
     $this->assertDatabaseHas('shipping_zones', ['id' => $zone->id]);
 });
 
+// D-5 / 0033 D-1's decisive argument, made concrete: a policy-level rule would be reachable by the
+// Super Admin Gate::before bypass, which is exactly why this guard lives in the action instead.
+// tests/Feature/Policies/ShippingRatePolicyTest.php proves the bypass is real at the RATE policy
+// (a Super Admin passes every ShippingRatePolicy ability while holding zero permission rows); this
+// proves the SAME actor still cannot punch through the zone-delete guard, because it is a plain
+// ValidationException thrown inside the action, entirely outside the Gate system.
+test('a Super Admin cannot bypass the in-use guard, even though Gate::before grants them delete', function () {
+    $superAdmin = User::factory()->create();
+    $superAdmin->assignRole('Super Admin');
+    $this->actingAs($superAdmin);
+
+    $zone = app(CreateShippingZone::class)('Zona Norte');
+    attachRatesToZone($zone, 3);
+
+    // The bypass is real: the policy ability itself passes for this actor.
+    expect($superAdmin->getAllPermissions())->toHaveCount(0)
+        ->and(Gate::forUser($superAdmin)->allows('delete', $zone))->toBeTrue();
+
+    // ...and the guard refuses anyway, because it is deliberately not a policy rule (D-5).
+    $caught = null;
+
+    try {
+        app(DeleteShippingZone::class)($zone);
+    } catch (Throwable $e) {
+        $caught = $e;
+    }
+
+    expect($caught)->toBeInstanceOf(ValidationException::class);
+    $this->assertDatabaseHas('shipping_zones', ['id' => $zone->id]);
+    expect(ShippingRate::query()->count())->toBe(3);
+});
+
 // A blocked deletion destroys nothing -- assert EXACT ids, not count() (0033's rule: a count
 // passes if rows were deleted and recreated).
 test('a blocked deletion leaves every rate row unchanged', function () {
