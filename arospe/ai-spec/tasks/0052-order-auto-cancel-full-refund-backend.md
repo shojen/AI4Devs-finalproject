@@ -17,7 +17,7 @@ component, no Blade markup, no notification, no schema change.
 > [0051](0051-order-payment-refund-state-backend.md) is `done`** — and 0051 is itself blocked behind
 > [0045](0045-orders-core-crud-backend.md), which is blocked behind five Epic 2 stories
 > ([0024](done/0024-products-core-crud-backend.md), [0029](done/0029-product-variants-backend.md),
-> [0035](done/0035-shipping-carriers-backend.md), [0036](0036-shipping-rate-rules-backend.md),
+> [0035](done/0035-shipping-carriers-backend.md), [0036](done/0036-shipping-rate-rules-backend.md),
 > [0038](0038-payment-methods-bank-transfer-backend.md)).
 >
 > Every column this story reads or writes — `orders.status`, `orders.payment_status`,

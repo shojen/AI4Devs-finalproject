@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -65,5 +66,23 @@ class ShippingCarrier extends Model
         return [
             'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * This carrier's rate rules (story 0036). Deliberately unfiltered by
+     * `is_active` -- a disabled carrier's rate rules survive untouched
+     * (D-6) and this relation is configuration, not resolution; only
+     * App\Actions\Shipping\ResolveApplicableShippingRate filters on the
+     * carrier's active state.
+     *
+     * The foreign key is passed EXPLICITLY -- see
+     * App\Models\ShippingZone::shippingRates()'s identical docblock for why
+     * relying on `hasMany()`'s class_basename()-derived default is unsafe.
+     *
+     * @return HasMany<ShippingRate, $this>
+     */
+    public function shippingRates(): HasMany
+    {
+        return $this->hasMany(ShippingRate::class, 'shipping_carrier_id');
     }
 }

@@ -14,17 +14,19 @@ return [
     | concurrente. La historia 0035 añade ahora su propio grupo de nivel
     | superior `carriers` junto a `zones` más abajo.
     |
-    | Sin clave `zones.delete_blocked` aquí -- diferida deliberadamente a la
-    | historia 0036, que posee el guard de bloqueo por uso en una regla de
-    | tarifa (D-1). Un texto con `:count` cuya redacción ningún product owner
-    | ha aprobado es copia muerta en dos idiomas hasta entonces.
-    |
     | `index.*`/`editor.*` añadidos por la historia 0034 (la pantalla de
     | listado/creación/renombrado/borrado y asignación de geografía de las
-    | zonas). Sigue sin haber clave `zones.delete_blocked` (D-6):
-    | DeleteShippingZone no lanza ninguna ValidationException hoy, y esta
-    | pantalla renderiza el mensaje que un futuro guard lance sin necesitar
+    | zonas); renderiza el mensaje que lance el guard de abajo sin necesitar
     | una clave propia.
+    |
+    | `zones.delete_blocked` añadida por la historia 0036 (D-5/R-6): el
+    | mensaje del guard de bloqueo por uso en una regla de tarifa, en la
+    | forma SIMPLE `singular|plural` de trans_choice() -- la convención
+    | documentada en naming.md (la propia `categories.delete_blocked` de
+    | lang/en/products.php), no la forma de rango explícito `{1}`/`[2,*]`.
+    | Corrección propia de R-6: este contador nunca es cero (el guard solo
+    | se dispara una vez que el contador ya es positivo), así que la forma
+    | de rango explícito no aporta nada aquí.
     |
     */
 
@@ -43,6 +45,15 @@ return [
         'fields' => [
             'name' => 'Nombre',
         ],
+
+        // D-5/R-6: mensaje del guard de bloqueo por uso en una regla de tarifa
+        // (App\Actions\Shipping\DeleteShippingZone). Forma simple
+        // singular|plural, igual que la propia `categories.delete_blocked` de
+        // lang/en/products.php -- este contador nunca es cero, así que la
+        // forma de rango explícito no aporta nada aquí. Redactada a mano, no
+        // traducida mecánicamente del inglés (R-6).
+        'delete_blocked' => 'Esta zona está siendo usada por :count tarifa de envío y no se puede eliminar.'
+            .'|Esta zona está siendo usada por :count tarifas de envío y no se puede eliminar.',
 
         'index' => [
             'heading' => 'Zonas de envío',

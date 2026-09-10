@@ -112,7 +112,15 @@ app/
                        SearchGeographyEntries — story 0033; ToggleShippingCarrier — story 0035,
                        the single named writer of `shipping_carriers.is_active`, taking the
                        DESIRED state and re-reading its row under `lockForUpdate()` inside its
-                       own transaction rather than trusting a caller-supplied instance)
+                       own transaction rather than trusting a caller-supplied instance;
+                       CreateShippingRate, UpdateShippingRate, DeleteShippingRate — story 0036,
+                       each self-authorizing against ShippingRatePolicy as its own first
+                       statement, since this story ships no route or component and the action
+                       is the only reachable enforcement point; ResolveApplicableShippingRate +
+                       ShippingRateResolution — the ancestry-walk rate-precedence resolver and
+                       its never-bare-null result object (see architecture/shipping.md);
+                       ListShippingRatesByCarrier — the grouped-by-carrier query, deliberately
+                       gating nothing of its own, 0037's gating consumer)
   Actions/Users/       Domain actions for the Users area (RequestEmailChange, ConfirmEmailChange,
                        CreateUser, UpdateUser — the last two authorize their own operation)
   Concerns/            Shared traits (validation rule sets)
@@ -154,7 +162,10 @@ app/
                        — story 0032, the only bigint-PK model in this app; ShippingZone — story
                        0033; ShippingCarrier — story 0035, a second standalone catalog with no
                        relationships at all, the identical starting shape ProductCategory shipped
-                       in; Role, which subclasses
+                       in; ShippingRate — story 0036, with two FKs (shipping_carrier_id,
+                       shipping_zone_id) and the null-aware scopeCoveringWeight() bracket scope,
+                       the one place the "and above" weight comparison may live; Role, which
+                       subclasses
                        the package's role model). product_media, product_sales_region and
                        (story 0029) product_variant_values all have no model class of their own —
                        each reached only through the owning models' BelongsToMany (e.g.
@@ -163,7 +174,14 @@ app/
   Notifications/       Notification classes (PendingEmailVerification, UserInvitation)
   Policies/            Eloquent model policies (UserPolicy, RolePolicy, SalesRegionPolicy,
                        MediaPolicy, ProductCategoryPolicy, ProductPolicy,
-                       ProductAttributeTypePolicy), auto-discovered by name
+                       ProductAttributeTypePolicy, ShippingZonePolicy — story 0033, a pre-existing
+                       gap in this listing closed here rather than left stale, ShippingRatePolicy
+                       — story 0036, matching ShippingZonePolicy's shape exactly: four abilities,
+                       no per-target rule, and real call sites on all three write actions from
+                       day one), auto-discovered by name. No ShippingCarrierPolicy exists (story
+                       0035's D-9): `shipping.view`/`.edit` are authorized directly as permission
+                       strings, named once on the model itself, since no per-target rule
+                       justifies a policy
   Providers/           Service providers (AppServiceProvider, FortifyServiceProvider)
 config/                Laravel + package config (fortify.php, permission.php,
                         intervention-image.php, livewire.php, ...), plus modules.php — the one
@@ -592,10 +610,4 @@ Use the scoped forms freely while iterating; the unscoped runs are what counts a
 
 **`php artisan test --parallel` is an equally valid unscoped record, and the faster one** (measured on this repo's own 950-test suite: ~2.6x on this project's dev container — see [testing/ci/commands.md#run-in-parallel](../testing/ci/commands.md#run-in-parallel)). It runs every test in every suite exactly like the plain unscoped form; `--parallel` changes how the work is distributed across processes, not what gets checked. CI runs it this way since the test-performance review that measured it. The one thing `--parallel` needs that the sequential form doesn't: `storage/framework/views` must sit on a filesystem that tolerates concurrent writes — see the ⚠️ in the linked section if you rebuild the Sail image and hit `tempnam()` errors under load.
 
-_Last updated: 2026-09-09 — Story 0035 (Shipping carriers — backend). Closed a pre-existing directory-listing gap left by stories 0033/0034 (Shipping never appeared in `app/Actions/`, `app/Livewire/`, `app/Models/` or `routes/`), adding `Actions/Shipping/` (CreateShippingZone through ToggleShippingCarrier), `Livewire/Shipping/` (Zones.php, Index.php), `ShippingZone`/`ShippingCarrier` to the `Models/` list, and `shipping.php` to the `routes/` paragraph. No convention rule changed — this story introduces no new type, brace, PHPDoc, validation-trait, action-injection or authorization-placement shape beyond what `SetSalesRegionActive`'s existing `bool $active` + `lockForUpdate()` pattern and `SalesRegion`'s existing non-fillable-idempotency-key pattern already establish._
-
-_Previously: 2026-09-06 — Story 0032 (Shipping geography catalog seed). Added `GeographyEntry`/`GeographyLevel`/`GeographyCatalogSeeder` to the directory-structure listing (`app/Models/`, `app/Enums/`, `database/data/`, `tests/Unit/`, `tests/Support/`), including the new `tests/Fixtures/geography/` sibling to `tests/Browser/Fixtures/`. No convention rule changed — every addition follows an existing pattern (the `Index`-in-a-subfolder-adjacent bigint-PK exception is ADR 0001's, not a new rule here; the deferred-`label()` and `app()`-resolution shapes are naming.md's/code-style.md's existing rules applied, not extended)._
-
-_Previously: 2026-09-06 — Story 0031 (Product variants — the variant builder inside the product editor, UI). Added `Products/VariantBuilder.php` (a third class in `Actions/Products/`'s sibling `Livewire/Products/`, and this app's first Livewire component nested inside another module's own routed page) and its mirrored `resources/views/livewire/products/variant-builder.blade.php` to the directory-structure listing, plus story 0031's five new `tests/Feature/Products/VariantBuilder*Test.php` files. No convention content changed beyond these listing entries this pass._
-
-_Previously: 2026-09-05 — Collapsed the accumulating `_Previously:` footer chain (spanning tasks 0004–story 0029b, ~40k characters) into this single line, per the doc-growth-management rule now codified in [contracts.md](../contracts.md#doc-growth-management-rule) and the docs-maintainer skill's Definition of Done. No convention content changed this pass.
+_Last updated: 2026-09-10 — Story 0036 (Shipping rate rules — backend). Extended `Actions/Shipping/` with `CreateShippingRate`/`UpdateShippingRate`/`DeleteShippingRate` (each self-authorizing against `ShippingRatePolicy` as its own first statement, since this story ships no route or component), `ResolveApplicableShippingRate`/`ShippingRateResolution` (the rate-precedence resolver and its never-bare-null result object — see the new [architecture/shipping.md](../architecture/shipping.md)), and `ListShippingRatesByCarrier`. Added `ShippingRate` to the `Models/` list. Closed a pre-existing gap in the `Policies/` line: `ShippingZonePolicy` (story 0033) had never been listed there either — added alongside the new `ShippingRatePolicy`, plus a note on why no `ShippingCarrierPolicy` exists (story 0035's D-9). No convention rule changed — this story introduces no new type, brace, PHPDoc, validation-trait, action-injection or authorization-placement shape beyond what task 0017's/story 0025's already-established self-authorizing-action pattern provides. Folded this file's own three-block `_Previously:` footer chain into this single line, per [contracts.md](../contracts.md#doc-growth-management-rule)'s doc-growth-management rule — no content from those entries was changed or lost; see git history for the full prior chain if needed._

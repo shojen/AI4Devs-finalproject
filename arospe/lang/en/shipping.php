@@ -13,16 +13,17 @@ return [
     | were never implemented concurrently. Story 0035 now adds its own
     | `carriers` top-level group alongside `zones` below.
     |
-    | No `zones.delete_blocked` key here -- deliberately deferred to story
-    | 0036, which owns the in-use-by-a-rate-rule count guard (D-1). A
-    | `:count`-bearing string whose wording no product owner has approved is
-    | dead copy in two locales until then.
-    |
     | `index.*`/`editor.*` added by story 0034 (the zone list/create/rename/
-    | delete/geography-assignment screen). Still no `zones.delete_blocked`
-    | key (D-6): DeleteShippingZone raises no ValidationException today, and
-    | this screen renders whatever message a future guard raises without
-    | needing a key of its own.
+    | delete/geography-assignment screen); it renders whatever message the
+    | guard below raises without needing a key of its own.
+    |
+    | `zones.delete_blocked` added by story 0036 (D-5/R-6): the
+    | in-use-by-a-rate-rule count guard's message, in the SIMPLE
+    | `singular|plural` trans_choice() form -- naming.md's documented
+    | convention (lang/en/products.php's own `categories.delete_blocked`),
+    | not the explicit-range `{1}`/`[2,*]` form. R-6's own correction: this
+    | key's count is never zero (the guard only ever fires once the count is
+    | already positive), so the explicit-range form buys nothing here.
     |
     */
 
@@ -41,6 +42,14 @@ return [
         'fields' => [
             'name' => 'Name',
         ],
+
+        // D-5/R-6: the zone-delete-blocked-by-a-rate-rule guard's message
+        // (App\Actions\Shipping\DeleteShippingZone). Simple singular|plural
+        // form, matching lang/en/products.php's `categories.delete_blocked`
+        // -- this count is never zero, so the explicit-range form buys
+        // nothing here.
+        'delete_blocked' => 'This zone is used by :count shipping rate and cannot be deleted.'
+            .'|This zone is used by :count shipping rates and cannot be deleted.',
 
         'index' => [
             'heading' => 'Shipping zones',

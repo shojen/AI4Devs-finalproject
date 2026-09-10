@@ -5,7 +5,7 @@ Build the real Shipping screen on top of the placeholder [0035](done/0035-shippi
 left at `/shipping`: carrier cards with an enable/disable toggle and an Activo/Inactivo state, and
 below them a rate table grouped by carrier showing each rate's name, zone badge, weight range (kg),
 price (€) and delivery estimate — plus a create/edit rate modal and a delete-confirmation modal.
-This story is also the first caller of [0036](0036-shipping-rate-rules-backend.md)'s
+This story is also the first caller of [0036](done/0036-shipping-rate-rules-backend.md)'s
 `ShippingRatePolicy`, which shipped with zero call sites.
 
 ## Type
@@ -49,7 +49,7 @@ call in the story. Genuinely unresolved items are in **Open questions**, not her
 
 ### D-1 — The rate table extends 0035's `App\Livewire\Shipping\Index` in place. No second component, no second route.
 
-[0036](0036-shipping-rate-rules-backend.md) **D-10** is dispositive rather than advisory: 0035
+[0036](done/0036-shipping-rate-rules-backend.md) **D-10** is dispositive rather than advisory: 0035
 already claims `Route::livewire('shipping', ShippingIndex::class)->name('shipping.index')` **and**
 `resources/views/livewire/shipping.blade.php` — *the* path Livewire's
 [`Index`-in-a-subfolder exception](../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
@@ -93,7 +93,7 @@ itself out by name. **Consequence: no empty-string-to-null coercion and no trimm
 `/livewire/update` round-trip.** A blank field is `''`.
 
 **Finding 2 — `''` is not rejected by 0036's rule set. It is skipped, and passes.** This is where
-[0036](0036-shipping-rate-rules-backend.md)'s reasoning is wrong. Its `maxWeightRules()` opens with
+[0036](done/0036-shipping-rate-rules-backend.md)'s reasoning is wrong. Its `maxWeightRules()` opens with
 `'nullable'` and comments that it "short-circuits". `Validator::isNotNullIfMarkedAsNullable()`
 (`Validator.php:886`) tests `is_null()`, and `''` is not null — so on that path alone `numeric`
 would run and reject. But `isValidatable()` (`Validator.php:819`) checks
@@ -116,7 +116,7 @@ That raw `''` reaches a `DECIMAL(8,3)` column. `.env.example:23` pins `DB_CONNEC
 loosely typed and stores `''` without complaint. Production is `mysql:8.4` in strict mode, which
 raises `Incorrect decimal value` (SQLSTATE 22007 / error 1366) as an uncaught `QueryException` — a
 **500**. So the naive implementation is *green in CI and a 500 in production*, which is the exact
-shape of the gap [0036](0036-shipping-rate-rules-backend.md) **R-4** and
+shape of the gap [0036](done/0036-shipping-rate-rules-backend.md) **R-4** and
 [`ci-database-connection-gap.md`](ci-database-connection-gap.md) already track.
 
 **The decision, therefore:**
@@ -196,7 +196,7 @@ Consequence per **D-2**: `public string $shippingZoneId = '';` with a placeholde
 
 ### D-4 — The carrier select lists **every** carrier, disabled ones included.
 
-[0036](0036-shipping-rate-rules-backend.md) **D-6**'s corollary is explicit and tested: *"a rate rule
+[0036](done/0036-shipping-rate-rules-backend.md) **D-6**'s corollary is explicit and tested: *"a rate rule
 may be created for a carrier that is currently disabled … Rates are configuration; `is_active`
 governs **resolution**, never authoring."* Filtering the select on `is_active` would silently
 contradict a confirmed decision and break the natural onboarding order (configure a carrier's rates,
@@ -244,7 +244,7 @@ is computed.
 
 ### D-7 — Where every `Gate::authorize()` goes. This discharges 0036's central hand-off.
 
-[0036](0036-shipping-rate-rules-backend.md) **D-11** ships `ShippingRatePolicy` with **zero call
+[0036](done/0036-shipping-rate-rules-backend.md) **D-11** ships `ShippingRatePolicy` with **zero call
 sites** and states the cost openly: *"nothing in this story can regress if the policy is wrong."*
 This story is what makes it real.
 
@@ -337,7 +337,7 @@ minimum that fixes it. Raised as **OQ-C** because the placement is a UX call nob
 
 ### D-11 — The carrier card's "N rate rules will stop applying" hint is out of scope.
 
-[0036](0036-shipping-rate-rules-backend.md) **D-6** says 0037 *"may"* show it, framed as optional and
+[0036](done/0036-shipping-rate-rules-backend.md) **D-6** says 0037 *"may"* show it, framed as optional and
 explicitly *"a UI hint, never a block"*. It is not built here: it costs a count per carrier for a
 nicety the PRD never asks for, and — exactly as 0034 **D-9** argues for the overlap notice — every
 line of it is a line a reviewer might later mistake for a blocking rule. **What this story does own

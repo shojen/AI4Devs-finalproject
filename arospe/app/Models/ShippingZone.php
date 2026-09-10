@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -48,5 +49,32 @@ class ShippingZone extends Model
     public function geographyEntries(): BelongsToMany
     {
         return $this->belongsToMany(GeographyEntry::class, 'shipping_zone_geography_entry');
+    }
+
+    /**
+     * The rate rules referencing this zone (story 0036). Read by
+     * App\Actions\Shipping\DeleteShippingZone's in-use count guard (D-5) --
+     * deliberately UNFILTERED by the rate's carrier's active state, so a
+     * disabled carrier's rates still block the zone's deletion.
+     *
+     * 0033 explicitly deferred adding this relation until the story that
+     * uses it (D-5) -- this is that story.
+     *
+     * The foreign key is passed EXPLICITLY, never inferred: `hasMany()`'s
+     * default infers it from `Str::snake(class_basename($this))`, which is
+     * garbled for an anonymous subclass -- the exact
+     * `tests/Feature/ShippingZones/DeleteShippingZoneTest.php` double this
+     * guard is tested against (`shippingZoneDeleteFailureDouble()`), whose
+     * own comment already documents the identical class_basename() hazard
+     * for `getTable()`. Without this, the double's own
+     * `$shippingZone->shippingRates()->count()` call throws an unrelated
+     * "unknown column" QueryException before `deleteOrFail()` is ever
+     * reached, masking the simulated 1451/1062 entirely.
+     *
+     * @return HasMany<ShippingRate, $this>
+     */
+    public function shippingRates(): HasMany
+    {
+        return $this->hasMany(ShippingRate::class, 'shipping_zone_id');
     }
 }
