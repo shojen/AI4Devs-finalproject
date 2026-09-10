@@ -652,7 +652,7 @@ decision rather than a rediscovery.
   criteria (which require every optional column, including the two country columns, to persist as
   `null` when the actor leaves it blank).** A blank string reaching `Validator` for a `nullable`
   rule is skipped, not rejected (Laravel treats every non-implicit rule as inapplicable to a blank
-  string — see [errors-log.md](../../docs/errors-log.md#livewire-skips-convertemptystringstonulltrimstrings-and-laravel-skips-non-implicit-rules-for-a-blank-string--the-two-combine-to-let-a-raw--reach-a-decimal-column--2026-09-10)),
+  string — see [errors-log.md](../../../docs/errors-log.md#livewire-skips-convertemptystringstonulltrimstrings-and-laravel-skips-non-implicit-rules-for-a-blank-string--the-two-combine-to-let-a-raw--reach-a-decimal-column--2026-09-10)),
   so both actions normalise every blank optional field (not only the two country columns) to a real
   `null` **before** `Validator::make()` runs, matching the pattern that errors-log entry already
   establishes for `App\Livewire\Shipping\Index::saveRate()`. This is the only reading that makes the
