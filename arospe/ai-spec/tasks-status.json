@@ -7,9 +7,9 @@
       "slug": "0038-payment-methods-bank-transfer-backend",
       "title": "Payment methods — bank transfer with a validated IBAN (backend)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree-0038-payment-methods-bank-transfer-backend",
+      "claimed_at": "2026-09-10T14:40:00Z",
       "touches": [
         "database/migrations/*_create_payment_methods_table.php",
         "app/Models/PaymentMethod.php",
