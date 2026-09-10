@@ -325,12 +325,14 @@ class Zones extends Component
     /**
      * Delete the confirmed zone.
      *
-     * D-6: any `ValidationException` `DeleteShippingZone` raises (today:
-     * none -- the in-use-by-a-rate-rule guard is story 0036's, not yet
-     * implementable since `shipping_rates` does not exist) is left to
-     * surface into this component's error bag and render inside the
-     * still-open delete modal, message-agnostic -- this screen adds no
-     * `zones.delete_blocked` key of its own.
+     * D-6: the `ValidationException` `DeleteShippingZone` raises when rate
+     * rules still reference the zone (story 0036's D-5 in-use count guard,
+     * keyed 'shippingZoneId') is left to surface into this component's
+     * error bag and render inside the still-open delete modal,
+     * message-agnostic -- this screen adds no `zones.delete_blocked` key
+     * of its own; the copy is the action's. It survives past the throwing
+     * request because $shippingZoneId is a real declared property (see
+     * its docblock above).
      *
      * Phase 4 security-audit finding F-3: re-authorizes here too, even
      * though `DeleteShippingZone` already self-authorizes (0033 Phase 4

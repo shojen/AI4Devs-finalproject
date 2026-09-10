@@ -53,7 +53,7 @@ return [
         // forma de rango explícito no aporta nada aquí. Redactada a mano, no
         // traducida mecánicamente del inglés (R-6).
         'delete_blocked' => 'Esta zona está siendo usada por :count tarifa de envío y no se puede eliminar.'
-            .'|Esta zona está siendo usada por :count tarifas de envío y no se pueden eliminar.',
+            .'|Esta zona está siendo usada por :count tarifas de envío y no se puede eliminar.',
 
         'index' => [
             'heading' => 'Zonas de envío',
