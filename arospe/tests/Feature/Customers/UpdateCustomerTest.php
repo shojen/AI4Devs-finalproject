@@ -138,6 +138,24 @@ test('a rejected edit leaves every column of the stored row unchanged', function
         ->and($fresh->email)->toBe($customer->email);
 });
 
+// =====================================================================
+// Editing — blank-to-null normalisation (D-9, Phase 4 audit F-1/F-2): starting from a customer
+// with every optional column already populated, submitting a single one of them back as an
+// explicit '' must clear it to a real database null rather than persist a literal empty string.
+// One dataset entry per App\Concerns\CustomerValidationRules::OPTIONAL_FIELDS member (via
+// UpdateCustomer::OPTIONAL_FIELDS), matching CreateCustomerTest.php's identical dataset.
+// =====================================================================
+
+test('an optional column submitted as a blank string is cleared to null on update, starting from a populated value', function (string $field) {
+    $customer = Customer::factory()->create();
+
+    $attributes = customerUpdatePayload($customer, [$field => '']);
+
+    $updated = app(UpdateCustomer::class)($customer, $attributes);
+
+    expect($updated->fresh()->{$field})->toBeNull();
+})->with(UpdateCustomer::OPTIONAL_FIELDS);
+
 // D-13: a customer's email is contact data, not an authentication identifier — changing it needs
 // no mailbox-confirmation flow, unlike users.email's RequestEmailChange/pending_email mechanism.
 // Asserted negatively so the absence is proven rather than assumed, and so this also guards

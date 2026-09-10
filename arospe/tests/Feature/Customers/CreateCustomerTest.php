@@ -281,10 +281,15 @@ test('a billing postal code one character over the maximum length (21) is refuse
 // membership in the seeded sales_regions catalog)
 // =====================================================================
 
+// D-9 amended at Phase 4 audit (F-1): a BLANK country is no longer part of this "rejected in
+// shape" dataset -- it is normalised to null before validation ever runs (see the dedicated
+// blank-to-null normalisation test below) and is therefore ACCEPTED, not refused. A country that
+// is present but malformed (wrong length, non-letters) is still refused exactly as before -- only
+// the blank case's outcome changed.
 test('the shipping/billing country accepts a two-letter code and rejects anything else in shape', function (string $country, bool $accepted) {
     $attributes = [
         'name' => 'Cliente',
-        'email' => 'country-'.Str::lower($country === '' ? 'blank' : $country).'-'.Str::random(6).'@example.com',
+        'email' => 'country-'.Str::lower($country).'-'.Str::random(6).'@example.com',
         'shipping_country' => $country,
         'billing_country' => $country,
     ];
@@ -305,10 +310,29 @@ test('the shipping/billing country accepts a two-letter code and rejects anythin
     'a three-letter ISO code is rejected' => ['ESP', false],
     'a single letter is rejected' => ['E', false],
     'a letter plus a digit is rejected' => ['E1', false],
-    'a blank string is rejected' => ['', false],
     'the upper-case alpha-2 code is accepted' => ['ES', true],
     'the lower-case alpha-2 code is accepted, stored canonically upper-case' => ['es', true],
 ]);
+
+// =====================================================================
+// Creation — blank-to-null normalisation (D-9, Phase 4 audit F-1/F-2): every one of the thirteen
+// optional columns, submitted as an explicit '' (the shape a real form submits for an untouched
+// optional field), must persist as a real database null rather than a literal empty string. One
+// dataset entry per App\Concerns\CustomerValidationRules::OPTIONAL_FIELDS member, so a future
+// column added to that list without a matching case here is caught by an under-count rather than
+// silently skipped.
+// =====================================================================
+
+test('an optional column submitted as a blank string persists as null on create', function (string $field) {
+    $attributes = customerFullPayload([
+        'email' => 'blank-'.Str::lower(str_replace('_', '-', $field)).'-'.Str::random(6).'@example.com',
+        $field => '',
+    ]);
+
+    $customer = app(CreateCustomer::class)($attributes);
+
+    expect($customer->fresh()->{$field})->toBeNull();
+})->with(CreateCustomer::OPTIONAL_FIELDS);
 
 // =====================================================================
 // Duplicate email
