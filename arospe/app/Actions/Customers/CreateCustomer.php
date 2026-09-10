@@ -63,10 +63,17 @@ class CreateCustomer
     }
 
     /**
-     * Lowercase the email and uppercase the two country codes BEFORE
-     * validation runs (D-5, D-9), never as a model mutator -- a mutator
-     * fires after save() and would let the uniqueness rule and the write
-     * see different bytes.
+     * Lowercase the email, blank-to-null every optional column, and
+     * uppercase the two country codes -- all BEFORE validation runs (D-5,
+     * D-9), never as a model mutator (a mutator fires after save() and
+     * would let the uniqueness rule and the write see different bytes).
+     *
+     * The blank-to-null pass (Phase 4 audit F-1/F-2) must run before the
+     * country-uppercasing pass below it: Str::upper('') is still '', so
+     * uppercasing first would leave an explicitly-submitted blank country as
+     * '' rather than null, and 'nullable' only short-circuits the shape
+     * rules for a genuine null -- see
+     * App\Concerns\CustomerValidationRules::OPTIONAL_FIELDS.
      *
      * @param  array<string, mixed>  $attributes
      * @return array<string, mixed>
@@ -75,6 +82,12 @@ class CreateCustomer
     {
         if (array_key_exists('email', $attributes) && is_string($attributes['email'])) {
             $attributes['email'] = Str::lower($attributes['email']);
+        }
+
+        foreach (self::OPTIONAL_FIELDS as $field) {
+            if (array_key_exists($field, $attributes) && is_string($attributes[$field]) && trim($attributes[$field]) === '') {
+                $attributes[$field] = null;
+            }
         }
 
         foreach (['shipping_country', 'billing_country'] as $countryField) {

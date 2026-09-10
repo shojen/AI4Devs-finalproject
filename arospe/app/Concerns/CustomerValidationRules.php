@@ -14,6 +14,31 @@ use Illuminate\Validation\Rule;
 trait CustomerValidationRules
 {
     /**
+     * Every optional customer column — `phone` plus the twelve shipping/billing address columns
+     * (`*_country` included). Shared by `App\Actions\Customers\CreateCustomer` and `UpdateCustomer`
+     * so both actions normalise the identical field list: a blank string (`''`) submitted for any
+     * of these must be treated as "not provided" and persisted as `null` (D-3/D-9), never as a
+     * literal empty string.
+     *
+     * Both `ConvertEmptyStringsToNull`/`TrimStrings` are Laravel HTTP middleware that never run for
+     * a direct `__invoke()` call, and Laravel's own validator skips every NON-implicit rule
+     * (`string`/`size`/`regex`/`max` included) once a field's submitted value is a blank string --
+     * see docs/errors-log.md's "Livewire skips ConvertEmptyStringsToNull ... and Laravel skips
+     * non-implicit rules for a blank string" entry for the exact mechanism. So normalising a blank
+     * optional field to a real `null` must happen in the action, BEFORE `Validator::make()` ever
+     * runs -- it cannot be delegated to a validation rule.
+     *
+     * @var array<int, string>
+     */
+    public const OPTIONAL_FIELDS = [
+        'phone',
+        'shipping_address_line1', 'shipping_address_line2', 'shipping_city',
+        'shipping_postal_code', 'shipping_province', 'shipping_country',
+        'billing_address_line1', 'billing_address_line2', 'billing_city',
+        'billing_postal_code', 'billing_province', 'billing_country',
+    ];
+
+    /**
      * The whole payload's rules — name, email, phone and both address
      * blocks (shipping_* / billing_*). $customerId is forwarded to
      * customerEmailRules() so the uniqueness check ignores the record's own
@@ -91,22 +116,18 @@ trait CustomerValidationRules
             "{$prefix}_postal_code" => ['nullable', 'string', 'max:20'],
             "{$prefix}_province" => ['nullable', 'string', 'max:100'],
             // D-9: ISO 3166-1 alpha-2 shape only, never membership in the
-            // seeded sales_regions catalog. 'filled' is a deliberate
-            // addition beyond the field's literal shape (nullable/string/
-            // size/regex alone): Illuminate\Validation\Validator skips every
-            // NON-implicit rule (string/size/regex included) once the
-            // submitted value is a blank string, per
-            // Validator::presentOrRuleIsImplicit() -- see
-            // docs/errors-log.md's "Livewire skips ConvertEmptyStringsToNull
-            // ... and Laravel skips non-implicit rules for a blank string"
-            // entry for the exact mechanism. Without 'filled' (an IMPLICIT
-            // rule), an explicitly-submitted '' would silently pass
-            // validation instead of being refused. 'filled' itself is
-            // Arr::has()-based: it passes when the key is entirely absent
-            // (the omitted-and-optional case) and fails only when the key
-            // IS present with an empty value -- exactly the "optional but
-            // not blank" semantics this column needs.
-            "{$prefix}_country" => ['nullable', 'filled', 'string', 'size:2', 'regex:/^[A-Za-z]{2}$/'],
+            // seeded sales_regions catalog. No 'filled' rule here (Phase 4
+            // audit F-1): a blank submitted value is normalised to a real
+            // `null` by CreateCustomer/UpdateCustomer's normalizeAttributes()
+            // BEFORE this rule set ever runs -- see OPTIONAL_FIELDS above --
+            // so by the time this rule sees the field it has already been
+            // reduced to either `null` (accepted, 'nullable' short-circuits)
+            // or a real, non-blank candidate country code that the shape
+            // rules below must still validate. 'filled' would reject that
+            // already-normalised `null` as if it were a forgotten field,
+            // which is exactly the wrong outcome for D-3's "name and email
+            // only" flow.
+            "{$prefix}_country" => ['nullable', 'string', 'size:2', 'regex:/^[A-Za-z]{2}$/'],
         ];
     }
 }

@@ -65,8 +65,11 @@ class UpdateCustomer
     }
 
     /**
-     * Lowercase the email and uppercase the two country codes BEFORE
-     * validation runs (D-5, D-9) -- see CreateCustomer's identical helper.
+     * Lowercase the email, blank-to-null every optional column, and
+     * uppercase the two country codes BEFORE validation runs (D-5, D-9) --
+     * see CreateCustomer's identical helper and
+     * App\Concerns\CustomerValidationRules::OPTIONAL_FIELDS for why the
+     * blank-to-null pass must run before the uppercasing pass.
      *
      * @param  array<string, mixed>  $attributes
      * @return array<string, mixed>
@@ -75,6 +78,12 @@ class UpdateCustomer
     {
         if (array_key_exists('email', $attributes) && is_string($attributes['email'])) {
             $attributes['email'] = Str::lower($attributes['email']);
+        }
+
+        foreach (self::OPTIONAL_FIELDS as $field) {
+            if (array_key_exists($field, $attributes) && is_string($attributes[$field]) && trim($attributes[$field]) === '') {
+                $attributes[$field] = null;
+            }
         }
 
         foreach (['shipping_country', 'billing_country'] as $countryField) {
