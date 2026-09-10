@@ -7,14 +7,17 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 /**
  * A store end-customer — an admin-managed record entirely separate from the
  * Users/Roles/Permissions system (story 0041, D-11). A Customer can never
- * authenticate into the dashboard: it implements no auth contract, uses
- * neither Spatie's HasRoles nor SoftDeletes (0042's addition, not this
- * story's), and holds no role and no permission.
+ * authenticate into the dashboard: it implements no auth contract and uses
+ * neither Spatie's HasRoles nor holds any role or permission. Deleting one
+ * (story 0042) is a soft delete with no override on delete() — unlike
+ * App\Models\User, a Customer has no authentication identifier to recycle,
+ * so its email stays reserved and no column is obfuscated (0042, D-1/D-2).
  *
  * @property string $id
  * @property string $name
@@ -34,6 +37,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $billing_country
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  */
 #[Fillable([
     'name', 'email', 'phone',
@@ -45,5 +49,5 @@ use Illuminate\Support\Carbon;
 class Customer extends Model
 {
     /** @use HasFactory<CustomerFactory> */
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, SoftDeletes;
 }
