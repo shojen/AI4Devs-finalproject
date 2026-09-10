@@ -923,44 +923,52 @@ re-debate or a scope change) — story approved to proceed to Phase 3.**
 
 ## Phase 4 — Security audit record
 
-`appsec-auditor` audited the Phase 3 implementation; `code-reviewer` followed with two rounds of its
-own findings against the audited code. Per [contracts.md](../../../docs/contracts.md)'s doc-growth-management
-rule, this is a summary of disposition, not the full finding text — see the commits cited for the
-complete before/after.
+`appsec-auditor` audited the Phase 3 implementation over **two rounds** (the second re-auditing the
+first round's own fix as new code, per this project's standing convention); `code-reviewer` then ran
+the single Phase 5 pass. **Corrected in place** — an earlier draft of this section misattributed F-3
+through F-7 to `code-reviewer`; both rounds below were `appsec-auditor`'s own, and `code-reviewer`'s
+distinct Phase 5 findings (M-1, M-2, N-1 through N-3) are recorded separately further up this
+document. Per [contracts.md](../../../docs/contracts.md)'s doc-growth-management rule, this is a
+summary of disposition, not the full finding text — see the commits cited for the complete
+before/after.
 
-- **F-1/F-2 (Phase 4 security audit, `appsec-auditor`)** — a real contradiction between this story's
-  own Gherkin (which listed a blank country `""` among the *rejected* examples) and **D-3**/the
-  acceptance criteria (which require every optional column, country columns included, to persist as
-  `null` when left blank). The shipped `filled` rule on `*_country` rejected exactly the input D-3
-  exists to accept. Resolved as the audit's own recommended option A: every one of the thirteen
-  optional columns — not only the two country ones — is normalised blank-to-`null` **before**
-  `Validator::make()` ever runs, via the new `App\Concerns\CustomerValidationRules::normalizeCustomerAttributes()`
-  and its `OPTIONAL_FIELDS` list. **D-9 was amended in place** to record this (see above). Commits
-  `c681280` (the task-file amendment) and `196d145` (the fix).
-- **F-3 through F-7 (Phase 5 code review, `code-reviewer`, two follow-up rounds)** — found against the
-  F-1/F-2 fix itself, treating it as new code rather than assuming it correct: **F-3** — no test
-  asserted `CreateCustomer::OPTIONAL_FIELDS` stays in lockstep with `customerRules()`'s own `nullable`
-  keys, so the two lists could silently drift apart with nothing to catch it; closed with a reflection-based
-  drift-guard unit test. **F-4** — `Str::upper()`'s full Unicode case mapping expanded the single German
-  character `'ß'` into the two-character string `'SS'`, a real seeded country code the actor never
-  typed, *before* the `size:2` shape rule ever saw it; fixed by uppercasing the two country columns with
-  the byte-wise, ASCII-only `strtoupper()` instead. **F-5** — a non-blank optional value survived
-  normalisation with its surrounding whitespace intact (`'  Madrid  '` persisted verbatim); fixed by
-  trimming every `OPTIONAL_FIELDS` value the blank-to-`null` pass does not null out. **F-6** — the
-  normalisation logic was duplicated verbatim inside both `CreateCustomer` and `UpdateCustomer`; moved
-  into the single shared `CustomerValidationRules::normalizeCustomerAttributes()` both actions compose,
-  per [base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+- **F-1/F-2 (Phase 4 security audit round 1, `appsec-auditor`)** — a real contradiction between this
+  story's own Gherkin (which listed a blank country `""` among the *rejected* examples) and
+  **D-3**/the acceptance criteria (which require every optional column, country columns included, to
+  persist as `null` when left blank). The shipped `filled` rule on `*_country` rejected exactly the
+  input D-3 exists to accept. Resolved as the audit's own recommended option A: every one of the
+  thirteen optional columns — not only the two country ones — is normalised blank-to-`null`
+  **before** `Validator::make()` ever runs, via the new
+  `App\Concerns\CustomerValidationRules::normalizeCustomerAttributes()` and its `OPTIONAL_FIELDS`
+  list. **D-9 was amended in place** to record this (see above). Commits `c681280` (the task-file
+  amendment) and `196d145`/`ff6c53c` (the fix and its tests).
+- **F-3 through F-7 (Phase 4 security audit round 2, `appsec-auditor` re-auditing the round-1 fix as
+  new code)** — none blocking, verdict ✅ on the round itself: **F-3** — no test asserted
+  `CreateCustomer::OPTIONAL_FIELDS` stays in lockstep with `customerRules()`'s own `nullable` keys,
+  so the two lists could silently drift apart with nothing to catch it; closed with a reflection-based
+  drift-guard unit test. **F-4** — `Str::upper()`'s full Unicode case mapping expanded the single
+  German character `'ß'` into the two-character string `'SS'`, a real seeded country code the actor
+  never typed, *before* the `size:2` shape rule ever saw it; fixed by uppercasing the two country
+  columns with the byte-wise, ASCII-only `strtoupper()` instead. **F-5** — a non-blank optional value
+  survived normalisation with its surrounding whitespace intact (`'  Madrid  '` persisted verbatim);
+  fixed by trimming every `OPTIONAL_FIELDS` value the blank-to-`null` pass does not null out. **F-6**
+  — the normalisation logic was duplicated verbatim inside both `CreateCustomer` and `UpdateCustomer`;
+  moved into the single shared `CustomerValidationRules::normalizeCustomerAttributes()` both actions
+  compose, per [base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
   "move the rule, never copy it" rule. **F-7** — two docblocks cited the trait constant as the invalid
   `CustomerValidationRules::OPTIONAL_FIELDS` form (PHP refuses a direct trait-constant reference);
   corrected to the `App\Actions\Customers\CreateCustomer::OPTIONAL_FIELDS` form, matching the
-  `GenerateImageConversions`/`MediaValidationRules::MAX_DIMENSION` precedent. Commits `ff6c53c` (tests
-  for the F-1/F-2 fix), `dd189e3` (F-4/F-5/F-6/F-7 fixes) and `20eea79` (F-3's drift guard plus tests for
-  F-4/F-5), with `befbc71` closing two stale comment references the round found while reviewing its own
-  fix.
-- **Verdict:** all seven findings (F-1 through F-7) closed within the story; no finding deferred to a
-  later story. `code-reviewer` approved the Phase 5 round with the full unscoped test/Pint/Larastan
-  gate reported green (per this story's own closing record — not re-run by this docs pass, which
-  touched no application code).
+  `GenerateImageConversions`/`MediaValidationRules::MAX_DIMENSION` precedent. Commits `dd189e3`
+  (production fix for F-3 through F-7) and `20eea79` (their tests).
+- **M-1, M-2, N-1 through N-3 (Phase 5 code review, `code-reviewer`, single round)** — approved with
+  no blocking findings; M-1/M-2 are documentation hand-off gaps closed by this same Phase 6 pass
+  (the 0044 hand-off note and the `naming.md`/`README.md` stale counts), N-1/N-2 were two stale
+  comment references fixed directly in commit `befbc71`, and N-3 (no formal Phase 4 record in this
+  file) is what this section itself closes.
+- **Verdict:** all seven security-audit findings (F-1 through F-7) closed within the story; no
+  finding deferred to a later story. `code-reviewer` approved the Phase 5 round with the full
+  unscoped test/Pint/Larastan gate reported green (per this story's own closing record — not re-run
+  by this docs pass, which touched no application code).
 
 ## Provenance
 
