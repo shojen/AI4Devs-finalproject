@@ -789,7 +789,7 @@ component. Nothing on the screen references, links to, or shares anything with a
   count already carries the only number that matters here. Raised as **OQ-2** in case the product owner
   wants Users parity anyway; if it is added, the `summary` key comes back with it.
 - **D-8 — Sidebar entry branches on whether [0013](../done/0013-sidebar-module-gating-ui.md) has landed**, exactly
-  as [0039](../0039-payment-methods-ui.md) already specifies for itself:
+  as [0039](0039-payment-methods-ui.md) already specifies for itself:
   - *If 0013 has **not** landed (expected):* add one
     `<flux:sidebar.item icon="tag" :href="route('product-categories.index')" :current="request()->routeIs('product-categories.*')" wire:navigate>`
     to `resources/views/layouts/app/sidebar.blade.php`, with a comment noting it is scaffolding 0013's
@@ -988,7 +988,7 @@ Phase 1 (Three Amigos) debate run on 2026-08-18 with `frontend-expert` (files an
 block and Products acceptance criterion 2, grounded in full readings of
 [0023](../done/0023-product-categories-backend.md) and [0024](../done/0024-products-core-crud-backend.md), with
 [0006](../done/0006-users-list-editor-ui.md) / `App\Livewire\Users\Index` as the list+modal pattern and
-[0039](../0039-payment-methods-ui.md) as the precedent for a UI story's sidebar branching.
+[0039](0039-payment-methods-ui.md) as the precedent for a UI story's sidebar branching.
 
 Both amigos' contributions are reflected above, including **one recorded divergence** (**D-7**, whether
 the screen carries a header summary line — decided for QA's position, and re-raised as **OQ-2** so the
