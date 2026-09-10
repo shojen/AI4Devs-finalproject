@@ -18,14 +18,14 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
-As of this snapshot, `ai-spec/tasks/in-progress/` does not exist (no story is currently checked
-out into that stage), so every task is either `done/` (closed, merged) or still sitting directly
-in `ai-spec/tasks/` (not started). One additional file, `ci-database-connection-gap.md`, lives
-outside the `00XX-` numbering — it is an infrastructure fix (not a PRD-derived user story) and is
-already marked `Status: fixed and fully documented` inside its own file, so it is listed for
-completeness but excluded from the dependency graph and from the parallelization analysis below.
+As of this snapshot, `ai-spec/tasks/in-progress/` holds no files — every task is either `done/`
+(closed, merged) or still sitting directly in `ai-spec/tasks/` (not started). One additional file,
+`ci-database-connection-gap.md`, lives outside the `00XX-` numbering — it is an infrastructure fix
+(not a PRD-derived user story) and is already marked `Status: fixed and fully documented` inside
+its own file, so it is listed for completeness but excluded from the dependency graph and from the
+parallelization analysis below.
 
-- **95 files total**: 94 numbered user stories (53 `done/`, 41 still in `ai-spec/tasks/`) + 1
+- **95 files total**: 94 numbered user stories (54 `done/`, 40 still in `ai-spec/tasks/`) + 1
   non-numbered infrastructure doc (already resolved).
 - For a machine-readable, per-task claim registry that two parallel Claude Code sessions can use
   to coordinate against this same dependency data, see
@@ -35,8 +35,8 @@ completeness but excluded from the dependency graph and from the parallelization
 ## Table of contents
 
 - [Inventory](#inventory)
-  - [Done (53) — shipped, out of scope for this graph](#done-53--shipped-out-of-scope-for-this-graph)
-  - [Pending — not started (41 numbered + 1 infra doc)](#pending--not-started-41-numbered--1-infra-doc)
+  - [Done (54) — shipped, out of scope for this graph](#done-54--shipped-out-of-scope-for-this-graph)
+  - [Pending — not started (40 numbered + 1 infra doc)](#pending--not-started-40-numbered--1-infra-doc)
 - [Dependency graph (pending tasks only)](#dependency-graph-pending-tasks-only)
 - [Analysis](#analysis)
   - [Pending tasks that are independent of each other and safe to parallelize](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
@@ -46,7 +46,7 @@ completeness but excluded from the dependency graph and from the parallelization
 
 ## Inventory
 
-### Done (53) — shipped, out of scope for this graph
+### Done (54) — shipped, out of scope for this graph
 
 Already merged into `main`/`finalproject-ARP` and closed via the workflow's Phase 7; see
 [`ai-spec/tasks/done/`](tasks/done/) for each story's full file. Listed here only as IDs, grouped
@@ -55,15 +55,14 @@ appears as a node in the dependency graph below:
 
 - **Epic 1 — Users, Roles & Auth (20):** 0001, 0002, 0003, 0004, 0005, 0006, 0006b, 0007, 0008,
   0008a, 0009, 0010, 0011, 0012, 0013, 0014, 0015, 0015a, 0015b, 0040.
-- **Epic 2 — Products, Taxes, Media, Shipping (33):** 0016, 0017, 0018, 0019, 0019a, 0019b,
+- **Epic 2 — Products, Taxes, Media, Shipping (34):** 0016, 0017, 0018, 0019, 0019a, 0019b,
   0019c, 0019d, 0020, 0021, 0022, 0023, 0024, 0024a, 0024b, 0025, 0026, 0027, 0028, 0029, 0029a,
-  0029b, 0030, 0030a, 0031, 0031a, 0032, 0033, 0034, 0035, 0036, 0037, 0080.
+  0029b, 0030, 0030a, 0031, 0031a, 0032, 0033, 0034, 0035, 0036, 0037, 0038, 0080.
 
-### Pending — not started (41 numbered + 1 infra doc)
+### Pending — not started (40 numbered + 1 infra doc)
 
 | ID | Title | Epic area |
 | --- | --- | --- |
-| 0038 | Payment methods — bank transfer with a validated IBAN (backend) | Epic 2 — Payment methods |
 | 0039 | Payment methods — store-settings screen (UI) | Epic 2 — Payment methods |
 | 0041 | Customers CRUD backend | Epic 3 — Customers |
 | 0042 | Customers — soft delete (backend) | Epic 3 — Customers |
@@ -136,7 +135,6 @@ flowchart LR
 
     subgraph PEND_SHIP["Epic 2 cont. — Shipping / Payment"]
         direction TB
-        P0038["0038 Payment methods BE"]
         P0039["0039 Payment methods UI"]
     end
 
@@ -199,9 +197,6 @@ flowchart LR
         P0079["0079 Blog post editor i18n UI"]
     end
 
-    %% Shipping / Payment
-    P0038 --> P0039
-
     %% Customers
     P0041 --> P0042
     P0041 --> P0043
@@ -211,7 +206,6 @@ flowchart LR
 
     %% Orders core + siblings
     P0041 --> P0045
-    P0038 --> P0045
     P0042 -.-> P0045
     P0045 --> P0046
     P0043 --> P0046
@@ -306,8 +300,8 @@ flowchart LR
     P0070 --> P0079
     P0068 --> P0079
 
-    class P0039,P0042,P0043,P0044,P0045,P0046,P0047,P0048,P0049,P0050,P0051,P0052,P0053,P0054,P0055,P0056,P0057,P0060,P0061,P0062,P0063,P0064,P0065,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0038,P0041,P0058,P0059,P0068 ready;
+    class P0042,P0043,P0044,P0045,P0046,P0047,P0048,P0049,P0050,P0051,P0052,P0053,P0054,P0055,P0056,P0057,P0060,P0061,P0062,P0063,P0064,P0065,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
+    class P0039,P0041,P0058,P0059,P0068 ready;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
@@ -322,9 +316,8 @@ yellow (`pending`) = still blocked on at least one open pending dependency.
 These are the tasks whose **entire dependency chain is already `done/`** — nothing pending blocks
 them — the five green `ready` nodes in the diagram above:
 
-- **0038 — Payment methods (backend).** Depends only on `done/0002`. A brand-new domain
-  (`payment_methods` table, its own model/policy/routes) with no overlap with any other pending
-  story. Ready now.
+- **0039 — Payment methods UI.** Its only dependency, `0038` (Payment methods backend), shipped —
+  see [`done/0038`](tasks/done/0038-payment-methods-bank-transfer-backend.md). Ready now.
 - **0041 — Customers CRUD (backend).** "This story depends on no other Epic 3 story… it can start
   immediately." A brand-new domain (`customers` table). Ready now.
 - **0058 — Blog categories (backend).** "None inside Epic 4 for its schema, model, actions or
@@ -337,19 +330,19 @@ them — the five green `ready` nodes in the diagram above:
   ultimately depends on it), it is also the single highest-leverage task to start first if only
   one of the five can be picked up immediately.
 
-**0038, 0041 and 0068 are fully independent of each other and of 0058/0059** — three separate
-domains (payment methods, customers, the store-languages catalog), no shared files, no shared
-tables, and none of them appears in the other's `conflict_risk_with` set in
+**0039, 0041 and 0068 are fully independent of each other and of 0058/0059** — three separate
+domains (the payment methods UI, customers, the store-languages catalog), no shared files, no
+shared tables, and none of them appears in the other's `conflict_risk_with` set in
 [`ai-spec/tasks-status.json`](tasks-status.json). All three can be dispatched to parallel
 agents/worktrees today with no coordination needed beyond the project's usual per-branch worktree
 isolation (see [`docs/testing/worktree-databases.md`](../docs/testing/worktree-databases.md)).
 
-**0037 already closed** (it went dependency-ready the moment `0036` shipped, a second session
-claimed it via `tasks-status.json`, and it is now in `done/` too) — a real, worked instance of
-why the JSON registry exists alongside this diagram: a task can turn dependency-ready and get
-claimed by another session before this snapshot is regenerated, so the JSON's live `status`/
-`claimed_by` is always the thing to check before dispatching a "ready" node from here, never this
-diagram alone.
+**0037 and 0038 already closed** (each went dependency-ready the moment its own blocker shipped —
+`0036` for `0037`, nothing pending at all for `0038` — a session claimed it via `tasks-status.json`,
+and it is now in `done/` too) — a real, worked instance of why the JSON registry exists alongside
+this diagram: a task can turn dependency-ready and get claimed by another session before this
+snapshot is regenerated, so the JSON's live `status`/`claimed_by` is always the thing to check
+before dispatching a "ready" node from here, never this diagram alone.
 
 **0058 and 0059 are a softer case.** Neither blocks the other and both are ready today, but both
 land inside `app/Actions/Blog/` (different files — `CreateBlogCategory`/`RenameBlogCategory`/
@@ -370,10 +363,10 @@ did (per the note above); the same will happen for **0060** the moment **0059** 
 The dependency graph above makes most of the backlog a strict sequencing problem rather than a
 parallelization one. The major chains, in the order they must be executed:
 
-1. **Customers → Orders (Epic 3).** `0041 → {0042, 0043} → 0044`. Then `0045` depends on `0041`
-   plus the still-pending payment story `0038` (`0036`, its former third blocker, is now `done`,
-   alongside its other already-shipped prerequisites `done/0024`/`done/0029`/`done/0035` — see the
-   graph note above). `0045` is
+1. **Customers → Orders (Epic 3).** `0041 → {0042, 0043} → 0044`. Then `0045` depends on `0041` —
+   its other two former blockers, `0036` and `0038`, are now both `done`, alongside its other
+   already-shipped prerequisites `done/0024`/`done/0029`/`done/0035` — see the graph note above.
+   `0045` is
    the single biggest hub in the backlog: it gates `0046`, `0047` (also needs `0042`+`0044`),
    `0048`, `0049`, `0050` (also needs `0049` and `0051`), `0051`, `0052` (via `0051`), `0053`, and
    `0054`. **`0055` (the Orders UI) is the epic's terminal node** — its own task file states Phase

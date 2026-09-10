@@ -387,7 +387,7 @@ dark mode and produces no JavaScript console errors.
       Configure action.
 
 ## Dependencies & risks
-- **Depends on 0038 (`ai-spec/tasks/0038-payment-methods-bank-transfer-backend.md`), which is still
+- **Depends on 0038 (`ai-spec/tasks/done/0038-payment-methods-bank-transfer-backend.md`), which is still
   at the `new` stage.** Verified against the working tree: there is no `payment_methods` migration,
   no `App\Models\PaymentMethod`, no `PaymentMethodPolicy`, and `routes/web.php` registers no
   `payment-methods.index`. Per the

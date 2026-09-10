@@ -19,5 +19,6 @@ class ProductionSeeder extends Seeder
         $this->call(SalesRegionSeeder::class);
         $this->call(GeographyCatalogSeeder::class);
         $this->call(ShippingCarrierSeeder::class);
+        $this->call(PaymentMethodSeeder::class);
     }
 }
