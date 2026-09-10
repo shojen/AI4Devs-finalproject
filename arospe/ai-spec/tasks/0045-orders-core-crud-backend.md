@@ -906,7 +906,7 @@ rediscovery.
   does **not** apply the `SoftDeletingScope`
   ([schema.md](../../docs/database/schema.md#soft-deletes)), so a soft-deleted customer's id passes
   validation. That is the *correct* behaviour here and is left as-is: story
-  [0042](0042-customers-soft-delete-backend.md) soft-deletes customers precisely so their order history
+  [0042](done/0042-customers-soft-delete-backend.md) soft-deletes customers precisely so their order history
   survives, and PRD §3.1's stated reason is "so a customer's orders are never orphaned". Refusing to
   record an order against a trashed customer would fight that. Recorded explicitly so `appsec-auditor`
   sees a decision rather than an oversight, and so a later story does not "fix" it. **If a product rule
@@ -952,7 +952,7 @@ rediscovery.
 | Depends on | State | Verified how |
 | --- | --- | --- |
 | `customers` table + `App\Models\Customer` | story [0041](done/0041-customers-crud-backend.md) — **hard dependency; confirm it is `done` before Phase 3** | `orders.customer_id` FKs it; the address snapshot copies its twelve columns |
-| `customers.deleted_at` (soft delete) | story [0042](0042-customers-soft-delete-backend.md) — **related; confirm its state at the same time** | **D-12** depends on it existing; 0042's own forward note prescribes `restrictOnDelete()` on `orders.customer_id`, which this story honours verbatim. If 0042 has not landed, **D-12** is simply not yet reachable — it does not change this story's schema |
+| `customers.deleted_at` (soft delete) | story [0042](done/0042-customers-soft-delete-backend.md) — **related; confirm its state at the same time** | **D-12** depends on it existing; 0042's own forward note prescribes `restrictOnDelete()` on `orders.customer_id`, which this story honours verbatim. If 0042 has not landed, **D-12** is simply not yet reachable — it does not change this story's schema |
 | `sales_regions` table | task 0016 — **done (shipped)** | `docs/database/schema.md` § `sales_regions`; `orders.tax_rate`'s `decimal(6,3)` mirrors `sales_regions.rate` |
 | `orders.*` permissions in the seeded catalog | **shipped** | `RolePermissionSeeder::MODULES` carries `orders` |
 | `Gate::before` Super Admin bypass | **shipped** (Epic 1) | `docs/architecture/authorization.md` |

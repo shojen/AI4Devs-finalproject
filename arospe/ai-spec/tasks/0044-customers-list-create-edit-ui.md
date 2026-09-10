@@ -708,7 +708,7 @@ is none. Second, the hint is still a **hint**: it is layered on top of the compo
 `$customer->delete()` on the resolved model instance after `Gate::authorize('delete', $customer)`.**
 
 This is the residue of the delete-path ownership question, now settled in all three files (0042's
-[Resolved questions](0042-customers-soft-delete-backend.md#resolved-questions) carries the ownership
+[Resolved questions](done/0042-customers-soft-delete-backend.md#resolved-questions) carries the ownership
 table): 0041 ships **no Livewire component** (its **D-1**), and 0042 is a backend story owning a column,
 a trait and one added policy method. Neither can hold a `wire:click` handler, so the delete path's *UI
 half* is necessarily here — while the *ability* it authorizes against is 0042's.
@@ -839,7 +839,7 @@ is higher for exactly that reason.
 | Depends on | What this story consumes from it | Why it is hard, not soft |
 | --- | --- | --- |
 | [0041](done/0041-customers-crud-backend.md) | `customers` table, `App\Models\Customer`, `CustomerValidationRules`, `CreateCustomer`, `UpdateCustomer`, the **D-15** retrieval contract | Every property this view binds, every rule it validates against and every write it dispatches is defined there. Nothing renders without it. |
-| [0042](0042-customers-soft-delete-backend.md) | `customers.deleted_at`, `SoftDeletes` on the model, the `customers.delete` gate | The delete affordance's *semantics* — "leaves the list, record survives" — are 0042's. Without it, this screen's delete button would hard-delete. |
+| [0042](done/0042-customers-soft-delete-backend.md) | `customers.deleted_at`, `SoftDeletes` on the model, the `customers.delete` gate | The delete affordance's *semantics* — "leaves the list, record survives" — are 0042's. Without it, this screen's delete button would hard-delete. |
 | [0043](0043-customers-new-customer-notification-backend.md) | Nothing at the view layer — but `CreateCustomer` gains a **constructor dependency** | That is what makes `new CreateCustomer` break. This story must resolve the action from the container; landing before 0043 would let a `new` call site through review and break it later. |
 
 **Two inconsistencies between the sibling files, both composed in parallel. The first is now resolved;
