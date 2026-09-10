@@ -2,7 +2,7 @@
 
 ## Description
 Introduce the `payment_methods` table and the store-settings backend behind PRD [§2.5 Payment
-Methods](../../docs/PRD/PRD.md#25-payment-methods-store-settings): a catalog seeded with exactly one
+Methods](../../../docs/PRD/PRD.md#25-payment-methods-store-settings): a catalog seeded with exactly one
 method — **bank transfer** — carrying a single configurable field, an **IBAN**. This story owns the
 schema, the seeder, the save/edit path, and IBAN validation (structure **plus** the ISO 7064 mod-97
 checksum). No Blade/Flux markup and no browser tests: the screen's real UI is a paired frontend
@@ -156,13 +156,13 @@ public function down(): void
   **`code` is not future-proofing** — it earns its place from a requirement *this* story has: an
   idempotent seeder needs a stable machine key that is not the mutable `iban`, exactly mirroring
   `Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web'])` in
-  [`RolePermissionSeeder`](../../database/seeders/RolePermissionSeeder.php). The PRD's own framing is
+  [`RolePermissionSeeder`](../../../database/seeders/RolePermissionSeeder.php). The PRD's own framing is
   plural ("which payment methods are **available**") and
-  [`RolePermissionSeeder::MODULES`](../../database/seeders/RolePermissionSeeder.php) already carries
+  [`RolePermissionSeeder::MODULES`](../../../database/seeders/RolePermissionSeeder.php) already carries
   `payment-methods` as a full CRUD module, so a type-specific table would force a breaking rename the
   moment method #2 exists. Method #2, when it comes, gets its own alteration migration adding its own
   nullable columns — the real precedent being `add_two_factor_columns_to_users_table` and
-  `add_status_to_users_table` (see [migrations.md](../../docs/database/migrations.md#adding-a-column-to-an-existing-table)).
+  `add_status_to_users_table` (see [migrations.md](../../../docs/database/migrations.md#adding-a-column-to-an-existing-table)).
   Recorded explicitly so a reviewer does not read a discriminator on a one-row table as scope creep
   that slipped past unexamined.
 - **`$table->uuid('id')->primary()` — UUID v7, per an explicit user decision that overrides this
@@ -170,7 +170,7 @@ public function down(): void
   (bigint), and so did `product-owner`; the user resolved it the other way. See
   [Documented functional decisions](#documented-functional-decisions) for the reasoning and the ADR
   consequence. The migration-side pattern is the one in
-  [migrations.md](../../docs/database/migrations.md#uuid-primary-keys); the key is a `CHAR(36)`
+  [migrations.md](../../../docs/database/migrations.md#uuid-primary-keys); the key is a `CHAR(36)`
   string, so Epic 3's `orders.payment_method_id` is a `foreignUuid(...)`, never a `foreignId(...)`.
 - **`string(30)` and `string(34)`, not bare `string()`** — same reasoning `add_status_to_users_table`
   applies: a bare `string()` is `VARCHAR(255)`. `34` is IBAN's real ISO 13616 maximum (not Spain's
@@ -181,15 +181,15 @@ public function down(): void
   checksum-valid-looking account number sitting in production. `NULL` *is* "not yet configured".
 - **Unique index on `code` — the one load-bearing index.** It makes `firstOrCreate(['code' => …])`
   idempotent and turns "exactly one row per method" into a database invariant rather than a seeder
-  convention, justified the same way [schema.md](../../docs/database/schema.md#users) justifies
+  convention, justified the same way [schema.md](../../../docs/database/schema.md#users) justifies
   `pending_email`'s unique index.
 - **No separate `$table->index('code')`.** `->unique()` already creates a b-tree index; adding an
   explicit second one would recreate this repo's own recorded mistake — the redundant
-  `users_uuid_unique` index in [errors-log.md](../../docs/errors-log.md). The "explicitly index FK
+  `users_uuid_unique` index in [errors-log.md](../../../docs/errors-log.md). The "explicitly index FK
   columns" habit from `create_passkeys_table` applies to **foreign keys**, not to a column that
   already carries a unique constraint. Do not over-apply it here.
 - **No index on `iban`** — never queried by, never a join key, at most a handful of rows ever. Same
-  reasoning [schema.md](../../docs/database/schema.md#users) gives for omitting one on `status`.
+  reasoning [schema.md](../../../docs/database/schema.md#users) gives for omitting one on `status`.
 - **No `is_active` / `enabled` column — decided, not forgotten.** Shipping (§2.4) has an explicit
   enable/disable acceptance criterion; §2.5 has none — only list, configure IBAN, reject invalid
   IBAN. A boolean no screen reads and no AC requires is speculative design. It arrives as
@@ -197,22 +197,22 @@ public function down(): void
   "configured-but-hidden" a real distinction.
 - **No `deleted_at` / `SoftDeletes`** — no AC in this story deletes a payment method, and the delete
   path is refused outright (see the policy below).
-- **`down()` is the exact inverse of `up()`**, per [migrations.md](../../docs/database/migrations.md#structure).
+- **`down()` is the exact inverse of `up()`**, per [migrations.md](../../../docs/database/migrations.md#structure).
 
 ### Enum and translations
 
 - `app/Enums/PaymentMethodCode.php` — **new**. Backed string enum, TitleCase key:
   `case BankTransfer = 'bank_transfer';`, plus `label(): string` returning
   `__('payment_methods.names.'.$this->value)`. This mirrors
-  [`App\Enums\UserStatus`](../../app/Enums/UserStatus.php) exactly, including the deliberate
+  [`App\Enums\UserStatus`](../../../app/Enums/UserStatus.php) exactly, including the deliberate
   "`string` column + PHP enum, never a native MySQL `enum`" choice recorded in
-  [migrations.md](../../docs/database/migrations.md#when-the-new-columns-default-is-wrong-for-existing-rows-backfill-in-the-same-up).
+  [migrations.md](../../../docs/database/migrations.md#when-the-new-columns-default-is-wrong-for-existing-rows-backfill-in-the-same-up).
   The class is named after the column it casts (`code`), so the two cannot drift.
 - **No `name` / `label` column on the table.** Following `UserStatus`'s precedent, the human-readable
   label is a translation key off the `code`, not stored data — a stored label would have to be kept
   in sync with `lang/en/` and `lang/es/` *and* the database by hand.
 - `lang/en/payment_methods.php` + `lang/es/payment_methods.php` — **new**, key-for-key identical per
-  [naming.md](../../docs/conventions/naming.md#translation-keys). Keys: `names.bank_transfer`, the
+  [naming.md](../../../docs/conventions/naming.md#translation-keys). Keys: `names.bank_transfer`, the
   `iban.invalid` validation message, and the "not yet configured" copy. Both files ship in this story
   even though it renders no real UI, because `PaymentMethodCode::label()` is a backend concern.
   `APP_LOCALE=en` today, so everything renders English until Epic 5 — accepted and documented, not a
@@ -247,13 +247,13 @@ public function down(): void
 
   - **`code` is deliberately omitted from `#[Fillable]`** — the same omission-as-mass-assignment-guard
     convention `users.status` and `users.pending_email` use
-    ([base-standards.md](../../docs/conventions/base-standards.md#model-conventions)). It is an
+    ([base-standards.md](../../../docs/conventions/base-standards.md#model-conventions)). It is an
     identity column written only by the seeder, never by an admin form. `iban` is the single
     admin-settable column, so it *is* fillable — unlike `users.status`, an administrator setting it
     through a form is precisely the intended path.
   - **`use HasUuids;` and `@property string $id`, with no `$keyType` / `$incrementing` properties** —
     the trait's `HasUniqueStringIds` concern already overrides those as *methods*, so restating them
-    is the redundancy [base-standards.md](../../docs/conventions/base-standards.md#uuid-primary-keys)
+    is the redundancy [base-standards.md](../../../docs/conventions/base-standards.md#uuid-primary-keys)
     calls out. `Str::uuid7()` is the trait's default `newUniqueId()`; do not override it or
     substitute `HasUlids`. The factory needs no change — the trait populates the key just before
     insert. One behavioural consequence to expect once the frontend story adds route-model binding:
@@ -271,7 +271,7 @@ public function down(): void
   **`app/Rules/` is a stock Laravel location, not a new base folder needing approval** — verified by
   running `php artisan list`, which carries `make:rule` ("Create a new validation rule"); its stub
   target is `app/Rules/`. Same carve-out as `app/Enums/`, `app/Listeners/`, `app/Policies/` in
-  [base-standards.md](../../docs/conventions/base-standards.md#directory-structure). Phase 6 must add
+  [base-standards.md](../../../docs/conventions/base-standards.md#directory-structure). Phase 6 must add
   the folder to that directory listing.
 
   ```php
@@ -346,7 +346,7 @@ public function down(): void
 
 - `app/Concerns/PaymentMethodValidationRules.php` — **new**, matching the
   `<Noun>ValidationRules` / `<noun>Rules()` convention in
-  [naming.md](../../docs/conventions/naming.md#traits-and-their-methods) and staying flat and
+  [naming.md](../../../docs/conventions/naming.md#traits-and-their-methods) and staying flat and
   single-concern like its three siblings:
 
   ```php
@@ -367,7 +367,7 @@ public function down(): void
 IBANs are conventionally printed and typed in four-character groups (`ES91 2100 0418 4502 0005
 1332`), and mod-97 cannot tolerate the spaces. This repo has already paid twice for getting
 normalisation ordering wrong (the email lowercasing in story 0003, and the `getOriginal()` slip in
-0007 — both in [errors-log.md](../../docs/errors-log.md)), so the layering is specified here rather
+0007 — both in [errors-log.md](../../../docs/errors-log.md)), so the layering is specified here rather
 than left to Phase 3:
 
 1. **Load-bearing — the Livewire component, as the statement immediately before `validate()`**,
@@ -392,11 +392,11 @@ decouples it from the component's expectations; the rule's docblock says so.
 
 - `app/Actions/PaymentMethods/UpdatePaymentMethodIban.php` — **new**, invokable, imperative
   verb-phrase name with no `Action`/`Service` suffix per
-  [naming.md](../../docs/conventions/naming.md#classes). `__invoke(PaymentMethod $method, string $iban): void`.
+  [naming.md](../../../docs/conventions/naming.md#classes). `__invoke(PaymentMethod $method, string $iban): void`.
   Normalises (step 2 above) and persists. A new `app/Actions/PaymentMethods/` subfolder is the
   per-domain grouping `app/Actions/` already uses (`Fortify/`, `Users/`).
 - `app/Livewire/PaymentMethods/Index.php` — **new**, class-based per
-  [base-standards.md](../../docs/conventions/base-standards.md#livewire-component-convention-class-based-not-single-file),
+  [base-standards.md](../../../docs/conventions/base-standards.md#livewire-component-convention-class-based-not-single-file),
   with `#[Title('Payment methods')]`.
 
   **This component's public surface is a contract the paired frontend story (0039) builds against, so
@@ -435,7 +435,7 @@ decouples it from the component's expectations; the rule's docblock says so.
     hardcoded lookup: the component queries the table normally, and the "only one method" guarantee
     comes from the three enforcement layers below. Do not special-case it.
   - **`canEdit` is a per-row `Gate::allows('update', $method)`**, following the pattern
-    [authorization.md](../../docs/architecture/authorization.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)
+    [authorization.md](../../../docs/architecture/authorization.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)
     documents from the Users list, and it must satisfy that section's four rules. Two are easy to get
     wrong here: it must call **the same policy method `save()` authorizes against**, never a re-stated
     `$user->can('payment-methods.edit')` — a restatement goes stale the first time
@@ -450,7 +450,7 @@ decouples it from the component's expectations; the rule's docblock says so.
     **populates `$iban` from the resolved model, never from `$paymentMethods`**. That array is a
     public property and therefore client-writable, so backing the form's values out of it would let a
     tampered payload seed the modal; the rule is recorded in
-    [blade-livewire-output-encoding.md](../../docs/security/blade-livewire-output-encoding.md). It
+    [blade-livewire-output-encoding.md](../../../docs/security/blade-livewire-output-encoding.md). It
     assigns `$this->iban = $target->iban ?? ''` (the `?? ''` is what keeps the never-`null` invariant
     above) and sets `$showModal = true`.
   - **`$editingMethodId` is `#[Locked]`**, matching `$editingUserId`: `save()` re-resolves the target
@@ -459,14 +459,14 @@ decouples it from the component's expectations; the rule's docblock says so.
   - **`closeModal()` resets `$editingMethodId`, `$iban` and `$showModal`**, so a cancelled edit
     cannot leak the previous target's value into the next one.
 - `resources/views/livewire/payment-methods.blade.php` — **new, minimal placeholder only.** Note the
-  [`Index`-in-a-subfolder exception](../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name):
+  [`Index`-in-a-subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name):
   `App\Livewire\PaymentMethods\Index` resolves to this **flat** path, one level shallower than its
   class — not `payment-methods/index.blade.php`. The placeholder exists so `Livewire::test()` can
   render; the real card/list + edit UI is **story 0039**, which consumes the contract above and which
   per the PRD should follow
   the shipping-carrier-card or tax-rules-list pattern. This mirrors 0004 → 0006 exactly.
 - `app/Policies/PaymentMethodPolicy.php` — **new**, auto-discovered by name (no `AuthServiceProvider`
-  — see [base-standards.md](../../docs/conventions/base-standards.md#directory-structure)):
+  — see [base-standards.md](../../../docs/conventions/base-standards.md#directory-structure)):
   `viewAny()` → `payment-methods.view`; `update()` → `payment-methods.edit`; and `create()` /
   `delete()` **explicitly returning `false`**.
 - `routes/web.php` — **modify**, inside the existing `auth` + `verified` group beside `users.index`:
@@ -481,12 +481,12 @@ decouples it from the component's expectations; the rule's docblock says so.
   `Authorize` but not Spatie's `PermissionMiddleware`, so `permission:` would protect the initial
   `GET` only and leave every `save()` round-trip unauthorised at the route layer. This is why the
   component re-authorises in `mount()` and `save()` regardless. See
-  [authorization.md](../../docs/architecture/authorization.md) and
-  [livewire-authorization.md](../../docs/security/livewire-authorization.md). `routes/web.php` rather
+  [authorization.md](../../../docs/architecture/authorization.md) and
+  [livewire-authorization.md](../../../docs/security/livewire-authorization.md). `routes/web.php` rather
   than `routes/settings.php`: the latter is scoped to the *acting user's own account*, not store-wide
   configuration.
 - **No change to the permission catalog.** `payment-methods.view/create/edit/delete` already exist in
-  [`RolePermissionSeeder::MODULES`](../../database/seeders/RolePermissionSeeder.php) and are already
+  [`RolePermissionSeeder::MODULES`](../../../database/seeders/RolePermissionSeeder.php) and are already
   granted to `Administrator`. This story adds no permission and reseeds no grant.
 
 ### Seeder and factory
@@ -496,7 +496,7 @@ decouples it from the component's expectations; the rule's docblock says so.
   is reserved for throwaway fixtures like `test@example.com`; this row is **required application
   data** of exactly the same class as the roles/permissions catalog — Epic 3's orders will reference
   it, so the app is incomplete until it has run, and `db:seed` is a production deployment step here
-  (see [seeder-safety.md](../../docs/security/seeder-safety.md)).
+  (see [seeder-safety.md](../../../docs/security/seeder-safety.md)).
 
   ```php
   PaymentMethod::firstOrCreate(
@@ -560,7 +560,7 @@ tables; a "delete the last remaining payment method" guard; a `routes/store-sett
 > round-trip.** MySQL's default `utf8mb4_*_ci` collation is case-insensitive, so a "lowercase is
 > rejected" test written as a round-trip could pass because the engine folded the value, not because
 > validation refused it — the same class of masking recorded for case normalisation in
-> [soft-delete-patterns.md](../../docs/security/soft-delete-patterns.md).
+> [soft-delete-patterns.md](../../../docs/security/soft-delete-patterns.md).
 
 **The IBAN dataset** — `tests/Datasets/Ibans.php` (or inline). **Every value below was verified by
 executing the exact `Iban` implementation from this story** (structure regex, then chunked mod-97),
@@ -615,8 +615,8 @@ dataset('invalid_ibans', [
 - [ ] An `Administrator` (holds `payment-methods.edit`) can set the IBAN.
 - [ ] A user with no role is refused **and** the IBAN is unchanged.
 - [ ] **An actor holding every *other* module's `edit` permission but not `payment-methods.edit` is refused.** This is the case that catches a policy that checks the wrong permission string — a very plausible copy-paste slip given this story scaffolds from `UserPolicy`. Precedent: `IndexTest`'s "a blog editor whose role does not grant `users.view` is denied server-side".
-- [ ] A `Super Admin` — who holds **no** direct `payment-methods.*` grant and reaches it only through the `Gate::before` bypass — can set the IBAN. Regression guard for the bypass coverage gap in [authorization.md](../../docs/architecture/authorization.md).
-- [ ] `GET /payment-methods` is refused (403) for an actor without `payment-methods.view`, and reached by one with it. **An HTTP test and a `Livewire::test()` test are not substitutes for each other** here — see [testing/README.md](../../docs/testing/README.md).
+- [ ] A `Super Admin` — who holds **no** direct `payment-methods.*` grant and reaches it only through the `Gate::before` bypass — can set the IBAN. Regression guard for the bypass coverage gap in [authorization.md](../../../docs/architecture/authorization.md).
+- [ ] `GET /payment-methods` is refused (403) for an actor without `payment-methods.view`, and reached by one with it. **An HTTP test and a `Livewire::test()` test are not substitutes for each other** here — see [testing/README.md](../../../docs/testing/README.md).
 - [ ] `Gate::denies('create', PaymentMethod::class)` and `Gate::denies('delete', $method)` for an `Administrator` — i.e. the block holds *despite* that role legitimately holding those permissions.
 
 **`tests/Feature/Seeders/PaymentMethodSeederTest.php`**
@@ -624,9 +624,9 @@ dataset('invalid_ibans', [
 - [ ] **"Bank transfer is the only method" asserts count *and* identity** — `toHaveCount(1)` **and** `first()->code === PaymentMethodCode::BankTransfer`. Count alone passes against "seeded the wrong method"; identity alone passes against "seeded two". Do not assert on a hardcoded row id, which couples the test to seeder internals.
 - [ ] Seeding twice still yields exactly one row (idempotency). This is a **separate test** from the one above — a single-run assertion tells you nothing about second-run behaviour, and one test must not claim to cover both.
 - [ ] **Re-running the seeder does not clobber an administrator-configured IBAN**: seed, write an IBAN, seed again, assert the IBAN survives. This is the `firstOrCreate`-vs-`updateOrCreate` regression, and it is the difference between a correct seeder and silent production data loss. Write it before trusting the seeder's shape, not after.
-- [ ] Per the ambient-`.env` lesson in [errors-log.md](../../docs/errors-log.md), if any of these tests touch `DatabaseSeeder` (which also runs `RolePermissionSeeder`), neutralise `config(['auth.super_admin.email' => null])` first rather than assuming a clean `.env`.
+- [ ] Per the ambient-`.env` lesson in [errors-log.md](../../../docs/errors-log.md), if any of these tests touch `DatabaseSeeder` (which also runs `RolePermissionSeeder`), neutralise `config(['auth.super_admin.email' => null])` first rather than assuming a clean `.env`.
 
-**Deliberately not tested** (per [what-not-to-test.md](../../docs/testing/qa/what-not-to-test.md)):
+**Deliberately not tested** (per [what-not-to-test.md](../../../docs/testing/qa/what-not-to-test.md)):
 migration `up()`/`down()` mechanics (`RefreshDatabase` runs every migration each run; `down()`
 symmetry is a code-review item); mod-97 as abstract mathematics reimplemented in a test — exercise it
 *through* `ibanRules()`, which is what actually gates the app; an exhaustive sweep of all ~70
@@ -666,16 +666,16 @@ foreign key, a relation, or an `orders` table** — those are Epic 3's to create
 - [ ] PRD AC 4 (an order references a configured payment method) is **not** implemented here, and its absence is recorded as Epic 3 scope rather than a gap.
 
 ## Definition of Done
-- [ ] Tests written and green, plus the **full** existing suite (per the Full Test Suite Gate Rule in [contracts.md](../../docs/contracts.md)).
+- [ ] Tests written and green, plus the **full** existing suite (per the Full Test Suite Gate Rule in [contracts.md](../../../docs/contracts.md)).
 - [ ] Code reviewed (code-reviewer).
 - [ ] No security findings (appsec-auditor) — specifically: that `save()` re-authorises rather than trusting route middleware; that `code` is genuinely unwritable by mass assignment; that the seeder cannot clobber a configured IBAN; and that an IBAN is never echoed into a `wire:*` directive without `@js()` when the frontend story lands.
-- [ ] Documentation updated (docs-keeper) — [database/schema.md](../../docs/database/schema.md) (new `payment_methods` section + ER diagram), [api/routes.md](../../docs/api/routes.md) (`payment-methods.index` as the second permission-gated route), [architecture/authorization.md](../../docs/architecture/authorization.md) (`PaymentMethodPolicy`, and the deliberate `create`/`delete` refusal despite the seeded grants), [conventions/base-standards.md](../../docs/conventions/base-standards.md) (add `app/Rules/` and `app/Actions/PaymentMethods/` to the directory listing), and — **required, not conditional** — an amendment to [ADR 0001](../../docs/decisions/0001-uuid-primary-keys.md) recording that UUID v7 is now the standing policy for all new Epic 2 business entities (with story 0032's shipping geography catalog as the named exception), superseding its closed list of seven. See decision D-1.
+- [ ] Documentation updated (docs-keeper) — [database/schema.md](../../../docs/database/schema.md) (new `payment_methods` section + ER diagram), [api/routes.md](../../../docs/api/routes.md) (`payment-methods.index` as the second permission-gated route), [architecture/authorization.md](../../../docs/architecture/authorization.md) (`PaymentMethodPolicy`, and the deliberate `create`/`delete` refusal despite the seeded grants), [conventions/base-standards.md](../../../docs/conventions/base-standards.md) (add `app/Rules/` and `app/Actions/PaymentMethods/` to the directory listing), and — **required, not conditional** — an amendment to [ADR 0001](../../../docs/decisions/0001-uuid-primary-keys.md) recording that UUID v7 is now the standing policy for all new Epic 2 business entities (with story 0032's shipping geography catalog as the named exception), superseding its closed list of seven. See decision D-1.
 - [ ] Acceptance criteria met.
 
 ## Dependencies and related work
 - **Depends on story 0002** (the seeded roles/permissions catalog) only in that `payment-methods.*` must already exist. It does; no seeder change is needed.
 - **No dependency within Epic 2.** This story touches no products, taxes, sales regions or shipping.
-- **Story 0039 (the paired frontend half) depends on this one** and is numbered after it, per the [task ordering rule](../../docs/workflow.md#task-ordering-rule): its Blade markup binds to this component's public surface, which is why that surface is specified in full above rather than discovered during Phase 3. Any change to it after 0039's Phase 1 is a change to 0039's contract and must be relayed, not made silently.
+- **Story 0039 (the paired frontend half) depends on this one** and is numbered after it, per the [task ordering rule](../../../docs/workflow.md#task-ordering-rule): its Blade markup binds to this component's public surface, which is why that surface is specified in full above rather than discovered during Phase 3. Any change to it after 0039's Phase 1 is a change to 0039's contract and must be relayed, not made silently.
 - **Epic 3 (Orders) depends on this one** for the record it will reference. Three notes to carry forward, none actionable here: `orders.payment_method_id` is a **`foreignUuid(...)`**, not a `foreignId(...)`, since this table keys on a UUID (decision D-1); it should be `restrictOnDelete()`, never `cascadeOnDelete()`; and if a future story ever wires the unused `payment-methods.delete` permission to a real delete action, deleting the only row would leave the store with zero payment methods and break order creation — that guard belongs to whichever story introduces the delete path, not to this one. Nothing in this schema forecloses either.
 
 ## Resolved in the debate
@@ -683,7 +683,7 @@ foreign key, a relation, or an `orders` table** — those are Epic 3's to create
 - **Checksum, not structure-only.** Structure-only validation would accept a single mistyped digit in an account number the store is asking customers to wire money to.
 - **No new Composer dependency.** Chunked modulo keeps mod-97 in pure PHP with no `ext-bcmath`/`ext-gmp` requirement. (A package remains available as OQ-2 if the human prefers it.)
 - **No `is_active` column.** §2.4 Shipping has an explicit enable/disable AC; §2.5 has none. `database-expert` raised this as a genuine judgment call; decided here as a product call, on the PRD's silence.
-- **Authorization lives in the Livewire component, not in the action.** `backend-qa` proposed pushing `Gate::authorize()` into `UpdatePaymentMethodIban` so the action is not callable unguarded. Declined for consistency: every existing action in this repo (`CreateUser`, `UpdateUser`, `RequestEmailChange`) is an unguarded domain operation, with authorization at the Livewire boundary — introducing a second, contradictory pattern in a low-risk story is worse than the marginal exposure, since the action has exactly one call site and no HTTP boundary of its own. **Flagged for Phase 4** so `appsec-auditor` sees the decision rather than discovering it, and note the distinction that [livewire-authorization.md](../../docs/security/livewire-authorization.md) actually draws: a *business rule* enforced only in a component is bypassed by other call sites — which is precisely why normalisation and validation **are** duplicated in the action.
+- **Authorization lives in the Livewire component, not in the action.** `backend-qa` proposed pushing `Gate::authorize()` into `UpdatePaymentMethodIban` so the action is not callable unguarded. Declined for consistency: every existing action in this repo (`CreateUser`, `UpdateUser`, `RequestEmailChange`) is an unguarded domain operation, with authorization at the Livewire boundary — introducing a second, contradictory pattern in a low-risk story is worse than the marginal exposure, since the action has exactly one call site and no HTTP boundary of its own. **Flagged for Phase 4** so `appsec-auditor` sees the decision rather than discovering it, and note the distinction that [livewire-authorization.md](../../../docs/security/livewire-authorization.md) actually draws: a *business rule* enforced only in a component is bypassed by other call sites — which is precisely why normalisation and validation **are** duplicated in the action.
 - **Spaces**: rejected by the `Iban` rule, accepted by the *screen* because the component normalises first. Both amigos' positions reconcile to this; the dataset above reflects it (spaces appear only in the rule-level invalid set, while the component-level test asserts a spaced IBAN saves successfully and is stored unspaced).
 
 ## Open questions
@@ -701,8 +701,8 @@ mirroring how `routes/settings.php` isolates personal-account screens — may be
 
 **D-1 — UUID v7 primary key. Explicit user decision, overriding this debate's unanimous
 recommendation.** `database-expert`, `backend-expert` and `product-owner` all recommended
-`$table->id()` (bigint), reasoning that [ADR 0001](../../docs/decisions/0001-uuid-primary-keys.md)
-and PRD [assumption 19](../../docs/PRD/PRD.md#assumptions--confirmed-decisions) enumerate **exactly
+`$table->id()` (bigint), reasoning that [ADR 0001](../../../docs/decisions/0001-uuid-primary-keys.md)
+and PRD [assumption 19](../../../docs/PRD/PRD.md#assumptions--confirmed-decisions) enumerate **exactly
 seven** UUID entities by name — `payment_methods` not among them — and that the ADR's stated
 rationale (enumeration-safe public identifiers) does not bite for an admin-only table holding a
 handful of rows in an app with no storefront and no REST API.
@@ -725,7 +725,7 @@ locally-optimal ones. The cost is real but small and fully priced in above: `CHA
 Consequence for Phase 6: **ADR 0001 must be amended**, not merely cited. Its list of seven entities
 is written as closed and this decision widens it into a standing policy; leaving the ADR unchanged
 would leave the repo's own decision record contradicting the schema — precisely the "a doc's negative
-claim outlived the code" failure already recorded in [errors-log.md](../../docs/errors-log.md). This
+claim outlived the code" failure already recorded in [errors-log.md](../../../docs/errors-log.md). This
 is carried into the Definition of Done.
 
 **D-2 — Hand-rolled IBAN rule, confirmed.** `app/Rules/Iban.php` with structure **plus** mod-97

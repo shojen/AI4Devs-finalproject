@@ -16,7 +16,7 @@ unreachable.
 > [0045](0045-orders-core-crud-backend.md) is `done` — and 0045 is itself ⛔ blocked on five PRD Epic 2
 > stories ([0024](done/0024-products-core-crud-backend.md), [0029](done/0029-product-variants-backend.md),
 > [0035](done/0035-shipping-carriers-backend.md), [0036](done/0036-shipping-rate-rules-backend.md),
-> [0038](0038-payment-methods-bank-transfer-backend.md)).**
+> [0038](done/0038-payment-methods-bank-transfer-backend.md)).**
 >
 > This story renders `orders` rows, reads `App\Enums\OrderStatus`, and adds a `hasMany(Order::class)`
 > relation. **None of `orders`, `order_items`, `App\Models\Order` or `OrderStatus` exists in code yet.**
@@ -762,7 +762,7 @@ names the customer. Reversible in one line if the product asks.
 **Phase 3 cannot begin until [0045](0045-orders-core-crud-backend.md) is `done`**, and 0045 is itself
 blocked on [0024](done/0024-products-core-crud-backend.md), [0029](done/0029-product-variants-backend.md),
 [0035](done/0035-shipping-carriers-backend.md), [0036](done/0036-shipping-rate-rules-backend.md) and
-[0038](0038-payment-methods-bank-transfer-backend.md). The chain is **0047 → 0045 → five Epic 2 stories**.
+[0038](done/0038-payment-methods-bank-transfer-backend.md). The chain is **0047 → 0045 → five Epic 2 stories**.
 
 There is nothing here to stub. An order-history screen with no `orders` table has no rows to render, no
 enum to label and no relation to declare — and shipping the route with a placeholder is the empty-detail-

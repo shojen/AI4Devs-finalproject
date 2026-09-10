@@ -3,32 +3,11 @@
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
     {
-      "id": "0038",
-      "slug": "0038-payment-methods-bank-transfer-backend",
-      "title": "Payment methods — bank transfer with a validated IBAN (backend)",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "database/migrations/*_create_payment_methods_table.php",
-        "app/Models/PaymentMethod.php",
-        "app/Policies/PaymentMethodPolicy.php",
-        "app/Concerns/PaymentMethodValidationRules.php",
-        "routes/payment-methods.php",
-        "lang/en/payment-methods.php",
-        "lang/es/payment-methods.php"
-      ],
-      "conflict_risk_with": []
-    },
-    {
       "id": "0039",
       "slug": "0039-payment-methods-ui",
       "title": "Payment methods — store-settings screen (UI)",
-      "depends_on": [
-        "0038"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -99,10 +78,8 @@
       "id": "0045",
       "slug": "0045-orders-core-crud-backend",
       "title": "Orders core CRUD backend",
-      "depends_on": [
-        "0038"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [

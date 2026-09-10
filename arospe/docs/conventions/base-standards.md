@@ -129,6 +129,11 @@ app/
                        gating nothing of its own, 0037's gating consumer)
   Actions/Users/       Domain actions for the Users area (RequestEmailChange, ConfirmEmailChange,
                        CreateUser, UpdateUser — the last two authorize their own operation)
+  Actions/PaymentMethods/ Domain actions for the Payment Methods area (UpdatePaymentMethodIban —
+                       story 0038, the single writer of `payment_methods.iban`; self-authorizes
+                       `update` as its own first statement, corrected during this story's own
+                       Phase 4 security audit after shipping ungated on a since-disproven premise
+                       — see database/schema.md#payment_methods)
   Concerns/            Shared traits (validation rule sets)
   Console/Commands/    Artisan commands
   Enums/               Backed enums for domain value sets (UserStatus, RoleName, SalesRegionKind,
@@ -148,7 +153,9 @@ app/
                        Media/, ProductCategories/, Products/, Products/AttributeTypes/, Components/,
                        Settings/, Settings/TwoFactor/, Actions/, Shipping/ — Zones.php (story 0033/
                        0034), Index.php (story 0035, a real routed screen shipped with a
-                       placeholder view, mirroring Users/Index.php's own 0004→0006 split)).
+                       placeholder view, mirroring Users/Index.php's own 0004→0006 split),
+                       PaymentMethods/ — Index.php (story 0038, a real routed screen shipped with
+                       a placeholder view, the same 0004→0006 split)).
                        Dev/ (story 0020, the media-gallery-harness
                        scaffolding) was RETIRED by story 0027 once Products/Editor supplied a real
                        host page — see below. Components/ (story 0021, extended by 0022) is not a module area
@@ -170,11 +177,13 @@ app/
                        relationships at all, the identical starting shape ProductCategory shipped
                        in; ShippingRate — story 0036, with two FKs (shipping_carrier_id,
                        shipping_zone_id) and the null-aware scopeCoveringWeight() bracket scope,
-                       the one place the "and above" weight comparison may live; Customer — story
-                       0041, Epic 3's first domain model, a third instance of ProductCategory's/
-                       ShippingCarrier's own no-relationships-at-birth shape, with all fifteen
-                       writable columns fillable and none withheld (D-7 — there is no seeder-owned
-                       or server-derived column split here, unlike SalesRegion/Media); Role, which
+                       the one place the "and above" weight comparison may live; PaymentMethod —
+                       story 0038, a third standalone catalog with no relationships at all, the
+                       identical starting shape ProductCategory/ShippingCarrier shipped in; and
+                       Customer — story 0041, Epic 3's first domain model, a fourth instance of
+                       that same no-relationships-at-birth shape, with all fifteen writable
+                       columns fillable and none withheld (D-7 — there is no seeder-owned or
+                       server-derived column split here, unlike SalesRegion/Media); Role, which
                        subclasses
                        the package's role model). product_media, product_sales_region and
                        (story 0029) product_variant_values all have no model class of their own —
@@ -194,8 +203,14 @@ app/
                        No ShippingCarrierPolicy exists (story
                        0035's D-9): `shipping.view`/`.edit` are authorized directly as permission
                        strings, named once on the model itself, since no per-target rule
-                       justifies a policy
+                       justifies a policy. PaymentMethodPolicy — story 0038, four abilities;
+                       create()/delete() explicitly return false (bank transfer is the only
+                       method this phase), a documented exception for a Super Admin actor via
+                       the Gate::before bypass
   Providers/           Service providers (AppServiceProvider, FortifyServiceProvider)
+  Rules/               Stock Laravel location (`make:rule`), not a new base folder — Iban.php,
+                       story 0038, ISO 13616 structure plus the ISO 7064 mod-97 checksum,
+                       computed with a chunked modulo (no new Composer dependency)
 config/                Laravel + package config (fortify.php, permission.php,
                         intervention-image.php, livewire.php, ...), plus modules.php — the one
                         app-owned config file (see below)
@@ -211,7 +226,8 @@ lang/                   Published translation files, one folder per locale (en/,
                         app-owned domain files kept key-for-key identical across both
                         (users.php, roles.php, navigation.php, sales-regions.php, media.php,
                         components.php, products.php — the latter's categories.index subgroup is
-                        story 0025's copy for the product categories screen)
+                        story 0025's copy for the product categories screen; shipping.php;
+                        payment-methods.php since story 0038)
 resources/
   views/
     components/        Blade components — all anonymous (no app/View/Components/ in this repo)
@@ -225,15 +241,20 @@ resources/
     partials/
 routes/                 web.php, plus one file per functional area that web.php requires
                         (settings.php, roles.php, users.php, sales-regions.php,
-                        product-categories.php, product-attribute-types.php, products.php) — no
-                        api.php yet. web.php no longer holds the story 0020/0021 environment-gated
-                        dev route (story 0020's browser-test harness) — story 0027 retired it once
-                        Products/Editor supplied a real host page; see ../api/routes.md
+                        product-categories.php, product-attribute-types.php, products.php,
+                        shipping.php, payment-methods.php) — no api.php yet. web.php no longer
+                        holds the story 0020/0021 environment-gated dev route (story 0020's
+                        browser-test harness) — story 0027 retired it once Products/Editor
+                        supplied a real host page; see ../api/routes.md
 tests/
   Feature/              Feature tests, mirrors app structure (Actions/Auth/, Auth/, Settings/,
                         Seeders/, Users/, Roles/, SalesRegions/, Media/, ProductCategories/,
                         Products/, Components/, Models/, Policies/, Authorization/,
-                        Navigation/, ...). Dev/ (story 0020's MediaGalleryHarnessRouteTest.php) was
+                        Navigation/, PaymentMethods/ since story 0038 — the story's own
+                        Datasets.php holds the valid/invalid IBAN pairs shared across its four
+                        test files, per Pest's own directory-scoped dataset convention (see
+                        tests/Feature/ShippingRates/Datasets.php for the mechanism)). Dev/
+                        (story 0020's MediaGalleryHarnessRouteTest.php) was
                         deleted by story 0027 along with its subject. Story 0031 adds five files to
                         Products/ for the nested VariantBuilder component, of which
                         VariantBuilderTest.php (create/duplicate-combination/sku-collision refusal/
@@ -252,8 +273,12 @@ tests/
                         pure-function collaborators directly rather than only through the actions
                         that inject them), Concerns/ (story 0023's
                         ProductCategoryValidationRulesTest.php, the first trait-level unit test in
-                        this folder, joined by story 0024's ProductValidationRulesTest.php),
-                        Enums/ (ProductStatusTest.php / ProductTypeTest.php since story 0024),
+                        this folder, joined by story 0024's ProductValidationRulesTest.php and
+                        story 0038's PaymentMethodValidationRulesTest.php, which drives the real
+                        Iban rule through ibanRules() rather than re-deriving mod-97 as abstract
+                        math),
+                        Enums/ (ProductStatusTest.php / ProductTypeTest.php since story 0024;
+                        PaymentMethodCodeTest.php since story 0038),
                         Exceptions/, Listeners/, Models/, Seeders/ (story 0032's
                         GeographyCatalogSeederParsingTest.php — the CSV-parsing generator exercised
                         via reflection, no database — and GeographyFixtureIntegrityTest.php, which
@@ -284,7 +309,7 @@ tests/
   Pest.php, TestCase.php
 ```
 
-`app/Enums/`, `app/Exceptions/`, `app/Listeners/`, `app/Notifications/`, `app/Policies/` and `lang/` are all **stock Laravel locations** (`make:enum`, `make:exception`, `make:listener`, `make:notification`, `make:policy`, `lang:publish`), not new base folders — creating one of them needs no approval; inventing a folder Laravel doesn't ship does.
+`app/Enums/`, `app/Exceptions/`, `app/Listeners/`, `app/Notifications/`, `app/Policies/`, `app/Rules/` and `lang/` are all **stock Laravel locations** (`make:enum`, `make:exception`, `make:listener`, `make:notification`, `make:policy`, `make:rule`, `lang:publish`), not new base folders — creating one of them needs no approval; inventing a folder Laravel doesn't ship does. `app/Rules/` is story 0038's own confirmation, per `php artisan list`, which carries `make:rule` with `app/Rules/` as its stub target.
 
 `app/Policies/` in particular is **registration-free**: Laravel 13 auto-discovers `App\Policies\<Model>Policy` for `App\Models\<Model>`, so `UserPolicy` binds to `User` by naming alone. This repo has no `AuthServiceProvider` and does not need one — do not add one to register a conventionally-named policy. What each ability means lives in [architecture/authorization.md](../architecture/authorization.md#policies), not here.
 
@@ -292,7 +317,7 @@ tests/
 
 **`app/Livewire/Dev/` (story 0020) was retired by story 0027, and this paragraph now records the retirement rather than the folder it used to describe.** It held `MediaGalleryHarness`, a throwaway host page whose only purpose was to give `App\Livewire\Media\Gallery` and (since story 0021) `App\Livewire\Components\WysiwygEditor` — both modal/embedded components with no route of their own — a URL a browser test could `visit()`. The four rules that separated that scaffolding from surface (a *registration*-time environment gate rather than middleware; `auth`+`verified` kept anyway as defence in depth; a test asserting absence from the route *collection*, not a 404; a named deletion trigger in every file it occupied) are recorded in this project's history rather than repeated here, since there is no longer a live instance to point them at. Story 0027's `App\Livewire\Products\Editor` — a real, routed page (`products.create`/`products.edit`) — turned out to be a strict superset of the harness (it embeds two `Gallery` instances and one `WysiwygEditor`, exactly the shape the harness mounted for its own tests), so both harness browser test files were re-pointed at it and made green **before** `App\Livewire\Dev\MediaGalleryHarness`, its view, its `routes/web.php` registration block and `tests/Feature/Dev/MediaGalleryHarnessRouteTest.php` were all deleted. **The scaffolding's own text said "if 0027 has shipped and this section still exists, it was not removed" — it does not, and it was.** See [api/routes.md](../api/routes.md#productsindex-productscreate-and-productsedit--the-fifth-permission-gated-route-family) for the migration itself.
 
-`routes/` follows the same one-per-area shape: `web.php` declares only the app-wide routes (`home`, `dashboard`) and then `require`s one file per functional area — `settings.php`, `roles.php`, and `users.php` since task 0040, which moved `users.index` out of `web.php` so it stops being the one route that didn't follow the pattern, plus `sales-regions.php` since task 0017, `product-categories.php` since story 0025, `product-attribute-types.php` since story 0028, `products.php` since story 0027 (the first area file to register **two** routes, `products.create`/`products.edit`, onto one component), and `shipping.php` since story 0033 (extended by story 0035 to a second route on the same file, `shipping.index` alongside `shipping.zones.index`). A new area's routes go in a new `routes/<area>.php` with its own middleware group, appended as another `require` line rather than inlined into `web.php`; what each route contract actually is belongs to [api/routes.md](../api/routes.md).
+`routes/` follows the same one-per-area shape: `web.php` declares only the app-wide routes (`home`, `dashboard`) and then `require`s one file per functional area — `settings.php`, `roles.php`, and `users.php` since task 0040, which moved `users.index` out of `web.php` so it stops being the one route that didn't follow the pattern, plus `sales-regions.php` since task 0017, `product-categories.php` since story 0025, `product-attribute-types.php` since story 0028, `products.php` since story 0027 (the first area file to register **two** routes, `products.create`/`products.edit`, onto one component), `shipping.php` since story 0033 (extended by story 0035 to a second route on the same file, `shipping.index` alongside `shipping.zones.index`), and `payment-methods.php` since story 0038. A new area's routes go in a new `routes/<area>.php` with its own middleware group, appended as another `require` line rather than inlined into `web.php`; what each route contract actually is belongs to [api/routes.md](../api/routes.md).
 
 Task 0017 is the first area file written *from* this convention rather than into it, and it is worth reading as the copyable case: [`routes/sales-regions.php`](../../routes/sales-regions.php) is [`routes/roles.php`](../../routes/roles.php) with three strings changed, `web.php`'s entire diff is one `require` line, and and the `Index` class is imported **aliased** (`use App\Livewire\SalesRegions\Index as SalesRegionsIndex;`), matching what both existing area files already do: each file's own `use` statements can't actually collide, but `Index::class` read on its own line says nothing about which of the three areas it belongs to, and these files are read one at a time.
 
@@ -625,4 +650,4 @@ Use the scoped forms freely while iterating; the unscoped runs are what counts a
 
 _Last updated: 2026-09-10 — Story 0041 (Customers CRUD backend). Added `Actions/Customers/` (`CreateCustomer`/`UpdateCustomer`, each self-authorizing its own operation from Phase 1), `Customer` to the `Models/` list (Epic 3's first domain model, all fifteen writable columns fillable per D-7), and `CustomerPolicy` to the `Policies/` line (three abilities, no `delete()` yet — a named hand-off to story 0042). No convention rule changed — this story introduces no new type, brace, PHPDoc, validation-trait, action-injection or authorization-placement shape beyond what task 0017's/story 0025's already-established self-authorizing-action pattern provides; `App\Concerns\CustomerValidationRules` follows the existing `<Noun>ValidationRules` trait convention (see [naming.md](naming.md#traits-and-their-methods)).
 
-_Previously: 2026-09-10 — Story 0036 (Shipping rate rules — backend). Extended `Actions/Shipping/` with `CreateShippingRate`/`UpdateShippingRate`/`DeleteShippingRate` (each self-authorizing against `ShippingRatePolicy` as its own first statement, since this story ships no route or component), `ResolveApplicableShippingRate`/`ShippingRateResolution` (the rate-precedence resolver and its never-bare-null result object — see the new [architecture/shipping.md](../architecture/shipping.md)), and `ListShippingRatesByCarrier`. Added `ShippingRate` to the `Models/` list. Closed a pre-existing gap in the `Policies/` line: `ShippingZonePolicy` (story 0033) had never been listed there either — added alongside the new `ShippingRatePolicy`, plus a note on why no `ShippingCarrierPolicy` exists (story 0035's D-9). No convention rule changed — this story introduces no new type, brace, PHPDoc, validation-trait, action-injection or authorization-placement shape beyond what task 0017's/story 0025's already-established self-authorizing-action pattern provides. Folded this file's own three-block `_Previously:` footer chain into this single line, per [contracts.md](../contracts.md#doc-growth-management-rule)'s doc-growth-management rule — no content from those entries was changed or lost; see git history for the full prior chain if needed._
+_Previously: 2026-09-10 — Story 0038 (Payment methods — bank transfer with a validated IBAN, backend). Added `app/Rules/` to the stock-Laravel-locations list (this repo's first use of `make:rule`) and `Actions/PaymentMethods/` (`UpdatePaymentMethodIban`, corrected to self-authorize during this story's own Phase 4 security audit — the task file's original "actions in this repo are generally unguarded" premise did not survive inspection). Added `PaymentMethod` to the `Models/` list (a third standalone catalog, matching `ProductCategory`/`ShippingCarrier`'s starting shape) and `PaymentMethodPolicy` to the `Policies/` list (the documented Super Admin `Gate::before` exception on `create()`/`delete()`). Extended the `Livewire/`, `routes/`, `lang/` and `tests/` tree entries with this story's own files. No convention rule changed — this story's own authorization-placement finding is a confirming instance of the pre-existing "an authorization rule belongs to the action" convention, not a new one. Folded the prior `_Previously:` line (story 0036) into this single line, per [contracts.md](../contracts.md#doc-growth-management-rule)'s doc-growth-management rule — no content changed or lost; see git history for the full prior chain if needed._
