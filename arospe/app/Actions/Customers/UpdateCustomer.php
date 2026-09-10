@@ -26,10 +26,14 @@ class UpdateCustomer
      * Edit an existing customer.
      *
      * Authorizes `update` on the resolved `$customer` as its own first
-     * statement (D-12). The whole record is submitted every time (D-11 --
-     * no partial-field PATCH semantics), and the uniqueness rule ignores
-     * the target's own id (customerEmailRules($customer->id)), which is
-     * what makes saving a customer under its own unchanged email succeed.
+     * statement (D-12). A key omitted from `$attributes` is never validated
+     * and never appears in `$validated`, so `$customer->update($validated)`
+     * leaves that column untouched -- omission means "not being changed",
+     * not "clear it" (see docs/errors-log.md's 2026-09-01 entry on this
+     * exact ambiguity for a partial-field update payload). The uniqueness
+     * rule ignores the target's own id (customerEmailRules($customer->id)),
+     * which is what makes saving a customer under its own unchanged email
+     * succeed.
      *
      * @param  array<string, mixed>  $attributes
      */

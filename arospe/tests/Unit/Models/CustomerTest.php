@@ -8,8 +8,8 @@
 // Feature/Browser only, matching SalesRegionTest.php's/UserTest.php's/ShippingCarrierTest.php's
 // own shape) -- so the "produces a UUID id" check below calls HasUuids::newUniqueId() directly
 // rather than persisting a factory-made row. The factory round-trip / persisted-id check lives in
-// tests/Feature/Customers/CreationTest.php instead, where a real INSERT already happens for other
-// reasons.
+// tests/Feature/Customers/PersistenceTest.php instead, where a real INSERT already happens for
+// other reasons.
 //
 // "A customer is not a dashboard user" (D-11) is asserted here in its four STRUCTURAL forms --
 // no HasRoles, no Authenticatable, no PasskeyUser, no SoftDeletes -- all class-shape checks with
