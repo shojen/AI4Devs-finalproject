@@ -20,31 +20,11 @@
       "conflict_risk_with": []
     },
     {
-      "id": "0041",
-      "slug": "0041-customers-crud-backend",
-      "title": "Customers CRUD backend",
-      "depends_on": [],
-      "status": "claimed",
-      "claimed_by": "worktree-0041-customers-crud-backend",
-      "claimed_at": "2026-09-10T00:00:00Z",
-      "touches": [
-        "database/migrations/*_create_customers_table.php",
-        "app/Models/Customer.php",
-        "app/Policies/CustomerPolicy.php",
-        "app/Concerns/CustomerValidationRules.php",
-        "app/Actions/Customers/CreateCustomer.php",
-        "app/Actions/Customers/UpdateCustomer.php"
-      ],
-      "conflict_risk_with": []
-    },
-    {
       "id": "0042",
       "slug": "0042-customers-soft-delete-backend",
       "title": "Customers — soft delete (backend)",
-      "depends_on": [
-        "0041"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -61,10 +41,8 @@
       "id": "0043",
       "slug": "0043-customers-new-customer-notification-backend",
       "title": "Customers — \"new customer\" notification (backend)",
-      "depends_on": [
-        "0041"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -80,7 +58,6 @@
       "slug": "0044-customers-list-create-edit-ui",
       "title": "Customers — list + create/edit UI",
       "depends_on": [
-        "0041",
         "0042",
         "0043"
       ],
@@ -101,10 +78,8 @@
       "id": "0045",
       "slug": "0045-orders-core-crud-backend",
       "title": "Orders core CRUD backend",
-      "depends_on": [
-        "0041"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -149,7 +124,6 @@
       "slug": "0047-customer-order-history-view-ui",
       "title": "Customer detail — order history view UI",
       "depends_on": [
-        "0041",
         "0042",
         "0044",
         "0045"

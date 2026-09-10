@@ -232,7 +232,7 @@ Feature: Order records (backend)
 `database/migrations/<ts>_create_orders_table.php` — **new**. Shape confirmed by `database-expert`
 against this repo's greenfield-UUID precedent,
 [`create_sales_regions_table`](../../docs/database/migrations.md#uuid-primary-keys), and against
-[`create_customers_table`](0041-customers-crud-backend.md) for the address-column lengths.
+[`create_customers_table`](done/0041-customers-crud-backend.md) for the address-column lengths.
 
 ```php
 Schema::create('orders', function (Blueprint $table): void {
@@ -424,7 +424,7 @@ Scaffolded with `php artisan make:model Order -m -f --no-interaction`. Follows
 ### Validation trait — `app/Concerns/OrderValidationRules.php` (new)
 
 Mirrors [`UserValidationRules`](../../app/Concerns/UserValidationRules.php) /
-[`CustomerValidationRules`](0041-customers-crud-backend.md) exactly — `<Noun>ValidationRules` trait,
+[`CustomerValidationRules`](done/0041-customers-crud-backend.md) exactly — `<Noun>ValidationRules` trait,
 `<noun>Rules()` methods returning rule arrays, flat and single-concern
 ([naming.md](../../docs/conventions/naming.md#traits-and-their-methods)):
 
@@ -724,7 +724,7 @@ and it is recorded here in full rather than silently settled.**
 The problem: `orders` and `order_items` need FK columns into `products`, `product_variants`,
 `shipping_rates` and `payment_methods`. **None of those four tables exists in code.** Epic 2 is still
 in progress; of everything this story references, only `sales_regions` (task 0016) and `customers`
-(story [0041](0041-customers-crud-backend.md)) are real, shipped tables.
+(story [0041](done/0041-customers-crud-backend.md)) are real, shipped tables.
 
 | Position | Proposed by | Shape |
 | --- | --- | --- |
@@ -951,7 +951,7 @@ rediscovery.
 
 | Depends on | State | Verified how |
 | --- | --- | --- |
-| `customers` table + `App\Models\Customer` | story [0041](0041-customers-crud-backend.md) — **hard dependency; confirm it is `done` before Phase 3** | `orders.customer_id` FKs it; the address snapshot copies its twelve columns |
+| `customers` table + `App\Models\Customer` | story [0041](done/0041-customers-crud-backend.md) — **hard dependency; confirm it is `done` before Phase 3** | `orders.customer_id` FKs it; the address snapshot copies its twelve columns |
 | `customers.deleted_at` (soft delete) | story [0042](0042-customers-soft-delete-backend.md) — **related; confirm its state at the same time** | **D-12** depends on it existing; 0042's own forward note prescribes `restrictOnDelete()` on `orders.customer_id`, which this story honours verbatim. If 0042 has not landed, **D-12** is simply not yet reachable — it does not change this story's schema |
 | `sales_regions` table | task 0016 — **done (shipped)** | `docs/database/schema.md` § `sales_regions`; `orders.tax_rate`'s `decimal(6,3)` mirrors `sales_regions.rate` |
 | `orders.*` permissions in the seeded catalog | **shipped** | `RolePermissionSeeder::MODULES` carries `orders` |
