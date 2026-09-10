@@ -246,7 +246,7 @@ attribute-based conventions ([base-standards.md](../../docs/conventions/base-sta
 
 - `use HasFactory, HasUuids;` — UUID v7 per this project's Epic 2+ policy, `@property string $id`,
   and **no** `$keyType` / `$incrementing` properties (the trait already overrides both as methods).
-- `#[Fillable([...])]` listing **all sixteen** writable columns (name, email, phone, and the twelve
+- `#[Fillable([...])]` listing **all fifteen** writable columns (name, email, phone, and the twelve
   address columns). Unlike `SalesRegion` there are no seeder-owned columns here, so nothing is
   withheld — **D-7** records why that is a decision rather than an omission.
 - **No `#[Hidden]`** — the model carries no secret.
@@ -385,7 +385,7 @@ Four properties, each copied from the precedent rather than re-derived (**D-12**
 
 - `database/seeders/RolePermissionSeeder.php` — `customers` is **already** in `MODULES`
   (verified: line 25), so `customers.view` / `.create` / `.edit` / `.delete` already exist in the
-  38-permission catalog. **No catalog change, no new permission, no re-seed.**
+  42-permission catalog. **No catalog change, no new permission, no re-seed.**
 - `routes/*.php`, `config/modules.php`, `app/Livewire/**`, `resources/views/**` — 0044's.
 - `lang/en/*`, `lang/es/*` — no user-facing copy ships here; 0044 adds `customers.php` (**D-14**).
 - `app/Notifications/**`, `app/Listeners/**` — 0043's.
@@ -412,7 +412,7 @@ action-level, and 0044 owns the HTTP-level ones.
 
 ### Creation — happy paths
 
-- [ ] Integration test: creating with a full payload stores all sixteen columns.
+- [ ] Integration test: creating with a full payload stores all fifteen columns.
 - [ ] Integration test: creating with name + email only stores `null` in every optional column.
 - [ ] Integration test: an email supplied in mixed case is stored lowercase.
 
@@ -435,8 +435,8 @@ action-level, and 0044 owns the HTTP-level ones.
 - [ ] Negative test: a second customer with the identical email is rejected with a
       `ValidationException` on `email`, and exactly one row exists afterwards.
 - [ ] Negative test: a second customer whose email differs **only in capitalisation** is rejected.
-      This is the case that proves the normalisation rather than the collation is doing the work
-      (**D-5**, **R-2**) — it must pass on SQLite *and* MySQL.
+      This is the case that proves the PHP-side normalisation is doing the work, not merely the
+      connection's own collation folding (**D-5**, **R-2**).
 - [ ] Integration test: a customer may hold the same address as an existing `users` row (**D-6**).
 - [ ] Negative test: the DB unique index has the last word — insert a colliding row directly
       through the query builder, bypassing the action, and assert a `23000` `QueryException`.
@@ -515,7 +515,7 @@ cannot authenticate, hold a role, or hold a permission.
 - [ ] The `create_customers_table` migration contains **no** `deleted_at` column and **no** foreign
       key.
 - [ ] `App\Models\Customer` uses `HasUuids` and `HasFactory`, declares `#[Fillable]` over all
-      sixteen writable columns, and uses neither `SoftDeletes` nor `HasRoles`.
+      fifteen writable columns, and uses neither `SoftDeletes` nor `HasRoles`.
 - [ ] `Customer` is not authenticatable: it implements no auth contract, holds no role, holds no
       permission, and produces no `model_has_roles` / `model_has_permissions` rows.
 - [ ] `name` and `email` are required; `phone` and all twelve address columns are optional and
@@ -554,10 +554,16 @@ cannot authenticate, hold a role, or hold a permission.
       `app/Actions/Customers/`, `Customer` in `app/Models/`, and `CustomerPolicy` in the
       `app/Policies/` line — **that last one is an enumeration, so check it for an under-count rather
       than only appending**; `docs/architecture/authorization.md`'s Policies section gains
-      `CustomerPolicy` as the second flat, tier-free policy in the repo (the first being
-      `SalesRegionPolicy`), stated as the shape a domain entity with no privilege tier takes;
-      `docs/decisions/0001-uuid-primary-keys.md`'s "still future" entity list is reconciled with a
-      second non-ADR UUID table (the same deferred amendment `sales_regions` already flagged).
+      `CustomerPolicy` as another flat, tier-free policy in the repo — `SalesRegionPolicy`,
+      `ProductCategoryPolicy`, `ProductPolicy`, `ProductAttributeTypePolicy`, `ShippingZonePolicy`
+      and `ShippingRatePolicy` already share this shape, so cite `CustomerPolicy` by name alongside
+      them rather than by an ordinal, which this doc set's own naming.md has already had to correct
+      twice for going stale; `docs/database/schema.md`'s UUID-status Notes bullet ("beyond ADR 0001's
+      original seven") gains `customers` as another table under
+      [ADR 0001 Amendment 1](../../docs/decisions/0001-uuid-primary-keys.md#amendment-1-2026-08-27--the-scope-is-the-policy-not-the-list-of-seven)'s
+      already-general policy — **no new ADR amendment is needed**, since Amendment 1 was written
+      precisely so a later UUID table would not require one; only the running table count in that
+      bullet needs incrementing.
 - [ ] **Hand-off notes recorded for 0042, 0043 and 0044** (real gaps, not formalities) — see
       [Dependencies](#dependencies). In particular 0042 must decide what a trashed customer's email
       does to `Rule::unique()`, which does **not** apply the soft-delete scope
@@ -595,16 +601,24 @@ decision rather than a rediscovery.
   vary, the PRD gives no rule, and a regex here would reject legitimate input for no stated benefit.
 - **D-5 — Email uniqueness is enforced in two layers: normalisation + comparison in PHP as the
   primary guard, and the MySQL UNIQUE index as the backstop.** This is the decisive engineering
-  decision in the story. The suite runs on **SQLite** (`BINARY`, case-sensitive) while production
-  runs **MySQL** (`utf8mb4_unicode_ci`, case-insensitive), so a collation-backed rule is literally a
-  different rule in the two places and CI cannot reproduce production's folding. Lowercasing at
-  every write site — exactly what `App\Actions\Users\CreateUser` / `UpdateUser` /
-  `RequestEmailChange` already do for `users.email` — gives identical behaviour on both engines,
-  and the UNIQUE index sits behind it as the last-word race guard, the same relationship
-  [schema.md](../../docs/database/schema.md#users) documents for `pending_email`. A `23000`
-  `QueryException` is converted to a `ValidationException` on `email`. **Not a model accessor/mutator**:
-  the normalisation must happen before validation runs, and a mutator fires after it — which would
-  let a rule and a write see different bytes.
+  decision in the story. **Corrected at Phase 2 review** — an earlier draft justified this by a
+  claimed SQLite-test/MySQL-production collation divergence that does not exist in this repo:
+  `phpunit.xml` and `.env.example` both pin `DB_CONNECTION=mysql` (the latter's own comment reads
+  "never SQLite"), so the suite already runs on the same MySQL connection production does, and
+  there is no CI-vs-production engine mismatch to guard against here. The real reason to normalise
+  in PHP is the connection's own collation: `email` sits under `utf8mb4_unicode_ci`
+  ([config/database.php](../../config/database.php)), which folds case *and* accent, so a bare
+  `UNIQUE` index alone would refuse a legitimate pair only as a raw `23000` `QueryException` with
+  no field-level message — the same reasoning [`product_categories.name`](../../docs/database/schema.md#product_categories)
+  and [`shipping_zones.name`](../../docs/database/schema.md#shipping_zones) already establish for
+  their own PHP-side normalised-comparison guards. Lowercasing at every write site — exactly what
+  `App\Actions\Users\CreateUser` / `UpdateUser` / `RequestEmailChange` already do for `users.email`
+  — is what makes creation refuse a mixed-case duplicate with a clean validation message rather than
+  an unhandled database error, and the UNIQUE index sits behind it as the last-word race guard, the
+  same relationship [schema.md](../../docs/database/schema.md#users) documents for `pending_email`.
+  A `23000` `QueryException` is converted to a `ValidationException` on `email`. **Not a model
+  accessor/mutator**: the normalisation must happen before validation runs, and a mutator fires
+  after it — which would let a rule and a write see different bytes.
 - **D-6 — Uniqueness is scoped to the `customers` table alone; a customer and a dashboard user may
   share an address.** *(Documented functional decision.)* They are different domains: a customer is
   contact data with no authentication meaning, a `users` row is a credential. The store owner is a
@@ -761,15 +775,21 @@ on, and it can start immediately. What it depends on is already shipped and veri
   one PRD section, and every one of them is *mentioned* in the same five scenarios. Mitigation: the
   [scope fences](#scope-fences-what-this-story-must-not-do) are enumerated as prohibitions, and each
   names its owning story number.
-- **R-2 — CI and production disagree on string collation.** SQLite's `BINARY` is case-sensitive;
-  MySQL's `utf8mb4_unicode_ci` is case- *and* accent-insensitive. A duplicate-email test that relies
-  on the index alone would pass in CI and behave differently in production. Mitigated structurally
-  by **D-5** (normalise in PHP, so both engines see the same bytes), and the mixed-case duplicate
-  test is the specific case that proves it. **Note the residual:** accent folding is *not* addressed
-  — MySQL would treat two emails differing only by an accented character as colliding while SQLite
-  would not. This is accepted, because the `email` RFC space makes accented local parts vanishingly
-  rare here, and because unlike story 0023's category names an email is not a human-chosen display
-  label. Recorded so it is a known asymmetry rather than a surprise `23000`.
+- **R-2 — A duplicate-email test that relies on the UNIQUE index alone proves nothing about the
+  rule.** *(Corrected at Phase 2 review — this risk previously framed itself around a CI-vs-production
+  SQLite/MySQL collation mismatch that does not exist in this repo; both `phpunit.xml` and
+  `.env.example` pin `DB_CONNECTION=mysql`, so there is no engine divergence to guard against.)* The
+  real risk is narrower: `email`'s `utf8mb4_unicode_ci` collation already makes MySQL's own index
+  case- *and* accent-insensitive, so a test asserting only that the index refuses a mixed-case
+  duplicate would pass whether or not `CreateCustomer`/`UpdateCustomer` normalise anything
+  themselves — it cannot distinguish "the rule normalises" from "the index happened to catch it".
+  Mitigated by **D-5**: the mixed-case duplicate test asserts a clean `ValidationException` on
+  `email` (not a raw `23000` `QueryException`), which only the PHP-side normalisation can produce.
+  **Note the residual, carried over unchanged:** accent folding is left to the connection's own
+  collation rather than re-implemented in PHP — two emails differing only by an accented character
+  collide via MySQL's `utf8mb4_unicode_ci`, with no equivalent PHP-side check. This is accepted,
+  because the `email` RFC space makes accented local parts vanishingly rare here, and because unlike
+  story 0023's category names an email is not a human-chosen display label.
 - **R-3 — The migration length and the validation `max:` must stay in lockstep.** Six columns carry
   a non-255 cap. A validation rule looser than its column silently produces a truncation or a
   `22001` in production; stricter is merely confusing. Mitigated by the both-sides boundary dataset
@@ -842,6 +862,34 @@ reasoning is recorded so it can be reversed knowingly.
 debate's reasoning — the recommendation's own stated ground was the `SalesRegion` precedent, and that
 precedent has a policy. What survives from the recommendation is its *semantic* claim, which D-12
 keeps in full: no tier, no ownership, no row-level nuance.
+
+## Phase 2 — INVEST validation record
+
+`code-reviewer` reviewed this story against INVEST and against existing `docs/` conventions.
+**Verdict: four factual defects found, all corrected in place in this file (none required a
+re-debate or a scope change) — story approved to proceed to Phase 3.**
+
+- **B1 (blocking) — D-5 and R-2 rested on a false SQLite-test/MySQL-production collation-divergence
+  premise.** `phpunit.xml`/`.env.example` both pin `DB_CONNECTION=mysql`; there is no such
+  divergence in this repo. Both sections rewritten to cite the real reason PHP-side normalisation
+  is needed: `email`'s `utf8mb4_unicode_ci` collation already folds case and accent, so an
+  index-only guard would refuse a duplicate only as a raw `23000`, not a clean validation message
+  — the same reasoning `product_categories.name`/`shipping_zones.name` already establish. **D-5's
+  conclusion (normalise in PHP, UNIQUE index as backstop) is unchanged**; only its stated
+  justification was wrong.
+- **B2 — the DoD's "second flat, tier-free policy" claim undercounted.** `SalesRegionPolicy` is not
+  the only prior instance — `ProductCategoryPolicy`, `ProductPolicy`, `ProductAttributeTypePolicy`,
+  `ShippingZonePolicy` and `ShippingRatePolicy` already share the shape. Corrected to cite every
+  prior policy by name rather than by a fragile ordinal.
+- **B3 — "38-permission catalog" is stale.** The catalog has been 42 permissions since story 0019
+  added the `media` module; `customers.*` was already present at 38 and remains present at 42, so
+  the substantive claim ("no catalog change needed") is unaffected — only the number was corrected.
+- **B4 — "sixteen writable columns" miscounted.** `name` + `email` + `phone` + 6 shipping + 6
+  billing = 15, not 16. Corrected everywhere it appeared (model section, acceptance criteria, test
+  plan).
+- **Minor — the DoD's ADR-reconciliation line described a still-open deferral that Amendment 1
+  already closed.** Corrected to cite [ADR 0001 Amendment 1](../../docs/decisions/0001-uuid-primary-keys.md#amendment-1-2026-08-27--the-scope-is-the-policy-not-the-list-of-seven)
+  directly — `customers` needs only a `schema.md` count bump, no new amendment.
 
 ## Provenance
 
