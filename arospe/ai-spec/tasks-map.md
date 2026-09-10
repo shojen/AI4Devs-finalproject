@@ -18,20 +18,19 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
-As of this snapshot, `ai-spec/tasks/in-progress/` is empty again — `0041-customers-crud-backend.md`
-completed Phase 7 and moved to `done/` in this same regeneration pass, alongside `0038` (Payment
-methods — bank transfer backend), which had already closed on `finalproject-ARP` while this
-worktree's own branch was still in progress and is folded into this snapshot for the first time
-here (see the note under
+As of this snapshot, `ai-spec/tasks/in-progress/` is empty again —
+`0043-customers-new-customer-notification-backend.md` completed Phase 7 and moved to `done/` in
+this same regeneration pass, freeing `0056` (Notification viewing backend) into `ready` with no
+pending dependency left at all (see the note under
 [Pending tasks that are independent](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
-for what both closures unblocked). Every other task is either `done/` (closed, merged) or still
-sitting directly in `ai-spec/tasks/` (not started). One additional file,
+for what else this closure unblocked). Every other task is either `done/` (closed, merged) or
+still sitting directly in `ai-spec/tasks/` (not started). One additional file,
 `ci-database-connection-gap.md`, lives
 outside the `00XX-` numbering — it is an infrastructure fix (not a PRD-derived user story) and is
 already marked `Status: fixed and fully documented` inside its own file, so it is listed for
 completeness but excluded from the dependency graph and from the parallelization analysis below.
 
-- **95 files total**: 94 numbered user stories (56 `done/`, 38 still in `ai-spec/tasks/`) + 1
+- **95 files total**: 94 numbered user stories (57 `done/`, 37 still in `ai-spec/tasks/`) + 1
   non-numbered infrastructure doc (already resolved).
 - For a machine-readable, per-task claim registry that two parallel Claude Code sessions can use
   to coordinate against this same dependency data, see
@@ -41,8 +40,8 @@ completeness but excluded from the dependency graph and from the parallelization
 ## Table of contents
 
 - [Inventory](#inventory)
-  - [Done (56) — shipped, out of scope for this graph](#done-56--shipped-out-of-scope-for-this-graph)
-  - [Pending — not started (38 numbered + 1 infra doc)](#pending--not-started-38-numbered--1-infra-doc)
+  - [Done (57) — shipped, out of scope for this graph](#done-57--shipped-out-of-scope-for-this-graph)
+  - [Pending — not started (37 numbered + 1 infra doc)](#pending--not-started-37-numbered--1-infra-doc)
 - [Dependency graph (pending tasks only)](#dependency-graph-pending-tasks-only)
 - [Analysis](#analysis)
   - [Pending tasks that are independent of each other and safe to parallelize](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
@@ -52,7 +51,7 @@ completeness but excluded from the dependency graph and from the parallelization
 
 ## Inventory
 
-### Done (56) — shipped, out of scope for this graph
+### Done (57) — shipped, out of scope for this graph
 
 Already merged into `main`/`finalproject-ARP` and closed via the workflow's Phase 7; see
 [`ai-spec/tasks/done/`](tasks/done/) for each story's full file. Listed here only as IDs, grouped
@@ -64,16 +63,17 @@ appears as a node in the dependency graph below:
 - **Epic 2 — Products, Taxes, Media, Shipping (35):** 0016, 0017, 0018, 0019, 0019a, 0019b,
   0019c, 0019d, 0020, 0021, 0022, 0023, 0024, 0024a, 0024b, 0025, 0026, 0027, 0028, 0029, 0029a,
   0029b, 0030, 0030a, 0031, 0031a, 0032, 0033, 0034, 0035, 0036, 0037, 0038, 0039, 0080.
-- **Epic 3 — Customers & Orders (1):** 0041 — the epic's foundation story (the first to close in
+- **Epic 3 — Customers & Orders (2):** 0041 — the epic's foundation story (the first to close in
   this epic); its own three former dependents (0042, 0043, 0045) are re-derived against `done/`
-  rather than against this pending list from here on.
+  rather than against this pending list from here on. 0043 — the "new customer" notification
+  backend, the second story to close in this epic; its own former dependents (0044, 0046, 0056,
+  0065) are likewise re-derived against `done/` from here on.
 
-### Pending — not started (38 numbered + 1 infra doc)
+### Pending — not started (37 numbered + 1 infra doc)
 
 | ID | Title | Epic area |
 | --- | --- | --- |
 | 0042 | Customers — soft delete (backend) | Epic 3 — Customers |
-| 0043 | Customers — "new customer" notification (backend) | Epic 3 — Customers |
 | 0044 | Customers — list + create/edit UI | Epic 3 — Customers |
 | 0045 | Orders core CRUD backend | Epic 3 — Orders |
 | 0046 | Orders — "new order" notification (backend) | Epic 3 — Orders |
@@ -143,7 +143,6 @@ flowchart LR
     subgraph PEND_CUST["Epic 3 — Customers"]
         direction TB
         P0042["0042 Customers soft delete BE"]
-        P0043["0043 New-customer notif BE"]
         P0044["0044 Customers list/UI"]
     end
 
@@ -200,12 +199,10 @@ flowchart LR
 
     %% Customers
     P0042 --> P0044
-    P0043 --> P0044
 
     %% Orders core + siblings
     P0042 -.-> P0045
     P0045 --> P0046
-    P0043 --> P0046
     P0042 --> P0047
     P0044 --> P0047
     P0045 --> P0047
@@ -231,7 +228,6 @@ flowchart LR
     P0047 -.-> P0055
 
     %% Notifications
-    P0043 --> P0056
     P0046 -.-> P0056
     P0056 --> P0057
     P0046 -.-> P0057
@@ -248,7 +244,6 @@ flowchart LR
     P0061 --> P0063
     P0060 -.-> P0063
     P0061 --> P0064
-    P0043 --> P0065
     P0061 --> P0065
     P0064 --> P0065
 
@@ -296,8 +291,8 @@ flowchart LR
     P0070 --> P0079
     P0068 --> P0079
 
-    class P0044,P0046,P0047,P0048,P0049,P0050,P0051,P0052,P0053,P0054,P0055,P0056,P0057,P0060,P0061,P0062,P0063,P0064,P0065,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0042,P0043,P0045,P0058,P0059,P0068 ready;
+    class P0044,P0046,P0047,P0048,P0049,P0050,P0051,P0052,P0053,P0054,P0055,P0057,P0060,P0061,P0062,P0063,P0064,P0065,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
+    class P0042,P0045,P0056,P0058,P0059,P0068 ready;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
@@ -316,10 +311,6 @@ them — the six green `ready` nodes in the diagram above:
   note below) — depends on nothing else pending. Touches `App\Models\Customer`,
   `CustomerPolicy` (adds `delete()` to the existing file) and a new
   `add_soft_deletes_to_customers_table` migration. Ready now.
-- **0043 — Customers "new customer" notification (backend).** Same release: `0041` was its only
-  dependency and is now `done/`. Touches a new `create_notifications_table` migration,
-  `App\Notifications\CustomerCreated` and hooks into `CreateCustomer`'s successful return. Ready
-  now.
 - **0045 — Orders core CRUD backend.** Its own task file names six hard blockers —
   `done/0024`, `done/0029`, `done/0035`, `done/0036`, `done/0038` and `0041` — every one of which
   is now `done/`. No pending dependency remains at all; this is the biggest hub in the backlog
@@ -330,15 +321,19 @@ them — the six green `ready` nodes in the diagram above:
   policy… the foundational story the other blog stories build on." Ready now.
 - **0059 — Blog tags (backend).** No hard dependency on 0058 in either direction (both depend only
   on already-shipped work plus `done/0022`'s `NormalizeForSearch`). Ready now.
+- **0056 — Notification viewing (backend).** Its only dependency, `0043`, is now `done/` too —
+  depends on nothing else pending. Touches `App\Models\User` (the unread-count/mark-as-read
+  surface) and a new `app/Actions/Notifications/` namespace. Ready now.
 - **0068 — Store Languages catalog (backend).** Depends only on `done/0002` (the
   `store-languages.*` permissions) and cites `done/0016`/`0017`/`0018` only as a *precedent*, not a
   code dependency. Ready now — and, being the root of the entire Epic 5 chain (every i18n story
   ultimately depends on it), it is also the single highest-leverage task to start first if only
   one of the five can be picked up immediately.
 
-**0042, 0043 and 0068 are fully independent of each other and of 0058/0059** — no shared
+**0042, 0056 and 0068 are fully independent of each other and of 0058/0059** — no shared
 files, no shared tables, and none of them appears in the other's `conflict_risk_with` set in
-[`ai-spec/tasks-status.json`](tasks-status.json). All three can be dispatched to parallel
+[`ai-spec/tasks-status.json`](tasks-status.json) (0056's own entry there names only `0046`, which
+is still `blocked` and outside this set). All three can be dispatched to parallel
 agents/worktrees today with no coordination needed beyond the project's usual per-branch worktree
 isolation (see [`docs/testing/worktree-databases.md`](../docs/testing/worktree-databases.md)).
 
@@ -349,15 +344,21 @@ Its own `conflict_risk_with` entry in `tasks-status.json` names `0042` as a soft
 Dispatching `0045` alongside `0042` is fine with the coordination that section describes; it is not
 the zero-coordination parallelism the three tasks above are.
 
-**0037, 0038, 0039 and 0041 already closed** (each went dependency-ready the moment its own last
-blocker shipped — `0036` for `0037`, nothing pending at all for `0038`, `0038` for `0039`, nothing
-pending at all for `0041` — was claimed via `tasks-status.json` by whichever session picked it up
-next, and is now in `done/` too) — a real, worked instance, four times over, of why the JSON
-registry exists alongside this diagram: a task can turn dependency-ready and get claimed by another
-session before this snapshot is regenerated, so the JSON's live `status`/`claimed_by` is always the
-thing to check before dispatching a "ready" node from here, never this diagram alone. **0041's own
-closure is what freed 0042, 0043 and 0045 above** — all three were `blocked` in the immediately
-preceding snapshot and moved to `ready` in this same regeneration pass, per
+**0037, 0038, 0039, 0041 and 0043 already closed** (each went dependency-ready the moment its own
+last blocker shipped — `0036` for `0037`, nothing pending at all for `0038`, `0038` for `0039`,
+nothing pending at all for `0041`, `0041` for `0043` — was claimed via `tasks-status.json` by
+whichever session picked it up next, and is now in `done/` too) — a real, worked instance, five
+times over, of why the JSON registry exists alongside this diagram: a task can turn
+dependency-ready and get claimed by another session before this snapshot is regenerated, so the
+JSON's live `status`/`claimed_by` is always the thing to check before dispatching a "ready" node
+from here, never this diagram alone. **0041's own closure is what freed 0042, 0043 and 0045 in the
+previous regeneration pass; 0043's own closure, in this pass, is what freed 0056.** 0056's own
+dependency section named `0043` as its only blocker, so it recomputed to fully `ready` — with no
+pending dependency left at all — the moment 0043 moved to `done/`. `0044`, `0046` and `0065` each
+also cited `0043` (`0044`/`0046` as a hard blocker alongside a still-pending sibling; `0065` as a
+soft/informational one alongside two still-pending hard blockers), so each dropped `0043` from its
+own `depends_on` array but stays `blocked` — `0044` on `0042` alone now, `0046` on `0045` alone
+now, `0065` on `0061` and `0064` — per
 [workflow.md](../docs/workflow.md#regenerating-the-task-coordination-files)'s "recompute `status`
 for every remaining task that named it as a dependency" rule.
 
@@ -370,20 +371,22 @@ permission module and the same kind of `lang/en|es/blog.php` file. This is low r
 worth a quick coordination check (e.g. who creates `lang/{en,es}/blog.php` first) rather than
 treating it as zero-risk parallelism.
 
-Once those land, the same "ready" property propagates outward in a few places — **0037**, **0038**
-and **0041** already did (per the note above), and that is what freed **0045** into `ready` too;
-**0044** will do the same the moment **both 0042 and 0043** close; the same will also happen for
-**0060** the moment **0059** closes, **0066**/**0070**/**0071** the moment **0068** closes, and
-**0061** the moment **both 0058 and 0059** close — none of those is parallel-safe to a second
-session today, only sequential.
+Once those land, the same "ready" property propagates outward in a few places — **0037**, **0038**,
+**0041** and **0043** already did (per the note above), and that is what freed **0045** and
+**0056** into `ready` too; **0044** will do the same the moment **0042** closes (its one remaining
+dependency); **0046** the moment **0045** closes; **0065** the moment **both 0061 and 0064** close;
+the same will also happen for **0060** the moment **0059** closes, **0066**/**0070**/**0071** the
+moment **0068** closes, and **0061** the moment **both 0058 and 0059** close — none of those is
+parallel-safe to a second session today, only sequential.
 
 ### Pending tasks that must be sequenced
 
 The dependency graph above makes most of the backlog a strict sequencing problem rather than a
 parallelization one. The major chains, in the order they must be executed:
 
-1. **Customers → Orders (Epic 3).** `0041` (`done/`) is what unblocked `{0042, 0043}`, both `ready`
-   above; `{0042, 0043} → 0044` next. `0045` itself has **zero remaining blockers**: all six of its
+1. **Customers → Orders (Epic 3).** `0041` (`done/`) unblocked `{0042, 0043}` in the previous
+   regeneration pass; `0043` has since closed too (this pass), so `0044` now waits on `0042` alone
+   — `0042 → 0044` next. `0045` itself has **zero remaining blockers**: all six of its
    former hard dependencies — `0041` plus `done/0024`/`done/0029`/`done/0035`/`done/0036`/`done/0038`
    — are now `done/`, so it is `ready` above rather than merely sequenced behind this chain. `0045`
    is
@@ -392,7 +395,8 @@ parallelization one. The major chains, in the order they must be executed:
    `0054`. **`0055` (the Orders UI) is the epic's terminal node** — its own task file states Phase
    3 cannot begin until **all eight** of `0045`, `0048`, `0049`, `0050`, `0051`, `0052`, `0053` and
    `0054` are `done`.
-2. **Notifications (Epic 3).** `0043 → 0056 → 0057`, with `0046` as a soft/informational
+2. **Notifications (Epic 3).** `0043` (`done/`) is what unblocked `0056` — it is `ready` above with
+   no pending dependency left at all; `0056 → 0057` next. `0046` remains a soft/informational
    (non-blocking) dependency of both `0056` and `0057` — it only makes their "two distinct
    notification types" test meaningful, it does not gate them.
 3. **Blog (Epic 4).** `{0058, 0059} → 0061 → {0062, 0063, 0064 → 0065}`, with `0059 → 0060` running
@@ -480,10 +484,10 @@ in [`ai-spec/tasks-status.json`](tasks-status.json):
 ### Scope and known limitations of this map
 
 - **The `done/` tasks are omitted from the graph entirely, on purpose** (see the note at the top of
-  this file). They are still listed as flat IDs in the [inventory](#done-55--shipped-out-of-scope-for-this-graph)
+  this file). They are still listed as flat IDs in the [inventory](#done-57--shipped-out-of-scope-for-this-graph)
   above and are still referenced by ID in this analysis' prose where they explain *why* a pending
   task has no incoming edge (i.e. all its real prerequisites already shipped) — but re-deriving a
-  full internal dependency graph for 55 already-merged stories would not change anything actionable
+  full internal dependency graph for 57 already-merged stories would not change anything actionable
   today, so it was not attempted.
 - **Several pending task files themselves warn that their own dependency sections may be stale.**
   Many Epic 3/4/5 stories were composed before their prerequisites shipped, and each carries a

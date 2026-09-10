@@ -5,7 +5,7 @@
 Establish the **generic notification-viewing mechanism** an administrator's bell/dropdown reads: the
 unread count, the recent-notifications list, and mark-as-read. It works with whatever notification
 types exist in the `notifications` table at the time, and it never branches on a notification's
-`type` — so the two event producers that exist today ([0043](0043-customers-new-customer-notification-backend.md)
+`type` — so the two event producers that exist today ([0043](done/0043-customers-new-customer-notification-backend.md)
 `CustomerCreated`, [0046](0046-orders-new-order-notification-backend.md) `OrderCreated`) and the two
 that do not yet exist need **zero change here** when they arrive.
 
@@ -40,7 +40,7 @@ backend | includes database-expert: **no**
 - **No `database-expert`.** This story adds no table, no column, no index and no migration. The
   `notifications` table — including its `$table->uuidMorphs('notifiable')` correction and the composite
   `(notifiable_type, notifiable_id)` index that composite index gives it — is story
-  [0043](0043-customers-new-customer-notification-backend.md)'s deliverable, and it is exactly the
+  [0043](done/0043-customers-new-customer-notification-backend.md)'s deliverable, and it is exactly the
   access path every query below uses. That is the whole reason the participant list is two rather than
   three.
 
@@ -278,7 +278,7 @@ suite — which is what makes 0057 a view built against something real rather th
 
 | Depends on | Kind | Why |
 | --- | --- | --- |
-| [0043](0043-customers-new-customer-notification-backend.md) — new-customer notification | **hard** | Owns the `notifications` table, its `uuidMorphs('notifiable')` correction and its composite index. Without it there is no table to query and not a single test here can run |
+| [0043](done/0043-customers-new-customer-notification-backend.md) — new-customer notification | **hard** | Owns the `notifications` table, its `uuidMorphs('notifiable')` correction and its composite index. Without it there is no table to query and not a single test here can run |
 | [0046](0046-orders-new-order-notification-backend.md) — new-order notification | **soft / informational** | Not required to build or pass this story, but it is what makes the mixed-type test *meaningful*: two genuinely different `type` values proving the mechanism never branches on one. If 0046 has not landed, that test may be written against a second real type or a test-local notification class, and the acceptance criterion is unchanged |
 | `App\Models\User` `Notifiable` | **shipped** (Epic 1) | Verified in the working tree; no model change in this story |
 
@@ -456,8 +456,8 @@ that would be a *preference*, not an authorization rule, and preferences are exp
 
 ## Provenance
 
-- **PRD source:** [§ Cross-cutting: global search & notifications](../../docs/PRD/PRD.md#cross-cutting-global-search--notifications) — specifically the two bell-**state** scenarios ("The bell shows an unread indicator", "Reading notifications clears the unread indicator") and the acceptance criterion *"The bell displays an unread indicator and clears it once notifications are read."* The section's `Scenario Outline: A confirmed event generates a notification` is **not** this story's — it belongs to the four event producers ([0043](0043-customers-new-customer-notification-backend.md), [0046](0046-orders-new-order-notification-backend.md), and Epic 2's and Epic 4's unbuilt ones) — and the whole `Feature: Global panel search` is excluded (**OQ-1**).
-- **Backlog origin:** [0043's OQ-3](0043-customers-new-customer-notification-backend.md#open-questions), option (a) — "add a cross-cutting notifications bell story to the backlog, sequenced after the event producers". This file is that story's backend half; **0057** is its UI half. 0046 deliberately did not reopen the gap, and this file closes it once for all four producers rather than once per producer.
+- **PRD source:** [§ Cross-cutting: global search & notifications](../../docs/PRD/PRD.md#cross-cutting-global-search--notifications) — specifically the two bell-**state** scenarios ("The bell shows an unread indicator", "Reading notifications clears the unread indicator") and the acceptance criterion *"The bell displays an unread indicator and clears it once notifications are read."* The section's `Scenario Outline: A confirmed event generates a notification` is **not** this story's — it belongs to the four event producers ([0043](done/0043-customers-new-customer-notification-backend.md), [0046](0046-orders-new-order-notification-backend.md), and Epic 2's and Epic 4's unbuilt ones) — and the whole `Feature: Global panel search` is excluded (**OQ-1**).
+- **Backlog origin:** [0043's OQ-3](done/0043-customers-new-customer-notification-backend.md#open-questions), option (a) — "add a cross-cutting notifications bell story to the backlog, sequenced after the event producers". This file is that story's backend half; **0057** is its UI half. 0046 deliberately did not reopen the gap, and this file closes it once for all four producers rather than once per producer.
 - **Process:** [workflow.md](../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from `backend-expert` (the finding that `Notifiable` provides every operation for free, the no-new-class recommendation, the no-permission-gate reasoning, the mark-all trigger and the cap range) and `backend-qa` (the mixed-type and two-path zero-count cases, cross-user scoping named as the highest risk with the one-dispatch construction rule, the count-level belt-and-braces assertion, the ordering/cap case, the soft-deleted case raised and withdrawn, and the permission-revocation disagreement escalated rather than assumed), composed by `product-owner` as facilitator. **No `database-expert`**: this story adds no schema (see the Type section).
 - **Gherkin conventions:** every scenario opens with a named business-role actor ("a signed-in administrator", "a customer administrator") and carries exactly one `When`, per [gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 — mandatory across all Gherkin in this project, per the incident recorded in [errors-log.md](../../docs/errors-log.md).
 - **Verified against the working tree by `product-owner` rather than relayed:** `App\Models\User` carries `use Notifiable;` and `use SoftDeletes;`; no `notifications` migration exists in `database/migrations/` yet (0043's, still `new`); `resources/views/`, `app/Livewire/` and `config/modules.php` contain no bell, dropdown, unread indicator or notification route of any kind; and every vendor method quoted above was read from the installed `laravel/framework` source (`Notifiable` → `HasDatabaseNotifications` + `RoutesNotifications`; `notifications()` returns `morphMany(...)->latest()`; `scopeUnread` is `whereNull('read_at')`; `DatabaseNotification::markAsRead()` guards on `is_null($this->read_at)`; `DatabaseNotificationCollection::markAsRead()` is `$this->each->markAsRead()`).

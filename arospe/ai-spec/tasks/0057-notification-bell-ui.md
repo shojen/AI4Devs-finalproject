@@ -15,7 +15,7 @@ zero change here when they arrive.
 > which sits **above** the epics because the bell's contents are produced by Epic 2 (low/zero stock),
 > Epic 3 (new customer, new order) and Epic 4 (blog post published) alike. It is filed here because
 > Epic 3 owns two of the four producers and is where the gap became visible
-> ([0043](0043-customers-new-customer-notification-backend.md)'s **OQ-3**, option (a)) — not because a
+> ([0043](done/0043-customers-new-customer-notification-backend.md)'s **OQ-3**, option (a)) — not because a
 > notifications bell belongs to Customers or Orders. It is the last story of this session's extended
 > Epic 3 decomposition.
 
@@ -331,7 +331,7 @@ Nothing another administrator received is ever visible.
 | Depends on | Kind | Why |
 | --- | --- | --- |
 | [0056](0056-notification-viewing-backend.md) — notification viewing (backend) | **hard** | Defines the three query shapes this UI calls verbatim, and pins them with the regression suite. Building the view first means building against a contract that does not exist |
-| [0043](0043-customers-new-customer-notification-backend.md) — new-customer notification | **hard (transitively)** | Owns the `notifications` table itself, and supplies one of the two recognized types |
+| [0043](done/0043-customers-new-customer-notification-backend.md) — new-customer notification | **hard (transitively)** | Owns the `notifications` table itself, and supplies one of the two recognized types |
 | [0046](0046-orders-new-order-notification-backend.md) — new-order notification | **soft / informational** | Not required to build or pass this story. It supplies the *second* recognized type, which is what makes the mixed-type test meaningful; without it that test runs against one real type plus a test-local one, and the acceptance criteria are unchanged |
 | Task 0013's layout (`<x-sidebar-nav />`, `x-desktop-user-menu`) | **shipped** | Verified in the working tree; this story adds two lines beside them and changes neither |
 
@@ -470,7 +470,7 @@ payload.
 ## Provenance
 
 - **PRD source:** [§ Cross-cutting: global search & notifications](../../docs/PRD/PRD.md#cross-cutting-global-search--notifications) — the two bell-**state** scenarios ("The bell shows an unread indicator", "Reading notifications clears the unread indicator"), both covered above, plus the acceptance criterion *"The bell displays an unread indicator and clears it once notifications are read."* The section's `Scenario Outline: A confirmed event generates a notification` belongs to the four event producers, and the whole `Feature: Global panel search` is excluded and remains unowned.
-- **Backlog origin:** [0043's OQ-3](0043-customers-new-customer-notification-backend.md#open-questions), option (a). [0056](0056-notification-viewing-backend.md) is that story's backend half and names **0057** as its paired UI story by number; this file is it.
+- **Backlog origin:** [0043's OQ-3](done/0043-customers-new-customer-notification-backend.md#open-questions), option (a). [0056](0056-notification-viewing-backend.md) is that story's backend half and names **0057** as its paired UI story by number; this file is it.
 - **Process:** [workflow.md](../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from `frontend-expert` (the layout finding, the two-mount-point recommendation, the generic-with-fallback rendering path, the mark-all-then-re-read-via-method rule, the poll cadence, the `data-test` hooks, and the explicit request for a placement decision rather than a deferral) and `frontend-qa` (the eleven browser cases, the two-path indicator-absence split, the durable-clear-across-reload assertion, the unrecognized-type case named highest-value, the one-dispatch isolation constraint, the ≥2-route presence case, and the D-1 permission-revocation case), composed by `product-owner` as facilitator. **No `database-expert`**: no schema, no query (see the Type section).
 - **Gherkin conventions:** every scenario opens with a named business-role actor and carries exactly one `When`, per [gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 — mandatory across all Gherkin in this project, per the incident in [errors-log.md](../../docs/errors-log.md).
 - **Verified against the working tree by `product-owner` rather than relayed:** `resources/views/layouts/app.blade.php` renders `<x-layouts::app.sidebar>` and nothing else; `resources/views/layouts/app/sidebar.blade.php` contains the entire shell, with `<flux:header class="lg:hidden">` as the only header and `<x-desktop-user-menu class="hidden lg:block" />` after a `flux:spacer` inside `<flux:sidebar>`; `app/Livewire/` contains `Actions/`, `Roles/`, `Settings/` and `Users/` with no `Notifications/`; `lang/en/` and `lang/es/` contain `navigation.php`, `roles.php` and `users.php` with no `notifications.php`; and `tests/Browser/` contains `Auth/`, `RolesIndexTest.php` and `UsersIndexTest.php` with no `Notifications/` folder.

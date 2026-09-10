@@ -3,8 +3,8 @@
 ## Description
 When a customer record is created, generate a **database notification** for every administrator who
 holds `customers.view`. This closes the first of the four confirmed notification events in PRD
-[§ Cross-cutting: global search & notifications](../../docs/PRD/PRD.md#cross-cutting-global-search--notifications)
-and the last acceptance criterion of [§3.1 Customers](../../docs/PRD/PRD.md#31-customers). This story
+[§ Cross-cutting: global search & notifications](../../../docs/PRD/PRD.md#cross-cutting-global-search--notifications)
+and the last acceptance criterion of [§3.1 Customers](../../../docs/PRD/PRD.md#31-customers). This story
 owns the `notifications` table, the `CustomerCreated` notification, the recipient-resolution rule, and
 the dispatch site inside story 0041's customer-create action. **It renders nothing** — no bell, no
 dropdown, no unread badge.
@@ -134,16 +134,16 @@ public function down(): void
 - **`$table->uuidMorphs('notifiable')`, never the stub's `$table->morphs('notifiable')`.** This is the
   one line that must change and the only way this story can fail at the schema level. `morphs()` emits
   an `UNSIGNED BIGINT` `notifiable_id`; `users.id` is a `CHAR(36)` UUID
-  ([schema.md](../../docs/database/schema.md#users)), so the stock stub produces a column that cannot
+  ([schema.md](../../../docs/database/schema.md#users)), so the stock stub produces a column that cannot
   hold a single real recipient. `uuidMorphs()` emits `notifiable_type VARCHAR` +
   `notifiable_id CHAR(36)` plus their composite index. This is the same correction the historical
   `users` UUID conversion had to make to `spatie/laravel-permission`'s morph key
   (`model_id` → `model_uuid`, retyped) — but **far simpler here, because `notifications` is
   greenfield**: write it correctly once, with no rename, no backfill and no multi-migration dance. See
-  [migrations.md](../../docs/database/migrations.md#uuid-primary-keys).
+  [migrations.md](../../../docs/database/migrations.md#uuid-primary-keys).
 - **`php artisan notifications:table` publishes an app-owned stub into `database/migrations/`, and
   editing it is the expected step** — it is emphatically **not** a package-vendored migration in the
-  sense of [migrations.md's Package-vendored migrations](../../docs/database/migrations.md#package-vendored-migrations).
+  sense of [migrations.md's Package-vendored migrations](../../../docs/database/migrations.md#package-vendored-migrations).
   That rule exists for `create_permission_tables.php`, which reads its whole shape from
   `config('permission.*')` and must not be hand-edited. Laravel's notifications stub reads no config
   at all; once published it is ordinary repository source. Recorded because treating it as
@@ -157,23 +157,23 @@ public function down(): void
 - **No explicit `$table->index(...)`.** `uuidMorphs()` already creates the composite
   `(notifiable_type, notifiable_id)` index, which is the only access path any future viewer UI needs
   ("my notifications, newest first"). Adding a second index would recreate the redundant
-  `users_uuid_unique` mistake in [errors-log.md](../../docs/errors-log.md).
+  `users_uuid_unique` mistake in [errors-log.md](../../../docs/errors-log.md).
 - **No index on `read_at`.** A per-user unread count filters on an already-indexed
   `(notifiable_type, notifiable_id)` prefix first; a boolean-ish column over a backoffice-sized table
-  is the worst possible index candidate, the same reasoning [schema.md](../../docs/database/schema.md#users)
+  is the worst possible index candidate, the same reasoning [schema.md](../../../docs/database/schema.md#users)
   gives for omitting one on `users.status`.
 - **No foreign key to `users`.** The relation is polymorphic; an FK cannot be declared across a morph.
   This matches how `model_has_roles` already relates to `users` in this schema.
-- **`down()` is the exact inverse of `up()`**, per [migrations.md](../../docs/database/migrations.md#structure).
+- **`down()` is the exact inverse of `up()`**, per [migrations.md](../../../docs/database/migrations.md#structure).
 - **No model change.** `App\Models\User` already carries `use Notifiable;`
-  ([`app/Models/User.php`](../../app/Models/User.php), verified) — this story adds no trait, no column
+  ([`app/Models/User.php`](../../../app/Models/User.php), verified) — this story adds no trait, no column
   and no relation to `User`.
 
 ### Notification — `App\Notifications\CustomerCreated`
 
 `app/Notifications/CustomerCreated.php` — **new**. `app/Notifications/` is a stock Laravel location
 (`make:notification`), so no folder approval is needed
-([base-standards.md](../../docs/conventions/base-standards.md#directory-structure)).
+([base-standards.md](../../../docs/conventions/base-standards.md#directory-structure)).
 
 ```php
 class CustomerCreated extends Notification
@@ -199,14 +199,14 @@ class CustomerCreated extends Notification
 
 - **`CustomerCreated`, not `NewCustomerCreated` or `CustomerCreatedNotification`.** A statement of fact
   about what happened, matching `PendingEmailVerification` / `UserInvitation` / the `ActivateVerifiedUser`
-  listener, per [naming.md](../../docs/conventions/naming.md#classes). No `Notification` suffix.
+  listener, per [naming.md](../../../docs/conventions/naming.md#classes). No `Notification` suffix.
 - **`['database']` only — no `mail` channel.** See decision **D-2**.
 - **Not `ShouldQueue`.** See decision **D-4**.
 - **No `type` discriminator inside `data`.** Laravel's `DatabaseChannel` already writes the
   notification's FQCN into the `notifications.type` column, so a second copy inside the JSON payload
   would be redundant state that can drift on a class rename.
 - **No `lang/` file in this story.** `data` stores structural values, never rendered copy — the same
-  keys-not-copy reasoning [base-standards.md](../../docs/conventions/base-standards.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache)
+  keys-not-copy reasoning [base-standards.md](../../../docs/conventions/base-standards.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache)
   applies to `config/`. Baking `"New customer: Ana García"` into an immutable JSON column would put an
   English string somewhere `lang/es/` can never reach. The copy belongs to whichever story renders the
   bell (OQ-3).
@@ -214,9 +214,9 @@ class CustomerCreated extends Notification
 ### Recipient resolution + dispatch — `App\Actions\Customers\NotifyCustomerCreated`
 
 `app/Actions/Customers/NotifyCustomerCreated.php` — **new**, invokable, imperative verb-phrase name
-with no `Action`/`Service` suffix per [naming.md](../../docs/conventions/naming.md#classes). It lands
+with no `Action`/`Service` suffix per [naming.md](../../../docs/conventions/naming.md#classes). It lands
 in the `app/Actions/Customers/` subfolder **story 0041 creates** for `CreateCustomer` — one subfolder
-per domain area, per [base-standards.md](../../docs/conventions/base-standards.md#directory-structure).
+per domain area, per [base-standards.md](../../../docs/conventions/base-standards.md#directory-structure).
 
 ```php
 public function __invoke(Customer $customer): void
@@ -240,9 +240,9 @@ public function __invoke(Customer $customer): void
   users holding the permission through a role *or* directly, and it is a live query, never a cached or
   snapshotted list, so a grant revoked a minute ago takes effect immediately. This is the "gate on
   permissions, never role names" convention in
-  [architecture/authorization.md](../../docs/architecture/authorization.md) applied to a recipient set
+  [architecture/authorization.md](../../../docs/architecture/authorization.md) applied to a recipient set
   rather than to an access check. `customers.view` already exists in the seeded catalog
-  ([`RolePermissionSeeder::MODULES`](../../database/seeders/RolePermissionSeeder.php), verified) — this
+  ([`RolePermissionSeeder::MODULES`](../../../database/seeders/RolePermissionSeeder.php), verified) — this
   story adds no permission and reseeds no grant.
 - **Soft-deleted administrators are excluded for free, and the story relies on that deliberately.**
   `User` uses `SoftDeletes`, so the `SoftDeletingScope` is already on `User::query()`; no `whereNull`
@@ -271,7 +271,7 @@ Two constraints on **where** that call goes, both load-bearing:
    `DB::afterCommit` registration), so a rollback cannot leave a notification announcing a customer
    that does not exist. This is the same no-side-effect-on-rollback constraint story 0015 applied to
    its email dispatch, and it is a direct application of
-   [the `DB::transaction()` entry in errors-log.md](../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21):
+   [the `DB::transaction()` entry in errors-log.md](../../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21):
    *wrapping existing code in a transaction is a change to every side effect that code already
    performed*. Read forward here rather than in hindsight.
 2. **After authorization and validation, on the success path only.** A refused or invalid creation
@@ -280,13 +280,13 @@ Two constraints on **where** that call goes, both load-bearing:
 - **Constructor injection, not a widened `__invoke()` signature.** `CreateCustomer::__invoke()`'s
   parameter list is a public contract 0041's Livewire component and every direct-call test must match
   verbatim; an internal collaborator belongs in the constructor, per the documented exception in
-  [code-style.md](../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract).
+  [code-style.md](../../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract).
   **This makes `CreateCustomer` un-`new`-able**, so every test must resolve it with
   `app(CreateCustomer::class)` — the constraint that page records after three actions broke ten call
   sites at once in story 0015b.
 - **No model event, no observer.** A `created` event on `Customer` would fire for factories, seeders
   and imports too, and — per the blast-radius rule in
-  [base-standards.md](../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done) —
+  [base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done) —
   would bind every test in the repo. The PRD's event is "an administrator created a customer", which
   is an *action*, not a row insert.
 
@@ -323,7 +323,7 @@ its policy and its CRUD are **story 0041's**.
 - [ ] **Rollback: a creation that throws after the customer row is written stores no notification.** Force a failure inside the transaction and assert zero `notifications` rows. This is the assertion that pins constraint 1 of the dispatch site; without it, a dispatch moved inside the transaction — or before it — passes every other test here.
 - [ ] Multiple eligible recipients each get their own row (count equals the number of holders), not one shared row.
 
-**Deliberately not tested** (per [what-not-to-test.md](../../docs/testing/qa/what-not-to-test.md)):
+**Deliberately not tested** (per [what-not-to-test.md](../../../docs/testing/qa/what-not-to-test.md)):
 migration `up()`/`down()` mechanics (`RefreshDatabase` runs every migration each run); Laravel's
 `DatabaseChannel` write itself as a framework behaviour — exercise it *through* the dispatch, which is
 what the app actually does; the UUID generation of `notifications.id`; anything in `tests/Browser/`
@@ -358,10 +358,10 @@ customer generates the confirmed 'new customer' notification") asks for, and no 
 - [ ] **No notification-viewing UI is built**, and its absence is recorded here as an out-of-scope gap (OQ-3) rather than as an unmet criterion.
 
 ## Definition of Done
-- [ ] Tests written and green, plus the **full** existing suite (per the Full Test Suite Gate Rule in [contracts.md](../../docs/contracts.md)).
+- [ ] Tests written and green, plus the **full** existing suite (per the Full Test Suite Gate Rule in [contracts.md](../../../docs/contracts.md)).
 - [ ] Code reviewed (code-reviewer).
-- [ ] No security findings (appsec-auditor) — specifically: that the recipient query cannot be widened by caller-supplied input; that the payload leaks no customer field beyond `customer_id`/`customer_name`; that a dispatch cannot be triggered by an actor who failed the `customers.create` gate; and that adding this side effect to `CreateCustomer` grants no capability to a less-privileged caller (the shared-code lesson from [errors-log.md](../../docs/errors-log.md)).
-- [ ] Documentation updated (docs-keeper) — [database/schema.md](../../docs/database/schema.md) (new `notifications` section + ER diagram node, and the `uuidMorphs()`-not-`morphs()` rule), [database/migrations.md](../../docs/database/migrations.md#uuid-primary-keys) (a published-stub migration is app-owned source and must be edited for a UUID morph — explicitly distinguished from the package-vendored rule), and [conventions/base-standards.md](../../docs/conventions/base-standards.md#directory-structure) (`app/Notifications/` gains a third class; `app/Actions/Customers/` gains a second).
+- [ ] No security findings (appsec-auditor) — specifically: that the recipient query cannot be widened by caller-supplied input; that the payload leaks no customer field beyond `customer_id`/`customer_name`; that a dispatch cannot be triggered by an actor who failed the `customers.create` gate; and that adding this side effect to `CreateCustomer` grants no capability to a less-privileged caller (the shared-code lesson from [errors-log.md](../../../docs/errors-log.md)).
+- [ ] Documentation updated (docs-keeper) — [database/schema.md](../../../docs/database/schema.md) (new `notifications` section + ER diagram node, and the `uuidMorphs()`-not-`morphs()` rule), [database/migrations.md](../../../docs/database/migrations.md#uuid-primary-keys) (a published-stub migration is app-owned source and must be edited for a UUID morph — explicitly distinguished from the package-vendored rule), and [conventions/base-standards.md](../../../docs/conventions/base-standards.md#directory-structure) (`app/Notifications/` gains a third class; `app/Actions/Customers/` gains a second).
 - [ ] **The Definition of Done explicitly does NOT include a notification-viewer UI**, for this story or for the Epic 3 batch as currently decomposed. See OQ-3.
 - [ ] Acceptance criteria met.
 
@@ -372,7 +372,7 @@ customer generates the confirmed 'new customer' notification") asks for, and no 
 - **Hard dependency on story 0041 (Customers CRUD backend), which must be implemented first.** The
   dispatch call lands inside 0041's `CreateCustomer` action, and every Feature test here needs the
   `Customer` model, its migration and its factory. Per the
-  [task ordering rule](../../docs/workflow.md#task-ordering-rule), 0041's lower number is not
+  [task ordering rule](../../../docs/workflow.md#task-ordering-rule), 0041's lower number is not
   cosmetic — sequence it into Phase 3 ahead of this story. (0041 is being composed in parallel and is
   referenced by id rather than by link, so this file carries no link to a path that may not exist yet;
   add the link once its filename is final.)
@@ -391,7 +391,7 @@ customer generates the confirmed 'new customer' notification") asks for, and no 
   as a test case rather than left to Phase 3 for exactly this reason.
 - **R-2 — Cross-story edit.** This story modifies a file story 0041 owns. If 0041 is still in flight
   when this reaches Phase 3, the two must not be implemented by concurrent agents, per the
-  [Parallel Agent File-Ownership Rule](../../docs/contracts.md#parallel-agent-file-ownership-rule).
+  [Parallel Agent File-Ownership Rule](../../../docs/contracts.md#parallel-agent-file-ownership-rule).
 - **R-3 — Unbounded row growth with no reader.** Every customer creation writes N rows that nothing
   ever reads or marks read while OQ-3 stays open. At backoffice volumes this is negligible, and
   `model:prune` is deliberately not wired here — recorded so it is a known consequence rather than a
@@ -404,7 +404,7 @@ default is stated so Phase 3 is not blocked.** `User::permission()` filters on p
 deletes, not on `users.status`, so as specified all permission holders are notified regardless of
 account state. **Recommended default: notify them (no status filter) _(recommended)_** — a notification
 is a record, not access, and `users.status` is enforced at sign-in
-([architecture/authentication.md](../../docs/architecture/authentication.md)); a suspended
+([architecture/authentication.md](../../../docs/architecture/authentication.md)); a suspended
 administrator who is later reactivated then has an intact history rather than a silent gap. The
 alternative — adding `->where('status', UserStatus::Active)` — is one line if the human prefers it.
 
@@ -415,11 +415,11 @@ the recipient rule a single query with no actor parameter, and a customer create
 external channel has no acting administrator at all, so a self-exclusion branch would be dead code on
 that path. The alternative is passing the actor into `NotifyCustomerCreated` and rejecting them, which
 reintroduces exactly the caller-supplied-state shape
-[errors-log.md](../../docs/errors-log.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
+[errors-log.md](../../../docs/errors-log.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
 warns about.
 
 **OQ-3 — The notification-viewer UI is a genuinely missing story, and this is a decision for the
-human, not an omission.** PRD [§ Cross-cutting](../../docs/PRD/PRD.md#cross-cutting-global-search--notifications)
+human, not an omission.** PRD [§ Cross-cutting](../../../docs/PRD/PRD.md#cross-cutting-global-search--notifications)
 carries four acceptance-criteria-bearing bell scenarios — an unread indicator, reading notifications
 clearing that indicator, per-event generation, and no notification for unrelated changes. This story
 delivers the **third** one for the customer event and nothing else, because **no story in the current
@@ -449,7 +449,7 @@ Three options, for the human to choose:
 **D-1 — The Super Admin is deliberately excluded from this notification.** `User::permission('customers.view')`
 is a **data** query against `role_has_permissions` / `model_has_permissions`, while the Super Admin's
 access comes from the `Gate::before` bypass in
-[architecture/authorization.md](../../docs/architecture/authorization.md) — an authorization-layer
+[architecture/authorization.md](../../../docs/architecture/authorization.md) — an authorization-layer
 construct that grants **no rows** for any query to match. A Super Admin therefore falls out of the
 recipient set for free, and the decision is to **leave it that way**.
 
@@ -487,7 +487,7 @@ consequence a reviewer must accept: this story's acceptance criteria are satisfi
 `QUEUE_CONNECTION=database`) to defer a write that is cheaper than the job row itself, and would put
 the notification behind a worker that must be running for the feature to work at all — turning a
 synchronous, assertable side effect into an eventual one that every test would need `Queue::fake()` to
-observe. The precedent in [architecture/authentication.md](../../docs/architecture/authentication.md)
+observe. The precedent in [architecture/authentication.md](../../../docs/architecture/authentication.md)
 cuts the same way: `PendingEmailVerification` is queued because it performs an **outbound SMTP** call,
 while `UserInvitation` deliberately is not. There is no outbound call here. Revisit only if a `mail`
 channel is ever added (D-2), at which point queueing becomes the right answer for the same reason.
@@ -505,6 +505,14 @@ notification for a **hard**-deleted customer would render a dangling link, which
 PRD §3.1 mandates soft delete precisely so records are never physically removed. Reversible — adding a
 field to `toArray()` is one line — but reversing it does **not** backfill existing rows, so a later
 addition means a mixed-shape column. Decide additions deliberately.
+
+**Addendum (Phase 4 security-audit finding F-2, 2026-09-10):** `customer_name` is itself personal
+data, kept for exactly the same reason `email` is excluded above — and the same consequence applies
+to it: this row has no erasure path (`model:prune` deliberately not wired, R-3) and outlives both a
+soft-deleted and an edited `customers` row. A future erasure/retention story must treat
+`notifications.data` as a second location holding a customer's name, not only the `customers` table.
+No code change from this — recorded so the *kept* field's tradeoff is as explicit as the *excluded*
+one, matching `App\Notifications\CustomerCreated::toArray()`'s own updated docblock.
 
 ## Resolved in the debate
 - **Recipients are permission-driven (`customers.view`), never role-name-driven** — the repo's standing

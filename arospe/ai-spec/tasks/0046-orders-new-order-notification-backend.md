@@ -8,7 +8,7 @@ and the "new order" acceptance criterion of [§3.2 Orders](../../docs/PRD/PRD.md
 owns the `OrderCreated` notification, the recipient-resolution rule, and the dispatch site inside story
 [0045](0045-orders-core-crud-backend.md)'s `CreateOrder`. **It renders nothing** — no bell, no dropdown,
 no unread badge — and it adds **no migration**: the `notifications` table is story
-[0043](0043-customers-new-customer-notification-backend.md)'s deliverable and already exists once that
+[0043](done/0043-customers-new-customer-notification-backend.md)'s deliverable and already exists once that
 story is `done`.
 
 > ## ⛔ BLOCKED — inherited cross-epic dependency (read this before Phase 3)
@@ -37,7 +37,7 @@ story is `done`.
 > lists notifications. "A new-order notification is generated" is therefore fully testable (a
 > `notifications` row plus `Notification::assertSentTo`) and produces **zero visible admin-facing
 > behaviour**. A reviewer must not read that absence as an unmet acceptance criterion. **The viewer-UI
-> gap is already tracked exactly once, at story 0043 ([its OQ-3](0043-customers-new-customer-notification-backend.md#open-questions)),
+> gap is already tracked exactly once, at story 0043 ([its OQ-3](done/0043-customers-new-customer-notification-backend.md#open-questions)),
 > and this story deliberately does not reopen it as a second open question** — it is one cross-cutting
 > gap, not one per event producer.
 
@@ -155,7 +155,7 @@ Feature: New-order notification
 ### No migration — the `notifications` table is story 0043's
 
 **This story creates no migration and must not create one.** `notifications` is published, edited and
-owned by story [0043](0043-customers-new-customer-notification-backend.md), including the
+owned by story [0043](done/0043-customers-new-customer-notification-backend.md), including the
 `$table->uuidMorphs('notifiable')` correction (the stock `morphs()` emits an `UNSIGNED BIGINT`
 `notifiable_id`, which cannot hold this app's `CHAR(36)` `users.id`). A second `create_notifications_table`
 migration would fail on `migrate:fresh` outright; a "safety" `Schema::hasTable()` guard around one would
@@ -396,7 +396,7 @@ and no more.
 | Depends on | State | Why |
 | --- | --- | --- |
 | [0045](0045-orders-core-crud-backend.md) — Orders core CRUD | **hard dependency, and itself ⛔ BLOCKED** | The dispatch call lands inside its `CreateOrder`; every Feature test here needs `Order`, `OrderItem` and `OrderFactory`. **Inherits 0045's full block** on [0024](done/0024-products-core-crud-backend.md), [0029](done/0029-product-variants-backend.md), [0035](done/0035-shipping-carriers-backend.md), [0036](done/0036-shipping-rate-rules-backend.md) and [0038](done/0038-payment-methods-bank-transfer-backend.md) |
-| [0043](0043-customers-new-customer-notification-backend.md) — new-customer notification | **hard dependency** | Owns the `notifications` table and its `uuidMorphs('notifiable')` correction. This story adds **no** migration and cannot run a single Feature test without it |
+| [0043](done/0043-customers-new-customer-notification-backend.md) — new-customer notification | **hard dependency** | Owns the `notifications` table and its `uuidMorphs('notifiable')` correction. This story adds **no** migration and cannot run a single Feature test without it |
 | [0041](done/0041-customers-crud-backend.md) — Customers CRUD | **transitive, via 0045** | `customer_name` is read off the order's `customer` relation; `Customer` must exist with a resolvable display name |
 | `orders.view` in the seeded catalog | **shipped** | `RolePermissionSeeder::MODULES` carries `orders` (verified) — no seeder change needed |
 | `App\Models\User` `Notifiable` + `SoftDeletes` | **shipped** (Epic 1) | Verified; no model change in this story |
@@ -436,7 +436,7 @@ are not cosmetic — sequence both into Phase 3 ahead of this story.
 ### Open questions
 
 **None genuinely new.** This is stated explicitly rather than by omission: every question this story
-could raise was already asked and answered in [0043](0043-customers-new-customer-notification-backend.md),
+could raise was already asked and answered in [0043](done/0043-customers-new-customer-notification-backend.md),
 and inventing a fresh one to fill the section would be noise. The three inherited items and their
 status here:
 
@@ -569,7 +569,7 @@ string** — at which point the refactor is mechanical and safe, which is precis
   and negative sets, the faked/un-faked pair, the payload key-set assertion, the rollback case named as
   the highest-value test, and the inherited-block flag), composed by `product-owner` as facilitator.
   **No `database-expert`**: this story adds no schema (see the Type section).
-- **Sibling story this one mirrors:** [0043](0043-customers-new-customer-notification-backend.md) — its
+- **Sibling story this one mirrors:** [0043](done/0043-customers-new-customer-notification-backend.md) — its
   decisions D-1 through D-5 and open questions OQ-1/OQ-2/OQ-3 apply here by direct analogy and are
   resolved above rather than re-debated.
 - **Gherkin conventions:** every scenario opens with a named business-role actor ("an order
