@@ -28,6 +28,11 @@ return [
     | se dispara una vez que el contador ya es positivo), así que la forma
     | de rango explícito no aporta nada aquí.
     |
+    | `carriers.index.*` más allá de `heading`, y todo el grupo `rates`,
+    | añadidos por la historia 0037 (el marcado real de la pantalla de
+    | Envíos: tarjetas de transportista sobre una tabla de tarifas agrupada,
+    | según la propia leyenda de la captura del §2.4 del PRD -- D-1).
+    |
     */
 
     'carriers' => [
@@ -38,6 +43,79 @@ return [
 
         'index' => [
             'heading' => 'Transportistas',
+            'toggle_label' => 'Activo',
+            'toggle_aria' => 'Cambiar el estado activo de :name',
+            'action_not_allowed' => 'Acción no permitida',
+        ],
+
+        'editor' => [
+            // OQ-B (recomendada, adoptada): distingue un transportista inactivo en el
+            // selector del formulario de tarifas -- sin esto, un administrador podría
+            // crear una tarifa para un transportista que nunca cotizará, sin ninguna
+            // señal al respecto.
+            'carrier_option_inactive' => ':name (Inactivo)',
+        ],
+    ],
+
+    'rates' => [
+        // Hallazgo M1 de la revisión de código de la Fase 5: saveRate() valida un array de
+        // datos en snake_case (el propio docblock de App\Livewire\Shipping\Index explica por
+        // qué), así que sin este bloque el placeholder :attribute de Laravel humaniza el
+        // nombre de la COLUMNA en bruto en lugar de la etiqueta real del campo. Coincide con
+        // el propio bloque `attributes` de lang/es/sales-regions.php (la excepción
+        // documentada en naming.md).
+        'attributes' => [
+            'name' => 'nombre',
+            'shipping_carrier_id' => 'transportista',
+            'shipping_zone_id' => 'zona',
+            'min_weight_kg' => 'peso mínimo',
+            'max_weight_kg' => 'peso máximo',
+            'price' => 'precio',
+            'delivery_estimate' => 'estimación de entrega',
+        ],
+
+        'index' => [
+            'new_rate' => 'Nueva tarifa',
+            'action_not_allowed' => 'Acción no permitida',
+            'column_name' => 'Nombre',
+            'column_zone' => 'Zona',
+            'column_weight' => 'Peso',
+            'column_price' => 'Precio',
+            'column_delivery' => 'Entrega',
+            'column_actions' => 'Acciones',
+            // D-8: nunca un 'null' literal -- solo se muestra cuando max_weight_kg es null.
+            'weight_open_ended' => ':min kg y superior',
+            'weight_range' => ':min–:max kg',
+            'price_format' => ':price €',
+            // El estado vacío general de la tabla -- solo se muestra cuando TODOS los
+            // transportistas tienen cero tarifas, nunca por transportista (un
+            // transportista sin tarifas muestra 'no_rates_yet' en su lugar, su propio
+            // grupo se sigue mostrando -- D-4/D-8).
+            'empty' => 'Todavía no hay tarifas de envío. Crea la primera para empezar.',
+            'no_rates_yet' => 'Este transportista todavía no tiene tarifas.',
+            'edit_rate' => 'Editar :name',
+            'delete_rate' => 'Eliminar :name',
+            'delete_confirm_title' => 'Eliminar tarifa de envío',
+            'delete_confirm_text' => '¿Seguro que quieres eliminar ":name"? Esta acción no se puede deshacer.',
+        ],
+
+        'editor' => [
+            'create_title' => 'Crear tarifa de envío',
+            'edit_title' => 'Editar tarifa de envío',
+            'name_label' => 'Nombre',
+            'carrier_label' => 'Transportista',
+            'carrier_placeholder' => 'Selecciona un transportista',
+            'zone_label' => 'Zona',
+            'zone_placeholder' => 'Selecciona una zona',
+            // D-10/OQ-C (adoptada): un enlace secundario junto al selector de zona,
+            // para que un administrador al que le falta una zona no pierda un
+            // formulario de tarifa a medio rellenar.
+            'manage_zones_link' => 'Gestionar zonas de envío',
+            'min_weight_label' => 'Peso mín. (kg)',
+            'max_weight_label' => 'Peso máx. (kg)',
+            'max_weight_help' => 'Déjalo en blanco para "y superior" -- sin límite superior.',
+            'price_label' => 'Precio (€)',
+            'delivery_estimate_label' => 'Estimación de entrega',
         ],
     ],
 
