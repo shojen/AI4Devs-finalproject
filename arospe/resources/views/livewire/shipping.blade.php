@@ -289,7 +289,21 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    {{-- Errors-log 2026-09-11: `items-start` is load-bearing here, not
+                    decorative. CSS Grid's default `align-items: stretch` stretches every
+                    cell in this row to the height of the tallest one -- and once "Max.
+                    weight"'s cell grows taller than its siblings' (its own help text below
+                    the input), Flux's flux:with-field `<ui-field>` (a display:grid custom
+                    element) redistributes that extra stretched height across its OWN
+                    internal rows in a way that shifts the label/input position, not only
+                    the field's own bottom padding. Verified by execution: with the default
+                    stretch, every sibling field's label row grew from 17.5px to 35.5px
+                    the moment "Max. weight"'s own wrapper became taller, desyncing every
+                    input in the row even though none of THEIR markup changed. `items-start`
+                    keeps every cell at its own natural height, so the three inputs align on
+                    the same row regardless of which field carries extra help text below
+                    it. --}}
+                    <div class="grid grid-cols-1 items-start gap-4 sm:grid-cols-3">
                         {{-- D-5: type="text" inputmode="decimal", never type="number" -- a native
                         number input performs its own client-side parsing and a Spanish-locale
                         decimal comma never reaches the wire payload. --}}
@@ -301,14 +315,30 @@
                             data-test="rate-min-weight-input"
                         />
 
-                        <flux:input
-                            type="text"
-                            inputmode="decimal"
-                            wire:model="maxWeightKg"
-                            :label="__('shipping.rates.editor.max_weight_label')"
-                            :description="__('shipping.rates.editor.max_weight_help')"
-                            data-test="rate-max-weight-input"
-                        />
+                        <div>
+                            {{-- `:description` renders BEFORE the slotted control inside
+                            <ui-field>, pushing the input itself down one row relative to
+                            siblings with no description -- moving the help text to a plain
+                            sibling flux:text AFTER the input avoids that entirely.
+                            `:description:trailing` was tried and rejected: it double-escaped
+                            this string's HTML entities (rendered a literal "&quot;" instead
+                            of a real quote), verified by execution. --}}
+                            <flux:input
+                                type="text"
+                                inputmode="decimal"
+                                wire:model="maxWeightKg"
+                                :label="__('shipping.rates.editor.max_weight_label')"
+                                aria-describedby="rate-max-weight-help"
+                                data-test="rate-max-weight-input"
+                            />
+                            {{-- Explicit aria-describedby/id pair -- with the help text moved
+                            outside flux:input's own :description slot (see the comment above the
+                            grid this sits in), the automatic association <ui-field> normally
+                            wires up is gone, so it is restored by hand here. --}}
+                            <flux:text id="rate-max-weight-help" size="sm" class="mt-1 text-zinc-500 dark:text-zinc-400">
+                                {{ __('shipping.rates.editor.max_weight_help') }}
+                            </flux:text>
+                        </div>
 
                         <flux:input
                             type="text"

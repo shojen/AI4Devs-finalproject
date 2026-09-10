@@ -195,6 +195,13 @@ class Index extends Component
         $toggle($carrier, $active);
 
         $this->loadCarriers();
+        // Errors-log 2026-09-11: $ratesByCarrier carries its own
+        // `carrierIsActive` snapshot (loadRates(), used by the rate table's
+        // "Inactive" badge and by canEditShipping's sibling hints) -- toggling
+        // a carrier without reloading it left that snapshot stale until the
+        // next full page load, so the just-disabled carrier's rate group kept
+        // rendering as if it were still active.
+        $this->loadRates();
     }
 
     /**
