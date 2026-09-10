@@ -40,5 +40,10 @@ class DatabaseSeeder extends Seeder
         // application data, independent of GeographyCatalogSeeder above -- carriers and
         // zones do not meet until a future rate-rules story.
         $this->call(ShippingCarrierSeeder::class);
+
+        // Story 0038: the single bank-transfer payment method. Required application
+        // data -- Epic 3's orders will reference it -- independent of every seeder
+        // above.
+        $this->call(PaymentMethodSeeder::class);
     }
 }
