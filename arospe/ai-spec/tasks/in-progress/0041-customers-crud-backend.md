@@ -428,7 +428,12 @@ action-level, and 0044 owns the HTTP-level ones.
       100/101; a postal code at 20/21. **Each boundary asserted from both sides**, so the test can
       tell `max:150` from `max:151`.
 - [ ] Negative test (dataset): `shipping_country` / `billing_country` rejected for `España`,
-      `ESP`, `E`, `E1`, `""`; accepted for `ES` and `es`.
+      `ESP`, `E`, `E1`; accepted for `ES` and `es`.
+- [ ] Integration test (dataset): every optional column — `phone` and the twelve address columns,
+      `shipping_country`/`billing_country` included — submitted as `''` persists as `null`, both
+      on create and (starting from a populated value) on update. **Added at Phase 4** (findings
+      F-1/F-2): this is the case that proves the blank-to-`null` normalisation runs, and it is what
+      makes a blank country accepted rather than rejected — see the amended **D-9**.
 
 ### Duplicate email
 
@@ -641,7 +646,21 @@ decision rather than a rediscovery.
   ships to a different address, and tax is the worst place in the system for two sources of truth.
   If a "default region" convenience is ever wanted, it is an additive nullable FK.
 - **D-9 — Country is `char`-shaped ISO 3166-1 **alpha-2**, validated for shape only, never for
-  membership in the seeded region catalog.** *(Documented functional decision; provisional pending
+  membership in the seeded region catalog.** **Amended at Phase 4 security audit (finding F-1) — a
+  blank country is normalised to `null` and accepted, resolving a contradiction between this
+  story's own Gherkin (which listed `""` among the rejected examples) and D-3/the acceptance
+  criteria (which require every optional column, including the two country columns, to persist as
+  `null` when the actor leaves it blank).** A blank string reaching `Validator` for a `nullable`
+  rule is skipped, not rejected (Laravel treats every non-implicit rule as inapplicable to a blank
+  string — see [errors-log.md](../../docs/errors-log.md#livewire-skips-convertemptystringstonulltrimstrings-and-laravel-skips-non-implicit-rules-for-a-blank-string--the-two-combine-to-let-a-raw--reach-a-decimal-column--2026-09-10)),
+  so both actions normalise every blank optional field (not only the two country columns) to a real
+  `null` **before** `Validator::make()` runs, matching the pattern that errors-log entry already
+  establishes for `App\Livewire\Shipping\Index::saveRate()`. This is the only reading that makes the
+  "an administrator with only a name and an email" flow (D-3's own justification for optionality)
+  reachable from a real form submission, which sends every field's key even when its value is
+  blank. Shape validation (`size:2`, the alpha regex) is unchanged and still rejects `E`, `E1`,
+  `ESP` and `España` — only a *blank* value's outcome changed, from "rejected" to "accepted as
+  `null`". *(Documented functional decision; provisional pending
   Orders' tax-resolution debate.)* Two reasons membership validation is refused here. First, a
   customer may legitimately live in a country the tax catalog has not activated — refusing the
   address would block a record for a reason the administrator cannot fix from the Customers screen.
