@@ -223,5 +223,19 @@ return [
             'current_when' => 'shipping.index',
             'permissions' => ['shipping.view'],
         ],
+        // Story 0039 -- Payment methods settings screen, nested in the same `store_settings`
+        // cluster as sales_regions/shipping_zones/shipping_carriers: all four are store-wide
+        // configuration screens in the same sense (D-1/D-4 of story 0080). 'permissions' is
+        // EXACTLY the ability routes/payment-methods.php's own `can:` middleware enforces on
+        // payment-methods.index -- never a broader set (see this file's header note).
+        'payment_methods' => [
+            'group' => null,
+            'cluster' => 'store_settings',
+            'label' => 'navigation.items.payment_methods',
+            'icon' => 'credit-card',
+            'route' => 'payment-methods.index',
+            'current_when' => 'payment-methods.*',
+            'permissions' => ['payment-methods.view'],
+        ],
     ],
 ];

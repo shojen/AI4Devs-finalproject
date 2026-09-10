@@ -18,7 +18,7 @@ frontend (related_task_id: **0028**) | includes database-expert: **no**
 > `resources/views/livewire/products/attribute-types.blade.php`. Every candidate split (list vs.
 > modal vs. repeater) would mean a second story editing the first story's markup — the
 > two-stories-one-file collision [0006](0006-users-list-editor-ui.md) and
-> [0039](../0039-payment-methods-ui.md) already documented and avoided.
+> [0039](0039-payment-methods-ui.md) already documented and avoided.
 
 ## Debate decisions (confirmed before writing this story)
 
@@ -507,7 +507,7 @@ false.
 - **OQ-1a (recommended)** — amend **0028** to add `closeModal()` (which resets `$name`, `$values`,
   `$editingTypeId`) and `closeDeleteModal()`. 0028 is still at the `new` stage, so it is free to
   change, and a frontend story must not write backend component code. This is the same fix
-  [0039](../0039-payment-methods-ui.md)'s OQ-1 recommends for its own contract gap.
+  [0039](0039-payment-methods-ui.md)'s OQ-1 recommends for its own contract gap.
 - OQ-1b — leave the reset to `openCreateModal()` instead, and drop the reopen scenario. Cheaper, but
   it leaves stale rows in the component between open and reopen, which is exactly the state-leak
   class 0006's Phase 4 finding F2 was raised about.
@@ -545,7 +545,7 @@ the administrator then removes an earlier row, message *n* would now sit against
 **OQ-6 — navigation grouping for the Products area.** Three product screens are coming (0025
 categories, 0027 products, 0030 this one) and today the sidebar has a single flat `Platform` group.
 - **OQ-6a (recommended)** — this story adds one flat item to `Platform`, exactly as
-  [0039](../0039-payment-methods-ui.md) does, with a comment marking it as scaffolding, and leaves the
+  [0039](0039-payment-methods-ui.md) does, with a comment marking it as scaffolding, and leaves the
   grouping to **0013**, which replaces the whole file with a permission-aware registry. Avoids three
   stories inventing three different groupings.
 - OQ-6b — introduce a `Catalog` group now. Better final shape, but 0025/0027 would then have to

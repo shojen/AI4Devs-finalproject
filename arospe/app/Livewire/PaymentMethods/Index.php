@@ -110,6 +110,16 @@ class Index extends Component
         $this->editingMethodId = $target->id;
         $this->iban = $target->iban ?? '';
         $this->showModal = true;
+
+        // Story 0039 finding F4: dismissing the modal via its wire:model-bound $showModal
+        // directly (the X control or a click outside) bypasses closeModal() entirely, and
+        // Livewire persists the error bag across that round trip -- without this, a stale
+        // `iban` error from a previously refused save on one method rendered against the
+        // next method opened, with no field and no context. See
+        // docs/security/livewire-error-bag-persistence.md rule 2 ("every opener, not only
+        // every closer") -- this only has one method to configure this phase, but the fix
+        // belongs on the opener regardless of how many methods exist.
+        $this->resetValidation('iban');
     }
 
     /**
