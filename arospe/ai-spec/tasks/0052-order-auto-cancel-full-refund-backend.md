@@ -18,7 +18,7 @@ component, no Blade markup, no notification, no schema change.
 > [0045](0045-orders-core-crud-backend.md), which is blocked behind five Epic 2 stories
 > ([0024](done/0024-products-core-crud-backend.md), [0029](done/0029-product-variants-backend.md),
 > [0035](done/0035-shipping-carriers-backend.md), [0036](done/0036-shipping-rate-rules-backend.md),
-> [0038](in-progress/0038-payment-methods-bank-transfer-backend.md)).
+> [0038](done/0038-payment-methods-bank-transfer-backend.md)).
 >
 > Every column this story reads or writes — `orders.status`, `orders.payment_status`,
 > `order_items.quantity`, `order_items.refunded_quantity` — is created by 0045, and the transition
