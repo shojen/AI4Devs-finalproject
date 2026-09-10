@@ -1,11 +1,11 @@
 # [0037] Shipping carriers and rates — UI (carrier cards, grouped rate table, rate modal)
 
 ## Description
-Build the real Shipping screen on top of the placeholder [0035](done/0035-shipping-carriers-backend.md)
+Build the real Shipping screen on top of the placeholder [0035](../done/0035-shipping-carriers-backend.md)
 left at `/shipping`: carrier cards with an enable/disable toggle and an Activo/Inactivo state, and
 below them a rate table grouped by carrier showing each rate's name, zone badge, weight range (kg),
 price (€) and delivery estimate — plus a create/edit rate modal and a delete-confirmation modal.
-This story is also the first caller of [0036](done/0036-shipping-rate-rules-backend.md)'s
+This story is also the first caller of [0036](../done/0036-shipping-rate-rules-backend.md)'s
 `ShippingRatePolicy`, which shipped with zero call sites.
 
 ## Type
@@ -15,7 +15,7 @@ database-expert: **no**
 No migration, no model, no action, no policy and no new permission. Every domain artifact this
 screen drives already exists; this story is markup, component wiring and authorization call sites.
 
-**PRD coverage.** [§2.4 Shipping](../../docs/PRD/PRD.md#24-shipping). From the
+**PRD coverage.** [§2.4 Shipping](../../../docs/PRD/PRD.md#24-shipping). From the
 `Feature: Shipping carriers and rates` block this story owns the **rendered** form of *Enable a
 carrier*, *Disable a carrier*, *Create a rate rule for a carrier*, and the
 `Scenario Outline: An invalid shipping rate is rejected` (both examples). It satisfies the UI half
@@ -49,15 +49,15 @@ call in the story. Genuinely unresolved items are in **Open questions**, not her
 
 ### D-1 — The rate table extends 0035's `App\Livewire\Shipping\Index` in place. No second component, no second route.
 
-[0036](done/0036-shipping-rate-rules-backend.md) **D-10** is dispositive rather than advisory: 0035
+[0036](../done/0036-shipping-rate-rules-backend.md) **D-10** is dispositive rather than advisory: 0035
 already claims `Route::livewire('shipping', ShippingIndex::class)->name('shipping.index')` **and**
 `resources/views/livewire/shipping.blade.php` — *the* path Livewire's
-[`Index`-in-a-subfolder exception](../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
+[`Index`-in-a-subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
 forces for `App\Livewire\Shipping\Index`. A separate rate component either collides on that file or
 invents a second shipping route nobody asked for. 0036 names the consumer explicitly: *"Story 0037
 is the named consumer, and it owns the whole screen including the carrier cards 0035 stubbed."*
 
-**This does not contradict [0034](done/0034-shipping-zones-ui.md) D-1**, which rejected folding zone CRUD
+**This does not contradict [0034](../done/0034-shipping-zones-ui.md) D-1**, which rejected folding zone CRUD
 into `/shipping` on a "one component owning three unrelated concerns" argument. That argument
 carved *zones* out — a separate workflow with its own picker, its own validation surface and its own
 sidebar entry — leaving `Index` with **two** concerns that are one screen: PRD §2.4's own screenshot
@@ -93,7 +93,7 @@ itself out by name. **Consequence: no empty-string-to-null coercion and no trimm
 `/livewire/update` round-trip.** A blank field is `''`.
 
 **Finding 2 — `''` is not rejected by 0036's rule set. It is skipped, and passes.** This is where
-[0036](done/0036-shipping-rate-rules-backend.md)'s reasoning is wrong. Its `maxWeightRules()` opens with
+[0036](../done/0036-shipping-rate-rules-backend.md)'s reasoning is wrong. Its `maxWeightRules()` opens with
 `'nullable'` and comments that it "short-circuits". `Validator::isNotNullIfMarkedAsNullable()`
 (`Validator.php:886`) tests `is_null()`, and `''` is not null — so on that path alone `numeric`
 would run and reject. But `isValidatable()` (`Validator.php:819`) checks
@@ -116,13 +116,13 @@ That raw `''` reaches a `DECIMAL(8,3)` column. `.env.example:23` pins `DB_CONNEC
 loosely typed and stores `''` without complaint. Production is `mysql:8.4` in strict mode, which
 raises `Incorrect decimal value` (SQLSTATE 22007 / error 1366) as an uncaught `QueryException` — a
 **500**. So the naive implementation is *green in CI and a 500 in production*, which is the exact
-shape of the gap [0036](done/0036-shipping-rate-rules-backend.md) **R-4** and
-[`ci-database-connection-gap.md`](ci-database-connection-gap.md) already track.
+shape of the gap [0036](../done/0036-shipping-rate-rules-backend.md) **R-4** and
+[`ci-database-connection-gap.md`](../ci-database-connection-gap.md) already track.
 
 **The decision, therefore:**
 
 1. `public string $maxWeightKg = '';` — a `string`, never `?string`, never `null`. This is
-   [errors-log.md](../../docs/errors-log.md)'s `null`-property rule applied beyond `<select>`: a
+   [errors-log.md](../../../docs/errors-log.md)'s `null`-property rule applied beyond `<select>`: a
    `wire:model`-bound property must hold a real empty value in the type the DOM expects. Same for
    `$minWeightKg`, `$price`, `$shippingCarrierId`, `$shippingZoneId` — and `reset()` must restore
    the sentinels, never `null`.
@@ -141,7 +141,7 @@ shape of the gap [0036](done/0036-shipping-rate-rules-backend.md) **R-4** and
    the outcome depend on a documented rule (`nullable` against a real `null`) instead of on
    `presentOrRuleIsImplicit()` behaviour no future reviewer has any reason to know. This is exactly
    the position, and the reason, that `Users\Index::save()` lowercases the email in — and that
-   [0017](done/0017-sales-region-tax-configuration-backend.md) **D12** normalises its rate in.
+   [0017](../done/0017-sales-region-tax-configuration-backend.md) **D12** normalises its rate in.
 3. Because `TrimStrings` is skipped too, the component **trims every string field itself**. Do not
    assume framework trimming anywhere on this screen.
 
@@ -155,7 +155,7 @@ shape of the gap [0036](done/0036-shipping-rate-rules-backend.md) **R-4** and
 
 **`set('maxWeightKg', null)` must never be the proof.** It writes the property directly, never
 touches the DOM, and would be green against a completely broken screen — the precise lesson
-[errors-log.md](../../docs/errors-log.md) records for the `null`-`<select>` desync, whose own entry
+[errors-log.md](../../../docs/errors-log.md) records for the `null`-`<select>` desync, whose own entry
 also notes that a `selectOption()`/`fill()`-style API can miss the same class of bug because the
 failure mode is a *missing* event.
 
@@ -175,14 +175,14 @@ second is the dangerous one, and only the exact `=== null` assertion catches it.
 Three independent reasons, any one sufficient:
 
 1. **Cardinality mismatch.** 0022 exists for the ~8,100-row geography catalog;
-   [0034](done/0034-shipping-zones-ui.md) **D-4**'s entire justification is that "a plain `<select>` does
+   [0034](../done/0034-shipping-zones-ui.md) **D-4**'s entire justification is that "a plain `<select>` does
    not scale" *at that size*. Shipping zones are admin-curated groupings, realistically in the tens.
    `ShippingZone::orderBy('name')->get(['id', 'name'])` is one bounded query and the full option
    list in the DOM is unremarkable at that size.
 2. **Arity mismatch.** 0022 is a **multi**-select bound to an array. A rate carries exactly one
    zone (`shipping_zones.id` NOT NULL, one FK). Using it would mean binding an array and validating
    "exactly one" — fighting the component's own contract for no gain.
-3. **Risk avoidance.** [0034](done/0034-shipping-zones-ui.md) names embedding 0022's dropdown inside a
+3. **Risk avoidance.** [0034](../done/0034-shipping-zones-ui.md) names embedding 0022's dropdown inside a
    `flux:modal` as an explicitly untested combination whose fallback, if unfixable, is a full-page
    editor. This story's zone control lives inside a modal. There is no reason to inherit an open
    risk that nothing here requires.
@@ -196,7 +196,7 @@ Consequence per **D-2**: `public string $shippingZoneId = '';` with a placeholde
 
 ### D-4 — The carrier select lists **every** carrier, disabled ones included.
 
-[0036](done/0036-shipping-rate-rules-backend.md) **D-6**'s corollary is explicit and tested: *"a rate rule
+[0036](../done/0036-shipping-rate-rules-backend.md) **D-6**'s corollary is explicit and tested: *"a rate rule
 may be created for a carrier that is currently disabled … Rates are configuration; `is_active`
 governs **resolution**, never authoring."* Filtering the select on `is_active` would silently
 contradict a confirmed decision and break the natural onboarding order (configure a carrier's rates,
@@ -208,8 +208,8 @@ Conflating listing with resolution is the single likeliest cross-wiring in the w
 
 ### D-5 — Weight and price inputs are `type="text" inputmode="decimal"`, never `type="number"`, and a Spanish decimal comma is accepted.
 
-Not a new decision — [0018](done/0018-sales-region-tax-configuration-ui.md) **D1** and
-[0017](done/0017-sales-region-tax-configuration-backend.md) **D12** already settled this for the tax-rate
+Not a new decision — [0018](../done/0018-sales-region-tax-configuration-ui.md) **D1** and
+[0017](../done/0017-sales-region-tax-configuration-backend.md) **D12** already settled this for the tax-rate
 field, and the reasoning transfers verbatim: a native `<input type="number">` does its own
 client-side parsing, so `4,95` is either refused as a keystroke or coerced before submission and the
 comma **never reaches the wire payload** for the component to normalise. `type="text"` plus
@@ -229,7 +229,7 @@ This resolves the question `frontend-qa` raised as ambiguous: it is not open, it
 
 ### D-6 — Row and toggle actions gate on **screen-level** `#[Computed]` capability flags, not per-row `Gate::allows()`.
 
-[0034](done/0034-shipping-zones-ui.md) **D-5**'s reasoning transfers unchanged. The Users screen computes
+[0034](../done/0034-shipping-zones-ui.md) **D-5**'s reasoning transfers unchanged. The Users screen computes
 `canEdit`/`canDelete` per row because `UserPolicy` carries genuine per-target rules (Super Admin
 protection, trashed-target refusal). `ShippingRatePolicy` carries **none** — 0036 **D-11** ships four
 uniform abilities, and **D-5** deliberately keeps the only per-record rule in the shipping domain
@@ -244,7 +244,7 @@ is computed.
 
 ### D-7 — Where every `Gate::authorize()` goes. This discharges 0036's central hand-off.
 
-[0036](done/0036-shipping-rate-rules-backend.md) **D-11** ships `ShippingRatePolicy` with **zero call
+[0036](../done/0036-shipping-rate-rules-backend.md) **D-11** ships `ShippingRatePolicy` with **zero call
 sites** and states the cost openly: *"nothing in this story can regress if the policy is wrong."*
 This story is what makes it real.
 
@@ -259,7 +259,7 @@ This story is what makes it real.
 Each is the **first statement** of its method (or of its branch). Route middleware is *not* what
 protects them: `verified` and Spatie's `permission:` middleware are absent from Livewire 4's
 `PersistentMiddleware` allow-list, so `/livewire/update` reaches every method directly — see
-[livewire-authorization.md](../../docs/security/livewire-authorization.md).
+[livewire-authorization.md](../../../docs/security/livewire-authorization.md).
 
 **The screen-level flags of D-6 deliberately use the bare permission string, not the policy.**
 `ShippingRatePolicy::update(User $user, ShippingRate $shippingRate)` has a **non-nullable** target,
@@ -278,7 +278,7 @@ always has a concrete `$rate`) avoids editing a file this story does not own. Ra
   inherited from 0024 **R-4**). Interpolate it directly; never `(float)` it and never compare it
   numerically in a Blade `@if`. A `0.00` rate is a **legal free-shipping rate** and must render as
   `0,00 €`, so the naive truthiness test `@if ($rate['price'])` is forbidden — the same trap
-  [0018](done/0018-sales-region-tax-configuration-ui.md) **D6** records for a `0.000` tax rate.
+  [0018](../done/0018-sales-region-tax-configuration-ui.md) **D6** records for a `0.000` tax rate.
 - **Zone badge** — a `flux:badge` carrying the zone name. **Neutral `zinc`**, one colour for all
   zones: unlike `UserStatus`, zones are admin-created with no fixed set, so per-zone colouring would
   require inventing a mapping nobody has agreed.
@@ -290,13 +290,13 @@ always has a concrete `$rate`) avoids editing a file this story does not own. Ra
   `livewire/blaze`, so the disabled branch must be a full `@if`/`@else` with an explicit
   `<flux:tooltip>` wrapper written out; and `cursor-not-allowed!` must sit on that **wrapper**, never
   on the button, because Flux's `disabled:pointer-events-none` removes the button from hit-testing.
-  Both are in [errors-log.md](../../docs/errors-log.md) with their verification method. Copy the
+  Both are in [errors-log.md](../../../docs/errors-log.md) with their verification method. Copy the
   structure from `resources/views/livewire/users.blade.php`; do not rediscover either.
 - **Every id in a `wire:*` argument goes through `@js()`** — `toggleCarrier(@js($carrier['id']))`,
   `openEditRateModal(@js($rate['id']))`, `confirmDeleteRate(@js($rate['id']))`. Mandatory, not
   stylistic: a value in a `wire:` directive lands in a JavaScript evaluator where Blade's HTML
   escaping is undone by the parser
-  ([blade-livewire-output-encoding.md](../../docs/security/blade-livewire-output-encoding.md)).
+  ([blade-livewire-output-encoding.md](../../../docs/security/blade-livewire-output-encoding.md)).
 - **Both modals' inner content is wrapped** in `@if ($showRateModal)` / `@if ($showDeleteRateModal)`,
   so only one "Cancel" control is ever in the DOM — the Users-screen rule, now applied to a third
   modal pair on a screen that already has one.
@@ -310,7 +310,7 @@ always has a concrete `$rate`) avoids editing a file this story does not own. Ra
 this screen quotes a rate for a destination.
 
 Normally this project rejects "assert the absence of a thing nobody proposed" tests
-([0034](done/0034-shipping-zones-ui.md) rejects exactly that shape). This one is the narrow exception, on
+([0034](../done/0034-shipping-zones-ui.md) rejects exactly that shape). This one is the narrow exception, on
 `frontend-qa`'s argument: the resolver is a real, directly-importable class sitting in the same
 namespace as everything this story *does* call, and 0036 **D-13** itself invites *"a future admin
 screen [to] surface coverage gaps from the same shape"* — a concrete, named temptation. So:
@@ -322,7 +322,7 @@ screen [to] surface coverage gaps from the same shape"* — a concrete, named te
 `resources/views/layouts/app/sidebar.blade.php` today renders exactly two items (Dashboard, Users),
 0035 adds none for `/shipping`, and 0034 adds one for `shipping.zones.index`. This story adds one
 ungated `flux:sidebar.item` to `shipping.index`, in the deliberately cosmetic style
-[api/routes.md](../../docs/api/routes.md) records for the Users link — access is still refused by
+[api/routes.md](../../../docs/api/routes.md) records for the Users link — access is still refused by
 `can:shipping.view` on the route and re-checked in `mount()`; permission-aware navigation arrives
 with story **0013**.
 
@@ -337,7 +337,7 @@ minimum that fixes it. Raised as **OQ-C** because the placement is a UX call nob
 
 ### D-11 — The carrier card's "N rate rules will stop applying" hint is out of scope.
 
-[0036](done/0036-shipping-rate-rules-backend.md) **D-6** says 0037 *"may"* show it, framed as optional and
+[0036](../done/0036-shipping-rate-rules-backend.md) **D-6** says 0037 *"may"* show it, framed as optional and
 explicitly *"a UI hint, never a block"*. It is not built here: it costs a count per carrier for a
 nicety the PRD never asks for, and — exactly as 0034 **D-9** argues for the overlap notice — every
 line of it is a line a reviewer might later mistake for a blocking rule. **What this story does own
@@ -349,7 +349,7 @@ confirmation and no data change**, and that has a test.
 ## Gherkin
 
 Every scenario opens with a named business-role actor and carries a single `When`, per
-[gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3, and stays
+[gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3, and stays
 out of DOM/column/status-code detail per rule 2.
 
 ```gherkin
@@ -592,11 +592,11 @@ Feature: Permissions on the shipping screen
   (**D-4**) and `zoneOptions()` (**D-3**).
 
   Actions are injected **per method** as trailing container-resolved parameters, per
-  [code-style.md](../../docs/conventions/code-style.md#inject-single-purpose-actions-per-method).
+  [code-style.md](../../../docs/conventions/code-style.md#inject-single-purpose-actions-per-method).
   `openEditRateModal()` and `confirmDeleteRate()` populate from a freshly
   `ShippingRate::findOrFail()`-ed model, **never** by reading back out of the client-writable
   `$ratesByCarrier` array — the rule
-  [livewire-authorization.md](../../docs/security/livewire-authorization.md) records for the Users
+  [livewire-authorization.md](../../../docs/security/livewire-authorization.md) records for the Users
   delete modal. Authorization placement is **D-7**; the pre-`validate()` normalisation block is
   **D-2** and **D-5**.
 
@@ -617,11 +617,11 @@ Feature: Permissions on the shipping screen
   button, column labels, the open-ended weight string (**D-8**), the price/currency format, both
   empty states, the delete-confirmation copy, the row-action `aria-label`s, the "action not allowed"
   tooltip and the link to the zone catalog. Key-for-key identical, English source, per
-  [naming.md](../../docs/conventions/naming.md#translation-keys).
+  [naming.md](../../../docs/conventions/naming.md#translation-keys).
 
   > **Five-way shared-file hazard.** `lang/en|es/shipping.php` is **created by 0035** and modified by
   > **0033**, **0036**, **0034** and **here**. Per
-  > [contracts.md](../../docs/contracts.md#parallel-agent-file-ownership-rule)'s Parallel Agent
+  > [contracts.md](../../../docs/contracts.md#parallel-agent-file-ownership-rule)'s Parallel Agent
   > File-Ownership Rule these must never be implemented by concurrently-dispatched agents.
   > Sequential only. `resources/views/layouts/app/sidebar.blade.php` carries a second, smaller
   > hazard: **0034** adds a line to it and story **0013** will restructure it entirely.
@@ -639,7 +639,7 @@ consumed at all (**D-3**).
 
 ## Tests to perform
 
-Level chosen per [coverage-policy.md](../../docs/testing/frontend/coverage-policy.md): browser only
+Level chosen per [coverage-policy.md](../../../docs/testing/frontend/coverage-policy.md): browser only
 where the DOM/JS round-trip is itself the risk; everything else at the cheaper Livewire component
 level. **Nothing here re-tests 0035's toggle action, 0036's validation/action/resolver semantics, or
 0033's zone CRUD** — those have owners, and two owners for one fact means both go stale
@@ -647,80 +647,80 @@ independently.
 
 ### `tests/Feature/Shipping/CarrierCardsTest.php` — component level
 
-- [ ] Every seeded carrier renders with its code, name and description.
-- [ ] Toggling flips the rendered Activo/Inactivo state for **that** carrier only.
-- [ ] The new state is read back after a **fresh mount** (a new `Livewire::test()` instance, not the
+- [x] Every seeded carrier renders with its code, name and description.
+- [x] Toggling flips the rendered Activo/Inactivo state for **that** carrier only.
+- [x] The new state is read back after a **fresh mount** (a new `Livewire::test()` instance, not the
       same one) — guards a toggle that mutates only the in-memory property and never reloads.
-- [ ] **Disabling a carrier that holds rate rules succeeds with no warning, and every rate row
+- [x] **Disabling a carrier that holds rate rules succeeds with no warning, and every rate row
       survives, asserted by exact id** (**D-11**, 0036 **D-6**).
 
 ### `tests/Feature/Shipping/RateListingTest.php` — component level
 
-- [ ] Rates render under their own carrier, asserted by **exact carrier-id → rate-id identity**, not
+- [x] Rates render under their own carrier, asserted by **exact carrier-id → rate-id identity**, not
       by count — a count assertion passes against an implementation that dumps every rate under one
       carrier.
-- [ ] **A carrier with zero rates still renders as its own group** with an empty sub-state. Fails
+- [x] **A carrier with zero rates still renders as its own group** with an empty sub-state. Fails
       against a `$rates->groupBy('carrier_id')` built from a flat rate query, which silently drops
       empty carriers.
-- [ ] **A disabled carrier's rates still appear.** Build the fixture in this order: create the rate,
+- [x] **A disabled carrier's rates still appear.** Build the fixture in this order: create the rate,
       *then* disable the carrier, *then* render. Highest-value assertion in the file — it fails
       against `ShippingCarrier::where('is_active', true)->with('shippingRates')`, which reads as an
       entirely sensible "only show what's usable" refinement (**D-4**).
-- [ ] An open-ended rate renders "and above" and **never** the substring `null` (**D-8**).
-- [ ] A `0.00` rate renders as a real price, not as a blank — the PHP-truthiness trap
+- [x] An open-ended rate renders "and above" and **never** the substring `null` (**D-8**).
+- [x] A `0.00` rate renders as a real price, not as a blank — the PHP-truthiness trap
       (`@if ($rate['price'])`) that would make free shipping indistinguishable from unset.
-- [ ] `price` asserted as a **string** (`toBe('4.95')`), never with a loose `==` against a float,
+- [x] `price` asserted as a **string** (`toBe('4.95')`), never with a loose `==` against a float,
       which passes via coercion and masks 0036 **R-7**.
-- [ ] `loadRates()` issues a bounded number of queries regardless of carrier/rate count
+- [x] `loadRates()` issues a bounded number of queries regardless of carrier/rate count
       (`DB::listen`) — the guard on `ListShippingRatesByCarrier`'s eager loading actually being used.
-- [ ] The rate table's empty state renders when no rate exists at all.
+- [x] The rate table's empty state renders when no rate exists at all.
 
 ### `tests/Feature/Shipping/RateEditorTest.php` — component level
 
-- [ ] Creating a valid rate makes it appear under the chosen carrier, and the modal closes.
-- [ ] **A rate can be created for a currently disabled carrier**, and the disabled carrier appears in
+- [x] Creating a valid rate makes it appear under the chosen carrier, and the modal closes.
+- [x] **A rate can be created for a currently disabled carrier**, and the disabled carrier appears in
       `carrierOptions()` (**D-4**).
-- [ ] `zoneOptions()` lists every zone by name, and a zone created after mount appears on a remount.
-- [ ] 0036's `invalid_rate_attributes` dataset re-run **through `saveRate()`** rather than against
+- [x] `zoneOptions()` lists every zone by name, and a zone created after mount appears on a remount.
+- [x] 0036's `invalid_rate_attributes` dataset re-run **through `saveRate()`** rather than against
       the action. This is not duplication: the component's own job is to prove it does not
       pre-transform a value into something that passes a rule it should fail — see the `(float) ''`
       case in **D-2**.
-- [ ] `min == max` accepted; `0` price accepted (both assert acceptance, so neither belongs in the
+- [x] `min == max` accepted; `0` price accepted (both assert acceptance, so neither belongs in the
       rejection dataset).
-- [ ] **The blank max-weight case, at component level**: `set('maxWeightKg', '')` → `saveRate()` →
+- [x] **The blank max-weight case, at component level**: `set('maxWeightKg', '')` → `saveRate()` →
       `assertDatabaseHas('shipping_rates', ['max_weight_kg' => null])`. Asserts the **row**, never
       the validation outcome — validation passing was never the risk (**D-2**).
-- [ ] **A locale comma reaches the server and is normalised**: `set('price', '4,95')` → saved as
+- [x] **A locale comma reaches the server and is normalised**: `set('price', '4,95')` → saved as
       `4.95`; and `'4,95'` is asserted **invalid** against `priceRules()` in isolation, pinning that
       the normalisation is the component's and not the rule's (**D-5**, 0017 **D12**).
-- [ ] Editing only the delivery estimate leaves `max_weight_kg` `null` — the round-trip a fix that
+- [x] Editing only the delivery estimate leaves `max_weight_kg` `null` — the round-trip a fix that
       handles create-only would break.
-- [ ] `openEditRateModal()` and `confirmDeleteRate()` populate from the model, not from
+- [x] `openEditRateModal()` and `confirmDeleteRate()` populate from the model, not from
       `$ratesByCarrier`.
-- [ ] `set('editingRateId', …)`, `set('deletingRateId', …)` and `set('deletingRateName', …)` each
+- [x] `set('editingRateId', …)`, `set('deletingRateId', …)` and `set('deletingRateName', …)` each
       throw `CannotUpdateLockedPropertyException` — a regression-proof against a dropped `#[Locked]`.
-- [ ] Deleting through the confirmation flow removes the rate; cancelling leaves it.
+- [x] Deleting through the confirmation flow removes the rate; cancelling leaves it.
 
 ### `tests/Feature/Shipping/RateAuthorizationTest.php` — component level + HTTP level
 
-- [ ] `GET route('shipping.index')` is refused (403) without `shipping.view` — **HTTP layer**. Owned
+- [x] `GET route('shipping.index')` is refused (403) without `shipping.view` — **HTTP layer**. Owned
       jointly with 0035's carrier test; assert here only what this story adds, below.
-- [ ] A `shipping.view`-only user gets **200** and sees the rate table with every create/edit/delete
+- [x] A `shipping.view`-only user gets **200** and sees the rate table with every create/edit/delete
       control and every carrier toggle rendered **disabled** — the new surface.
-- [ ] `saveRate()` (create branch), `saveRate()` (edit branch) and `deleteRate()` each refused via
+- [x] `saveRate()` (create branch), `saveRate()` (edit branch) and `deleteRate()` each refused via
       `Livewire::test()` for a user lacking `shipping.create` / `shipping.edit` / `shipping.delete`,
       **with the data unchanged afterwards** — **component layer**. Separate from the HTTP test on
       purpose: per
-      [livewire-authorization.md](../../docs/security/livewire-authorization.md), the two cover
+      [livewire-authorization.md](../../../docs/security/livewire-authorization.md), the two cover
       different entry points and neither substitutes for the other.
-- [ ] `toggleCarrier()` refused without `shipping.edit`, carrier state unchanged.
-- [ ] A Super Admin holding **no** explicit `shipping.*` grant passes every path. 0036's own policy
+- [x] `toggleCarrier()` refused without `shipping.edit`, carrier state unchanged.
+- [x] A Super Admin holding **no** explicit `shipping.*` grant passes every path. 0036's own policy
       test already proves the *policy* bypasses correctly; **this test is what proves the component
       actually calls `Gate::authorize()` with the right ability and target** — and it is the first
       thing anywhere that can catch a mis-bound `ShippingRatePolicy` (**D-7**, 0036 **D-11**).
-- [ ] Row actions render **both** branches — disabled for a view-only user, enabled for a fully
+- [x] Row actions render **both** branches — disabled for a view-only user, enabled for a fully
       permitted one — since the disabled branch is separate markup that can rot independently.
-- [ ] `beforeEach` calls `app(PermissionRegistrar::class)->forgetCachedPermissions()` **then**
+- [x] `beforeEach` calls `app(PermissionRegistrar::class)->forgetCachedPermissions()` **then**
       `$this->seed(RolePermissionSeeder::class)`, never flushing between Act and Assert, and asserts
       against the seeded catalog rather than fabricating `Permission` rows.
 
@@ -728,27 +728,27 @@ independently.
 
 Three tests, each justified individually rather than by "browser is more thorough".
 
-- [ ] **Create an open-ended rate by really clearing the max-weight field** — fill every other field,
+- [x] **Create an open-ended rate by really clearing the max-weight field** — fill every other field,
       clear max-weight with real keystrokes, save, reload, assert the persisted row is `null` (not
       `0`, not `''`); then reopen it in edit mode and assert the field renders **genuinely blank**.
       *Justification:* the component-level equivalent cannot reach the DOM at all, and this story's
       whole **D-2** risk lives in what a real blank input transmits. **Highest-severity test in the
       story.**
-- [ ] **Pick a carrier and a zone from the real selects**, save, and assert the rate persists under
+- [x] **Pick a carrier and a zone from the real selects**, save, and assert the rate persists under
       the **chosen** option — not the first one in the list. *Justification:* this is verbatim the
       errors-log `null`-`<select>` bug class, whose failure mode is a *missing* `change` event that
       `set()` structurally cannot reproduce. It is the executable proof of **D-2**'s
       never-null-sentinel rule.
-- [ ] **The full click-driven journey** — create a rate, edit it, delete it through the confirmation
+- [x] **The full click-driven journey** — create a rate, edit it, delete it through the confirmation
       modal, cancel a delete once, and toggle a carrier. *Justification:* exercises the acceptance
       criteria end-to-end and carries `->assertNoJavaScriptErrors()` across all three modals in one
       browser boot rather than paying that cost three times.
-- [ ] `->assertNoJavaScriptErrors()` in **every** browser test — mandatory per
-      [test-quality-checklist.md](../../docs/testing/frontend/test-quality-checklist.md).
+- [x] `->assertNoJavaScriptErrors()` in **every** browser test — mandatory per
+      [test-quality-checklist.md](../../../docs/testing/frontend/test-quality-checklist.md).
 
 ### One arch-test line
 
-- [ ] `expect(App\Livewire\Shipping\Index::class)->not->toUse(ResolveApplicableShippingRate::class)`
+- [x] `expect(App\Livewire\Shipping\Index::class)->not->toUse(ResolveApplicableShippingRate::class)`
       (**D-9**). One line in the existing arch test file, not a dedicated file.
 
 ### Not worth writing
@@ -798,64 +798,64 @@ rendered unavailable rather than failing on click. The rate resolver is nowhere 
 
 ## Acceptance criteria
 
-- [ ] Carriers are enabled and disabled from the screen and show an active/inactive state
+- [x] Carriers are enabled and disabled from the screen and show an active/inactive state
       *(PRD §2.4 AC 1, UI half)*.
-- [ ] Rate rules are **created, edited and deleted** from the screen with zone, weight range,
+- [x] Rate rules are **created, edited and deleted** from the screen with zone, weight range,
       price (€) and delivery estimate, and are **shown grouped by carrier as in the prototype**
       *(PRD §2.4 AC 2)*.
-- [ ] A **carrier with no rate rules** still appears as its own group, and a **disabled carrier's
+- [x] A **carrier with no rate rules** still appears as its own group, and a **disabled carrier's
       rates are still listed** (**D-4**; 0036 **D-6**).
-- [ ] Min ≤ max weight and a non-negative price are validated as **inline field messages**, with
+- [x] Min ≤ max weight and a non-negative price are validated as **inline field messages**, with
       `min == max` and `0,00 €` both accepted *(PRD §2.4 AC 3)*.
-- [ ] **A blank maximum weight persists as `NULL`** — never `0`, never `''` — proven through the real
+- [x] **A blank maximum weight persists as `NULL`** — never `0`, never `''` — proven through the real
       DOM and not only through `set()`, and it reopens blank on edit (**D-2**).
-- [ ] An open-ended bracket renders as "N kg and above", never "N–null" (**D-8**; 0036's hand-off).
-- [ ] Weight and price inputs are `type="text" inputmode="decimal"`, and a value typed with a decimal
+- [x] An open-ended bracket renders as "N kg and above", never "N–null" (**D-8**; 0036's hand-off).
+- [x] Weight and price inputs are `type="text" inputmode="decimal"`, and a value typed with a decimal
       comma reaches the server with its comma intact and is normalised in the component (**D-5**).
-- [ ] The zone select is a **plain bounded dropdown** over the existing zone catalog, not 0022's
+- [x] The zone select is a **plain bounded dropdown** over the existing zone catalog, not 0022's
       searchable component, and the screen offers a route to the zone catalog (**D-3**, **D-10**).
-- [ ] The carrier select lists **every** carrier, disabled included (**D-4**).
-- [ ] `mount()` and **every** mutating method re-authorize as their first statement, against
+- [x] The carrier select lists **every** carrier, disabled included (**D-4**).
+- [x] `mount()` and **every** mutating method re-authorize as their first statement, against
       `ShippingRatePolicy` for rate operations and the bare `shipping.edit` string for the carrier
       toggle — discharging 0036's zero-call-site hand-off (**D-7**).
-- [ ] `$editingRateId`, `$deletingRateId` and `$deletingRateName` are `#[Locked]`, and the edit and
+- [x] `$editingRateId`, `$deletingRateId` and `$deletingRateName` are `#[Locked]`, and the edit and
       delete targets are re-read from the database rather than from the rendered array.
-- [ ] **No property bound to a form control is ever `null`** (**D-2**).
-- [ ] Every id interpolated into a `wire:*` argument goes through `@js()` (**D-8**).
-- [ ] Row actions the acting user may not perform render **disabled**, with the `data-test` hook on
+- [x] **No property bound to a form control is ever `null`** (**D-2**).
+- [x] Every id interpolated into a `wire:*` argument goes through `@js()` (**D-8**).
+- [x] Row actions the acting user may not perform render **disabled**, with the `data-test` hook on
       **both** branches, the tooltip written as an explicit wrapper, and `cursor-not-allowed!` on
       that wrapper rather than on the button (**D-8**).
-- [ ] Only one "Cancel" control is ever in the DOM (**D-8**).
-- [ ] `ResolveApplicableShippingRate` is not referenced anywhere on this screen (**D-9**).
-- [ ] No route, migration, model, action, policy or permission is added, and nothing owned by 0022,
+- [x] Only one "Cancel" control is ever in the DOM (**D-8**).
+- [x] `ResolveApplicableShippingRate` is not referenced anywhere on this screen (**D-9**).
+- [x] No route, migration, model, action, policy or permission is added, and nothing owned by 0022,
       0032, 0033, 0034, 0035 or 0036 is modified.
-- [ ] All copy is English source through `__()` in `lang/en/shipping.php`, mirrored key-for-key in
+- [x] All copy is English source through `__()` in `lang/en/shipping.php`, mirrored key-for-key in
       `lang/es/shipping.php`; no hardcoded literals.
-- [ ] The screen renders correctly in light and dark mode and produces **no JavaScript console
+- [x] The screen renders correctly in light and dark mode and produces **no JavaScript console
       errors**.
 
 ## Definition of Done
 
-- [ ] Tests written and green, plus the **full** suite
-      ([contracts.md](../../docs/contracts.md#full-test-suite-gate-rule)'s Full Test Suite Gate Rule).
-- [ ] Code reviewed (code-reviewer).
-- [ ] No security findings (appsec-auditor). Expected focus: that `$ratesByCarrier` and every
+- [x] Tests written and green, plus the **full** suite
+      ([contracts.md](../../../docs/contracts.md#full-test-suite-gate-rule)'s Full Test Suite Gate Rule).
+- [x] Code reviewed (code-reviewer).
+- [x] No security findings (appsec-auditor). Expected focus: that `$ratesByCarrier` and every
       unlocked form property are client-writable by construction, so their only defence is the
       re-read-from-database discipline plus 0036's server-side validation.
-- [ ] Documentation updated (docs-keeper) — [`docs/api/routes.md`](../../docs/api/routes.md) (what
+- [x] Documentation updated (docs-keeper) — [`docs/api/routes.md`](../../../docs/api/routes.md) (what
       `shipping.index` now renders, its `data-test` selectors, and the sidebar link), and
-      [`docs/errors-log.md`](../../docs/errors-log.md) **with the D-2 finding**: Livewire's
+      [`docs/errors-log.md`](../../../docs/errors-log.md) **with the D-2 finding**: Livewire's
       `skipRequestPayloadTamperingMiddleware()` opt-out, Laravel's non-implicit-rule skip for a blank
       string, and the resulting SQLite-green / MySQL-500 divergence. That combination is a durable,
       project-wide trap, not a story detail.
-- [ ] **0036's four-part hand-off discharged**, each verifiable: (a) `Gate::authorize()` before every
+- [x] **0036's four-part hand-off discharged**, each verifiable: (a) `Gate::authorize()` before every
       rate action (**D-7**); (b) the `shippingZoneId` error-bag binding — see **OQ-A** for what that
       item actually means; (c) an open-ended bracket rendered "N kg and above" (**D-8**); (d) the
       rate id feeding any `Rule::exists`/`ignore()` kept server-authoritative via `#[Locked]` plus a
       re-read.
-- [ ] **0036's `maxWeightRules()` comment corrected** — it states a mechanism that does not hold
+- [x] **0036's `maxWeightRules()` comment corrected** — it states a mechanism that does not hold
       (**D-2**). A comment change in 0036's file, not a rule change.
-- [ ] Acceptance criteria met.
+- [x] Acceptance criteria met.
 
 ## Dependencies, risks, open questions
 
@@ -870,7 +870,7 @@ rendered unavailable rather than failing on click. The rate resolver is nowhere 
 - **0034 — zones UI.** Soft: only the `shipping.zones.index` route name, for the link in **D-10**.
 - **0002 — seeded permission catalog.** `shipping.*` already exists; nothing to add.
 - **Sequential only.** Five stories write `lang/en|es/shipping.php` and two write the sidebar; per
-  [contracts.md](../../docs/contracts.md#parallel-agent-file-ownership-rule) none may be implemented
+  [contracts.md](../../../docs/contracts.md#parallel-agent-file-ownership-rule) none may be implemented
   concurrently.
 
 ### Risks
@@ -887,7 +887,7 @@ rendered unavailable rather than failing on click. The rate resolver is nowhere 
   though it were unset.
 - **R-4 — `type="number"` sneaking into a weight or price field**, defeating **D-5** silently and
   invisibly to every `set()`-based test. Exactly the risk
-  [0018](done/0018-sales-region-tax-configuration-ui.md) records for its own rate field.
+  [0018](../done/0018-sales-region-tax-configuration-ui.md) records for its own rate field.
 - **R-5 — the sidebar `:current` wildcard.** A `shipping.*` match would highlight this item on
   0034's zones screen and vice versa (**D-10**).
 - **R-6 — two stories land in the sidebar and the locale files.** 0034 and 0037 both add to both, and
@@ -929,14 +929,14 @@ relitigated:
   `UpdateShippingRate::__invoke(ShippingRate $rate, array $attributes)` imposes no restriction, and
   the zone-delete guard's own error message instructs administrators to reassign rates — so
   reassignment must work. No extra confirmation: it is an edit like any other, and it is reversible.
-- **The decimal-input format is not open** — [0018](done/0018-sales-region-tax-configuration-ui.md) **D1**
-  and [0017](done/0017-sales-region-tax-configuration-backend.md) **D12** already settled it project-wide
+- **The decimal-input format is not open** — [0018](../done/0018-sales-region-tax-configuration-ui.md) **D1**
+  and [0017](../done/0017-sales-region-tax-configuration-backend.md) **D12** already settled it project-wide
   (**D-5**).
 
 ## Provenance
 
 Phase 1 Three Amigos debate, 2026-08-18: `product-owner` + `frontend-expert` + `frontend-qa`, per
-[`docs/workflow.md`](../../docs/workflow.md#phase-1--three-amigos-debate)'s classification rule
+[`docs/workflow.md`](../../../docs/workflow.md#phase-1--three-amigos-debate)'s classification rule
 (frontend; no schema change, so no `database-expert`). Both amigos were convened live and both
 materially changed this document.
 
@@ -962,8 +962,8 @@ Three notes on how this debate ran, recorded for honesty:
   prove this" conclusion from the errors-log precedent. All three are recorded in **D-2** with file
   and line references, because this is the kind of claim that must not be taken on trust.
 - **`frontend-qa` raised the decimal-input format as a blocking ambiguity; it was resolved from
-  precedent rather than escalated.** [0018](done/0018-sales-region-tax-configuration-ui.md) **D1** and
-  [0017](done/0017-sales-region-tax-configuration-backend.md) **D12** had already settled it for the tax
+  precedent rather than escalated.** [0018](../done/0018-sales-region-tax-configuration-ui.md) **D1** and
+  [0017](../done/0017-sales-region-tax-configuration-backend.md) **D12** had already settled it for the tax
   field. It is recorded here as **D-5** rather than as an open question, which is what the
-  [Uncertainty Handling Rule](../../docs/contracts.md#uncertainty-handling-rule) asks for: ask only
+  [Uncertainty Handling Rule](../../../docs/contracts.md#uncertainty-handling-rule) asks for: ask only
   where the answer genuinely is not already in the repo.
