@@ -294,6 +294,18 @@ Public surface the view consumes:
   the component, passing `$this->editingCustomerId` to `customerEmailRules()` on the edit path. **No rule
   array is written inline in this component**
   ([code-style.md](../../docs/conventions/code-style.md#centralize-shared-validation-in-traits)).
+  **Correction, added at 0041's Phase 6 docs pass (M-1)**: the trait shipped by 0041 gained two more
+  members after this task file's own Phase 1 draft was written — `public const OPTIONAL_FIELDS` and
+  `protected function normalizeCustomerAttributes(array $attributes): array`. **This component must call
+  `$this->normalizeCustomerAttributes($attributes)` on the submitted payload before calling
+  `Validator::make(...)` / `$this->customerRules(...)`**, exactly as `CreateCustomer`/`UpdateCustomer`
+  both already do — omitting that call is a real divergence from the actions, not a style choice: a blank
+  optional field (e.g. an untouched country `<flux:select>` submitting `''`) would validate differently
+  here than it does in the action (Laravel's validator skips every non-implicit rule for a blank string
+  rather than rejecting it — see [errors-log.md](../../docs/errors-log.md#livewire-skips-convertemptystringstonulltrimstrings-and-laravel-skips-non-implicit-rules-for-a-blank-string--the-two-combine-to-let-a-raw--reach-a-decimal-column--2026-09-10)),
+  and a country typed as `' es '` would fail this component's own `size:2` check while the action would
+  have accepted and normalised it to `'ES'`. See
+  [docs/database/schema.md#customers](../../docs/database/schema.md#customers) for the full mechanism.
 
 ### View — `resources/views/livewire/customers.blade.php` (new)
 
@@ -417,7 +429,9 @@ locales, snake_case leaves, grouped by feature:
 - `app/Actions/Customers/**` — 0041 (`CreateCustomer`, `UpdateCustomer`) and 0043
   (`NotifyCustomerCreated`). This story **calls** them and changes neither.
 - `app/Concerns/CustomerValidationRules.php` — 0041's. Reused verbatim; if a rule needs changing, that is
-  a finding against 0041, not an edit here.
+  a finding against 0041, not an edit here. **This component must still *call* `normalizeCustomerAttributes()`
+  before validating (see the M-1 correction above) — "reused verbatim" means the trait's own methods are
+  not edited, not that calling its normalisation method is optional.**
 - `app/Notifications/**` — 0043's.
 - `database/seeders/RolePermissionSeeder.php` — no permission is added.
 - `app/Policies/**` — `CustomerPolicy` is created by 0041 (`viewAny` / `create` / `update`) and
@@ -824,7 +838,7 @@ is higher for exactly that reason.
 
 | Depends on | What this story consumes from it | Why it is hard, not soft |
 | --- | --- | --- |
-| [0041](0041-customers-crud-backend.md) | `customers` table, `App\Models\Customer`, `CustomerValidationRules`, `CreateCustomer`, `UpdateCustomer`, the **D-15** retrieval contract | Every property this view binds, every rule it validates against and every write it dispatches is defined there. Nothing renders without it. |
+| [0041](done/0041-customers-crud-backend.md) | `customers` table, `App\Models\Customer`, `CustomerValidationRules`, `CreateCustomer`, `UpdateCustomer`, the **D-15** retrieval contract | Every property this view binds, every rule it validates against and every write it dispatches is defined there. Nothing renders without it. |
 | [0042](0042-customers-soft-delete-backend.md) | `customers.deleted_at`, `SoftDeletes` on the model, the `customers.delete` gate | The delete affordance's *semantics* — "leaves the list, record survives" — are 0042's. Without it, this screen's delete button would hard-delete. |
 | [0043](0043-customers-new-customer-notification-backend.md) | Nothing at the view layer — but `CreateCustomer` gains a **constructor dependency** | That is what makes `new CreateCustomer` break. This story must resolve the action from the container; landing before 0043 would let a `new` call site through review and break it later. |
 

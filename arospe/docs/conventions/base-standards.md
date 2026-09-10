@@ -51,6 +51,12 @@ app/
   Actions/Auth/        Cross-cutting auth-state actions (EnsureRecentPasswordConfirmation — the
                        step-up freshness guard; LogRefusedPrivilegedAttempt — the refusal audit
                        line; not an area, and not Fortify's)
+  Actions/Customers/   Domain actions for the Customers area (CreateCustomer, UpdateCustomer —
+                       story 0041; both self-authorize their own operation as their own first
+                       statement from Phase 1, matching SalesRegions/ProductCategories' shape
+                       rather than ProductCategories' own initial no-caller gap, since this
+                       story's own D-12 wrote the self-authorizing requirement into its task file
+                       before implementation began)
   Actions/Fortify/    Fortify contract implementations (CreatesNewUsers, ResetsUserPasswords)
   Actions/Media/       Domain actions for the Media Library area (StoreUploadedImage — the atomic
                        upload/convert/insert; GenerateImageConversions — the only class in the app
@@ -173,8 +179,12 @@ app/
                        shipping_zone_id) and the null-aware scopeCoveringWeight() bracket scope,
                        the one place the "and above" weight comparison may live; PaymentMethod —
                        story 0038, a third standalone catalog with no relationships at all, the
-                       identical starting shape ProductCategory/ShippingCarrier shipped in; Role,
-                       which subclasses
+                       identical starting shape ProductCategory/ShippingCarrier shipped in; and
+                       Customer — story 0041, Epic 3's first domain model, a fourth instance of
+                       that same no-relationships-at-birth shape, with all fifteen writable
+                       columns fillable and none withheld (D-7 — there is no seeder-owned or
+                       server-derived column split here, unlike SalesRegion/Media); Role, which
+                       subclasses
                        the package's role model). product_media, product_sales_region and
                        (story 0029) product_variant_values all have no model class of their own —
                        each reached only through the owning models' BelongsToMany (e.g.
@@ -187,7 +197,10 @@ app/
                        gap in this listing closed here rather than left stale, ShippingRatePolicy
                        — story 0036, matching ShippingZonePolicy's shape exactly: four abilities,
                        no per-target rule, and real call sites on all three write actions from
-                       day one), auto-discovered by name. No ShippingCarrierPolicy exists (story
+                       day one, CustomerPolicy — story 0041, three abilities (no `delete()` yet —
+                       a named hand-off to story 0042, which adds it to this same file), no
+                       per-target rule, modelled on SalesRegionPolicy), auto-discovered by name.
+                       No ShippingCarrierPolicy exists (story
                        0035's D-9): `shipping.view`/`.edit` are authorized directly as permission
                        strings, named once on the model itself, since no per-target rule
                        justifies a policy. PaymentMethodPolicy — story 0038, four abilities;
@@ -635,4 +648,6 @@ Use the scoped forms freely while iterating; the unscoped runs are what counts a
 
 **`php artisan test --parallel` is an equally valid unscoped record, and the faster one** (measured on this repo's own 950-test suite: ~2.6x on this project's dev container — see [testing/ci/commands.md#run-in-parallel](../testing/ci/commands.md#run-in-parallel)). It runs every test in every suite exactly like the plain unscoped form; `--parallel` changes how the work is distributed across processes, not what gets checked. CI runs it this way since the test-performance review that measured it. The one thing `--parallel` needs that the sequential form doesn't: `storage/framework/views` must sit on a filesystem that tolerates concurrent writes — see the ⚠️ in the linked section if you rebuild the Sail image and hit `tempnam()` errors under load.
 
-_Last updated: 2026-09-10 — Story 0038 (Payment methods — bank transfer with a validated IBAN, backend). Added `app/Rules/` to the stock-Laravel-locations list (this repo's first use of `make:rule`) and `Actions/PaymentMethods/` (`UpdatePaymentMethodIban`, corrected to self-authorize during this story's own Phase 4 security audit — the task file's original "actions in this repo are generally unguarded" premise did not survive inspection). Added `PaymentMethod` to the `Models/` list (a third standalone catalog, matching `ProductCategory`/`ShippingCarrier`'s starting shape) and `PaymentMethodPolicy` to the `Policies/` list (the documented Super Admin `Gate::before` exception on `create()`/`delete()`). Extended the `Livewire/`, `routes/`, `lang/` and `tests/` tree entries with this story's own files. No convention rule changed — this story's own authorization-placement finding is a confirming instance of the pre-existing "an authorization rule belongs to the action" convention, not a new one._
+_Last updated: 2026-09-10 — Story 0041 (Customers CRUD backend). Added `Actions/Customers/` (`CreateCustomer`/`UpdateCustomer`, each self-authorizing its own operation from Phase 1), `Customer` to the `Models/` list (Epic 3's first domain model, all fifteen writable columns fillable per D-7), and `CustomerPolicy` to the `Policies/` line (three abilities, no `delete()` yet — a named hand-off to story 0042). No convention rule changed — this story introduces no new type, brace, PHPDoc, validation-trait, action-injection or authorization-placement shape beyond what task 0017's/story 0025's already-established self-authorizing-action pattern provides; `App\Concerns\CustomerValidationRules` follows the existing `<Noun>ValidationRules` trait convention (see [naming.md](naming.md#traits-and-their-methods)).
+
+_Previously: 2026-09-10 — Story 0038 (Payment methods — bank transfer with a validated IBAN, backend). Added `app/Rules/` to the stock-Laravel-locations list (this repo's first use of `make:rule`) and `Actions/PaymentMethods/` (`UpdatePaymentMethodIban`, corrected to self-authorize during this story's own Phase 4 security audit — the task file's original "actions in this repo are generally unguarded" premise did not survive inspection). Added `PaymentMethod` to the `Models/` list (a third standalone catalog, matching `ProductCategory`/`ShippingCarrier`'s starting shape) and `PaymentMethodPolicy` to the `Policies/` list (the documented Super Admin `Gate::before` exception on `create()`/`delete()`). Extended the `Livewire/`, `routes/`, `lang/` and `tests/` tree entries with this story's own files. No convention rule changed — this story's own authorization-placement finding is a confirming instance of the pre-existing "an authorization rule belongs to the action" convention, not a new one. Folded the prior `_Previously:` line (story 0036) into this single line, per [contracts.md](../contracts.md#doc-growth-management-rule)'s doc-growth-management rule — no content changed or lost; see git history for the full prior chain if needed._
