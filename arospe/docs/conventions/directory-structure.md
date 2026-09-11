@@ -131,7 +131,12 @@ app/
                        0034), Index.php (story 0035, a real routed screen shipped with a
                        placeholder view, mirroring Users/Index.php's own 0004→0006 split),
                        PaymentMethods/ — Index.php (story 0038, a real routed screen shipped with
-                       a placeholder view, the same 0004→0006 split)).
+                       a placeholder view, the same 0004→0006 split), Customers/ — Index.php
+                       (story 0044, a real routed screen shipped with its real view in the same
+                       story, consuming story 0041/0042's Customer model/actions/validation trait
+                       and soft delete; its deleteCustomer() authorization guard lives in this
+                       component rather than in a dedicated DeleteCustomer action, since none
+                       exists — the same placement Users\Index::deleteUser() already establishes).
                        Dev/ (story 0020, the media-gallery-harness
                        scaffolding) was RETIRED by story 0027 once Products/Editor supplied a real
                        host page — see below. Components/ (story 0021, extended by 0022) is not a module area
@@ -206,7 +211,8 @@ lang/                   Published translation files, one folder per locale (en/,
                         (users.php, roles.php, navigation.php, sales-regions.php, media.php,
                         components.php, products.php — the latter's categories.index subgroup is
                         story 0025's copy for the product categories screen; shipping.php;
-                        payment-methods.php since story 0038)
+                        payment-methods.php since story 0038; customers.php since story 0044 —
+                        the file 0041 deliberately deferred to this story, D-14)
 resources/
   views/
     components/        Blade components — all anonymous (no app/View/Components/ in this repo)
@@ -221,7 +227,8 @@ resources/
 routes/                 web.php, plus one file per functional area that web.php requires
                         (settings.php, roles.php, users.php, sales-regions.php,
                         product-categories.php, product-attribute-types.php, products.php,
-                        shipping.php, payment-methods.php) — no api.php yet. web.php no longer
+                        shipping.php, payment-methods.php, customers.php since story 0044) — no
+                        api.php yet. web.php no longer
                         holds the story 0020/0021 environment-gated dev route (story 0020's
                         browser-test harness) — story 0027 retired it once Products/Editor
                         supplied a real host page; see ../api/routes.md
