@@ -329,7 +329,7 @@ class Index extends Component
     #[Computed]
     public function customersSummary(): string
     {
-        $count = count($this->customers);
+        $count = count($this->customers());
 
         return trans_choice('customers.index.summary', $count, ['count' => $count]);
     }
