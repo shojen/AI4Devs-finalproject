@@ -35,6 +35,7 @@ return [
         'shipping_zones' => 'Zonas de envío',
         'shipping_carriers' => 'Transportistas y tarifas',
         'payment_methods' => 'Métodos de pago',
+        'customers' => 'Clientes',
     ],
 
 ];

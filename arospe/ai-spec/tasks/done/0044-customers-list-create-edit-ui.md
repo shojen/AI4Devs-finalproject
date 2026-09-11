@@ -321,7 +321,7 @@ Structure, mirroring the shipped `users.blade.php` / `roles.blade.php` shape:
 - **Header** — `flux:heading`, the live `customersSummary()` count, and a primary "New customer" button
   (rendered disabled with a tooltip when `Gate::allows('create', Customer::class)` is false — the
   same policy ability `openCreateModal()` authorizes with).
-- **List** — a `flux:table` with **five** columns, not sixteen (**D-6**):
+- **List** — a `flux:table` with **four** columns, not fifteen (**D-6**):
 
   | Column | Content |
   | --- | --- |
@@ -373,7 +373,8 @@ Four markup rules, all inherited rather than invented, all load-bearing:
 ```php
 // config/modules.php — items
 'customers' => [
-    'group' => 'platform',
+    'group' => null,
+    'cluster' => null,
     'label' => 'navigation.items.customers',
     'icon' => 'user-group',
     'route' => 'customers.index',
@@ -382,8 +383,18 @@ Four markup rules, all inherited rather than invented, all load-bearing:
 ],
 ```
 
-- **`group: 'platform'`** — Customers is a top-level operational module like Users, not store
-  configuration; the `settings` group holds configuration screens.
+> **Corrected at Phase 2 (INVEST validation) — the `platform` group cited below no longer exists.** Story
+> 0080 (`config/modules.php`'s nesting/grouping restructuring) **retired** the flat `platform` group
+> entirely rather than renaming it, and every `items` entry now carries **both** a nullable `group` and a
+> nullable `cluster` key. `customers` follows the exact shape `users` already uses — a bare top-level item,
+> `group: null, cluster: null` — since Customers, like Users, is a top-level operational module with no
+> wrapping group and no sub-resource cluster of its own. See
+> [authorization.md](../../docs/architecture/authorization.md#the-second-half-of-a-module-gate-the-sidebar-registry)
+> and `config/modules.php`'s own header comment for the current, real shape.
+
+- **`group: null, cluster: null`, the `users` shape** — Customers is a top-level operational module like
+  Users, not store configuration and not a sub-resource of an existing cluster; the `settings` group and the
+  `store`-nested clusters hold configuration/catalog screens instead.
 - **`permissions` must set-equal the route's `can:` middleware.** `tests/Feature/Navigation/SidebarModuleGatingTest.php`
   asserts that mechanically for every entry, so the two halves cannot drift — this story adds no new rule,
   it satisfies an existing one.
@@ -479,7 +490,7 @@ where marked.
       **enabled** for a holder of `customers.edit` / `customers.delete` and **disabled** for a
       view-only actor, with the `data-test` hook present on **both** branches.
 - [ ] Integration test: the create button renders disabled for an actor without `customers.create`.
-- [ ] **Count assertion, scoped and proven movable**: the create/edit modal renders exactly the sixteen
+- [ ] **Count assertion, scoped and proven movable**: the create/edit modal renders exactly the fifteen
       bound inputs. Scope the selector by a string that cannot match a sibling or wrapper element and
       include the delimiter that ends the element name, then **prove the count can move** by removing one
       field and confirming it changes by exactly one — an over-count by a constant reads as the true
@@ -509,7 +520,9 @@ never by label text. Every test asserts **no JavaScript console errors**.
       error is shown on the email field, and the list still holds exactly one such customer. The
       modal-stays-open half is the assertion that catches a form that closes and silently discards input.
 - [ ] **Duplicate email differing only in capitalisation** → same outcome. This is the case that proves
-      0041's **D-5** normalisation reaches the screen; it must pass on SQLite *and* MySQL.
+      0041's **D-5** normalisation reaches the screen. **Corrected at Phase 2 (INVEST validation)**: this
+      repo is MySQL-only in both test and dev (`phpunit.xml`, `.env.example`) — there is no SQLite
+      environment to also pass against.
 - [ ] **Edit pre-fills**: open a customer's edit modal → every field shows that customer's **stored** value.
       A stale prefill is a silent data-corruption bug, not a cosmetic one — the same reasoning the Users
       screen's edit-modal tests carry.
@@ -541,7 +554,7 @@ never by label text. Every test asserts **no JavaScript console errors**.
 
 `GET /customers` renders a permission-gated Customers screen linked from the sidebar to exactly the
 administrators who hold `customers.view`. The screen lists every customer in name order with their name,
-email, phone and shipping location, offers a create/edit modal covering all sixteen writable fields
+email, phone and shipping location, offers a create/edit modal covering all fifteen writable fields
 grouped as identity / shipping address / billing address with a one-click "same as shipping" copy, and a
 delete confirmation naming the target. Creating and editing go through 0041's `CreateCustomer` /
 `UpdateCustomer`, so a duplicate email — including one differing only in capitalisation — is refused
@@ -600,24 +613,31 @@ writes a database row that no UI in this repository reads yet.
       never the only check; and that `copyShippingToBilling()` moves only client-supplied form state and
       discloses nothing (**D-1**).
 - [ ] Documentation updated (docs-keeper):
-  - [`api/routes.md`](../../docs/api/routes.md) — `customers.index` joins the app-owned routes table as the
-    **third** permission-gated route, with its own subsection following the `users.index` / `roles.index`
-    shape (what the view renders, the `data-test` hooks, the two Flux/Blaze markup rules reused verbatim,
-    the sidebar bullet).
-  - [`architecture/authorization.md`](../../docs/architecture/authorization.md) — the sidebar registry's
-    **third** entry, and the first module gate written by an epic other than Epic 1: confirmation that the
-    copyable pattern was appended to rather than edited. **Note explicitly that this screen does *not*
-    adopt step-up authentication and why** (**D-7**), so the layer's scope stays a stated boundary rather
-    than an apparent omission.
-  - [`conventions/base-standards.md`](../../docs/conventions/base-standards.md) — the `routes/` listing
-    gains `customers.php`, the `app/Livewire/` listing gains `Customers/`, and the `lang/` listing gains
-    `customers.php`. **Each of those is an enumeration that becomes an under-count the moment this story
-    lands** — the [bare-negative-claim](../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
-    failure mode arriving as arithmetic. **Grep `docs/` for "three per-area files", "two module routes"
-    and similar counts** rather than trusting the change→doc mapping, which routes only to the docs
-    describing the change.
-  - [`conventions/naming.md`](../../docs/conventions/naming.md) — a **third** row in the
-    `Index`-in-a-subfolder exception table (`App\Livewire\Customers\Index` → `livewire/customers.blade.php`).
+  - **Correction at Phase 2 (INVEST validation)**: every ordinal below ("third route", "third entry", "third
+    row") in this task file's own earlier draft was stale even before implementation started — this repo
+    now has far more than three permission-gated routes and sidebar entries, and `docs/api/routes.md` /
+    `docs/database/schema.md` are themselves split into per-area/per-domain files rather than one monolith.
+    **Do not trust a positional ordinal written into this task file — verify the real, current count/shape
+    in the doc itself before writing**, per the
+    [bare-negative-claim](../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
+    failure mode arriving as arithmetic.
+  - [`api/routes.md`](../../docs/api/routes.md) — `customers.index` joins the app-owned routes table; its
+    own subsection belongs in the split-out
+    [`api/users-and-roles.md`](../../docs/api/users-and-roles.md)-style per-area file (or a new
+    `api/customers.md`, per that index's own doc-growth-management convention), following the
+    `users.index` / `roles.index` shape (what the view renders, the `data-test` hooks, the two Flux/Blaze
+    markup rules reused verbatim, the sidebar bullet).
+  - [`architecture/authorization.md`](../../docs/architecture/authorization.md) — a new sidebar registry
+    entry, and the first module gate written by an epic other than Epic 1: confirmation that the copyable
+    pattern was appended to rather than edited. **Note explicitly that this screen does *not* adopt step-up
+    authentication and why** (**D-7**), so the layer's scope stays a stated boundary rather than an apparent
+    omission.
+  - [`conventions/directory-structure.md`](../../docs/conventions/directory-structure.md) — **not
+    `base-standards.md`**, which no longer carries the `routes/`/`app/Livewire/`/`lang/` listings (they were
+    split out). The `routes/` listing gains `customers.php`, the `app/Livewire/` listing gains `Customers/`,
+    and the `lang/` listing gains `customers.php`.
+  - [`conventions/naming.md`](../../docs/conventions/naming.md) — a new row in the `Index`-in-a-subfolder
+    exception table (`App\Livewire\Customers\Index` → `livewire/customers.blade.php`).
   - [`database/schema.md`](../../docs/database/schema.md) / [`migrations.md`](../../docs/database/migrations.md) —
     **verify, do not assume.** This story contains no column, model or migration; expect no change and
     record that it was checked.
@@ -668,12 +688,14 @@ has not activated, and `sales_regions.code` is **administrator-editable and null
 options whenever an administrator blanks a code. A dropdown that offers fewer countries than the validator
 accepts is worse than a text field: it makes a legal value unreachable through the UI.
 
-Two supporting facts. The Sales Regions **screen** does not exist yet either (story 0018), so there is no
-shipped precedent for how this catalog is presented. And a `<select>` here would reintroduce the
-null-property/native-`<select>` desync class of bug for no gain
+One supporting fact remains, corrected at Phase 2 (INVEST validation): the Sales Regions **screen** (story
+0018) has since shipped (`App\Livewire\SalesRegions\Index`), so this is no longer "no precedent exists" —
+it is a deliberate decision **not** to reuse that catalog for this field, for the reasons stated above (D-9's
+own rationale). A `<select>` here would also reintroduce the null-property/native-`<select>` desync class of
+bug for no gain
 ([errors-log-archive.md](../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)).
 
-**Revisit once Sales Regions UI ships**, and only if the *product* wants a constrained list — at which
+**Revisit now that Sales Regions UI has shipped**, and only if the *product* wants a constrained list — at which
 point the right shape is a searchable picker over the full ISO catalog (which the seeder already holds as
 ~249 rows, active or not), never over the *active* subset. Recorded in
 [Technical tasks for the backlog](#technical-tasks-for-the-backlog).
@@ -745,12 +767,12 @@ moved.
 re-read in the same round trip need `unset($this->customers)` after the write. State that in the method's
 docblock rather than discovering it as a stale-list bug.
 
-### D-6 — The list table shows five columns, not sixteen
+### D-6 — The list table shows four columns, not fifteen
 
 **Decision: Customer (name over email), Phone, Shipping location (city + country), and the actions
 column.** Every other field is modal-only. Adopted from `frontend-expert`.
 
-Sixteen columns is not a table, it is a spreadsheet — it would scroll horizontally on every viewport, and
+Fifteen columns is not a table, it is a spreadsheet — it would scroll horizontally on every viewport, and
 this project's rule is that wide content scrolls inside its own container rather than the page body. The
 list's primary job, per 0041's **D-15** ordering rationale, is **looking a person up**; city + country is
 the smallest discriminator that distinguishes two customers with similar names, which is why it earns a
@@ -871,7 +893,7 @@ see [Technical tasks for the backlog](#technical-tasks-for-the-backlog).
   that found them. *Mitigation:* all four are stated as markup rules above, and the instruction is to copy
   `users.blade.php`'s shipped shape verbatim rather than write the obvious form and rediscover why it is
   wrong.
-- **R-2 — Sixteen bound fields is the largest form in this app, and every one of them is a chance to bind
+- **R-2 — Fifteen bound fields is the largest form in this app, and every one of them is a chance to bind
   a `null`.** *Mitigation:* every form property is typed `public string` with an `''` default, stated as a
   hard rule above, plus the "does an empty string reach a nullable column" question resolved explicitly at
   the action boundary rather than left implicit.
@@ -916,7 +938,7 @@ Derived from this story, none of them in scope:
    volume (**D-8**). Pair it with revisiting 0042's provisional `deleted_at` index (**D-4** there), since
    the composite index's second column is driven by whatever the list actually filters on — a question this
    story deliberately leaves unanswered.
-2. **Revisit the country field** (**D-2**) once the Sales Regions screen (story 0018) ships, and only on a
+2. **Revisit the country field** (**D-2**) now that the Sales Regions screen (story 0018) has shipped, and only on a
    product signal. If it becomes a picker, it is sourced from the **full** ISO catalog, never the active
    subset.
 3. **A customer detail route** (`customers.show`), owned by 0047 (**OQ-2**).
