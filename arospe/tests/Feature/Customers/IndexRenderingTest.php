@@ -2,7 +2,7 @@
 
 // View-level rendering tests for App\Livewire\Customers\Index /
 // resources/views/livewire/customers.blade.php (story 0044), per
-// ai-spec/tasks/in-progress/0044-customers-list-create-edit-ui.md's "Tests to perform" section.
+// ai-spec/tasks/done/0044-customers-list-create-edit-ui.md's "Tests to perform" section.
 //
 // Written at TDD Phase 3 step 1 (red), before the real component/view exist. Component logic,
 // persistence and the two authorization layers are covered by IndexTest.php -- nothing here

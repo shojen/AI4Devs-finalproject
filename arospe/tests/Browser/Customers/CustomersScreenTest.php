@@ -1,7 +1,7 @@
 <?php
 
 // Pest 4 browser tests for the Customers screen (story 0044), per
-// ai-spec/tasks/in-progress/0044-customers-list-create-edit-ui.md's "Tests to perform" section.
+// ai-spec/tasks/done/0044-customers-list-create-edit-ui.md's "Tests to perform" section.
 // The wired-up tests/Browser/ suite runs on Chromium in CI (task 0006b, done).
 //
 // Written at TDD Phase 3 step 1 (red), before routes/customers.php, App\Livewire\Customers\Index

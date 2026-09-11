@@ -7,7 +7,7 @@ Blade/Flux view that renders a compact read-only identity header plus that custo
 history**. It also adds the `App\Models\Customer::orders()` relation that stories
 [0041](done/0041-customers-crud-backend.md) and [0045](0045-orders-core-crud-backend.md) both deliberately
 omitted and named this story as the owner of, and the "view detail" row affordance that
-[0044](0044-customers-list-create-edit-ui.md)'s list does not yet carry — without which the screen is
+[0044](done/0044-customers-list-create-edit-ui.md)'s list does not yet carry — without which the screen is
 unreachable.
 
 > ## ⛔ BLOCKED — inherited cross-epic dependency (read this before Phase 3)
@@ -21,7 +21,7 @@ unreachable.
 > This story renders `orders` rows, reads `App\Enums\OrderStatus`, and adds a `hasMany(Order::class)`
 > relation. **None of `orders`, `order_items`, `App\Models\Order` or `OrderStatus` exists in code yet.**
 > There is nothing here that can be stubbed to proceed: an order-history screen with no `orders` table
-> is the ghost affordance [0044](0044-customers-list-create-edit-ui.md) explicitly refused to ship.
+> is the ghost affordance [0044](done/0044-customers-list-create-edit-ui.md) explicitly refused to ship.
 >
 > **The blocking chain is two links long, so state it once and check both:** 0047 → 0045 → {0024, 0029,
 > 0035, 0036, 0038}. Confirm 0045 is `done` — not merely unblocked — before Phase 2 is re-run.
@@ -750,7 +750,7 @@ names the customer. Reversible in one line if the product asks.
 | --- | --- | --- |
 | `customers` table + `App\Models\Customer` | story [0041](done/0041-customers-crud-backend.md) — **hard dependency** | the relation is declared on that model; the header reads its `name`/`email`/`phone` |
 | `customers.deleted_at` (soft delete) | story [0042](done/0042-customers-soft-delete-backend.md) — **hard dependency** | the 404-for-a-trashed-customer test asserts behaviour that only exists once `SoftDeletes` is on the model |
-| The Customers screen: route file, list view, lang files, registry entry | story [0044](0044-customers-list-create-edit-ui.md) — **hard dependency**, and this story **edits three of its files** (**D-6**) | `routes/customers.php`, `resources/views/livewire/customers.blade.php`, `lang/{en,es}/customers.php` |
+| The Customers screen: route file, list view, lang files, registry entry | story [0044](done/0044-customers-list-create-edit-ui.md) — **hard dependency**, and this story **edits three of its files** (**D-6**) | `routes/customers.php`, `resources/views/livewire/customers.blade.php`, `lang/{en,es}/customers.php` |
 | `orders` table, `App\Models\Order`, `App\Enums\OrderStatus`, `orders.statuses.*` lang keys | story [0045](0045-orders-core-crud-backend.md) — **hard dependency, itself ⛔ blocked** | every order row column, the status badge label, and the `hasMany` target |
 | `orders.view` in the seeded permission catalog | **shipped** (Epic 1) | `RolePermissionSeeder::MODULES` carries `orders`; all four CRUD actions are generated for it |
 | `Gate::before` Super Admin bypass | **shipped** (Epic 1) | [authorization.md](../../docs/architecture/authorization.md) |
