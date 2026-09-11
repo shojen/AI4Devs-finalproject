@@ -598,7 +598,7 @@ posts that reference a category arrive in 0061.
       `--dirty`), and **Larastan level 7** (`vendor/bin/phpstan analyse`). The third is the one
       nothing else prompts you to run, and a verification record naming only two of the three is a
       record of two gates — see
-      [errors-log.md](../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+      [errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
 - [ ] Code reviewed (code-reviewer).
 - [ ] No security findings (appsec-auditor).
 - [ ] Documentation updated (docs-keeper): `docs/database/schema.md` gains a `blog_categories`
@@ -813,7 +813,7 @@ the two taxonomies can be diffed decision by decision. **D-13** and **D-14** are
   workaround that does not apply); **guard on `isDirty('name')`**, so an unrelated save does not
   rewrite the column; and **the blast radius is the whole suite**, since a model event binds every
   `BlogCategory` in every test — which is precisely the case
-  [errors-log.md](../../docs/errors-log.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)
+  [errors-log.md](../../docs/errors-log-archive.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)
   records, making the unscoped `php artisan test` run mandatory rather than advisory.
 
   **Recorded alternative, rejected:** each action computes and `forceFill`s it explicitly, matching
@@ -829,7 +829,7 @@ the two taxonomies can be diffed decision by decision. **D-13** and **D-14** are
   — landed **2026-08-19**, two days later. Verified at `HEAD`: `App\Actions\Users\CreateUser` opens
   with `Gate::authorize('create', User::class)`. 0023's note is therefore a true statement about a
   tree that no longer exists, which is precisely the failure mode
-  [errors-log.md](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+  [errors-log.md](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
   records for deferred task files. Since 0058 is planned *now*, on a codebase where task 0017 already
   demonstrated the convention costs nothing when applied at Phase 1, all three actions authorize as
   their first statement — via `LogRefusedPrivilegedAttempt::authorize()` rather than a bare
@@ -943,7 +943,7 @@ the two taxonomies can be diffed decision by decision. **D-13** and **D-14** are
   validation `max:` low enough that the worst-case fold still fits. **The expansion factor is not
   verified here** — this worktree has no `vendor/` directory, so `Str::ascii()` could not be executed
   — and per this project's own
-  [hedge rule](../../docs/errors-log.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
+  [hedge rule](../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
   an unverified mechanism must not be written up as fact. The one command that settles it, to be run
   at Phase 2/3: `php artisan tinker --execute 'dump(strlen(Str::ascii(str_repeat("ß", 255))));'`.
   **[0059](0059-blog-tags-backend.md) has the identical exposure at its own `100`/`100`** and its R-4

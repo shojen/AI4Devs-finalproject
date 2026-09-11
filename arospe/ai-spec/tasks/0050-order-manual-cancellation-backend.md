@@ -332,7 +332,7 @@ detail:
   effect; a transaction would wrap nothing. Recorded rather than left to inference, because 0045's
   `CreateOrder` opens one and a reader may expect symmetry — and because adding one later relocates
   every side effect the wrapped code performs, the mistake recorded in
-  [errors-log.md](../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
+  [errors-log.md](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
   If story 0052 or a "cancellation notification" story ever adds a side effect here, it fires **after**
   any commit, never inside it.
 - **`payment_status` is never read for a decision beyond the predicate, and never written** (**D-1**).
@@ -690,7 +690,7 @@ a rediscovery.
   > *"Decisively: the two operations are authorized differently. Cancellation reduces to `orders.edit`;
   > a refund requires `orders.refund`, created precisely so a business can grant order maintenance to
   > staff who may not move money. Auto-refunding from a cancellation would let an actor holding only
-  > `orders.edit` cause a refund"* — the [least-privileged-caller capability grant](../../docs/errors-log.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24)
+  > `orders.edit` cause a refund"* — the [least-privileged-caller capability grant](../../docs/errors-log-archive.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24)
   > failure arriving as a feature request. **That argument is now moot: under D-6 as decided, every
   > actor who can reach `CancelOrder` already holds `orders.refund`,** so an auto-refund would grant
   > that actor nothing they did not already have. Recorded rather than deleted, because a reader who
@@ -997,7 +997,7 @@ and every name in this document is a reading aid rather than a locator (**R-5**)
 - **R-5 — This document goes stale while it waits.** It is blocked behind 0045 and 0049, and 0045 is
   itself blocked behind five Epic 2 stories — the "a deferred finding is a claim about a tree, and the
   task file freezes while the tree does not" failure recorded in
-  [errors-log.md](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+  [errors-log.md](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
   *Mitigation:* the Phase 2 INVEST review must be **re-run** immediately before Phase 3 and must
   re-verify against the **shipped code**, not against sibling task files: that `OrderPolicy` exists and
   what its constant is really called, **that `orders.refund` is really in the seeded catalog and

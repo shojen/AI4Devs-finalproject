@@ -372,7 +372,7 @@ re-run. Seeding is already a documented required deployment step
 > this worktree's `HEAD` (`9cdd144`) with `grep -n "\b37\b\|\b38\b" tests/Feature/Seeders/*.php`
 > before Phase 3 starts — per this project's own rule that a line number in a stored task is a
 > reading aid to re-verify, never a locator to trust (see
-> [errors-log.md](../../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
+> [errors-log.md](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
 > Total sites: **12** in `RolePermissionSeederTest.php` (not 10), **3** in `DatabaseSeederTest.php`
 > (not 2) — **15**, not 12.
 
@@ -969,7 +969,7 @@ Four findings, all addressed in this same pass rather than deferred: **N1 (Mediu
 one section a later story would actually read for the constant's rationale had the wrong number;
 corrected in place with a blockquote recording why. **N2 (Medium, fixed by this section)** — no
 phase-verdict/gate-record sections existed in this task file, the exact gap this project's own
-[errors-log.md](../../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
+[errors-log.md](../../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
 entry warns about. **N3 (Low, fixed)** — the QA plan's named-but-undelivered seeder upgrade-path
 test ("re-seeding an environment already carrying the 38-permission catalog yields 42 and creates
 no duplicates") now exists as

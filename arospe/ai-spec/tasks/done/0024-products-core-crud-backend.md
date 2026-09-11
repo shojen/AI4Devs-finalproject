@@ -643,7 +643,7 @@ interim and what must not happen before it closes.
 - [x] Tests written and green, plus the **full** existing suite in a single isolated run, per
       [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule.
 - [x] **All three quality gates run unscoped and each result recorded — including "not run"**, per
-      [errors-log.md](../../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26):
+      [errors-log.md](../../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26):
       `php artisan test`, `vendor/bin/pint --format agent`, `vendor/bin/phpstan analyse`. Note
       `phpstan.neon` analyses `database/`, so the migration **and the factory** are in scope.
 

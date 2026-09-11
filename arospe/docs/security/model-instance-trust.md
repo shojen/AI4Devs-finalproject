@@ -17,7 +17,7 @@ value was decided by whoever hydrated the instance, at whatever time they did so
 > reading. The ✅ block in each section is the shipped fix, not a recommendation — `SetDefaultSalesRegion`,
 > `SetSalesRegionActive` and `UpdateSalesRegion` all now write through an instance re-fetched inside their
 > own transaction/call, never through the caller-supplied one, per
-> [errors-log.md](../errors-log.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
+> [errors-log.md](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
 > rule against a page that outlives its own fix. **F-2 was not reachable through the shipped dashboard** —
 > `App\Livewire\SalesRegions\Index` re-fetches every row with `findOrFail()` immediately before each call, so
 > the component itself never hands an action a dirtied instance. **F-1 was reachable through the dashboard**

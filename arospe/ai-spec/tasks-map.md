@@ -501,7 +501,7 @@ in [`ai-spec/tasks-status.json`](tasks-status.json):
   Many Epic 3/4/5 stories were composed before their prerequisites shipped, and each carries a
   self-aware note along the lines of *"this document goes stale while it waits… every name in this
   file is a reading aid, not a locator"* (a rule this project's own
-  [`docs/errors-log.md`](../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+  [`docs/errors-log.md`](../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
   states explicitly). This map inherits that caveat: **before actually starting a pending story,
   re-verify its own "Dependencies" section against `HEAD` rather than trusting this snapshot**,
   especially for any story more than a few positions deep in a chain (0055, 0073, 0079 in

@@ -378,5 +378,5 @@ and conversions — backend), from the verification of findings F-1 (decompressi
 temporary-upload endpoint). Every measurement in this page was taken against the shipped code in this
 worktree, not reproduced from the original audit's notes; the reproduction fixtures were removed
 afterwards. Written as ❌/✅ pairs describing the **shipped** state from the outset, per
-[errors-log.md](../errors-log.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
+[errors-log.md](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
 rule for an audit-authored page._

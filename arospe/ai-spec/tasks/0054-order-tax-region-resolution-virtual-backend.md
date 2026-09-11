@@ -323,7 +323,7 @@ It performs, in this order:
    deliberately non-fillable.
 
 > **Phase 3 must re-read the transaction-side-effect rule before writing step 5**, per
-> [errors-log.md](../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
+> [errors-log.md](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
 > The forward-looking constraint here is specific: **if a later story notifies on a flag, that
 > dispatch must happen after the commit**, or a rolled-back resolution mails somebody about a flag
 > that does not exist — the same rule 0045 states for its own "new order received" notification.
@@ -739,7 +739,7 @@ precisely so it is met by the reader who needs it.
   `ProductType` enum, the `ResolveProductTaxRate` signature and the `billing_*` column shapes this file
   quotes. *Mitigation:* **the Phase 2 INVEST review must be re-run immediately before Phase 3**, with
   every cited contract re-verified against `HEAD`, per
-  [errors-log.md](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+  [errors-log.md](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
   This file's shapes are a reading aid, not a locator.
 - **R-7 — The central decision is overturned after Phase 3.** *Mitigation:* the decision is isolated to
   **one branch** in one action (`ip_derived_country === null ⇒ continue` vs `⇒ flag`) plus its tests.

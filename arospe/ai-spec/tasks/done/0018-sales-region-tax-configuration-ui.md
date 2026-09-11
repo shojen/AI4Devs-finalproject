@@ -1324,7 +1324,7 @@ proving inertness by construction (no `wire:click` to act on) rather than by an 
   follow one. Left as a gap for a future story to pick up deliberately.
 - **N8** — attempted (unify `wire:click` argument encoding on `@js()` for consistency with the file's other
   calls) and **reverted** after it silently broke `setActive()`'s wire:click across all three row copies —
-  see the write-up immediately below and [docs/errors-log.md](../../../docs/errors-log.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26).
+  see the write-up immediately below and [docs/errors-log.md](../../../docs/errors-log-archive.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26).
   Not "fixed" — the pre-existing `{{ \Illuminate\Support\Js::from(...) }}` form was correct and is kept.
 - **N7** and **N9** — recorded as known, accepted, deliberately not addressed in this pass: N7 (the
   triplicated row markup, of which F-5 and this pass's N8 mistake are both direct symptoms) is a real
@@ -1351,7 +1351,7 @@ component tag's attribute value do not compile; a single one does, and so do two
 same attribute**, which is exactly why the pre-existing `Js::from()` form had always worked. Reverted to
 that form in all three copies, each with an inline comment recording the finding so a future pass doesn't
 "fix" it back to `@js()` a second time. Full write-up, the minimal repro, and the generalised rule are in
-[docs/errors-log.md](../../../docs/errors-log.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26).
+[docs/errors-log.md](../../../docs/errors-log-archive.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26).
 
 **An unrelated environment incident surfaced during this investigation and is recorded for completeness,
 not because it reflects a story defect.** Several ad-hoc `docker exec ... php artisan tinker` /

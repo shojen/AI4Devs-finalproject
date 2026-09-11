@@ -458,7 +458,7 @@ and the notification that announces it is story 0065.
       that was not run*: `php artisan test` (not `--filter`), `vendor/bin/pint --format agent` (not
       `--dirty`), and **Larastan level 7** (`vendor/bin/phpstan analyse`). The third is the one nothing
       else prompts you to run, and a record naming two of three is a record of two gates — see
-      [errors-log.md](../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+      [errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
       **Note `phpstan.neon` analyses `routes/`**, so this story's new route file is in scope.
 - [ ] **The index is verified to exist with `php artisan db:table blog_posts` after 0061 has
       migrated** — not by re-reading 0061's task file (**R-1**). If it is absent, **R-1**'s explicit
@@ -801,7 +801,7 @@ Three consequences, each verified rather than assumed:
   > was removed. And the *second half* of this bullet, which is the reason it is here at all, is
   > untouched: no model events fire, so **D-12**'s dispatch must stay explicit.
 - **No `DB::transaction()` wrapper.** A single statement is already atomic, and
-  [errors-log.md's transaction-wrapper entry](../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
+  [errors-log.md's transaction-wrapper entry](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
   is a standing warning that a wrapper is a change to every side effect inside it. The one thing that
   *must* be ordered is the event dispatch, which follows the successful write (**D-12**).
 
@@ -1060,7 +1060,7 @@ Read or executed against this worktree and the sibling checkout's `vendor/` duri
   (**V-7**). If the two disagree, every scheduled post publishes offset by that difference. **Almost
   certainly fine** — the `mysql:8.4` container and the app container both very likely resolve to UTC —
   but "almost certainly" is precisely the hedge
-  [this project's own rule](../../docs/errors-log.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
+  [this project's own rule](../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
   says not to paper over. **Verify once at Phase 3** with `SELECT @@global.time_zone,
   @@session.time_zone;` against the running container. **This is pre-existing** — it applies equally to
   `created_at`/`updated_at` on every table — so it is not a blocker unique to this story, but this is

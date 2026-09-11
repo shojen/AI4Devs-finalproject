@@ -496,7 +496,7 @@ Three constraints on both calls, all load-bearing and all asserted by this story
    create path the condition is the submitted status alone** — there is no transition to detect.
 2. **After the persistence transaction commits — never inside it.** A rollback must not leave a
    notification announcing a publication that did not happen, per 0043's constraint 1 and
-   [the `DB::transaction()` entry in errors-log.md](../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
+   [the `DB::transaction()` entry in errors-log.md](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
    No special ordering against `SyncBlogPostTags` is needed beyond this, since the tag sync is inside
    the same commit boundary the dispatch already waits for.
 3. **After authorization and validation, on the success path only.** A refused or invalid save reaches
@@ -840,18 +840,18 @@ link (**R-8**).
       that was not run*: `php artisan test` (not `--filter`), `vendor/bin/pint --format agent` (not
       `--dirty`), and **Larastan level 7** (`vendor/bin/phpstan analyse`). A record naming two of three
       is a record of two gates — see
-      [errors-log.md](../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+      [errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
 - [ ] **The restore test and the listener-registration test were each *proven able to fail*** by the
       temporary-breakage step described in their entries, and both verifications are recorded.
 - [ ] **Every claim this file makes about 0061's and 0064's shipped code is re-verified against `HEAD`
       before implementation** — `UpdateBlogPost::__invoke()`'s parameter list, its transaction
       structure, `CreateBlogPost`'s signature, and `ScheduledBlogPostPublished`'s property name are all
       taken from Phase-1 *text*, not from code that exists (**V-1**). Per
-      [the deferred-findings rule](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
+      [the deferred-findings rule](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
       a name in this file is a reading aid, never a locator.
 - [ ] **`grep -rn "UpdateBlogPost" app/` at Phase 3**, not an assumption that one screen calls it — the
       shared-code lesson from
-      [errors-log.md](../../docs/errors-log.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24).
+      [errors-log.md](../../docs/errors-log-archive.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24).
       Adding a side effect to a shared action is a capability grant to its **least**-privileged caller.
 - [ ] Code reviewed (code-reviewer). **Point the review at D-7 and R-1 specifically**: that the pre-save
       status is captured before mutation off a re-read instance, that `getOriginal()` is not read after
@@ -1187,7 +1187,7 @@ which is what the two rollback tests pin.
 > plainly because it is unusual for this backlog.** These are the only cross-story constraints in this
 > file that another story's shipped code already satisfies rather than promises to: 0061's **D-19**
 > names the same after-the-commit rule, the same success-path-only rule, and cites the same
-> [`DB::transaction()` errors-log entry](../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
+> [`DB::transaction()` errors-log entry](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
 > **This story therefore verifies them rather than implementing them** — which is why the rollback
 > cases stay in this story's test plan even though the code they guard is 0061's. A constraint nobody
 > tests is a constraint that survives exactly until the next refactor of the file it lives in.
@@ -1568,7 +1568,7 @@ Two things worth keeping from how this resolved, since neither is obvious from t
   both were written by careful authors; what disagreed with them was `CreateBlogPost::__invoke()`'s
   own parameter list. **An enumeration in a hand-off is a claim to check against the code it
   describes** — the same rule this repo's
-  [deferred-findings entry](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+  [deferred-findings entry](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
   states for stale findings, arriving here as an under-count rather than as staleness.
 
 *(Option (b), leaving it out, was rejected because it leaves an unobservable hole — the most natural
@@ -1594,7 +1594,7 @@ not diverge.
 **OQ-4 — Should the administrator who published the post be notified of their own action? Inherited
 from 0043's OQ-2.** **Same default: no self-exclusion _(recommended)_** — it keeps the recipient rule a
 single query with no actor parameter, avoiding the caller-supplied-state shape
-[errors-log.md](../../docs/errors-log.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
+[errors-log.md](../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
 warns about. **The argument is stronger here than in either sibling**: the automatic trigger has **no
 acting administrator at all** (0064's **D-5** — a cron tick reads no actor), so a self-exclusion branch
 would be dead code on half of this story's paths by construction.

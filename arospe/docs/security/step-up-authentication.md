@@ -333,7 +333,7 @@ not have to reconstruct what "closed" means from the diff alone.
 _Last updated: 2026-08-24 — Task 0015a, Phase 5 code review finding F-3: this page was authored during
 the first Phase 4 audit (Phase 3's shipped code) and never revisited after the widened, human-approved
 fixes (F1/F2/F3/F4, decisions D6/D7/D8) and the Phase 4 re-audit that verified them — the exact failure
-[errors-log.md](../errors-log.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)
+[errors-log.md](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)
 already names, recurring one story later. Corrected the stale `! $isNoOpRoleChange || $statusChanged`
 code quote (now `|| $emailChanged`), rewrote "Hang the guard off the narrowest condition" around the
 two-round history rather than a single ❌/✅ pair that labelled the shipped, decision-D7-approved

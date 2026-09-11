@@ -108,7 +108,7 @@
 > folder); **V-9**'s *"nothing in this dependency chain exists in code yet"* is corrected (0019–0026 are
 > all closed); and the Definition of Done's quality-gate item now names all three gates in their
 > **unscoped** completion form rather than `pint --dirty` alone, per the two
-> [errors-log](../../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
+> [errors-log](../../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
 > entries about exactly that.
 >
 > **One thing raised but deliberately *not* decided in this pass**, so it is visible to Phase 2 rather
@@ -1336,8 +1336,8 @@ moved onto a real screen.
       and folds gate 3 into gate 2's sentence. `--dirty` inspects only files with *uncommitted* changes,
       so it becomes a no-op the moment the work is committed, and a gate absent from a record is a gate
       that did not run — the two failures [errors-log.md](../../../docs/errors-log.md) records on
-      [2026-08-20](../../../docs/errors-log.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)
-      and [2026-08-26](../../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+      [2026-08-20](../../../docs/errors-log-archive.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)
+      and [2026-08-26](../../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
       Three clauses, never two:
       ```bash
       php artisan test                    # unscoped — not --filter (--parallel is an equally valid record)
@@ -1386,7 +1386,7 @@ moved onto a real screen.
 > - [ ] **[OQ-10](#open-questions) answered before Phase 3 starts** — which store language the list renders and orders by. This restores a blocking-question gate of exactly the shape the discharged OQ-5/OQ-6 bullet above used to carry, for the same reason: [D-4](#d-4--the-list-query-explicit-columns-two-eager-loads-and-real-pagination)'s query and its ordering test's fixture are both unwritable without it.
 > - [ ] **The `docs-keeper` line widens.** Beyond the three product routes and the retired harness route, this story now also lands the app's **first consumer of a translated read on a list screen** — `docs/database/schema.md` and `docs/architecture/authorization.md` are 0076's to update, but the *screen*-side facts (which language a list resolves, and that the permission catalog stays at **42** across the whole Epic 5 product chain) belong in the pass this story runs.
 >
-> ⚠️ **And one caveat on the Full Test Suite Gate evidence:** if 0076 lands before this story's D-4 correction is implemented, `tests/Feature/Products/IndexQueryTest.php` is **already red** when this story starts. That red is 0076's hand-off, not a regression introduced here — record it as such rather than letting a green-suite requirement push someone into patching the wrong file, per the [deferred-findings rule](../../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+> ⚠️ **And one caveat on the Full Test Suite Gate evidence:** if 0076 lands before this story's D-4 correction is implemented, `tests/Feature/Products/IndexQueryTest.php` is **already red** when this story starts. That red is 0076's hand-off, not a regression introduced here — record it as such rather than letting a green-suite requirement push someone into patching the wrong file, per the [deferred-findings rule](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
 
 ## Documented functional decisions
 

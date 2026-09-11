@@ -271,7 +271,7 @@ Two constraints on **where** that call goes, both load-bearing:
    `DB::afterCommit` registration), so a rollback cannot leave a notification announcing a customer
    that does not exist. This is the same no-side-effect-on-rollback constraint story 0015 applied to
    its email dispatch, and it is a direct application of
-   [the `DB::transaction()` entry in errors-log.md](../../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21):
+   [the `DB::transaction()` entry in errors-log.md](../../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21):
    *wrapping existing code in a transaction is a change to every side effect that code already
    performed*. Read forward here rather than in hindsight.
 2. **After authorization and validation, on the success path only.** A refused or invalid creation
@@ -415,7 +415,7 @@ the recipient rule a single query with no actor parameter, and a customer create
 external channel has no acting administrator at all, so a self-exclusion branch would be dead code on
 that path. The alternative is passing the actor into `NotifyCustomerCreated` and rejecting them, which
 reintroduces exactly the caller-supplied-state shape
-[errors-log.md](../../../docs/errors-log.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
+[errors-log.md](../../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
 warns about.
 
 **OQ-3 — The notification-viewer UI is a genuinely missing story, and this is a decision for the

@@ -266,7 +266,7 @@ Nothing is user-visible yet: the screen that renders the refusal is story 0025, 
       All three quality gates re-run unscoped immediately after and clean: `pint --test --format agent`
       (passed), `phpstan analyse` level 7 (0 errors).
 - [x] **All three quality gates run unscoped and each result recorded — including "not run"**, per
-      [errors-log.md](../../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+      [errors-log.md](../../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
       **Corrected at Phase 5 review, finding N-7** (this bullet previously named `php artisan test`,
       the exact command [ci/commands.md](../../../docs/testing/ci/commands.md) documents as fatalling at
       128M on this host-native worktree, and contradicted itself on the pass count):

@@ -315,7 +315,7 @@ detail (**D-3**):
   no side effect, so a transaction would wrap nothing. Deliberately recorded rather than left to
   inference, because 0045's `CreateOrder` opens one and a reader may expect symmetry — and because
   adding one later relocates every side effect the wrapped code performs, the mistake recorded in
-  [errors-log.md](../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
+  [errors-log.md](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
 - **Nothing else is written.** `payment_status`, `updated_at` aside, is untouched; no
   `refunded_quantity`, no totals, no `flagged_for_review`.
 
@@ -463,7 +463,7 @@ pre-emption of 0050's design.
       `Gate::authorize('orders.create')` and **no model argument** — which resolves through Spatie's
       permission gate, not through a policy. **Verify that by execution rather than by reasoning**
       (the hedge rule from
-      [errors-log.md](../../docs/errors-log.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)):
+      [errors-log.md](../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)):
       if adding the policy turns out to change that resolution, **D-5** is wrong and the story stops
       to re-decide rather than patching around it.
 
@@ -776,14 +776,14 @@ it inherits their block only through 0045, and adds no sixth dependency of its o
 - **R-4 — Introducing a policy has whole-suite blast radius.** `OrderPolicy` binds every `Gate` call
   against an `Order` anywhere in the repository, present and future — the same property that made
   story 0010's role-model event guard break an unrelated test
-  ([errors-log.md](../../docs/errors-log.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)).
+  ([errors-log.md](../../docs/errors-log-archive.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)).
   *Mitigation:* the unscoped `php artisan test` run is called out in the Definition of Done with the
   reason attached, and the `CreateOrder` regression test is specified explicitly rather than left to
   the full-suite run to discover.
 - **R-5 — This document goes stale while it waits.** It is blocked behind 0045, which is itself
   blocked behind five stories, each of which may change during its own Phase 4/5 — the "a deferred
   finding is a claim about a tree, and the task file freezes while the tree does not" failure
-  ([errors-log.md](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
+  ([errors-log.md](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
   *Mitigation:* the Phase 2 INVEST review must be **re-run** immediately before Phase 3, and must
   re-verify against the shipped code — not against 0045's task file — that `OrderStatus` still has
   exactly those five cases, that `Order::$status` is still cast to the enum and still omitted from
@@ -825,7 +825,7 @@ than logging neither. Two options:
   what was debated.
 It is raised rather than decided because it edits a file this story otherwise declares out of scope
 (**D-5**), and a scope exclusion that a decision quietly crosses is the exact failure recorded in
-[errors-log.md](../../docs/errors-log.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24).
+[errors-log.md](../../docs/errors-log-archive.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24).
 
 **OQ-2 — Should a forward transition ever be confirmable too? Non-blocking, backlog.** PRD §3.2 asks
 for confirmation on backward moves only, and this story implements exactly that. Recorded because

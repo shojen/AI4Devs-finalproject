@@ -378,7 +378,7 @@ under test has leaked back into the caller.
 - [ ] Blank / whitespace-only refused on **every** language path, not only the default.
 - [ ] **The error key is `names.{storeLanguageId}` and is *derived* from the passed language, not
       accepted as a parameter** (**D-3**, 0071 **D-13**). *Why it can fail:* a caller-supplied key is
-      the shape [errors-log.md](../../docs/errors-log.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
+      the shape [errors-log.md](../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
       records as making a guard only as strong as its call sites, and it would let the component
       silently point a refusal at the wrong tab.
 - [ ] Every refusal writes exactly one `Log::warning('Privileged action refused', …)` with
@@ -571,10 +571,10 @@ no tab, and cannot be written to even by a forged payload.
 - [ ] **All three quality gates run unscoped and each result recorded, including "not run"** —
       `php artisan test`, `vendor/bin/pint --format agent`, `vendor/bin/phpstan analyse` (Larastan
       level 7). The third is the one nothing else prompts you to run; see
-      [errors-log.md](../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+      [errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
 - [ ] **Stories 0060, 0068, 0070 and 0074 are closed first**, and **every** interface claim in this
       file re-verified against `HEAD` with its disposition recorded — **R-4**, and the
-      [deferred-findings rule](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+      [deferred-findings rule](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
 - [ ] **Q-1 answered before Phase 3**, since it decides whether `SetBlogTagTranslation` is built here
       or consumed.
 - [ ] Code reviewed (code-reviewer). Point the review at **D-2** (the population rule), **D-9**
@@ -805,7 +805,7 @@ Spanish edit — which is why it is **Q-3** as well as a decision. Mitigated by 
 returned to the failing tab with their typed values still on screen, so the correction is one edit away
 rather than a re-entry. *Rejected: per-language independent commits*, which leave the editor guessing
 which of five tabs actually saved. ⚠️ Per
-[errors-log.md](../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21),
+[errors-log.md](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21),
 a transaction wrapper is a change to **every** side effect the wrapped code performs — here that
 includes `LogRefusedPrivilegedAttempt`'s writes. Confirm at Phase 3 that a rolled-back save still
 leaves its refusal log line committed; an audit trail that disappears with the rollback would be a
@@ -942,7 +942,7 @@ renders. The mismatch is a property of the *edit* form's array binding, not of t
   0059, 0060, 0068, 0070 and 0074 are all Phase 1 documents; `app/Models/BlogTag.php`,
   `app/Models/StoreLanguage.php` and `App\Concerns\HasTranslations` do not exist, and `vendor/` is
   absent so nothing could be verified by execution. Both amigos flagged this independently. Per the
-  [deferred-findings rule](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
+  [deferred-findings rule](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
   **re-verify each against `HEAD` before Phase 3 and record every disposition, including "already
   closed"**. The claims most likely to have moved: `nameRules()`'s exact signature (0074 **D-6** says
   Phase 3 settles the Laravel expression), whether `SetTranslation` can write `store_language_id` at all
@@ -1142,7 +1142,7 @@ so **D-1** follows an established Epic 5 precedent instead of inventing one.
 **Two things this debate could not verify and deliberately did not assert**: whether `<flux:tabs>` ships
 in Flux Free (**D-1**, **R-4**), and whether `wire:model` against a dynamic UUID array key round-trips
 correctly under Livewire 4 in a hidden Alpine block (**R-5**). Both are recorded as Phase 3 execution
-obligations, per this project's [standing rule](../../docs/errors-log.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
+obligations, per this project's [standing rule](../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
 that an unverified mechanism written up confidently is worse than an open question written up plainly.
 
 **Human architectural decision, 2026-08-30 — recorded after the debate and after the 0071

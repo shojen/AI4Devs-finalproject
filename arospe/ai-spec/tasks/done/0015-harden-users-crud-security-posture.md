@@ -564,7 +564,7 @@ Gherkin scenario forbids, and it is live today.
   existing `DB::transaction()` closure satisfies the required outcome but violates this constraint,
   and it is the precise shape
   [`docs/errors-log.md` — "Wrapping existing code in a `DB::transaction()` moved a cache flush nobody
-  had written"](../../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
+  had written"](../../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
   warns about: a wrapper relocates every side effect of the wrapped code, including the ones the diff
   does not show. Read that entry before choosing a shape.
 - **Recommended shape:** run the email-change delegation **after `authorizeRoleAndStatusChange()` and

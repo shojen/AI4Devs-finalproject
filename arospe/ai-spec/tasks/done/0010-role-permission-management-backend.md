@@ -1045,7 +1045,7 @@ remediation asked for as implementation rules).
   no-ops entirely once the tree is committed. A plain `vendor/bin/pint --format agent` found
   `fully_qualified_strict_types` and `ordered_imports` violations immediately. Fixed by that unscoped
   run. **This is a project-wide gate weakness, not a mistake specific to this story**, and is recorded
-  as such in [`docs/errors-log.md`](../../../docs/errors-log.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)
+  as such in [`docs/errors-log.md`](../../../docs/errors-log-archive.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)
   together with its sibling (`test --filter`, below), with the corresponding correction to the
   conventions page's gate list.
 - **F-2 — a disclosure test that asserted nothing.** The `openEditModal()` test was written against

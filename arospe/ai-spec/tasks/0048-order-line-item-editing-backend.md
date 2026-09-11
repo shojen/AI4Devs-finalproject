@@ -29,7 +29,7 @@ no Livewire component, no Blade markup, no status transition, no refund, no tax 
 > `refunded_quantity` column, the `unit_price` snapshot and the two status enums all exist so that a
 > story like this one can be written against them.
 
-> ## ⚠️ This story does **not** depend on 0049 (status transitions) — they are independent siblings
+> ## ⚠️ This story does **not** depend on 0049 (status transitions) — they are independent siblings <a id="not-depend-on-0049"></a>
 >
 > Both stories are *adjacent to* `orders.status`, and the resemblance is superficial enough to invite a
 > sequencing assumption nobody intended. State it plainly:
@@ -44,7 +44,7 @@ no Livewire component, no Blade markup, no status transition, no refund, no tax 
 > dependency: 0049 introduces a confirmation mechanism for backward transitions, and this story's
 > "no confirmation bypass exists" test asserts that mechanism — whatever shape it takes — does **not**
 > unlock a shipped order's line items. That test is written here and is satisfiable whether 0049 has
-> landed or not (see [**T-B**](#the-no-confirmation-bypass-test-and-why-it-is-written-here)).
+> landed or not (see [**T-B**](#the-no-confirmation-bypass-test)).
 
 ## Type
 backend | includes database-expert: **no**
@@ -464,7 +464,7 @@ All Feature tests unless marked otherwise, in `tests/Feature/Orders/`. This stor
 - [ ] Integration test (positive control): the same three operations **succeed** against `Pendiente` and
       `Procesando`. Without it, a guard that blocks *everything* passes every negative case above.
 
-#### The "no confirmation bypass" test — and why it is written here
+#### The "no confirmation bypass" test — and why it is written here <a id="the-no-confirmation-bypass-test"></a>
 
 - [ ] **Negative test — `T-B`:** attempt each of the three operations against an `Enviado` order **with
       whatever confirmation mechanism sibling story 0049 uses**, and assert the refusal is unchanged.
@@ -762,7 +762,7 @@ rediscovery.
   every time** — the set is a handful of rows and the arithmetic is free relative to the correctness.
   ⚠️ **Phase 3 must read the transaction-side-effect rule before writing this**: wrapping work in a
   `DB::transaction()` relocates every side effect the wrapped code already performs
-  ([errors-log.md](../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)).
+  ([errors-log.md](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)).
   The specific forward constraint here: **if story 0046's notification, or any later order-changed
   event, is ever hooked to these actions, it dispatches *after* the commit** — a rolled-back edit must
   not notify anyone.
@@ -824,7 +824,7 @@ rediscovery.
 | The direct-throw-for-Super-Admin-binding rule | **shipped** (task 0008a) | [security/authorization-patterns.md](../../docs/security/authorization-patterns.md#a-rule-that-must-bind-a-super-admin-actor-must-be-a-direct-throw-not-a-gate-check) |
 
 **Not a dependency, stated explicitly:** story **0049** (status transitions). See the
-[⚠️ banner](#-this-story-does-not-depend-on-0049-status-transitions--they-are-independent-siblings)
+[⚠️ banner](#not-depend-on-0049)
 under [Type](#type) — the two are independent siblings, both depending only on 0045, and the only
 interaction is the test **T-B** documents.
 
@@ -876,7 +876,7 @@ finds it needs a column, the story is wrong and comes back to Phase 1**, it does
 - **R-7 — This document goes stale while it waits.** It is blocked behind 0045, which is itself blocked
   behind five stories, any of which may change during their own Phase 4/5 — and this file quotes 0045's
   column names, its trait's method names, and its folder. That is exactly the
-  [stale-deferred-finding](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+  [stale-deferred-finding](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
   failure. *Mitigation:* **Phase 3 re-verifies every referenced name against the shipped code before
   writing a line**, and the Phase 2 INVEST review is **re-run** immediately before Phase 3 rather than
   treated as passed on first reading. This file's identifiers are a reading aid, not a locator.

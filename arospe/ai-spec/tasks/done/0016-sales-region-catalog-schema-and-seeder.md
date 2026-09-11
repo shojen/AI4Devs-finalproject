@@ -350,7 +350,7 @@ class SalesRegionSeeder extends Seeder
 
 **On the codes** (administrator-visible, and they may reach invoices — worth a sign-off): `ES-IB` / `ES-CN` / `ES-CE` / `ES-ML` are **real** ISO 3166-2:ES subdivisions. `ES-PEN` is **synthetic** — "Península" is not an ISO subdivision, because it is *the rest of Spain*; `ES-PEN` was chosen over `ES-PE` deliberately, since `PE` is Peru's alpha-2 and would read as a bug to anyone scanning the list. Because nothing ever *resolves* by `code`, all of these are starting values rather than contracts.
 
-> ⚠️ **The specific numeric `rate` values need fiscal sign-off before Phase 3.** The *structure* is what this story guarantees; the actual percentages (IVA general on Península/Baleares, IGIC on Canarias, IPSI on Ceuta/Melilla) are real-world fiscal data that changes over time. See [Open questions](#open-questions-non-blocking-for-schema-confirm-before-phase-3). The tests below deliberately assert **"the 5 rate-carrying active rows carry a non-null rate"**, not specific numbers, so a corrected rate never turns the suite red.
+> ⚠️ **The specific numeric `rate` values need fiscal sign-off before Phase 3.** The *structure* is what this story guarantees; the actual percentages (IVA general on Península/Baleares, IGIC on Canarias, IPSI on Ceuta/Melilla) are real-world fiscal data that changes over time. See [Dependencies, risks and open questions](#dependencies-risks-and-open-questions). The tests below deliberately assert **"the 5 rate-carrying active rows carry a non-null rate"**, not specific numbers, so a corrected rate never turns the suite red.
 
 ### `database/seeders/ProductionSeeder.php` — **create**
 

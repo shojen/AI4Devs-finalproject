@@ -7,7 +7,7 @@ other rows and then persists, rather than one a user supplies.
 > 🟢 **Status: both sections below are ✅ CLOSED as of 2026-09-04** (closed by the same day's
 > remediation and verified by this page's own author at the Phase 4 re-audit — the slot the ❌/✅
 > framing was written to leave open, per
-> [errors-log.md](../errors-log.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
+> [errors-log.md](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
 > audit-authored-page rule). Every ❌ block below is kept verbatim as the record of what shipped from
 > Phase 3 — each claim about it was **reproduced by execution** against this worktree's MySQL 8.4
 > instance, not reasoned about — and is now followed by the shipped ✅ rather than being deleted.
@@ -533,7 +533,7 @@ _Previously: 2026-09-04 (second re-audit, same day) — **this page's own remain
 the correction is the entry: the status banner and the
 [What the remediation introduced](#what-the-remediation-introduced-a-retried-transaction-is-a-retry-safe-unit-or-it-is-a-lost-update)
 section both still said ❌ OPEN after `UpdateProduct` had already dropped its `attempts: 3`, which is
-[the audit-authored-page failure mode](../errors-log.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)
+[the audit-authored-page failure mode](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)
 recurring on the page that cites it. Closed here with the ❌ text kept verbatim: **R-1** (closed by
 removal — no `attempts` on `UpdateProduct`'s transaction, none reintroduced by `Editor::save()`, both
 retained `attempts: 3` re-verified retry-safe, pinned by a source assertion that proves it can fail),

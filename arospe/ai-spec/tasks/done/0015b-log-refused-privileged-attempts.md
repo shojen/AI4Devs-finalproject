@@ -226,7 +226,7 @@ file if it does:**
 > Phase 3 must therefore decide explicitly whether `mount()` gets a refusal log at all, and any test
 > for it must be **proven able to fail** (temporarily remove the route gate and confirm the assertion
 > goes red) before it counts as coverage — this is exactly the trap
-> [`docs/errors-log.md`](../../../docs/errors-log.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)
+> [`docs/errors-log.md`](../../../docs/errors-log-archive.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)
 > records for the `verified` middleware. Defence in depth is still the right reason to keep the
 > check; it is not automatically a reason to log it.
 
@@ -406,7 +406,7 @@ documented exception) — but found three concrete, mechanical gaps:
       rate-limit refusal, assert the recorded context contains no password, no invitation token, no
       email-change hash and no session id. Assert on the **recorded context array**, not on a
       rendered string, so an added key cannot slip past a substring check — and per
-      [`docs/errors-log.md`](../../../docs/errors-log.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21),
+      [`docs/errors-log.md`](../../../docs/errors-log-archive.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21),
       prove the assertion can fail before trusting it.
 - [x] **Must-not-over-log — the success path is unchanged.** A permitted create, edit and delete on
       each screen still produce **exactly** their existing single `Log::info` success line and **no**
@@ -522,7 +522,7 @@ unmodified.
         of change was a *class* those screens share. `docs-keeper` judged the Phase 3 off-by-one loop
         bound **below the bar** (caught inside its own phase, absent from this file's record, no
         lasting convention), and 0015's finding **I-2** likewise — it is already covered by
-        [the deferred-findings entry](../../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
+        [the deferred-findings entry](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
         whose rule ("write a finding as the property that must hold, and re-verify it against `HEAD`")
         is exactly what this story's own enumeration tables did.
       - **Four files this DoD does not name were also corrected**, found by grepping rather than by the

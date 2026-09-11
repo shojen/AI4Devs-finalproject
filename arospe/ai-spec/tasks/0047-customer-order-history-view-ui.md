@@ -170,7 +170,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
   ([base-standards.md](../../docs/conventions/base-standards.md#uuid-primary-keys)).
 - ⚠️ **Do not plan a `verified`-middleware test.** `App\Models\User` does not implement `MustVerifyEmail`,
   so `verified` refuses nobody on any route in this app; a test asserting it carries no signal
-  ([errors-log.md](../../docs/errors-log.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)).
+  ([errors-log.md](../../docs/errors-log-archive.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)).
 
 ### Component — `app/Livewire/Customers/Show.php` (new)
 
@@ -792,7 +792,7 @@ page 0044's OQ-3 explicitly refused. **If 0045 is not `done` when Phase 3 starts
 - **R-3 — This document goes stale while it waits.** It is blocked behind a story that is itself blocked
   behind five, each of which may change during its own Phase 4/5 — precisely the *"a deferred finding is a
   claim about a tree, and the task file freezes while the tree does not"* failure recorded in
-  [errors-log.md](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+  [errors-log.md](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
   This file quotes 0045's `order_number`, `status`, `total` and `created_at` column shapes, its
   `OrderStatus` case set, and 0044's `data-test` conventions — **all read from task files that are
   themselves still `new`**. *Mitigation:* Phase 2's INVEST review must be **re-run** immediately before

@@ -1059,7 +1059,7 @@ gap or an overlap:
   at 20, `tax_rate` at `decimal(6,3)`, `products.type` as a `ProductType` enum) read from task files that
   are themselves still `new`. That is precisely the "a deferred finding is a claim about a tree, and the
   task file freezes while the tree does not" failure recorded in
-  [errors-log.md](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+  [errors-log.md](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
   *Mitigation:* **Phase 2's INVEST review must be re-run immediately before Phase 3**, and must
   re-verify every quoted shape against the shipped migrations. **This file's numbers are a reading aid,
   not a locator.**

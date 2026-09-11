@@ -473,7 +473,7 @@ emails start arriving in the recipient's language as soon as this ships.
 - [ ] All **three** quality gates run **unscoped** and each result recorded explicitly, including any
       not run: `php artisan test` (not `--filter`), `vendor/bin/pint --format agent` (not `--dirty`),
       and **Larastan level 7** (`vendor/bin/phpstan analyse`) — the one nothing else prompts you to
-      run ([errors-log.md](../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)).
+      run ([errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)).
 - [ ] Code reviewed (code-reviewer).
 - [ ] No security findings (appsec-auditor).
 - [ ] Documentation updated (docs-keeper): `docs/database/schema.md`'s `users` table gains the
@@ -581,7 +581,7 @@ would otherwise pass for the wrong reason:
   *user-settable preference* whose offered set a later story may legitimately change is a different
   risk class. The `from()`-not-`tryFrom()` fact was checked by execution against the installed
   framework rather than reasoned about, per this repo's rule that
-  [a hedge means nobody ran the code](../../docs/errors-log.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24).
+  [a hedge means nobody ran the code](../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24).
   **A reviewer must not add the cast "for consistency with `status`."**
 - **D-6 — No `UiLocale::default()`; the default is a *persisted, administrator-configurable* setting,
   read through one accessor.** The original form of this decision forbade a hardcoded enum-level
@@ -709,7 +709,7 @@ would otherwise pass for the wrong reason:
 ### Scope fences: what this story must NOT do
 
 Stated in terms of **classes**, not screens, per the
-[errors-log rule](../../docs/errors-log.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24)
+[errors-log rule](../../docs/errors-log-archive.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24)
 that a screen-shaped exclusion cannot bind shared code:
 
 - `App\Actions\Users\UpdateUser` and `App\Actions\Users\CreateUser` — must not read or write

@@ -505,7 +505,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
 - [ ] **All three quality gates run unscoped and each result recorded, including "not run"** —
       `php artisan test`, `vendor/bin/pint --format agent`, and `vendor/bin/phpstan analyse` (Larastan
       level 7). The third is the one nothing else prompts you to run; see
-      [errors-log.md](../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+      [errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
       **This story registers a model event, so its blast radius is the whole suite by construction** —
       the unscoped run is not optional here.
 - [ ] Code reviewed (code-reviewer).
@@ -614,7 +614,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
     invariant is expressed as "recompute when the source changes" rather than "recompute always".
   - **The blast radius is the whole suite.** A model event binds every `BlogTag` in every test, which
     is precisely the case
-    [errors-log.md](../../docs/errors-log.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)
+    [errors-log.md](../../docs/errors-log-archive.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)
     records — so the unscoped `php artisan test` run is mandatory, not advisory.
 
   **Recorded alternative, rejected:** each action computes and `forceFill`s it explicitly, matching
@@ -758,7 +758,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
 
   No `DB::transaction()` wrapper: the race is closed by the unique index plus the catch, and a
   transaction would neither prevent the collision nor change the resolution. Per
-  [errors-log.md](../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21),
+  [errors-log.md](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21),
   a transaction wrapper is a change to every side effect the wrapped code performs and is not added
   speculatively.
 
@@ -824,7 +824,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
   actions carries a rate limiter, and none is shared with an unprivileged caller. **Worth stating
   because it will be true in 0061 and false thereafter:** if a later story lets an *unauthenticated*
   or self-service path reach `FindOrCreateBlogTag`, step 3 becomes mandatory, for exactly the reason
-  [errors-log.md](../../docs/errors-log.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24)
+  [errors-log.md](../../docs/errors-log-archive.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24)
   records — an unbounded side effect on a shared class is a capability grant to its *least*-privileged
   caller.
 
@@ -849,7 +849,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
   couples a correctness rule to a column setting nothing in `app/` protects. **D-3** stands on its own
   four arguments, none of which is the engine split.
 
-  This is [the deferred-findings rule](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+  This is [the deferred-findings rule](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
   applied at Phase 1 rather than at Phase 2: a premise inherited from a sibling task file is a claim
   about a tree, and it was re-verified before being carried.
 
@@ -971,7 +971,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
      available, and confirm the result fits. **The exact expansion factor is deliberately NOT stated
      as fact anywhere in this file** — `vendor/` is absent from this worktree, so it could not be
      verified here, and this project's
-     [standing rule](../../docs/errors-log.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
+     [standing rule](../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
      is that an unverified mechanism written up confidently is worse than an open question written up
      plainly. Treat "`ß` → `ss`, therefore roughly 2×" as the *hypothesis to test*, not the answer.
   3. **If that measurement shows any in-policy input can still overflow, do not just grow the
@@ -1149,7 +1149,7 @@ would have copied it. It was re-checked against `HEAD` — `phpunit.xml`, `.env.
 [`ci-database-connection-gap.md`](ci-database-connection-gap.md). Recorded as **D-13** rather than
 silently dropped, because a later reader comparing the two task files will otherwise assume 0059
 simply forgot the risk. This is
-[the deferred-findings rule](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+[the deferred-findings rule](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
 applied one phase earlier than it was written for.
 
 Two decisions in this file are **new patterns rather than applications of an existing one**, and both
@@ -1161,6 +1161,6 @@ ability in `FindOrCreateBlogTag` (**D-11** / **OQ-3**).
 **Not yet run:** Phase 2 (`code-reviewer` INVEST validation). Beyond the four open questions, one item
 deserves an explicit look there rather than at implementation time: **D-4**'s model event gives this
 story whole-suite blast radius, which
-[errors-log.md](../../docs/errors-log.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)
+[errors-log.md](../../docs/errors-log-archive.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)
 records as the exact shape that slips past a `--filter`ed test run. The Definition of Done names all
 three quality gates unscoped for that reason.

@@ -46,7 +46,7 @@ refined.** Almost nothing here is new mechanism; what *is* new is named in
 > (**D-4** there) from this story's scope — and it creates a problem no sibling has: **a refusal about
 > a slug has no slug field to land on** (**D-2**, **Q-2**).
 >
-> Per this project's rule that [a second-hand claim is a flag that nobody checked](../../docs/errors-log.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24),
+> Per this project's rule that [a second-hand claim is a flag that nobody checked](../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24),
 > this is recorded as a correction with its evidence rather than silently worked around. **Both amigos
 > were asked to challenge it independently and both confirmed it against the files.**
 
@@ -62,7 +62,7 @@ refined.** Almost nothing here is new mechanism; what *is* new is named in
 > `vendor/` directory**, so nothing below was settled by executing Laravel, Livewire, Alpine or Flux
 > code. Stories 0020, 0021, 0058, 0059, 0060, 0061, 0062, 0063, 0068, 0070, 0071, 0074 and 0078 are
 > **all Phase 1 files**. **Phase 3 must re-verify every signature named here against `HEAD` before
-> writing a line** — the [deferred-findings failure mode](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
+> writing a line** — the [deferred-findings failure mode](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
 > at this epic's widest exposure yet: **thirteen unshipped stories** (**R-12**).
 
 ## Type
@@ -592,7 +592,7 @@ cause**. That is the same shape 0078 **D-6** records for the trashed-post reserv
       control that matters most on this screen.** 0061 **D-10** forbids title uniqueness (a series, a
       "Part 2"), unlike `name` on all three sibling entities — so an author mechanically following
       0071/0077's master pattern adds a uniqueness rule *for consistency* and nothing catches it. This
-      is the [`@js()`-cleanup-for-consistency failure mode](../../docs/errors-log.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
+      is the [`@js()`-cleanup-for-consistency failure mode](../../docs/errors-log-archive.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
       arriving in a validation rule. Both `frontend-qa` and the facilitator flagged it independently.
 - [ ] **The action accepts a blank body for any language, unconditionally, regardless of the post's
       `status`** — asserted against a **`Published`** post. *Risk if missing:* this is 0078's backlog
@@ -711,7 +711,7 @@ cause**. That is the same shape 0078 **D-6** records for the trashed-post reserv
       now mount *transitively*, one inside each editor (**D-4**).
 - [ ] The non-translatable controls — category, status, publication date, tag field — render **exactly
       once**. Three rules make this assertion real rather than vacuous: match on the `data-test` hook
-      **including the closing quote** (the [`<ui-checkbox` prefix trap](../../docs/errors-log.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21));
+      **including the closing quote** (the [`<ui-checkbox` prefix trap](../../docs/errors-log-archive.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21));
       use a **three-language** dataset, because at N=1 the assertion cannot fail and at N=2 an off-by-one
       is indistinguishable from a wrapper; and assert the translatable hooks against the **derived**
       language count, never a literal.
@@ -867,7 +867,7 @@ nowhere else in the application.
       tests, which are the only level that can observe three of this story's failure modes
 - [ ] `vendor/bin/pint --format agent` run **unscoped**, not `--dirty`
 - [ ] **Larastan level 7 run and recorded** — named explicitly because
-      [errors-log.md](../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
+      [errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
       records three consecutive stories whose verification notes listed two of three gates and were read
       as records of all three. **A record naming two gates is a record of two gates.**
 - [ ] **Compiled output of the tab strip and the N panels verified by rendering**, not by the absence of
@@ -984,7 +984,7 @@ exist for this.**
 > while ceasing to mean what it meant, because the mounts are now transitive. Three obligations follow:
 > the per-language `wire:key` must cascade correctly into each nested gallery (0021 **D5**'s uniqueness
 > machinery, at N instead of 1); a **bounded query-count test proven able to move** is needed, per the
-> [count-assertion rule](../../docs/errors-log.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21);
+> [count-assertion rule](../../docs/errors-log-archive.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21);
 > and page weight at N=3+ is a real Phase 3 verification item, not a theoretical one.
 > `frontend-expert`'s finding, and the sharpest thing in this story that is not about correctness.
 
@@ -1071,7 +1071,7 @@ are the family's, applied unchanged:
    on the sanitised value. Putting it here rather than only in the component is what closes 0078's
    **R-8** structurally rather than by remembering.
 4. **Error keys are derived internally** as `"titles.{$language->id}"` / `"bodies.{$language->id}"`,
-   never accepted as parameters — the [guard-took-the-state-it-guarded](../../docs/errors-log.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
+   never accepted as parameters — the [guard-took-the-state-it-guarded](../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
    shape.
 5. **It reuses `BlogPostValidationRules` and writes no local rule** — subject to **Q-1**.
 6. **Named parameters, never `array $fields`** (0077 **D-19**): an array is a pass-through surface the
@@ -1202,7 +1202,7 @@ plausible drift. Every sibling in this family has a unique `name`; this one does
 pattern — where per-language `name` uniqueness is *the* headline rule — will add title uniqueness for
 consistency, and nothing will catch it. `frontend-qa` names it as the negative control it would "bet
 real money" a first draft gets wrong, and the facilitator flagged it independently. It is the
-[cleanup-for-consistency failure mode](../../docs/errors-log.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
+[cleanup-for-consistency failure mode](../../docs/errors-log-archive.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
 arriving in a validation rule instead of a Blade attribute. **The uniqueness that *does* exist is on the
 derived `slug`, per `(store_language_id, slug)` — and it has no field (D-2).**
 
@@ -1227,7 +1227,7 @@ commit → (0061's post-commit notification dispatch, untouched).
   there deliberately. **An outer transaction moves that "after the commit" point**, so a notification
   0061 designed to fire only on a durable transition could fire inside an outer scope that later rolls
   back. This is precisely the
-  [transaction-wrapper rule](../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21) —
+  [transaction-wrapper rule](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21) —
   *wrapping existing code in a transaction is a change to every side effect that code already
   performed, and the diff will not show you the one that moved.* `frontend-expert`'s finding; **the
   sharpest new risk this story adds**, and it must be resolved by execution at Phase 3, not reasoned
@@ -1394,7 +1394,7 @@ a post's French title is neither identity-sensitive nor hard to reverse.
   `flux:table`, because `flux:tab` is a prefix of it. **The conclusion is correct** (there is genuinely
   no tabbed markup; `grep -rnE 'flux:tab[^l]|flux:tabs|role="tab"'` returns nothing), but the cited
   command could not have produced the cited result. This is the repo's own
-  [prefix-trap failure mode](../../docs/errors-log.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21)
+  [prefix-trap failure mode](../../docs/errors-log-archive.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21)
   appearing inside a *verification claim in a story file* rather than in a test — the same trap as
   `<ui-checkbox` matching `<ui-checkbox-group` and `assertSee('0%')` matching `10%`. Nothing here
   depends on it; recorded because this project's stale-claim rule is that a false premise reaches a

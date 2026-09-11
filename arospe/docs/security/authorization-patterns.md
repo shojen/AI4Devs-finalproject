@@ -140,7 +140,7 @@ Three real call sites hold this shape today: [`database/seeders/RolePermissionSe
 > being added, removed or reordered — the diff contained no flush at all, so a review looking for one
 > found nothing to check. **Adding a `DB::transaction()` around existing code relocates every side
 > effect that code already performed**, so treat it as a change to each of them. See
-> [errors-log.md](../errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
+> [errors-log.md](../errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
 
 **Testing caveat.** `phpunit.xml` sets `CACHE_STORE=array`, so the permission cache is per-process in
 tests. No test in this suite can reproduce the cross-worker window above — it must be prevented by
@@ -971,7 +971,7 @@ controls, and must interpret the submitted input **exactly** as the write that f
 > *test* rather than a rewrite of the component — read it as "the shape the guard test exists to
 > protect", not as an outstanding hole. This section was written as a ❌/✅ pair with an explicit status
 > banner precisely so this update was a one-line status flip rather than a re-framing, per
-> [the audit-authored-page rule](../errors-log.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20).
+> [the audit-authored-page rule](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20).
 
 Story 0013 introduced this repo's first **declarative permission registry** — `config/modules.php`,
 read by `resources/views/components/sidebar-nav.blade.php` — and the registry is designed to be
@@ -1192,7 +1192,7 @@ a live render, not reasoned from the package's docs.
   HTML while `data-test="sidebar-group-settings"` appears 1× (the group's `$attributes` land only on
   the `<ui-disclosure>` wrapper, not on the collapsed-sidebar `<flux:dropdown>` duplicate). Confirmed by
   counting the real render. Presence/absence assertions are unaffected; a **count** assertion would be
-  off by a constant and read as correct — see [errors-log.md](../errors-log.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21).
+  off by a constant and read as correct — see [errors-log.md](../errors-log-archive.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21).
 
 ## Confirmed safe: a `can:`-gated route's 403 names no permission — and `APP_DEBUG` is not what makes that true
 
@@ -1297,7 +1297,7 @@ _Previously: 2026-08-22 — Task 0013, Phase 6 docs sync (sidebar module gating 
 
 _Previously: 2026-08-21 — Task 0013, Phase 4 audit (sidebar module gating — UI): added two sections for this repo's first **declarative permission registry** (`config/modules.php`), whose whole design is that every later epic appends entries to it. **A registry that means "ungated" by absence fails open, silently** is an open finding written as a ❌/✅ pair — `empty($item['permissions'])` cannot distinguish "declared ungated" from "the author forgot the key", verified by execution across three silent fail-open shapes and two fail-closed ones, plus the recommendation that a registry entry's permissions be pinned to its route's real `can:` middleware by a test rather than by a comment. **Confirmed safe: a sidebar built on `Gate::any()`** records the six things a later epic should not re-derive — why `Gate::any()` traverses the identical mechanism as `can:` middleware, why the two `Gate::before` callbacks compose in either order, why `hasAnyPermission()` would have been the exact inverse of the requirement, why an unseeded ability and a guest both deny rather than throw, that the rendered markup is escaped in every position including the `data-test` array keys, and that `flux:sidebar.group` renders its slot twice when `expandable` and `icon` are combined._
 
-_Previously: 2026-08-21 — Task 0012, Phase 6 docs sync: **Flush the permission cache after the transaction commits** gained the three real call sites that now hold its shape (`RolePermissionSeeder`, plus `saveRole()` / `deleteRole()` since this story's Phase 4 fix), and a ⚠️ recording why this rule was violated in the first place — the flush at issue was the **vendor's**, fired from inside `syncPermissions()` and `Role`'s `deleted` event, so task 0010's `DB::transaction()` wrapper moved it pre-commit with no flush line appearing anywhere in that diff. Generalised as: wrapping existing code in a transaction is a change to every side effect that code already performed. The [confirmed-safe 403 section](#confirmed-safe-a-can-gated-routes-403-names-no-permission--and-app_debug-is-not-what-makes-that-true) below was re-verified against the shipped `ModuleRouteAccessTest.php` in this pass — its code quotes, the `assertSee`/`assertDontSee` pairing and both named reopening conditions still match the real files, so it needed no correction (the [audit-authored-page rule](../errors-log.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20) says to check, not to assume)._
+_Previously: 2026-08-21 — Task 0012, Phase 6 docs sync: **Flush the permission cache after the transaction commits** gained the three real call sites that now hold its shape (`RolePermissionSeeder`, plus `saveRole()` / `deleteRole()` since this story's Phase 4 fix), and a ⚠️ recording why this rule was violated in the first place — the flush at issue was the **vendor's**, fired from inside `syncPermissions()` and `Role`'s `deleted` event, so task 0010's `DB::transaction()` wrapper moved it pre-commit with no flush line appearing anywhere in that diff. Generalised as: wrapping existing code in a transaction is a change to every side effect that code already performed. The [confirmed-safe 403 section](#confirmed-safe-a-can-gated-routes-403-names-no-permission--and-app_debug-is-not-what-makes-that-true) below was re-verified against the shipped `ModuleRouteAccessTest.php` in this pass — its code quotes, the `assertSee`/`assertDontSee` pairing and both named reopening conditions still match the real files, so it needed no correction (the [audit-authored-page rule](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20) says to check, not to assume)._
 
 _Previously: 2026-08-21 — Task 0012 (module/sidebar access gating — backend), Phase 4 audit: added
 "Confirmed safe: a `can:`-gated route's 403 names no permission — and `APP_DEBUG` is not what makes that

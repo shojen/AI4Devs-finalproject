@@ -447,7 +447,7 @@ Feature: The blog posts screen is permission-gated
 > 0020, 0021, 0022, 0058, 0059 or 0061 exists in this tree — `app/Models/` holds only `Role.php`,
 > `SalesRegion.php`, `User.php`, and `app/Livewire/` holds only `Actions/`, `Roles/`, `SalesRegions/`,
 > `Settings/`, `Users/`. Per this project's
-> [deferred-findings rule](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
+> [deferred-findings rule](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
 > **every citation below must be re-verified against `HEAD` before Phase 3**, and each disposition
 > recorded — including "already closed". Five to seven stories land between this debate and that
 > point.
@@ -898,7 +898,7 @@ Nothing about the data model changes: this story adds no table, column, migratio
 - [ ] All **three** quality gates run **unscoped** and each result recorded explicitly, including any
       not run: `php artisan test` (not `--filter`), `vendor/bin/pint --format agent` (not `--dirty`),
       and **Larastan level 7**. A record naming two of three is a record of two gates — see
-      [errors-log.md](../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+      [errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
 - [ ] **Every citation in [Interface contract consumed](#interface-contract-consumed) re-verified
       against `HEAD` before Phase 3, with each disposition recorded** — including "already closed".
       **V-1**: none of the six dependency stories exists in code today.
@@ -950,7 +950,7 @@ Nothing about the data model changes: this story adds no table, column, migratio
 >       against `HEAD`; 0072, 0074, 0078 and 0079 have since amended what those citations describe, so
 >       the check is against the **post-retrofit** shape and each disposition — including "already
 >       closed" — is recorded. This is the
->       [deferred-findings rule](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+>       [deferred-findings rule](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
 >       at this file's widest exposure: **ten** unshipped stories now stand between this debate and
 >       Phase 3.
 >
@@ -1388,7 +1388,7 @@ is name-based and case/accent-insensitive.
 - **The chip list is never filtered, paginated or truncated.** This is not cosmetic: 0061's **D-17** ⚠️
   says the full-replace `sync()` is safe *only* while the field shows every tag the post holds — the
   moment one is hidden, an omission stops being the editor's decision and becomes a silent revoke,
-  which is [the exact trap this repo has already hit twice](../../docs/errors-log.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20).
+  which is [the exact trap this repo has already hit twice](../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20).
   **This constraint must be repeated in the component's own docblock**, where the next author reads.
 - **Suggestions exclude names already on the post**, compared case-insensitively, matching 0022's D11
   rule and 0059's own folding semantics.
@@ -1897,7 +1897,7 @@ action an editor can take to resolve it.
 
 Executed read-only against this worktree during the debate. **`vendor/` is absent (V-6)**, so nothing
 requiring PHP execution was verified and every such claim is flagged at its site, per this project's
-[hedge rule](../../docs/errors-log.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24).
+[hedge rule](../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24).
 
 - **V-1 — Not one dependency exists in code.** `app/Models/` holds `Role.php`, `SalesRegion.php`,
   `User.php`. `app/Livewire/` holds `Actions/`, `Roles/`, `SalesRegions/`, `Settings/`, `Users/`.

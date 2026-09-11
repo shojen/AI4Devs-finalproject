@@ -742,7 +742,7 @@ closure and now.
   emit that attribute. Rescoped to `'<ui-checkbox '` after tracing the real rendered markup — **with
   the trailing space**, because `flux:checkbox.group` emits its own `<ui-checkbox-group>` wrapper whose
   tag shares the child's prefix and silently inflated both counts by exactly one. Recorded as a durable
-  lesson in [`docs/errors-log.md`](../../../docs/errors-log.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21),
+  lesson in [`docs/errors-log.md`](../../../docs/errors-log-archive.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21),
   since the failure mode is specific to counting: an over-count by a *constant* reads as the true number.
 - **F-5 — an error assertion that read the bag instead of the render.** The invalid-name dataset test
   asserted only `assertHasErrors(['name'])`, which would keep passing if the render outlet itself

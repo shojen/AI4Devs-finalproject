@@ -329,7 +329,7 @@ App\Concerns\BlogTagValidationRules::nameFormatRules(): array       // format ON
 >
 > **What this does *not* change.** `CreateBlogTag`, `RenameBlogTag` and `DeleteBlogTag` keep their signatures byte-for-byte (0074 **D-7**, **D-15**); `CreateBlogTag` gains an internal `DB::transaction()` and `RenameBlogTag` does not (0074 **D-5**), neither of which is visible to this caller. `BlogPolicy`'s four abilities and their constants are untouched. The *meaning* of both write actions narrows to **"the default store language's name"** — which is the whole reason 0075 has to add a third action for the other languages.
 >
-> **F-1 still binds, and now doubly.** This contract was already a claim about one unimplemented task file; it is now a claim about **two** (0059 and 0074). Re-verify every line against `HEAD` before Phase 3 and record each disposition, per [the deferred-findings rule](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23). 0074's own **R-2** (whether `SetTranslation` can write `store_language_id` at all, given `#[Fillable]`) is unresolved and is 0070's to settle.
+> **F-1 still binds, and now doubly.** This contract was already a claim about one unimplemented task file; it is now a claim about **two** (0059 and 0074). Re-verify every line against `HEAD` before Phase 3 and record each disposition, per [the deferred-findings rule](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23). 0074's own **R-2** (whether `SetTranslation` can write `store_language_id` at all, given `#[Fillable]`) is unresolved and is 0070's to settle.
 
 **Three obligations this story inherits verbatim from 0059's Definition of Done**, all
 non-negotiable:
@@ -515,7 +515,7 @@ The hook names carry the **full** domain (`blog-tag`, not `tag`) — see **V-2**
 Both `wire:click` arguments — `openEditModal(@js($tag['id']))` and
 `confirmDelete(@js($tag['id']))` — are **single-argument** `@js()` calls, the shape
 `roles.blade.php` already ships and the shape
-[errors-log.md's dated correction](../../docs/errors-log.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
+[errors-log.md's dated correction](../../docs/errors-log-archive.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
 confirms compiles correctly inside a `flux:` component tag. **This screen has no multi-argument
 `wire:click` anywhere** — no `setActive(id, bool, replacement)`-shaped signature exists — so the trap
 that killed every row toggle on the Sales Regions screen does not recur here structurally. Record
@@ -854,7 +854,7 @@ product taxonomy.
 - [ ] **All three quality gates run unscoped and each result recorded, including "not run"** —
       `php artisan test`, `vendor/bin/pint --format agent`, and `vendor/bin/phpstan analyse`
       (Larastan level 7). The third is the one nothing else prompts you to run; see
-      [errors-log.md](../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+      [errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
 - [ ] **Story 0059 is closed, with its two *blocking* whitespace tests intact** — a hard prerequisite,
       not a courtesy. See **R-3**: this story's own case/accent canaries cannot prove
       `NormalizeForSearch` is in the call path, and that proof lives entirely in 0059's suite.
@@ -1103,7 +1103,7 @@ product taxonomy.
   and `app/Policies/BlogTagPolicy.php` do not exist, and `0059-blog-tags-backend.md` is still in
   `ai-spec/tasks/` (Phase 1), not `in-progress/` or `done/`. This mirrors [0025's own
   **F-2**](done/0025-product-categories-ui.md#findings) exactly. Recorded as a dependency, **not** a blocker
-  to Phase 1 — but per [the deferred-findings rule](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
+  to Phase 1 — but per [the deferred-findings rule](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
   every statement in the **Interface contract** and **D-1** must be **re-verified against `HEAD`
   before this story enters Phase 3**, with each disposition recorded.
 - **F-2 — `frontend-qa` cited `tests/Feature/ProductCategories/IndexTest.php` and
@@ -1214,7 +1214,7 @@ product taxonomy.
   through its row-scoped hook.
 - **R-5 — The `@js()` / component-tag-attribute compilation trap.** This screen's row actions each
   carry exactly **one** `@js()` argument, the shape `roles.blade.php` ships and the
-  [dated correction](../../docs/errors-log.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
+  [dated correction](../../docs/errors-log-archive.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
   confirms is safe inside a `flux:` tag — so the failure that made every Sales Regions row toggle a
   silent no-op does not recur structurally. The underlying rule still binds: any `wire:click` argument
   carrying a UUID goes through `@js(...)`, verified by reading the **compiled** HTML rather than by the
@@ -1306,7 +1306,7 @@ moment 0059's code exists. Each carries a recommendation, per
   > `withCount('posts')` here** — state the intent explicitly (`->withTrashed()` to include,
   > `->whereNull('deleted_at')`/the default to exclude), and pin it with a test that creates a tag with
   > one live and one trashed post and asserts the literal number. Per
-  > [the hedge rule](../../docs/errors-log.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24),
+  > [the hedge rule](../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24),
   > resolve which default actually applies by **running it** (one `tinker` call against `Role` +
   > a trashed holder settles it for both), and record the result in whichever story adds the count —
   > correcting 0061's **D-7c** if it turns out to be inverted. For an editor-facing count, excluding
@@ -1372,7 +1372,7 @@ in this repo. Neither amigo cited that; it came from reading the real directory 
 expert's, and is the most important: 0059 does not exist in code, so this story's entire interface
 contract — **D-1** above all — is a claim about a task file rather than about a tree, and must be
 re-verified against `HEAD` before Phase 3 under
-[the deferred-findings rule](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+[the deferred-findings rule](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
 **F-2** and **F-3** are the facilitator's, and both are instances of the same failure mode caught early:
 QA cited two `ProductCategories` test files as shape precedents when neither exists (story 0025 is
 unimplemented), and

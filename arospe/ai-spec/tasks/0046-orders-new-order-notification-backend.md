@@ -277,7 +277,7 @@ Three constraints on **where** that call goes, all load-bearing:
    inside a `DB::afterCommit` registration), so a rollback cannot leave a notification announcing an
    order that does not exist. **0045's own task file already flags this forward-looking**, under its
    action's step 4, citing
-   [the `DB::transaction()` entry in errors-log.md](../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21):
+   [the `DB::transaction()` entry in errors-log.md](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21):
    *wrapping existing code in a transaction is a change to every side effect that code already
    performed*. Read forward here rather than in hindsight.
 2. **After `order_number` is finalized — i.e. after the retry loop, not before it.** 0045 **D-1** makes
@@ -384,7 +384,7 @@ and no more.
 - [ ] Tests written and green, plus the **full** existing suite run **unscoped** (`php artisan test`, not `--filter`), per [contracts.md](../../docs/contracts.md)'s Full Test Suite Gate Rule and [base-standards.md](../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
 - [ ] `vendor/bin/pint --format agent` clean (unscoped, **not** `--dirty`) and Larastan level 7 passing.
 - [ ] Code reviewed (code-reviewer).
-- [ ] No security findings (appsec-auditor) — specifically: that the recipient query cannot be widened by caller-supplied input; that the payload leaks no customer or order field beyond `order_id` / `order_number` / `customer_name` (no email, no address, no total); that a dispatch cannot be triggered by an actor who failed the `orders.create` gate; and that adding this side effect to `CreateOrder` grants no capability to a less-privileged caller — the shared-code lesson from [errors-log.md](../../docs/errors-log.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24). **`CreateOrder`'s caller list must be re-grepped at Phase 3** (`grep -rn "CreateOrder" app/`), not assumed to be one screen.
+- [ ] No security findings (appsec-auditor) — specifically: that the recipient query cannot be widened by caller-supplied input; that the payload leaks no customer or order field beyond `order_id` / `order_number` / `customer_name` (no email, no address, no total); that a dispatch cannot be triggered by an actor who failed the `orders.create` gate; and that adding this side effect to `CreateOrder` grants no capability to a less-privileged caller — the shared-code lesson from [errors-log.md](../../docs/errors-log-archive.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24). **`CreateOrder`'s caller list must be re-grepped at Phase 3** (`grep -rn "CreateOrder" app/`), not assumed to be one screen.
 - [ ] Documentation updated (docs-keeper) — [conventions/base-standards.md](../../docs/conventions/directory-structure.md#directory-structure) (`app/Notifications/` gains a fourth class; `app/Actions/Orders/` gains a second). **No schema or migration doc change**: this story adds no column, table or migration, and [database/schema.md](../../docs/database/schema.md)'s `notifications` section is story 0043's to write.
 - [ ] **The Definition of Done explicitly does NOT include a notification-viewer UI**, for this story or for the Epic 3 batch as currently decomposed. See 0043's OQ-3.
 - [ ] Acceptance criteria met.
@@ -431,7 +431,7 @@ are not cosmetic — sequence both into Phase 3 ahead of this story.
   than treated as passed on first reading, and **`Customer`'s display-name attribute must be
   re-verified against the shipped model** — this file assumes `$order->customer->name`, read from
   0043's own usage, and 0041's task file is itself still `new`. A name is a reading aid, not a locator
-  ([errors-log.md](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
+  ([errors-log.md](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
 
 ### Open questions
 
@@ -443,7 +443,7 @@ status here:
 | Inherited from 0043 | Status for this story |
 | --- | --- |
 | **OQ-1** — should a `suspended`/`inactive` administrator receive notifications? | **Inherited unchanged; same default: notify them (no status filter).** A notification is a record, not access, and `users.status` is enforced at sign-in ([architecture/authentication.md](../../docs/architecture/authentication.md)). If the human overrides it for 0043, this story changes identically — one `->where('status', …)` clause in each action, and the two must not diverge |
-| **OQ-2** — should the administrator who created the record be notified of their own action? | **Inherited unchanged; same default: no self-exclusion.** It keeps the recipient rule a single query with no actor parameter, and avoids reintroducing the caller-supplied-state shape [errors-log.md](../../docs/errors-log.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20) warns about. An order created by a future storefront or import has no acting administrator at all, so a self-exclusion branch would be dead code on that path — **an argument that is actually stronger here than it was for customers** |
+| **OQ-2** — should the administrator who created the record be notified of their own action? | **Inherited unchanged; same default: no self-exclusion.** It keeps the recipient rule a single query with no actor parameter, and avoids reintroducing the caller-supplied-state shape [errors-log.md](../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20) warns about. An order created by a future storefront or import has no acting administrator at all, so a self-exclusion branch would be dead code on that path — **an argument that is actually stronger here than it was for customers** |
 | **OQ-3** — the missing notification-viewer UI | **Tracked once, at 0043. Deliberately not reopened here.** It is one cross-cutting gap covering all four event producers, not one gap per producer; re-raising it per story is how a single decision becomes four unresolved questions. This story is not blocked by it |
 
 **The one real open item this story carried is resolved below as D-5**, not left open: whether

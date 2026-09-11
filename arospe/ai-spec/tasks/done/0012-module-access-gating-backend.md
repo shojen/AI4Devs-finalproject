@@ -336,7 +336,7 @@ this file.
 commented out at the top of `app/Models/User.php`), so `EnsureEmailIsVerified` refuses nobody on any
 route in this app — `verified` is a structural no-op here, not a control this story can prove "still
 runs". This is exactly the case
-[`docs/errors-log.md`](../../../docs/errors-log.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)
+[`docs/errors-log.md`](../../../docs/errors-log-archive.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)
 already names forward: *"any future story that copies an `auth` + `verified` group into a new area
 file … must not plan a `verified` test either."* Dropped rather than kept as dead coverage.
 
@@ -662,7 +662,7 @@ surface.
 
 **Verified, not assumed — and one thing changed as a result.** `docs/security/authorization-patterns.md`
 and `docs/security/README.md` were written by this story's own Phase 4, so per this repo's own
-[audit-authored-page rule](../../../docs/errors-log.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)
+[audit-authored-page rule](../../../docs/errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)
 they were re-checked rather than trusted: the confirmed-safe 403 section's two named reopening
 conditions were re-verified against the real tree (`resources/views/errors/` does not exist; `grep -rn
 "Response::deny\|->deny(" app/` returns nothing), as was `shouldRenderJsonWhen`'s quote in

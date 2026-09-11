@@ -317,10 +317,10 @@ are not deleted — they are inverted or narrowed**, so the coverage survives th
 otherwise open, both were written specifically to fail if someone implemented this feature early, and
 a `--filter`ed run over this story's own new test file would report green while both are red — the
 scoped-gate failure recorded in
-[errors-log.md](../../docs/errors-log.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20).
+[errors-log.md](../../docs/errors-log-archive.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20).
 The Definition of Done therefore requires the **unscoped** run, and Phase 3 must **re-grep** for both
 assertions rather than trusting this table's description of them — 0051's file is itself a claim about
-a tree that does not exist yet ([errors-log.md](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
+a tree that does not exist yet ([errors-log.md](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
 
 ### Explicitly **not** touched by this story
 
@@ -592,7 +592,7 @@ rediscovery.
     adding a second caller inherits the obligation to gate that caller** — this is precisely the
     *"adding an unbounded side effect to shared code is a capability grant to its least-privileged
     caller"* rule from
-    [errors-log.md](../../docs/errors-log.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24),
+    [errors-log.md](../../docs/errors-log-archive.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24),
     read forwards instead of backwards.
   - **The exemption is written down in the class's own docblock**, not only here, so a reader who
     never opens this file can still tell "exempt" from "forgotten". This mirrors 0015a's precedent
@@ -634,14 +634,14 @@ rediscovery.
   event would be the state as `RecordRefund` last saw it, and the listener's whole job is to act on
   the state **as it is now, under a lock**. Passing the object would make the stale copy reachable —
   and a listener that reads `$event->order->status` looks correct, passes every single-threaded test,
-  and is wrong under concurrency. This is the [errors-log](../../docs/errors-log.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
+  and is wrong under concurrency. This is the [errors-log](../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
   rule — *a guard must derive the state it guards, never accept it* — applied to a listener's input.
   Passing the id makes the re-fetch structurally unavoidable rather than a discipline. It also keeps
   the event trivially serialisable if a later story ever does queue it (**D-3** notwithstanding),
   with no `SerializesModels` re-fetch semantics to reason about.
 - **D-5 — The dispatch happens after the transaction commits, never inside it.** This is the
   decision `backend-expert` argued from this repo's own
-  [errors-log entry](../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
+  [errors-log entry](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
   on transaction-relocated side effects, and 0051's own action spec states the same constraint
   forward-looking: *"when story 0052 adds an auto-cancel side effect … it must fire after the commit,
   or a rolled-back refund cancels an order that was never refunded."* A synchronous listener firing
@@ -784,7 +784,7 @@ documents agree without either having been written to match the other.
   inspect the dispatcher's registered listeners; (b) **D-7**'s idempotency guard makes a double fire
   harmless in effect, which is why this is a risk rather than a blocker; (c) the `updated_at`
   assertion in the idempotency test is what would catch a double *write* if the guard were ever
-  removed. This is the [errors-log](../../docs/errors-log.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
+  removed. This is the [errors-log](../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
   rule applied preemptively: a hedge is a flag that nobody ran the code.
 - **R-3 — A later story "unifying" the manual and automatic cancel paths would silently reopen the
   guard.** The obvious refactor — one `CancelOrder` with a `$systemTriggered` flag — looks like
@@ -807,7 +807,7 @@ documents agree without either having been written to match the other.
   signature and return shape, `OrderStatus`'s cases and backing values, `CancelOrder`'s actual guard
   (which this story does not depend on but does test against), the `AppServiceProvider` registration
   form, and 0051's two falsified test names. **Every name in this file is a reading aid, not a
-  locator** ([errors-log.md](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
+  locator** ([errors-log.md](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
 
 ### Resolved questions
 

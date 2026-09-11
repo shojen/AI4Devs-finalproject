@@ -254,7 +254,7 @@ anyway.
 🔴 **Only the generator's own signature — the other three variant actions' confirmed signatures are
 0031's own [D-13a](../done/0031-product-variants-editor-ui.md#d-13a--the-confirmed-action-surface-this-component-calls-single-variant-actions),
 not repeated here.**
-[0029 **D-17.1**](../done/0029-product-variants-backend.md#d-171--the-action-signatures--three-since-the-generators-moved-to-0029b)
+[0029 **D-17.1**](../done/0029-product-variants-backend.md#d-17-1)
 closes 0031's OQ-3(c) for all four actions; this section carries only the fourth:
 
 ```php

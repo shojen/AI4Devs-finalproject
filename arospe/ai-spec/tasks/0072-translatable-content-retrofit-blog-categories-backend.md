@@ -44,7 +44,7 @@ the one place the recipe does not fit as written — see the box below.
 > **Stories 0058 (`blog_categories`), 0068 (`store_languages`) and 0070 (the mechanism) are all Phase 1
 > files, not shipped code.** Everything below is designed against their *specified* shape. Phase 3
 > must re-verify every signature named here against `HEAD` before writing a line of code — the
-> [deferred-findings failure mode](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+> [deferred-findings failure mode](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
 > this project already records once, and which applies **twice over** here (**R-12**).
 
 ## Type
@@ -479,7 +479,7 @@ Feature and Unit only. **No browser tests** — this story ships no screen.
       each, in the default store language, with `name` **byte-identical** to the original — asserted
       **per row, never as a count**. *Why:* a count assertion passes even if every row got the wrong
       name or all rows collapsed to one value — the
-      [count-assertion failure mode](../../docs/errors-log.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21)
+      [count-assertion failure mode](../../docs/errors-log-archive.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21)
       this project records.
 - [ ] Feature: the backfilled `normalized_name` equals a **fresh** `NormalizeForSearch` call on the
       name — not merely equal to the parent's old column value (**D-5**).
@@ -607,7 +607,7 @@ too, and 0070's drift guard covers a second registered entry with no change to t
       construction
 - [ ] `vendor/bin/pint --format agent` run **unscoped**, not `--dirty`
 - [ ] **Larastan level 7 run and recorded** — named explicitly because
-      [errors-log.md](../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
+      [errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
       records three consecutive stories whose verification notes listed two of three gates and were read
       as records of all three. A record naming two gates is a record of two gates.
 - [ ] Code reviewed (code-reviewer)
@@ -830,7 +830,7 @@ is one no post uses, and its translations are exactly the data that has just bec
   *moves* that column and so doubles the surface. **Whatever widths 0058's Phase 2 settles must be applied
   identically to `blog_category_translations`.** The expansion factor **could not be verified here**: this
   worktree has no `vendor/`, and per
-  [this project's hedge rule](../../docs/errors-log.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
+  [this project's hedge rule](../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
   an unverified mechanism must not be written up as fact. What *is* verified is that `composer.lock` pins
   `voku/portable-ascii` 2.1.1 as the real library behind `Str::ascii()`, so the hazard is concrete rather
   than hypothetical. The command that settles it, at Phase 2/3:

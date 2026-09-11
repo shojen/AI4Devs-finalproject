@@ -368,7 +368,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
   story adds none and reseeds nothing.
 - ⚠️ **Do not plan a `verified`-middleware test.** `App\Models\User` does not implement `MustVerifyEmail`,
   so `verified` refuses nobody on any route in this app; a test asserting it carries no signal
-  ([errors-log.md](../../docs/errors-log.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)).
+  ([errors-log.md](../../docs/errors-log-archive.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)).
 
 ### Component — `app/Livewire/Orders/Index.php` (**new**)
 
@@ -527,10 +527,10 @@ Markup rules inherited rather than invented:
 2. **An explicit `<flux:tooltip>` wrapper on the disabled branch, never a conditionally-bound `:tooltip`
    prop** — under `livewire/blaze` a Flux prop that decides whether a wrapper renders counts as *present*
    whenever the attribute is written on the tag at all
-   ([errors-log.md](../../docs/errors-log.md#a-conditionally-bound-fluxbutton-tooltip-prop-rendered-an-empty-tooltip-on-every-enabled-row)).
+   ([errors-log-archive.md](../../docs/errors-log-archive.md#a-conditionally-bound-fluxbutton-tooltip-prop-rendered-an-empty-tooltip-on-every-enabled-row--2026-08-16)).
 3. **`cursor-not-allowed!` on that wrapper, not on the button** — Flux's own
    `disabled:pointer-events-none` takes a disabled button out of hit-testing
-   ([errors-log.md](../../docs/errors-log.md#disabledcursor-not-allowed-on-a-flux-button-was-never-the-cursor-the-user-saw)).
+   ([errors-log-archive.md](../../docs/errors-log-archive.md#disabledcursor-not-allowed-on-a-flux-button-was-never-the-cursor-the-user-saw--2026-08-16)).
    Do not "simplify" either back into the obvious form.
 4. **Every `wire:model`-bound property has a real non-`null` value in the type the DOM expects** — the
    status select binds a `string` backing value and never a nullable enum
@@ -1511,7 +1511,7 @@ hard dependency of this story, the ordering constraint costs nothing — it only
   its constant, four exception class names, five lang key groups, `orders.refund`'s existence, and the
   `flag_reason` column. That is precisely the *"a deferred finding is a claim about a tree, and the task
   file freezes while the tree does not"* failure recorded in
-  [errors-log.md](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+  [errors-log.md](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
   *Mitigation:* **Phase 2's INVEST review must be re-run immediately before Phase 3**, and must
   re-verify every quoted name against the **shipped code** rather than against a sibling task file —
   including whether 0050's **D-6** was overridden into a dedicated `orders.cancel` permission (its own

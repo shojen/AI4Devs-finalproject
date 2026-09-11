@@ -339,7 +339,7 @@ Consequences, all of which are this story's job to carry:
   389, 487, 575) and `tests/Feature/Seeders/DatabaseSeederTest.php` (lines ~44, 94, 129). **Those
   line numbers are a reading aid, not a locator** — re-grep for `38` / `37` before editing, per the
   deferred-findings rule in
-  [errors-log.md](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+  [errors-log.md](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
   This alone is why the story's Definition of Done requires the **unscoped** suite run: a
   `--filter`ed run over `tests/Feature/Orders/` would report green while fourteen other tests are
   red ([base-standards.md](../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done)).
@@ -394,7 +394,7 @@ is a rule this repo already paid for:
 - More importantly, "how many units of this line have already come back" is *the state the guard
   exists to protect*, and a guard must **derive** that state rather than accept it or look it up
   loosely — the rule from
-  [errors-log.md](../../docs/errors-log.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20).
+  [errors-log.md](../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20).
   So both guards run inside `RecordRefund`, against the order's **own freshly-read, row-locked**
   `items` collection, and raise `ValidationException::withMessages(['items' => …])` on failure.
 
@@ -466,7 +466,7 @@ Performing, **in this order**:
 
 > **Phase 3 must re-read the transaction-side-effect rule before writing step 3.** Wrapping work in
 > a `DB::transaction()` relocates every side effect the wrapped code already performed — the mistake
-> in [errors-log.md](../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
+> in [errors-log.md](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
 > Here the forward constraint is specific: **when story 0052 adds an auto-cancel side effect, or a
 > refund notification is ever added, it must fire *after* the commit**, or a rolled-back refund
 > cancels an order that was never refunded.
@@ -955,7 +955,7 @@ a rediscovery.
   blocked behind five Epic 2 stories, every one of which may change during its own Phase 4/5 — the
   "a deferred finding is a claim about a tree, and the task file freezes while the tree does not"
   failure recorded in
-  [errors-log.md](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+  [errors-log.md](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
   *Mitigation:* Phase 2's INVEST review must be **re-run** immediately before Phase 3, and it must
   re-verify against the shipped code: `order_items.refunded_quantity`'s existence and type,
   `unit_price`'s precision, `PaymentStatus`'s four cases and their backing values, the trait's real

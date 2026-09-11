@@ -285,7 +285,7 @@ Feature: Sidebar module visibility
   `<ui-disclosure>` wrapper). Presence/absence assertions (`assertSee`, `assertDontSee`,
   `Selector::getByTestId()`-style single-match helpers) are unaffected; a **count**-based assertion
   would silently be off by a constant and read as correct — the exact failure mode
-  [`docs/errors-log.md`](../../../docs/errors-log.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21)
+  [`docs/errors-log.md`](../../../docs/errors-log-archive.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21)
   already records. Do not write a count-based test against this component without first confirming
   the real occurrence count from rendered HTML.
 

@@ -278,7 +278,7 @@ app structure, **D-22**)
 - [ ] ⚠️ **Do NOT write a `verified`-refusal test.** `App\Models\User` does not implement
       `MustVerifyEmail`, so `verified` refuses **nobody** on any route in this app — a test asserting
       it cannot go red however it is written. This is a recorded, previously-paid-for lesson
-      ([errors-log.md](../../docs/errors-log.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)).
+      ([errors-log.md](../../docs/errors-log-archive.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)).
 
 **Feature — `tests/Feature/Localization/LanguageSwitcherTest.php`** (new; the shared behaviour, tested
 once)
@@ -360,7 +360,7 @@ that and does not claim to.
 - [ ] All **three** quality gates run **unscoped** and each result recorded explicitly, including any
       not run: `php artisan test` (not `--filter`), `vendor/bin/pint --format agent` (not `--dirty`),
       and **Larastan level 7** (`vendor/bin/phpstan analyse`)
-      ([errors-log.md](../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)).
+      ([errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)).
 - [ ] All **three** prove-it-can-fail steps performed and their red result recorded.
 - [ ] Code reviewed (code-reviewer).
 - [ ] No security findings (appsec-auditor).
@@ -494,7 +494,7 @@ timing.
   ⚠️ **Explicitly hedged; Phase 3 must settle it by execution:** `frontend-expert` could not verify
   whether `$this->redirect($url)` defaults to a hard browser redirect or a soft `wire:navigate` morph,
   because `vendor/` is absent (**R-7**), and said so rather than asserting. Per
-  [the hedge rule](../../docs/errors-log.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24),
+  [the hedge rule](../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24),
   **do not build a fix around either answer** — run the browser test and assert the sidebar re-renders.
 - **D-6 — `SetUserUiLocale` is method-injected into `setLocale()`.** The
   [constructor-injection exception](../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)
@@ -652,7 +652,7 @@ timing.
 ### Scope fences: what this story must NOT do
 
 Stated in terms of **classes**, per the
-[errors-log rule](../../docs/errors-log.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24)
+[errors-log rule](../../docs/errors-log-archive.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24)
 that a screen-shaped exclusion cannot bind shared code:
 
 - `App\Http\Middleware\SetUiLocale` — **untouched**. Already global via 0066's `bootstrap/app.php`
@@ -700,7 +700,7 @@ that a screen-shaped exclusion cannot bind shared code:
   applying**: the conditionally-bound `tooltip` prop and the `disabled:cursor-*` /
   `pointer-events-none` interaction both require a disabled branch, and neither control has one.
   `@js()` **is** safe in a `flux:` tag's attribute — the
-  [corrected errors-log entry](../../docs/errors-log.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
+  [corrected errors-log entry](../../docs/errors-log-archive.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
   establishes by execution that only an anonymous `<x-…>` tag fails to compile it.
 - **R-5 — OPEN, for Phase 2: who owns extracting the hardcoded English chrome?** The PRD's Layer 1
   `Then` clause is only partially satisfiable, and neither 0066 nor 0067 satisfies it. This story makes

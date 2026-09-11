@@ -186,5 +186,5 @@ _Last updated: 2026-09-02 — Story 0024a (Product description — HTML sanitiza
 version of this page, written after Phase 4's audit and re-audit closed both findings it documents
 (F-1, the `block`-vs-`drop` distinction; F-2, the idempotence-to-convergence correction), so both are
 recorded here as ❌/✅ pairs describing the shipped, closed state from the outset rather than the
-vulnerable state the audit found — per [errors-log.md](../errors-log.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
+vulnerable state the audit found — per [errors-log.md](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
 rule for an audit-authored page._

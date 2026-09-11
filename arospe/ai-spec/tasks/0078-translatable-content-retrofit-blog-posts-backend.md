@@ -42,7 +42,7 @@ used **unmodified**.
 > **Stories 0061, 0068 and 0070 are all Phase 1 files, not shipped code.** Everything below is designed
 > against their *specified* shape. **Phase 3 must re-verify every signature named here against `HEAD`
 > before writing a line of code** — the
-> [deferred-findings failure mode](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
+> [deferred-findings failure mode](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
 > which applies **three times over** here (**R-12**).
 
 ## Type
@@ -531,7 +531,7 @@ Feature and Unit only. **No browser tests** — this story ships no screen.
       post, and `translated()` never throws, so nothing detects it until someone restores one.
 - [ ] N arranged posts each get **exactly one** translation row, in the default store language, with
       `title`, `body` and `slug` **byte-identical** to the originals — asserted **per row, never as a
-      count** (the [count-assertion failure mode](../../docs/errors-log.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21)).
+      count** (the [count-assertion failure mode](../../docs/errors-log-archive.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21)).
 - [ ] A **null** body survives as null, and a title at the length boundary survives unchanged.
 - [ ] The backfill with **no default store language** throws and writes nothing.
 - [ ] **One reassuring assertion, not a suite:** N pre-existing, already-globally-unique posts backfill
@@ -643,7 +643,7 @@ covers a fourth registered entry with no change to the guard.
       construction.
 - [ ] `vendor/bin/pint --format agent` run **unscoped**, not `--dirty`
 - [ ] **Larastan level 7 run and recorded** — named explicitly because
-      [errors-log.md](../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
+      [errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
       records three consecutive stories whose verification notes listed two of three gates and were read
       as records of all three. **A record naming two gates is a record of two gates.**
 - [ ] Index reality verified with `php artisan db:table blog_post_translations` after migrating — not by
@@ -864,7 +864,7 @@ before the call is re-read too — which is the correct direction and incidental
 stale-relation hazard on this one path. And the transaction that **D-15** already established simply
 widens to cover the translation write, so unlike 0074's **D-5** this story does not have to *add* one —
 but the errors-log's
-[transaction-wrapper rule](../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
+[transaction-wrapper rule](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
 still binds: widening what sits inside a transaction is a change to every side effect inside it, and the
 notification dispatch must stay **outside**.
 

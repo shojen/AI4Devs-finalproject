@@ -628,7 +628,7 @@ consumes these arrives in a later UI story, and the products that reference a ca
   `.github/workflows/tests.yml` line 42 sets a job-level `DB_CONNECTION: mysql` against a
   `mysql` service container. **One engine, everywhere: MySQL, `utf8mb4_unicode_ci`** (per
   `config/database.php`). This story was debated on 2026-08-17/18 and the environment has changed
-  under it since; that is the [deferred-findings failure mode](../../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+  under it since; that is the [deferred-findings failure mode](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
   this project already records — a claim about a tree, outliving the tree.
   **The real risk, which survives the correction and still justifies two layers.**
   `utf8mb4_unicode_ci` is case- **and** accent-insensitive, so the `UNIQUE(name)` index really does
@@ -786,7 +786,7 @@ in this file that reasoned from a CI/local split was reasoning from something th
 
 **Why it happened, and why it is not a normal staleness.** This story was debated on 2026-08-17/18,
 and the claim may well have held then; the environment has been changed by other work since. That is
-precisely the [deferred-story failure mode](../../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+precisely the [deferred-story failure mode](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
 this project already records — *a finding is a claim about a tree, and the task file freezes while
 the tree does not* — with the aggravating detail that the claim was written up as
 **verified against three named files**, which is the hedge shape
@@ -839,7 +839,7 @@ files plus the extended `tests/Unit/ArchitectureTest.php`. Re-run at closure:
   holds (the index alone can only refuse with a raw `23000`, never a field-level
   `ValidationException`), and the case/accent tests were kept with their assertions sharpened from
   "holds on both engines" to the **exception class**. This is the
-  [deferred-story failure mode](../../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+  [deferred-story failure mode](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
   caught by the phase designed to catch it.
 - **Phase 3 (TDD): green.** Migration, model, factory, validation trait, three actions, policy, plus
   40 new tests.

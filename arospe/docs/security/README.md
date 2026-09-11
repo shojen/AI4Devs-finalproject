@@ -197,7 +197,7 @@ repo must follow — always with a real code example pulled from this repository
   `Gate` target still being the caller's instance (**R-3**, no rule reads it yet), an authorization-ordering
   fix that deliberately did *not* touch an already-reviewed-and-accepted two-transaction shape (**R-4** — the
   re-audit's broader suggestion was declined in writing rather than silently reversing a Phase 1 decision),
-  and three test-hygiene fixes (**R-5**). **A Phase 5 code review then corrected two claims on the page itself** — an unusually fast recurrence of [the audit-authored-page failure mode](../errors-log.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20), where the stale sentence was *one day old* rather than one story old: its status blockquote said **neither** finding was reachable through the shipped dashboard, which is true of F-2 (the component re-fetches every row with `findOrFail()` before each call, so it never hands an action a dirtied instance) and **false of F-1** — that `findOrFail()` runs *outside* the action's transaction, so a second administrator's already-committed write landing in that window reproduces the exact stale read, which is the "two administrators clicking within the same second" row the page's own exploit table already described two paragraphs below. And the lock-ordering bullet repeated R-1a's over-claim one layer up: `SetSalesRegionActive`'s promotion path still acquires two lock sets in sequence (its own ordered query, then the nested action's separate one), so what closes that residual window is the **outer** transaction's `attempts: 3` retry, not the ordering — a nested SAVEPOINT-level call cannot retry itself, since Laravel only retries at `transactions === 1`.
+  and three test-hygiene fixes (**R-5**). **A Phase 5 code review then corrected two claims on the page itself** — an unusually fast recurrence of [the audit-authored-page failure mode](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20), where the stale sentence was *one day old* rather than one story old: its status blockquote said **neither** finding was reachable through the shipped dashboard, which is true of F-2 (the component re-fetches every row with `findOrFail()` before each call, so it never hands an action a dirtied instance) and **false of F-1** — that `findOrFail()` runs *outside* the action's transaction, so a second administrator's already-committed write landing in that window reproduces the exact stale read, which is the "two administrators clicking within the same second" row the page's own exploit table already described two paragraphs below. And the lock-ordering bullet repeated R-1a's over-claim one layer up: `SetSalesRegionActive`'s promotion path still acquires two lock sets in sequence (its own ordered query, then the nested action's separate one), so what closes that residual window is the **outer** transaction's `attempts: 3` retry, not the ordering — a nested SAVEPOINT-level call cannot retry itself, since Laravel only retries at `transactions === 1`.
 - [Step-up authentication](step-up-authentication.md) — the rules governing the app's **third**
   authorization layer, added by task 0015a: a password-confirmation freshness guard that answers
   "is the person at the keyboard still the account holder", which route middleware and policies both
@@ -433,7 +433,7 @@ repo must follow — always with a real code example pulled from this repository
 _Last updated: 2026-09-10 — Story 0036 (Shipping rate rules — backend), **Phase 4 re-audit, round 2**:
 [livewire-error-bag-persistence.md](livewire-error-bag-persistence.md)'s own ❌ (Failure mode 2,
 `Zones::confirmDelete()` missing a reset) closed within the same audit pass that raised it, per
-[errors-log.md](../errors-log.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
+[errors-log.md](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
 rule for audit-authored pages — corrected in place rather than left open once the fix landed.
 
 _Previously: 2026-09-04 — Story 0029 (Product variants — core backend), **Phase 4 re-audit**: no new
@@ -481,7 +481,7 @@ project's own standing rule — found that the fix does not close what its docbl
 `ValidationException`, never a crash) and 254 is genuinely the catalog's hard ceiling (249 +
 `SPAIN_TERRITORIES`' 5, with no create path), but it does not prevent the per-element
 `Rule::exists()` queries from running first. Written as a ❌/✅ pair with the ❌ marked **open**, per
-[errors-log.md](../errors-log.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
+[errors-log.md](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
 audit-authored-page rule. No other page on this index changed — story 0026's other four fixes
 (F-1's non-disclosure docblock, F-4's direct pivot query, F-5's deterministic tiebreak, F-6's scan
 ceiling) were each re-verified closed by execution and produced no new durable rule, so they live in
@@ -492,12 +492,12 @@ _Previously: 2026-09-02 — Story 0024a (Product description — HTML sanitizati
 untrusted-HTML-storage rather than authorization or file decoding. Written as ❌/✅ pairs describing
 the shipped, closed state from the outset (both Phase 4 findings — F-1's `block`-vs-`drop`
 distinction, F-2's idempotence-to-convergence correction — were already closed by the time this page
-was written), per [errors-log.md](../errors-log.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
+was written), per [errors-log.md](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
 rule. No other page on this index changed — this story's other findings (F-3/F-4, both scheme/host
 restrictions left at an informational, accepted default) are recorded on the new page itself rather
 than duplicated here._
 
-_Previously: 2026-08-27 — Story 0019 (Media Library upload and conversions — backend), **Phase 4 re-audit**: added [image-upload-processing.md](image-upload-processing.md), the eleventh page, from the verification of findings F-1 (decompression bomb via unbounded Imagick decode), F-2 (the action not validating its own input, and trusting `putFile()`'s inferred extension), F-3 (unchecked `Storage::put()` return) and F-5 (Livewire's temporary-upload endpoint carrying no `mimes` restriction and a looser size ceiling). Every number on that page was measured against the shipped code in this worktree rather than carried over from the first audit's notes, and the reproduction fixtures were removed afterwards. Written as ❌/✅ pairs describing the **shipped** state from the outset, per [errors-log.md](../errors-log.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s rule for an audit-authored page — the failure mode that page's own footer records as having recurred with a one-day fuse._
+_Previously: 2026-08-27 — Story 0019 (Media Library upload and conversions — backend), **Phase 4 re-audit**: added [image-upload-processing.md](image-upload-processing.md), the eleventh page, from the verification of findings F-1 (decompression bomb via unbounded Imagick decode), F-2 (the action not validating its own input, and trusting `putFile()`'s inferred extension), F-3 (unchecked `Storage::put()` return) and F-5 (Livewire's temporary-upload endpoint carrying no `mimes` restriction and a looser size ceiling). Every number on that page was measured against the shipped code in this worktree rather than carried over from the first audit's notes, and the reproduction fixtures were removed afterwards. Written as ❌/✅ pairs describing the **shipped** state from the outset, per [errors-log.md](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s rule for an audit-authored page — the failure mode that page's own footer records as having recurred with a one-day fuse._
 
 _Previously: 2026-08-26 — Task 0017 (Sales Region tax configuration — backend), **Phase 6 docs sync**: no new page and no new rule — [model-instance-trust.md](model-instance-trust.md) was re-verified against `HEAD` rather than rewritten (every ❌/✅ code block still matches the shipped actions, the `whereKeyNot()` → `$rows->reject(...)` supersession is recorded on the page and confirmed in the code, and nothing in this app reads `SetSalesRegionActive`'s return value, exactly as the R-2 section says). What this pass corrected is **this index entry**, which stopped at Phase 4 round 2 while the page itself gained two Phase 5 code-review corrections the next day: the status blockquote's "neither finding was dashboard-reachable" claim, which is true only of F-2, and the lock-ordering bullet's over-claim, where the residual window inside `SetSalesRegionActive`'s promotion path is closed by the **outer** transaction's `attempts: 3` rather than by ordering. Both are now summarised above. Recorded as a distinct data point rather than folded away: this is the audit-authored-page failure mode recurring with a **one-day** fuse instead of a one-story one, caught by the review that immediately followed — which is the prescribed fix working, not a new lesson (see [errors-log.md](../errors-log.md))._
 
@@ -519,7 +519,7 @@ _Previously: 2026-08-25 — Task 0017, Phase 4 audit and same-day fix: added
 share one root cause and one remedy, which is what earns them a page rather than a per-review note: a
 caller-supplied Eloquent instance is untrusted on **both** sides — its attributes are not a safe input to a
 guard, and its dirty set is not a safe payload for a write. Written as ❌/✅ pairs from the start per the
-[audit-authored-page rule](../errors-log.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)
+[audit-authored-page rule](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)
 and updated to **closed** once the fix landed the same day, so neither block was left describing a tree that
 no longer existed. This is also the first page here about a **domain invariant** rather than an authorization
 rule — the authorization coverage of this story (three actions, five component methods, the policy, the
@@ -531,7 +531,7 @@ _Previously: 2026-08-24 — Task 0015a, Phase 5 code review finding F-3: [step-u
 was authored during the *first* Phase 4 audit (Phase 3's shipped code, role/status/delete only) and
 never revisited once the human-approved widening (F1/F2/F3/F4, decisions D6/D7/D8) and its own re-audit
 landed — the exact staleness
-[errors-log.md](../errors-log.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)
+[errors-log.md](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)
 already names. This entry is rewritten around that page's now-closed ⚠️ items rather than describing
 them as open._
 

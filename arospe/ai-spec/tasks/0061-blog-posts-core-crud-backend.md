@@ -964,7 +964,7 @@ is 0065's.
       `--dirty`), and **Larastan level 7** (`vendor/bin/phpstan analyse`). The third is the one
       nothing else prompts you to run, and a record naming only two of the three is a record of two
       gates — see
-      [errors-log.md](../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+      [errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
       **This story registers a model event, so its blast radius is the whole suite by construction**;
       the unscoped run is not optional.
 - [ ] Index reality verified with `php artisan db:table blog_posts` **and**
@@ -1696,7 +1696,7 @@ a single `DB::transaction()`. Without it, a refusal during tag resolution (the `
 **D-13**) leaves a post whose title, body and category committed while its tags did not — a worse
 state than an outright failure, and one no error message describes.
 
-⚠️ **Read [errors-log.md's transaction-wrapper entry](../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
+⚠️ **Read [errors-log.md's transaction-wrapper entry](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
 before writing this.** Wrapping code in a transaction is a change to **every** side effect that code
 already performs, including ones the diff does not show. Two land inside this boundary and must be
 examined deliberately rather than discovered: `FindOrCreateBlogTag`'s own insert — which 0059's
@@ -1816,7 +1816,7 @@ deleted — it is a taxonomy entity the post does not own, and removing it from 
 screen, not a side effect of a post save.
 
 **Why the full-replace-`sync()` trap this repo has hit twice does not bite here — stated rather than
-assumed.** [errors-log.md](../../docs/errors-log.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
+assumed.** [errors-log.md](../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
 records the rule that *absence in a payload from a partially-visible form is not a decision* — the
 roles screen's permission matrix, where an actor who cannot see `roles.manage-administrators` would
 silently revoke it by omission. The distinguishing property is **visibility**: a post editor's tag
@@ -2004,7 +2004,7 @@ if ($blogPost->status === BlogPostStatus::Published) {
 - **After the commit, never inside the transaction** (**D-15**). A notification sent from inside
   `DB::transaction()` still goes out when the transaction later rolls back — the tag-sync refusal in
   **D-15** is a live rollback path on both actions — and an unsendable notification cannot be
-  recalled. This is [the errors-log's transaction-wrapper rule](../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
+  recalled. This is [the errors-log's transaction-wrapper rule](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
   applied deliberately at the point of writing rather than discovered by a later audit, and it is the
   same *after the commit* placement `security/authorization-patterns.md` requires of the permission
   cache flush.
@@ -2159,7 +2159,7 @@ Executed or read against this worktree during the debate.
 - **V-8 — `vendor/` is absent from this worktree**, so nothing requiring PHP execution was verified:
   the `mediumText` sizing arithmetic in **D-4**, `Str::slug()`'s exact output, and the `EXPLAIN` plans
   in **D-11** are all reasoned rather than measured, and are flagged as such at each site per this
-  project's [hedge rule](../../docs/errors-log.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24).
+  project's [hedge rule](../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24).
 - **V-9 — `tests/Unit/Concerns/` does not exist yet.** 0058 creates it. This story's
   `BlogPostValidationRulesTest.php` lands in a folder its sibling introduces.
 

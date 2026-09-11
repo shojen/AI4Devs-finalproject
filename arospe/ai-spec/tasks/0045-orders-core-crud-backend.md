@@ -469,7 +469,7 @@ Invokable, imperative-verb-phrase class with no `Action` suffix, resolved from t
 
 > **Phase 3 must re-read the transaction-side-effect rule before writing step 4.** Wrapping work in a
 > `DB::transaction()` relocates every side effect the wrapped code already performed — the mistake
-> recorded in [errors-log.md](../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
+> recorded in [errors-log.md](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
 > Here the constraint is forward-looking and specific: **story 0046's "new order received"
 > notification must be dispatched *after* the commit, never inside it**, or a rolled-back order mails
 > a customer about an order that does not exist.
@@ -750,7 +750,7 @@ in progress; of everything this story references, only `sales_regions` (task 001
    share option (b)'s exact failure signature: the cleanup is invisible.** The redundant
    `users_uuid_unique` index survived a five-migration conversion because "the migration diff will not
    show you an index that nobody removed". The
-   [`DB::transaction()` wrapper](../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
+   [`DB::transaction()` wrapper](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
    relocated a permission-cache flush that appeared nowhere in the diff. Option (b) creates four
    obligations of the same shape, spread across five *other* stories, each of which must remember to
    add an `ALTER` migration for a table it does not own. That is not a forward dependency; it is four
@@ -1019,7 +1019,7 @@ epic can be implemented until `orders` and `order_items` exist:
   `shipping_rates.price` at `decimal(10,2)` — read from those stories' own task files, which are
   themselves still `new`. *Mitigation:* **Phase 3 must re-verify every one of those five shapes against
   the shipped migrations before writing this story's, exactly as the deferred-findings rule requires**
-  ([errors-log.md](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
+  ([errors-log.md](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
   This file's numbers are a reading aid, not a locator.
 - **R-5 — This document goes stale while it waits.** It is blocked on five stories, each of which may
   itself change during its own Phase 4/5. That is precisely the "a deferred finding is a claim about a

@@ -47,7 +47,7 @@ story by number.
 > directory**, so nothing below was settled by executing Laravel, Livewire, Alpine or Flux code.
 > Stories 0058, 0061, 0062, 0068, 0070, 0071 and 0072 are all Phase 1 files. **Phase 3 must
 > re-verify every signature named here against `HEAD` before writing a line** — the
-> [deferred-findings failure mode](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
+> [deferred-findings failure mode](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
 > at this story's widest exposure yet (**R-3**).
 
 ## Type
@@ -396,7 +396,7 @@ rather than ported from 0071**:
   passing the category's own id compiles, runs and matches nothing.
 - **The error key is derived internally as `"names.{$language->id}"`**, never accepted as a
   parameter (0071 **D-13**). A caller-supplied key is the shape this project's errors log records as
-  [a guard taking the state it guards as a parameter](../../docs/errors-log.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20).
+  [a guard taking the state it guards as a parameter](../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20).
 - **Then calls `SetTranslation`**, whose `updateOrCreate()` on the `(category, language)` natural key
   makes re-translating replace rather than duplicate, and whose write fires 0072's
   `normalized_name` derivation hook on `BlogCategoryTranslation`.
@@ -699,7 +699,7 @@ first.
 - [ ] Tests written and green (**full suite unscoped**, not `--filter`)
 - [ ] `vendor/bin/pint --format agent` run **unscoped**, not `--dirty`
 - [ ] **Larastan level 7 run and recorded** — named explicitly because
-      [errors-log.md](../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
+      [errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
       records three consecutive stories whose verification notes listed two of three gates and were
       read as records of all three
 - [ ] Code reviewed (code-reviewer) — ⚠️ **the two authorization/validation layers (D-8) are

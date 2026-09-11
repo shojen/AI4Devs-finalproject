@@ -677,7 +677,7 @@ the enabled and the disabled branch so a test selects the same control either wa
 >   `translated('name')`, rendering an **em dash** when it resolves to `null`.
 > - **`@js()` stays correct for both `wire:click` arguments below**, and the paragraph that follows is
 >   unaffected. 0073's tab controls use `{{ \Illuminate\Support\Js::from(…) }}` inside the strip, which
->   is the same rule read off [the errors-log's dated correction](../../docs/errors-log.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26) —
+>   is the same rule read off [the errors-log's dated correction](../../docs/errors-log-archive.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26) —
 >   prefer a `{{ }}` echo in a component-tag attribute, and verify the **compiled output** rather than
 >   the absence of an error.
 >
@@ -688,7 +688,7 @@ the enabled and the disabled branch so a test selects the same control either wa
 Both `wire:click` arguments — `openEditModal(@js($category['id']))` and
 `confirmDelete(@js($category['id']))` — are **single-argument** `@js()` calls, the shape
 `roles.blade.php` already ships and the shape
-[errors-log.md's dated correction](../../docs/errors-log.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
+[errors-log.md's dated correction](../../docs/errors-log-archive.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
 confirms compiles correctly inside a `flux:` component tag. **This screen has no multi-argument
 `wire:click` anywhere** — `deleteCategory` takes its target from `$blogCategoryId`, not from an
 argument — so the trap that killed every row toggle on the Sales Regions screen does not recur here
@@ -1045,7 +1045,7 @@ links to, or shares anything with the product taxonomy.
 - [ ] **All three quality gates run unscoped and each result recorded, including any "not run"** —
       `php artisan test` (not `--filter`), `vendor/bin/pint --format agent` (not `--dirty`), and
       **Larastan level 7**, which story 0017 omitted from three consecutive verification records
-      ([errors-log.md](../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)).
+      ([errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)).
 - [ ] Code reviewed (code-reviewer).
 - [ ] No security findings (appsec-auditor). Point the audit specifically at: the `#[Locked]` +
       server-read id pair behind `Rule::unique()->ignore()`; that every mutating **and disclosing**
@@ -1240,7 +1240,7 @@ links to, or shares anything with the product taxonomy.
   `BlogCategories/`, no `routes/blog-*.php`, no `lang/*/blog*.php`, and `config/modules.php` holds
   only `platform` / `settings` / `taxes` with no `blog` group. 0058, 0059, 0060 and 0061 are all still
   in `ai-spec/tasks/` (Phase 1). Per
-  [the deferred-findings rule](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
+  [the deferred-findings rule](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
   **every statement in the Interface contract and in D-1 must be re-verified against `HEAD` before
   this story enters Phase 3, with each disposition recorded.**
 - **F-3 — 0061's D-7c states the `withCount()` soft-delete default in the direction opposite to this
@@ -1252,7 +1252,7 @@ links to, or shares anything with the product taxonomy.
   `Model::newQuery()` applying the `SoftDeletingScope` would predict. 0060's **OQ-4** reached the same
   conclusion independently and `frontend-qa` reached it a third time here. **Not verified by execution:
   `vendor/` is absent from this worktree**, and per
-  [the hedge rule](../../docs/errors-log.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
+  [the hedge rule](../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
   an unverified mechanism must not be written up as fact.
   **The consequence for this story is nil, deliberately:** **D-5** requires the scope to be stated
   explicitly in both directions, so the shipped code is correct whichever way the default falls. What
@@ -1508,7 +1508,7 @@ And **F-3**, the sharpest: **0061's D-7c states the `withCount()` soft-delete de
 opposite to this repo's own shipped `Roles\Index`**, which has to opt *in* to trashed rows explicitly.
 Three independent readings (0060's OQ-4, `frontend-qa`'s, and the facilitator's grep) agree it is
 inverted, and none could verify by execution because `vendor/` is absent from this worktree — so per
-[the hedge rule](../../docs/errors-log.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
+[the hedge rule](../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
 it is recorded as an open question with a fix that is correct either way (**D-5**: state the scope
 explicitly), and settling it is named in the Definition of Done.
 
