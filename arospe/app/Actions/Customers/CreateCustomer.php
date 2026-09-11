@@ -6,8 +6,10 @@ use App\Actions\Auth\LogRefusedPrivilegedAttempt;
 use App\Concerns\CustomerValidationRules;
 use App\Models\Customer;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class CreateCustomer
 {
@@ -18,9 +20,12 @@ class CreateCustomer
      * domain argument is this action's whole public signature, called that
      * way by every direct-call test -- see
      * docs/conventions/code-style.md's constructor-injection exception.
+     * NotifyCustomerCreated (story 0043) is injected the same way for the
+     * identical reason.
      */
     public function __construct(
         private readonly LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt,
+        private readonly NotifyCustomerCreated $notifyCustomerCreated,
     ) {}
 
     /**
@@ -45,7 +50,7 @@ class CreateCustomer
         $validated = Validator::make($attributes, $this->customerRules())->validate();
 
         try {
-            return Customer::create($validated);
+            $customer = Customer::create($validated);
         } catch (QueryException $e) {
             if ($e->getCode() === '23000') {
                 // The unique index is the last-word RACE guard behind the
@@ -59,5 +64,31 @@ class CreateCustomer
 
             throw $e;
         }
+
+        // Dispatched only after Customer::create() has committed (there is
+        // no surrounding DB::transaction() here, so "after the insert
+        // succeeds" already satisfies the after-commit constraint -- see
+        // errors-log.md's "wrapping existing code in a DB::transaction()"
+        // entry) and only on this success path: a rejected/invalid
+        // creation never reaches this line (story 0043).
+        //
+        // Swallowed rather than rethrown (Phase 4 security-audit finding
+        // F-1): a notification-dispatch failure -- e.g. a transient DB
+        // error inserting one of N recipient rows -- must not turn an
+        // already-persisted, already-committed customer into a failed
+        // request. This notification has no reader anywhere in the app yet
+        // (R-3/OQ-3), so failing the visible operation for it would be
+        // strictly worse than losing the notification; logged so the
+        // failure is not silent.
+        try {
+            ($this->notifyCustomerCreated)($customer);
+        } catch (Throwable $e) {
+            Log::warning('CustomerCreated notification dispatch failed', [
+                'customer_id' => $customer->id,
+                'exception' => $e::class,
+            ]);
+        }
+
+        return $customer;
     }
 }

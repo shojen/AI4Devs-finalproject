@@ -10,12 +10,12 @@ in PRD [§ Cross-cutting: global search & notifications](../../docs/PRD/PRD.md#c
 
 This story owns the `BlogPostPublished` notification, the recipient-resolution rule, **one listener**
 and **one dispatch site inside a file it does not own**. It adds **no migration** (the `notifications`
-table is story [0043](0043-customers-new-customer-notification-backend.md)'s), **no permission** (the
+table is story [0043](done/0043-customers-new-customer-notification-backend.md)'s), **no permission** (the
 `blog.*` tier is already seeded), **no policy**, **no route** and **no UI**.
 
 > ### This story has **three** triggers, and that is what makes it different from its two siblings
 >
-> Stories [0043](0043-customers-new-customer-notification-backend.md) and
+> Stories [0043](done/0043-customers-new-customer-notification-backend.md) and
 > [0046](0046-orders-new-order-notification-backend.md) each announce a **row creation** reached from
 > exactly one call site. This one announces a **publication** reached from **three independent
 > paths** — two of them state transitions and one a creation:
@@ -78,7 +78,7 @@ table is story [0043](0043-customers-new-customer-notification-backend.md)'s), *
 > ### ⛔ BLOCKED — read this before Phase 3
 >
 > Fully specified now, but Phase 3 cannot start until **all** of the following are `done`:
-> [0043](0043-customers-new-customer-notification-backend.md) (owns the `notifications` table),
+> [0043](done/0043-customers-new-customer-notification-backend.md) (owns the `notifications` table),
 > [0061](0061-blog-posts-core-crud-backend.md) (owns `BlogPost`, `BlogPostStatus`, `UpdateBlogPost`,
 > `RestoreBlogPost`) and [0064](0064-scheduled-post-auto-publish-backend.md) (owns
 > `ScheduledBlogPostPublished` and the sweep that dispatches it). 0061 and 0064 transitively require
@@ -522,7 +522,7 @@ has no transition; the submitted status *is* the whole condition, which is what 
 - `App\Models\BlogPost`, `App\Enums\BlogPostStatus`, `App\Actions\Blog\RestoreBlogPost` — story
   [0061](0061-blog-posts-core-crud-backend.md).
 - The `notifications` table and its `uuidMorphs('notifiable')` correction — story
-  [0043](0043-customers-new-customer-notification-backend.md).
+  [0043](done/0043-customers-new-customer-notification-backend.md).
 - `App\Models\User`'s `Notifiable` + `SoftDeletes` — Epic 1, verified at `HEAD` (**V-3**).
 
 ### Explicitly NOT in this story
@@ -1402,7 +1402,7 @@ none.
 
 | Depends on | State | Why |
 | --- | --- | --- |
-| [0043](0043-customers-new-customer-notification-backend.md) — new-customer notification | **hard, `new`** | Owns the `notifications` table and its `uuidMorphs('notifiable')` correction. This story adds **no** migration and cannot run one Feature test without it |
+| [0043](done/0043-customers-new-customer-notification-backend.md) — new-customer notification | **hard, `new`** | Owns the `notifications` table and its `uuidMorphs('notifiable')` correction. This story adds **no** migration and cannot run one Feature test without it |
 | [0061](0061-blog-posts-core-crud-backend.md) — blog posts core CRUD | **hard, `new`** | Owns `BlogPost`, `BlogPostStatus`, `BlogPostFactory`, `RestoreBlogPost`, and — since **OQ-1** was confirmed — **both manual dispatch sites**, `UpdateBlogPost` and `CreateBlogPost` (its revised **D-19**, **V-9**). The coupling is now one-way: 0061 calls this story's action, and this story edits nothing of 0061's |
 | [0064](0064-scheduled-post-auto-publish-backend.md) — scheduled auto-publish | **hard, `new`** | Owns `App\Events\Blog\ScheduledBlogPostPublished` and the only automatic transition. **D-9** resolves its **OQ-2** |
 | [0078](0078-translatable-content-retrofit-blog-posts-backend.md) — translatable-content retrofit (Epic 5) | **hard once it lands, `new`** *(added 2026-08-30)* | Removes `blog_posts.title` and supplies `BlogPost::translated()`, which **D-4a**'s payload calls. Ordering is one-directional but **either order works**: if 0078 ships first this story is written against `translated()` from the outset; if this story ships first, 0078's retrofit changes one line here and the amendments above describe the end state. What must **not** happen is this story implementing `$post->title` after 0078 has landed — the property would be undefined and the payload would silently store `null` on a `?string` type. Transitively brings [0068](0068-store-languages-catalog-backend.md) (`StoreLanguage`) and [0070](0070-translatable-content-mechanism-product-categories-backend.md) (`HasTranslations`) |
@@ -1641,7 +1641,7 @@ Recorded so they are not re-opened. Each was a real question at the start.
   2026-08-27 with `backend-expert` and `backend-qa` convened as subagents, composed by `product-owner`
   as facilitator. **No `database-expert`** — see the Type section.
 - **Sibling stories this one copies the shape of:**
-  [0043](0043-customers-new-customer-notification-backend.md) (the template and the `notifications`
+  [0043](done/0043-customers-new-customer-notification-backend.md) (the template and the `notifications`
   table's origin) and [0046](0046-orders-new-order-notification-backend.md) (the second producer, which
   copied 0043 without a shared base class). This is the **third**, and 0046's **D-6** named it by
   number as the point at which the abstraction question must be re-asked — it is asked and answered in

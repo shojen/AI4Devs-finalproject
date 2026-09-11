@@ -1,31 +1,13 @@
 {
-  "generated_at": "2026-09-10T00:00:00Z",
+  "generated_at": "2026-09-11T00:00:00Z",
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
-    {
-      "id": "0043",
-      "slug": "0043-customers-new-customer-notification-backend",
-      "title": "Customers — \"new customer\" notification (backend)",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "database/migrations/*_create_notifications_table.php",
-        "app/Notifications/CustomerCreated.php",
-        "app/Actions/Customers/NotifyCustomerCreated.php",
-        "app/Actions/Customers/CreateCustomer.php"
-      ],
-      "conflict_risk_with": []
-    },
     {
       "id": "0044",
       "slug": "0044-customers-list-create-edit-ui",
       "title": "Customers — list + create/edit UI",
-      "depends_on": [
-        "0043"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -65,8 +47,7 @@
       "slug": "0046-orders-new-order-notification-backend",
       "title": "Orders — \"new order\" notification (backend)",
       "depends_on": [
-        "0045",
-        "0043"
+        "0045"
       ],
       "status": "blocked",
       "claimed_by": null,
@@ -295,10 +276,8 @@
       "id": "0056",
       "slug": "0056-notification-viewing-backend",
       "title": "Notification viewing — unread count, recent list, mark-as-read (backend)",
-      "depends_on": [
-        "0043"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -498,7 +477,6 @@
       "slug": "0065-blog-post-published-notification-backend",
       "title": "Blog post published — notification (backend)",
       "depends_on": [
-        "0043",
         "0061",
         "0064"
       ],

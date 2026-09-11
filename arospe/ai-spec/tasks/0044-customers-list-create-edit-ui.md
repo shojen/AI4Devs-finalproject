@@ -840,7 +840,7 @@ is higher for exactly that reason.
 | --- | --- | --- |
 | [0041](done/0041-customers-crud-backend.md) | `customers` table, `App\Models\Customer`, `CustomerValidationRules`, `CreateCustomer`, `UpdateCustomer`, the **D-15** retrieval contract | Every property this view binds, every rule it validates against and every write it dispatches is defined there. Nothing renders without it. |
 | [0042](done/0042-customers-soft-delete-backend.md) | `customers.deleted_at`, `SoftDeletes` on the model, the `customers.delete` gate | The delete affordance's *semantics* — "leaves the list, record survives" — are 0042's. Without it, this screen's delete button would hard-delete. |
-| [0043](0043-customers-new-customer-notification-backend.md) | Nothing at the view layer — but `CreateCustomer` gains a **constructor dependency** | That is what makes `new CreateCustomer` break. This story must resolve the action from the container; landing before 0043 would let a `new` call site through review and break it later. |
+| [0043](done/0043-customers-new-customer-notification-backend.md) | Nothing at the view layer — but `CreateCustomer` gains a **constructor dependency** | That is what makes `new CreateCustomer` break. This story must resolve the action from the container; landing before 0043 would let a `new` call site through review and break it later. |
 
 **Two inconsistencies between the sibling files, both composed in parallel. The first is now resolved;
 the second is a benign ordering detail.**
