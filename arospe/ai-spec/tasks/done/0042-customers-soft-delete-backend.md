@@ -1,7 +1,7 @@
 # [0042] Customers — soft delete (backend)
 
 ## Description
-Make deleting a customer a **soft** delete, per PRD [§3.1 Customers](../../docs/PRD/PRD.md#31-customers):
+Make deleting a customer a **soft** delete, per PRD [§3.1 Customers](../../../docs/PRD/PRD.md#31-customers):
 *"deletion never physically removes the record, so a customer's orders are never orphaned."* This story
 adds `customers.deleted_at`, puts `SoftDeletes` on `App\Models\Customer`, and confirms the
 `customers.delete` authorization gate. It ships **no** email obfuscation and **no** `Customer::delete()`
@@ -80,8 +80,8 @@ Feature: Soft-deleting a customer
 > **No `restore` / `force delete` scenario, deliberately.** PRD §3.1 has no restore acceptance
 > criterion, and this repo already carries the precedent: `SoftDeletes::restore()` exists on `User`
 > for free and has **no call site anywhere in the app** (see
-> [schema.md](../../docs/database/schema.md#soft-deletes)). Inventing one here would be a
-> [ghost scenario](../../docs/testing/frontend/gherkin-guidelines.md#6-no-ghost-scenarios). Recorded
+> [schema.md](../../../docs/database/schema.md#soft-deletes)). Inventing one here would be a
+> [ghost scenario](../../../docs/testing/frontend/gherkin-guidelines.md#6-no-ghost-scenarios). Recorded
 > in [Technical tasks for the backlog](#technical-tasks-for-the-backlog) instead.
 
 ## Files to create/modify
@@ -111,20 +111,20 @@ public function down(): void
 
 - **`Schema::table(...)`, not a change to story 0041's `create_customers_table`.** Story 0041 defines
   `customers` deliberately **without** `deleted_at`; this story adds it in its own alteration
-  migration, per [migrations.md](../../docs/database/migrations.md#adding-a-column-to-an-existing-table).
+  migration, per [migrations.md](../../../docs/database/migrations.md#adding-a-column-to-an-existing-table).
   Do not "tidy" the column into 0041's `create_*` file — that would make the two stories inseparable
   and break the historical-migrations-are-immutable convention this repo follows for `users`.
 - **`->after('updated_at')`**, so `deleted_at` is physically the last column, matching `users`.
 - **No backfill statement.** `softDeletes()` is nullable with no default, and `NULL` is exactly right
   for every pre-existing row ("not deleted"). This is the case that migrations.md's
-  [backfill rule](../../docs/database/migrations.md#when-the-new-columns-default-is-wrong-for-existing-rows-backfill-in-the-same-up)
+  [backfill rule](../../../docs/database/migrations.md#when-the-new-columns-default-is-wrong-for-existing-rows-backfill-in-the-same-up)
   explicitly does **not** apply to — recorded so nobody adds a defensive `UPDATE` that does nothing.
-- **`down()` is the exact inverse of `up()`**, per [migrations.md](../../docs/database/migrations.md#structure).
+- **`down()` is the exact inverse of `up()`**, per [migrations.md](../../../docs/database/migrations.md#structure).
 
 #### Index decision — none for now, and the `users` reasoning does **not** transfer
 
 **No standalone index on `deleted_at`.** But the justification is *not* the one
-[schema.md](../../docs/database/schema.md#users) gives for `users`, and copying that sentence across
+[schema.md](../../../docs/database/schema.md#users) gives for `users`, and copying that sentence across
 would be wrong — `database-expert` raised this explicitly and it is recorded here rather than
 silently inherited.
 
@@ -165,11 +165,11 @@ class Customer extends Model
 
 - **`use SoftDeletes;` and the `@property Carbon|null $deleted_at` PHPDoc line.** Keeping that block
   in sync with the migration is the drift
-  [base-standards.md](../../docs/conventions/base-standards.md#model-conventions) exists to catch.
+  [base-standards.md](../../../docs/conventions/base-standards.md#model-conventions) exists to catch.
 - **Do *not* restate `'deleted_at' => 'datetime'` in `casts()`.** The trait's own
   `initializeSoftDeletes()` merges the date cast in, so restating it is the same redundancy
   base-standards names for `$keyType` / `$incrementing` under
-  [UUID primary keys](../../docs/conventions/base-standards.md#uuid-primary-keys) — the rule is
+  [UUID primary keys](../../../docs/conventions/base-standards.md#uuid-primary-keys) — the rule is
   "don't restate what the trait already provides". Note `User` *does* restate it; that is the older
   shape, not the one to copy.
 - **No `#[Fillable]` change.** `deleted_at` is written by the framework, never by a form. It is
@@ -189,12 +189,12 @@ absence:
 
 - **The `SoftDeletingScope` on `Customer` carries no authentication weight.** For `User`, that scope
   *is* the sign-in refusal with no second check behind it
-  ([soft-delete-patterns.md](../../docs/security/soft-delete-patterns.md#the-global-scope-is-the-sign-in-refusal--there-is-no-second-check)).
+  ([soft-delete-patterns.md](../../../docs/security/soft-delete-patterns.md#the-global-scope-is-the-sign-in-refusal--there-is-no-second-check)).
   A customer **cannot authenticate at all** — PRD §3.1 is explicit that customers have no dashboard
   login, no role and no permissions — so here the scope is purely a list/lookup concern. Losing it
   would be a data-visibility bug, not an authentication bypass. The two must not be reasoned about
   interchangeably.
-- **The Spatie detach-on-delete trap does not apply.** [That rule](../../docs/security/soft-delete-patterns.md#adding-softdeletes-silently-stops-spatie-from-detaching-role-grants)
+- **The Spatie detach-on-delete trap does not apply.** [That rule](../../../docs/security/soft-delete-patterns.md#adding-softdeletes-silently-stops-spatie-from-detaching-role-grants)
   binds a model using `HasRoles`. `Customer` has no roles and no permissions by product definition,
   so adding `SoftDeletes` detaches nothing and there is nothing to preserve.
 - **The "delete through the model instance, never the query builder" rule is not load-bearing for
@@ -207,16 +207,16 @@ absence:
 ### Policy — `App\Policies\CustomerPolicy` (**modify**) — one added ability
 
 **This story does not create the class.** Story 0041 creates
-[`app/Policies/CustomerPolicy.php`](../../app/Policies/CustomerPolicy.php) with `viewAny`, `create`
+[`app/Policies/CustomerPolicy.php`](../../../app/Policies/CustomerPolicy.php) with `viewAny`, `create`
 and `update` (its **D-12**), modelled on the shipped
-[`SalesRegionPolicy`](../../app/Policies/SalesRegionPolicy.php). This story **adds one method and one
+[`SalesRegionPolicy`](../../../app/Policies/SalesRegionPolicy.php). This story **adds one method and one
 constant to that existing file** and changes nothing else in it. Auto-discovered by name, no
 `AuthServiceProvider`
-([base-standards.md](../../docs/conventions/base-standards.md#directory-structure)).
+([base-standards.md](../../../docs/conventions/base-standards.md#directory-structure)).
 
 The ability is a **flat permission check** and nothing more, matching its three siblings exactly —
 including the permission name as a constant on the class that owns the rule
-([naming.md](../../docs/conventions/naming.md#permission-names)), never a re-typed literal:
+([naming.md](../../../docs/conventions/naming.md#permission-names)), never a re-typed literal:
 
 ```php
 // added to the existing App\Policies\CustomerPolicy
@@ -237,7 +237,7 @@ Note the parameter names match 0041's (`$actor` / `$target`, the `SalesRegionPol
   `customers.delete` may delete any customer**. Stated affirmatively so the absence reads as a
   decision rather than an oversight.
 - **No permission catalog change.** `customers.view/create/edit/delete` already exist in
-  [`RolePermissionSeeder::MODULES`](../../database/seeders/RolePermissionSeeder.php) and are already
+  [`RolePermissionSeeder::MODULES`](../../../database/seeders/RolePermissionSeeder.php) and are already
   granted to `Administrator`. This story adds no permission and reseeds no grant.
 - **The `Gate::before` Super Admin bypass reaches this ability**, exactly as it reaches every other
   policy method here — a Super Admin holds no `customers.*` row and passes anyway. That is expected,
@@ -265,7 +265,7 @@ every 0041 test.
 ### Translations — `lang/en/customers.php` + `lang/es/customers.php` (modify)
 
 Any delete-confirmation / delete-success copy this story introduces goes in both files, key-for-key
-identical, per [naming.md](../../docs/conventions/naming.md#translation-keys). `APP_LOCALE=en` today,
+identical, per [naming.md](../../../docs/conventions/naming.md#translation-keys). `APP_LOCALE=en` today,
 so everything renders English until Epic 5 — accepted and documented, not a defect. 0041 ships **no**
 lang file (its **D-14** defers `customers.php` to 0044), so if this story introduces delete copy it
 **creates** both files and 0044 extends them; the keys are disjoint either way. See 0044's
@@ -299,7 +299,7 @@ Listed so reviewers do not reopen them:
 
 **`tests/Feature/Customers/DeletedEmailReservationTest.php`** (`RefreshDatabase`) — the whole file exists to pin [D-1](#d-1--a-soft-deleted-customers-email-stays-reserved-decided-not-deferred)
 
-- [ ] **Creating a new customer with a soft-deleted customer's email is rejected with a validation error on the `email` field** — assert the validator's own result (`assertHasErrors(['email' => 'unique'])`), **not** a database exception. `Rule::unique(Customer::class)` does **not** apply the soft-delete scope (verified for `users` and recorded in [schema.md](../../docs/database/schema.md#soft-deletes)), so the app layer refuses first and the `23000` never fires. A test that asserts on a `QueryException` would be asserting the wrong layer and would start failing the moment validation is corrected.
+- [ ] **Creating a new customer with a soft-deleted customer's email is rejected with a validation error on the `email` field** — assert the validator's own result (`assertHasErrors(['email' => 'unique'])`), **not** a database exception. `Rule::unique(Customer::class)` does **not** apply the soft-delete scope (verified for `users` and recorded in [schema.md](../../../docs/database/schema.md#soft-deletes)), so the app layer refuses first and the `23000` never fires. A test that asserts on a `QueryException` would be asserting the wrong layer and would start failing the moment validation is corrected.
 - [ ] **The still-deleted customer is unchanged after the rejected attempt** — no row rewritten, still exactly one customer holding that address.
 - [ ] Creating a customer with an email belonging to **no** row (deleted or otherwise) succeeds — the negative control that proves the test above is measuring reservation and not a broken create path.
 
@@ -309,19 +309,19 @@ Listed so reviewers do not reopen them:
 - [ ] An actor with **no role** is refused **and the customer is still active afterwards**. Both halves: asserting only that an exception was thrown passes against an implementation that deletes first and authorizes second.
 - [ ] **An actor holding every *other* module's `delete` permission but not `customers.delete` is refused.** This is the case that catches the ability checking the wrong permission string — a very plausible copy-paste slip when adding a fourth method beside three near-identical siblings, where the only difference between them is the constant they read. Precedent: `IndexTest`'s "a blog editor whose role does not grant `users.view` is denied server-side".
 - [ ] **`CustomerPolicy`'s three pre-existing abilities still answer as 0041 specified** — a holder of `customers.view` alone still passes `viewAny` and still fails `create` / `update` / `delete`. Cheap, and it is what catches an edit to the shared file that changes more than the one method this story owns.
-- [ ] **A `Super Admin` — who holds no direct `customers.*` grant and reaches it only through the `Gate::before` bypass — can delete a customer.** Regression guard for the bypass coverage gap in [authorization.md](../../docs/architecture/authorization.md).
+- [ ] **A `Super Admin` — who holds no direct `customers.*` grant and reaches it only through the `Gate::before` bypass — can delete a customer.** Regression guard for the bypass coverage gap in [authorization.md](../../../docs/architecture/authorization.md).
 - [ ] **Any holder may delete any customer** — assert explicitly that a second administrator can delete a customer created by a first. This pins the "no tier system" decision so a later story cannot quietly add ownership semantics without a red test.
-- [ ] **The HTTP-level refusal and the `Livewire::test()` refusal are both asserted.** They are **not** substitutes for each other — see [testing/README.md](../../docs/testing/README.md); route middleware and the in-component gate fail in different places, and Livewire's `/livewire/update` round-trip does not re-run every route middleware.
+- [ ] **The HTTP-level refusal and the `Livewire::test()` refusal are both asserted.** They are **not** substitutes for each other — see [testing/README.md](../../../docs/testing/README.md); route middleware and the in-component gate fail in different places, and Livewire's `/livewire/update` round-trip does not re-run every route middleware.
 
 **Idempotency / repeat action**
 
 - [ ] **Deleting an already-deleted customer is a 404, not a domain branch.** Route-model binding resolves through the default (scoped) query, so a trashed id simply does not bind — assert the 404 and assert that no second `deleted_at` write happened (the original timestamp is unchanged). Recorded explicitly because "we need an already-deleted guard" is the obvious-but-wrong conclusion; there is no branch to write.
 
-**Deliberately not tested** (per [what-not-to-test.md](../../docs/testing/qa/what-not-to-test.md))
+**Deliberately not tested** (per [what-not-to-test.md](../../../docs/testing/qa/what-not-to-test.md))
 
 - Migration `up()` / `down()` mechanics — `RefreshDatabase` runs every migration each run; `down()` symmetry is a code-review item.
 - The `SoftDeletes` trait itself as framework behavior. Exercise it *through* `Customer`, which is what the app actually uses.
-- **Bulk delete through the query builder.** With no `Customer::delete()` override there is nothing for a builder call to bypass, so a test here would assert framework behavior and would carry no signal — the same "prove the control can refuse someone before asserting that it refuses" lesson recorded in [errors-log.md](../../docs/errors-log.md) for the dead `verified` middleware. It stays a **code-review checklist item** for as long as no override exists.
+- **Bulk delete through the query builder.** With no `Customer::delete()` override there is nothing for a builder call to bypass, so a test here would assert framework behavior and would carry no signal — the same "prove the control can refuse someone before asserting that it refuses" lesson recorded in [errors-log.md](../../../docs/errors-log.md) for the dead `verified` middleware. It stays a **code-review checklist item** for as long as no override exists.
 - Anything involving `orders` — the table does not exist (see the note under [Description](#description)).
 - Anything in `tests/Browser/` — paired frontend story.
 
@@ -356,15 +356,15 @@ cannot implement.
 
 ## Definition of Done
 
-- [ ] Tests written and green, plus the **full** existing suite (per the Full Test Suite Gate Rule in [contracts.md](../../docs/contracts.md)), and both quality gates run **unscoped** — `vendor/bin/pint --format agent` (not `--dirty`) and `php artisan test` (not `--filter`), per [base-standards.md](../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
+- [ ] Tests written and green, plus the **full** existing suite (per the Full Test Suite Gate Rule in [contracts.md](../../../docs/contracts.md)), and both quality gates run **unscoped** — `vendor/bin/pint --format agent` (not `--dirty`) and `php artisan test` (not `--filter`), per [base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
 - [ ] Code reviewed (code-reviewer) — including the "every `Customer` delete call site is instance-based" checklist item, which no test covers.
 - [ ] No security findings (appsec-auditor) — specifically: that the delete path re-authorizes rather than trusting route middleware; that the `SoftDeletingScope`'s role here is data visibility and **not** an authentication control (unlike `User`'s); and that no `Customer` query anywhere uses `withTrashed()` where the active list is meant.
 - [ ] Documentation updated (docs-keeper):
-  - [`database/schema.md`](../../docs/database/schema.md) — `customers` gains `deleted_at` and its own **Soft deletes** subsection, written as an explicit **contrast** with the `users` one (no obfuscation, no token revocation, no authentication weight, email stays reserved) rather than a copy of it. The ER diagram gains the column.
-  - **Two existing sentences become false and must be corrected in the same pass, not appended to.** [`database/schema.md`](../../docs/database/schema.md#soft-deletes) says *"`App\Models\User` is the only model in this codebase using `Illuminate\Database\Eloquent\SoftDeletes` (task 0005)"*, and [`conventions/base-standards.md`](../../docs/conventions/base-standards.md#deleting-a-user-goes-through-the-model-not-the-query-builder) says *"`App\Models\User` is the one model using `Illuminate\Database\Eloquent\SoftDeletes` today (task 0005)"*. Both are an under-count the moment this story lands — the same [bare-negative-claim](../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13) failure mode this repo has already had to fix five times in one pass. **Grep for `SoftDeletes` across `docs/` rather than relying on the change→doc mapping**, which routes to the docs describing the change and never to the ones asserting it hasn't happened.
-  - [`security/soft-delete-patterns.md`](../../docs/security/soft-delete-patterns.md) — that page is written end to end about an **authenticatable**. A second soft-deleted model that is deliberately *not* one is a real addition: which of its rules bind `Customer` (none of the three above) and why, so a later story does not inherit `User`'s obfuscation reasoning by proximity.
-  - [`architecture/authorization.md`](../../docs/architecture/authorization.md) — `CustomerPolicy::delete()` as the first flat, tier-free **delete** ability in this repo, and why that is correct for a passive record. **Verify the surrounding claim rather than assuming it:** 0041 will already have added `CustomerPolicy` to that page as the second flat, tier-free *policy* (after `SalesRegionPolicy`), so this pass extends an existing entry by one ability — it does not introduce the shape. Check whether any ability **count** on that page became an under-count.
-  - [`database/migrations.md`](../../docs/database/migrations.md) — **verify, do not assume.** This migration establishes no new convention; it mirrors an existing file exactly. Expect no change and record that it was checked.
+  - [`database/schema.md`](../../../docs/database/schema.md) — `customers` gains `deleted_at` and its own **Soft deletes** subsection, written as an explicit **contrast** with the `users` one (no obfuscation, no token revocation, no authentication weight, email stays reserved) rather than a copy of it. The ER diagram gains the column.
+  - **Two existing sentences become false and must be corrected in the same pass, not appended to.** [`database/schema.md`](../../../docs/database/schema.md#soft-deletes) says *"`App\Models\User` is the only model in this codebase using `Illuminate\Database\Eloquent\SoftDeletes` (task 0005)"*, and [`conventions/base-standards.md`](../../../docs/conventions/base-standards.md#deleting-a-user-goes-through-the-model-not-the-query-builder) says *"`App\Models\User` is the one model using `Illuminate\Database\Eloquent\SoftDeletes` today (task 0005)"*. Both are an under-count the moment this story lands — the same [bare-negative-claim](../../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13) failure mode this repo has already had to fix five times in one pass. **Grep for `SoftDeletes` across `docs/` rather than relying on the change→doc mapping**, which routes to the docs describing the change and never to the ones asserting it hasn't happened.
+  - [`security/soft-delete-patterns.md`](../../../docs/security/soft-delete-patterns.md) — that page is written end to end about an **authenticatable**. A second soft-deleted model that is deliberately *not* one is a real addition: which of its rules bind `Customer` (none of the three above) and why, so a later story does not inherit `User`'s obfuscation reasoning by proximity.
+  - [`architecture/authorization.md`](../../../docs/architecture/authorization.md) — `CustomerPolicy::delete()` as the first flat, tier-free **delete** ability in this repo, and why that is correct for a passive record. **Verify the surrounding claim rather than assuming it:** 0041 will already have added `CustomerPolicy` to that page as the second flat, tier-free *policy* (after `SalesRegionPolicy`), so this pass extends an existing entry by one ability — it does not introduce the shape. Check whether any ability **count** on that page became an under-count.
+  - [`database/migrations.md`](../../../docs/database/migrations.md) — **verify, do not assume.** This migration establishes no new convention; it mirrors an existing file exactly. Expect no change and record that it was checked.
 - [ ] Acceptance criteria met.
 
 ## Documented functional decisions
@@ -385,7 +385,7 @@ a security reason that does not exist here.
 `users.email` is a **live authentication identifier**: recycling it without revoking everything keyed
 by that string handed the deleted user's still-valid reset link to whoever claimed the address next —
 a real, working account-takeover path found in a Phase 4 audit and recorded in
-[errors-log.md](../../docs/errors-log.md). `customers.email` is a contact field. There is no customer
+[errors-log.md](../../../docs/errors-log.md). `customers.email` is a contact field. There is no customer
 login, no `password_reset_tokens` row keyed by it, no session, no passkey, no notification routing.
 **Freeing it safely is a problem this domain does not have, so freeing it buys nothing.**
 
@@ -401,7 +401,7 @@ and the mitigation is recorded as backlog work, not as part of this story.
 | --- | --- |
 | **(a) Leave the unique index untouched** — a deleted customer's email stays reserved | ✅ **Chosen.** Zero code, zero migration, zero new failure mode. |
 | **(b) Obfuscate the email on delete, mirroring `User::delete()`** | ❌ Rejected. It **destroys the identifying data soft delete exists to preserve** — the PRD's whole rationale is that a deleted customer's orders stay attributable to a named person, and an order pointing at `deleted+{uuid}@deleted.invalid` defeats that. It also adds an override, a transaction and a `23000` catch to solve a security problem this domain does not have. |
-| **(c) Composite unique on `(email, deleted_at)`** | ❌ Rejected as **unsafe on MySQL**, for the reason [schema.md](../../docs/database/schema.md#soft-deletes) already records for `users`: `NULL <> NULL` for uniqueness purposes, so every **live** customer (`deleted_at IS NULL`) would stop being constrained against sharing an address. It regresses the exact invariant PRD §3.1 requires ("duplicates are rejected") in order to relax a different one. |
+| **(c) Composite unique on `(email, deleted_at)`** | ❌ Rejected as **unsafe on MySQL**, for the reason [schema.md](../../../docs/database/schema.md#soft-deletes) already records for `users`: `NULL <> NULL` for uniqueness purposes, so every **live** customer (`deleted_at IS NULL`) would stop being constrained against sharing an address. It regresses the exact invariant PRD §3.1 requires ("duplicates are rejected") in order to relax a different one. |
 | **(d) `STORED` generated column (`CASE WHEN deleted_at IS NULL THEN email END`) + `UNIQUE` on it** | ❌ Not now — but this is the **correct** shape, and it is the named path if D-1 is ever revisited. Unique indexes ignore `NULL`s, so it enforces "unique among live customers" without touching live-row uniqueness. Rejected today only as complexity nothing has asked for. |
 
 **This decision is reversible and cheap to reverse.** Reversing it means one alteration migration
@@ -412,7 +412,7 @@ product signal, not an engineering one, and it should not be pre-empted here.
 
 **One mechanical fact worth knowing before implementing:** `Rule::unique(Customer::class)` does **not**
 apply the soft-delete scope (verified for `users`, recorded in
-[schema.md](../../docs/database/schema.md#soft-deletes)). So D-1's behavior arrives with **zero code**
+[schema.md](../../../docs/database/schema.md#soft-deletes)). So D-1's behavior arrives with **zero code**
 — validation already sees trashed rows and refuses at the app layer, before the database constraint is
 reached. The reservation is not something this story builds; it is something this story decides not to
 remove.
@@ -464,7 +464,7 @@ structural and this one is not, so it expires when the table grows.
 
 **Hard dependency.** Story 0041 creates the `customers` table and `App\Models\Customer`; this story
 alters both. It cannot enter Phase 3 before 0041 is done, and its number is higher for exactly that
-reason, per the [task ordering rule](../../docs/workflow.md#task-ordering-rule).
+reason, per the [task ordering rule](../../../docs/workflow.md#task-ordering-rule).
 
 Two specifics carried over from 0041's stated shape:
 
@@ -488,7 +488,7 @@ Three notes to carry forward, none actionable here:
 1. **`orders.customer_id` must be `foreignUuid('customer_id')->constrained('customers')->restrictOnDelete()`** —
    `foreignUuid`, never `foreignId`, because `customers` keys on a `CHAR(36)` UUID v7; and
    `restrictOnDelete()` rather than `cascadeOnDelete()`, mirroring `sales_regions.parent_id`'s
-   precedent in [migrations.md](../../docs/database/migrations.md#uuid-primary-keys) — a customer's
+   precedent in [migrations.md](../../../docs/database/migrations.md#uuid-primary-keys) — a customer's
    order history is not worthless without the customer row, so a delete must be refused rather than
    silently propagate. **Do not add an explicit `$table->index('customer_id')`**: `constrained()`
    already leaves the column indexed, and adding one on top recreates this repo's own redundant-index

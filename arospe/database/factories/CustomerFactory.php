@@ -74,6 +74,18 @@ class CustomerFactory extends Factory
     }
 
     /**
+     * A soft-deleted customer (story 0042). Deliberately a state, not a
+     * default — a factory whose default row is deleted would silently
+     * break every story 0041 test.
+     */
+    public function trashed(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'deleted_at' => now(),
+        ]);
+    }
+
+    /**
      * A "Piso N, Puerta X"-shaped second address line, built from Faker
      * methods Faker\Generator's own declared method-tag stubs actually
      * list -- Faker's own `secondaryAddress()` (Address provider) is not

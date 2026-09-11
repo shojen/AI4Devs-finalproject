@@ -8,12 +8,31 @@ exists" still carries credentials, role grants and relations.
 
 ## Table of Contents
 
+- [A second soft-deleted model, deliberately unalike — App\Models\Customer (story 0042)](#a-second-soft-deleted-model-deliberately-unalike--appmodelscustomer-story-0042)
 - [The global scope *is* the sign-in refusal — there is no second check](#the-global-scope-is-the-sign-in-refusal--there-is-no-second-check)
 - [A vendor relation is the one place that scope can be lost silently](#a-vendor-relation-is-the-one-place-that-scope-can-be-lost-silently)
 - [Freeing an identifier means revoking everything keyed by its string, not just the row](#freeing-an-identifier-means-revoking-everything-keyed-by-its-string-not-just-the-row)
 - [Adding SoftDeletes silently stops Spatie from detaching role grants](#adding-softdeletes-silently-stops-spatie-from-detaching-role-grants)
 - [A deterministic placeholder written into a UNIQUE column still needs the 23000 catch](#a-deterministic-placeholder-written-into-a-unique-column-still-needs-the-23000-catch)
 - [Confirmed safe: what the scope already covers](#confirmed-safe-what-the-scope-already-covers)
+
+## A second soft-deleted model, deliberately unalike — `App\Models\Customer` (story 0042)
+
+Every rule on this page was written about `users` specifically, because the danger they guard
+against is specific to an **authenticatable**: a record that "no longer exists" but still carries
+credentials, role grants and relations. `App\Models\Customer` (story 0042) is this repo's second
+`SoftDeletes` model, and it is deliberately **not** an authenticatable — PRD §3.1 states as a hard
+boundary that a customer can never sign in, holds no role and holds no permission. Recording which
+of the rules above bind it (none) and why is the point of this section: a later story must not
+inherit `User::delete()`'s reasoning by proximity just because both models sit under `SoftDeletes`.
+
+- **[The global scope *is* the sign-in refusal](#the-global-scope-is-the-sign-in-refusal--there-is-no-second-check) does not bind `Customer`.** There is no sign-in to refuse. `Customer`'s `SoftDeletingScope` is a plain data-visibility concern — it removes a trashed row from the active list, from counts, and from route-model binding — never an authentication control. Losing it on `Customer` would be a data-visibility bug; losing the equivalent scope on `User` is an authentication bypass. The two must not be reasoned about interchangeably.
+- **[Freeing an identifier means revoking everything keyed by its string](#freeing-an-identifier-means-revoking-everything-keyed-by-its-string-not-just-the-row) does not apply, because `Customer` deliberately does NOT free its identifier.** `customers.email` is never obfuscated on delete (0042's own D-1/D-2) — the address stays reserved, refused by `Rule::unique(Customer::class)` (which, exactly as for `users`, does not apply the soft-delete scope) rather than recycled. There is also no `password_reset_tokens`-shaped table keyed by `customers.email` to revoke in the first place: no customer login means no reset token, no session, no passkey. The whole *reason* `User::delete()` obfuscates — making a live authentication identifier safe to recycle — does not exist for a record that was never an authentication identifier.
+- **[Adding SoftDeletes silently stops Spatie from detaching role grants](#adding-softdeletes-silently-stops-spatie-from-detaching-role-grants) does not apply.** `Customer` does not use `HasRoles`, holds no role and holds no permission by product definition — there is nothing for the `deleting` listener's opt-out to preserve or fail to detach.
+- **[A deterministic placeholder written into a UNIQUE column still needs the 23000 catch](#a-deterministic-placeholder-written-into-a-unique-column-still-needs-the-23000-catch) does not apply.** There is no placeholder — `Customer::delete()` writes nothing beyond the framework's own `deleted_at` stamp, so there is no derived value to worry about colliding with attacker-chosen input.
+- **What genuinely IS shared with `users`**, and is worth reading as the one real overlap: `Rule::unique(Customer::class)` not applying the soft-delete scope is the identical mechanical fact [Confirmed safe: what the scope already covers](#confirmed-safe-what-the-scope-already-covers) already records for `users.email` — it is *why* a soft-deleted customer's email stays reserved with zero new code, the same way it is *why* `users` needed an explicit obfuscation write to free its own address. One fact, two opposite decisions, each correct for its own model.
+
+See [database/schema.md](../database/schema.md#soft-deletes-and-why-the-users-reasoning-does-not-transfer) for the full column-level writeup, and [conventions/base-standards.md](../conventions/base-standards.md#deleting-a-user-goes-through-the-model-not-the-query-builder) for the corrected "only model using `SoftDeletes`" claim this story's own Definition of Done required fixing.
 
 ## The global scope *is* the sign-in refusal — there is no second check
 
@@ -224,7 +243,14 @@ Verified during this audit and worth not re-deriving:
   request through the scope, so an in-flight session stops authenticating immediately. No explicit
   session-invalidation step is required for that alone.
 
-_Last updated: 2026-08-14 — created by the Phase 4 audit of task 0005 (soft-delete users +
+_Last updated: 2026-09-10 — Story 0042 (Customers — soft delete, backend). Added the
+**A second soft-deleted model, deliberately unalike** section: `App\Models\Customer` is this
+repo's second `SoftDeletes` model, and none of this page's five rules bind it (it is not an
+authenticatable) — recorded explicitly so a later story does not inherit `User::delete()`'s
+obfuscation reasoning by proximity. No existing rule changed; every section below this one is
+still about `users` specifically._
+
+_Previously: 2026-08-14 — created by the Phase 4 audit of task 0005 (soft-delete users +
 administrator-level protection guard); the identifier-revocation section extended during the
 post-fix re-audit with the implemented `getRawOriginal()` capture and the corollary that the
 revocation key must be normalised explicitly rather than by collation._
