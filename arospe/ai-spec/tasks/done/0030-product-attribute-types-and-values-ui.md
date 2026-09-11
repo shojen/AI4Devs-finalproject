@@ -192,7 +192,7 @@ Feature: Product attribute types screen — list, create/edit modal, values repe
     beside the existing Users entry, with a comment noting it is scaffolding 0013's registry will
     absorb. Static and ungated exactly like the Users link — a **cosmetic** leak only; access is
     refused by `can:products.view` on the route and re-checked in `mount()`, precisely as
-    [api/routes.md](../../docs/api/routes.md#usersindex--the-first-permission-gated-route) already
+    [api/routes.md](../../docs/api/users-and-roles.md#usersindex--the-first-permission-gated-route) already
     documents for Users. `swatch` is verified present in
     `vendor/livewire/flux/stubs/resources/views/flux/icon/` (as are `tag`, `rectangle-stack`,
     `adjustments-horizontal`) — see OQ-7.

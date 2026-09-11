@@ -178,7 +178,7 @@ This story's closure lifts [0024](../../ai-spec/tasks/done/0024-products-core-cr
 own scope fence forbidding any code from rendering, echoing or returning `products.description`.
 0027 (products list/editor UI), 0061 (blog posts, reusing this exact config for the `body` column),
 0076 (products i18n retrofit), 0077 and 0079 (language-tab editors) each depend on this closure; see
-[api/routes.md](../api/routes.md#applivewirecomponentswysiwygeditor--the-gallerys-first-real-consumer-and-the-second-routeless-gated-component)
+[api/routes.md](../api/products.md#applivewirecomponentswysiwygeditor--the-gallerys-first-real-consumer-and-the-second-routeless-gated-component)
 for the correction to that page's own prior, speculative attribution of this class to stories other
 than the one that actually created it.
 

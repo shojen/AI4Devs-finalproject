@@ -740,7 +740,7 @@ Phase 3 (V1).
 - **Icon-only controls** (`edit-media-{id}`, `media-upload-button`, `media-dropzone`,
   `media-confirm`, `media-cancel`) each carry an `aria-label` and a `data-test` hook, present on
   **both** the enabled and the disabled branch, exactly as the Users row actions do
-  ([api/routes.md](../../../docs/api/routes.md#usersindex--the-first-permission-gated-route)).
+  ([api/routes.md](../../../docs/api/users-and-roles.md#usersindex--the-first-permission-gated-route)).
 - **`@js()` on every id interpolated into a `wire:*` argument** — `wire:click="toggleSelect(@js($item['id']))"`.
   Mandatory, not stylistic
   ([blade-livewire-output-encoding.md](../../../docs/security/blade-livewire-output-encoding.md)).

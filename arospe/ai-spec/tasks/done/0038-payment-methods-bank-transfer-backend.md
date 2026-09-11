@@ -181,7 +181,7 @@ public function down(): void
   checksum-valid-looking account number sitting in production. `NULL` *is* "not yet configured".
 - **Unique index on `code` — the one load-bearing index.** It makes `firstOrCreate(['code' => …])`
   idempotent and turns "exactly one row per method" into a database invariant rather than a seeder
-  convention, justified the same way [schema.md](../../../docs/database/schema.md#users) justifies
+  convention, justified the same way [schema.md](../../../docs/database/schema-users-auth.md#users) justifies
   `pending_email`'s unique index.
 - **No separate `$table->index('code')`.** `->unique()` already creates a b-tree index; adding an
   explicit second one would recreate this repo's own recorded mistake — the redundant
@@ -189,7 +189,7 @@ public function down(): void
   columns" habit from `create_passkeys_table` applies to **foreign keys**, not to a column that
   already carries a unique constraint. Do not over-apply it here.
 - **No index on `iban`** — never queried by, never a join key, at most a handful of rows ever. Same
-  reasoning [schema.md](../../../docs/database/schema.md#users) gives for omitting one on `status`.
+  reasoning [schema.md](../../../docs/database/schema-users-auth.md#users) gives for omitting one on `status`.
 - **No `is_active` / `enabled` column — decided, not forgotten.** Shipping (§2.4) has an explicit
   enable/disable acceptance criterion; §2.5 has none — only list, configure IBAN, reject invalid
   IBAN. A boolean no screen reads and no AC requires is speculative design. It arrives as

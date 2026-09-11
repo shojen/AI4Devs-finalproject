@@ -775,7 +775,7 @@ rediscovery.
   - **`orders.tax_rate` is `NULL`** → leave `tax_amount` at `0.00`, write nothing to `tax_rate`, and
     **never resolve a sales region**. `NULL` means *not configured* and `0.000` means *a legitimate 0%*
     — the distinction `sales_regions.rate` established
-    ([schema.md](../../docs/database/schema.md#sales_regions)) and 0045's **D-8** carried onto `orders`.
+    ([schema.md](../../docs/database/schema-products.md#sales_regions)) and 0045's **D-8** carried onto `orders`.
     Resolution is stories 0053/0054's **entire** scope, and a story that resolves one "helpfully" masks
     their work while looking like working behaviour (0045's **D-9**, and **R-2** below).
 

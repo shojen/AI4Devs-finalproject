@@ -816,7 +816,7 @@ a rediscovery.
   turns on, and the precedent is this repo's own: `deleteRole()` refuses a role that still has
   holders with a `ValidationException`, and the model-level guard behind it raises a **409**
   `RoleInUseException` — neither is a 403, because neither is about who is asking
-  ([api/routes.md](../../docs/api/routes.md#rolesindex--the-second-permission-gated-route)). A
+  ([api/routes.md](../../docs/api/users-and-roles.md#rolesindex--the-second-permission-gated-route)). A
   refund from `PendingPayment` or `Refunded` is refused for the same kind of reason. **A dedicated
   domain exception was considered and not adopted**: `RoleInUseException` exists because a *model
   event* needed to refuse from a place that could not raise a validation error; here the refusal

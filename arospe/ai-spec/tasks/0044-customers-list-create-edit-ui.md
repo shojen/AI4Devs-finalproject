@@ -305,7 +305,7 @@ Public surface the view consumes:
   rather than rejecting it — see [errors-log.md](../../docs/errors-log.md#livewire-skips-convertemptystringstonulltrimstrings-and-laravel-skips-non-implicit-rules-for-a-blank-string--the-two-combine-to-let-a-raw--reach-a-decimal-column--2026-09-10)),
   and a country typed as `' es '` would fail this component's own `size:2` check while the action would
   have accepted and normalised it to `'ES'`. See
-  [docs/database/schema.md#customers](../../docs/database/schema.md#customers) for the full mechanism.
+  [docs/database/schema-other.md#customers](../../docs/database/schema-other.md#customers) for the full mechanism.
 
 ### View — `resources/views/livewire/customers.blade.php` (new)
 
@@ -664,7 +664,7 @@ reason 1 first.
 0041's **D-9** forbids validating a customer's country against the seeded region catalog, for two reasons
 that bind the UI just as hard as the backend: a customer may legitimately live in a country the tax catalog
 has not activated, and `sales_regions.code` is **administrator-editable and nullable**
-([schema.md](../../docs/database/schema.md#sales_regions)), so a picker sourced from it would silently lose
+([schema.md](../../docs/database/schema-products.md#sales_regions)), so a picker sourced from it would silently lose
 options whenever an administrator blanks a code. A dropdown that offers fewer countries than the validator
 accepts is worse than a text field: it makes a legal value unreachable through the UI.
 

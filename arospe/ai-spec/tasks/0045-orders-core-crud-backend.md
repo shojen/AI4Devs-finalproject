@@ -578,7 +578,7 @@ working feature.
 - [ ] Integration test: a newly created order's `shipping_rate_id` is `null`.
 - [ ] Integration test: a newly created order's `tax_rate` is `null` — **not** `0.000`. The two must
       not share a meaning, exactly as `sales_regions.rate` documents
-      ([schema.md](../../docs/database/schema.md#sales_regions)).
+      ([schema.md](../../docs/database/schema-products.md#sales_regions)).
 - [ ] Integration test: a newly created order's `flagged_for_review` is `false`.
 - [ ] Integration test: `tax_amount` and `shipping_amount` are `0.00` and `total` equals `subtotal`
       (**D-8**), asserted as decimal strings.
@@ -881,7 +881,7 @@ rediscovery.
   stories 0053/0054/0037 populate the other two terms — a later story fills a value in, it does not
   rewrite the formula. `tax_rate` stays **`NULL`**, never `0.000`: `sales_regions.rate` already
   establishes that "not configured" and "a legitimate 0%" cannot share a representation
-  ([schema.md](../../docs/database/schema.md#sales_regions)), and an order whose tax has not been
+  ([schema.md](../../docs/database/schema-products.md#sales_regions)), and an order whose tax has not been
   resolved must be distinguishable from one resolved to a zero-rated region.
 - **D-9 — `sales_region_id` and `shipping_rate_id` are nullable and `NULL` at creation.** This story
   creates the reference points; resolving them is stories 0053/0054 (tax) and 0037/0054 (shipping).
@@ -904,7 +904,7 @@ rediscovery.
   future hard-delete path rather than a live behaviour.
 - **D-12 — `Rule::exists()` on `customer_id` is soft-delete-unaware, deliberately.** `Rule::exists()`
   does **not** apply the `SoftDeletingScope`
-  ([schema.md](../../docs/database/schema.md#soft-deletes)), so a soft-deleted customer's id passes
+  ([schema.md](../../docs/database/schema-users-auth.md#soft-deletes)), so a soft-deleted customer's id passes
   validation. That is the *correct* behaviour here and is left as-is: story
   [0042](done/0042-customers-soft-delete-backend.md) soft-deletes customers precisely so their order history
   survives, and PRD §3.1's stated reason is "so a customer's orders are never orphaned". Refusing to

@@ -476,7 +476,7 @@ Feature: Roles and permissions management
   the initial `GET` only: every subsequent `saveRole()` / `deleteRole()` action request runs through
   **zero** permission middleware, silently, while the page-load check keeps passing. Sibling story
   [0012](../done/0012-module-access-gating-backend.md) states the identical rule for every future module
-  route, and [`docs/api/routes.md`](../../../docs/api/routes.md#usersindex--the-first-permission-gated-route)
+  route, and [`docs/api/routes.md`](../../../docs/api/users-and-roles.md#usersindex--the-first-permission-gated-route)
   records it as an already-shipped project convention that must not be "normalised" away —
   `routes/web.php` carries it as an inline comment above `users.index`. Write the same comment above
   `roles.index`.
@@ -892,7 +892,7 @@ accent-insensitive — so `Rule::unique('roles', 'name')->where('guard_name', 'w
 duplicate on its own, and the "if it is case-sensitive, add an explicit lowercase comparison" branch of
 this question never applied. The finding is recorded where a future reader will actually meet it: the
 docblock on [`App\Concerns\RoleValidationRules::roleNameRules()`](../../../app/Concerns/RoleValidationRules.php),
-and in [`docs/database/schema.md`](../../../docs/database/schema.md#roles-permissions-model_has_roles-model_has_permissions-role_has_permissions).
+and in [`docs/database/schema.md`](../../../docs/database/schema-users-auth.md#roles-permissions-model_has_roles-model_has_permissions-role_has_permissions).
 Two consequences worth carrying forward rather than rediscovering, both already live in this codebase:
 
 - **The same collation is why the seeder cannot use a bare `firstOrCreate()`** for either protected

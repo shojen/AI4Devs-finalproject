@@ -572,7 +572,7 @@ cannot authenticate, hold a role, or hold a permission.
 - [ ] **Hand-off notes recorded for 0042, 0043 and 0044** (real gaps, not formalities) — see
       [Dependencies](#dependencies). In particular 0042 must decide what a trashed customer's email
       does to `Rule::unique()`, which does **not** apply the soft-delete scope
-      ([schema.md](../../../docs/database/schema.md#soft-deletes)).
+      ([schema.md](../../../docs/database/schema-users-auth.md#soft-deletes)).
 - [ ] Acceptance criteria met.
 
 ## Documented functional decisions
@@ -614,13 +614,13 @@ decision rather than a rediscovery.
   in PHP is the connection's own collation: `email` sits under `utf8mb4_unicode_ci`
   ([config/database.php](../../../config/database.php)), which folds case *and* accent, so a bare
   `UNIQUE` index alone would refuse a legitimate pair only as a raw `23000` `QueryException` with
-  no field-level message — the same reasoning [`product_categories.name`](../../../docs/database/schema.md#product_categories)
-  and [`shipping_zones.name`](../../../docs/database/schema.md#shipping_zones) already establish for
+  no field-level message — the same reasoning [`product_categories.name`](../../../docs/database/schema-products.md#product_categories)
+  and [`shipping_zones.name`](../../../docs/database/schema-shipping.md#shipping_zones) already establish for
   their own PHP-side normalised-comparison guards. Lowercasing at every write site — exactly what
   `App\Actions\Users\CreateUser` / `UpdateUser` / `RequestEmailChange` already do for `users.email`
   — is what makes creation refuse a mixed-case duplicate with a clean validation message rather than
   an unhandled database error, and the UNIQUE index sits behind it as the last-word race guard, the
-  same relationship [schema.md](../../../docs/database/schema.md#users) documents for `pending_email`.
+  same relationship [schema.md](../../../docs/database/schema-users-auth.md#users) documents for `pending_email`.
   A `23000` `QueryException` is converted to a `ValidationException` on `email`. **Not a model
   accessor/mutator**: the normalisation must happen before validation runs, and a mutator fires
   after it — which would let a rule and a write see different bytes.
@@ -665,7 +665,7 @@ decision rather than a rediscovery.
   customer may legitimately live in a country the tax catalog has not activated — refusing the
   address would block a record for a reason the administrator cannot fix from the Customers screen.
   Second, and decisively, `sales_regions.code` is **administrator-editable and nullable**
-  ([schema.md](../../../docs/database/schema.md#sales_regions)), so validating against it would make
+  ([schema.md](../../../docs/database/schema-products.md#sales_regions)), so validating against it would make
   customer creation fail whenever an administrator blanks a code — a coupling with a silent,
   unrelated trigger. Stored uppercase for a canonical form; tightening to an FK against the catalog
   is an additive migration once Orders decides how a country maps to a region.
@@ -766,7 +766,7 @@ on, and it can start immediately. What it depends on is already shipped and veri
 - **0042 (soft delete)** inherits a table with no `deleted_at` and must add it in its own migration.
   **The trap it must decide on, flagged here rather than discovered there:** `Rule::unique()` does
   **not** apply the soft-delete scope (verified on `users` —
-  [schema.md](../../../docs/database/schema.md#soft-deletes)), so a trashed customer's email stays
+  [schema.md](../../../docs/database/schema-users-auth.md#soft-deletes)), so a trashed customer's email stays
   taken forever unless 0042 either makes the uniqueness check trashed-aware or obfuscates the
   address on delete the way `User::delete()` does. It must also delete this story's
   "`Customer` does not use `SoftDeletes`" structural assertion rather than work around it.

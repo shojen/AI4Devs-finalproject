@@ -1029,7 +1029,7 @@ Five notes:
 
 **Route:** none added. The builder inherits `products.edit`'s `can:products.view` — **never**
 `permission:products.view`, since Livewire 4's `PersistentMiddleware` allow-list carries Laravel's
-`Authorize` but not Spatie's `PermissionMiddleware` ([api/routes.md](../../../docs/api/routes.md#usersindex--the-first-permission-gated-route)).
+`Authorize` but not Spatie's `PermissionMiddleware` ([api/routes.md](../../../docs/api/users-and-roles.md#usersindex--the-first-permission-gated-route)).
 
 ### D-11 — Editing a variant: the combination is shown **fixed**, not disabled
 

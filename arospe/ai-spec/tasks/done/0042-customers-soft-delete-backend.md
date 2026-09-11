@@ -80,7 +80,7 @@ Feature: Soft-deleting a customer
 > **No `restore` / `force delete` scenario, deliberately.** PRD §3.1 has no restore acceptance
 > criterion, and this repo already carries the precedent: `SoftDeletes::restore()` exists on `User`
 > for free and has **no call site anywhere in the app** (see
-> [schema.md](../../../docs/database/schema.md#soft-deletes)). Inventing one here would be a
+> [schema.md](../../../docs/database/schema-users-auth.md#soft-deletes)). Inventing one here would be a
 > [ghost scenario](../../../docs/testing/frontend/gherkin-guidelines.md#6-no-ghost-scenarios). Recorded
 > in [Technical tasks for the backlog](#technical-tasks-for-the-backlog) instead.
 
@@ -124,7 +124,7 @@ public function down(): void
 #### Index decision — none for now, and the `users` reasoning does **not** transfer
 
 **No standalone index on `deleted_at`.** But the justification is *not* the one
-[schema.md](../../../docs/database/schema.md#users) gives for `users`, and copying that sentence across
+[schema.md](../../../docs/database/schema-users-auth.md#users) gives for `users`, and copying that sentence across
 would be wrong — `database-expert` raised this explicitly and it is recorded here rather than
 silently inherited.
 
@@ -299,7 +299,7 @@ Listed so reviewers do not reopen them:
 
 **`tests/Feature/Customers/DeletedEmailReservationTest.php`** (`RefreshDatabase`) — the whole file exists to pin [D-1](#d-1--a-soft-deleted-customers-email-stays-reserved-decided-not-deferred)
 
-- [ ] **Creating a new customer with a soft-deleted customer's email is rejected with a validation error on the `email` field** — assert the validator's own result (`assertHasErrors(['email' => 'unique'])`), **not** a database exception. `Rule::unique(Customer::class)` does **not** apply the soft-delete scope (verified for `users` and recorded in [schema.md](../../../docs/database/schema.md#soft-deletes)), so the app layer refuses first and the `23000` never fires. A test that asserts on a `QueryException` would be asserting the wrong layer and would start failing the moment validation is corrected.
+- [ ] **Creating a new customer with a soft-deleted customer's email is rejected with a validation error on the `email` field** — assert the validator's own result (`assertHasErrors(['email' => 'unique'])`), **not** a database exception. `Rule::unique(Customer::class)` does **not** apply the soft-delete scope (verified for `users` and recorded in [schema.md](../../../docs/database/schema-users-auth.md#soft-deletes)), so the app layer refuses first and the `23000` never fires. A test that asserts on a `QueryException` would be asserting the wrong layer and would start failing the moment validation is corrected.
 - [ ] **The still-deleted customer is unchanged after the rejected attempt** — no row rewritten, still exactly one customer holding that address.
 - [ ] Creating a customer with an email belonging to **no** row (deleted or otherwise) succeeds — the negative control that proves the test above is measuring reservation and not a broken create path.
 
@@ -361,7 +361,7 @@ cannot implement.
 - [ ] No security findings (appsec-auditor) — specifically: that the delete path re-authorizes rather than trusting route middleware; that the `SoftDeletingScope`'s role here is data visibility and **not** an authentication control (unlike `User`'s); and that no `Customer` query anywhere uses `withTrashed()` where the active list is meant.
 - [ ] Documentation updated (docs-keeper):
   - [`database/schema.md`](../../../docs/database/schema.md) — `customers` gains `deleted_at` and its own **Soft deletes** subsection, written as an explicit **contrast** with the `users` one (no obfuscation, no token revocation, no authentication weight, email stays reserved) rather than a copy of it. The ER diagram gains the column.
-  - **Two existing sentences become false and must be corrected in the same pass, not appended to.** [`database/schema.md`](../../../docs/database/schema.md#soft-deletes) says *"`App\Models\User` is the only model in this codebase using `Illuminate\Database\Eloquent\SoftDeletes` (task 0005)"*, and [`conventions/base-standards.md`](../../../docs/conventions/base-standards.md#deleting-a-user-goes-through-the-model-not-the-query-builder) says *"`App\Models\User` is the one model using `Illuminate\Database\Eloquent\SoftDeletes` today (task 0005)"*. Both are an under-count the moment this story lands — the same [bare-negative-claim](../../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13) failure mode this repo has already had to fix five times in one pass. **Grep for `SoftDeletes` across `docs/` rather than relying on the change→doc mapping**, which routes to the docs describing the change and never to the ones asserting it hasn't happened.
+  - **Two existing sentences become false and must be corrected in the same pass, not appended to.** [`database/schema.md`](../../../docs/database/schema-users-auth.md#soft-deletes) says *"`App\Models\User` is the only model in this codebase using `Illuminate\Database\Eloquent\SoftDeletes` (task 0005)"*, and [`conventions/base-standards.md`](../../../docs/conventions/base-standards.md#deleting-a-user-goes-through-the-model-not-the-query-builder) says *"`App\Models\User` is the one model using `Illuminate\Database\Eloquent\SoftDeletes` today (task 0005)"*. Both are an under-count the moment this story lands — the same [bare-negative-claim](../../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13) failure mode this repo has already had to fix five times in one pass. **Grep for `SoftDeletes` across `docs/` rather than relying on the change→doc mapping**, which routes to the docs describing the change and never to the ones asserting it hasn't happened.
   - [`security/soft-delete-patterns.md`](../../../docs/security/soft-delete-patterns.md) — that page is written end to end about an **authenticatable**. A second soft-deleted model that is deliberately *not* one is a real addition: which of its rules bind `Customer` (none of the three above) and why, so a later story does not inherit `User`'s obfuscation reasoning by proximity.
   - [`architecture/authorization.md`](../../../docs/architecture/authorization.md) — `CustomerPolicy::delete()` as the first flat, tier-free **delete** ability in this repo, and why that is correct for a passive record. **Verify the surrounding claim rather than assuming it:** 0041 will already have added `CustomerPolicy` to that page as the second flat, tier-free *policy* (after `SalesRegionPolicy`), so this pass extends an existing entry by one ability — it does not introduce the shape. Check whether any ability **count** on that page became an under-count.
   - [`database/migrations.md`](../../../docs/database/migrations.md) — **verify, do not assume.** This migration establishes no new convention; it mirrors an existing file exactly. Expect no change and record that it was checked.
@@ -401,7 +401,7 @@ and the mitigation is recorded as backlog work, not as part of this story.
 | --- | --- |
 | **(a) Leave the unique index untouched** — a deleted customer's email stays reserved | ✅ **Chosen.** Zero code, zero migration, zero new failure mode. |
 | **(b) Obfuscate the email on delete, mirroring `User::delete()`** | ❌ Rejected. It **destroys the identifying data soft delete exists to preserve** — the PRD's whole rationale is that a deleted customer's orders stay attributable to a named person, and an order pointing at `deleted+{uuid}@deleted.invalid` defeats that. It also adds an override, a transaction and a `23000` catch to solve a security problem this domain does not have. |
-| **(c) Composite unique on `(email, deleted_at)`** | ❌ Rejected as **unsafe on MySQL**, for the reason [schema.md](../../../docs/database/schema.md#soft-deletes) already records for `users`: `NULL <> NULL` for uniqueness purposes, so every **live** customer (`deleted_at IS NULL`) would stop being constrained against sharing an address. It regresses the exact invariant PRD §3.1 requires ("duplicates are rejected") in order to relax a different one. |
+| **(c) Composite unique on `(email, deleted_at)`** | ❌ Rejected as **unsafe on MySQL**, for the reason [schema.md](../../../docs/database/schema-users-auth.md#soft-deletes) already records for `users`: `NULL <> NULL` for uniqueness purposes, so every **live** customer (`deleted_at IS NULL`) would stop being constrained against sharing an address. It regresses the exact invariant PRD §3.1 requires ("duplicates are rejected") in order to relax a different one. |
 | **(d) `STORED` generated column (`CASE WHEN deleted_at IS NULL THEN email END`) + `UNIQUE` on it** | ❌ Not now — but this is the **correct** shape, and it is the named path if D-1 is ever revisited. Unique indexes ignore `NULL`s, so it enforces "unique among live customers" without touching live-row uniqueness. Rejected today only as complexity nothing has asked for. |
 
 **This decision is reversible and cheap to reverse.** Reversing it means one alteration migration
@@ -412,7 +412,7 @@ product signal, not an engineering one, and it should not be pre-empted here.
 
 **One mechanical fact worth knowing before implementing:** `Rule::unique(Customer::class)` does **not**
 apply the soft-delete scope (verified for `users`, recorded in
-[schema.md](../../../docs/database/schema.md#soft-deletes)). So D-1's behavior arrives with **zero code**
+[schema.md](../../../docs/database/schema-users-auth.md#soft-deletes)). So D-1's behavior arrives with **zero code**
 — validation already sees trashed rows and refuses at the app layer, before the database constraint is
 reached. The reservation is not something this story builds; it is something this story decides not to
 remove.

@@ -543,7 +543,7 @@ already opening `DeleteProductCategory`. **It deliberately does not**, for two r
 1. **Closing one of three leaves the folder half-converted, which is worse than uniformly deferred.**
    `app/Actions/ProductCategories/` holds `CreateProductCategory`, `RenameProductCategory` and
    `DeleteProductCategory`. 0023 shipped all three unauthorized as an explicit, documented hand-off to
-   **0025** — recorded as a ⚠️ in [schema.md](../../../docs/database/schema.md#product_categories) and in
+   **0025** — recorded as a ⚠️ in [schema.md](../../../docs/database/schema-products.md#product_categories) and in
    [base-standards.md](../../../docs/conventions/base-standards.md#directory-structure). Gating only the
    one this story happens to touch produces an inconsistency a reader cannot explain from the code,
    and it silently changes 0025's job from "add three gates" to "add two, and find out why".

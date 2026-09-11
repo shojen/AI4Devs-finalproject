@@ -46,8 +46,8 @@ The Context section enumerates **seven** entities because those were the seven t
 
 | Table | Story | Status when this amendment landed |
 | --- | --- | --- |
-| `sales_regions` | [0016](../database/schema.md#sales_regions) | Shipped 2026-08-20. Recorded at the time in [schema.md's Notes](../database/schema.md#notes) and [conventions/base-standards.md](../conventions/base-standards.md#uuid-primary-keys) as a **deferred** ADR amendment. |
-| `media` | 0019 (D9) | Shipped 2026-08-27. See [schema.md § `media`](../database/schema.md#media). |
+| `sales_regions` | [0016](../database/schema-products.md#sales_regions) | Shipped 2026-08-20. Recorded at the time in [schema.md's Notes](../database/schema.md#notes) and [conventions/base-standards.md](../conventions/base-standards.md#uuid-primary-keys) as a **deferred** ADR amendment. |
+| `media` | 0019 (D9) | Shipped 2026-08-27. See [schema.md § `media`](../database/schema-products.md#media). |
 
 Rather than append a ninth name and wait for a tenth, the rule this ADR actually enforces is stated directly:
 
@@ -62,7 +62,7 @@ Two honest notes, so the widening is not read as stronger than it is:
 
 **Status: accepted. This amendment narrows a stale count in Amendment 1 above; it changes no rule.**
 
-[`product_categories`](../database/schema.md#product_categories) (story 0023) is the first of this ADR's originally-named six not-yet-implemented entities to actually ship — and unlike `sales_regions` and `media`, it needed **no** amendment to be covered, because "Product Categories" is one of the seven the Context section named on 2026-07-22 (line 10 above: *"Products, Product Variants, Product Categories — future, PRD Epic 2 ... not yet implemented"*). The table is a plain, greenfield `create_*` migration following the Decision above exactly — `HasUuids`, a single `uuid('id')->primary()`, no `$keyType`/`$incrementing` restated — with nothing for this ADR to add.
+[`product_categories`](../database/schema-products.md#product_categories) (story 0023) is the first of this ADR's originally-named six not-yet-implemented entities to actually ship — and unlike `sales_regions` and `media`, it needed **no** amendment to be covered, because "Product Categories" is one of the seven the Context section named on 2026-07-22 (line 10 above: *"Products, Product Variants, Product Categories — future, PRD Epic 2 ... not yet implemented"*). The table is a plain, greenfield `create_*` migration following the Decision above exactly — `HasUuids`, a single `uuid('id')->primary()`, no `$keyType`/`$incrementing` restated — with nothing for this ADR to add.
 
 Two bookkeeping corrections that follow from this landing normally, rather than needing a new rule:
 
@@ -73,7 +73,7 @@ Two bookkeeping corrections that follow from this landing normally, rather than 
 
 **Status: accepted. This amendment narrows a stale count in Amendment 2 above; it changes no rule.**
 
-[`products`](../database/schema.md#products) (story 0024) is the second of this ADR's originally-named seven entities to ship — like `product_categories` one story earlier, it needed **no** amendment, because "Products" is named explicitly in the Context section on line 10 above. It is a plain, greenfield `create_*` migration following the Decision exactly: `HasUuids`, a single `uuid('id')->primary()`, no `$keyType`/`$incrementing` restated.
+[`products`](../database/schema-products.md#products) (story 0024) is the second of this ADR's originally-named seven entities to ship — like `product_categories` one story earlier, it needed **no** amendment, because "Products" is named explicitly in the Context section on line 10 above. It is a plain, greenfield `create_*` migration following the Decision exactly: `HasUuids`, a single `uuid('id')->primary()`, no `$keyType`/`$incrementing` restated.
 
 `product_media`, the gallery pivot the same story adds, is a **different case worth stating explicitly rather than leaving ambiguous**: it has no surrogate primary key of its own — a composite `(product_id, media_id)` over two already-UUID foreign keys — the same shape as the vendored `spatie/laravel-permission` pivot tables (`role_has_permissions`, `model_has_roles`), which this ADR has never named or covered. There is no "entity identifier" for this ADR's policy to apply to, so `product_media` is neither one of the seven nor an addition beyond them — it is out of scope, the same way the permission pivots always have been.
 
@@ -83,7 +83,7 @@ One bookkeeping correction that follows normally: Amendment 2's "five [of the or
 
 **Status: accepted. This amendment narrows a stale count in Amendment 3 above; it changes no rule.**
 
-[`product_variants`](../database/schema.md#product_variants) (story 0029) is the third of this ADR's originally-named seven entities to ship — like `product_categories` and `products` before it, it needed **no** amendment, because "Product Variants" is named explicitly in the Context section on line 10 above. It is a plain, greenfield `create_*` migration following the Decision exactly: `HasUuids`, a single `uuid('id')->primary()`, no `$keyType`/`$incrementing` restated.
+[`product_variants`](../database/schema-products.md#product_variants) (story 0029) is the third of this ADR's originally-named seven entities to ship — like `product_categories` and `products` before it, it needed **no** amendment, because "Product Variants" is named explicitly in the Context section on line 10 above. It is a plain, greenfield `create_*` migration following the Decision exactly: `HasUuids`, a single `uuid('id')->primary()`, no `$keyType`/`$incrementing` restated.
 
 `product_variant_values`, the combination pivot the same story adds, is the **same out-of-scope case** `product_media` and `product_sales_region` already are, per Amendment 3 above: no surrogate primary key of its own — a composite `(product_variant_id, product_attribute_value_id)` over two already-UUID foreign keys, verified against `php artisan db:table product_variant_values`. There is no "entity identifier" for this ADR's policy to apply to.
 
@@ -93,7 +93,7 @@ One bookkeeping correction that follows normally: Amendment 3's "four [of the or
 
 **Status: accepted. This amendment closes a prediction Amendment 1 made, rather than reversing or narrowing anything.**
 
-Amendment 1 (2026-08-27) named its one exception in the abstract: *"a high-volume internal geography lookup table, which stays `bigint` — it is never exposed publicly and has nothing to enumerate."* No such table existed in code at the time. [`geography_entries`](../database/schema.md#geography_entries) (story 0032, the shipping geography catalog) is that table, and it is the first — and, on current PRD scope, only — instance of this exception actually shipping.
+Amendment 1 (2026-08-27) named its one exception in the abstract: *"a high-volume internal geography lookup table, which stays `bigint` — it is never exposed publicly and has nothing to enumerate."* No such table existed in code at the time. [`geography_entries`](../database/schema-shipping.md#geography_entries) (story 0032, the shipping geography catalog) is that table, and it is the first — and, on current PRD scope, only — instance of this exception actually shipping.
 
 `geography_entries.id` is a plain `bigint` auto-increment (`$table->id()`), and the model carries **no** `HasUuids` trait — the deliberate, literal opposite of every other Epic 2 table this ADR covers. Three grounds, all stated in the story's own task file and none of them new: it is a pure high-volume internal lookup table (~8,300 rows), its entries have no independent business identity of their own, and they are never exposed in a URL — there is no `route('geography.show', $entry)` anywhere in this app, nor is one planned. The accepted cost this ADR's Decision section names for UUIDv7 (a larger index/FK footprint) would land twice over on a table this size and on every row of story 0033's future zone pivot, for no enumeration-safety benefit at all — the identical reasoning Amendment 1 already gave in the abstract.
 
@@ -103,7 +103,7 @@ Nothing above this amendment needed correcting: `geography_entries` is not one o
 
 **Status: accepted. This amendment records a decision, not a rule change — Amendment 1's policy already covered the outcome.**
 
-[`payment_methods`](../database/schema.md#payment_methods) (story 0038) is a UUIDv7 PK table under Amendment 1's general policy, the same bucket `sales_regions`/`media`/`shipping_zones`/`shipping_carriers`/`shipping_rates` already sit in — see [schema.md's Notes](../database/schema.md#notes). Nothing about *that* is new. What is worth a named amendment rather than a silent addition to schema.md's own running list: this is the **first** table on record where the story's own Three Amigos debate (`database-expert`, `backend-expert` and `product-owner`, unanimously) recommended a plain `bigint` — reasoning that the entity is not among this ADR's original seven, is admin-only, and has no public identifier to protect — and a human decision overrode it toward the standing UUIDv7 policy instead, explicitly and directly.
+[`payment_methods`](../database/schema-other.md#payment_methods) (story 0038) is a UUIDv7 PK table under Amendment 1's general policy, the same bucket `sales_regions`/`media`/`shipping_zones`/`shipping_carriers`/`shipping_rates` already sit in — see [schema.md's Notes](../database/schema.md#notes). Nothing about *that* is new. What is worth a named amendment rather than a silent addition to schema.md's own running list: this is the **first** table on record where the story's own Three Amigos debate (`database-expert`, `backend-expert` and `product-owner`, unanimously) recommended a plain `bigint` — reasoning that the entity is not among this ADR's original seven, is admin-only, and has no public identifier to protect — and a human decision overrode it toward the standing UUIDv7 policy instead, explicitly and directly.
 
 The reasoning for the override, recorded so it is not relitigated: optimising each table's key type locally, on its own merits, is exactly how a schema ends up with PK type varying per table for reasons no later reader can reconstruct — every one of the debate's individually defensible "this one is small/admin-only/no public identifier" arguments would, applied consistently, produce that outcome. A single rule with one named exception (Amendment 1's own geography-lookup-table exception) is cheaper to hold and review than a dozen locally-optimal ones, and `payment_methods` is a real, ongoing business entity a future Epic 3 `orders.payment_method_id` foreign key will reference — not the kind of high-volume internal lookup table Amendment 1's named exception is for.
 

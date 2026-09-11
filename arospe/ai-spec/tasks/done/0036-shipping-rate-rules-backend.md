@@ -377,7 +377,7 @@ Adopted properties, each load-bearing:
   > transaction* would be caught here and misreported to the administrator as a shipping-rate count.
   > The already-shipped `app/Actions/Shipping/DeleteShippingZone.php` docblock says *"a
   > QueryException **1451** catch"*, and
-  > [schema.md](../../../docs/database/schema.md#shipping_zone_geography_entry) already documents *"a
+  > [schema.md](../../../docs/database/schema-shipping.md#shipping_zone_geography_entry) already documents *"a
   > matching `23000`→`1451` catch"* for this exact guard — **this task file was the only artifact
   > still saying `23000`**. Narrow on `errorInfo[1] === 1451`, never on `getCode()`.
   >
@@ -567,7 +567,7 @@ driving lookup filters on `shipping_zone_id`, which the FK's own auto-created in
 everything downstream — the carrier's `is_active`, the weight bracket — is a filter over a handful of
 rows. Adding `(shipping_zone_id, shipping_carrier_id, min_weight_kg)` would cost a write on every
 rate edit and buy a sub-millisecond scan that is already sub-millisecond. This is the same reasoning
-[schema.md](../../../docs/database/schema.md#users) records for `users.status` and 0035 records for
+[schema.md](../../../docs/database/schema-users-auth.md#users) records for `users.status` and 0035 records for
 `shipping_carriers.is_active`.
 
 **Do not hand-write `$table->index('shipping_zone_id')` or `$table->index('shipping_carrier_id')`.**

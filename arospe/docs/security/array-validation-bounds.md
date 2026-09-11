@@ -307,7 +307,7 @@ shows:
   reads as "the client does not control this array". It does. `#[Locked]` binds the **property write
   channel**, never the component's own public methods, and `addGalleryImages(array $media)` is a
   public Livewire method (also an `#[On('product-images-added')]` listener, which
-  [api/routes.md](../api/routes.md#applivewirecomponentswysiwygeditor--the-gallerys-first-real-consumer-and-the-second-routeless-gated-component)
+  [api/routes.md](../api/products.md#applivewirecomponentswysiwygeditor--the-gallerys-first-real-consumer-and-the-second-routeless-gated-component)
   already records is registered page-globally and therefore client-reachable). It appends every item
   it is handed, with no cap, so the client picks the length regardless of the lock.
 - Even with the validation fixed, the array still lives in **component state**: it is serialised into
@@ -459,12 +459,12 @@ at 20,000 rows** in this story's own Phase 4 audit — past PHP's default 30 s `
 while still ultimately returning only the `max:100` message.
 
 **Why three passes, not the two-pass shape verbatim.** `$values` is the component's own client-
-writable form input (deliberately not `#[Locked]`, per [database/schema.md](../database/schema.md#product_attribute_values)),
+writable form input (deliberately not `#[Locked]`, per [database/schema.md](../database/schema-products.md#product_attribute_values)),
 so a forged payload can carry a scalar where a row object is expected, or a non-string where a
 row's `id`/`value` is expected — reaching `SyncProductAttributeValues`' `array_key_exists()` lookup
 directly and raising an unhandled `TypeError` (a 500) rather than a validation error, a **second**,
 independent Phase 4 finding this story closed in the same pass (see `attributeValueRowRules()` /
-`attributeValueIdRules()` in [database/schema.md](../database/schema.md#product_attribute_values)).
+`attributeValueIdRules()` in [database/schema.md](../database/schema-products.md#product_attribute_values)).
 Establishing each row's *shape* has to run before `Str::squish()` normalises the text, so it cannot
 share pass 1 (which validates `name`, an O(1) uniqueness query, and the array's own size) or pass 3
 (the O(n²) per-value text rule) — it needs its own pass in between:

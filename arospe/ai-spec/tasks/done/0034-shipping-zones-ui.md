@@ -91,7 +91,7 @@ the ordinary kebab-case mirror rule holds and the view sits one level deeper tha
    (here) and rate rules (0036) — each with its own modal, its own validation surface and its own
    permission checks.
 3. **`can:`, never `permission:`.** Whichever route it is, the gate must be Laravel's `can:` — the
-   rule [api/routes.md](../../../docs/api/routes.md#usersindex--the-first-permission-gated-route)
+   rule [api/routes.md](../../../docs/api/users-and-roles.md#usersindex--the-first-permission-gated-route)
    records, because Livewire 4's `PersistentMiddleware` allow-list carries Laravel's `Authorize` but
    not Spatie's middleware. A tab does not change this; a separate route makes it a fresh, explicit
    decision rather than an inherited one.

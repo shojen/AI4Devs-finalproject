@@ -795,7 +795,7 @@ component. Nothing on the screen references, links to, or shares anything with a
     to `resources/views/layouts/app/sidebar.blade.php`, with a comment noting it is scaffolding 0013's
     registry will absorb. Static and **ungated**, exactly like the Users link — a **cosmetic** leak only;
     access is refused by `can:products.view` on the route and re-checked in `mount()`, precisely as
-    [api/routes.md](../../../docs/api/routes.md#usersindex--the-first-permission-gated-route) already
+    [api/routes.md](../../../docs/api/users-and-roles.md#usersindex--the-first-permission-gated-route) already
     documents. The caveat must be recorded in the docs pass.
   - *If 0013 **has** landed:* add a `config/modules.php` entry keyed on `products.view` instead, and **do
     not touch `sidebar.blade.php`**, which 0013 replaces.
@@ -896,7 +896,7 @@ component. Nothing on the screen references, links to, or shares anything with a
 - **R-6 — (added 2026-09-01) `app/Actions/ProductCategories/`'s three actions still do not authorize,
   and one of them says so falsely.** 0023 shipped all three with authorization deliberately handed off
   to **this story**, which is recorded in
-  [schema.md](../../../docs/database/schema.md#product_categories) and
+  [schema.md](../../../docs/database/schema-products.md#product_categories) and
   [base-standards.md](../../../docs/conventions/base-standards.md#directory-structure) — so this screen
   must call `Gate::authorize()` before each action, and **above** 0024b's in-use guard, never below it
   (0024b **D-B2**: an inverted order turns a permission refusal into a business message that discloses

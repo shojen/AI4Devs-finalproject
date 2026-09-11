@@ -471,7 +471,7 @@ optional.
 - [ ] **Integration test: `null` and `'0.000'` resolve differently** — a region with no configured
       rate writes `tax_rate = null` and `tax_amount = 0.00`; a region configured at `0.000` writes
       `tax_rate = '0.000'` and `tax_amount = 0.00`. The two must not share a representation, exactly as
-      [`sales_regions.rate`](../../docs/database/schema.md#sales_regions) establishes. **A test
+      [`sales_regions.rate`](../../docs/database/schema-products.md#sales_regions) establishes. **A test
       asserting only the amounts would pass against an implementation that conflates them.**
 - [ ] Integration test: `subtotal` `100.00` at a 21% rate writes `tax_amount` `21.00` and `total`
       `121.00`, as decimal strings — proving 0045 **D-8**'s written-out
@@ -688,7 +688,7 @@ override is a decision rather than a rediscovery.
 | **0053 — physical-product tax resolution** | **SIBLING, not a dependency** | Both depend only on 0045; **there is no dependency between 0053 and 0054 in either direction**, and either may be implemented first. They share exactly one artifact — the `App\Concerns\ResolvesSalesRegionFromAddress` trait, specified as create-if-absent (**D-7**), whose country→`slug` rule and Spain postal-prefix map are [0053's **D-4**/**D-5**](0053-order-tax-region-resolution-physical-backend.md#documented-functional-decisions) and are referenced here, never restated |
 | [0026](done/0026-product-sales-region-assignment-and-tax-resolution-backend.md) — product↔region assignment + `ResolveProductTaxRate` | `new` | Provides the `ResolveProductTaxRate` / `ResolvedTaxRate` / `TaxRateResolutionTier` contract this story consumes verbatim; its scope fence explicitly hands address→region mapping to Epic 3 |
 | [0024](done/0024-products-core-crud-backend.md) — Products | `new` | Provides `App\Enums\ProductType` (`Physical` / `Virtual`), which is how "the order is virtual" is determined at all |
-| `sales_regions` catalog | **done** (task 0016) | [`schema.md`](../../docs/database/schema.md#sales_regions); the fiscal territories the postal mapping targets, and the `is_default` row the fallback tier needs |
+| `sales_regions` catalog | **done** (task 0016) | [`schema.md`](../../docs/database/schema-products.md#sales_regions); the fiscal territories the postal mapping targets, and the `is_default` row the fallback tier needs |
 
 ### ⚠️ Forward-compatibility framing — read this before treating the feature as broken
 

@@ -223,7 +223,7 @@ $spain = ... ?? SalesRegion::query()->where('slug', self::SPAIN_SLUG)->first(); 
 ```
 
 This is the same collation-versus-`===` mismatch task 0008 found on `roles.name` (see
-[database/schema.md](../database/schema.md#roles-permissions-model_has_roles-model_has_permissions-role_has_permissions)),
+[database/schema.md](../database/schema-users-auth.md#roles-permissions-model_has_roles-model_has_permissions-role_has_permissions)),
 now on a *seeder idempotency key*, and it splits into two behaviours worth knowing before writing the
 next catalog seeder:
 

@@ -1329,7 +1329,7 @@ weight:
    person* may legitimately need, which is what justifies freeing it. A slug is derived from a title,
    and an editor reusing a title simply gets `mi-post-2` from **OQ-2**'s collision handling. The cost
    is one suffixed slug; the cost of the alternative is a broken restore.
-3. **`User`'s own stated reason does not transfer.** [schema.md](../../docs/database/schema.md#soft-deletes)
+3. **`User`'s own stated reason does not transfer.** [schema.md](../../docs/database/schema-users-auth.md#soft-deletes)
    gives two: freeing the address, and **revoking everything keyed by that string** —
    `password_reset_tokens`, which has no FK and would otherwise hand a live reset link to whoever
    claims the address next. **Nothing in this database is keyed by a blog slug**: no tokens, no auth,
@@ -1468,7 +1468,7 @@ because it FKs into `blog_tags` *and* `blog_posts` — the same reason `product_
 ### D-9 — The `(deleted_at, status, published_at)` composite index, and why it departs from this repo's default
 
 > **`deleted_at` leads, and that is a direct consequence of D-7 rather than a preference.**
-> [schema.md](../../docs/database/schema.md#users) states the rule for `users.status` in as many
+> [schema.md](../../docs/database/schema-users-auth.md#users) states the rule for `users.status` in as many
 > words: *"If one is ever added it must be composite `(deleted_at, status)`, never plain `status`,
 > because the `SoftDeletingScope` puts `deleted_at IS NULL` into every one of those queries."* Once
 > `BlogPost` soft-deletes, 0064's sweep is really
@@ -2361,7 +2361,7 @@ guessed. **None blocks Phase 2 review. OQ-2 and OQ-3 must be settled before Phas
   domain with an unbounded growth story. *Alternative:* defer to 0064, which then owns the decision
   once its query plan is real. Either is defensible; what is not acceptable is letting it default
   silently. **The column order is no longer part of this question** — `deleted_at` must lead once
-  `BlogPost` soft-deletes, per [schema.md](../../docs/database/schema.md#users)'s own rule for
+  `BlogPost` soft-deletes, per [schema.md](../../docs/database/schema-users-auth.md#users)'s own rule for
   `users.status`, so only *whether* the index ships here is open, not *what it looks like*.
 
 - **OQ-7 — Refusal-logging test file naming: fold or split?** Two conventions are live in this repo
@@ -2491,7 +2491,7 @@ original decision's scope** — they are the reason this revision is more than a
   durable form.
 - **The composite index had to be reordered** (**D-9**). `deleted_at` now leads, because the
   `SoftDeletingScope` puts `deleted_at IS NULL` into 0064's sweep and
-  [schema.md](../../docs/database/schema.md#users) states exactly this rule for `users.status`.
+  [schema.md](../../docs/database/schema-users-auth.md#users) states exactly this rule for `users.status`.
 - **The slug's fate on delete became a real design call** (**D-7b**), and it is answered *against* the
   `App\Models\User::delete()` precedent: no override, no obfuscation, the slug stays reserved.
   Obfuscating it would make a restore lossy or fallible, which defeats the decision that motivated the

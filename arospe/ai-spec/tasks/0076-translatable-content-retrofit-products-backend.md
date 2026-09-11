@@ -417,7 +417,7 @@ Feature and Unit only. **No browser tests** — this story ships no screen. This
 - [ ] Feature: re-saving a product's own slug in the same language is accepted — **three** assertions: (a) the no-op save succeeds, (b) the row is genuinely unchanged, (c) a genuinely free slug is still accepted, as the control.
 - [ ] Feature: **the wrong-key catch, written deliberately** (**D-6**, **R-5**): product A with French slug `"chaussures"` and product B with `"bottes"`; re-save A's unchanged; assert success. A generic self-save assertion catches this too, but *"A collided with itself"* is a far faster diagnosis from failure output alone.
 - [ ] Feature: writing a slug into a language the product has **no translation row in yet** is accepted — the insert case, exactly where a translation-row-id-keyed `->ignore()` has no id to pass.
-- [ ] Feature: two products may both hold a `NULL` slug in the same language — the nullable-unique property MySQL provides and [`users.pending_email`](../../docs/database/schema.md#users) already relies on.
+- [ ] Feature: two products may both hold a `NULL` slug in the same language — the nullable-unique property MySQL provides and [`users.pending_email`](../../docs/database/schema-users-auth.md#users) already relies on.
 - [ ] Feature: uniqueness is checked against the **canonical** form, so `"Chaussures De Course"` collides with a stored `"chaussures-de-course"`. *Risk if missing:* the canonicalization-before-validate residual 0024's **D-13** trap (b) records for SKU, arriving here on a second column.
 - [ ] Feature: a **foreign-key** violation (a forged `store_language_id`) is **not** misattributed as a duplicate-slug validation error — this table carries two `UNIQUE`s plus two FKs.
 
@@ -706,7 +706,7 @@ Derived from this debate; **none are in scope for 0076**.
 6. 0070's **D-1** anticipated that *"0076/0078 translate five fields"*, which is what **D-5**'s set reaches — corroboration, not authority.
 7. 0070's index-count correction dated 2026-08-29 (three, not four) was read and applied; **D-11** records why the number is conditional here in a way it is not for the single-field siblings.
 8. The three downstream break sites in **R-1** were read in 0027's own file, and the `order_items.product_name` derivation in **R-3** in 0045's and 0048's.
-9. `users.pending_email`'s nullable-unique precedent, which **D-6** relies on, was verified in [docs/database/schema.md](../../docs/database/schema.md#users) rather than assumed.
+9. `users.pending_email`'s nullable-unique precedent, which **D-6** relies on, was verified in [docs/database/schema.md](../../docs/database/schema-users-auth.md#users) rather than assumed.
 
 **One point on which the facilitator narrowed an amigo's finding rather than adopting it wholesale.** `backend-qa` flagged the sanitization hook's container resolution as *"genuinely new ground… a shape no sibling has tried"*. The **shape** is precedented — 0072's and 0074's translation models both call `app(NormalizeForSearch::class)` inside a `saving` closure — and `backend-expert` independently treated it as routine. What is new is only that the resolved class wraps a third-party sanitizer rather than a pure fold, so the residual is narrower than stated but not zero. Recorded as **R-2** with the narrowing explicit, rather than repeating the stronger claim or dropping the concern.
 

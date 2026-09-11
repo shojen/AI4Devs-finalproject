@@ -564,7 +564,7 @@ would otherwise pass for the wrong reason:
   migration's conditional backfill: there, the column's default would have mis-stated existing rows
   and a backfill was mandatory; here, any non-null default would falsely record a choice every
   existing administrator never made. Writing a backfill would be the bug.
-- **D-4 — No index.** The same cardinality argument [schema.md](../../docs/database/schema.md#users)
+- **D-4 — No index.** The same cardinality argument [schema.md](../../docs/database/schema-users-auth.md#users)
   applies to `users.status` and `users.deleted_at`: a backoffice `users` table is 10²–10³ rows, and
   this column is only ever read per-row through the primary key (`Auth::user()->ui_locale`), never
   filtered on. The query that would reopen the decision is a reporting count

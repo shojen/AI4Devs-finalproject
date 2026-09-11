@@ -702,7 +702,7 @@ filter.
 
 **`deleted_at` leads for reuse, not selectivity** — it is plainly the *least* selective predicate
 here. It leads because the `SoftDeletingScope` puts it into *every* query against this table, which is
-the rule [schema.md](../../docs/database/schema.md#users) already states for `users.status`. Between
+the rule [schema.md](../../docs/database/schema-users-auth.md#users) already states for `users.status`. Between
 `deleted_at` and `status` the order is cost-neutral for this query; the reuse argument is the
 tiebreak.
 

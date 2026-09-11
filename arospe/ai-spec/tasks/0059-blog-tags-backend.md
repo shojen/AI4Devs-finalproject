@@ -844,7 +844,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
   "a collation-backed rule is literally a different rule in the two places" argument no longer
   applies, so it must not be repeated in this story's own reasoning. **What it does not change:** the
   app-level normalised comparison is still the primary guard and the index still the backstop — that
-  is the same defence-in-depth relationship [schema.md](../../docs/database/schema.md#users) documents
+  is the same defence-in-depth relationship [schema.md](../../docs/database/schema-users-auth.md#users) documents
   for `pending_email`, and it holds regardless of engine parity, because relying on collation alone
   couples a correctness rule to a column setting nothing in `app/` protects. **D-3** stands on its own
   four arguments, none of which is the engine split.
@@ -1006,7 +1006,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
 - **R-8 — A collation-only implementation passes the case and accent tests for the wrong reason, and
   this is the story's most likely false-green.** `utf8mb4_unicode_ci` is itself case- *and*
   accent-insensitive, exactly as
-  [schema.md](../../docs/database/schema.md#roles-permissions-model_has_roles-model_has_permissions-role_has_permissions)
+  [schema.md](../../docs/database/schema-users-auth.md#roles-permissions-model_has_roles-model_has_permissions-role_has_permissions)
   documents for `roles.name`. So an implementation that skips `NormalizeForSearch` entirely — storing
   `normalized_name` as a verbatim copy of `name`, or looking up on `name` — **still passes** every
   case-only and accent-only assertion, because MySQL folds both at the index and in the `WHERE`

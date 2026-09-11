@@ -139,7 +139,7 @@ This is the **exact precedent** `App\Actions\ProductCategories\DeleteProductCate
 and documents in its own docblock — *"This MUST run before the in-use count below, never after: a
 reversed order would leak the product count to an actor who does not even hold `products.delete`
 (R-6)"* — established at 0024b/0025 and recorded in
-[database/schema.md](../../../docs/database/schema.md#product_categories) and
+[database/schema.md](../../../docs/database/schema-products.md#product_categories) and
 [architecture/authorization.md](../../../docs/architecture/authorization.md). Follow it exactly rather
 than re-deriving it.
 
@@ -263,7 +263,7 @@ not stable.
 
 `App\Livewire\Products\AttributeTypes\Index` already declares
 `#[Locked] public int $deletingTypeUsageCount = 0;`, documented in
-[api/routes.md](../../../docs/api/routes.md#product-attribute-typesindex--the-fifth-permission-gated-route-and-the-first-shipped-with-a-backend-only-placeholder-view-since-task-0017)
+[api/routes.md](../../../docs/api/products.md#product-attribute-typesindex--the-fifth-permission-gated-route)
 as *"always `0` until story 0029 adds an in-use guard — the same D7 hand-off `product_categories`'s
 own in-use block once was, deliberately not a stub returning a lying `0` from a model method"*.
 

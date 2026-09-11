@@ -415,7 +415,7 @@ consumes these arrives in a later UI story, and the products that reference a ca
       "zero call sites" is likewise false as of story 0025 — it is `App\Livewire\ProductCategories\Index`'s
       first and only caller, for all four abilities. See
       [docs/architecture/authorization.md](../../../docs/architecture/authorization.md#productcategorypolicy--the-fifth-policy-and-the-first-to-gain-its-call-site-in-a-later-story-than-the-one-that-created-it)
-      and [docs/database/schema.md](../../../docs/database/schema.md#product_categories).
+      and [docs/database/schema.md](../../../docs/database/schema-products.md#product_categories).
 - [x] Acceptance criteria met.
 
 ## Documented functional decisions
@@ -437,7 +437,7 @@ consumes these arrives in a later UI story, and the products that reference a ca
   reasons that do not generalize (identity retention, freeing an authentication identifier,
   relations that must survive). A lookup-table row has none of those. Three concrete costs of the
   other choice: (i) `Rule::unique()` does **not** apply the soft-delete scope (verified on `users`
-  — see [schema.md](../../../docs/database/schema.md#soft-deletes)), so a trashed "Footwear" would
+  — see [schema.md](../../../docs/database/schema-users-auth.md#soft-deletes)), so a trashed "Footwear" would
   squat its name forever unless every uniqueness check were made trashed-aware; (ii) `products`
   could reference a trashed parent in 0024, since `cascadeOnDelete()` never fires on a soft delete;
   (iii) 0024's guard is a *count-based gate that runs before the delete*, so it works identically
@@ -462,7 +462,7 @@ consumes these arrives in a later UI story, and the products that reference a ca
   duplicate is refused **cleanly, on the `name` field, before the database is ever asked**, and the
   `UNIQUE` index sits behind it purely as the last-word **race** guard for two concurrent creates
   that both pass validation — the same relationship
-  [schema.md](../../../docs/database/schema.md#users) documents for `pending_email`, whose unique index
+  [schema.md](../../../docs/database/schema-users-auth.md#users) documents for `pending_email`, whose unique index
   is "the last-word guard behind the application checks". Both actions convert a `23000`
   `QueryException` into a `ValidationException` on `name`, the exact pattern
   [`CreateUser`](../../../app/Actions/Users/CreateUser.php) already uses for `email`.
@@ -641,7 +641,7 @@ consumes these arrives in a later UI story, and the products that reference a ca
   can refuse a duplicate *cleanly*, with a field-level message, before the database is ever asked;
   the **`UNIQUE` index remains purely as a race-condition backstop** for two concurrent creates that
   both pass validation, exactly the relationship
-  [schema.md](../../../docs/database/schema.md#users) documents for `pending_email`, whose unique index
+  [schema.md](../../../docs/database/schema-users-auth.md#users) documents for `pending_email`, whose unique index
   is "the last-word guard behind the application checks".
   **The residual risk, unchanged and still worth naming:** the PHP normalisation must fold **at
   least** as aggressively as `utf8mb4_unicode_ci`, or a pair PHP accepts gets rejected by the index
@@ -706,7 +706,7 @@ confirmed answer, so a later reader sees what was decided and why the alternativ
   normalised values in PHP puts the refusal in the form where the administrator can act on it; the
   index then sits behind it as the last-word **race** guard for two concurrent creates that both
   pass validation, the same relationship
-  [schema.md](../../../docs/database/schema.md#users) documents for `pending_email`. Implemented by
+  [schema.md](../../../docs/database/schema-users-auth.md#users) documents for `pending_email`. Implemented by
   **D-4**, with its one implementation constraint spelled out there: the PHP normalisation must
   fold at least as aggressively as `utf8mb4_unicode_ci` (case **and** accents), or MySQL will
   reject with a `23000` a pair PHP just accepted.

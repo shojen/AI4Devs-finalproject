@@ -423,7 +423,7 @@ ship a second copy.
 ### D-7 — `ShippingZone` must **not** use `SoftDeletes`.
 
 Not a preference — soft deletes would silently disable two FK behaviours this whole design rests
-on. [`schema.md`](../../../docs/database/schema.md#soft-deletes) already records that
+on. [`schema.md`](../../../docs/database/schema-users-auth.md#soft-deletes) already records that
 `cascadeOnDelete()` never fires on a soft delete (which is why trashed users keep their `passkeys`
 rows); the same is true of `restrictOnDelete`. Adding the trait would therefore leave a trashed
 zone's memberships in place **and** stop 0036's restrict guard firing at all, letting a zone be

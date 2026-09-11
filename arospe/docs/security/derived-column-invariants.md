@@ -260,7 +260,7 @@ Two further rules the cascades need on top of it:
 Ask it of every stored derived value. The answer is never "just the class the story is named after" —
 the inputs are on other tables, edited from other screens, by other stories' shipped actions. The
 same question applied to a *hash* rather than a SKU is what
-[database/schema.md](../database/schema.md#product_attribute_values) already records as story 0029's
+[database/schema.md](../database/schema-products.md#product_attribute_values) already records as story 0029's
 dependency on 0028's id-stability guarantee: a derived column's correctness is a property of the whole
 set of paths that can move its inputs.
 

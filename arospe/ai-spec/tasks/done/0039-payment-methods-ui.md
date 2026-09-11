@@ -154,7 +154,7 @@ Feature: Payment methods settings screen (bank transfer)
     beside the existing Users entry, with a comment noting it is scaffolding 0013's registry will
     absorb. Static and ungated, exactly like the Users link — a **cosmetic** leak only; access is
     refused by `can:payment-methods.view` on the route and re-checked in `mount()`, precisely as
-    [api/routes.md](../../../docs/api/routes.md#usersindex--the-first-permission-gated-route) already
+    [api/routes.md](../../../docs/api/users-and-roles.md#usersindex--the-first-permission-gated-route) already
     documents for Users.
   - *If 0013 **has** landed:* add a `config/modules.php` entry keyed on `payment-methods.view`
     instead, and **do not touch `sidebar.blade.php`**, which 0013 replaces with `<x-sidebar-nav />`.

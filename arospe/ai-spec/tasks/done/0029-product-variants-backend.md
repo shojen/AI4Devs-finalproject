@@ -993,7 +993,7 @@ answer is that a registry row is **a reservation, not a second answer to a quest
 nothing ever *reads* `skus.sku` to learn a SKU; it is written to claim the name and deleted by
 cascade to release it. There is exactly one readable column. The precedent for a claim-row shadowing
 an identifier is already in this schema: `users.pending_email`'s unique index, which
-[schema.md](../../../docs/database/schema.md#users) calls "the last-word guard behind the application
+[schema.md](../../../docs/database/schema-users-auth.md#users) calls "the last-word guard behind the application
 checks".
 
 **The residual this option accepts.** `Product::where(...)->update(['sku' => 'X'])` through the
@@ -1259,7 +1259,7 @@ explicit `'media'`. `down()` in both files is the exact `Schema::dropIfExists(..
 | `featured_media_id` | `foreignUuid()->nullable()->constrained('media')->restrictOnDelete()` | 0024 **D-9** confirmed. **Nullable *is* the inheritance mechanism** — see **D-7** |
 | `position` | `unsignedInteger`, NOT NULL, `default(0)` | See **D-8** |
 | `timestamps()` | present | Universal in this repo |
-| — | **no `SoftDeletes`** | 0024 **D-12** reason #1 with double force: `Rule::unique()` does not apply the soft-delete scope ([schema.md](../../../docs/database/schema.md#soft-deletes)), so a trashed variant would permanently squat **both** its SKU *and* its `combination_hash` — "re-create the Size 40 / Black variant" would be refused with nothing in the UI able to explain why |
+| — | **no `SoftDeletes`** | 0024 **D-12** reason #1 with double force: `Rule::unique()` does not apply the soft-delete scope ([schema.md](../../../docs/database/schema-users-auth.md#soft-deletes)), so a trashed variant would permanently squat **both** its SKU *and* its `combination_hash` — "re-create the Size 40 / Black variant" would be refused with nothing in the UI able to explain why |
 
 **On `price` being NOT NULL rather than nullable-and-inheriting.** Read the two PRD sentences against
 each other: the Gherkin says *"that variant has its own SKU, price, and stock"*, and the acceptance

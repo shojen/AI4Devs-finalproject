@@ -576,7 +576,7 @@ a rediscovery.
   - **This repository has no audit-log table anywhere, and that is a stated project position, not an
     omission.** [PRD assumption 17](../../docs/PRD/PRD.md#assumptions--confirmed-decisions) says "no
     audit / change-history log this phase", and
-    [schema.md](../../docs/database/schema.md#soft-deletes) states it again in the concrete — "this
+    [schema.md](../../docs/database/schema-users-auth.md#soft-deletes) states it again in the concrete — "this
     app has no audit-log table" is the reason a deleted user's original address is gone rather than
     archived. Introducing the first one as a **side effect of a scope-narrow transition story** would
     make an architectural decision in the wrong place: an audit trail is its own named story, with its

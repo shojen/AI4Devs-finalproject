@@ -110,7 +110,7 @@ than inventing new ones. It does not register, rename, or move either route.
   Chain (or confirm) the authorization middleware onto
   `users.index`, **already registered by story 0004** and relocated here by story 0040, inside the
   existing `['auth', 'verified']` group — and already shipping gated on `can:users.view` (see
-  [`docs/api/routes.md`](../../../docs/api/routes.md#usersindex--the-first-permission-gated-route)).
+  [`docs/api/routes.md`](../../../docs/api/users-and-roles.md#usersindex--the-first-permission-gated-route)).
   This story confirms and, if open question 6 says so, widens that gate. Real, current file content
   (verified 2026-08-21 by reading `routes/users.php`), including the inline comment
   [`docs/api/routes.md`](../../../docs/api/routes.md) states must **not** be "normalised" away:
@@ -158,7 +158,7 @@ than inventing new ones. It does not register, rename, or move either route.
   it is this and not something else:
   - **Use Laravel's `can:`, never Spatie's `permission:`, on a `Route::livewire(...)` route.** This
     is not a preference this story invents — it is an already-documented, already-shipped project
-    rule. [`docs/api/routes.md`](../../../docs/api/routes.md#usersindex--the-first-permission-gated-route)
+    rule. [`docs/api/routes.md`](../../../docs/api/users-and-roles.md#usersindex--the-first-permission-gated-route)
     states it as *"`can:users.view`, not `permission:users.view`" — the two express the same rule but
     are not interchangeable on a `Route::livewire(...)` route*, and `routes/users.php` carries the
     same reasoning as an inline comment above `users.index` that must **not** be "normalised" away. The
@@ -446,7 +446,7 @@ Resolve before Phase 3; none of them blocks Phase 2 INVEST review.
    permission(s) compose this route's gate — question 2 below (whether `roles.manage` counts) and
    question 6 (how an any-of set can be expressed at all under `can:`), neither of which is a naming
    question. Note also that `users.index` already ships gated on `can:users.view` (see
-   [`docs/api/routes.md`](../../../docs/api/routes.md#usersindex--the-first-permission-gated-route)), so
+   [`docs/api/routes.md`](../../../docs/api/users-and-roles.md#usersindex--the-first-permission-gated-route)), so
    this story adjusts an existing gate rather than adding the first one.
 2. **~~Does "manage roles & permissions" count toward the Users gate?~~ RESOLVED 2026-08-21,
    human-confirmed.** Recommended option taken: **the two sets are fully disjoint** — matches 0013's

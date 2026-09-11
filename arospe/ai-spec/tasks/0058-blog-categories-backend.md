@@ -643,7 +643,7 @@ the two taxonomies can be diffed decision by decision. **D-13** and **D-14** are
   that do not generalize (identity retention, freeing an authentication identifier, relations that
   must survive). A lookup-table row has none of those. Three concrete costs of the other choice:
   (i) `Rule::unique()` does **not** apply the soft-delete scope (verified on `users` — see
-  [schema.md](../../docs/database/schema.md#soft-deletes)), so a trashed "Guías" would squat its name
+  [schema.md](../../docs/database/schema-users-auth.md#soft-deletes)), so a trashed "Guías" would squat its name
   forever unless every uniqueness check were made trashed-aware; (ii) `blog_posts` could reference a
   trashed parent in 0061, since a cascade never fires on a soft delete; (iii) 0061's guard is a
   *count-based gate that runs before the delete*, so it works identically against a hard delete —

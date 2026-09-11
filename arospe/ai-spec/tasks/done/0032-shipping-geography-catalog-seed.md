@@ -168,7 +168,7 @@ engines at once. The **collation** half of OQ-6 remains open and is unaffected.
   | `created_at` / `updated_at` | timestamps | consistency with every other table here |
 
   Indexes: `PRIMARY(id)`; `UNIQUE(iso_alpha2)` and `UNIQUE(ine_code)` — both nullable-unique, the
-  pattern `users.pending_email` already establishes ([schema.md](../../../docs/database/schema.md#users):
+  pattern `users.pending_email` already establishes ([schema.md](../../../docs/database/schema-users-auth.md#users):
   MySQL and SQLite both allow unlimited `NULL`s in a unique index), which is what makes "no
   duplicate entries" a *database* invariant rather than a seeder-only one; an explicit
   `INDEX(parent_id)` following this repo's be-explicit-about-FK-indexes convention
@@ -244,7 +244,7 @@ engines at once. The **collation** half of OQ-6 remains open and is unaffected.
   **unconditionally**, next to the existing `RolePermissionSeeder` call. This is real reference
   data that shipping is non-functional without in every environment — not the
   `app()->environment(['local','testing'])`-gated `test@example.com` fixture user. It extends the
-  precedent [schema.md](../../../docs/database/schema.md#roles-permissions-model_has_roles-model_has_permissions-role_has_permissions)
+  precedent [schema.md](../../../docs/database/schema-users-auth.md#roles-permissions-model_has_roles-model_has_permissions-role_has_permissions)
   already records (seeding is a required deployment step); it does not create a new one.
 
   The seeder must also be independently runnable as

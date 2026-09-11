@@ -710,7 +710,7 @@ follows. Three carry **additions** beyond the recommended option; those addition
 and are cross-referenced into [Acceptance criteria](#acceptance-criteria) and
 [Tests to perform](#tests-to-perform).
 
-> **Seeded row counts, corrected against [database/schema.md](../../../docs/database/schema.md#sales_regions)
+> **Seeded row counts, corrected against [database/schema.md](../../../docs/database/schema-products.md#sales_regions)
 > and `database/data/iso-3166-countries.json` (249 entries, España among them).** The catalog is
 > **254 rows**: 249 ISO countries + Spain's 5 fiscal territories. **6 are active** (España + its 5
 > territories); **248 countries are inactive with a `NULL` rate**. The "~249 inactive / ~255 rows"
@@ -788,7 +788,7 @@ concept the data model does not have"). Two facts settle it outright:
    about *what* is unconfigured (rate? code? description?), where the Rate column is precise.
 2. **The two axes are genuinely orthogonal in the seeded data, and conflating them would misrepresent a
    real row.** "España" ships **active with a `NULL` rate** — deliberately, as a disclosure/parent node
-   that is not independently rateable ([schema.md](../../../docs/database/schema.md#sales_regions)). An
+   that is not independently rateable ([schema.md](../../../docs/database/schema-products.md#sales_regions)). An
    Active control that also meant "configured" would have to render España as some third thing, or lie
    about it. That single row is sufficient to refuse (b).
 
@@ -944,7 +944,7 @@ earlier state. This directly strengthened Q1 and Q3: both had an alternative who
 "amends a 0017 contract confirmed at Phase 1", and for both that alternative is now a **new backend
 story with its own seven phases** instead. Neither is worth that. The counts used in the questions as
 drafted (~249 inactive, ~255 rows) were also verified and corrected to **248 inactive of 254 rows, 6
-active**, against [database/schema.md](../../../docs/database/schema.md#sales_regions) and the 249-entry
+active**, against [database/schema.md](../../../docs/database/schema-products.md#sales_regions) and the 249-entry
 ISO fixture.
 
 **The two adjacent items this pass flagged have since been applied.** They were left out of the

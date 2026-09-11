@@ -115,7 +115,7 @@ Feature: Shipping carriers
   a second alteration migration the moment that story starts.
 
   **No index on `is_active`** — the same reasoning
-  [`docs/database/schema.md`](../../../docs/database/schema.md#users) already records for
+  [`docs/database/schema.md`](../../../docs/database/schema-users-auth.md#users) already records for
   `users.status`: four rows resolve in a sub-millisecond clustered scan while an index costs a
   write on every update. If one is ever needed it must be composite, never bare `is_active`.
 
@@ -185,7 +185,7 @@ Feature: Shipping carriers
   `can:`, never `permission:` — Livewire 4's `PersistentMiddleware` allow-list carries Laravel's
   `Authorize` but not Spatie's middleware, so `permission:` would leave every `/livewire/update`
   round-trip ungated at the route layer. This is a correctness rule, not a style choice; see
-  [`docs/api/routes.md`](../../../docs/api/routes.md#usersindex--the-first-permission-gated-route).
+  [`docs/api/routes.md`](../../../docs/api/users-and-roles.md#usersindex--the-first-permission-gated-route).
 
 - `lang/en/shipping.php` + `lang/es/shipping.php` — **new**, key-for-key identical. Carrier state
   labels (`statuses.active` / `statuses.inactive`) and screen copy. Keys from the start rather than

@@ -240,7 +240,7 @@ The store action writes the original, generates both variants, then inserts the 
 a missing `.avif` renders a broken tile forever with no UI able to detect it, and an orphaned file
 is invisible garbage nobody will ever collect (this project has no audit or cleanup job — PRD
 assumption 17). This mirrors `App\Models\User::delete()`'s single-transaction discipline
-([schema.md § Soft deletes](../../../docs/database/schema.md#soft-deletes)).
+([schema.md § Soft deletes](../../../docs/database/schema-users-auth.md#soft-deletes)).
 
 ### D7 — Search is a `LIKE` scan with no index — deliberately
 
@@ -249,7 +249,7 @@ assumption 17). This mirrors `App\Models\User::delete()`'s single-transaction di
 a `FULLTEXT` index costs a write on every insert and changes match semantics (word-boundary and
 minimum-token-length rules) in ways a user typing a partial filename would experience as "search
 is broken". This is the same reasoning schema.md already records for
-[`users.status`](../../../docs/database/schema.md#users) — and per **V7** it is a scale judgement,
+[`users.status`](../../../docs/database/schema-users-auth.md#users) — and per **V7** it is a scale judgement,
 not a portability one, since the test connection is MySQL and `FULLTEXT` *would* work.
 
 The `LIKE` wildcards must be escaped (`%`, `_`, `\`) before interpolation so a user searching for
@@ -360,7 +360,7 @@ already handles the growth correctly and needs no structural change:
 
 **Deployment note:** an already-deployed environment does not gain `media.*` until `db:seed` is
 re-run. Seeding is already a documented required deployment step
-([schema.md](../../../docs/database/schema.md#roles-permissions-model_has_roles-model_has_permissions)).
+([schema.md](../../../docs/database/schema-users-auth.md#roles-permissions-model_has_roles-model_has_permissions-role_has_permissions)).
 
 ### Exact test updates this forces (verified line numbers, not guessed)
 
@@ -513,7 +513,7 @@ Physical column order as written in the migration:
 The unique is a last-word guard, not the primary defence — Laravel's `store()` already generates a
 40-character random basename, so a collision is already implausible; the constraint is what makes
 "two rows can never point at the same file" a database invariant rather than a hope (the same
-reasoning [schema.md](../../../docs/database/schema.md#users) records for `pending_email`).
+reasoning [schema.md](../../../docs/database/schema-users-auth.md#users) records for `pending_email`).
 **No index on `title`/`description`** (D7 — a leading-wildcard `LIKE` cannot use a B-tree anyway),
 **no index on `uploaded_by`** (never filtered on in this story; add it with the feature that
 needs it), **no `FULLTEXT`** (D7).

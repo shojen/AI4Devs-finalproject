@@ -218,7 +218,7 @@ itself.
 > `symfony/html-sanitizer`, `config/html-sanitizer.php` and `SanitizeProductDescription`, and it is a
 > **hard** blocker for this story specifically because this screen renders `description` unescaped and
 > binds 0021's `WysiwygEditor` to it — which
-> [api/routes.md](../../../docs/api/routes.md#applivewirecomponentswysiwygeditor--the-gallerys-first-real-consumer-and-the-second-routeless-gated-component)
+> [api/routes.md](../../../docs/api/products.md#applivewirecomponentswysiwygeditor--the-gallerys-first-real-consumer-and-the-second-routeless-gated-component)
 > forbids until *"that column's own write path runs a server-side sanitizer first"*. The third split
 > story, [0024b](../done/0024b-product-category-in-use-delete-guard.md) (the category in-use delete guard), is
 > **not** in this chain — it blocks 0025, not this story.
@@ -755,7 +755,7 @@ story's own Phase 2 correction), all non-negotiable:
 2. **Gate the routes with `can:products.view`, never `permission:products.view`** — Livewire 4's
    `PersistentMiddleware` allow-list carries Laravel's `Authorize` but not Spatie's
    `PermissionMiddleware`, so `permission:` would protect only the initial `GET`. See
-   [api/routes.md](../../../docs/api/routes.md#usersindex--the-first-permission-gated-route).
+   [api/routes.md](../../../docs/api/users-and-roles.md#usersindex--the-first-permission-gated-route).
 3. **The id fed to `Rule::unique()->ignore()` must be server-authoritative** — `#[Locked]`, assigned
    from a value read back out of the database, never from a method argument. 0029's own note warns
    this trap is *worse* one story over; getting it wrong here turns a uniqueness check into a

@@ -118,7 +118,7 @@ Documented once, linked everywhere else — do not duplicate these explanations 
 | Models | `app/Models/**` |
 | Views | `resources/views/livewire/**`, `resources/views/layouts/**`, `resources/views/components/**` (all anonymous — this repo has no `app/View/`) |
 | Declarative UI registry | `config/modules.php` — the permission-gated sidebar, read by `resources/views/components/sidebar-nav.blade.php`; see [authorization.md](authorization.md#the-second-half-of-a-module-gate-the-sidebar-registry) |
-| Uploaded files | `storage/app/public/media/**`, served through the `public/storage` symlink `composer.json`'s `setup` script creates (`storage:link`, added by story 0019 — the first story to put user-visible files there). Paths are recorded on `media` rows; see [database/schema.md](../database/schema.md#media) |
+| Uploaded files | `storage/app/public/media/**`, served through the `public/storage` symlink `composer.json`'s `setup` script creates (`storage:link`, added by story 0019 — the first story to put user-visible files there). Paths are recorded on `media` rows; see [database/schema.md](../database/schema-products.md#media) |
 | Migrations | `database/migrations/**` |
 | Seeders | `database/seeders/**` (`RolePermissionSeeder` is deploy-critical — see above) |
 | Middleware aliases & exception rendering | `bootstrap/app.php` |

@@ -134,7 +134,7 @@ public function down(): void
 - **`$table->uuidMorphs('notifiable')`, never the stub's `$table->morphs('notifiable')`.** This is the
   one line that must change and the only way this story can fail at the schema level. `morphs()` emits
   an `UNSIGNED BIGINT` `notifiable_id`; `users.id` is a `CHAR(36)` UUID
-  ([schema.md](../../../docs/database/schema.md#users)), so the stock stub produces a column that cannot
+  ([schema.md](../../../docs/database/schema-users-auth.md#users)), so the stock stub produces a column that cannot
   hold a single real recipient. `uuidMorphs()` emits `notifiable_type VARCHAR` +
   `notifiable_id CHAR(36)` plus their composite index. This is the same correction the historical
   `users` UUID conversion had to make to `spatie/laravel-permission`'s morph key
@@ -160,7 +160,7 @@ public function down(): void
   `users_uuid_unique` mistake in [errors-log.md](../../../docs/errors-log.md).
 - **No index on `read_at`.** A per-user unread count filters on an already-indexed
   `(notifiable_type, notifiable_id)` prefix first; a boolean-ish column over a backoffice-sized table
-  is the worst possible index candidate, the same reasoning [schema.md](../../../docs/database/schema.md#users)
+  is the worst possible index candidate, the same reasoning [schema.md](../../../docs/database/schema-users-auth.md#users)
   gives for omitting one on `users.status`.
 - **No foreign key to `users`.** The relation is polymorphic; an FK cannot be declared across a morph.
   This matches how `model_has_roles` already relates to `users` in this schema.

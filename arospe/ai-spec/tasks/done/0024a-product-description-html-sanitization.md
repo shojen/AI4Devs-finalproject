@@ -382,7 +382,7 @@ as its own unit rather than as a nice-to-have:
 
 | Consumer | Why it is blocked |
 | --- | --- |
-| **0027** (products list/editor UI) | Renders `description` unescaped and binds 0021's `WysiwygEditor` to it. [api/routes.md](../../../docs/api/routes.md#applivewirecomponentswysiwygeditor--the-gallerys-first-real-consumer-and-the-second-routeless-gated-component) states the rule directly: *"no consumer may bind `wire:model` to a persisted column until that column's own write path runs a server-side sanitizer first."* |
+| **0027** (products list/editor UI) | Renders `description` unescaped and binds 0021's `WysiwygEditor` to it. [api/routes.md](../../../docs/api/products.md#applivewirecomponentswysiwygeditor--the-gallerys-first-real-consumer-and-the-second-routeless-gated-component) states the rule directly: *"no consumer may bind `wire:model` to a persisted column until that column's own write path runs a server-side sanitizer first."* |
 | **0061** (blog posts backend) | Reuses this exact class and config for the blog `body` column. |
 | **0076** (products i18n retrofit) | Adds a second call site plus a model-event layer over the same value. |
 | **0077**, **0079** (language-tab editors) | Each injects `SanitizeProductDescription` directly. |

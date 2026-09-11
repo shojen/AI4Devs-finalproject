@@ -445,7 +445,7 @@ produces a *plausible* region and a *plausible* rate, and nothing looks wrong un
       recorded separately (**D-6**).
 - [ ] Integration test: a region whose `rate` is `'0.000'` resolves as a **real rate** — `tax_rate` is
       `'0.000'`, the flag stays `false`, and there is **no** fallback to the default. `null` and `0.000`
-      cannot share a meaning ([schema.md](../../docs/database/schema.md#sales_regions)).
+      cannot share a meaning ([schema.md](../../docs/database/schema-products.md#sales_regions)).
 
 ### The order's own address decides
 
@@ -744,7 +744,7 @@ rediscovery.
   the ~249 ISO rows, and `slug` carries the table's only non-FK UNIQUE index. `code` is explicitly **not**
   a resolution key — the seeder's own docblock states *"Nothing resolves by `code`, so these are starting
   values, not contracts"*, and `code` is administrator-editable
-  ([schema.md](../../docs/database/schema.md#sales_regions)), so resolving by it would let an
+  ([schema.md](../../docs/database/schema-products.md#sales_regions)), so resolving by it would let an
   administrator's cosmetic edit silently re-route an order's tax.
 
   The lower-casing is applied at the **query**, not assumed of the stored value: 0041 validates
@@ -931,7 +931,7 @@ rediscovery.
 
   | Term / case | Rule |
   | --- | --- |
-  | `tax_amount` | `subtotal × (tax_rate ÷ 100)` — `tax_rate` is a **percentage** (`21.000` means 21%), matching `sales_regions.rate`'s own semantics ([schema.md](../../docs/database/schema.md#sales_regions)) and 0054's `subtotal 100.00 @ 21% → 21.00` scenario. ⚠️ **0048's D-8 and 0054's own test plan both write the shorthand `subtotal × tax_rate`, which is dimensionally wrong read literally** — Phase 3 must implement the `÷ 100` form and, if 0048 or 0054 shipped the literal one, that is a bug in the shipped code, not a licence to copy it |
+  | `tax_amount` | `subtotal × (tax_rate ÷ 100)` — `tax_rate` is a **percentage** (`21.000` means 21%), matching `sales_regions.rate`'s own semantics ([schema.md](../../docs/database/schema-products.md#sales_regions)) and 0054's `subtotal 100.00 @ 21% → 21.00` scenario. ⚠️ **0048's D-8 and 0054's own test plan both write the shorthand `subtotal × tax_rate`, which is dimensionally wrong read literally** — Phase 3 must implement the `÷ 100` form and, if 0048 or 0054 shipped the literal one, that is a bug in the shipped code, not a licence to copy it |
   | `tax_rate` is `null` | `tax_amount = '0.00'`. The region is known and the rate is not (**D-6** case 5); no tax is invented. Distinguished from a real `'0.000'` by `tax_rate` and `flagged_for_review`, **never** by the amount, since both amounts are `'0.00'` |
   | `total` | `subtotal + tax_amount + shipping_amount` — 0045 **D-8**'s identity written out in full, so `shipping_amount` becoming non-zero (0037/0054) needs no edit here |
   | Basis | Always recomputed **from `subtotal`**, never accumulated onto the column's current value. `total += tax_amount` passes every single-run test and doubles on the second call |

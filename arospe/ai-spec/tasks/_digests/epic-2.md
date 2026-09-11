@@ -69,7 +69,7 @@ re-derive, never the full prose of a finalized story.
   story 0024b (originating in 0023/0024).
 - Full mechanism, the exception-type reasoning (`ValidationException` not a domain exception, since a
   Livewire error bag needs no per-call-site try/catch), and the residual count-disclosure note are
-  documented at [docs/database/schema.md#product_categories](../../../docs/database/schema.md#product_categories).
+  documented at [docs/database/schema-products.md#product_categories](../../../docs/database/schema-products.md#product_categories).
 
 ## Story 0025 — Product categories management screen (list, create/edit modal, blocked delete)
 
@@ -106,7 +106,7 @@ re-derive, never the full prose of a finalized story.
   and there's no second dimension to summarise like Users has "active") — story 0025.
 - Full mechanism (the two-layer gating, the `#[Locked]`/unlocked property split, the row-hint
   parity) is documented at
-  [docs/api/routes.md#product-categoriesindex--the-fourth-permission-gated-route](../../../docs/api/routes.md#product-categoriesindex--the-fourth-permission-gated-route)
+  [docs/api/products.md#product-categoriesindex--the-fourth-permission-gated-route](../../../docs/api/products.md#product-categoriesindex--the-fourth-permission-gated-route)
   and [docs/architecture/authorization.md#productcategorypolicy--the-fifth-policy-and-the-first-to-gain-its-call-site-in-a-later-story-than-the-one-that-created-it](../../../docs/architecture/authorization.md#productcategorypolicy--the-fifth-policy-and-the-first-to-gain-its-call-site-in-a-later-story-than-the-one-that-created-it).
 
 ## Story 0026 — Product ↔ Sales Region assignment and tax resolution backend (blocks story 0027)
@@ -186,7 +186,7 @@ re-derive, never the full prose of a finalized story.
   all** — removed project-wide by story 0016's own scope-change amendment (D11 there). The resolver
   and the picker have exactly two/no grouping tiers respectively — do not reintroduce a
   grouping-membership concept anywhere in story 0027 — story 0026 (D10).
-- Full mechanism is documented at [docs/database/schema.md#product_sales_region](../../../docs/database/schema.md#product_sales_region).
+- Full mechanism is documented at [docs/database/schema-products.md#product_sales_region](../../../docs/database/schema-products.md#product_sales_region).
 
 ## Story 0027 — Products list + editor UI (discharges 0026's hand-off; the first real caller of ProductPolicy/CreateProduct/UpdateProduct/DeleteProduct/SyncProductGallery/SyncProductSalesRegions/SearchSalesRegions)
 
@@ -284,7 +284,7 @@ re-derive, never the full prose of a finalized story.
   its view, its `routes/web.php` registration block and `tests/Feature/Dev/MediaGalleryHarnessRouteTest.php`
   were deleted. No later story should expect `app/Livewire/Dev/` to exist — story 0027.
 - Full mechanism is documented at
-  [docs/api/routes.md#productsindex-productscreate-and-productsedit--the-fifth-permission-gated-route-family](../../../docs/api/routes.md#productsindex-productscreate-and-productsedit--the-fifth-permission-gated-route-family)
+  [docs/api/products.md#productsindex-productscreate-and-productsedit--the-fifth-permission-gated-route-family](../../../docs/api/products.md#productsindex-productscreate-and-productsedit--the-fifth-permission-gated-route-family)
   and [docs/architecture/authorization.md#productpolicy--the-sixth-policy-and-the-second-built-entirely-for-a-screen-that-does-not-exist-yet](../../../docs/architecture/authorization.md#productpolicy--the-sixth-policy-and-the-second-built-entirely-for-a-screen-that-does-not-exist-yet).
 
 ## Story 0028 — Product variant attribute types & values backend (gap-filled at story 0029's Phase 6 — missing since 0028's own closure)
@@ -352,8 +352,8 @@ re-derive, never the full prose of a finalized story.
   authorization/validation/action wiring shipped, no real markup, matching `sales-regions.index`'s own
   precedent between tasks 0017/0018. **No `config/modules.php` sidebar entry** — third time this
   linkless half-state has occurred (after `roles.index`, `sales-regions.index`) — story 0028.
-- Full mechanism at [docs/database/schema.md#product_attribute_types](../../../docs/database/schema.md#product_attribute_types)
-  / [#product_attribute_values](../../../docs/database/schema.md#product_attribute_values).
+- Full mechanism at [docs/database/schema-products.md#product_attribute_types](../../../docs/database/schema-products.md#product_attribute_types)
+  / [#product_attribute_values](../../../docs/database/schema-products.md#product_attribute_values).
 
 ## Story 0029 — Product variants core backend (two tables, derived SKU, combination-hash duplicate guard, read-time image inheritance, self-authorizing actions)
 
@@ -470,8 +470,8 @@ re-derive, never the full prose of a finalized story.
   own a combination generator. Neither 0029a nor 0029b had started as of this story's own closure
   (both still sit at the top level of `ai-spec/tasks/`, not `in-progress/`) — a later story must not
   assume either has shipped.
-- Full mechanism at [docs/database/schema.md#product_variants](../../../docs/database/schema.md#product_variants)
-  / [#product_variant_values](../../../docs/database/schema.md#product_variant_values), and
+- Full mechanism at [docs/database/schema-products.md#product_variants](../../../docs/database/schema-products.md#product_variants)
+  / [#product_variant_values](../../../docs/database/schema-products.md#product_variant_values), and
   [docs/architecture/authorization.md#product-variant-actions-gate-against-the-parent-product-not-a-new-policy](../../../docs/architecture/authorization.md#product-variant-actions-gate-against-the-parent-product-not-a-new-policy).
 
 ## Story 0029a — Attribute type & value in-use delete guards backend (split out of 0029's D-10; discharges 0028's own Q3/D7 hand-off)
@@ -526,9 +526,9 @@ re-derive, never the full prose of a finalized story.
 - **This story ships NO migration, NO new column, NO permission, NO policy change, NO Livewire
   component, NO route, NO Blade view and NO browser test** — every FK it counts against is story
   0029's. Full mechanism at
-  [docs/database/schema.md#product_attribute_types](../../../docs/database/schema.md#product_attribute_types)
+  [docs/database/schema-products.md#product_attribute_types](../../../docs/database/schema-products.md#product_attribute_types)
   and
-  [docs/database/schema.md#since-story-0029a-deleting-a-value-in-use-is-hard-refused-per-value-with-a-message-naming-the-exact-count](../../../docs/database/schema.md#since-story-0029a-deleting-a-value-in-use-is-hard-refused-per-value-with-a-message-naming-the-exact-count).
+  [docs/database/schema-products.md#since-story-0029a-deleting-a-value-in-use-is-hard-refused-per-value-with-a-message-naming-the-exact-count](../../../docs/database/schema-products.md#since-story-0029a-deleting-a-value-in-use-is-hard-refused-per-value-with-a-message-naming-the-exact-count).
 
 ## Story 0029b — Product variant combination generator backend (the cartesian "generate all combinations" action; split out of 0029 at Phase 2 on INVEST "Small")
 
@@ -588,7 +588,7 @@ re-derive, never the full prose of a finalized story.
 - **This story ships NO Livewire component, NO route, NO Blade view, NO browser test, NO new
   permission and NO `product_product_attribute_type` declaration table** — story 0031 owns the
   generator's UI. Full mechanism at
-  [docs/database/schema.md#product_variants](../../../docs/database/schema.md#product_variants) and
+  [docs/database/schema-products.md#product_variants](../../../docs/database/schema-products.md#product_variants) and
   [docs/architecture/authorization.md#product-variant-actions-gate-against-the-parent-product-not-a-new-policy](../../../docs/architecture/authorization.md#product-variant-actions-gate-against-the-parent-product-not-a-new-policy).
 
 ## Story 0030a — Attribute value rename: usage warning and SKU-collision error rendering (amendment to 0030, found and recommended by 0031's Phase 1 debate)
@@ -604,7 +604,7 @@ re-derive, never the full prose of a finalized story.
   `ProductAttributeType::variantUsageCount()` (public, single scalar, `DISTINCT`-summed across a whole
   type — story 0029a) both exist to **refuse cheaply**; `variantUsageCounts()` exists to **display**
   a count per row without an N+1. Full three-way table at
-  [docs/database/schema.md#product_attribute_values](../../../docs/database/schema.md#product_attribute_values) —
+  [docs/database/schema-products.md#product_attribute_values](../../../docs/database/schema-products.md#product_attribute_values) —
   story 0030a.
 - **A generic, single `@error('sku')` outlet is the established convention for rendering ANY
   `sku`-keyed `ValidationException` on a screen that has no SKU field of its own.** Reuse this pattern
@@ -636,9 +636,9 @@ re-derive, never the full prose of a finalized story.
 - **This story ships NO migration, NO new column, NO new permission, NO route, NO new translation
   key for any of the four SKU-refusal messages (all reused as-is from story 0029), and does NOT touch
   `SyncProductAttributeValues::firstValueInUse()`.** Full mechanism at
-  [docs/api/routes.md#product-attribute-typesindex--the-fifth-permission-gated-route](../../../docs/api/routes.md#product-attribute-typesindex--the-fifth-permission-gated-route)
+  [docs/api/products.md#product-attribute-typesindex--the-fifth-permission-gated-route](../../../docs/api/products.md#product-attribute-typesindex--the-fifth-permission-gated-route)
   and
-  [docs/database/schema.md#product_attribute_values](../../../docs/database/schema.md#product_attribute_values).
+  [docs/database/schema-products.md#product_attribute_values](../../../docs/database/schema-products.md#product_attribute_values).
 
 ## Story 0031a — Product variant generator: the cartesian combination builder UI (composes onto 0031's `VariantBuilder`; `GenerateProductVariantCombinations`'s first and only UI call site; Epic 2's product arc closes)
 
@@ -672,6 +672,6 @@ re-derive, never the full prose of a finalized story.
 - **This story ships NO migration, NO model, NO action, NO policy, NO validation rule, NO permission-
   catalog change, NO reorder control, and NO "regenerate and overwrite" affordance** — every one of
   those is 0029b's or 0031's, unchanged and reused as-is. Full mechanism at
-  [docs/api/routes.md#productsindex-productscreate-and-productsedit--the-fifth-permission-gated-route-family](../../../docs/api/routes.md#productsindex-productscreate-and-productsedit--the-fifth-permission-gated-route-family)
+  [docs/api/products.md#productsindex-productscreate-and-productsedit--the-fifth-permission-gated-route-family](../../../docs/api/products.md#productsindex-productscreate-and-productsedit--the-fifth-permission-gated-route-family)
   and
-  [docs/database/schema.md#product_variants](../../../docs/database/schema.md#product_variants).
+  [docs/database/schema-products.md#product_variants](../../../docs/database/schema-products.md#product_variants).

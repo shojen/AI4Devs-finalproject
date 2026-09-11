@@ -667,7 +667,7 @@ interim and what must not happen before it closes.
 - [x] Documentation updated (docs-keeper, 2026-09-01). `docs/database/schema.md` gained `products`
       and `product_media` sections (columns/indexes verified with `php artisan db:table` against
       this worktree's `testing_0024` database, not read off the migration), the new
-      [Out-of-stock is computed, never stored](../../docs/database/schema.md#out-of-stock-is-computed-never-stored)
+      [Out-of-stock is computed, never stored](../../docs/database/schema-products.md#out-of-stock-is-computed-never-stored)
       subsection, ER-diagram entities for `PRODUCT_CATEGORIES`/`PRODUCTS`/`PRODUCT_MEDIA`, and a
       correction to `product_categories`' own now-false "no entity in the diagram" claim.
       `docs/decisions/0001-uuid-primary-keys.md` gained **Amendment 3** (Products needed no
@@ -1122,7 +1122,7 @@ from day one, so 0029 reuses it rather than re-implementing it — which **RQ-9*
 Consistent with 0023 D-3 and 0028, but for reasons specific to `products`:
 
 1. **`Rule::unique()` does not apply the soft-delete scope** — verified on `users`, recorded in
-   [schema.md](../../../docs/database/schema.md#soft-deletes). A trashed product would **permanently squat
+   [schema.md](../../../docs/database/schema-users-auth.md#soft-deletes). A trashed product would **permanently squat
    its SKU**, so re-listing a discontinued line under its own SKU would be refused with nothing in the
    UI able to explain why. A direct, user-visible defect on this story's *central* uniqueness rule.
 2. **`users`' reasons do not transfer.** It soft-deletes to retain identity, free an authentication
@@ -1242,7 +1242,7 @@ precedents for exactly the shape `SyncProductGallery` takes below — it is the 
 this pattern, not a bespoke exception. `ProductCategories/` (0023) is the **sole, explicitly
 flagged exception to the first half** (an action performing a real domain operation with no
 authorization at all), recorded as a ⚠️ gap in
-[schema.md](../../../docs/database/schema.md#product_categories) — an exception to be discharged by 0025,
+[schema.md](../../../docs/database/schema-products.md#product_categories) — an exception to be discharged by 0025,
 not a precedent to copy. **`backend-qa`'s recorded dissent at the original debate was correct**, and
 was overruled on false evidence; it is adopted here.
 
@@ -1386,7 +1386,7 @@ That is precisely the property that makes the reorder control expressible withou
 > **Why shipping `description` unsanitized here is safe, stated explicitly rather than left implicit.**
 > This project's conventions warn hard against persisting an unsanitized value "temporarily"
 > ([base-standards.md](../../../docs/conventions/base-standards.md#a-wireignored-client-owned-region--the-apps-first-instance),
-> [api/routes.md](../../../docs/api/routes.md#applivewirecomponentswysiwygeditor--the-gallerys-first-real-consumer-and-the-second-routeless-gated-component)),
+> [api/routes.md](../../../docs/api/products.md#applivewirecomponentswysiwygeditor--the-gallerys-first-real-consumer-and-the-second-routeless-gated-component)),
 > and that warning is about a **render** sink. Three conditions hold across this story's whole life,
 > and together they make the interim exposure **zero** rather than merely small:
 >

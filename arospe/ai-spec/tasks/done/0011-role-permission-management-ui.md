@@ -226,7 +226,7 @@ Feature: Roles & permissions management UI
   > component needs no other new property to render the screen**, so the rest of the diff to this file
   > stays empty. Bind to the names above; do not rename them, do not unlock a `#[Locked]` one, and do
   > not add a duplicate under this story's originally guessed name. The same surface is documented in
-  > [`docs/api/routes.md`](../../../docs/api/routes.md#rolesindex--the-second-permission-gated-route).
+  > [`docs/api/routes.md`](../../../docs/api/users-and-roles.md#rolesindex--the-second-permission-gated-route).
 - `resources/views/livewire/roles.blade.php` — **the core deliverable.** **Corrected 2026-08-20
   (found running 0010's own test suite, which needs this same view to render) — not a kebab-case
   mirror path, and not nested under `roles/`.** `App\Livewire\Roles\Index` is an `Index` class inside

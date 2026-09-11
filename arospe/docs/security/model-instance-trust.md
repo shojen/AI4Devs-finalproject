@@ -75,7 +75,7 @@ each worth internalising because each defeats a different plausible "fix":
 1. **It locks the wrong rows.** The lock covers `where('is_default', true)` — the rows being *cleared*. The
    row being *promoted* is not in that set; `whereKeyNot()` explicitly removes it even when it is.
 2. **On MySQL it happens to lock every row anyway — and that still does not help.** `sales_regions.is_default`
-   carries no index ([0016 omitted it deliberately](../database/schema.md#indexes--one-present-by-choice-one-by-requirement-four-omitted)),
+   carries no index ([0016 omitted it deliberately](../database/schema-products.md#indexes--one-present-by-choice-one-by-requirement-four-omitted)),
    so under REPEATABLE READ this locking scan examines and locks the whole table. The replacement row *is*
    locked. It makes no difference, because the guard has already read its stale copy.
 3. **A lock protects a row from changing; it cannot retroactively refresh a value already in a PHP variable.**
