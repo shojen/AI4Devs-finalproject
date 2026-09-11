@@ -655,17 +655,17 @@ would otherwise pass for the wrong reason:
   `backend-qa` recommended taking no `User` parameter at all, so that there is structurally nothing
   to target. The competing consideration is that a zero-target action is uncallable from a console
   command or queued job, which conflicts with
-  [0008a's rule](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+  [0008a's rule](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
   that an action be independently callable. Both are honoured: the signature is
   `__invoke(UiLocale $locale, ?User $user = null)`, and the *rule* — "an
   HTTP caller may write only their own row" — is derived from `Auth::user()` inside the action, never
   passed in. A caller with no authenticated actor (Artisan, queued job) may target any user; a caller
   with one may only target themselves. This keeps the action independently callable per
-  [0008a's convention](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+  [0008a's convention](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
   while closing the cross-user write `backend-qa` correctly flagged. No policy and no permission is
   introduced: setting one's own UI language is self-service, and every account does it identically.
 - **D-12 — The action lives in `app/Actions/Users/`, not a new `app/Actions/Locale/`.**
-  [base-standards.md](../../docs/conventions/base-standards.md#directory-structure)'s rule is that a
+  [base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)'s rule is that a
   subfolder is either a module area or a **named cross-cutting concern**, and `app/Actions/Auth/`
   earned its place only because its classes are called from two different module areas. This action
   has one caller and writes a `users` column, exactly like `RequestEmailChange` / `ConfirmEmailChange`.

@@ -268,7 +268,7 @@ addresses). Two named states for the cases the tests need repeatedly:
 Mirrors [`UserValidationRules`](../../../app/Concerns/UserValidationRules.php) /
 [`ProfileValidationRules`](../../../app/Concerns/ProfileValidationRules.php) exactly — `<Noun>ValidationRules`
 trait, `<noun>Rules()` methods returning rule arrays, flat and single-concern
-([naming.md](../../../docs/conventions/naming.md#traits-and-their-methods)):
+([naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)):
 
 ```php
 protected function customerRules(?string $customerId = null): array;   // the whole payload
@@ -307,7 +307,7 @@ Each performs, in this order:
 1. `Gate::authorize('create', Customer::class)` / `Gate::authorize('update', $customer)` as its
    **first** statement — routed through `App\Policies\CustomerPolicy` (**D-12**), and living in the
    class that performs the operation rather than in a caller that does not exist yet
-   ([base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
+   ([base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
    Note `create` is asked **class-level** (no instance exists yet) while `update` takes the resolved
    `Customer`, exactly as `SalesRegionPolicy`'s own two abilities are asked.
 2. Normalise the email with `Str::lower()` **before** validating, so the rule and the write see the
@@ -326,7 +326,7 @@ data, not an authentication identifier.
 
 Scaffolded with `php artisan make:policy CustomerPolicy --model=Customer --no-interaction`.
 Auto-discovered by name, with no `AuthServiceProvider`
-([base-standards.md](../../../docs/conventions/base-standards.md#directory-structure)). Modelled
+([base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure)). Modelled
 directly on the shipped [`SalesRegionPolicy`](../../../app/Policies/SalesRegionPolicy.php) (story 0017)
 — flat, tier-free abilities delegating straight to `hasPermissionTo()`, with the permission names
 declared as constants on the class that owns the rule
@@ -875,7 +875,7 @@ reasoning is recorded so it can be reversed knowingly.
    lowercasing must happen at *every* write site (**D-5**), and the `23000` → `ValidationException`
    conversion must too. With no action, "every write site" means 0044's component plus every future
    caller — precisely the drift
-   [base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+   [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
    exists to prevent, and precisely the gap task 0008a had to close retroactively for `CreateUser` /
    `UpdateUser`.
 2. **`SalesRegion` is not a parallel case.** It has no create path at all — the catalog is seeded,
@@ -954,7 +954,7 @@ before/after.
   fixed by trimming every `OPTIONAL_FIELDS` value the blank-to-`null` pass does not null out. **F-6**
   — the normalisation logic was duplicated verbatim inside both `CreateCustomer` and `UpdateCustomer`;
   moved into the single shared `CustomerValidationRules::normalizeCustomerAttributes()` both actions
-  compose, per [base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+  compose, per [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
   "move the rule, never copy it" rule. **F-7** — two docblocks cited the trait constant as the invalid
   `CustomerValidationRules::OPTIONAL_FIELDS` form (PHP refuses a direct trait-constant reference);
   corrected to the `App\Actions\Customers\CreateCustomer::OPTIONAL_FIELDS` form, matching the

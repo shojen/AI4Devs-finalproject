@@ -277,7 +277,7 @@ demand has no such ordering hazard.
   **No `Gate::policy()` registration, and no `AppServiceProvider` change for the policy at all.**
   `App\Policies\RolePolicy` binds to `App\Models\Role` by Laravel 13's auto-discovery, which is this
   repo's documented, registration-free convention
-  ([base-standards.md](../../../docs/conventions/base-standards.md#directory-structure),
+  ([base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure),
   [naming.md](../../../docs/conventions/naming.md#classes)). An earlier draft of this story kept an
   explicit `Gate::policy(Role::class, RolePolicy::class)` line, justified by the claim that code paths
   still holding a `Spatie\Permission\Models\Role` instance would otherwise not resolve the policy. **The
@@ -579,7 +579,7 @@ Two reasons it is bounded this way rather than left as a completion gate:
 
 **Note for Phase 6 (`docs-keeper`), unrelated to the above.** `app/Exceptions/` is a stock
 `make:exception` Laravel location, exactly like `app/Enums/` and `app/Policies/`, so
-[`docs/conventions/base-standards.md`](../../../docs/conventions/base-standards.md#directory-structure)'s
+[`docs/conventions/base-standards.md`](../../../docs/conventions/directory-structure.md#directory-structure)'s
 "stock Laravel locations … creating one of them needs no approval" sentence should list it alongside the
 others when this story adds `app/Exceptions/ImmutableRoleException.php`. Recorded here so it is not
 rediscovered as a question; not a change to make before Phase 6.

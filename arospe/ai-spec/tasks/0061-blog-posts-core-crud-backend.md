@@ -379,7 +379,7 @@ This is the same call task 0018 made for `SalesRegionKind`.
 | `app/Models/BlogCategory.php` | **Modify (0058 creates it).** Gains exactly one method: `/** @return HasMany<BlogPost, $this> */ public function posts(): HasMany`. It is what the delete guard counts through. 0058 deliberately omitted it ("`posts()` references a class and table that do not exist until 0061"). |
 | `app/Models/BlogTag.php` | **Modify (0059 creates it).** Gains exactly one method: `/** @return BelongsToMany<BlogPost, $this> */ public function posts(): BelongsToMany`. 0059's scope fence names this story as its owner. |
 | `database/factories/BlogPostFactory.php` | **New**, via `php artisan make:factory BlogPostFactory --model=BlogPost --no-interaction`. `blog_category_id => BlogCategory::factory()` so a bare `->create()` stands alone; `status => Draft` deliberately matching the column default; `published_at => null`. **Does not set `slug`** — the model hook derives it, which is itself a small proof the hook fires on the insert path. States: `draft()`, `published()`, `scheduled()`, `withTags(int $count)`. |
-| `app/Concerns/BlogPostValidationRules.php` | **New**, `<Noun>ValidationRules` / `<noun>Rules()` per [naming.md](../../docs/conventions/naming.md#traits-and-their-methods), where the noun is the **field**, not the model. Full rule set in **D-12**. |
+| `app/Concerns/BlogPostValidationRules.php` | **New**, `<Noun>ValidationRules` / `<noun>Rules()` per [naming.md](../../docs/conventions/naming-validation-traits.md#traits-and-their-methods), where the noun is the **field**, not the model. Full rule set in **D-12**. |
 
 > **Naming trap, inherited from 0024's own debate and live again here.** 0058 claims `nameRules()`
 > on `BlogCategoryValidationRules` and 0059 claims `nameRules()` / `nameFormatRules()` on
@@ -2063,7 +2063,7 @@ by adding a second guard. *(Read from `refresh()`'s documented semantics, **not*
 execution — `vendor/` is absent here, **V-8**.)*
 
 **Placed before `Gate::authorize()`, deliberately.**
-[base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+[base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
 ⚠️ records that *"authorize before the first write"* and *"re-read what you authorize against"* pull
 in opposite directions. Three reasons the re-read wins here:
 

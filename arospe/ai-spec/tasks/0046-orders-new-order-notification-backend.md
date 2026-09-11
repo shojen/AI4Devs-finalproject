@@ -170,7 +170,7 @@ be worse, because it would let this story ship against a table nobody in this st
 
 `app/Notifications/OrderCreated.php` — **new**. `app/Notifications/` is a stock Laravel location
 (`make:notification`), so no folder approval is needed
-([base-standards.md](../../docs/conventions/base-standards.md#directory-structure)). It will be the
+([base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)). It will be the
 folder's **fourth** class (`PendingEmailVerification`, `UserInvitation`, 0043's `CustomerCreated`).
 
 ```php
@@ -223,7 +223,7 @@ class OrderCreated extends Notification
 `app/Actions/Orders/NotifyOrderCreated.php` — **new**, invokable, imperative verb-phrase name with no
 `Action`/`Service` suffix per [naming.md](../../docs/conventions/naming.md#classes). It lands in the
 `app/Actions/Orders/` subfolder **story 0045 creates** for `CreateOrder` — one subfolder per domain
-area, per [base-standards.md](../../docs/conventions/base-standards.md#directory-structure).
+area, per [base-standards.md](../../docs/conventions/directory-structure.md#directory-structure).
 
 ```php
 public function __invoke(Order $order): void
@@ -385,7 +385,7 @@ and no more.
 - [ ] `vendor/bin/pint --format agent` clean (unscoped, **not** `--dirty`) and Larastan level 7 passing.
 - [ ] Code reviewed (code-reviewer).
 - [ ] No security findings (appsec-auditor) — specifically: that the recipient query cannot be widened by caller-supplied input; that the payload leaks no customer or order field beyond `order_id` / `order_number` / `customer_name` (no email, no address, no total); that a dispatch cannot be triggered by an actor who failed the `orders.create` gate; and that adding this side effect to `CreateOrder` grants no capability to a less-privileged caller — the shared-code lesson from [errors-log.md](../../docs/errors-log.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24). **`CreateOrder`'s caller list must be re-grepped at Phase 3** (`grep -rn "CreateOrder" app/`), not assumed to be one screen.
-- [ ] Documentation updated (docs-keeper) — [conventions/base-standards.md](../../docs/conventions/base-standards.md#directory-structure) (`app/Notifications/` gains a fourth class; `app/Actions/Orders/` gains a second). **No schema or migration doc change**: this story adds no column, table or migration, and [database/schema.md](../../docs/database/schema.md)'s `notifications` section is story 0043's to write.
+- [ ] Documentation updated (docs-keeper) — [conventions/base-standards.md](../../docs/conventions/directory-structure.md#directory-structure) (`app/Notifications/` gains a fourth class; `app/Actions/Orders/` gains a second). **No schema or migration doc change**: this story adds no column, table or migration, and [database/schema.md](../../docs/database/schema.md)'s `notifications` section is story 0043's to write.
 - [ ] **The Definition of Done explicitly does NOT include a notification-viewer UI**, for this story or for the Epic 3 batch as currently decomposed. See 0043's OQ-3.
 - [ ] Acceptance criteria met.
 

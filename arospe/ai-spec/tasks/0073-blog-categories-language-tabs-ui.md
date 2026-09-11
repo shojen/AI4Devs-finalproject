@@ -817,7 +817,7 @@ here verbatim — superseding this story's earlier component-only shape; see **C
 | **2 — action** | `App\Actions\Blog\SetBlogCategoryTranslation` | `Gate::authorize('update', $blogCategory)` then its own `Validator::make(...)->validate()` | binds **every** caller — a future importer, Artisan command or queued job inherits the whole rule with no component in sight |
 
 **Why both.** This repo has ruled on the identical question twice, in the same direction.
-[base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+[base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 establishes that *"if an operation must not happen without a permission, the check lives in the class
 that performs the operation"* — layer 2 — and task 0017's Sales Regions precedent adds the converse in
 as many words: ***"a component that authorizes as well is a layer, not a redundancy … a reviewer who

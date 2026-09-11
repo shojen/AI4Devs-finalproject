@@ -49,7 +49,7 @@ sanitized it.
 
 `App\Actions\Products\SanitizeProductDescription` is the **only** class in `app/` that imports
 `symfony/html-sanitizer` (mirroring how `App\Actions\Media\GenerateImageConversions` confines the
-imaging library to one class — see [conventions/base-standards.md](../conventions/base-standards.md#directory-structure)),
+imaging library to one class — see [conventions/base-standards.md](../conventions/directory-structure.md#directory-structure)),
 and it is constructor-injected into both actions as their **third** collaborator, matching the
 `code-style.md`-documented exception for an action whose `__invoke()` signature is a public contract
 (see [code-style.md](../conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)).

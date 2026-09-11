@@ -373,7 +373,7 @@ parameter (never used inside the body) so a future per-row rule needs no signatu
 | `confirmDelete()` / `deleteType()` | `Gate::authorize('delete', $target)` → `products.delete` |
 
 **Every mutating/disclosing action self-authorizes as its own first statement, per
-[`base-standards.md`](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+[`base-standards.md`](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
 "an authorization rule belongs to the action, not to one of its callers" convention** — verified
 against the real `App\Actions\ProductCategories\CreateProductCategory`, which constructor-injects
 `App\Actions\Auth\LogRefusedPrivilegedAttempt` and calls
@@ -896,7 +896,7 @@ implements against a settled contract rather than re-litigating.
   migration Epic 5 inherits, not a silent gap.
 - **Q5 → `product-attribute-types.index`.** Two-segment `<resource>.<action>` route name, per the
   recommendation. **One deviation from the task file's literal "Modifies routes/web.php" snippet**:
-  [`conventions/base-standards.md`](../../../docs/conventions/base-standards.md#directory-structure)
+  [`conventions/base-standards.md`](../../../docs/conventions/directory-structure.md#directory-structure)
   has established the one-file-per-area convention since task 0040 (`routes/users.php`,
   `roles.php`, `sales-regions.php`, `product-categories.php`, all `require`d from `web.php`), and
   every later story that added a gated route followed it rather than inlining into `web.php`. This

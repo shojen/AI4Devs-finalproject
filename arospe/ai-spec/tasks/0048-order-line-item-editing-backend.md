@@ -275,7 +275,7 @@ Feature: Order line-item editing (backend)
 The hard block's refusal. Follows [`RoleInUseException`](../../app/Exceptions/RoleInUseException.php)
 exactly — a `RuntimeException` subclass with a `render()` method returning **409 Conflict**, both a
 `JsonResponse` and a plain `Response` branch. `App\Exceptions\` is a stock Laravel location
-([base-standards.md](../../docs/conventions/base-standards.md#directory-structure)), and this becomes
+([base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)), and this becomes
 the repo's **fourth** response-rendering domain exception beside `ImmutableRoleException` (403),
 `RoleInUseException` (409) and `PasswordConfirmationRequiredException` (423).
 
@@ -293,7 +293,7 @@ same rule story 0015a's `PasswordConfirmationRequiredException` established
 Story [0045](0045-orders-core-crud-backend.md) creates this trait; this story appends to it rather than
 introducing a second one — `<Noun>ValidationRules` is named after the model whose input it describes,
 not after the screen or the action that submits it
-([naming.md](../../docs/conventions/naming.md#traits-and-their-methods)). Three additions:
+([naming.md](../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)). Three additions:
 
 ```php
 protected function orderItemQuantityRules(): array;   // ['required','integer','min:1']
@@ -363,7 +363,7 @@ performing **in this order** (the ordering is part of the guard, not an implemen
 
 > **`app/Actions/Orders/` is 0045's folder, created by `CreateOrder`.** This story adds three classes to
 > it; it does not create a new area. One subfolder per domain, per
-> [base-standards.md](../../docs/conventions/base-standards.md#directory-structure).
+> [base-standards.md](../../docs/conventions/directory-structure.md#directory-structure).
 
 ### Why three actions and not one `UpdateOrderItems($order, array $diff)`
 
@@ -697,7 +697,7 @@ rediscovery.
   configured for "orders" behaves coherently. **The reversal path:** if a product rule ever separates
   them, it is a new catalog constant plus one changed `Gate::authorize()` argument per action — the
   ability's *location* (in the action, per
-  [base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers))
+  [base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers))
   does not move.
 
 - **D-3 — Three single-purpose actions, not one diff-taking action.** *(`backend-expert`.)* The full
@@ -733,7 +733,7 @@ rediscovery.
     this rule answers "is this order editable", and the answer is the same for everyone. Putting it in
     an `OrderPolicy` would encode an actor-shaped question that has no actor-shaped answer.
   - **It lives in each action, not in a caller**, per
-    [the action-owns-the-rule convention](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers).
+    [the action-owns-the-rule convention](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers).
     Three copies of the `if` is the cost; the alternative — one guard in story 0055's component — leaves
     every non-dashboard caller (an API endpoint, an Artisan command, a queued job) completely unguarded.
     **If the three `if`s ever become four, extract a shared guard class** in the shape

@@ -576,7 +576,7 @@ timing.
   two components instead of between a component and the middleware. `app/Concerns/` is the right home
   — this repo's existing "shared traits composed at the consumer" folder — but note it holds **only**
   `*ValidationRules` traits today, so this is its first non-validation inhabitant and
-  [base-standards.md](../../docs/conventions/base-standards.md#directory-structure)'s one-line
+  [base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)'s one-line
   description of the folder needs widening in the docs pass.
   ⚠️ **Sequencing:** build `LanguageSwitcher` consuming the trait **from the start**, in the same
   implementation pass — do not ship it with inline logic and treat extracting the trait as optional
@@ -776,7 +776,7 @@ notification to another story's owner, and **R-3**/**R-4**/**R-7** are Phase 3 v
     recorded red results.
 12. Run all three quality gates unscoped and record each result, including any not run.
 13. Docs pass per the Definition of Done — including widening
-    [base-standards.md](../../docs/conventions/base-standards.md#directory-structure)'s `app/Concerns/`
+    [base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)'s `app/Concerns/`
     description, which today says "validation rule sets" and gains its first non-validation trait here.
 
 ## Provenance

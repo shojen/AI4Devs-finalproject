@@ -337,7 +337,7 @@ Nothing is user-visible yet: the screen that renders the refusal is story 0025, 
       action, and its siblings `CreateProductCategory`/`RenameProductCategory`, permanently ungated for
       any non-HTTP caller — the exact shape [errors-log.md's task 0008a entry](../../../docs/errors-log.md)
       records). The component **may** authorize too, as a fail-fast layer (defence in depth, not
-      duplication — see [base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+      duplication — see [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
       task 0017 precedent), but the action owns the rule. Once that gate exists, `DeleteProductCategory`
       *does* have actor context (`Auth::user()`, resolved internally by `LogRefusedPrivilegedAttempt`)
       — **OQ-B1**'s "no actor context" reasoning applies only to the separate domain-invariant refusal
@@ -544,7 +544,7 @@ already opening `DeleteProductCategory`. **It deliberately does not**, for two r
    `app/Actions/ProductCategories/` holds `CreateProductCategory`, `RenameProductCategory` and
    `DeleteProductCategory`. 0023 shipped all three unauthorized as an explicit, documented hand-off to
    **0025** — recorded as a ⚠️ in [schema.md](../../../docs/database/schema-products.md#product_categories) and in
-   [base-standards.md](../../../docs/conventions/base-standards.md#directory-structure). Gating only the
+   [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure). Gating only the
    one this story happens to touch produces an inconsistency a reader cannot explain from the code,
    and it silently changes 0025's job from "add three gates" to "add two, and find out why".
 2. **Scope.** This story exists because the original 0024 was too large. Absorbing 0023's hand-off
@@ -581,7 +581,7 @@ which both discloses the count to someone with no right to it and hides the real
 > permanently ungated for any future non-HTTP caller (a queued job, an Artisan command, a second
 > component). That is the identical shape [errors-log.md's task 0008a entry](../../../docs/errors-log.md)
 > already records as a real gap, not a hypothetical one. The correction below is not a new decision —
-> it is what **D-B1** and this project's own [action-owns-the-rule convention](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+> it is what **D-B1** and this project's own [action-owns-the-rule convention](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 > already implied; only the ordering text was ambiguous.
 
 So the shipped shape in 0025 is `DeleteProductCategory` **self-authorizing as its own first statement**,
@@ -608,7 +608,7 @@ public function __invoke(ProductCategory $productCategory): bool
 `LogRefusedPrivilegedAttempt` becomes the action's constructor-injected collaborator at that point (0024b
 itself adds no such dependency — this is 0025's diff, not this story's). The component **may** also
 authorize before calling the action, as a fail-fast UI layer (defence in depth, not duplication — see
-[base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+[base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
 task 0017 precedent for exactly this shape), but the action is what a non-HTTP caller inherits, and it is
 what makes the rule real rather than a UI convenience. The two refusals stay distinguishable by type:
 **403** for the authorization one, a `ValidationException` on `productCategoryId` for the invariant.

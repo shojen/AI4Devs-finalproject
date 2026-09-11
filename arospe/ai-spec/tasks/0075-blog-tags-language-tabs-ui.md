@@ -667,7 +667,7 @@ adds it"*.
 case that looks like an exception and is not"*: 0059 already made the tag actions responsible for their
 own validation, so adding a component-side copy would duplicate a rule the action owns and invite the
 two to drift — exactly what
-[base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+[base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
 *"move the rule, never copy it"* forbids. The principle is *"the operation is protected without relying
 on its caller"*, not *"the check appears in exactly two files"*. ⚠️ **The asymmetry is the whole rule
 and is easy to invert:** component-only is **never** acceptable (0008a's finding — every non-dashboard
@@ -992,7 +992,7 @@ it authorizes and validates regardless of any caller. The component still author
 - **Adopted: (a)** — `App\Actions\Blog\SetBlogTagTranslation`, and the story is reclassified
   **fullstack**. This is what **D-3** had proposed independently, on three grounds the resolution
   confirms: 0070's **D-12** literally anticipated it (*"called by whichever UI story adds it"*);
-  [base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+  [base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
   requires the rule to live in the class performing the operation, since otherwise no queued job or
   Artisan caller inherits it (0008a's finding); and it is the only option compatible with 0060's D-1.
 - **Rejected: (b)**, the component calling `SetTranslation` directly — 0071's original shape, overruled

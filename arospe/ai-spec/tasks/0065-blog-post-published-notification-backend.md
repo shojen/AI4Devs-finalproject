@@ -294,7 +294,7 @@ Feature: Blog post published notification
 
 `app/Notifications/BlogPostPublished.php` — **new**. `app/Notifications/` is a stock Laravel location
 (`make:notification`), so no folder approval is needed
-([base-standards.md](../../docs/conventions/base-standards.md#directory-structure)). It is the
+([base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)). It is the
 folder's **fifth** class (`PendingEmailVerification`, `UserInvitation`, and 0043's / 0046's — verified:
 only the first two exist today, **V-3**).
 
@@ -862,7 +862,7 @@ link (**R-8**).
       performs no `Auth`-dependent work a console process cannot satisfy (**D-3**, 0064's **D-5**); and
       **that the stale-instance race in R-1 cannot produce a duplicate announcement of one transition.**
 - [ ] Documentation updated (docs-keeper):
-  - [`conventions/base-standards.md`](../../docs/conventions/base-standards.md#directory-structure) —
+  - [`conventions/base-standards.md`](../../docs/conventions/directory-structure.md#directory-structure) —
     `app/Notifications/` gains a fifth class, `app/Actions/Blog/` gains another, and `app/Listeners/`
     gains its **third** listener and its **first with a constructor**.
   - [`conventions/code-style.md`](../../docs/conventions/code-style.md#inject-single-purpose-actions-per-method) —
@@ -1102,7 +1102,7 @@ that does not exist.
 
 1. **The `Index` precedent is not the same shape.** Those three are one class *kind* in three module
    *areas*, and this repo's own convention mandates aliasing them at every import
-   ([base-standards.md](../../docs/conventions/base-standards.md#directory-structure)'s route-file
+   ([base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)'s route-file
    rule). Here the collision would be between two **different kinds of thing** in the same story, and
    the one line where it bites most is the registration itself —
    `Event::listen(ScheduledBlogPostPublished::class, NotifyBlogPostPublished::class)` reads as though

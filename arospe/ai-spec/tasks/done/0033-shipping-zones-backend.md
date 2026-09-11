@@ -482,7 +482,7 @@ with `can:`, never `permission:`.
 > authorization artifacts..."* The "actions deliberately self-authorize nothing, matching
 > `CreateUser`/`UpdateUser`" premise was **false when written**: `CreateUser`/`UpdateUser` both
 > self-authorize as their own first statement, per
-> [base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+> [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
 > "an authorization rule belongs to the action, not to one of its callers" convention — there was
 > never a precedent in this codebase for an action that authorizes nothing while having no
 > collaborator relationship excusing it. Phase 4 corrected this: all four actions in
@@ -714,7 +714,7 @@ therefore asserts *this story's use of* the shared utility, while the utility's 
 ### Application
 
 - `app/Concerns/ShippingZoneValidationRules.php` — **new**, following
-  [naming.md](../../../docs/conventions/naming.md#traits-and-their-methods)'s `<Noun>ValidationRules`
+  [naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)'s `<Noun>ValidationRules`
   / `<noun>Rules()` convention.
 
   **The name method is `shippingZoneNameRules()`, not `nameRules()`.**

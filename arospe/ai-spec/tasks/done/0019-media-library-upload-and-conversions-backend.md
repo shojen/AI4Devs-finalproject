@@ -437,7 +437,7 @@ grep -rn "\b37\b\|\b38\b" tests/Feature/Seeders/RolePermissionSeederTest.php tes
   not** add an `AuthServiceProvider`.
 - `app/Actions/Media/StoreUploadedImage.php` — **new `app/Actions/Media/` subfolder**, which
   base-standards' "one subfolder per area" rule explicitly sanctions
-  ([directory structure](../../../docs/conventions/base-standards.md#directory-structure)). Invokable;
+  ([directory structure](../../../docs/conventions/directory-structure.md#directory-structure)). Invokable;
   stores the original on the `public` disk, delegates conversion, inserts the row, cleans up on
   failure (D6).
 - `app/Actions/Media/GenerateImageConversions.php` — invokable; the **only** class that imports
@@ -445,7 +445,7 @@ grep -rn "\b37\b\|\b38\b" tests/Feature/Seeders/RolePermissionSeederTest.php tes
   result). Split from the store action so it is unit-testable without a database row and
   reusable by a future "re-encode the library" command.
 - `app/Concerns/MediaValidationRules.php` — `<Noun>ValidationRules` trait with `<noun>Rules()`
-  methods per [naming.md](../../../docs/conventions/naming.md#traits-and-their-methods):
+  methods per [naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods):
   `imageUploadRules()` and `mediaDetailsRules()`. Holds the `MAX_UPLOAD_KB` / `MAX_DIMENSION`
   constants (D5). Flat and single-concern — it must not `use` another trait.
 - `app/Livewire/Media/Gallery.php` + `resources/views/livewire/media/gallery.blade.php` —

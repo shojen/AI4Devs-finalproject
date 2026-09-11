@@ -297,7 +297,7 @@ final class SetProductCategoryTranslation
 
 Five things in that block, each following an existing convention rather than inventing one:
 
-- **`Gate::authorize('update', $productCategory)` is the first statement**, outside any transaction, per [the action-owns-the-rule convention](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers). Verified against 0023: `ProductCategoryPolicy`'s four abilities map to the already-seeded `products.view/create/edit/delete`, so `update` **is** `products.edit`. No new permission, no new ability, catalog unchanged at **42** (0070 **D-13**).
+- **`Gate::authorize('update', $productCategory)` is the first statement**, outside any transaction, per [the action-owns-the-rule convention](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers). Verified against 0023: `ProductCategoryPolicy`'s four abilities map to the already-seeded `products.view/create/edit/delete`, so `update` **is** `products.edit`. No new permission, no new ability, catalog unchanged at **42** (0070 **D-13**).
 - **It authorizes `update` on the parent category, not on the translation row.** Translating is editing the category; there is deliberately no `TranslationPolicy` (0070 **D-13**), and inventing one would restate `ProductCategoryPolicy::update` under a new name.
 - **Both dependencies are constructor-injected**, per [code-style.md's documented exception](../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract) — `__invoke()`'s parameter list is a public contract every direct caller matches verbatim, so an internal collaborator must not widen it. This mirrors `SetSalesRegionActive` constructor-injecting `SetDefaultSalesRegion`, and 0023's own actions constructor-injecting `NormalizeForSearch`. **Resolve it from the container, never `new` it, including in tests.**
 - **It reuses 0070's widened `nameRules()` unchanged** and adds no method to `ProductCategoryValidationRules` — the trait stays reusable by the four siblings. The `23000` catch 0023 established still applies as the last-word race guard, with 0070's caveat that the translations table has **three** constraints, so a blanket `23000` → "name taken" is newly unsafe and must discriminate.
@@ -606,7 +606,7 @@ but it means the primitive is only as safe as its caller, and a component is the
 | **2 — action** | `App\Actions\ProductCategories\SetProductCategoryTranslation` | `Gate::authorize('update', $category)` then its own `Validator::make(...)->validate()` | binds **every** caller — a future importer, command or job inherits the whole rule by calling the action, with no component in sight |
 
 **Why both, stated so it survives a "simplify this" review.** This repo has already ruled on the
-identical question twice, in the same direction. [base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+identical question twice, in the same direction. [base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 establishes that *"if an operation must not happen without a permission, the check lives in the
 class that performs the operation"* — layer 2 — and task 0017's Sales Regions precedent adds the
 converse in as many words: ***"a component that authorizes as well is a layer, not a redundancy…
@@ -769,7 +769,7 @@ component imports `SetTranslation`, or the `x-show` panel-rendering mode (**D-2*
 **The case that looks like an exception and is not.** 0060's Blog Tags screen consumes actions that
 [0059](0059-blog-tags-backend.md) already made responsible for their own validation, so its
 component does **not** validate — there is no layer 1 to add, and adding one would duplicate a rule
-the action owns and invite the two to drift, which is exactly what [base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+the action owns and invite the two to drift, which is exactly what [base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
 *"move the rule, never copy it"* forbids. **Defence in depth still holds there, because layer 2 is
 self-sufficient by construction**: the action authorizes and validates regardless of what any
 caller did or did not do. The principle is *"the operation is protected without relying on its
@@ -909,7 +909,7 @@ security."* **D-4** was rewritten around the two-layer table, **D-13** was added
 master pattern for 0073/0075/0077/0079 (including the action-only shape for a component that cannot
 validate), and `App\Actions\ProductCategories\SetProductCategoryTranslation` was added with its own
 direct-call test file. The decision aligns with this repo's own existing rulings rather than
-overriding them — [base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+overriding them — [base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
 action-owns-the-rule convention and task 0017's *"a component that authorizes as well is a layer,
 not a redundancy"* — which is why it is recorded as an amendment with its reasoning rather than
 folded silently into the original text.

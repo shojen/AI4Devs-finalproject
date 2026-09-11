@@ -189,7 +189,9 @@ If you need the schema, read @docs/database/schema.md
 If you need migration conventions, read @docs/database/migrations.md
 If you need route/Livewire contracts, read @docs/api/routes.md
 If you need code-style examples, read @docs/conventions/code-style.md
+If you need the app's directory layout, or where a new class/action/config file belongs, read @docs/conventions/directory-structure.md
 If you need naming conventions, read @docs/conventions/naming.md
+If you need validation-trait naming conventions, read @docs/conventions/naming-validation-traits.md
 If you write or review tests, read @docs/testing/README.md
 If you need past architectural context, read @docs/decisions/
 Before repeating a past mistake, read @docs/errors-log.md

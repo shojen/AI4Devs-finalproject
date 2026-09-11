@@ -354,7 +354,7 @@ Feature: Administrator-level role management and its Super-Admin-only grant
   now factually wrong**: `App\Models\Role` has lived inside `app/Models/` since story 0008, and Laravel 13
   auto-discovers `App\Policies\RolePolicy` for it by naming convention alone — which is this repo's
   documented, registration-free convention
-  ([base-standards.md](../../../docs/conventions/base-standards.md#directory-structure),
+  ([base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure),
   [naming.md](../../../docs/conventions/naming.md#classes)). 0008's own Phase 2 review examined and
   explicitly rejected the registration, and the policy is working today without it. Do not reinstate the
   line. (Also unchanged from the earlier draft: **do not** add the Super-Admin `Gate::before` bypass here

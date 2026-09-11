@@ -922,7 +922,7 @@ product taxonomy.
   > whole rule: **component-only is never acceptable** (task 0008a's finding); **action-only is
   > acceptable precisely where a component cannot validate without duplicating** a rule the action
   > already owns — which is exactly what
-  > [base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+  > [base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
   > *"move the rule, never copy it"* requires.
   >
   > **The component still authorizes**, exactly as this file already specifies, and 0059's **D-12**

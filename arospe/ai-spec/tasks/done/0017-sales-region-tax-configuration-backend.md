@@ -269,7 +269,7 @@ left to be discovered from the "risk 8" cross-reference in this section's own vi
 
 Flat, single-concern trait, composed at the consumer — no trait in `app/Concerns/` `use`s another, and
 nesting breaks Larastan 7. Follows the `<Noun>ValidationRules` / `<noun>Rules()` convention
-([naming.md](../../../docs/conventions/naming.md#traits-and-their-methods)):
+([naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)):
 
 ```php
 /** @return array<int, ValidationRule|array<mixed>|string> */
@@ -1217,7 +1217,7 @@ this project's own standing practice. Findings and how each was folded in:
 `UpdateSalesRegion`, `SetDefaultSalesRegion` and `SetSalesRegionActive` as originally drafted contained
 zero `Gate::authorize()` calls, with `sales-regions.edit` checked only inside the *component*. This is the
 exact gap story **0008a** closed for `CreateUser`/`UpdateUser` (see
-[base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)) —
+[base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)) —
 a future Artisan command, queued job or second component calling these actions directly would bypass the
 permission entirely. **Fixed**: all three actions now authorize themselves as their first statement (see
 the rewritten action code blocks under "Files to create/modify" below).

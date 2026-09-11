@@ -373,7 +373,7 @@ and `payment_statuses.partially_refunded` ship there.
 ### Validation trait — `app/Concerns/OrderValidationRules.php` (modified)
 
 Extends 0045's trait rather than creating a second one — same noun, same model's input
-([naming.md](../../docs/conventions/naming.md#traits-and-their-methods)):
+([naming.md](../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)):
 
 ```php
 protected function refundItemsRules(): array;     // ['required', 'array', 'min:1']
@@ -415,7 +415,7 @@ Performing, **in this order**:
 
 1. **`Gate::authorize('orders.refund')` as the first statement.** The rule lives in the class that
    performs the operation, not in a caller that does not exist yet
-   ([base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
+   ([base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
    `orders.refund` is a **new** permission (**D-3**), not one of 0045's four.
 2. **Validate the payload shape** through the trait — the items array and every quantity.
 3. **Open a `DB::transaction()`.** Everything below runs inside it.
@@ -804,7 +804,7 @@ a rediscovery.
   stated in three places in this document.
 - **D-4 — `payment_status` is derived inside `RecordRefund`, never submitted.** The
   action-owns-the-rule convention
-  ([base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers))
+  ([base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers))
   applied to **state** rather than to authorization: a caller supplies units, never a status. The
   derivation is written out under the action's step 10, reads **final state rather than a delta**,
   and is total. PRD §3.2 calls payment state "a manual admin-set status" — that phrasing means *no

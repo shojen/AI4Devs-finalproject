@@ -167,7 +167,7 @@ Five points:
    per-request — and it is what keeps `CreateProductVariant` independently safe if a future caller
    forgets. **Do not remove it, and do not build a "skip the gate" parameter to avoid it** — that
    parameter is a one-argument bypass, exactly the shape
-   [base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+   [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
    forbids ("derive a security-relevant flag internally; never take it as a parameter").
 4. **`LogRefusedPrivilegedAttempt` is constructor-injected**, with `targetType: 'product'` passed
    explicitly (`resolveTarget()` auto-resolves only `User` and `Role`) — the same shape all three of
@@ -404,7 +404,7 @@ carried over:
 
 **They are appended to `App\Concerns\ProductVariantValidationRules`** — 0029's trait, which ships five
 methods — **never a second trait.** A `ProductVariantGeneratorValidationRules` would be a second home
-for the same concern, and [naming.md](../../../docs/conventions/naming.md#traits-and-their-methods)'s
+for the same concern, and [naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)'s
 flat, single-concern rule plus 0024's entity-prefix trap (a consumer composing two of these fatals on
 a duplicate method) both point the same way. Both names keep the `variant` prefix for the same
 collision reason.

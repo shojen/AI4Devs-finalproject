@@ -212,7 +212,7 @@ and `update` (its **D-12**), modelled on the shipped
 [`SalesRegionPolicy`](../../../app/Policies/SalesRegionPolicy.php). This story **adds one method and one
 constant to that existing file** and changes nothing else in it. Auto-discovered by name, no
 `AuthServiceProvider`
-([base-standards.md](../../../docs/conventions/base-standards.md#directory-structure)).
+([base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure)).
 
 The ability is a **flat permission check** and nothing more, matching its three siblings exactly —
 including the permission name as a constant on the class that owns the rule

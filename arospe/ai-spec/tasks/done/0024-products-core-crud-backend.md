@@ -259,10 +259,10 @@ TitleCase keys, lowercase backing values, per project `CLAUDE.md` and
 | --- | --- |
 | `app/Models/Product.php` | **New.** `use HasFactory, HasUuids;`, `#[Fillable([...])]`, `casts()`, the `category()` / `featuredImage()` / `gallery()` relations, and `isOutOfStock()` / `displayStatus()`. **No `SoftDeletes`** (**D-12**), no `#[Hidden]` (nothing sensitive). |
 | `database/factories/ProductFactory.php` | **New**, via `php artisan make:factory ProductFactory --model=Product --no-interaction`. `product_category_id => ProductCategory::factory()` so a bare `->create()` stands alone; `status => Draft` deliberately matching the column default; `sku` in canonical form. States: `active()`, `draft()`, `outOfStock()`, `physical()`, `virtual()`, `withFeaturedImage()`, `withGallery(int $count)`. |
-| `app/Concerns/ProductValidationRules.php` | **New**, `<Noun>ValidationRules` per [naming.md](../../../docs/conventions/naming.md#traits-and-their-methods). Flat and single-concern — it `use`s no other trait. **Every method is entity-prefixed**; see the naming note below and **D-13**. |
+| `app/Concerns/ProductValidationRules.php` | **New**, `<Noun>ValidationRules` per [naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods). Flat and single-concern — it `use`s no other trait. **Every method is entity-prefixed**; see the naming note below and **D-13**. |
 
 > **Naming decision: every method in this trait is entity-prefixed, which is a deliberate, reasoned
-> exception to [naming.md](../../../docs/conventions/naming.md#traits-and-their-methods)'s "a
+> exception to [naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)'s "a
 > `<noun>Rules()` method's noun is the **field**, not the model" rule.** Two verified collisions make
 > the unprefixed form unusable rather than merely inconsistent: `App\Concerns\ProductCategoryValidationRules::nameRules()`
 > and `App\Concerns\ProfileValidationRules::nameRules()` already both exist, and
@@ -285,7 +285,7 @@ TitleCase keys, lowercase backing values, per project `CLAUDE.md` and
 
 ### Actions — new subfolder `app/Actions/Products/`
 
-Sanctioned by [base-standards.md](../../../docs/conventions/base-standards.md#directory-structure)'s
+Sanctioned by [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure)'s
 one-subfolder-per-area rule, same as `app/Actions/Users/`.
 
 | Path | What & why |
@@ -701,7 +701,7 @@ interim and what must not happen before it closes.
 - [x] **Hand-off recorded for story 0027**, now narrower than before the split because the actions
       self-authorize: 0027 must still (a) call `Gate::authorize()` as the first statement of every
       method that mutates *or discloses* — **defence in depth and the honest source of its per-row
-      `canEdit`/`canDelete` hints, not a redundancy** ([base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+      `canEdit`/`canDelete` hints, not a redundancy** ([base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
       task-0017 blockquote); (b) gate the route with **`can:products.view`, never
       `permission:products.view`**; (c) keep the id fed to `Rule::unique()->ignore()`
       server-authoritative (`#[Locked]`, re-read from the model) — per
@@ -733,7 +733,7 @@ reader of a sibling story will have absorbed the wrong version.
 
 | # | What this file said | What is true |
 | --- | --- | --- |
-| **C-1** | **D-15 / RQ-10**: *"`CreateUser`/`UpdateUser` (verified to contain no `Gate` call) … authorize at the caller"*, so this story's actions must not self-authorize. | **False, and it reverses the decision.** `App\Actions\Users\CreateUser::__invoke()` line 66 is `$this->logRefusedPrivilegedAttempt->authorize('create', User::class);`, and `UpdateUser` self-authorizes four abilities through `authorize()` and logs two further non-`Gate` refusals through `->log()`. The **documented** convention is the opposite of what RQ-10 preserved — [base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers) quotes `CreateUser` as its ✅ example. `backend-qa`'s recorded dissent was right and was overruled on false evidence. **D-15** is rewritten; the actions self-authorize. |
+| **C-1** | **D-15 / RQ-10**: *"`CreateUser`/`UpdateUser` (verified to contain no `Gate` call) … authorize at the caller"*, so this story's actions must not self-authorize. | **False, and it reverses the decision.** `App\Actions\Users\CreateUser::__invoke()` line 66 is `$this->logRefusedPrivilegedAttempt->authorize('create', User::class);`, and `UpdateUser` self-authorizes four abilities through `authorize()` and logs two further non-`Gate` refusals through `->log()`. The **documented** convention is the opposite of what RQ-10 preserved — [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers) quotes `CreateUser` as its ✅ example. `backend-qa`'s recorded dissent was right and was overruled on false evidence. **D-15** is rewritten; the actions self-authorize. |
 | **C-2** | **V-1 / R-1**: CI cannot open a database connection; `phpunit.xml` never pins `DB_CONNECTION`, `.env.example` selects sqlite, the workflow runs no MySQL service. | **True on 2026-08-18, fixed on 2026-08-26**, by the task this very finding spawned — [`ci-database-connection-gap.md`](../ci-database-connection-gap.md), which records `866/866` passing against real MySQL. Verified at the split: `phpunit.xml:29` sets `DB_CONNECTION=mysql`, `.env.example:28` sets `DB_CONNECTION=mysql`, and `.github/workflows/tests.yml:27-47` runs a `mysql:8.4` service with job-level `DB_CONNECTION`/`DB_DATABASE`. **The dependent claim that 0019's V7 and 0023's R-2 were "wrong about CI" is withdrawn.** This is [the 2026-08-29 errors-log entry](../../../docs/errors-log.md#one-docs-pass-reported-two-gaps-that-were-not-there-both-marked-verified--2026-08-29)'s exact shape — a real finding whose write-up outlived its own fix — and a candidate for that log. |
 | **C-3** | **V-6**: *"`app/Models/` holds only `Role.php` and `User.php`; there is no `media` migration, no `Media` model, no `product_categories` migration, no `ProductCategory`."* | **False.** Both [0019](../done/0019-media-library-upload-and-conversions-backend.md) and [0023](../done/0023-product-categories-backend.md) are closed and merged; `app/Models/{Media,ProductCategory}.php`, `database/factories/MediaFactory.php` and both migrations exist. **This story is unblocked**, and R-2's sequencing warning is discharged. |
 | **C-4** | **R-8**: *"there is no `trans_choice` precedent anywhere in `lang/` today."* | **False.** `lang/en/roles.php`'s `index.delete_blocked` has used the `|`-delimited plural form since task 0010, with six `trans_choice()` call sites, and [naming.md](../../../docs/conventions/naming.md#translation-keys) has owned the convention since then. The consequence lands in [0024b](0024b-product-category-in-use-delete-guard.md), which now **matches** that precedent's simple `singular|plural` form rather than introducing explicit-range syntax. |
@@ -1228,7 +1228,7 @@ premise is false — `CreateUser::__invoke()` opens with
 `$this->logRefusedPrivilegedAttempt->authorize('create', User::class);` and `UpdateUser` self-authorizes
 four abilities through `authorize()` and logs two further non-`Gate` refusals through `->log()` — and
 the real, **documented** convention is the opposite:
-[base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+[base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 states that *"if an operation must not happen without a permission, the check lives in the class that
 performs the operation"*, quotes `CreateUser` as its ✅ example, and records task 0017's `SalesRegions`
 actions as the case where applying it at Phase 1 cost nothing. **The precise rule, stated narrowly

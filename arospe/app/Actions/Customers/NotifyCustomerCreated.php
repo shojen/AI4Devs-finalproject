@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Notification;
  * no gate" pattern App\Actions\Products\SyncProductGallery /
  * SyncProductSalesRegions / SyncProductAttributeValues and
  * App\Actions\Roles\EnforceGrantorPermissionScope already establish in this
- * codebase (see conventions/base-standards.md's directory-structure
+ * codebase (see conventions/directory-structure.md's directory-structure
  * section). This is structural, not an oversight, and it is enforced by
  * NotifyCustomerCreatedTest.php's own reachability assertion -- if a future
  * story ever calls this class directly from a second, independently

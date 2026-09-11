@@ -390,7 +390,7 @@ public function __invoke(array $productAttributeValueIds): string
 >
 > - **Directly under `app/Actions/`**, beside [`App\Actions\NormalizeForSearch`](../../../app/Actions/NormalizeForSearch.php) —
 >   the repo's one real precedent for a pure function belonging to no single domain. **Rejected**,
->   because [base-standards.md](../../../docs/conventions/base-standards.md#directory-structure) states
+>   because [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure) states
 >   that branch as *"or directly under `app/Actions/` **if it belongs to none**"*, and this one
 >   belongs squarely to the Products domain. `NormalizeForSearch` is shared by four different areas;
 >   this class has exactly one.
@@ -867,7 +867,7 @@ Three consequences, all of them constraints on how the cascade is written:
 > ```
 >
 > Three things this changes about the retrofit, none of them cosmetic. **(a) The entity-prefixed name
-> is mandatory, not optional** — 0024's own naming trap ([naming.md](../../../docs/conventions/naming.md#traits-and-their-methods))
+> is mandatory, not optional** — 0024's own naming trap ([naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods))
 > is why every method in that trait carries the `product` prefix, and a `skuRules()` added beside them
 > would break the blanket rule the trait is reviewed against in one glance. **(b) The shipped form is
 > `Rule::unique(Product::class, 'sku')` — the model-class form — under a ternary, not
@@ -1451,7 +1451,7 @@ $this->logRefusedPrivilegedAttempt->authorize(
 Six points, each of which a reviewer would otherwise ask:
 
 1. **Why this and not the deferral.** The convention is documented and unambiguous —
-   [base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers):
+   [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers):
    *"if an operation must not happen without a permission, the check lives in the class that performs
    the operation."* Every counter-precedent this document used to cite has since gone the other way:
    0024 reversed its own D-15/RQ-10 at its split (its **C-1**), 0025 discharged 0023's hand-off so all
@@ -1614,7 +1614,7 @@ Four rules that make the table total rather than merely descriptive:
 The [Files table](#creates) named three methods and specified none of them; 0031 OQ-3(b) additionally
 needs a fourth that was never listed. The trait is written out here so there is one definition and no
 call site has to guess. It stays flat and single-concern and `use`s no other trait
-([naming.md](../../../docs/conventions/naming.md#traits-and-their-methods)), and **every leaf method is
+([naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)), and **every leaf method is
 entity-prefixed** per 0024's naming trap — a variant editor composing this alongside
 `ProductValidationRules` would otherwise fatal on `priceRules()` / `stockRules()` /
 `featuredMediaIdRules()`, which is exactly the composition 0031 performs.
@@ -1927,7 +1927,7 @@ roll back only its own savepoint. 0029b runs strictly after this story reaches P
 | `app/Actions/Products/UpdateProductVariant.php` | `price`/`stock`/`featured_media_id`/`position` only — **never** the pivot, the hash, **or the SKU** (**D-13**, **D-4.3**). The SKU changes only through **D-4.6**'s cascades, which this action is not one of |
 | `app/Actions/Products/DeleteProductVariant.php` | Thin today; exists as the single seam Epic 3's "a variant referenced by orders cannot be deleted" guard bolts onto — 0023 **D-10** / 0024's `DeleteProduct` reasoning |
 | ~~`app/Actions/Products/GenerateProductVariantCombinations.php`~~ 🟠 **MOVED to [0029b](0029b-product-variant-combination-generator-backend.md), 2026-09-04.** *(row retained struck through so the cut is visible in the diff rather than silent)* | **Was, 2026-08-19 (D-18).** The cartesian generator: one outer transaction, one pre-read of the product's existing `combination_hash` values, then one `CreateProductVariant` call per new combination (its transaction becomes a savepoint, so a per-row refusal does not destroy the batch). Owns `MAX_COMBINATIONS = 200` (**D-18.5**), the empty-type refusal, the iteration order (**D-18.6**) and the summary array shape (**D-18.1**). **It re-implements nothing** — not the derivation, not the hash, not the collision check; a second copy of any of those is the defect **R-L** names |
-| `app/Concerns/ProductVariantValidationRules.php` | `<Noun>ValidationRules` per [naming.md](../../../docs/conventions/naming.md#traits-and-their-methods). Flat, single-concern, `use`s no other trait. **Entity-prefixed leaf methods** where a name would collide — 0024's naming trap is live here, because a variant editor composing this alongside `ProductValidationRules` fatals on a duplicate method. **No `skuRules()`/`productSkuRules()` and no variant SKU rule at all** — the variant SKU is derived, so there is no input to validate (**D-4.3**); the product-side `productSkuRules()` stays in 0024's trait. **Written out in full in [D-16](#d-16--productvariantvalidationrules-written-out-in-full): five methods** — `variantCombinationRules()`, `variantCombinationValueRules()`, `variantPriceRules()`, `variantStockRules()`, `variantFeaturedMediaIdRules()`. 🟠 The two `attributeTypeIds` methods **appended to this same trait by [0029b](0029b-product-variant-combination-generator-backend.md)**, never a second trait. 🔴 **Every consumer validates the id array in TWO passes** — [D-16.1](#d-161----the-two-id-arrays-must-be-validated-in-two-passes-never-one-combined-rule-array) |
+| `app/Concerns/ProductVariantValidationRules.php` | `<Noun>ValidationRules` per [naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods). Flat, single-concern, `use`s no other trait. **Entity-prefixed leaf methods** where a name would collide — 0024's naming trap is live here, because a variant editor composing this alongside `ProductValidationRules` fatals on a duplicate method. **No `skuRules()`/`productSkuRules()` and no variant SKU rule at all** — the variant SKU is derived, so there is no input to validate (**D-4.3**); the product-side `productSkuRules()` stays in 0024's trait. **Written out in full in [D-16](#d-16--productvariantvalidationrules-written-out-in-full): five methods** — `variantCombinationRules()`, `variantCombinationValueRules()`, `variantPriceRules()`, `variantStockRules()`, `variantFeaturedMediaIdRules()`. 🟠 The two `attributeTypeIds` methods **appended to this same trait by [0029b](0029b-product-variant-combination-generator-backend.md)**, never a second trait. 🔴 **Every consumer validates the id array in TWO passes** — [D-16.1](#d-161----the-two-id-arrays-must-be-validated-in-two-passes-never-one-combined-rule-array) |
 | `database/factories/ProductVariantFactory.php` | `product_id => Product::factory()` so a bare `->create()` stands alone. **The SKU must be derived, not faked**: default to `app(DeriveVariantSku::class)($product->sku, [$segment])` with a short unique `bothify()` segment, **never** `fake()->unique()->word()` (~1000-row `OverflowException`) and never a free-text SKU — a factory that writes an underived SKU makes **D-4.3**'s global consistency test unusable (**FP13**). States: `withCombination(array $valueIds)` (derives from the real values, in **D-4.2** order), `withOwnImage()`, `inheritingImage()`, `outOfStock()` |
 | `tests/**` | Phase 3, `backend-qa` — see [Tests to perform](#tests-to-perform) |
 

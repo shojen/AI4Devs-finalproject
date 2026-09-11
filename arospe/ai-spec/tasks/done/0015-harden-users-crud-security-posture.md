@@ -253,7 +253,7 @@ reason `Roles\Index` captures `$beforePermissionNames` before its own sync.
 Add a `RateLimiter::attempt()` guard mirroring `RequestEmailChange`'s existing pattern exactly (same
 facade, same `ValidationException` conversion), keyed on `Auth::id()`, `maxAttempts: 10`,
 `decaySeconds: 3600`. It belongs in the action (not the component), per
-[base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers) —
+[base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers) —
 a rate limit protecting an operation is a property of the operation. Place it **after**
 `Gate::authorize('create', User::class)` (line 41) and **before** the `DB::transaction()` (line 63),
 so an unauthorized caller is refused without consuming quota and no refused attempt opens a
@@ -338,7 +338,7 @@ classifies as sensitive.
 > target: it asks the Livewire component to re-derive tier membership, which is exactly the pattern
 > story 0008a removed from this very component (`administratorRoleId()` and `authorizeRoleChange()`
 > were **deleted**, not relocated — see
-> [base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+> [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 > and [security/livewire-authorization.md](../../../docs/security/livewire-authorization.md)).
 > No branch is needed there, because the policy already contains it —
 > verified at [`app/Policies/UserPolicy.php:56-67`](../../../app/Policies/UserPolicy.php):

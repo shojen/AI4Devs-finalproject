@@ -191,7 +191,7 @@ class OrderFullyRefunded
 
 - **`app/Events/` does not exist in this repo yet and needs no approval to create.** It is a stock
   Laravel location (`php artisan make:event`), which
-  [base-standards.md](../../docs/conventions/base-standards.md#directory-structure) puts in the same
+  [base-standards.md](../../docs/conventions/directory-structure.md#directory-structure) puts in the same
   category as `app/Enums/`, `app/Exceptions/`, `app/Listeners/`, `app/Notifications/` and
   `app/Policies/` — *"creating one of them needs no approval; inventing a folder Laravel doesn't ship
   does."* Scaffold it with the artisan command rather than by hand
@@ -227,7 +227,7 @@ public function handle(OrderFullyRefunded $event): void
   existed). Keeping the logic in an action is what makes the operation independently callable and
   directly testable without dispatching an event, and it is what lets a future non-refund caller
   (a support tool, an Artisan command) reach it — the same reasoning
-  [base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+  [base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
   applies to authorization rules.
 
 ### Action — `app/Actions/Orders/AutoCancelFullyRefundedOrder.php` (new, in 0045's subfolder)
@@ -268,7 +268,7 @@ Performing, **in this order**:
 > **No `Gate::authorize()` call anywhere in this action, and that is an accepted, documented
 > exception rather than an oversight** (**D-1**). It is recorded in the class's own docblock as well
 > as here, following the precedent
-> [base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+> [base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 > set for `Index::deleteUser()`'s step-up guard placement: *"Record a placement like this in the
 > method's own docblock so the next reader can tell 'this is where it belongs' from 'this is where it
 > is until something better exists'."* Here the equivalent distinction is **"exempt"** versus
@@ -353,7 +353,7 @@ Three consequences follow, and each is worth being explicit about:
    one-argument bypass of the exact rule the guard exists to enforce, and it would sit in a
    **public** `__invoke()` signature every present and future caller can reach. That is the same
    failure mode as *"derive a security-relevant flag internally; never take it as a parameter"*
-   ([base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)),
+   ([base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)),
    and it converts 0050's guard from an invariant into a convention.
 2. **The two paths are allowed to diverge, because they are different operations.** "An
    administrator decided to cancel this" and "this order's money has entirely gone back" share an
@@ -671,7 +671,7 @@ rediscovery.
 - **D-8 — The listener is registered explicitly in `AppServiceProvider`, matching the existing
   `ActivateVerifiedUser` precedent, rather than relying on Laravel's listener auto-discovery.** One
   registration idiom per repo, and this repo already has one
-  ([base-standards.md](../../docs/conventions/base-standards.md#directory-structure) names
+  ([base-standards.md](../../docs/conventions/directory-structure.md#directory-structure) names
   `app/Listeners/` as *"registered in AppServiceProvider"*). **This decision carries a real hazard
   Phase 3 must verify rather than assume** — see **R-2**: if auto-discovery is *also* active, an
   explicitly registered listener fires twice. The idempotency guard (**D-7**) makes a double fire

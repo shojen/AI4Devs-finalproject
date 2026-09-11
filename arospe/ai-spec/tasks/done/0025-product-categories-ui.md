@@ -319,7 +319,7 @@ lang/en|es/products.php                                        // created by 002
    shape `App\Actions\Products\CreateProduct`/`UpdateProduct`/`DeleteProduct` already use — with
    `Gate::authorize()` (or the equivalent `->authorize()` call) **also** present in this component's own
    `save()`/`deleteProductCategory()` methods as a fail-fast UI layer, defence in depth rather than
-   duplication (see [base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+   duplication (see [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
    task 0017 precedent). This story is where `ProductCategoryPolicy` stops being a zero-call-site
    policy **at both layers**, and its own Authorization test block needs an action-layer case per
    action (a direct `app(DeleteProductCategory::class)($category)` etc. as a denied actor must throw
@@ -897,7 +897,7 @@ component. Nothing on the screen references, links to, or shares anything with a
   and one of them says so falsely.** 0023 shipped all three with authorization deliberately handed off
   to **this story**, which is recorded in
   [schema.md](../../../docs/database/schema-products.md#product_categories) and
-  [base-standards.md](../../../docs/conventions/base-standards.md#directory-structure) — so this screen
+  [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure) — so this screen
   must call `Gate::authorize()` before each action, and **above** 0024b's in-use guard, never below it
   (0024b **D-B2**: an inverted order turns a permission refusal into a business message that discloses
   the product count to someone with no right to it). Two things make this easy to get wrong. First,

@@ -348,7 +348,7 @@ Three properties to carry into implementation:
   ([code-style.md](../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)),
   and `app/Concerns/` is already where this repo puts logic two classes compose. It stays flat and
   single-concern, `use`ing no other trait, per
-  [naming.md](../../docs/conventions/naming.md#traits-and-their-methods); its name follows the
+  [naming.md](../../docs/conventions/naming-validation-traits.md#traits-and-their-methods); its name follows the
   third-person-verb-phrase shape, not the `<Noun>ValidationRules` shape, which governs validation rule
   sets only.
 
@@ -785,7 +785,7 @@ rediscovery.
   administrator ever edits them (they are Spanish fiscal geography, not configuration), and it would need
   its own migration, model, seeder and CRUD story. **A config file**: `config/` here is for a declarative
   registry a later story extends by appending data
-  ([base-standards.md](../../docs/conventions/base-standards.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache)),
+  ([base-standards.md](../../docs/conventions/directory-structure.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache)),
   and this is neither extended nor appended-to — it is a closed set fixed by Spanish law. **Reusing
   `sales_regions.code`**: refused for the reason in **D-4**.
 
@@ -879,7 +879,7 @@ rediscovery.
   would fail closed against it — turning a hardening reflex into an outage.
 
   This is a deliberate departure from
-  [base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+  [base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
   "an authorization rule belongs to the action" convention, and the departure is narrow and stated: that
   convention governs an **operation a permission gates**. No permission in the seeded catalog gates "tax
   was resolved", because it is not an operation an administrator performs. **Recorded here so

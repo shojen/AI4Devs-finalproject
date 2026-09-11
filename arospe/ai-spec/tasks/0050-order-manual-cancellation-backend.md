@@ -316,7 +316,7 @@ detail:
 
 1. **`Gate::authorize('cancel', $order)` as the first statement.** The rule lives in the class that
    performs the operation, not in a caller that does not exist yet
-   ([base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
+   ([base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
    Story 0055's Livewire component will re-authorize on top of this, never instead of it.
 2. **Reject if `$order->status === OrderStatus::Cancelled`** with a `ValidationException` on the
    `status` field, resolving `orders.cancellation.already_cancelled` (**D-3**). **This must run above
@@ -636,7 +636,7 @@ branch in `TransitionOrderStatus` is left standing rather than deleted (**D-4**)
     "composed capability" is expressed here rather than by minting a third permission, and
     `hasPermissionTo()` **throws** rather than returning `false` for a name absent from the catalog,
     which makes every permission a composed ability names a hard dependency on its seeder.
-  - [`conventions/base-standards.md`](../../docs/conventions/base-standards.md#directory-structure)'s
+  - [`conventions/base-standards.md`](../../docs/conventions/directory-structure.md#directory-structure)'s
     directory listing gains `OrderCancellationBlockedException → 409` beside the exceptions already
     listed there. **Note two app exceptions now render 409** — check whether any nearby sentence
     claims `RoleInUseException` is the only one.

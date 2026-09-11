@@ -547,7 +547,7 @@ Two rules to carry forward, both proven by how this was closed:
   exactly **one** implementation of each tier rule. Two copies drift.
 - **A caller-supplied flag is not a guard.** `UpdateUser` used to receive the self-lockout boolean from
   the component; it now derives it from `Auth::user()` itself. See
-  [conventions/base-standards.md](../conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+  [conventions/base-standards.md](../conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
   for the convention, and
   [authorization-patterns.md](authorization-patterns.md#a-rule-that-must-bind-a-super-admin-actor-must-be-a-direct-throw-not-a-gate-check)
   for why the two Super Admin refusals are direct throws rather than `Gate` checks.

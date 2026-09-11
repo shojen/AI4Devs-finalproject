@@ -210,7 +210,7 @@ Line numbers are the verified `HEAD` (`00dd9c7`) ones as of 2026-08-23 and are a
   compares the elapsed time against `config('auth.password_timeout')` using the identical
   `>` comparison `RequirePassword` uses, and throws when stale. New subfolder `app/Actions/Auth/`,
   following the one-subfolder-per-area convention `app/Actions/Roles/` established (see
-  [base-standards.md](../../../docs/conventions/base-standards.md#directory-structure)); it also exposes a
+  [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure)); it also exposes a
   non-throwing `isRecentlyConfirmed(): bool` (named as a predicate, not the ambiguous `isConfirmed()` —
   confirmed *what* is unclear out of context) for the view's warning, so the UI hint and the guard
   cannot drift — the same "the hint reuses the guard's own predicate" rule the `Gate::allows()` UI hints
@@ -233,7 +233,7 @@ Line numbers are the verified `HEAD` (`00dd9c7`) ones as of 2026-08-23 and are a
 
 - **`app/Actions/Users/UpdateUser.php` (modify)** — call the guard from inside
   `authorizeRoleAndStatusChange()` (declared 132), so it binds the operation rather than one caller,
-  per [base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers).
+  per [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers).
   Two placement rules, both load-bearing:
   - **It must fire when a role change, a status change, or a third-party email change is actually
     happening — never on a name-only edit, and never on a self-edit of any kind.** *(Widened by the

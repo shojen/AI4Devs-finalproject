@@ -239,7 +239,7 @@ not negotiable:
 - **One implementation of the rule, not fourteen-plus.** Hand-written `try { … } catch { Log::…;
   throw; }` blocks at every call site is drift waiting to happen, and it is precisely the
   copy-the-rule pattern
-  [`base-standards.md`](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+  [`base-standards.md`](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
   forbids for authorization rules themselves. Move the rule into one place; call it from many. **Model
   the helper on the shipped `App\Actions\Auth\EnsureRecentPasswordConfirmation` pair**: a
   non-throwing predicate (its `isRecentlyConfirmed()`) plus a throwing wrapper (its `__invoke()`) — the
@@ -264,7 +264,7 @@ not negotiable:
 - **No new config file, no new base folder, no new dependency.** The shared helper lands in
   `app/Actions/Auth/` — an existing stock-Laravel-adjacent location already housing one cross-cutting
   auth concern (`EnsureRecentPasswordConfirmation`), per that folder's own naming rule in
-  [`base-standards.md`](../../../docs/conventions/base-standards.md#directory-structure).
+  [`base-standards.md`](../../../docs/conventions/directory-structure.md#directory-structure).
 - **`config/logging.php` is unmodified** (Q3 — decided "no dedicated channel").
 
 ### Confirmed *not* in scope, decided rather than omitted
@@ -479,7 +479,7 @@ unmodified.
       `RequestEmailChange`, `EnforceAdministratorPermissionGrant`, `EnforceGrantorPermissionScope`)
       log their own refusals with the **same shape and level** as the two components, callable
       independently of the Livewire layer — so a future non-dashboard caller inherits the logging for
-      free, the same reasoning [`base-standards.md`](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+      free, the same reasoning [`base-standards.md`](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
       already applies to the authorization rules themselves. `App\Models\Role`'s model-event guards
       (`ImmutableRoleException`, `RoleInUseException`) are explicitly **not** in this pass — recorded
       as a deferred decision, not an oversight.
@@ -572,7 +572,7 @@ All five open questions below are now **answered**. Phase 3 may start.
   refusals of their own (enumerated in [Files to create/modify](#files-to-createmodify) above), and a
   future non-dashboard caller (API endpoint, Artisan command, queued job) must inherit the same
   logging the dashboard gets — mirroring the [action-owns-the-rule
-  convention](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+  convention](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
   this repo already applies to authorization itself. **Explicitly still out of scope in this pass:**
   `App\Models\Role`'s own model-event guards (`ImmutableRoleException`, `RoleInUseException`) — these
   are deterministic state-based refusals with no per-attempt disclosure risk beyond what the Gate

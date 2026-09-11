@@ -193,7 +193,7 @@ Feature: Blog tags
 
 **Validation trait**
 - `app/Concerns/BlogTagValidationRules.php` — new, following
-  [naming.md](../../docs/conventions/naming.md#traits-and-their-methods)'s `<Noun>ValidationRules` /
+  [naming.md](../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)'s `<Noun>ValidationRules` /
   `<noun>Rules()` convention. **Two name-rule methods, not one** — this is the trait's whole point and
   the shape a reviewer should check first (**D-9**):
 
@@ -730,7 +730,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
   keep the two from being "unified" later.
 
   Note the naming follows
-  [naming.md](../../docs/conventions/naming.md#traits-and-their-methods)'s rule that a `<noun>Rules()`
+  [naming.md](../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)'s rule that a `<noun>Rules()`
   method's noun is the **field**, not the model — hence `nameRules()`, not `blogTagNameRules()`.
 
 - **D-10 — `FindOrCreateBlogTag` returns a `BlogTag`, never refuses on a name match, and resolves a
@@ -805,7 +805,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
   [`app/Actions/SalesRegions/`](../../app/Actions/SalesRegions/) — **not** 0023's D-9, which
   deliberately shipped its actions unauthorized with a hand-off note. That was an explicit, accepted
   gap at the time; the convention it deviates from
-  ([base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers))
+  ([base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers))
   has since been reinforced twice, and task 0017 demonstrated it "cost nothing when applied at Phase
   1". The case here is *stronger* than 0023's: `FindOrCreateBlogTag` has **two independent callers by
   design** (0060's screen, 0061's post save), which is precisely the "operation reachable from more

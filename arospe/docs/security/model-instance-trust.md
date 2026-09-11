@@ -26,7 +26,7 @@ value was decided by whoever hydrated the instance, at whatever time they did so
 > already-committed write landing in that window reproduces the exact stale read F-1 describes — the "two
 > administrators clicking within the same second" row in the exploit table below is that path, not a
 > hypothetical non-dashboard one. Both findings still had to be closed at the action layer regardless: under
-> the [action-owns-the-rule convention](../conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+> the [action-owns-the-rule convention](../conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 > these actions exist to be called from somewhere other than that component, dashboard-reachable or not.
 > Eight regression tests (four per
 > finding, two per action, split `SetDefaultSalesRegionTest.php` / `SetSalesRegionActiveTest.php` /
@@ -310,7 +310,7 @@ it — so this was unreachable in practice, and it inverts [this page's own open
 the fix stopped the action *trusting* a stale instance and left it *emitting* one.
 
 ✅ **The fix.** `SetSalesRegionActive` now calls `$target->refresh()` immediately before returning it, so a
-future non-dashboard caller — the kind [the action-owns-the-rule convention](../conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+future non-dashboard caller — the kind [the action-owns-the-rule convention](../conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 exists to support — gets an accurate row. A regression test asserts the return value directly
 (`tests/Feature/SalesRegions/SetSalesRegionActiveTest.php`, "the returned instance reflects is_default being
 cleared…"), confirmed to redden without the `refresh()` call before being trusted.
@@ -334,7 +334,7 @@ read by whoever adds the next branch, not rediscovered.
 
 Pre-existing, outside the original fix's diff, but touching the same two actions. `save()` called
 `$updateSalesRegion($target, ...)` — committing rate/description/code immediately — and only *then*
-authorized `$replacementDefault`, violating [this repo's "authorize before the first write" rule](../conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+authorized `$replacementDefault`, violating [this repo's "authorize before the first write" rule](../conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 for that second row specifically. Inert today for the same reason as R-3.
 
 ✅ **The fix — narrower than first proposed.** The re-audit's own suggestion (wrap both action calls in one

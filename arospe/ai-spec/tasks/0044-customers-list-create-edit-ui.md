@@ -188,7 +188,7 @@ Feature: Customers screen
 ### Route — `routes/customers.php` (new) + one `require` line in `routes/web.php`
 
 A new per-area route file, `require`d from `web.php` exactly the way `users.php` and `roles.php` are
-([base-standards.md](../../docs/conventions/base-standards.md#directory-structure)):
+([base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)):
 
 ```php
 <?php
@@ -389,7 +389,7 @@ Four markup rules, all inherited rather than invented, all load-bearing:
   it satisfies an existing one.
 - **No closures, no literal copy** — `label` is a translation key, because `config:cache` serialises with
   `var_export()` and an English string in `config/` is unreachable from `lang/es/`
-  ([base-standards.md](../../docs/conventions/base-standards.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache)).
+  ([base-standards.md](../../docs/conventions/directory-structure.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache)).
 - `lang/{en,es}/navigation.php` each gain **exactly one leaf**, `items.customers`, mirroring the registry
   key — which is simultaneously the config key, the translation leaf and the rendered
   `data-test="sidebar-link-customers"` hook
@@ -721,7 +721,7 @@ Three constraints on it:
   ([base-standards.md](../../docs/conventions/base-standards.md#deleting-a-user-goes-through-the-model-not-the-query-builder)).
 - **No `DeleteCustomer` action exists**, so the guard sits in the component by necessity rather than by
   design — the *weaker* placement case
-  [base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+  [base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
   records for `Users\Index::deleteUser()`. **Record that in the method's own docblock**, so the next
   reader can tell "this belongs here" from "this is here until something better exists", and so a later
   story extracting the action knows to move the guard with it.

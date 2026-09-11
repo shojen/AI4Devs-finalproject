@@ -1055,7 +1055,7 @@ class follows 0071 **D-13**'s master shape and 0077 **D-19**'s named-parameters 
 are the family's, applied unchanged:
 
 1. **Authorization is its own first statement**, outside any transaction, per
-   [the action-owns-the-rule convention](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers).
+   [the action-owns-the-rule convention](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers).
    It authorizes `update` on the **`BlogPost`** — which resolves to `blog.edit` through
    `BlogPostPolicy::EDIT_PERMISSION` — never on the translation row, and there is deliberately no
    `TranslationPolicy` (0078 **D-14**). Not `blog.create`: translating an existing post is editing it,

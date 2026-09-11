@@ -32,7 +32,7 @@ class CreateProductCategory
      * Authorizes `create` on `ProductCategory::class` as its own first
      * statement (story 0025, discharging the hand-off 0023 recorded --
      * see docs/database/schema-products.md#product_categories and
-     * docs/conventions/base-standards.md#directory-structure) -- the
+     * docs/conventions/directory-structure.md#directory-structure) -- the
      * identical self-authorizing shape App\Actions\Products\CreateProduct
      * already uses, so a future Artisan command, queued job or REST
      * controller inherits the same refusal the dashboard gets.

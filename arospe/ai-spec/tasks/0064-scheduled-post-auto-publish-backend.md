@@ -150,7 +150,7 @@ Feature: Scheduled posts go live automatically
 | Path | What & why |
 | --- | --- |
 | `routes/console.php` | **New — and it resolves a dangling reference that already exists.** [`bootstrap/app.php`](../../bootstrap/app.php) already passes `commands: __DIR__.'/../routes/console.php'` to `withRouting()` for a file that has never existed (**V-2**). Creating it is sufficient; **`bootstrap/app.php` needs no edit at all**. Holds exactly one `Schedule::command(...)` entry (**D-2**). |
-| `app/Console/Commands/PublishScheduledBlogPosts.php` | **New.** The scheduled command. `app/Console/Commands/` is a **stock Laravel location already named in [base-standards.md](../../docs/conventions/base-standards.md#directory-structure)**'s directory listing (`Console/Commands/    Artisan commands`), so it needs no new-base-folder approval — the same category as `app/Enums/` or `app/Listeners/`. It is empty-and-untracked on disk today (git does not track empty directories), which is why it is absent from this worktree. |
+| `app/Console/Commands/PublishScheduledBlogPosts.php` | **New.** The scheduled command. `app/Console/Commands/` is a **stock Laravel location already named in [base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)**'s directory listing (`Console/Commands/    Artisan commands`), so it needs no new-base-folder approval — the same category as `app/Enums/` or `app/Listeners/`. It is empty-and-untracked on disk today (git does not track empty directories), which is why it is absent from this worktree. |
 
 ```php
 // routes/console.php — the whole file
@@ -185,7 +185,7 @@ Schedule::command(PublishScheduledBlogPosts::class)
 
 | Path | What & why |
 | --- | --- |
-| `app/Events/Blog/ScheduledBlogPostPublished.php` | **New**, and **this creates `app/Events/`, a folder that does not exist in this repo today** (**V-3**) — a structural addition to [base-standards.md](../../docs/conventions/base-standards.md#directory-structure)'s directory listing, not a line edit. Carries the **`BlogPost` model**, not its id — settled by story [0065](0065-blog-post-published-notification-backend.md)'s **D-9**, which resolves this story's OQ-2. Dispatched once per successfully-transitioned post. **This story defines and dispatches it; story 0065 defines the listener and the notification** (**D-12**, **OQ-1**). |
+| `app/Events/Blog/ScheduledBlogPostPublished.php` | **New**, and **this creates `app/Events/`, a folder that does not exist in this repo today** (**V-3**) — a structural addition to [base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)'s directory listing, not a line edit. Carries the **`BlogPost` model**, not its id — settled by story [0065](0065-blog-post-published-notification-backend.md)'s **D-9**, which resolves this story's OQ-2. Dispatched once per successfully-transitioned post. **This story defines and dispatches it; story 0065 defines the listener and the notification** (**D-12**, **OQ-1**). |
 
 ### Consumed, not created by this story
 
@@ -556,7 +556,7 @@ the same kind of thing through a second mechanism for no benefit.
 
 It also preserves a real repo convention: `bootstrap/app.php` is touched by **no** module story in
 this project — the whole per-area routing convention is built on `web.php` gaining one `require` line
-(see [base-standards.md](../../docs/conventions/base-standards.md#directory-structure)). Putting
+(see [base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)). Putting
 scheduling logic in `bootstrap/app.php` would break that for the first time, for nothing.
 
 ⚠️ **`routes/console.php` is not an area file and must not be read as one.** Every other file in
@@ -605,7 +605,7 @@ rule" into "follow one".**
 
 The problem is real: there is no `Auth::user()` in a console process. 0061's **D-13** says every action
 in `app/Actions/Blog/` self-authorizes, and
-[base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+[base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 says the rule lives in the class performing the operation. Both were written for actor-driven writes.
 
 **The options, and why each was rejected or adopted:**
@@ -1017,7 +1017,7 @@ Read or executed against this worktree and the sibling checkout's `vendor/` duri
   sets **no** `'timezone'` key. See **R-4**.
 - **V-8 — `app/Console/Commands/` exists as an empty, untracked directory in the shared checkout** and
   is absent here only because git does not track empty directories. It is already named in
-  [base-standards.md](../../docs/conventions/base-standards.md#directory-structure)'s listing, so it
+  [base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)'s listing, so it
   needs no new-base-folder approval.
 
 ### Dependencies

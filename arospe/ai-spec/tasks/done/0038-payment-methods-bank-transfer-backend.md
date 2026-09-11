@@ -271,7 +271,7 @@ public function down(): void
   **`app/Rules/` is a stock Laravel location, not a new base folder needing approval** — verified by
   running `php artisan list`, which carries `make:rule` ("Create a new validation rule"); its stub
   target is `app/Rules/`. Same carve-out as `app/Enums/`, `app/Listeners/`, `app/Policies/` in
-  [base-standards.md](../../../docs/conventions/base-standards.md#directory-structure). Phase 6 must add
+  [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure). Phase 6 must add
   the folder to that directory listing.
 
   ```php
@@ -346,7 +346,7 @@ public function down(): void
 
 - `app/Concerns/PaymentMethodValidationRules.php` — **new**, matching the
   `<Noun>ValidationRules` / `<noun>Rules()` convention in
-  [naming.md](../../../docs/conventions/naming.md#traits-and-their-methods) and staying flat and
+  [naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods) and staying flat and
   single-concern like its three siblings:
 
   ```php
@@ -466,7 +466,7 @@ decouples it from the component's expectations; the rule's docblock says so.
   per the PRD should follow
   the shipping-carrier-card or tax-rules-list pattern. This mirrors 0004 → 0006 exactly.
 - `app/Policies/PaymentMethodPolicy.php` — **new**, auto-discovered by name (no `AuthServiceProvider`
-  — see [base-standards.md](../../../docs/conventions/base-standards.md#directory-structure)):
+  — see [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure)):
   `viewAny()` → `payment-methods.view`; `update()` → `payment-methods.edit`; and `create()` /
   `delete()` **explicitly returning `false`**.
 - `routes/web.php` — **modify**, inside the existing `auth` + `verified` group beside `users.index`:

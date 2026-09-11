@@ -1140,7 +1140,7 @@ public string $stock = '0';
 > derivation, which is the same fact **D-4**.1 builds the preview on); and there is still **no
 > `skuRules()` and no variant SKU rule of any kind**, so a reviewer who cannot find one has found the
 > design rather than a gap. This component **composes the whole trait** (it is flat and single-concern
-> per [naming.md](../../../docs/conventions/naming.md#traits-and-their-methods) — there is no narrower
+> per [naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods) — there is no narrower
 > import), but only exercises five of its seven methods; the last two back
 > **[0031a](0031a-product-variant-generator-ui.md)**'s axis picker.
 

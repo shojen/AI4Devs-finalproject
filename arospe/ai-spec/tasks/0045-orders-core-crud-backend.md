@@ -426,7 +426,7 @@ Scaffolded with `php artisan make:model Order -m -f --no-interaction`. Follows
 Mirrors [`UserValidationRules`](../../app/Concerns/UserValidationRules.php) /
 [`CustomerValidationRules`](done/0041-customers-crud-backend.md) exactly — `<Noun>ValidationRules` trait,
 `<noun>Rules()` methods returning rule arrays, flat and single-concern
-([naming.md](../../docs/conventions/naming.md#traits-and-their-methods)):
+([naming.md](../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)):
 
 ```php
 protected function orderRules(): array;              // the whole payload
@@ -452,7 +452,7 @@ Invokable, imperative-verb-phrase class with no `Action` suffix, resolved from t
 
 1. **`Gate::authorize('orders.create')` as the first statement.** The rule lives in the class that
    performs the operation, not in a caller that does not exist yet
-   ([base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
+   ([base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
    No `OrderPolicy` (**D-13**). `orders.create` is **already seeded** —
    `RolePermissionSeeder::MODULES` carries `orders`, so all four `orders.*` abilities exist; **no
    catalog change, no new permission, no re-seed.**

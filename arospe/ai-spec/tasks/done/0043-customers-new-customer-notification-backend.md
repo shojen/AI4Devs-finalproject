@@ -173,7 +173,7 @@ public function down(): void
 
 `app/Notifications/CustomerCreated.php` — **new**. `app/Notifications/` is a stock Laravel location
 (`make:notification`), so no folder approval is needed
-([base-standards.md](../../../docs/conventions/base-standards.md#directory-structure)).
+([base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure)).
 
 ```php
 class CustomerCreated extends Notification
@@ -206,7 +206,7 @@ class CustomerCreated extends Notification
   notification's FQCN into the `notifications.type` column, so a second copy inside the JSON payload
   would be redundant state that can drift on a class rename.
 - **No `lang/` file in this story.** `data` stores structural values, never rendered copy — the same
-  keys-not-copy reasoning [base-standards.md](../../../docs/conventions/base-standards.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache)
+  keys-not-copy reasoning [base-standards.md](../../../docs/conventions/directory-structure.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache)
   applies to `config/`. Baking `"New customer: Ana García"` into an immutable JSON column would put an
   English string somewhere `lang/es/` can never reach. The copy belongs to whichever story renders the
   bell (OQ-3).
@@ -216,7 +216,7 @@ class CustomerCreated extends Notification
 `app/Actions/Customers/NotifyCustomerCreated.php` — **new**, invokable, imperative verb-phrase name
 with no `Action`/`Service` suffix per [naming.md](../../../docs/conventions/naming.md#classes). It lands
 in the `app/Actions/Customers/` subfolder **story 0041 creates** for `CreateCustomer` — one subfolder
-per domain area, per [base-standards.md](../../../docs/conventions/base-standards.md#directory-structure).
+per domain area, per [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure).
 
 ```php
 public function __invoke(Customer $customer): void
@@ -361,7 +361,7 @@ customer generates the confirmed 'new customer' notification") asks for, and no 
 - [ ] Tests written and green, plus the **full** existing suite (per the Full Test Suite Gate Rule in [contracts.md](../../../docs/contracts.md)).
 - [ ] Code reviewed (code-reviewer).
 - [ ] No security findings (appsec-auditor) — specifically: that the recipient query cannot be widened by caller-supplied input; that the payload leaks no customer field beyond `customer_id`/`customer_name`; that a dispatch cannot be triggered by an actor who failed the `customers.create` gate; and that adding this side effect to `CreateCustomer` grants no capability to a less-privileged caller (the shared-code lesson from [errors-log.md](../../../docs/errors-log.md)).
-- [ ] Documentation updated (docs-keeper) — [database/schema.md](../../../docs/database/schema.md) (new `notifications` section + ER diagram node, and the `uuidMorphs()`-not-`morphs()` rule), [database/migrations.md](../../../docs/database/migrations.md#uuid-primary-keys) (a published-stub migration is app-owned source and must be edited for a UUID morph — explicitly distinguished from the package-vendored rule), and [conventions/base-standards.md](../../../docs/conventions/base-standards.md#directory-structure) (`app/Notifications/` gains a third class; `app/Actions/Customers/` gains a second).
+- [ ] Documentation updated (docs-keeper) — [database/schema.md](../../../docs/database/schema.md) (new `notifications` section + ER diagram node, and the `uuidMorphs()`-not-`morphs()` rule), [database/migrations.md](../../../docs/database/migrations.md#uuid-primary-keys) (a published-stub migration is app-owned source and must be edited for a UUID morph — explicitly distinguished from the package-vendored rule), and [conventions/base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure) (`app/Notifications/` gains a third class; `app/Actions/Customers/` gains a second).
 - [ ] **The Definition of Done explicitly does NOT include a notification-viewer UI**, for this story or for the Epic 3 batch as currently decomposed. See OQ-3.
 - [ ] Acceptance criteria met.
 

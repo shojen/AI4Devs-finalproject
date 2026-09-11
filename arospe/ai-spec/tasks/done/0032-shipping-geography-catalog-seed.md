@@ -420,7 +420,7 @@ a purpose-built index.
       in [database/schema.md](../../../docs/database/schema.md); the fixture/seeder convention in
       [database/migrations.md](../../../docs/database/migrations.md) if the chunked-upsert pattern is
       worth generalizing; `database/data/` added to the directory listing in
-      [conventions/base-standards.md](../../../docs/conventions/base-standards.md#directory-structure);
+      [conventions/base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure);
       and an addendum to [ADR 0001](../../../docs/decisions/0001-uuid-primary-keys.md) recording
       `geography_entries` as the one confirmed exception to the UUIDv7 policy, with the reason
       (high-volume internal lookup table, no independent business identity, never URL-exposed).

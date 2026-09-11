@@ -232,7 +232,7 @@ Feature: Blog categories
 
 **Validation trait**
 - `app/Concerns/BlogCategoryValidationRules.php` — new, following
-  [naming.md](../../docs/conventions/naming.md#traits-and-their-methods)'s `<Noun>ValidationRules` /
+  [naming.md](../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)'s `<Noun>ValidationRules` /
   `<noun>Rules()` convention, where the noun is the **field**, not the model (the rule
   `SalesRegionValidationRules`' `rateRules()`/`codeRules()` established):
 
@@ -273,7 +273,7 @@ Feature: Blog categories
     submitted string and would not catch `"guías"` against a stored `"Guías"` on a byte-comparing
     engine — it is the wrong column for the rule this story enforces (**D-4**). The value compared
     must be the candidate's **normalised** form, produced by the same
-    [`App\Actions\NormalizeForSearch`](../../docs/conventions/base-standards.md#directory-structure)
+    [`App\Actions\NormalizeForSearch`](../../docs/conventions/directory-structure.md#directory-structure)
     call the model event uses to write the column, so the pre-flight check and the constraint can
     never disagree (**D-12**). It is container-resolved and **threaded through as a parameter**
     rather than resolved with `app()`, per
@@ -749,7 +749,7 @@ the two taxonomies can be diffed decision by decision. **D-13** and **D-14** are
   `App\Policies\BlogCategoryPolicy` for `App\Models\BlogCategory` by that exact name. A single
   `BlogPolicy` spanning categories, tags and posts is auto-discoverable for *none* of them and would
   require an explicit `Gate::policy()` registration — i.e. reintroducing the `AuthServiceProvider`
-  that [base-standards.md](../../docs/conventions/base-standards.md#directory-structure) explicitly
+  that [base-standards.md](../../docs/conventions/directory-structure.md#directory-structure) explicitly
   says not to add. It would also force every ability method to branch on the target's class, which is
   strictly more code than three small policies. The counter-argument (all three blog entities gate on
   the same four permission strings, so a shared policy deduplicates them) is real but loses:
@@ -825,7 +825,7 @@ the two taxonomies can be diffed decision by decision. **D-13** and **D-14** are
   story would actively regress this one, and it is recorded loudly because the sibling's text reads
   authoritative. 0023's Phase 1 debate ran **2026-08-17**; task **0008a** — which moved authorization
   *into* `CreateUser`/`UpdateUser` as their own first statement and established the
-  [action-owns-the-rule convention](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+  [action-owns-the-rule convention](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
   — landed **2026-08-19**, two days later. Verified at `HEAD`: `App\Actions\Users\CreateUser` opens
   with `Gate::authorize('create', User::class)`. 0023's note is therefore a true statement about a
   tree that no longer exists, which is precisely the failure mode
@@ -840,7 +840,7 @@ the two taxonomies can be diffed decision by decision. **D-13** and **D-14** are
   the top of the test list: authorization runs before validation, so every negative-validation test
   must `actingAs()` a permitted actor or it passes for the wrong reason.**
 - **D-14 — Actions live in `app/Actions/Blog/` — an *area* folder — which knowingly diverges from
-  Epic 2's entity folders.** [base-standards.md](../../docs/conventions/base-standards.md#directory-structure)
+  Epic 2's entity folders.** [base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)
   states the rule as "one subfolder per area", and `app/Actions/SalesRegions/` is the shipped example
   holding all three of that area's actions. Epic 2's *planned* stories chose differently:
   `app/Actions/ProductCategories/` (0023) alongside `app/Actions/Products/` (0024) — two

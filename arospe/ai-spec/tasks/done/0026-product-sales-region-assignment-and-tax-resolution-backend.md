@@ -1092,7 +1092,7 @@ asymmetry looks like an inconsistency to a reviewer who has not read this paragr
 > (`CreateUser::__invoke()` line 66 authorizes `create`; `UpdateUser` carries seven such calls) — and
 > 0024 reversed itself at its three-way split (its **C-1**). Its four product actions now
 > self-authorize, and the **documented** convention
-> ([base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers))
+> ([base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers))
 > is that the check lives in the class performing the operation. **What is unaffected**: the second
 > half below — the *resolver* needing no authorization because it reads values already visible and may
 > run from a queued job — is an independent argument that stands on its own. **What must be

@@ -320,7 +320,7 @@ Feature: Orders list and detail/editor screens
 
 A new per-area route file, `require`d from `web.php` exactly the way `users.php`, `roles.php` and
 `customers.php` are
-([base-standards.md](../../docs/conventions/base-standards.md#directory-structure)):
+([base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)):
 
 ```php
 <?php
@@ -542,7 +542,7 @@ Markup rules inherited rather than invented:
 ### Component — `resources/views/components/confirm-dialog.blade.php` (**new**, anonymous) — **D-2**
 
 A small **anonymous** Blade component (this repo has no `app/View/Components/` and every component in it
-is anonymous — [base-standards.md](../../docs/conventions/base-standards.md#directory-structure)),
+is anonymous — [base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)),
 wrapping a `flux:modal` with a heading, a body, a dismiss control and a confirm control:
 
 ```blade
@@ -589,7 +589,7 @@ represents are **[D-2](#d-2)**.
   assuming it.**
 - **No closures, no literal copy** — `label` is a translation key, because `config:cache` serialises with
   `var_export()` and an English string in `config/` is unreachable from `lang/es/`
-  ([base-standards.md](../../docs/conventions/base-standards.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache)).
+  ([base-standards.md](../../docs/conventions/directory-structure.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache)).
 - `lang/{en,es}/navigation.php` each gain **exactly one leaf**, `items.orders`, mirroring the registry
   key — which is simultaneously the config key, the translation leaf and the rendered
   `data-test="sidebar-link-orders"` hook
@@ -1109,7 +1109,7 @@ judgment with the count already satisfied.
 Three constraints that bind either way:
 
 - **It is anonymous.** This repo has no `app/View/Components/` at all
-  ([base-standards.md](../../docs/conventions/base-standards.md#directory-structure)), and a class-based
+  ([base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)), and a class-based
   component here would be the first — a bigger decision than this story should make.
 - **It holds no state and makes no decision.** `:show` is the parent's `bool`; `confirm-action` and
   `dismiss-action` are method names the parent owns. A dialog that decided *whether* to appear would be

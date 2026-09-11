@@ -144,8 +144,10 @@ Full index: [`docs/README.md`](docs/README.md).
 - [`docs/workflow.md`](docs/workflow.md) — the multi-agent Three Amigos + TDD + security + review +
   docs process, phase by phase.
 - [`docs/architecture/`](docs/architecture/) — overview, authentication, authorization.
-- [`docs/conventions/base-standards.md`](docs/conventions/base-standards.md) — stack versions,
-  directory layout, model and Livewire component conventions, quality gates.
+- [`docs/conventions/base-standards.md`](docs/conventions/base-standards.md) — stack versions, model
+  and Livewire component conventions, quality gates. See
+  [`docs/conventions/directory-structure.md`](docs/conventions/directory-structure.md) (split out from
+  it) for the directory layout.
 
 **Read when relevant to the task:**
 
@@ -156,11 +158,20 @@ Full index: [`docs/README.md`](docs/README.md).
 | you need migration conventions | [`docs/database/migrations.md`](docs/database/migrations.md) |
 | you need route/Livewire contracts | [`docs/api/routes.md`](docs/api/routes.md) |
 | you need code-style examples | [`docs/conventions/code-style.md`](docs/conventions/code-style.md) |
+| you need the app's directory layout / where a new class or action belongs | [`docs/conventions/directory-structure.md`](docs/conventions/directory-structure.md) |
 | you need naming conventions | [`docs/conventions/naming.md`](docs/conventions/naming.md) |
+| you need validation-trait naming conventions | [`docs/conventions/naming-validation-traits.md`](docs/conventions/naming-validation-traits.md) |
 | you write or review tests | [`docs/testing/README.md`](docs/testing/README.md) |
 | you need past architectural context | [`docs/decisions/`](docs/decisions/README.md) |
 | before repeating a past mistake | [`docs/errors-log.md`](docs/errors-log.md) |
 
-_Last updated: 2026-08-10 — Created as the tool-agnostic mirror of `CLAUDE.md`, matching its pointer
+_Last updated: 2026-09-11 — Doc growth management pass (docs/contracts.md#doc-growth-management-rule),
+not a story. `docs/conventions/base-standards.md` and `docs/conventions/naming.md` were split — the
+directory-layout section moved to the new `docs/conventions/directory-structure.md`, and the
+validation-trait naming section moved to the new `docs/conventions/naming-validation-traits.md`. Added
+both to the "Read when relevant to the task" table and pointed the `base-standards.md` mandatory-reading
+bullet at the new directory-structure file._
+
+_Previously: 2026-08-10 — Created as the tool-agnostic mirror of `CLAUDE.md`, matching its pointer
 section after task 0002 (roles & permissions foundation) added `docs/security/` and made
 `db:seed --class=RolePermissionSeeder` a required deploy step._

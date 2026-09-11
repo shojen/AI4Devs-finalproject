@@ -665,7 +665,7 @@ configuration.
       Secondary:
       [`docs/api/routes.md`](../../../docs/api/routes.md)'s `users.index` entry describes where the
       component re-authorizes, and
-      [`docs/conventions/base-standards.md`](../../../docs/conventions/base-standards.md#controllers-sit-in-front-of-actions-not-instead-of-them)'s
+      [`docs/conventions/base-standards.md`](../../../docs/conventions/directory-structure.md#controllers-sit-in-front-of-actions-not-instead-of-them)'s
       action conventions gain the rule this story establishes: **an authorization rule belongs to the
       action, not to one of its callers.**
 - [ ] Acceptance criteria met

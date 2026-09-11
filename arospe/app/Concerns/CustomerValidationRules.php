@@ -10,7 +10,7 @@ use Illuminate\Validation\Rule;
 /**
  * Story 0041 — mirrors UserValidationRules/ProfileValidationRules exactly:
  * <Noun>ValidationRules trait, <noun>Rules() methods returning rule arrays,
- * flat and single-concern (see docs/conventions/naming.md#traits-and-their-methods).
+ * flat and single-concern (see docs/conventions/naming-validation-traits.md#traits-and-their-methods).
  */
 trait CustomerValidationRules
 {

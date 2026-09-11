@@ -140,7 +140,7 @@ Feature: Product categories
 
 **Validation trait**
 - `app/Concerns/ProductCategoryValidationRules.php` — new, following
-  [naming.md](../../../docs/conventions/naming.md#traits-and-their-methods)'s `<Noun>ValidationRules`
+  [naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)'s `<Noun>ValidationRules`
   / `<noun>Rules()` convention and `ProfileValidationRules`' two-method shape:
 
   ```php
@@ -187,7 +187,7 @@ Feature: Product categories
     collation — the exact thing **D-4** exists to prevent. It compares the candidate's normalised
     form against the normalised form of existing names (excluding `$productCategoryId` when
     renaming). **The fold on both sides of that comparison is
-    [`App\Actions\NormalizeForSearch`](../../../docs/conventions/base-standards.md#directory-structure)
+    [`App\Actions\NormalizeForSearch`](../../../docs/conventions/directory-structure.md#directory-structure)
     (`app/Actions/NormalizeForSearch.php`, `__invoke(string $value): string`) — the project's one
     shared text normaliser — never a private helper on this trait and never an inline
     `Str::lower()` / `Str::ascii()` pipeline (**D-12**).** The behaviour is unchanged from this

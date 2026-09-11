@@ -494,7 +494,7 @@ as "the same search works on one screen and not another".
 `__invoke(string $value): string`.
 
 Directly under `app/Actions/`, not in a subfolder, because
-[base-standards.md](../../../docs/conventions/base-standards.md#directory-structure) says exactly that:
+[base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure) says exactly that:
 "A new action goes in the subfolder for its domain (**or directly under `app/Actions/` if it belongs
 to none**)". Normalization belongs to no domain — products, geography and Sales Regions all call it.
 The naming follows the same file's convention for single-purpose invokables: imperative verb phrase,
@@ -508,7 +508,7 @@ it** — the needle a user typed *and* the haystack value a resolver matches aga
 > **new base folder** requiring approval under base-standards — the identical reason OQ-3 already
 > rejects `app/Contracts/` for the D1 interface. `app/Concerns/` was also rejected: it holds
 > validation-rule *traits* whose every method is suffixed `Rules`
-> ([naming.md](../../../docs/conventions/naming.md#traits-and-their-methods)), which this is not. If
+> ([naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)), which this is not. If
 > `app/Support/` is ever approved for other reasons, moving this class is a mechanical rename with a
 > single call-site sweep — see OQ-8.
 
@@ -802,13 +802,13 @@ Feature: Searchable multi-select field
 **Directory justification.** `app/Livewire/Components/` is a **subfolder of the existing
 `app/Livewire/` base directory**, exactly as `Actions/`, `Settings/` and `Users/` already are — the
 "don't create new base folders without approval" rule in
-[base-standards.md](../../../docs/conventions/base-standards.md#directory-structure) governs new
+[base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure) governs new
 top-level directories under `app/`, which this is not. `Components` was chosen over `Shared`/`UI` to
 mirror `resources/views/components/`, giving `app/Livewire/Components/` = reusable Livewire-backed UI
 against `resources/views/components/` = reusable plain Blade. **This was raised as OQ-3 and is now
 resolved** — not by this story, but by story 0021 shipping `App\Livewire\Components\WysiwygEditor`
 there first; the folder is an established convention in
-[base-standards.md](../../../docs/conventions/base-standards.md#directory-structure), so this story
+[base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure), so this story
 follows it rather than setting it. See the Resolved-questions section.
 
 **View resolution.** The [`Index`-in-a-subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
@@ -1080,7 +1080,7 @@ should be sequenced before both per [workflow.md](../../../docs/workflow.md)'s t
   2026-08-31, and not by this story.** It was raised here because it would set the precedent for every
   future shared component; **story 0021 got there first** and shipped `App\Livewire\Components\WysiwygEditor`
   into exactly that folder, which is now documented in
-  [base-standards.md](../../../docs/conventions/base-standards.md#directory-structure) as an established
+  [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure) as an established
   subfolder ("not a module area like the others — it holds reusable, content-agnostic components a
   screen embeds"). So this story **follows** the convention rather than establishing it, and the
   "Directory justification" paragraph above is retained as background, not as an open decision. The
@@ -1198,7 +1198,7 @@ so the shipped debounce is the same hand-rolled Alpine `setTimeout()` + `$wire.s
 every page load against a `flux:input` trigger (`ui-dropdown`'s `querySelector("button")` requirement
 is unmet), so the shipped popover is the identical `x-show`/`x-cloak`/`click.outside` shape D10's own
 sibling decision already used once before, in `wysiwyg-editor.blade.php`'s link popover. Both are now
-durable rules in [conventions/base-standards.md](../../../docs/conventions/base-standards.md#directory-structure)
+durable rules in [conventions/base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure)
 and (for the debounce case) [errors-log.md](../../../docs/errors-log.md). **OQ-7's ARIA scope is also
 corrected from an intent statement to a shipped-state record**: real `flux:label` association and
 per-chip `aria-label`s (including D14's chip-area `role="group"`) shipped as specified, but keyboard

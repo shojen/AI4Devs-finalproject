@@ -214,7 +214,7 @@ public function isBackwardFrom(self $current): bool
 ### Policy — `app/Policies/OrderPolicy.php` (**new**) — shared infrastructure
 
 Auto-discovered by name for `App\Models\Order`; no registration, no `AuthServiceProvider`
-([base-standards.md](../../docs/conventions/base-standards.md#directory-structure)).
+([base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)).
 
 ```php
 class OrderPolicy
@@ -296,7 +296,7 @@ detail (**D-3**):
 
 1. **`Gate::authorize('transitionStatus', $order)` as the first statement.** The rule lives in the
    class that performs the operation, not in a caller that does not exist yet
-   ([base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
+   ([base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
    Story 0055's Livewire component will re-authorize on top of this, never instead of it.
 2. **Refuse if `$order->status` *or* `$newStatus` is `OrderStatus::Cancelled`** — both directions,
    with **no confirmation path** and before any `rank()` call can be reached (**D-3**, **D-6**).
@@ -552,7 +552,7 @@ with a caller.
     `OrderPolicy` as the **third** policy — and the "`UserPolicy` has seven abilities / `RolePolicy`
     has five" enumerations nearby are re-counted rather than assumed, the under-count failure mode
     recorded in [errors-log-archive.md](../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13).
-  - [`conventions/base-standards.md`](../../docs/conventions/base-standards.md#directory-structure)'s
+  - [`conventions/base-standards.md`](../../docs/conventions/directory-structure.md#directory-structure)'s
     directory listing gains `OrderPolicy` in `app/Policies/` and
     `OrderStatusRegressionRequiresConfirmationException → 409` beside the three exceptions already
     listed there.

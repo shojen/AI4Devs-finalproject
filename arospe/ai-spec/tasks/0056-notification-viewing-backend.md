@@ -197,7 +197,7 @@ tests/Feature/Notifications/                              -- new folder, mirrori
 
 `tests/Feature/` already mirrors the app's areas (`Users/`, `Roles/`, `Settings/`, …), so a
 `Notifications/` folder follows the existing convention in
-[base-standards.md](../../docs/conventions/base-standards.md#directory-structure) — it is not a new
+[base-standards.md](../../docs/conventions/directory-structure.md#directory-structure) — it is not a new
 kind of location.
 
 ### Explicitly NOT in this story
@@ -371,7 +371,7 @@ padded one.** `backend-expert` asked the question explicitly, and the reasoning 
   There is no domain rule to centralise — no authorization branch, no ordering rule the vendor does not
   already supply, no validation, no transaction, no side effect.
 - This repo's action convention exists so that **a rule** lives in one place reachable by every caller
-  ([base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
+  ([base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
   An `app/Actions/Notifications/GetUnreadCount` wrapping `$user->unreadNotifications()->count()` carries
   no rule; it is indirection whose only effect is that the next reader has to open two files to learn
   what one line does. `CLAUDE.md` forbids exactly that kind of speculative structure.

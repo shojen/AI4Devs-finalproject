@@ -502,7 +502,7 @@ consumer, and it owns the whole screen including the carrier cards 0035 stubbed.
 > made the identical claim ("the actions deliberately self-authorize nothing (matching
 > `CreateUser`/`UpdateUser`)") and it was found false at that story's Phase 4 security audit
 > (finding F-1): `CreateUser`/`UpdateUser` both self-authorize as their own first statement, per
-> [base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+> [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
 > "an authorization rule belongs to the action, not to one of its callers" convention. 0033's four
 > `app/Actions/Shipping/*` actions were corrected to self-authorize against `ShippingZonePolicy` as
 > their own first statement, the same shape `App\Actions\ProductCategories\*` (story 0025) already
@@ -753,7 +753,7 @@ absence of the trait.
 ### Application
 
 - `app/Concerns/ShippingRateValidationRules.php` — **new**, per
-  [naming.md](../../../docs/conventions/naming.md#traits-and-their-methods)'s `<Noun>ValidationRules` /
+  [naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)'s `<Noun>ValidationRules` /
   `<noun>Rules()` convention.
 
   **The name method is `shippingRateNameRules()`, not `nameRules()`** — 0033 **D-6** flagged this

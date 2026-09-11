@@ -105,7 +105,7 @@ Two consequences worth stating plainly:
 - **No IP-geolocation dependency is added by this story.** `backend-expert` correctly flagged that
   adding one needs human approval per project `CLAUDE.md` ("do not change the application's
   dependencies without approval"), and recommended a bundled GeoLite2-style database file mirroring
-  this repo's [`database/data/`](../../docs/conventions/base-standards.md#directory-structure)
+  this repo's [`database/data/`](../../docs/conventions/directory-structure.md#directory-structure)
   fixture precedent over a third-party API call. **Under this resolution that question does not need
   answering yet**: this story stores an *already-derived* country code and compares it. Deriving a
   country **from** an IP address is explicitly out of scope and is
@@ -375,7 +375,7 @@ fourth invokable action, because a shared invokable would have to be injected in
 ([code-style.md](../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)),
 while `app/Concerns/` is where this repo already puts logic two classes compose. And it stays **flat
 and single-concern**, `use`ing no other trait, per
-[naming.md](../../docs/conventions/naming.md#traits-and-their-methods) — note its name follows the
+[naming.md](../../docs/conventions/naming-validation-traits.md#traits-and-their-methods) — note its name follows the
 third-person-verb-phrase shape rather than the `<Noun>ValidationRules` shape, which is specific to
 validation rule sets and does not apply here.
 

@@ -96,11 +96,11 @@
 >
 > | Finding | What was wrong | Where it is fixed |
 > | --- | --- | --- |
-> | **C1** | The `ProductValidationRules` contract listed **six method names that do not exist** and qualified them *"entity-prefixed where ambiguous"* — the selective form [naming.md](../../../docs/conventions/naming.md#traits-and-their-methods) records as rejected. The aggregate `productRules()` was missing entirely. | [Interface contract](#interface-contract-consumed--reconciled-against-the-amended-dependencies) — real names, plus a ⚠️ on the two knock-ons deliberately left to 0076 |
+> | **C1** | The `ProductValidationRules` contract listed **six method names that do not exist** and qualified them *"entity-prefixed where ambiguous"* — the selective form [naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods) records as rejected. The aggregate `productRules()` was missing entirely. | [Interface contract](#interface-contract-consumed--reconciled-against-the-amended-dependencies) — real names, plus a ⚠️ on the two knock-ons deliberately left to 0076 |
 > | **C1 (secondary)** | `CreateProduct` / `UpdateProduct` appeared as `__invoke(...)` — literally elided, so **D-12** was not implementable from this file. | Same block — both signatures spelled out (10/11 positional params; `$featuredMediaId` and `$orderedGalleryMediaIds` **required with no default**; `$description` defaulted on Create only) |
 > | **C3** | **D-17** and the contract were built on `url()`-style **accessors** on `App\Models\Media` that **do not exist** — the model has only `casts()`, `uploadedBy()` and a `#[Scope] search()`, and reading `->avifUrl` returns `null` silently. | [D-17](#d-17--the-thumbnail-renders-picture-over-0019s-real-column-names), rewritten around the shipped call-site form (`Storage::disk('public')->url($media->path)`, as in `Gallery::toPayloadItem()` and `WysiwygEditor::insertImage()`) |
 > | **C6** | A security hand-off was **absent**: 0026's two-phase region validation (array bound alone, then `salesRegionIds.*`) appeared nowhere, and **D-12**'s own code block showed the forbidden combined shape. | New inherited obligation **7**, **D-12(b2)**, one new named test in `EditorTest.php`, and DoD hand-off item 5 |
-> | **D1** | Routes were placed in `routes/web.php` *"beside `users.index`"* — which moved out at task **0040**, and which [base-standards.md](../../../docs/conventions/base-standards.md#directory-structure) forbids: one `routes/<area>.php` per area, five shipped instances. | [Route registrations](#route-registrations), [D-2](#d-2--three-routes-in-a-new-routesproductsphp-two-of-them-onto-one-editor-component) and the Files table — a **new `routes/products.php`**, one `require` line in `web.php` |
+> | **D1** | Routes were placed in `routes/web.php` *"beside `users.index`"* — which moved out at task **0040**, and which [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure) forbids: one `routes/<area>.php` per area, five shipped instances. | [Route registrations](#route-registrations), [D-2](#d-2--three-routes-in-a-new-routesproductsphp-two-of-them-onto-one-editor-component) and the Files table — a **new `routes/products.php`**, one `require` line in `web.php` |
 > | **D2** | The sidebar plan targeted a **dead code path**: **V-8**/**D-15** asserted `config/modules.php` does not exist and the sidebar is *"the static starter-kit list"*. Both false since task **0013**; `sidebar.blade.php` has no static module items to add one to. | [D-15](#d-15--sidebar-entry-one-configmodulesphp-entry-and-two-lang-leaves) rewritten around the real registry mechanism; Files table drops `sidebar.blade.php` and gains `config/modules.php` + both `navigation.php` files |
 >
 > **Also fixed, non-blocking:** the planned `tests/Feature/Products/AuthorizationTest.php` is renamed
@@ -511,7 +511,7 @@ Feature: Deleting a product
 | `resources/views/livewire/products.blade.php` | **New.** The **flat** path — `App\Livewire\Products\Index` drops `.index` per the [`Index`-in-a-subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name). |
 | `app/Livewire/Products/Editor.php` | **New.** The create/edit screen (**D-1**: a routed page, not a modal). |
 | `resources/views/livewire/products/editor.blade.php` | **New.** The ordinary kebab-case mirror — note it sits one level *deeper* than the list's view; [naming.md](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name) already records that this asymmetry is expected. |
-| `routes/products.php` | **New.** The area file, holding all three `Route::livewire(...)` registrations inside its own `['auth', 'verified']` group (**D-2**). One file per functional area is the convention ([base-standards.md](../../../docs/conventions/base-standards.md#directory-structure)); mirror [`routes/product-categories.php`](../../../routes/product-categories.php) exactly, including the aliased `use ... as ProductsIndex` / `as ProductEditor` imports. |
+| `routes/products.php` | **New.** The area file, holding all three `Route::livewire(...)` registrations inside its own `['auth', 'verified']` group (**D-2**). One file per functional area is the convention ([base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure)); mirror [`routes/product-categories.php`](../../../routes/product-categories.php) exactly, including the aliased `use ... as ProductsIndex` / `as ProductEditor` imports. |
 | `routes/web.php` | **Modify.** Exactly two edits: one `require __DIR__.'/products.php';` line appended after the five existing `require`s, **and** deletion of 0020/0021's harness block (**D-14**). No route is declared inline here. |
 | `config/modules.php` | **Modify** — append one `items.products` entry (**D-15**), `permissions` exactly `['products.view']`. Data only; the reading component is not touched. |
 | `lang/en/navigation.php` + `lang/es/navigation.php` | **Modify** — one `items.products` leaf each, key-for-key identical (**D-15**). |
@@ -731,7 +731,7 @@ Media                                          // id, title, description, path, 
 > `featuredMediaIdRules`, `galleryMediaIdsRules`, qualified as *"entity-prefixed where ambiguous"*), and
 > omitted the aggregate `productRules()` entirely. The shipped trait prefixes **every** product-field
 > method uniformly, and the selective "where ambiguous" form the old text described is exactly what
-> [naming.md](../../../docs/conventions/naming.md#traits-and-their-methods) records as rejected: an
+> [naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods) records as rejected: an
 > unprefixed `descriptionRules()` collides with `SalesRegionValidationRules::descriptionRules()`, and PHP
 > fatals the moment both traits are composed onto one class — which this editor does. The two
 > **un**prefixed methods in that file (`salesRegionIdsRules()`, `salesRegionIdRules()`) are correct as
@@ -791,7 +791,7 @@ story's own Phase 2 correction), all non-negotiable:
 > This block used to open *"`routes/web.php` — inside the existing auth+verified group, beside
 > `users.index`"*, which is wrong twice over: `users.index` moved out of `web.php` into its own
 > [`routes/users.php`](../../../routes/users.php) at **task 0040**, and
-> [base-standards.md](../../../docs/conventions/base-standards.md#directory-structure) mandates one
+> [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure) mandates one
 > `routes/<area>.php` per functional area appended as a `require` line — a convention with **five**
 > shipped instances today (`settings.php`, `roles.php`, `users.php`, `sales-regions.php`,
 > `product-categories.php`). `web.php` declares only the app-wide `home`/`dashboard` routes, the five
@@ -1154,7 +1154,7 @@ Discharges 0026 **D-8**'s hand-off explicitly, and covers this story's own compo
 > and its three write actions now authorize themselves. **What that changes here is the framing, not
 > the tests**: every case below is still required, now as *defence in depth plus the honest source of
 > the per-row hints* rather than as the only enforcement. See
-> [base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+> [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
 > task-0017 blockquote — *"a component that authorizes as well is a layer, not a redundancy"*.
 
 - [ ] One allow/deny pair per component method that mutates or discloses, driven through
