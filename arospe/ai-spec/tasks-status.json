@@ -7,9 +7,9 @@
       "slug": "0044-customers-list-create-edit-ui",
       "title": "Customers — list + create/edit UI",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree-0044-customers-list-create-edit-ui",
+      "claimed_at": "2026-09-11T00:00:00Z",
       "touches": [
         "app/Livewire/Customers/Index.php",
         "resources/views/livewire/customers.blade.php",
