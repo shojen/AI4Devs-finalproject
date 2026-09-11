@@ -250,7 +250,13 @@
                         data-test="rate-name-input"
                     />
 
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {{-- Errors-log 2026-09-11: `items-start` here for the identical reason as
+                    the Min./Max. weight/Price row below -- "Zone"'s cell is taller than
+                    "Carrier"'s (it carries the "Manage shipping zones" link underneath the
+                    select), and the default `align-items: stretch` let that extra height
+                    distort "Carrier"'s own Flux ui-field layout even though its markup never
+                    changed. --}}
+                    <div class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
                         {{-- D-4: every carrier, disabled included -- OQ-B (adopted): an inline
                         "(Inactive)" suffix on a disabled carrier's own option label. --}}
                         <flux:select
