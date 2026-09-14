@@ -165,18 +165,39 @@
                 <div class="space-y-4">
                     <flux:heading size="md">{{ __('customers.form.shipping_heading') }}</flux:heading>
 
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {{-- items-start (docs/errors-log.md, 2026-09-11 entry) stops Grid's default
+                    align-items: stretch from distorting a shorter row-mate's <ui-field> layout,
+                    but it doesn't equalize row heights: Country's field is still intrinsically
+                    taller than Province's once it carries its own :description text, so the two
+                    inputs land on different rows even with items-start. Fix: move the hint out of
+                    :description and into an info-icon tooltip next to the label instead, so
+                    Country's field is exactly as tall as any other single-line field. --}}
+                    <div class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
                         <flux:input wire:model="shippingAddressLine1" :label="__('customers.form.address_line1')" />
                         <flux:input wire:model="shippingAddressLine2" :label="__('customers.form.address_line2')" />
                         <flux:input wire:model="shippingCity" :label="__('customers.form.city')" />
                         <flux:input wire:model="shippingPostalCode" :label="__('customers.form.postal_code')" />
                         <flux:input wire:model="shippingProvince" :label="__('customers.form.province')" />
-                        <flux:input
-                            wire:model="shippingCountry"
-                            :label="__('customers.form.country')"
-                            :description="__('customers.form.country_hint')"
-                            maxlength="2"
-                        />
+
+                        <flux:field>
+                            <flux:label>
+                                {{ __('customers.form.country') }}
+
+                                <x-slot name="trailing">
+                                    <flux:tooltip :content="__('customers.form.country_hint')">
+                                        <flux:icon.information-circle
+                                            variant="micro"
+                                            tabindex="0"
+                                            class="cursor-help text-zinc-400 outline-none"
+                                        />
+                                    </flux:tooltip>
+                                </x-slot>
+                            </flux:label>
+
+                            <flux:input wire:model="shippingCountry" placeholder="{{ __('customers.form.country_placeholder') }}" maxlength="2" />
+
+                            <flux:error name="shippingCountry" />
+                        </flux:field>
                     </div>
                 </div>
 
@@ -184,23 +205,37 @@
                     <div class="flex items-center justify-between">
                         <flux:heading size="md">{{ __('customers.form.billing_heading') }}</flux:heading>
 
-                        <flux:button variant="ghost" size="sm" wire:click="copyShippingToBilling" data-test="same-as-shipping">
+                        <flux:button variant="outline" size="sm" wire:click="copyShippingToBilling" data-test="same-as-shipping">
                             {{ __('customers.form.same_as_shipping') }}
                         </flux:button>
                     </div>
 
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
                         <flux:input wire:model="billingAddressLine1" :label="__('customers.form.address_line1')" />
                         <flux:input wire:model="billingAddressLine2" :label="__('customers.form.address_line2')" />
                         <flux:input wire:model="billingCity" :label="__('customers.form.city')" />
                         <flux:input wire:model="billingPostalCode" :label="__('customers.form.postal_code')" />
                         <flux:input wire:model="billingProvince" :label="__('customers.form.province')" />
-                        <flux:input
-                            wire:model="billingCountry"
-                            :label="__('customers.form.country')"
-                            :description="__('customers.form.country_hint')"
-                            maxlength="2"
-                        />
+
+                        <flux:field>
+                            <flux:label>
+                                {{ __('customers.form.country') }}
+
+                                <x-slot name="trailing">
+                                    <flux:tooltip :content="__('customers.form.country_hint')">
+                                        <flux:icon.information-circle
+                                            variant="micro"
+                                            tabindex="0"
+                                            class="cursor-help text-zinc-400 outline-none"
+                                        />
+                                    </flux:tooltip>
+                                </x-slot>
+                            </flux:label>
+
+                            <flux:input wire:model="billingCountry" placeholder="{{ __('customers.form.country_placeholder') }}" maxlength="2" />
+
+                            <flux:error name="billingCountry" />
+                        </flux:field>
                     </div>
                 </div>
 

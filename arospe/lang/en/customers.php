@@ -40,6 +40,7 @@ return [
         'province' => 'Province',
         'country' => 'Country',
         'country_hint' => 'Two-letter country code (ISO 3166-1 alpha-2), e.g. ES.',
+        'country_placeholder' => 'example: ES',
     ],
 
     /*

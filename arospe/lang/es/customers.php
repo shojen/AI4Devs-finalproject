@@ -41,6 +41,7 @@ return [
         'province' => 'Provincia',
         'country' => 'País',
         'country_hint' => 'Código de país de dos letras (ISO 3166-1 alfa-2), por ejemplo ES.',
+        'country_placeholder' => 'ejemplo: ES',
     ],
 
     /*
