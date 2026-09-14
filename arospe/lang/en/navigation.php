@@ -34,6 +34,7 @@ return [
         'shipping_zones' => 'Shipping zones',
         'shipping_carriers' => 'Carriers & rates',
         'payment_methods' => 'Payment methods',
+        'customers' => 'Customers',
     ],
 
 ];

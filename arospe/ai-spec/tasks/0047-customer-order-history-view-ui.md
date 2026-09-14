@@ -7,27 +7,34 @@ Blade/Flux view that renders a compact read-only identity header plus that custo
 history**. It also adds the `App\Models\Customer::orders()` relation that stories
 [0041](done/0041-customers-crud-backend.md) and [0045](done/0045-orders-core-crud-backend.md) both deliberately
 omitted and named this story as the owner of, and the "view detail" row affordance that
-[0044](0044-customers-list-create-edit-ui.md)'s list does not yet carry — without which the screen is
+[0044](done/0044-customers-list-create-edit-ui.md)'s list does not yet carry — without which the screen is
 unreachable.
 
-> ## ⛔ BLOCKED — inherited cross-epic dependency (read this before Phase 3)
+> ## ✅ UNBLOCKED — both cross-epic dependencies are now `done`
 >
-> **This story is fully specified now, but its Phase 3 implementation cannot start until story
-> [0045](done/0045-orders-core-crud-backend.md) is `done` — and 0045 is itself ⛔ blocked on five PRD Epic 2
-> stories ([0024](done/0024-products-core-crud-backend.md), [0029](done/0029-product-variants-backend.md),
-> [0035](done/0035-shipping-carriers-backend.md), [0036](done/0036-shipping-rate-rules-backend.md),
-> [0038](done/0038-payment-methods-bank-transfer-backend.md)).**
->
+> **Resolved 2026-09-14.** This banner used to read (quoted in full, per this project's
+> audit-authored-page convention, rather than silently removed): *"This story is fully specified
+> now, but its Phase 3 implementation cannot start until story [0045](done/0045-orders-core-crud-backend.md)
+> is `done` — and 0045 is itself ⛔ blocked on five PRD Epic 2 stories ([0024](done/0024-products-core-crud-backend.md),
+> [0029](done/0029-product-variants-backend.md), [0035](done/0035-shipping-carriers-backend.md),
+> [0036](done/0036-shipping-rate-rules-backend.md), [0038](done/0038-payment-methods-bank-transfer-backend.md)).
 > This story renders `orders` rows, reads `App\Enums\OrderStatus`, and adds a `hasMany(Order::class)`
-> relation. **None of `orders`, `order_items`, `App\Models\Order` or `OrderStatus` exists in code yet.**
-> There is nothing here that can be stubbed to proceed: an order-history screen with no `orders` table
-> is the ghost affordance [0044](0044-customers-list-create-edit-ui.md) explicitly refused to ship.
+> relation. None of `orders`, `order_items`, `App\Models\Order` or `OrderStatus` exists in code yet.
+> There is nothing here that can be stubbed to proceed: an order-history screen with no `orders`
+> table is the ghost affordance [0044](done/0044-customers-list-create-edit-ui.md) explicitly refused
+> to ship. The blocking chain is two links long, so state it once and check both: 0047 → 0045 →
+> {0024, 0029, 0035, 0036, 0038}. Confirm 0045 is `done` — not merely unblocked — before Phase 2 is
+> re-run."*
 >
-> **The blocking chain is two links long, so state it once and check both:** 0047 → 0045 → {0024, 0029,
-> 0035, 0036, 0038}. Confirm 0045 is `done` — not merely unblocked — before Phase 2 is re-run.
->
-> **What is *not* blocked:** this document. See [R-3](#risks) for why specifying it now is deliberate,
-> and for the re-verification Phase 3 owes it.
+> **Both links are now satisfied**: 0045 (Orders core CRUD backend) closed with `orders`,
+> `order_items`, `App\Models\Order`, `App\Models\OrderItem`, `App\Enums\OrderStatus` and
+> `App\Enums\PaymentStatus` all shipped exactly as this story's own file below assumes them (see
+> [database/schema-orders.md](../../docs/database/schema-orders.md) for the shipped shape), and its
+> own five upstream blockers were already `done` before it closed. 0044 (Customers list +
+> create/edit UI) is also `done`. **Phase 2 must still re-verify this file's assumed column
+> shapes and the `Order`/`OrderItem` model contracts against what actually shipped — R-4/R-5-style
+> re-verification, per the errors-log rule this story's own Risks section already cites — before
+> Phase 3 begins**, rather than trusting this snapshot.
 
 ## Type
 frontend | includes database-expert: **no**
@@ -750,23 +757,23 @@ names the customer. Reversible in one line if the product asks.
 | --- | --- | --- |
 | `customers` table + `App\Models\Customer` | story [0041](done/0041-customers-crud-backend.md) — **hard dependency** | the relation is declared on that model; the header reads its `name`/`email`/`phone` |
 | `customers.deleted_at` (soft delete) | story [0042](done/0042-customers-soft-delete-backend.md) — **hard dependency** | the 404-for-a-trashed-customer test asserts behaviour that only exists once `SoftDeletes` is on the model |
-| The Customers screen: route file, list view, lang files, registry entry | story [0044](0044-customers-list-create-edit-ui.md) — **hard dependency**, and this story **edits three of its files** (**D-6**) | `routes/customers.php`, `resources/views/livewire/customers.blade.php`, `lang/{en,es}/customers.php` |
-| `orders` table, `App\Models\Order`, `App\Enums\OrderStatus`, `orders.statuses.*` lang keys | story [0045](done/0045-orders-core-crud-backend.md) — **hard dependency, itself ⛔ blocked** | every order row column, the status badge label, and the `hasMany` target |
+| The Customers screen: route file, list view, lang files, registry entry | story [0044](done/0044-customers-list-create-edit-ui.md) — **hard dependency**, and this story **edits three of its files** (**D-6**) | `routes/customers.php`, `resources/views/livewire/customers.blade.php`, `lang/{en,es}/customers.php` |
+| `orders` table, `App\Models\Order`, `App\Enums\OrderStatus`, `orders.statuses.*` lang keys | story [0045](done/0045-orders-core-crud-backend.md) — **hard dependency, now `done`** | every order row column, the status badge label, and the `hasMany` target |
 | `orders.view` in the seeded permission catalog | **shipped** (Epic 1) | `RolePermissionSeeder::MODULES` carries `orders`; all four CRUD actions are generated for it |
 | `Gate::before` Super Admin bypass | **shipped** (Epic 1) | [authorization.md](../../docs/architecture/authorization.md) |
 | The `can:`-gated Livewire route pattern | **shipped** (tasks 0004/0010/0040) | `routes/users.php`, `routes/roles.php` |
 | UUID route-model binding | **shipped** (task 0001) | `HasUuids::resolveRouteBindingQuery()` — the malformed-id 404 |
 
-#### ⛔ Blocked — inherited cross-epic dependency
+#### ✅ Unblocked — inherited cross-epic dependency, resolved
 
-**Phase 3 cannot begin until [0045](done/0045-orders-core-crud-backend.md) is `done`**, and 0045 is itself
-blocked on [0024](done/0024-products-core-crud-backend.md), [0029](done/0029-product-variants-backend.md),
+[0045](done/0045-orders-core-crud-backend.md) is `done`, and its own five upstream blockers —
+[0024](done/0024-products-core-crud-backend.md), [0029](done/0029-product-variants-backend.md),
 [0035](done/0035-shipping-carriers-backend.md), [0036](done/0036-shipping-rate-rules-backend.md) and
-[0038](done/0038-payment-methods-bank-transfer-backend.md). The chain is **0047 → 0045 → five Epic 2 stories**.
-
-There is nothing here to stub. An order-history screen with no `orders` table has no rows to render, no
-enum to label and no relation to declare — and shipping the route with a placeholder is the empty-detail-
-page 0044's OQ-3 explicitly refused. **If 0045 is not `done` when Phase 3 starts, the story is not ready.**
+[0038](done/0038-payment-methods-bank-transfer-backend.md) — were already `done` before it closed.
+The chain **0047 → 0045 → five Epic 2 stories** is fully satisfied. Phase 2 must still re-verify
+this story's assumed `orders`/`order_items` column shapes against
+[database/schema-orders.md](../../docs/database/schema-orders.md) (the shipped shape) before Phase
+3 begins, per the same re-verification discipline this file's own Risks section already names.
 
 #### What depends on this story
 

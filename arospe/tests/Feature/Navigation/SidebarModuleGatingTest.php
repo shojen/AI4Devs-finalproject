@@ -124,6 +124,37 @@ test('a role holding roles.manage sees the Roles & Permissions entry', function 
 });
 
 // =====================================================================
+// Story 0044 — the customers entry: `group: null, cluster: null`, the SAME bare top-level shape
+// `users` already uses (Customers is a top-level operational module, not store configuration and
+// not a sub-resource of an existing cluster). Only these two tests are added by this story — the
+// mechanical set-equality guards below (config:cache, permissions-match-route:can:, the Super
+// Admin exact-key-match test) already iterate config('modules.items') generically and pick this
+// entry up with no code change, per the task file's own instruction to verify that rather than
+// re-write it.
+// =====================================================================
+
+test('a role holding exactly customers.view sees the Customers entry', function () {
+    $this->actingAs(sidebarNavUserWith(['customers.view']));
+
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('data-test="sidebar-link-customers"', false);
+});
+
+test('a role without customers.view never sees the Customers entry — asserted on the data-test hook, never the word "Customers"', function () {
+    // Never assertDontSee('Customers') -- that word can collide with other copy on the page
+    // (task file, Tests to perform). Anchored with an assertSee() on the always-visible Dashboard
+    // hook so this exercises the real sidebar-nav component rather than passing vacuously.
+    $this->actingAs(sidebarNavUserWith(['blog.view']));
+
+    $response = $this->get(route('dashboard'));
+
+    $response->assertOk();
+    $response->assertSee('data-test="sidebar-link-dashboard"', false);
+    $response->assertDontSee('data-test="sidebar-link-customers"', false);
+});
+
+// =====================================================================
 // Story 0018 — the sales_regions entry, RE-TARGETED by story 0080 (see the
 // story 0080 sections further below for the full rationale). `groups.taxes`
 // is retired by 0080 D-4 and `sales_regions` moves into the `store_settings`

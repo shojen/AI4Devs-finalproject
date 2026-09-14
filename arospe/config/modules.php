@@ -237,5 +237,19 @@ return [
             'current_when' => 'payment-methods.*',
             'permissions' => ['payment-methods.view'],
         ],
+        // Story 0044 -- Customers is a top-level operational module like `users` (a bare item,
+        // group: null, cluster: null), not store configuration and not a sub-resource of an
+        // existing cluster. 'permissions' is EXACTLY the ability routes/customers.php's own
+        // `can:` middleware enforces on customers.index -- never a broader set (see this file's
+        // header note).
+        'customers' => [
+            'group' => null,
+            'cluster' => null,
+            'label' => 'navigation.items.customers',
+            'icon' => 'user-group',
+            'route' => 'customers.index',
+            'current_when' => 'customers.*',
+            'permissions' => ['customers.view'],
+        ],
     ],
 ];
