@@ -1,0 +1,122 @@
+<?php
+
+use App\Models\Order;
+use App\Models\User;
+use App\Policies\OrderPolicy;
+use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Gate;
+use Spatie\Permission\PermissionRegistrar;
+
+// Story 0045, Phase 3 (TDD "red" step): App\Policies\OrderPolicy does not exist yet -- every test
+// below is expected to fail until backend-expert implements it (with no registered policy, Gate
+// denies every ability by default, so an "allowed" assertion fails rather than throwing "class not
+// found" -- the correct RED outcome for a policy test, matching how a missing policy behaves).
+//
+// D-13: four flat abilities (viewAny/create/update/delete), no per-target rule on any of them,
+// modelled on ShippingRatePolicy -- this file's shape is copied from
+// tests/Feature/Policies/ShippingRatePolicyTest.php almost verbatim. `create` is the only ability
+// with a real caller in this story (CreateOrder); the other three are tested here precisely
+// because nothing else exercises them yet (per the task file's own instruction).
+
+beforeEach(function () {
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+    $this->seed(RolePermissionSeeder::class);
+});
+
+test('viewAny is allowed for an actor holding orders.view and denied for one without it', function () {
+    $allowedActor = User::factory()->create();
+    $allowedActor->givePermissionTo('orders.view');
+
+    $deniedActor = User::factory()->create();
+
+    expect(Gate::forUser($allowedActor)->allows('viewAny', Order::class))->toBeTrue()
+        ->and(Gate::forUser($deniedActor)->allows('viewAny', Order::class))->toBeFalse();
+});
+
+test('create is allowed for an actor holding orders.create and denied for one without it', function () {
+    $allowedActor = User::factory()->create();
+    $allowedActor->givePermissionTo('orders.create');
+
+    $deniedActor = User::factory()->create();
+
+    expect(Gate::forUser($allowedActor)->allows('create', Order::class))->toBeTrue()
+        ->and(Gate::forUser($deniedActor)->allows('create', Order::class))->toBeFalse();
+});
+
+test('update is allowed for an actor holding orders.edit and denied for one without it', function () {
+    $target = Order::factory()->create();
+
+    $allowedActor = User::factory()->create();
+    $allowedActor->givePermissionTo('orders.edit');
+
+    $deniedActor = User::factory()->create();
+
+    expect(Gate::forUser($allowedActor)->allows('update', $target))->toBeTrue()
+        ->and(Gate::forUser($deniedActor)->allows('update', $target))->toBeFalse();
+});
+
+test('delete is allowed for an actor holding orders.delete and denied for one without it', function () {
+    $target = Order::factory()->create();
+
+    $allowedActor = User::factory()->create();
+    $allowedActor->givePermissionTo('orders.delete');
+
+    $deniedActor = User::factory()->create();
+
+    expect(Gate::forUser($allowedActor)->allows('delete', $target))->toBeTrue()
+        ->and(Gate::forUser($deniedActor)->allows('delete', $target))->toBeFalse();
+});
+
+// Server-side enforcement -- not merely allows() returning false, per
+// docs/testing/qa/what-not-to-test.md's authorization rule.
+test('Gate::forUser denies each ability by throwing AuthorizationException, never merely returning false', function () {
+    $target = Order::factory()->create();
+    $deniedActor = User::factory()->create();
+
+    expect(fn () => Gate::forUser($deniedActor)->authorize('viewAny', Order::class))
+        ->toThrow(AuthorizationException::class);
+
+    expect(fn () => Gate::forUser($deniedActor)->authorize('create', Order::class))
+        ->toThrow(AuthorizationException::class);
+
+    expect(fn () => Gate::forUser($deniedActor)->authorize('update', $target))
+        ->toThrow(AuthorizationException::class);
+
+    expect(fn () => Gate::forUser($deniedActor)->authorize('delete', $target))
+        ->toThrow(AuthorizationException::class);
+});
+
+test('a Super Admin actor passes every OrderPolicy ability while holding zero permission rows', function () {
+    $superAdmin = User::factory()->create();
+    $superAdmin->assignRole('Super Admin');
+
+    $target = Order::factory()->create();
+
+    expect($superAdmin->getAllPermissions())->toHaveCount(0)
+        ->and(Gate::forUser($superAdmin)->allows('viewAny', Order::class))->toBeTrue()
+        ->and(Gate::forUser($superAdmin)->allows('create', Order::class))->toBeTrue()
+        ->and(Gate::forUser($superAdmin)->allows('update', $target))->toBeTrue()
+        ->and(Gate::forUser($superAdmin)->allows('delete', $target))->toBeTrue();
+});
+
+// The permission strings are asserted against RolePermissionSeeder's seeded catalog -- a
+// permission string not in the catalog throws PermissionDoesNotExist at runtime, so this is a
+// correctness test, not a style one. No new permission and no RolePermissionSeeder change.
+test('the four permission strings OrderPolicy gates on are all in the seeded orders module', function () {
+    expect(in_array('orders', RolePermissionSeeder::MODULES, true))->toBeTrue();
+
+    $actor = User::factory()->create();
+    $actor->givePermissionTo(['orders.view', 'orders.create', 'orders.edit', 'orders.delete']);
+
+    expect($actor->getAllPermissions())->toHaveCount(4);
+});
+
+// One public const <VERB>_PERMISSION per ability, named once on the class that owns the rule --
+// naming.md's permission-naming convention.
+test('OrderPolicy exposes one VERB_PERMISSION constant per ability, matching the seeded catalog', function () {
+    expect(OrderPolicy::VIEW_PERMISSION)->toBe('orders.view')
+        ->and(OrderPolicy::CREATE_PERMISSION)->toBe('orders.create')
+        ->and(OrderPolicy::EDIT_PERMISSION)->toBe('orders.edit')
+        ->and(OrderPolicy::DELETE_PERMISSION)->toBe('orders.delete');
+});
