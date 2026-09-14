@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\OrderStatus;
+use Tests\TestCase;
 
 // Story 0045, Phase 3: App\Enums\OrderStatus already exists (scaffolded ahead of the write path),
 // so the enum-shape tests below are expected to be GREEN already. The lang-key-parity test below,
@@ -12,6 +13,16 @@ use App\Enums\OrderStatus;
 // real consumer (docs/conventions/naming.md#translation-keys's "add label() when a second consumer
 // appears" rule). So this file asserts the lang-file leaves DIRECTLY against the raw array,
 // never through a label() method that does not exist.
+//
+// CI fix: `lang_path()` resolves through `app()->langPath()`, which needs the app container --
+// bound per-file here rather than directory-wide, so this stays a `tests/Unit/` test (no
+// RefreshDatabase, no database touched), matching `UserStatusTest.php`'s/`ProductStatusTest.php`'s
+// existing precedent (docs/testing/backend/unit-tests.md). Without this, `app()` can return a bare
+// `Illuminate\Container\Container` instead of the full `Application` depending on which other
+// tests already ran in the same PHPUnit/paratest worker process -- this passed locally by
+// accident of test ordering and failed under CI's real parallel distribution instead
+// ("Call to undefined method Illuminate\Container\Container::langPath()").
+uses(TestCase::class);
 
 test('OrderStatus exposes exactly the cases PRD §3.2 names, with the expected backing values', function () {
     $expected = [

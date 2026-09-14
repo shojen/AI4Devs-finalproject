@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\PaymentStatus;
+use Tests\TestCase;
 
 // Story 0045, Phase 3: App\Enums\PaymentStatus already exists (scaffolded ahead of the write
 // path), so the enum-shape test below is expected to be GREEN already. The lang-key-parity test
@@ -8,7 +9,9 @@ use App\Enums\PaymentStatus;
 // is expected to fail until backend-expert creates both lang files.
 //
 // N-4's resolution: NEITHER enum declares label() this story -- story 0055 adds it as their first
-// real consumer. See OrderStatusTest.php's own docblock; the same reasoning applies unchanged.
+// real consumer. See OrderStatusTest.php's own docblock; the same reasoning applies unchanged --
+// including the `uses(TestCase::class)` CI fix for `lang_path()` needing the app container.
+uses(TestCase::class);
 
 test('PaymentStatus exposes exactly the cases PRD §3.2 names, with the expected backing values', function () {
     $expected = [
