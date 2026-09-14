@@ -14,7 +14,7 @@ every control mirrors a predicate its own guard already reads.
 > ## ⛔ BLOCKED — inherited cross-epic dependency (read this before Phase 3)
 >
 > **This story is fully specified now, but its Phase 3 implementation cannot start until every Orders
-> backend story is `done`:** [0045](0045-orders-core-crud-backend.md),
+> backend story is `done`:** [0045](done/0045-orders-core-crud-backend.md),
 > [0048](0048-order-line-item-editing-backend.md), [0049](0049-order-status-transition-backend.md),
 > [0050](0050-order-manual-cancellation-backend.md),
 > [0051](0051-order-payment-refund-state-backend.md),
@@ -1387,7 +1387,7 @@ The rendered states are three, branched on `sales_region_id` and `tax_rate` and 
 
 | Depends on | State | Verified how |
 | --- | --- | --- |
-| `orders` / `order_items` tables, `Order` / `OrderItem`, `OrderStatus`, `PaymentStatus`, `orders.statuses.*` + `payment_statuses.*` lang keys, the **D-6** list and **D-14** detail retrieval contracts | story [0045](0045-orders-core-crud-backend.md) — **hard, and itself ⛔ blocked** | every column rendered, both badge label sets, both `#[Computed]` queries |
+| `orders` / `order_items` tables, `Order` / `OrderItem`, `OrderStatus`, `PaymentStatus`, `orders.statuses.*` + `payment_statuses.*` lang keys, the **D-6** list and **D-14** detail retrieval contracts | story [0045](done/0045-orders-core-crud-backend.md) — **hard, and itself ⛔ blocked** | every column rendered, both badge label sets, both `#[Computed]` queries |
 | `AddOrderItem` / `RemoveOrderItem` / `UpdateOrderItemQuantity`, `OrderNotEditableException`, the `Enviado`/`Entregado` hard block | story [0048](0048-order-line-item-editing-backend.md) — **hard** | three controls and `canEditLineItems()` |
 | `TransitionOrderStatus`, `OrderPolicy` (+ `transitionStatus()`), `OrderStatus::rank()` / `isBackwardFrom()`, `OrderStatusRegressionRequiresConfirmationException`, `orders.transitions.*` | story [0049](0049-order-status-transition-backend.md) — **hard** | the status select, the backward dialog, **D-11** |
 | `CancelOrder`, `OrderPolicy::cancel()`, `Order::isManuallyCancellable()`, `OrderCancellationBlockedException`, `orders.cancellation.*` | story [0050](0050-order-manual-cancellation-backend.md) — **hard** | the Cancel control and **D-9** |
@@ -1605,7 +1605,7 @@ enabled for every other caller of `TransitionOrderStatus`. If the business wants
 **OQ-4 — Does the list need pagination, search or filters? Non-blocking; backlog.** Consistent with
 0044 **D-8**, 0047 **D-11** and both shipped list screens: none in this cut. **The order book is the
 one list in this app that genuinely grows without bound**, though, so its trigger will arrive first —
-and 0045's [backlog item 2](0045-orders-core-crud-backend.md) already ties its index decisions to
+and 0045's [backlog item 2](done/0045-orders-core-crud-backend.md) already ties its index decisions to
 "what story 0055's list actually filters on". Revisit on a real volume signal, deciding the index and
 the filter together.
 

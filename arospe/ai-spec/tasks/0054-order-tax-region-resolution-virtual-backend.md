@@ -7,12 +7,12 @@ order, and ship the **geo/fraud-check mechanism** PRD [§3.2](../../docs/PRD/PRD
 describes — three new `orders` columns plus the billing-country-vs-IP-country comparison that sets
 `flagged_for_review`. This story is the virtual-product sibling of story 0053 (physical products,
 shipping address); the two are independent of each other and both depend only on
-[0045](0045-orders-core-crud-backend.md).
+[0045](done/0045-orders-core-crud-backend.md).
 
 > ## ⛔ BLOCKED — inherited cross-epic dependency (read this before Phase 3)
 >
 > **This story is fully specified now, but its Phase 3 implementation cannot start until
-> [0045](0045-orders-core-crud-backend.md) is `done` — and 0045 is itself blocked on PRD Epic 2
+> [0045](done/0045-orders-core-crud-backend.md) is `done` — and 0045 is itself blocked on PRD Epic 2
 > stories 0024, 0029, 0035, 0036 and 0038.** There is no `orders` table, no `Order` model and no
 > `billing_*` snapshot to read until 0045 ships. This story adds columns to a table that does not
 > exist yet.
@@ -684,7 +684,7 @@ override is a decision rather than a rediscovery.
 
 | Depends on | State | Verified how |
 | --- | --- | --- |
-| **[0045](0045-orders-core-crud-backend.md) — Orders core CRUD** | **HARD dependency; `new` and ⛔ BLOCKED** | This story `ALTER`s `orders`, reads its `billing_*` snapshot and writes `sales_region_id` / `tax_rate` / `tax_amount` / `flagged_for_review`. **This story inherits 0045's blocked status in full** — including its five Epic 2 blockers (0024, 0029, 0035, 0036, 0038) |
+| **[0045](done/0045-orders-core-crud-backend.md) — Orders core CRUD** | **HARD dependency; `new` and ⛔ BLOCKED** | This story `ALTER`s `orders`, reads its `billing_*` snapshot and writes `sales_region_id` / `tax_rate` / `tax_amount` / `flagged_for_review`. **This story inherits 0045's blocked status in full** — including its five Epic 2 blockers (0024, 0029, 0035, 0036, 0038) |
 | **0053 — physical-product tax resolution** | **SIBLING, not a dependency** | Both depend only on 0045; **there is no dependency between 0053 and 0054 in either direction**, and either may be implemented first. They share exactly one artifact — the `App\Concerns\ResolvesSalesRegionFromAddress` trait, specified as create-if-absent (**D-7**), whose country→`slug` rule and Spain postal-prefix map are [0053's **D-4**/**D-5**](0053-order-tax-region-resolution-physical-backend.md#documented-functional-decisions) and are referenced here, never restated |
 | [0026](done/0026-product-sales-region-assignment-and-tax-resolution-backend.md) — product↔region assignment + `ResolveProductTaxRate` | `new` | Provides the `ResolveProductTaxRate` / `ResolvedTaxRate` / `TaxRateResolutionTier` contract this story consumes verbatim; its scope fence explicitly hands address→region mapping to Epic 3 |
 | [0024](done/0024-products-core-crud-backend.md) — Products | `new` | Provides `App\Enums\ProductType` (`Physical` / `Virtual`), which is how "the order is virtual" is determined at all |
@@ -752,7 +752,7 @@ precisely so it is met by the reader who needs it.
 items? RESOLVED by the facilitator during 0053's Phase 1 composition — recorded here for consistency,
 not left as a choice between this file's original three options.**
 
-Story [0045](0045-orders-core-crud-backend.md) permits an order to carry any number of line items
+Story [0045](done/0045-orders-core-crud-backend.md) permits an order to carry any number of line items
 naming any products, so an order containing **one physical and one virtual product** is creatable
 today with no rule covering it. PRD §3.2 states the resolution rule per **product type** and is silent
 on a basket holding both.
@@ -847,4 +847,4 @@ Derived from this story, none of them in scope:
   [workflow.md](../../docs/workflow.md#link-integrity-check-on-every-stage-move).
 - **Epic 3 decomposition:** the virtual-product half of tax resolution. Story 0053 (physical products)
   is its sibling and is referenced by number without a link because its file may not exist yet — the
-  same convention [0045](0045-orders-core-crud-backend.md) uses for its own unwritten siblings.
+  same convention [0045](done/0045-orders-core-crud-backend.md) uses for its own unwritten siblings.

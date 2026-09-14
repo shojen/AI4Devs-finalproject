@@ -2,21 +2,21 @@
 
 ## Description
 Introduce the `orders` and `order_items` tables and the creation write path behind PRD
-[§3.2 Orders](../../docs/PRD/PRD.md#32-orders): an order references a **Customer**, one or more
+[§3.2 Orders](../../../docs/PRD/PRD.md#32-orders): an order references a **Customer**, one or more
 **product/variant line items** (each carrying a quantity and **the price at the time of order**), a
 **payment method**, and — later — the **Sales Region** used for tax and the **shipping rate/carrier**
 selected for delivery. This story owns the two greenfield UUID migrations, the `Order` / `OrderItem`
-models and factories, the two status enums, the validation rule set, `CreateOrder`, and the documented
-detail- and list-retrieval contracts its sibling stories consume. No route, no Livewire component, no
-Blade markup, no notification, no status transitions, no refunds, no tax resolution.
+models and factories, the two status enums, the validation rule set, `OrderPolicy`, `CreateOrder`, and
+the documented detail- and list-retrieval contracts its sibling stories consume. No route, no Livewire
+component, no Blade markup, no notification, no status transitions, no refunds, no tax resolution.
 
 > ## ⛔ BLOCKED — cross-epic dependency (read this before Phase 3)
 >
 > **This story is fully specified now, but its Phase 3 implementation cannot start until PRD Epic 2
-> stories [0024](done/0024-products-core-crud-backend.md) (Products), [0029](done/0029-product-variants-backend.md)
-> (Product Variants), [0035](done/0035-shipping-carriers-backend.md) (Shipping Carriers),
-> [0036](done/0036-shipping-rate-rules-backend.md) (Shipping Rates) and
-> [0038](done/0038-payment-methods-bank-transfer-backend.md) (Payment Methods) are all `done`.**
+> stories [0024](0024-products-core-crud-backend.md) (Products), [0029](0029-product-variants-backend.md)
+> (Product Variants), [0035](0035-shipping-carriers-backend.md) (Shipping Carriers),
+> [0036](0036-shipping-rate-rules-backend.md) (Shipping Rates) and
+> [0038](0038-payment-methods-bank-transfer-backend.md) (Payment Methods) are all `done`.**
 >
 > `orders` and `order_items` carry foreign keys into `products`, `product_variants`, `shipping_rates`
 > and `payment_methods` — four tables that **do not exist in code yet**. Every FK in this repository,
@@ -96,6 +96,16 @@ Feature: Order records (backend)
     Given an order administrator, with an existing order whose line item was priced at 10.00
     When the product's catalog price is changed to 25.00
     Then the existing order's line item still records a unit price of 10.00
+
+  Scenario: A line item for a variant stores the variant's own price, not the product's
+    Given an order administrator, with a product priced at 10.00 whose variant is priced at 15.00
+    When they create an order with one line item for that variant
+    Then the line item records a unit price of 15.00
+
+  Scenario: A later variant price change does not move an existing order's line item
+    Given an order administrator, with an existing order whose variant line item was priced at 15.00
+    When that variant's catalog price is changed to 40.00
+    Then the existing order's line item still records a unit price of 15.00
 
   Scenario: A line item stores the product's name and code at the time of order
     Given an order administrator, with an existing product
@@ -195,6 +205,11 @@ Feature: Order records (backend)
     When they create an order
     Then the order record is stored
 
+  Scenario: A refused order creation is recorded in the audit trail
+    Given a signed-in administrator whose role does not grant the orders create permission
+    When they attempt to create an order
+    Then the refusal is recorded against that administrator, naming the attempted action
+
   # --- Detail retrieval ---
 
   Scenario: An order's detail includes its customer
@@ -231,8 +246,8 @@ Feature: Order records (backend)
 
 `database/migrations/<ts>_create_orders_table.php` — **new**. Shape confirmed by `database-expert`
 against this repo's greenfield-UUID precedent,
-[`create_sales_regions_table`](../../docs/database/migrations.md#uuid-primary-keys), and against
-[`create_customers_table`](done/0041-customers-crud-backend.md) for the address-column lengths.
+[`create_sales_regions_table`](../../../docs/database/migrations.md#uuid-primary-keys), and against
+[`create_customers_table`](0041-customers-crud-backend.md) for the address-column lengths.
 
 ```php
 Schema::create('orders', function (Blueprint $table): void {
@@ -321,9 +336,9 @@ Non-negotiable properties of both files:
   buys, and it is the reason the story is blocked rather than partially shipped.
 - **No explicit `$table->index()` anywhere.** `constrained()` already leaves every FK column indexed;
   writing one by hand emits a second DDL statement and produces the redundant index recorded in
-  [errors-log-archive.md](../../docs/errors-log-archive.md#a-redundant-users_uuid_unique-index-survived-the-uuid-primary-key-conversion--2026-08-12).
+  [errors-log-archive.md](../../../docs/errors-log-archive.md#a-redundant-users_uuid_unique-index-survived-the-uuid-primary-key-conversion--2026-08-12).
   Verify with `php artisan db:table orders` / `db:table order_items` after migrating, never by reading
-  the migration ([migrations.md](../../docs/database/migrations.md#an-fk-column-does-not-also-get-an-explicit-index-here)).
+  the migration ([migrations.md](../../../docs/database/migrations.md#an-fk-column-does-not-also-get-an-explicit-index-here)).
 - **`order_number` UNIQUE** is the only non-FK index on either table (**D-1**).
 - **No index on `status` or `payment_status`** — the cardinality argument applied to `users.status` and
   to `sales_regions`: two low-cardinality tokens over a backoffice-sized table, where the index costs a
@@ -331,7 +346,7 @@ Non-negotiable properties of both files:
 - **No `deleted_at` on either table.** Orders are never deleted in this phase; `Cancelado` is the
   terminal state PRD §3.2 defines, and it is a `status` value, not a soft delete.
 - Every string column is **length-capped**; every money-like column is `decimal`, never `float`
-  ([migrations.md](../../docs/database/migrations.md#uuid-primary-keys)).
+  ([migrations.md](../../../docs/database/migrations.md#uuid-primary-keys)).
 
 ### Enums — `app/Enums/` (new)
 
@@ -344,11 +359,6 @@ enum OrderStatus: string
     case Shipped = 'shipped';
     case Delivered = 'delivered';
     case Cancelled = 'cancelled';
-
-    public function label(): string
-    {
-        return __('orders.statuses.'.$this->value);
-    }
 }
 ```
 
@@ -360,16 +370,23 @@ enum PaymentStatus: string
     case Paid = 'paid';
     case Refunded = 'refunded';
     case PartiallyRefunded = 'partially_refunded';
-
-    public function label(): string
-    {
-        return __('orders.payment_statuses.'.$this->value);
-    }
 }
 ```
 
+- **Neither enum declares `label()` — deliberately, and this is a Phase 2 correction rather than an
+  omission.** An earlier draft of this file gave both a `label()` resolving `orders.statuses.*` /
+  `orders.payment_statuses.*`, which would ship two methods with **zero** consumers until story 0055
+  builds the first screen that renders a status. [naming.md](../../../docs/conventions/naming.md#translation-keys)
+  states the rule directly — *"add `label()` when a second consumer appears, not when the first one
+  does"* — and this story has not even the first: `App\Enums\SalesRegionKind` (story 0016 deferred it,
+  task 0018 rendered `kind` and still declined it) and `App\Enums\GeographyLevel` (story 0032, no
+  rendering site at all) are the two shipped precedents, and both point the same way. **Story 0055 adds
+  `label()` to both enums when it becomes their first real consumer**, and owns the judgement about
+  whether a second consumer by then justifies the indirection at all. The lang files below still ship
+  **here** — see that section for why the two decisions are independent.
+
 - **TitleCase keys, lowercase snake_case backing values** — the `UserStatus` / `SalesRegionKind`
-  precedent ([naming.md](../../docs/conventions/naming.md#classes)). PRD §3.2 states the vocabulary in
+  precedent ([naming.md](../../../docs/conventions/naming.md#classes)). PRD §3.2 states the vocabulary in
   Spanish (`Pendiente → Procesando → Enviado → Entregado`, `Pendiente de pago`, …); the **backing
   values stay English tokens** and the Spanish is a translation, exactly as `users.statuses.*` handles
   it. `App\Enums\RoleName` is the only enum here whose backing values are not lowercase tokens, and
@@ -386,7 +403,7 @@ enum PaymentStatus: string
 ### Model — `app/Models/Order.php` (new)
 
 Scaffolded with `php artisan make:model Order -m -f --no-interaction`. Follows
-[base-standards.md](../../docs/conventions/base-standards.md#model-conventions):
+[base-standards.md](../../../docs/conventions/base-standards.md#model-conventions):
 
 - `use HasFactory, HasUuids;`, `@property string $id`, and **no** `$keyType` / `$incrementing`.
 - `casts()` carries `'status' => OrderStatus::class`, `'payment_status' => PaymentStatus::class`.
@@ -416,17 +433,25 @@ Scaffolded with `php artisan make:model Order -m -f --no-interaction`. Follows
 - `OrderFactory` default state produces a valid pending order with a customer and payment method, no
   sales region, no shipping rate, `flagged_for_review => false`. Named states: `withItems(int $n)`,
   `paid()`, and `forCustomer(Customer $c)`.
-- `OrderItemFactory` default state produces a line item with a product, a quantity and a unit price
-  matching the product's current price. Named state: `forVariant(ProductVariant $v)`.
+- `OrderItemFactory` default state produces a line item with a product, a quantity, and a `unit_price`
+  / `product_sku` / `product_name` matching that product's current values. Named state:
+  `forVariant(ProductVariant $v)`, which sets **both** `product_id` (the variant's parent) and
+  `product_variant_id`, and takes `unit_price` / `product_sku` from the **variant** rather than the
+  parent, per **D-15** — a factory that priced a variant line item from the parent product would make
+  D-15's regression test pass against the very implementation it exists to catch. Note the derived-column
+  hazard this shares with `GeographyEntryFactory`
+  ([errors-log.md](../../../docs/errors-log.md#a-geographyentryfactory-override-to-name-silently-left-normalized_name-stale-making-a-search-test-fail-against-real-search-code--2026-09-07)):
+  a caller overriding `unit_price` via `create([...])` does **not** get `line_total` recomputed, so any
+  test overriding one must pass the other explicitly.
 - Neither factory may produce a state this story's own validation would reject — a factory that can
   create a zero-line-item order makes **D-5**'s test meaningless.
 
 ### Validation trait — `app/Concerns/OrderValidationRules.php` (new)
 
-Mirrors [`UserValidationRules`](../../app/Concerns/UserValidationRules.php) /
-[`CustomerValidationRules`](done/0041-customers-crud-backend.md) exactly — `<Noun>ValidationRules` trait,
+Mirrors [`UserValidationRules`](../../../app/Concerns/UserValidationRules.php) /
+[`CustomerValidationRules`](0041-customers-crud-backend.md) exactly — `<Noun>ValidationRules` trait,
 `<noun>Rules()` methods returning rule arrays, flat and single-concern
-([naming.md](../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)):
+([naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)):
 
 ```php
 protected function orderRules(): array;              // the whole payload
@@ -444,22 +469,89 @@ protected function orderItemRules(): array;          // per-item: product, optio
 - `Rule::exists()` on `customer_id` uses the **default** (soft-delete-scoped-unaware) query, which
   means a soft-deleted customer's id would pass. That is deliberate and recorded as **D-12**.
 
+### Policy — `app/Policies/OrderPolicy.php` (new)
+
+Scaffolded with `php artisan make:policy OrderPolicy --model=Order --no-interaction`, then reduced to
+the shape [`app/Policies/ShippingRatePolicy.php`](../../../app/Policies/ShippingRatePolicy.php) already
+establishes — **this story's structural analogue in every respect that matters** (backend-only, no
+route, no Livewire component, the action as the sole reachable enforcement point) and the file to copy:
+
+```php
+class OrderPolicy
+{
+    public const VIEW_PERMISSION = 'orders.view';
+    public const CREATE_PERMISSION = 'orders.create';
+    public const EDIT_PERMISSION = 'orders.edit';
+    public const DELETE_PERMISSION = 'orders.delete';
+
+    public function viewAny(User $actor): bool { /* hasPermissionTo(self::VIEW_PERMISSION) */ }
+    public function create(User $actor): bool { /* hasPermissionTo(self::CREATE_PERMISSION) */ }
+    public function update(User $actor, Order $target): bool { /* hasPermissionTo(self::EDIT_PERMISSION) */ }
+    public function delete(User $actor, Order $target): bool { /* hasPermissionTo(self::DELETE_PERMISSION) */ }
+}
+```
+
+- **Four flat abilities from day one, no per-target branch on any of them**, matching
+  `ShippingRatePolicy`/`ShippingZonePolicy`/`CustomerPolicy` exactly. `create` is the only one with a
+  caller in this story (`CreateOrder`); the other three exist because stories 0048–0052 and 0055 will
+  each need one and because a policy split across five stories is how ability ownership drifts. There
+  is no genuine row-level rule for any of the four **yet** — see **D-13** for why that is an argument
+  for the policy rather than against it.
+- **One `public const <VERB>_PERMISSION` per ability**, so the permission string is named once on the
+  class that owns the rule rather than retyped at each `Gate::authorize()` call site
+  ([naming.md](../../../docs/conventions/naming.md#permission-names)). `App\Policies\UserPolicy`'s four
+  re-typed literals are a recorded, deferred violation — not the pattern to copy.
+- **No `view`/`restore`/`forceDelete` methods** — nothing in this app calls those for this model, and
+  `ShippingRatePolicy`'s own docblock states the same rule. `orders` has no `deleted_at` at all.
+- Registration-free: Laravel 13 auto-discovers `App\Policies\OrderPolicy` for `App\Models\Order` by
+  name. Do **not** add an `AuthServiceProvider`
+  ([directory-structure.md](../../../docs/conventions/directory-structure.md#directory-structure)).
+- The `Gate::before` Super Admin bypass applies unchanged, exactly as it does to the other eleven
+  policies.
+
 ### Action — `app/Actions/Orders/CreateOrder.php` (new subfolder)
 
 Invokable, imperative-verb-phrase class with no `Action` suffix, resolved from the container and never
-`new`-ed ([code-style.md](../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)).
+`new`-ed ([code-style.md](../../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)).
 `__invoke(array $attributes): Order`, performing in this order:
 
-1. **`Gate::authorize('orders.create')` as the first statement.** The rule lives in the class that
-   performs the operation, not in a caller that does not exist yet
-   ([base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
-   No `OrderPolicy` (**D-13**). `orders.create` is **already seeded** —
-   `RolePermissionSeeder::MODULES` carries `orders`, so all four `orders.*` abilities exist; **no
-   catalog change, no new permission, no re-seed.**
+1. **Self-authorize `create` against `OrderPolicy`, as the action's own first statement**, through
+   the refusal-logging wrapper every self-authorizing action in this codebase uses — **never a bare
+   `Gate::authorize()`**:
+
+   ```php
+   // app/Actions/Orders/CreateOrder.php — the first statement of __invoke()
+   $this->logRefusedPrivilegedAttempt->authorize('create', Order::class, targetType: 'order');
+   ```
+
+   `App\Actions\Auth\LogRefusedPrivilegedAttempt` is **constructor-injected**, not method-injected:
+   `__invoke(array $attributes): Order` is a public contract every direct-call test matches verbatim,
+   so an internal collaborator may not widen it
+   ([code-style.md](../../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)).
+   [`app/Actions/Shipping/CreateShippingRate.php`](../../../app/Actions/Shipping/CreateShippingRate.php)
+   is the reference example — same story shape, same call shape. Three details that are not optional:
+   - **`targetType: 'order'` is passed explicitly.** `LogRefusedPrivilegedAttempt::resolveTarget()`
+     auto-resolves only `User` and `Role` instances/classes; every other domain passes its own token.
+   - **No `targetId`** — this is a class-level `create` check with no row yet, matching
+     `CreateShippingZone`'s / `CreateShippingRate`'s / `CreateProductCategory`'s own create-time calls.
+   - The rule lives in the class that performs the operation, not in a caller that does not exist yet
+     ([directory-structure.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
+     This story ships no route and no component, so **this action is the only reachable enforcement
+     point.**
+
+   `orders.create` is **already seeded** — `RolePermissionSeeder::MODULES` carries `orders`, so all
+   four `orders.*` abilities exist; **no catalog change, no new permission, no re-seed.**
 2. **Validate the whole payload** through the trait, including the per-item rules.
 3. **Resolve every catalog row it will snapshot** — the products and variants named by the line items,
    and the customer — reading each from the database rather than trusting anything in the payload.
    A caller supplies an *id* and a *quantity*; it never supplies a name, a SKU or a price.
+   **When a line item names a `product_variant_id`, `unit_price` is snapshotted from the VARIANT's own
+   `product_variants.price`, never from the parent `products.price` (D-15).** `product_variants.price`
+   is `NOT NULL` and fully independent of its parent's price — that is the whole point of a variant —
+   so reading the parent would silently price every variant line item wrong. `product_sku` likewise
+   comes from `product_variants.sku` when a variant is named, and from `products.sku` otherwise;
+   `product_name` always comes from the parent `products.name`, since a variant carries no name of its
+   own. A line item with no `product_variant_id` reads all three from the product, unchanged.
 4. **Open a `DB::transaction()`** and, inside it: write the `orders` row (with the frozen address
    snapshot copied from the resolved `Customer`, **D-4**), write each `order_items` row with its
    derived `product_name` / `product_sku` / `unit_price` / `line_total`, then write the derived totals
@@ -467,43 +559,77 @@ Invokable, imperative-verb-phrase class with no `Action` suffix, resolved from t
 5. **Assign `order_number`** under the constraints in **D-1**, catching a `23000` `QueryException`
    from the UNIQUE index and retrying rather than surfacing it.
 
-> **Phase 3 must re-read the transaction-side-effect rule before writing step 4.** Wrapping work in a
-> `DB::transaction()` relocates every side effect the wrapped code already performed — the mistake
-> recorded in [errors-log.md](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
+> **Phase 3 must re-read both transaction rules before writing step 4.**
+>
+> **(a) A `DB::transaction()` relocates every side effect the wrapped code already performed** — the
+> mistake recorded in [errors-log.md](../../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
 > Here the constraint is forward-looking and specific: **story 0046's "new order received"
 > notification must be dispatched *after* the commit, never inside it**, or a rolled-back order mails
 > a customer about an order that does not exist.
+>
+> **(b) Every row this closure writes must be BUILT INSIDE the closure, via `forceCreate()`** — never a
+> model instantiated outside it and mutated within, which is the silent-lost-update shape recorded in
+> [errors-log.md](../../../docs/errors-log.md#dbtransactionfn-attempts-n-retried-a-closure-that-mutated-a-model-created-outside-it-producing-a-silent-lost-update-reported-as-success--2026-09-04).
+> `CreateOrder` is naturally in the **safe** shape — the `orders` row and every `order_items` row are
+> inserts, so they can only be created inside the closure, matching `CreateProduct`/
+> `CreateProductVariant` rather than `UpdateProduct`. Two obligations follow. **First, keep it that
+> way**: the "write the derived totals back onto the parent" half of step 4 must write through the
+> instance the closure itself created, not one resolved beforehand. **Second, `attempts: N` is not a
+> flag to add casually** — if Phase 3 reaches for a retry (for the `order_number` collision of **D-1**,
+> say), it must first re-derive that every write in the closure is re-doable, since a retried
+> `save()` on an already-`syncOriginal()`'d instance is a **successful no-op**, not an error. Prefer
+> **D-1**'s narrow catch-and-retry around the `order_number` assignment over a blanket `attempts:` on
+> the whole transaction.
 
 ### Translations — `lang/en/orders.php` + `lang/es/orders.php` (new)
 
 Two key groups only — `statuses` and `payment_statuses` — key-for-key identical across both locales
-([naming.md](../../docs/conventions/naming.md#translation-keys)). These ship here rather than with the
-UI story because the two enums' `label()` methods resolve them, exactly as `UserStatus::label()`
-resolves `users.statuses.*`. **No screen copy, no validation-message overrides, no button labels** —
-those belong to story 0055, which extends this file rather than creating it.
+([naming.md](../../../docs/conventions/naming.md#translation-keys)), one leaf per case of each enum, keyed
+by the enum's own backing value (`orders.statuses.pending`, `orders.payment_statuses.pending_payment`,
+…). **No screen copy, no validation-message overrides, no button labels** — those belong to story 0055,
+which extends this file rather than creating it.
+
+**These ship here even though neither enum declares `label()`, and the two decisions are independent.**
+The earlier draft justified the lang files *by* the `label()` methods, which made them look like one
+decision; they are not. The files ship now because **this story is what fixes the two enums' backing
+values**, and a translation file is only ever correct relative to the value set it covers — writing
+both locales in the same change that fixes the values is what
+[naming.md](../../../docs/conventions/naming.md#translation-keys) requires ("adding a key means adding it
+to **both** `lang/en/` and `lang/es/` in the same change"), and it means story 0055 *extends* an
+existing, already-complete pair rather than back-filling ten leaves for a value set it did not choose.
+What ships without a consumer here is a **data file**, not a method — the thing naming.md's
+`label()` rule actually argues against. The keys are pinned by a test asserting one leaf per enum case
+in both locales, so a case added later without its leaves fails loudly rather than rendering a raw key.
 
 ### Explicitly **not** touched by this story
 
 - `database/seeders/RolePermissionSeeder.php` — `orders` is already in `MODULES`.
 - `routes/*.php`, `config/modules.php`, `app/Livewire/**`, `resources/views/**` — story 0055's.
 - `app/Notifications/**`, `app/Listeners/**` — story 0046's ("new order received").
-- `app/Policies/**` — none is created (**D-13**).
+- `app/Policies/**` — **`OrderPolicy` IS created here** (**D-13**, a Phase 2 reversal); no *other*
+  policy file is touched.
 - `App\Models\Customer` — no `orders()` relation is added here; story 0047 (customer order history)
   owns it.
 - Anything that *reads* a status to decide whether something is permitted — stories 0048–0052.
 
 ## Tests to perform
 
-All Feature tests unless marked otherwise; new folder `tests/Feature/Orders/`, plus
-`tests/Unit/Enums/`. This story ships no route, so **every** authorization test here is action-level;
-story 0055 owns the HTTP-level ones ([testing/README.md](../../docs/testing/README.md)).
+All Feature tests unless marked otherwise; new folder `tests/Feature/Orders/` (including its own
+`RefusalLoggingTest.php`), plus `tests/Unit/Enums/` and one new file in the existing
+`tests/Feature/Policies/`. This story ships no route, so **every** authorization test here is
+action- or policy-level; story 0055 owns the HTTP-level ones
+([testing/README.md](../../../docs/testing/README.md)).
 
 ### Model, enum & schema
 
 - [ ] Unit test: `OrderStatus` and `PaymentStatus` each expose exactly the cases PRD §3.2 names, with
       the expected backing values, asserted as a set — so a case added or renamed fails loudly.
-- [ ] Unit test: each enum's `label()` resolves a translation key rather than returning the raw value,
-      and every case has a key present in **both** `lang/en/orders.php` and `lang/es/orders.php`.
+- [ ] Unit test: **every case of both enums has a leaf, keyed by its backing value, present in both
+      `lang/en/orders.php` and `lang/es/orders.php`, and the two files are key-for-key identical.**
+      Asserted against the files directly (`cases()` → key lookup), **not** through a `label()` method —
+      neither enum declares one this story, and story 0055 adds it as their first real consumer. This
+      test is what makes the consumerless lang files safe to ship now: a case added later without its
+      two leaves fails here rather than rendering a raw key on 0055's screen.
 - [ ] Unit test: `Order` and `OrderItem` use `HasUuids`; a created order's `id` is a 36-character UUID
       string.
 - [ ] Integration test: factory round-trip for both models — every column persists and reloads
@@ -520,6 +646,11 @@ story 0055 owns the HTTP-level ones ([testing/README.md](../../docs/testing/READ
 - [ ] Integration test: an order with three line items persists exactly three child rows.
 - [ ] Integration test: a line item naming a variant persists **both** `product_id` and
       `product_variant_id`.
+- [ ] Integration test (**D-15**): a line item naming a variant whose `product_variants.price` is
+      `15.00`, on a parent product priced at `10.00`, records `unit_price` **`15.00`** — the variant's
+      price, not the parent's. Give the two rows deliberately different prices; equal ones make the
+      test pass against the wrong implementation. `product_sku` likewise comes from the variant's own
+      SKU, while `product_name` still comes from the parent product.
 - [ ] Integration test: a new order's `status` is `Pending` and its `payment_status` is
       `PendingPayment`, read back as enum instances rather than strings.
 - [ ] Integration test: `order_number` is non-empty, ≤ 20 characters, and **differs from** the order's
@@ -536,6 +667,13 @@ story 0055 owns the HTTP-level ones ([testing/README.md](../../docs/testing/READ
       `unit_price` is still `10.00`. `backend-qa` named this the single highest-risk behaviour in the
       story, because the failure mode — a live join instead of a snapshot — is invisible until a price
       changes, and by then the historical data is already wrong.
+- [ ] **Dedicated regression test for the VARIANT case (**D-15**), analogous to the product-price one
+      above and not folded into it:** create an order whose line item names a variant priced at
+      `15.00`; mutate **`product_variants.price`** to `40.00` and save it; re-fetch the order and
+      assert the line item's `unit_price` is still `15.00`. Mutating only the *parent product's* price
+      cannot detect the most likely failure here — an implementation that snapshots from
+      `products.price` passes that version of the test while pricing every variant line item wrong from
+      the moment it ships.
 - [ ] Integration test: the same regression for `product_name` and `product_sku` — rename the product
       after the order exists and assert the line item still carries the old name and code.
 - [ ] Integration test: `line_total` equals `unit_price × quantity`, asserted for quantity 1 and
@@ -578,7 +716,7 @@ working feature.
 - [ ] Integration test: a newly created order's `shipping_rate_id` is `null`.
 - [ ] Integration test: a newly created order's `tax_rate` is `null` — **not** `0.000`. The two must
       not share a meaning, exactly as `sales_regions.rate` documents
-      ([schema.md](../../docs/database/schema-products.md#sales_regions)).
+      ([schema.md](../../../docs/database/schema-products.md#sales_regions)).
 - [ ] Integration test: a newly created order's `flagged_for_review` is `false`.
 - [ ] Integration test: `tax_amount` and `shipping_amount` are `0.00` and `total` equals `subtotal`
       (**D-8**), asserted as decimal strings.
@@ -589,11 +727,29 @@ working feature.
       `CreateOrder` with an `AuthorizationException`, and **zero rows are written in both tables**.
 - [ ] Integration test: an administrator holding `orders.create` succeeds — the positive case beside
       the 403, without which a mistyped ability passes silently
-      ([authorization.md](../../docs/architecture/authorization.md)).
+      ([authorization.md](../../../docs/architecture/authorization.md)).
 - [ ] Integration test: a Super Admin holding no individual `orders.*` grant succeeds, via
       `Gate::before`.
 - [ ] Negative test: the ability string is asserted **literally** (`orders.create`) against
-      `RolePermissionSeeder`'s catalog, so a typo cannot fail closed unnoticed.
+      `RolePermissionSeeder`'s catalog, so a typo cannot fail closed unnoticed. Assert
+      `OrderPolicy::CREATE_PERMISSION` (and its three siblings) equal the seeded names, since the
+      constants are now the single place each string is written.
+- [ ] Policy unit/integration tests, mirroring
+      [`tests/Feature/Policies/`](../../../tests/Feature/Policies)'s existing per-policy files: an
+      allow-and-deny pair for each of `viewAny`/`create`/`update`/`delete`, plus a Super Admin holding
+      no individual grant allowed on all four via `Gate::before`. The three abilities with no caller in
+      this story are tested here precisely *because* nothing else exercises them — an untested,
+      uncalled ability is where a later story inherits a mistake.
+- [ ] **`tests/Feature/Orders/RefusalLoggingTest.php` (new file):** a refused `CreateOrder` logs the
+      refusal through `LogRefusedPrivilegedAttempt` — `Log::spy()`, then assert a single `warning` with
+      message `'Privileged action refused'` and a context carrying `actor_id` = the actor's id,
+      `ability` = `'create'`, `target_type` = `'order'`, and `target_id` **present and `null`** (a
+      class-level create check has no row yet). Assert zero rows in both tables afterwards. Copy the
+      shape from [`tests/Feature/ShippingZones/RefusalLoggingTest.php`](../../../tests/Feature/ShippingZones/RefusalLoggingTest.php)
+      — the closest analogue, same class-level-target create call — or
+      [`tests/Feature/PaymentMethods/RefusalLoggingTest.php`](../../../tests/Feature/PaymentMethods/RefusalLoggingTest.php).
+      **`array_key_exists('target_id', $context)` alongside the `=== null` check, not just the null
+      comparison** — an absent key and a null value are different bugs and `??` conflates them.
 
 ### Detail retrieval
 
@@ -627,7 +783,7 @@ working feature.
 - Any status **transition** (0048–0052), any refund (0051/0052), any tax resolution (0053/0054), any
   notification (0046), anything rendered (0055).
 - Migration `up()`/`down()` mechanics — `RefreshDatabase` runs every migration each run; `down()`
-  symmetry is a code-review item ([what-not-to-test.md](../../docs/testing/qa/what-not-to-test.md)).
+  symmetry is a code-review item ([what-not-to-test.md](../../../docs/testing/qa/what-not-to-test.md)).
 - The `refunded_quantity` column's *behaviour*. This story ships the column and its `0` default and
   nothing that reads it; a test asserting "it defaults to 0" is worth having, but a test asserting what
   happens when it is set is 0051/0052's and would be a ghost test here.
@@ -638,11 +794,12 @@ Once done, the application can record an order: a persisted `orders` row with a 
 unique human-readable `order_number`, a `restrictOnDelete` reference to a `Customer`, a required
 reference to a configured payment method, its own frozen copy of the shipping and billing addresses as
 they stood at order time, and one or more `order_items` rows each carrying a quantity plus the
-product's **name, code and unit price at the time of order** — values that survive both a later catalog
-price change and the catalog row's own deletion. `CreateOrder` authorizes itself against the
-already-seeded `orders.create` permission, validates its whole payload, refuses an order with no line
-items, and writes both tables inside one transaction so a rejected order leaves nothing behind. Both
-status dimensions are recorded as backed enums in their earliest states.
+product's **name, code and unit price at the time of order** — taken from the *variant* when a line item
+names one, and values that survive both a later catalog price change and the catalog row's own deletion.
+`CreateOrder` authorizes itself against a new `App\Policies\OrderPolicy` through
+`LogRefusedPrivilegedAttempt` (so a refusal is audited, not merely thrown), validates its whole payload,
+refuses an order with no line items, and writes both tables inside one transaction so a rejected order
+leaves nothing behind. Both status dimensions are recorded as backed enums in their earliest states.
 
 **Nothing is resolved that this story does not own:** `sales_region_id`, `shipping_rate_id` and
 `tax_rate` are `null`, `flagged_for_review` is `false`, `tax_amount` and `shipping_amount` are `0.00`,
@@ -664,9 +821,11 @@ table to build against.
       `order_items.product_id`, `product_variant_id` → `nullOnDelete()`.
 - [ ] `order_number` carries a UNIQUE index; no explicit `$table->index()` exists on either table, and
       the only other indexes present are the ones `constrained()` created.
-- [ ] `App\Enums\OrderStatus` and `App\Enums\PaymentStatus` exist with PRD §3.2's exact value sets,
-      lowercase snake_case backing values, and `label()` resolving `orders.statuses.*` /
-      `orders.payment_statuses.*` respectively, with both lang files key-for-key identical.
+- [ ] `App\Enums\OrderStatus` and `App\Enums\PaymentStatus` exist with PRD §3.2's exact value sets and
+      lowercase snake_case backing values, and **neither declares `label()`** (story 0055 adds it as
+      the first real consumer). `lang/{en,es}/orders.php` each carry one `statuses.*` /
+      `payment_statuses.*` leaf per case, key-for-key identical across the two locales and pinned by a
+      test.
 - [ ] `Order` and `OrderItem` use `HasUuids` and `HasFactory`, cast both status columns to their enums,
       and omit every derived, status and tax column from `#[Fillable]` — pinned by a test that fails if
       the omission is undone.
@@ -674,44 +833,80 @@ table to build against.
       items field and leaves both tables empty.
 - [ ] A line item records `product_name`, `product_sku` and `unit_price` as of order time, and those
       values are unaffected by a later change to — or deletion of — the catalog row.
+- [ ] A line item naming a `product_variant_id` snapshots `unit_price` and `product_sku` from the
+      **variant** (`product_variants.price` / `.sku`), not from the parent product, and each is pinned
+      by its own regression test mutating the **variant's** row (**D-15**).
 - [ ] An order holds its own copy of the customer's shipping and billing addresses, unaffected by a
       later change to the customer record.
-- [ ] `CreateOrder` calls `Gate::authorize('orders.create')` as its first statement, is refused for an
-      actor lacking the ability, and passes for a Super Admin via the existing bypass.
+- [ ] `App\Policies\OrderPolicy` exists with four flat abilities (`viewAny`/`create`/`update`/`delete`),
+      one `public const <VERB>_PERMISSION` per ability, no per-target branch and no
+      `view`/`restore`/`forceDelete` — modelled on `ShippingRatePolicy`, auto-discovered by name with no
+      `AuthServiceProvider` (**D-13**).
+- [ ] `CreateOrder` self-authorizes as its own first statement via
+      `$this->logRefusedPrivilegedAttempt->authorize('create', Order::class, targetType: 'order')` —
+      with `LogRefusedPrivilegedAttempt` **constructor-injected**, and **no bare `Gate::authorize()`
+      anywhere in the action**. It is refused for an actor lacking `orders.create`, passes for a Super
+      Admin via the existing bypass, and every refusal is logged (pinned by
+      `tests/Feature/Orders/RefusalLoggingTest.php`).
 - [ ] A newly created order has `sales_region_id`, `shipping_rate_id` and `tax_rate` all `null`,
       `flagged_for_review` `false`, `tax_amount` and `shipping_amount` `0.00`, and `total` equal to
       `subtotal`.
 - [ ] No permission is added to `RolePermissionSeeder`; the four `orders.*` abilities are used exactly
       as already seeded.
-- [ ] No route, Livewire component, Blade view, policy, notification or listener is added, and
-      `App\Models\Customer` gains no `orders()` relation.
+- [ ] No route, Livewire component, Blade view, `config/modules.php` entry, notification or listener is
+      added, and `App\Models\Customer` gains no `orders()` relation. (A **policy** *is* added — see
+      above; it was on this "not added" list until **D-13**'s Phase 2 reversal.)
 - [ ] The detail-retrieval (**D-14**) and list-retrieval (**D-6**) contracts are stated in this file
       and each pinned by a test.
 
 ## Definition of Done
 - [ ] Tests written and green, plus the full existing suite (per
-      [contracts.md](../../docs/contracts.md)'s Full Test Suite Gate Rule) — run **unscoped**
+      [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule) — run **unscoped**
       (`php artisan test`, not `--filter`), per
-      [base-standards.md](../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
+      [base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
 - [ ] `vendor/bin/pint --format agent` clean (unscoped, **not** `--dirty`) and Larastan level 7 passing.
 - [ ] Code reviewed (code-reviewer).
 - [ ] No security findings (appsec-auditor) — specifically: that no price, name, SKU or total can be
-      supplied by a caller; that the action authorizes before its first write; and that the
-      `Rule::exists()` on `customer_id` is soft-delete-unaware **by decision** (**D-12**) rather than by
-      oversight.
+      supplied by a caller; that the action authorizes **through `LogRefusedPrivilegedAttempt` against
+      `OrderPolicy`** before its first write, so a refusal is audited rather than silently thrown; that
+      a variant line item's price comes from the variant row and not the payload (**D-15**); and that
+      the `Rule::exists()` on `customer_id` is soft-delete-unaware **by decision** (**D-12**) rather
+      than by oversight.
 - [ ] Documentation updated (docs-keeper):
-  - [`database/schema.md`](../../docs/database/schema.md) gains `orders` and `order_items` sections
-    plus their ER-diagram nodes and edges.
-  - [`conventions/base-standards.md`](../../docs/conventions/base-standards.md)'s directory listing
-    gains `app/Actions/Orders/`, `Order` / `OrderItem` in `app/Models/`, and `OrderStatus` /
-    `PaymentStatus` in `app/Enums/`.
-  - [`database/migrations.md`](../../docs/database/migrations.md) — this repo's **first
-    `cascadeOnDelete()` on a UUID FK** and its **first `nullOnDelete()` anywhere**. Both diverge from
-    `create_sales_regions_table`'s `restrictOnDelete()` and both do so for stated reasons (**D-11**,
-    **D-2**); record the three-way rule rather than leaving a reader to infer it from three files.
+  - [`database/schema.md`](../../../docs/database/schema.md) gains `orders` and `order_items` **ER-diagram
+    nodes and edges** — that file is now an **index** (the ER diagram plus pointers), so the per-table
+    prose does **not** go there. It goes in a domain file: either appended to
+    [`database/schema-other.md`](../../../docs/database/schema-other.md) (which already holds
+    `payment_methods`, `customers` and `notifications`) or, if Epic 3's Orders tables warrant their own
+    page, a new `database/schema-orders.md` linked from `schema.md`'s **Domain tables** list.
+    docs-keeper decides which; the split rule is
+    [contracts.md](../../../docs/contracts.md#doc-growth-management-rule)'s.
+  - [`conventions/directory-structure.md`](../../../docs/conventions/directory-structure.md)'s directory
+    listing gains `app/Actions/Orders/`, `Order` / `OrderItem` in `app/Models/`, `OrderStatus` /
+    `PaymentStatus` in `app/Enums/`, and `OrderPolicy` in `app/Policies/`. **Not
+    `conventions/base-standards.md`** — the `app/` directory listing was split out of that file on
+    2026-09-11 and only a pointer remains there.
+  - [`architecture/authorization.md`](../../../docs/architecture/authorization.md) — `OrderPolicy` is the
+    **twelfth** policy; add it to the roster (four flat abilities, no per-target rule, `orders.*`
+    catalog permissions, no new permission seeded). Re-count rather than incrementing the stated
+    number blind: that page's policy count has been stale before.
+  - [`database/migrations.md`](../../../docs/database/migrations.md) — record the **three-way delete-behaviour
+    rule** these two migrations exercise together, rather than a novelty claim: **cascade when the child
+    is a part of its parent** (`order_items.order_id`, **D-11**, the same reasoning as
+    `passkeys.user_id`); **restrict when the child is a peer whose own data would be destroyed**
+    (`orders.customer_id` / `payment_method_id` / `sales_region_id` / `shipping_rate_id`, the same
+    reasoning as `sales_regions.parent_id`); **null when a snapshot preserves the row's meaning without
+    the reference** (`order_items.product_id` / `product_variant_id`, **D-2** — safe *only* because
+    `product_name`/`product_sku`/`unit_price` survive the null). One story exercising all three at once
+    is what makes the rule statable; a reader should not have to infer it from three separate files.
+    **Do not frame any of these as a first** — an earlier draft of this bullet claimed this story ships
+    "this repo's first `cascadeOnDelete()` on a UUID FK" and its "first `nullOnDelete()` anywhere", and
+    both are false: `product_media` (0024), `product_sales_region` (0026), `product_variants` and
+    `product_variant_values` (0029) already cascade on UUID FKs, and `media.uploaded_by` has used
+    `nullOnDelete()` since story 0019.
   - **Grep for bare negative claims this story falsifies**, rather than trusting the change→doc
     mapping — the failure mode recorded in
-    [errors-log-archive.md](../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13).
+    [errors-log-archive.md](../../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13).
 - [ ] Acceptance criteria met.
 
 ## Resolved disagreement
@@ -724,24 +919,24 @@ and it is recorded here in full rather than silently settled.**
 The problem: `orders` and `order_items` need FK columns into `products`, `product_variants`,
 `shipping_rates` and `payment_methods`. **None of those four tables exists in code.** Epic 2 is still
 in progress; of everything this story references, only `sales_regions` (task 0016) and `customers`
-(story [0041](done/0041-customers-crud-backend.md)) are real, shipped tables.
+(story [0041](0041-customers-crud-backend.md)) are real, shipped tables.
 
 | Position | Proposed by | Shape |
 | --- | --- | --- |
 | **(b)** Ship now with placeholder columns | `backend-expert` | The four columns ship as plain nullable `uuid()` with **no** `constrained()` call, each carrying an explicit `$table->index()` (since there is no FK to auto-create one), plus a documented forward dependency: a later `ALTER` migration — owned by each Epic 2 sibling story — retrofits the real `constrained()` FK once its table exists. Rationale: Orders can exist and be tested now, rather than blocking all of Epic 3 on Epic 2's remaining backlog. |
-| **(a)** Sequence the implementation | `database-expert` | The story is **debated and schema-designed now** (this document) but **blocked from Phase 3** until 0024, 0029, 0035, 0036 and 0038 land. Rationale: every FK in this repository, without exception, uses `constrained()` against an already-existing table; there is zero precedent for an unconstrained-then-retrofitted FK, and this repo's own [errors-log.md](../../docs/errors-log.md) records two separate incidents of exactly the "ship it now, fix it properly later" pattern causing real drift. |
+| **(a)** Sequence the implementation | `database-expert` | The story is **debated and schema-designed now** (this document) but **blocked from Phase 3** until 0024, 0029, 0035, 0036 and 0038 land. Rationale: every FK in this repository, without exception, uses `constrained()` against an already-existing table; there is zero precedent for an unconstrained-then-retrofitted FK, and this repo's own [errors-log.md](../../../docs/errors-log.md) records two separate incidents of exactly the "ship it now, fix it properly later" pattern causing real drift. |
 
 **Resolution: option (a) is adopted.** Three reasons, in order of weight.
 
 1. **The precedent is not merely strong, it is exceptionless — and it was verified rather than
-   recalled.** [`database/migrations.md`](../../docs/database/migrations.md) documents four FK
+   recalled.** [`database/migrations.md`](../../../docs/database/migrations.md) documents four FK
    examples across three tables (`passkeys.user_id`, `sales_regions.parent_id`, and the re-added
    passkeys FK in the UUID finalize migration), and **every single one** is `constrained()` against a
    table that already exists. The document's own rules are written *around* that assumption: "let
    `constrained()` supply the FK's index" is stated as **the** rule for FK indexing, and option (b)
    would require writing explicit `$table->index()` calls on four columns — reintroducing, by design,
    precisely the hand-written index the
-   [redundant `users_uuid_unique`](../../docs/errors-log-archive.md#a-redundant-users_uuid_unique-index-survived-the-uuid-primary-key-conversion--2026-08-12)
+   [redundant `users_uuid_unique`](../../../docs/errors-log-archive.md#a-redundant-users_uuid_unique-index-survived-the-uuid-primary-key-conversion--2026-08-12)
    entry exists to prevent. Then, when the retrofit `ALTER` lands, `constrained()` would find a
    suitable index already present or create a second — and nobody would notice either way, because an
    index nobody wrote is not visible in a diff.
@@ -750,7 +945,7 @@ in progress; of everything this story references, only `sales_regions` (task 001
    share option (b)'s exact failure signature: the cleanup is invisible.** The redundant
    `users_uuid_unique` index survived a five-migration conversion because "the migration diff will not
    show you an index that nobody removed". The
-   [`DB::transaction()` wrapper](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
+   [`DB::transaction()` wrapper](../../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
    relocated a permission-cache flush that appeared nowhere in the diff. Option (b) creates four
    obligations of the same shape, spread across five *other* stories, each of which must remember to
    add an `ALTER` migration for a table it does not own. That is not a forward dependency; it is four
@@ -766,8 +961,10 @@ in progress; of everything this story references, only `sales_regions` (task 001
 
 **What was *accepted* from `backend-expert`'s position, unchanged:** everything else in their
 contribution — the file list, the enum shape and backing values, the self-authorizing action, the
-"no route/component/policy" boundary, and the confirmation that `orders.*` permissions are already
-seeded. The disagreement is narrow and is confined to sequencing.
+"no route/component" boundary, and the confirmation that `orders.*` permissions are already
+seeded. The disagreement recorded here is narrow and is confined to sequencing. *(One further piece of
+that contribution — the "no policy" half of the boundary — was **not** ultimately accepted: it was
+reversed at the Phase 2 re-review, see **D-13**. The sequencing resolution below is unaffected.)*
 
 **How to reverse this if the schedule demands it.** If Epic 2's remaining backlog slips far enough that
 Epic 3 stalling becomes the larger cost, option (b) becomes a legitimate trade — but it must then be
@@ -881,7 +1078,7 @@ rediscovery.
   stories 0053/0054/0037 populate the other two terms — a later story fills a value in, it does not
   rewrite the formula. `tax_rate` stays **`NULL`**, never `0.000`: `sales_regions.rate` already
   establishes that "not configured" and "a legitimate 0%" cannot share a representation
-  ([schema.md](../../docs/database/schema-products.md#sales_regions)), and an order whose tax has not been
+  ([schema.md](../../../docs/database/schema-products.md#sales_regions)), and an order whose tax has not been
   resolved must be distinguishable from one resolved to a zero-rated region.
 - **D-9 — `sales_region_id` and `shipping_rate_id` are nullable and `NULL` at creation.** This story
   creates the reference points; resolving them is stories 0053/0054 (tax) and 0037/0054 (shipping).
@@ -904,23 +1101,44 @@ rediscovery.
   future hard-delete path rather than a live behaviour.
 - **D-12 — `Rule::exists()` on `customer_id` is soft-delete-unaware, deliberately.** `Rule::exists()`
   does **not** apply the `SoftDeletingScope`
-  ([schema.md](../../docs/database/schema-users-auth.md#soft-deletes)), so a soft-deleted customer's id passes
+  ([schema.md](../../../docs/database/schema-users-auth.md#soft-deletes)), so a soft-deleted customer's id passes
   validation. That is the *correct* behaviour here and is left as-is: story
-  [0042](done/0042-customers-soft-delete-backend.md) soft-deletes customers precisely so their order history
+  [0042](0042-customers-soft-delete-backend.md) soft-deletes customers precisely so their order history
   survives, and PRD §3.1's stated reason is "so a customer's orders are never orphaned". Refusing to
   record an order against a trashed customer would fight that. Recorded explicitly so `appsec-auditor`
   sees a decision rather than an oversight, and so a later story does not "fix" it. **If a product rule
   ever says an order may not be *created* for a deleted customer, that is a rule on the action, not a
   change to the FK or the validator.**
-- **D-13 — No `OrderPolicy`; the action authorizes with the raw permission ability.** This story's only
-  write is a creation, and "may this actor create an order" reduces to `orders.create` with zero
-  row-level nuance — a policy would be one method returning `$user->can()`. Story 0041 **D-12** set this
-  precedent for `Customer`. **The forward note matters more than the decision:** unlike customers,
-  orders almost certainly *will* need a policy, because stories 0048–0052 introduce genuinely
-  row-state-dependent rules (editing line items is blocked once `Enviado`; manual cancellation is
-  blocked in three states; a refund is refused outside `Pagado` / `Parcialmente reembolsado`). Whichever
-  of those stories arrives first should create `OrderPolicy` — at which point `CreateOrder`'s
-  `Gate::authorize()` **changes target, not location**.
+- **D-13 — Corrected at Phase 2 re-review: `App\Policies\OrderPolicy` IS created by this story, with
+  four flat abilities.** The original decision is quoted rather than deleted, per this project's
+  audit-authored-page convention: *"No `OrderPolicy`; the action authorizes with the raw permission
+  ability. This story's only write is a creation, and 'may this actor create an order' reduces to
+  `orders.create` with zero row-level nuance — a policy would be one method returning `$user->can()`.
+  Story 0041 **D-12** set this precedent for `Customer`."* **The precedent citation was backwards.**
+  Story 0041's D-12 reads, in the shipped file, *"`App\Policies\CustomerPolicy` exists, and this story
+  creates it"* — its own no-policy recommendation was **reversed** during that story, for the reason
+  quoted there: *"a no-policy domain entity is not a pattern this repo has."* That is verifiably still
+  true — `ls app/Policies/` returns eleven policies, and `ShippingZonePolicy`, `ShippingRatePolicy`,
+  `PaymentMethodPolicy` and `CustomerPolicy` are all flat, no-per-target-rule policies over exactly the
+  "reduces to `$user->can()`" abilities the old text used as the argument *against* one.
+  <br><br>
+  **Story [0036](0036-shipping-rate-rules-backend.md) settles it, because it is this story's exact
+  structural analogue**: backend-only, no route, no Livewire component, the action as the sole
+  reachable enforcement point — and it created `ShippingRatePolicy` anyway, with four abilities from
+  day one and all three write actions self-authorizing against it as their first statement. This story
+  copies that file.
+  <br><br>
+  What the old text got right survives as the reason the *bodies* are trivial, not as a reason to skip
+  the class: an order carries no privilege tier and can never be the acting user, so every ability
+  today is a flat `hasPermissionTo()`. Three things the policy buys regardless, all of them 0041's own
+  reasoning: each permission string is named **once** on the class that owns the rule rather than
+  retyped at every `Gate::authorize()` call site; story 0055's per-row UI hints will ask the **same**
+  method the write authorizes with, so a hint cannot drift from the click; and — the decisive one here
+  — stories 0048–0052 introduce genuinely row-state-dependent rules (editing line items is blocked once
+  `Enviado`; manual cancellation is blocked in three states; a refund is refused outside `Pagado` /
+  `Parcialmente reembolsado`), which now edit **one method body** instead of relocating every call
+  site's target. `viewAny`/`update`/`delete` therefore ship here rather than being added one per story,
+  which is how ability ownership drifts across an epic.
 - **D-14 — The detail-retrieval contract:** `Order::query()->with(['customer', 'items', 'paymentMethod',
   'salesRegion', 'shippingRate'])->findOrFail($id)`, returning the order with its customer, its line
   items and its payment method loaded, and `salesRegion` / `shippingRate` as `null` while unresolved.
@@ -928,6 +1146,27 @@ rediscovery.
   a lazy `items` relation makes an N+1 the default. Like **D-6**, a specification pinned by a test rather
   than a scope method — and the test asserts the relations are *loaded*, not merely retrievable, since
   those are different bugs.
+- **D-15 — A variant line item snapshots its price and SKU from the VARIANT row, not from the parent
+  product.** *(Added at Phase 2 re-review: the original file specified the snapshot only for the plain
+  product case, and the variant case — which this story's own Gherkin and factory both cover — was left
+  ambiguous.)* `product_variants.price` is `NOT NULL` and entirely independent of `products.price` —
+  that is what a variant *is* — so "snapshot the price at the time of order" has two different answers
+  depending on whether `product_variant_id` is present, and only one of them is right. The rule, stated
+  per column so Phase 3 has nothing to infer:
+  - `unit_price` ← `product_variants.price` when a variant is named, else `products.price`.
+  - `product_sku` ← `product_variants.sku` when a variant is named, else `products.sku`. (This is also
+    why `order_items.product_sku` is capped at the **longer** of the two lengths — see the migration.)
+  - `product_name` ← always `products.name`. A variant has no name column of its own; its human
+    identity is its SKU plus its attribute values, and denormalising those onto the line item is not
+    something PRD §3.2 asks for.
+  <br><br>
+  **Why this needs its own decision and its own regression test rather than "obviously the variant":**
+  the wrong implementation is the *natural* one to write — resolve the product, read `$product->price`,
+  attach the variant id as a reference — and it passes every test that mutates only the product's
+  price. The failure is silent, permanent and financial, exactly the shape **R-2** describes, so it gets
+  the same treatment: a dedicated test that mutates the **variant's** price and re-fetches. Fixtures
+  must give the product and the variant **different** prices; equal ones make both implementations
+  pass.
 
 ### Scope fences: what this story must NOT do
 
@@ -951,8 +1190,8 @@ rediscovery.
 
 | Depends on | State | Verified how |
 | --- | --- | --- |
-| `customers` table + `App\Models\Customer` | story [0041](done/0041-customers-crud-backend.md) — **hard dependency; confirm it is `done` before Phase 3** | `orders.customer_id` FKs it; the address snapshot copies its twelve columns |
-| `customers.deleted_at` (soft delete) | story [0042](done/0042-customers-soft-delete-backend.md) — **related; confirm its state at the same time** | **D-12** depends on it existing; 0042's own forward note prescribes `restrictOnDelete()` on `orders.customer_id`, which this story honours verbatim. If 0042 has not landed, **D-12** is simply not yet reachable — it does not change this story's schema |
+| `customers` table + `App\Models\Customer` | story [0041](0041-customers-crud-backend.md) — **hard dependency; confirm it is `done` before Phase 3** | `orders.customer_id` FKs it; the address snapshot copies its twelve columns |
+| `customers.deleted_at` (soft delete) | story [0042](0042-customers-soft-delete-backend.md) — **related; confirm its state at the same time** | **D-12** depends on it existing; 0042's own forward note prescribes `restrictOnDelete()` on `orders.customer_id`, which this story honours verbatim. If 0042 has not landed, **D-12** is simply not yet reachable — it does not change this story's schema |
 | `sales_regions` table | task 0016 — **done (shipped)** | `docs/database/schema.md` § `sales_regions`; `orders.tax_rate`'s `decimal(6,3)` mirrors `sales_regions.rate` |
 | `orders.*` permissions in the seeded catalog | **shipped** | `RolePermissionSeeder::MODULES` carries `orders` |
 | `Gate::before` Super Admin bypass | **shipped** (Epic 1) | `docs/architecture/authorization.md` |
@@ -964,11 +1203,11 @@ rediscovery.
 
 | Blocking story | Provides | Consumed by |
 | --- | --- | --- |
-| [0024](done/0024-products-core-crud-backend.md) — Products | `products` table, `products.price` / `.name` / `.sku`, `ProductFactory` | `order_items.product_id`; the price/name/SKU snapshots and their regression tests |
-| [0029](done/0029-product-variants-backend.md) — Product Variants | `product_variants` table, `ProductVariantFactory` | `order_items.product_variant_id`; the variant line-item scenario |
-| [0035](done/0035-shipping-carriers-backend.md) — Shipping Carriers | `shipping_carriers` | transitively, via `shipping_rates` |
-| [0036](done/0036-shipping-rate-rules-backend.md) — Shipping Rates | `shipping_rates` table | `orders.shipping_rate_id` |
-| [0038](done/0038-payment-methods-bank-transfer-backend.md) — Payment Methods | `payment_methods` table, the seeded bank-transfer row | `orders.payment_method_id` (NOT NULL — no order can be created without it) |
+| [0024](0024-products-core-crud-backend.md) — Products | `products` table, `products.price` / `.name` / `.sku`, `ProductFactory` | `order_items.product_id`; the price/name/SKU snapshots and their regression tests |
+| [0029](0029-product-variants-backend.md) — Product Variants | `product_variants` table, `ProductVariantFactory` | `order_items.product_variant_id`; the variant line-item scenario |
+| [0035](0035-shipping-carriers-backend.md) — Shipping Carriers | `shipping_carriers` | transitively, via `shipping_rates` |
+| [0036](0036-shipping-rate-rules-backend.md) — Shipping Rates | `shipping_rates` table | `orders.shipping_rate_id` |
+| [0038](0038-payment-methods-bank-transfer-backend.md) — Payment Methods | `payment_methods` table, the seeded bank-transfer row | `orders.payment_method_id` (NOT NULL — no order can be created without it) |
 
 The reasoning is [**DR-1**](#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns).
 **If any of the five is missing when Phase 3 starts, the story is not ready.** Do not stub a table, stub
@@ -987,8 +1226,13 @@ epic can be implemented until `orders` and `order_items` exist:
   0044's Customers screen.
 - **0048–0052** — status transitions, the backward-transition confirmation, the hard block on editing a
   shipped order, manual-cancellation guards, refunds and the 100%-refund auto-cancel. These read
-  `status` / `payment_status` / `refunded_quantity`, all of which ship here as inert columns, and they
-  are where `OrderPolicy` should be created (**D-13**).
+  `status` / `payment_status` / `refunded_quantity`, all of which ship here as inert columns. **They
+  inherit `App\Policies\OrderPolicy` rather than creating it** (**D-13**): each adds its row-state
+  branch to an existing `update()`/`delete()` body — and must decide, per
+  [architecture/authorization.md](../../../docs/architecture/authorization.md), whether a given rule is a
+  domain **invariant** (a direct `throw`, binding even a Super Admin) or an **authorization** rule (a
+  policy branch, which the `Gate::before` bypass skips). "A shipped order's line items may not be
+  edited" is very likely the former.
 - **0053–0054** — Sales Region resolution and tax computation. These fill in `sales_region_id`,
   `tax_rate`, `tax_amount`, `flagged_for_review`, and they read the **order's own** frozen address
   snapshot rather than the customer's live one (**D-4**).
@@ -1019,16 +1263,24 @@ epic can be implemented until `orders` and `order_items` exist:
   `shipping_rates.price` at `decimal(10,2)` — read from those stories' own task files, which are
   themselves still `new`. *Mitigation:* **Phase 3 must re-verify every one of those five shapes against
   the shipped migrations before writing this story's, exactly as the deferred-findings rule requires**
-  ([errors-log.md](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
+  ([errors-log.md](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
   This file's numbers are a reading aid, not a locator.
 - **R-5 — This document goes stale while it waits.** It is blocked on five stories, each of which may
   itself change during its own Phase 4/5. That is precisely the "a deferred finding is a claim about a
   tree, and the task file freezes while the tree does not" failure recorded in the errors log.
   *Mitigation:* the Phase 2 INVEST review must be **re-run** immediately before Phase 3 rather than
   treated as passed on first reading, and R-4's re-verification is part of it.
-- **R-6 — `Gate::authorize('orders.create')` fails closed on a typo, silently.** A misspelled ability
-  denies everyone, and denial looks exactly like a correct refusal. *Mitigation:* a **positive** success
-  test beside the 403, plus the literal-ability assertion against the seeded catalog.
+- **R-6 — An authorization check fails closed on a typo, silently.** A misspelled ability denies
+  everyone, and denial looks exactly like a correct refusal. *Mitigation:* a **positive** success test
+  beside every refusal test, plus an assertion that each `OrderPolicy::<VERB>_PERMISSION` constant
+  equals its seeded catalog name. Routing through the policy narrows the blast radius but does not
+  remove it — the constants' *values* are still strings nothing else checks, which is exactly what that
+  assertion is for.
+- **R-7 — A variant line item priced from the parent product is invisible until a variant's price
+  diverges.** The same shape as **R-2**, one level down, and it survives any test whose fixtures give
+  the product and its variant the same price. *Mitigation:* **D-15** states the per-column rule
+  explicitly, the regression test mutates the **variant's** own row, and the fixtures are required to
+  use deliberately different prices.
 
 ### Resolved questions
 
@@ -1044,7 +1296,9 @@ epic can be implemented until `orders` and `order_items` exist:
 | What does the order list order by? | backend-qa | **D-6** — `created_at desc`, with an `id` tie-break |
 | What are the totals at creation? | backend-qa | **D-8** — subtotal derived; tax/shipping `0.00`; `tax_rate` `NULL` |
 | Is `sales_region_id` resolved here? | backend-qa | **D-9** — no; `NULL`, and asserted `NULL` |
-| Is there an `OrderPolicy`? | backend-expert | **D-13** — not here; 0048–0052 will need one |
+| Is there an `OrderPolicy`? | backend-expert | **D-13** — **yes, created here** with four flat abilities (reversed at Phase 2 re-review; the original "not here" rested on a mis-read of 0041's own reversed precedent) |
+| Which price does a VARIANT line item snapshot? | Phase 2 re-review | **D-15** — the variant's own `product_variants.price`, never the parent product's |
+| Do the two status enums get `label()` now? | Phase 2 re-review | No — deferred to 0055, its first real consumer ([naming.md](../../../docs/conventions/naming.md#translation-keys)); the lang files still ship here |
 | Does a soft-deleted customer block order creation? | backend-qa | **D-12** — no, by decision |
 | Enum backing values: Spanish or English? | backend-expert | English lowercase tokens; Spanish via `lang/es/orders.php` |
 
@@ -1065,8 +1319,13 @@ trivial nullable column — so nobody should feel pressure to speculate it in no
 
 Derived from this story, none of them in scope:
 
-1. **Create `OrderPolicy`** in whichever of stories 0048–0052 arrives first, and re-point
-   `CreateOrder`'s `Gate::authorize()` at it (**D-13**).
+1. **Add `label()` to `OrderStatus` / `PaymentStatus`** in story 0055, their first real rendering
+   consumer, against the `lang/{en,es}/orders.php` leaves this story already ships — and check at that
+   point whether a second consumer exists at all, since
+   [naming.md](../../../docs/conventions/naming.md#translation-keys) treats a one-caller `label()` as
+   indirection that hides which lang group owns the copy. *(This replaces the original item 1, "create
+   `OrderPolicy` in whichever of stories 0048–0052 arrives first" — **D-13** was reversed and the
+   policy ships here.)*
 2. **Revisit indexing on `orders`** once a real order volume and a real list-filter set exist — the same
    provisional-YAGNI shape story 0042 recorded for `customers.deleted_at`, with the same requirement to
    measure rather than assume, and with the second column driven by what story 0055's list actually
@@ -1077,25 +1336,25 @@ Derived from this story, none of them in scope:
 
 ## Provenance
 
-- **PRD source:** [§3.2 Orders](../../docs/PRD/PRD.md#32-orders), plus
-  [§3.1 Customers](../../docs/PRD/PRD.md#31-customers) (the customer an order references and the
-  soft-delete rationale) and [assumption 19](../../docs/PRD/PRD.md#assumptions--confirmed-decisions)
+- **PRD source:** [§3.2 Orders](../../../docs/PRD/PRD.md#32-orders), plus
+  [§3.1 Customers](../../../docs/PRD/PRD.md#31-customers) (the customer an order references and the
+  soft-delete rationale) and [assumption 19](../../../docs/PRD/PRD.md#assumptions--confirmed-decisions)
   (UUID PKs).
-- **Process:** [workflow.md](../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from
+- **Process:** [workflow.md](../../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from
   `backend-expert`, `backend-qa` and `database-expert`, composed by `product-owner` as facilitator.
   **This story's debate produced a genuine disagreement between two experts**, resolved and recorded in
   full as [DR-1](#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns)
   rather than settled silently, with the reversal path named.
 - **Gherkin conventions:** every scenario opens with a named business-role actor ("an order
   administrator") and carries exactly one `When`, per
-  [gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 — mandatory
+  [gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 — mandatory
   across all Gherkin in this project, per the incident recorded in
-  [errors-log.md](../../docs/errors-log.md).
+  [errors-log.md](../../../docs/errors-log.md).
 - **Stage:** `new`, and **blocked** — see the banner under [Description](#description). It moves to
   `ai-spec/tasks/in-progress/` at the start of Phase 3, and to `ai-spec/tasks/done/` at Phase 7 — both
   moves change this file's directory depth, so every relative link above must be re-resolved on each
   move (both directions), per
-  [workflow.md](../../docs/workflow.md#link-integrity-check-on-every-stage-move).
+  [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move).
 - **Epic 3 decomposition:** the Orders foundation story. Siblings referenced by number (0046
   notification, 0047 order history, 0048–0052 status/refunds, 0053–0054 tax resolution, 0055 UI)
   because their files may not exist yet.

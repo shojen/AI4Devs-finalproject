@@ -38,6 +38,17 @@ app/
                        upload/convert/insert; GenerateImageConversions — the only class in the app
                        that imports the imaging library; UpdateMediaDetails — the inline
                        title/description write, and MediaPolicy::update()'s first caller)
+  Actions/Orders/      Domain actions for the Orders area (CreateOrder — story 0045, the sole
+                       reachable enforcement point for this story since it ships no route or
+                       component: self-authorizes `create` on Order::class as its own first
+                       statement, resolves every catalog row it snapshots from the database
+                       rather than trusting the payload -- reading a named variant's price
+                       and SKU THROUGH its own item's already-resolved product, never as an
+                       independent lookup, closing a related-id-pair price-manipulation finding
+                       from this story's own Phase 4 audit (see
+                       docs/security/related-id-pair-resolution.md) -- and wraps the whole
+                       DB::transaction() in its own retry loop rather than using `attempts:`,
+                       since every row it writes is BUILT INSIDE the closure via forceCreate())
   Actions/ProductCategories/ Domain actions for the Product Categories area (CreateProductCategory,
                        RenameProductCategory, DeleteProductCategory) — one action per operation
                        (story 0023). Unlike every other area's actions, none of the three authorize
@@ -117,7 +128,15 @@ app/
                        ProductDisplayStatus, a badge-only third enum never persisted, never
                        validated and carrying no column or cast of its own; GeographyLevel, story
                        0032 — deliberately no label(), since this story ships no rendering site at
-                       all, per naming.md's "add label() when a second consumer appears" rule)
+                       all, per naming.md's "add label() when a second consumer appears" rule;
+                       OrderStatus / PaymentStatus, story 0045 — two SEPARATE value sets rather
+                       than one enum or one lang group, since PRD §3.2 treats fulfilment status
+                       and payment status as independently-evolving dimensions; neither declares
+                       label() either, for the identical GeographyLevel reason -- deferred to
+                       story 0055, their first real rendering consumer -- even though both
+                       already ship their lang/{en,es}/orders.php leaves now, pinned by a test,
+                       since a translation file is only ever correct relative to the value set it
+                       covers and this story is what fixes that value set)
   Exceptions/          Domain exceptions that render their own response (ImmutableRoleException → 403,
                        RoleInUseException → 409, PasswordConfirmationRequiredException → 423) —
                        plus, since story 0022, one that deliberately does NOT: UnresolvedSelectionException
@@ -164,7 +183,17 @@ app/
                        Customer — story 0041, Epic 3's first domain model, a fourth instance of
                        that same no-relationships-at-birth shape, with all fifteen writable
                        columns fillable and none withheld (D-7 — there is no seeder-owned or
-                       server-derived column split here, unlike SalesRegion/Media); Role, which
+                       server-derived column split here, unlike SalesRegion/Media); Order —
+                       story 0045, Epic 3's second domain model and this app's first with FOUR
+                       BelongsTo relations at once (customer, paymentMethod, salesRegion nullable,
+                       shippingRate nullable) plus a hasMany (items), and the mass-assignment
+                       guard's largest omission list yet (order_number, both status columns, all
+                       four totals, tax_rate, flagged_for_review, sales_region_id,
+                       shipping_rate_id — eleven columns, every one derived or a status a later
+                       story owns); OrderItem — story 0045, five columns omitted
+                       (product_name/product_sku/unit_price/line_total/refunded_quantity), since a
+                       fillable unit_price would hand a caller the ability to set its own price;
+                       Role, which
                        subclasses
                        the package's role model). product_media, product_sales_region and
                        (story 0029) product_variant_values all have no model class of their own —
@@ -190,7 +219,15 @@ app/
                        justifies a policy. PaymentMethodPolicy — story 0038, four abilities;
                        create()/delete() explicitly return false (bank transfer is the only
                        method this phase), a documented exception for a Super Admin actor via
-                       the Gate::before bypass
+                       the Gate::before bypass. OrderPolicy — story 0045, the twelfth policy,
+                       modelled directly on ShippingRatePolicy (D-13, a Phase 2 reversal of this
+                       story's own original "no policy" recommendation): four flat abilities, no
+                       per-target branch on any of them today. `create` is the only ability with
+                       a real caller in this story (CreateOrder, self-authorizing); viewAny/
+                       update/delete ship with no caller yet ON PURPOSE, since stories 0048-0052
+                       add genuinely row-state-dependent rules (editing blocked once Shipped, a
+                       refund refused outside Paid/PartiallyRefunded) as branches to update()'s/
+                       delete()'s EXISTING body rather than relocating every call site's target
   Providers/           Service providers (AppServiceProvider, FortifyServiceProvider)
   Rules/               Stock Laravel location (`make:rule`), not a new base folder — Iban.php,
                        story 0038, ISO 13616 structure plus the ISO 7064 mod-97 checksum,
@@ -212,7 +249,11 @@ lang/                   Published translation files, one folder per locale (en/,
                         components.php, products.php — the latter's categories.index subgroup is
                         story 0025's copy for the product categories screen; shipping.php;
                         payment-methods.php since story 0038; customers.php since story 0044 —
-                        the file 0041 deliberately deferred to this story, D-14)
+                        the file 0041 deliberately deferred to this story, D-14; orders.php since
+                        story 0045 — two key groups only, statuses/payment_statuses, one leaf per
+                        enum case, plus a third errors group added at Phase 4 re-audit for
+                        CreateOrder's own column-ceiling guard message; no screen copy yet, since
+                        this story ships no route or component)
 resources/
   views/
     components/        Blade components — all anonymous (no app/View/Components/ in this repo)
@@ -440,3 +481,5 @@ Three constraints that come with it, each learned from this story's audits:
 
 What the rules themselves say, and why a rule that must bind a Super Admin actor is a direct `throw` rather than a `Gate` check, belongs to [architecture/authorization.md](../architecture/authorization.md#the-guard-belongs-to-the-action-not-to-the-caller), not here.
 
+
+_Last updated: 2026-09-14 — Story 0045 (Orders core CRUD backend). Added `app/Actions/Orders/` (`CreateOrder`), `Order`/`OrderItem` to `app/Models/`, `OrderStatus`/`PaymentStatus` to `app/Enums/`, `OrderPolicy` (the twelfth policy) to `app/Policies/`, and `lang/{en,es}/orders.php` to the `lang/` bullet. This file had no footer of its own since its split out of `base-standards.md` on 2026-09-11 — this is its first.

@@ -15,7 +15,7 @@ component, no Blade markup, no notification, no schema change.
 >
 > **This story is fully specified now, but its Phase 3 implementation cannot start until story
 > [0051](0051-order-payment-refund-state-backend.md) is `done`** — and 0051 is itself blocked behind
-> [0045](0045-orders-core-crud-backend.md), which is blocked behind five Epic 2 stories
+> [0045](done/0045-orders-core-crud-backend.md), which is blocked behind five Epic 2 stories
 > ([0024](done/0024-products-core-crud-backend.md), [0029](done/0029-product-variants-backend.md),
 > [0035](done/0035-shipping-carriers-backend.md), [0036](done/0036-shipping-rate-rules-backend.md),
 > [0038](done/0038-payment-methods-bank-transfer-backend.md)).
@@ -66,7 +66,7 @@ test plan were composed independently and validate the same shape: the post-comm
 re-fetch-under-lock, the direct `forceFill()` write past both status-transition classes, the
 idempotent early return, and the absence of an authorization gate. `backend-qa`'s contrast test is
 the executable form of `backend-expert`'s central claim. Where a sibling story recorded a genuine
-expert conflict ([0045 **DR-1**](0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns),
+expert conflict ([0045 **DR-1**](done/0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns),
 [0051 **DR-1**](0051-order-payment-refund-state-backend.md#dr-1--the-refund-model-line-item-quantities-not-an-arbitrary-monetary-amount)),
 this one has none, and inventing daylight between two aligned contributions would misrepresent the
 debate.
@@ -677,7 +677,7 @@ rediscovery.
   explicitly registered listener fires twice. The idempotency guard (**D-7**) makes a double fire
   harmless, which is a happy accident and not a reason to skip the check.
 - **D-9 — No `OrderPolicy` is created here, narrowing 0045's backlog item 1 for a second time.**
-  [0045 **D-13**](0045-orders-core-crud-backend.md#documented-functional-decisions) forecast that
+  [0045 **D-13**](done/0045-orders-core-crud-backend.md#documented-functional-decisions) forecast that
   "whichever of stories 0048–0052 arrives first" would create one, and
   [0051 **DR-2**](0051-order-payment-refund-state-backend.md#dr-2--no-orderpolicy-here-despite-0045s-forward-note-naming-this-cluster)
   already declined on the grounds that its rules were about the *row*, not the *actor*. **This story
@@ -721,10 +721,10 @@ rediscovery.
 | Depends on | State | Verified how |
 | --- | --- | --- |
 | `RecordRefund` + the `payment_status` derivation | story [0051](0051-order-payment-refund-state-backend.md) — **hard dependency; ⛔ blocked until `done`** | This story adds the one-line dispatch 0051's **OQ-2** left for it, and hooks the `Refunded` transition it derives |
-| `orders` / `order_items` tables, `Order` model, `OrderStatus` enum | story [0045](0045-orders-core-crud-backend.md) — **hard dependency, transitively via 0051** | `orders.status` is written here; `OrderStatus::Cancelled` is read |
-| `app/Actions/Orders/` folder | story [0045](0045-orders-core-crud-backend.md) | `AutoCancelFullyRefundedOrder` lands beside `CreateOrder` and `RecordRefund` |
+| `orders` / `order_items` tables, `Order` model, `OrderStatus` enum | story [0045](done/0045-orders-core-crud-backend.md) — **hard dependency, transitively via 0051** | `orders.status` is written here; `OrderStatus::Cancelled` is read |
+| `app/Actions/Orders/` folder | story [0045](done/0045-orders-core-crud-backend.md) | `AutoCancelFullyRefundedOrder` lands beside `CreateOrder` and `RecordRefund` |
 | `CancelOrder` + `OrderPolicy::cancel()` | story [0050](0050-order-manual-cancellation-backend.md) — **soft dependency** | Needed for the **contrast test** and the regression guard only; **no code in this story calls, imports or modifies either.** If 0050 is not yet `done`, the two tests that reference it are the only blocked items, and they are blocked on a *test fixture*, not on this story's design |
-| `App\Enums\PaymentStatus::Refunded` | story [0045](0045-orders-core-crud-backend.md) | The dispatch condition reads it |
+| `App\Enums\PaymentStatus::Refunded` | story [0045](done/0045-orders-core-crud-backend.md) | The dispatch condition reads it |
 | `AppServiceProvider` listener registration precedent | **shipped** (Epic 1, `ActivateVerifiedUser`) | **D-8** copies its form; **R-2** is the hazard that comes with it |
 
 #### Cross-check required against 0051's already-saved file
