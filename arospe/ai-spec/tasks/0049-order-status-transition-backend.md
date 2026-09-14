@@ -6,15 +6,15 @@ linear status vocabulary (`Pendiente → Procesando → Enviado → Entregado`):
 `TransitionOrderStatus` action that advances an order freely, and refuses a **backward** move unless
 the caller explicitly confirms it. This story also creates **`OrderPolicy`** — the shared
 authorization surface stories 0050, 0051, 0052 and 0055 all extend — per story
-[0045](0045-orders-core-crud-backend.md)'s forward note **D-13**. No cancellation, no refunds, no tax,
+[0045](done/0045-orders-core-crud-backend.md)'s forward note **D-13**. No cancellation, no refunds, no tax,
 no route, no Livewire component, no Blade markup, no status-history table.
 
 > ## ⛔ BLOCKED — inherited from story 0045
 >
 > **This story is fully specified now, but its Phase 3 implementation cannot start until story
-> [0045](0045-orders-core-crud-backend.md) is `done`** — and 0045 is itself blocked on five Epic 2
+> [0045](done/0045-orders-core-crud-backend.md) is `done`** — and 0045 is itself blocked on five Epic 2
 > stories (0024 Products, 0029 Product Variants, 0035 Shipping Carriers, 0036 Shipping Rates, 0038
-> Payment Methods; see its [**DR-1**](0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns)).
+> Payment Methods; see its [**DR-1**](done/0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns)).
 >
 > There is nothing to transition until an `orders` row exists. `App\Enums\OrderStatus`,
 > `App\Models\Order` and `OrderFactory` are all 0045's deliverables, and every test in this file
@@ -728,8 +728,8 @@ a rediscovery.
 
 | Depends on | State | Verified how |
 | --- | --- | --- |
-| `orders` table, `App\Models\Order`, `OrderFactory` | story [0045](0045-orders-core-crud-backend.md) — **hard dependency, and the only one; ⛔ inherited BLOCKED** | there is no row to transition without it; every test creates its order through `OrderFactory` |
-| `App\Enums\OrderStatus` with its five cases | story [0045](0045-orders-core-crud-backend.md) | this story adds two methods to it and no case |
+| `orders` table, `App\Models\Order`, `OrderFactory` | story [0045](done/0045-orders-core-crud-backend.md) — **hard dependency, and the only one; ⛔ inherited BLOCKED** | there is no row to transition without it; every test creates its order through `OrderFactory` |
+| `App\Enums\OrderStatus` with its five cases | story [0045](done/0045-orders-core-crud-backend.md) | this story adds two methods to it and no case |
 | `orders.*` permissions in the seeded catalog | **shipped** | `RolePermissionSeeder::MODULES` carries `orders` |
 | `Gate::before` Super Admin bypass | **shipped** (Epic 1) | [authorization.md](../../docs/architecture/authorization.md#the-super-admin-bypass) |
 | Policy auto-discovery by name | **shipped** (Epic 1, task 0004) | `UserPolicy` / `RolePolicy` bind with no `AuthServiceProvider` |
@@ -873,4 +873,4 @@ Derived from this story, none of them in scope:
 - **Epic 3 decomposition:** the first of the status-and-refund stories. Siblings are referenced by
   number (0048 line-item edit block, 0050 cancellation, 0051 refunds, 0052 the 100%-refund
   auto-cancel, 0053–0054 tax resolution, 0055 UI) because their files may not exist yet; story
-  [0045](0045-orders-core-crud-backend.md) is the one that does.
+  [0045](done/0045-orders-core-crud-backend.md) is the one that does.

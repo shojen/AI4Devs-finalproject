@@ -6,7 +6,7 @@ holds `orders.view`. This closes the second of the four confirmed notification e
 [§ Cross-cutting: global search & notifications](../../docs/PRD/PRD.md#cross-cutting-global-search--notifications)
 and the "new order" acceptance criterion of [§3.2 Orders](../../docs/PRD/PRD.md#32-orders). This story
 owns the `OrderCreated` notification, the recipient-resolution rule, and the dispatch site inside story
-[0045](0045-orders-core-crud-backend.md)'s `CreateOrder`. **It renders nothing** — no bell, no dropdown,
+[0045](done/0045-orders-core-crud-backend.md)'s `CreateOrder`. **It renders nothing** — no bell, no dropdown,
 no unread badge — and it adds **no migration**: the `notifications` table is story
 [0043](done/0043-customers-new-customer-notification-backend.md)'s deliverable and already exists once that
 story is `done`.
@@ -14,7 +14,7 @@ story is `done`.
 > ## ⛔ BLOCKED — inherited cross-epic dependency (read this before Phase 3)
 >
 > **This story is fully specified now, but its Phase 3 implementation cannot start until story
-> [0045](0045-orders-core-crud-backend.md) is `done` — and 0045 is itself blocked until PRD Epic 2
+> [0045](done/0045-orders-core-crud-backend.md) is `done` — and 0045 is itself blocked until PRD Epic 2
 > stories [0024](done/0024-products-core-crud-backend.md) (Products),
 > [0029](done/0029-product-variants-backend.md) (Product Variants),
 > [0035](done/0035-shipping-carriers-backend.md) (Shipping Carriers),
@@ -23,7 +23,7 @@ story is `done`.
 >
 > The dispatch call lands **inside** 0045's `CreateOrder`, and every Feature test here needs a real
 > `Order` — which needs `orders`, `order_items`, `OrderFactory` and the five tables those FK into. The
-> full reasoning is 0045's [**DR-1**](0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns);
+> full reasoning is 0045's [**DR-1**](done/0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns);
 > this story does not re-litigate it and does not get to route around it. **Do not stub an `Order`
 > factory or a `notifications` table to make this story testable earlier** — that is option (b)
 > arriving by the back door.
@@ -61,7 +61,7 @@ notification at all, and this story's deliverable is a notification class and a 
 independently testable against an `Order` factory. What they share is exactly **one line** — the
 dispatch call — which is why the coupling is called out explicitly in
 [Dependencies](#dependencies-risks-and-open-questions) rather than left implicit. 0045's own
-[scope fences](0045-orders-core-crud-backend.md#scope-fences-what-this-story-must-not-do) already say it
+[scope fences](done/0045-orders-core-crud-backend.md#scope-fences-what-this-story-must-not-do) already say it
 must *not* create, dispatch or listen for this notification.
 
 ### Why this is a shape copy of 0043, and what that means for review
@@ -395,7 +395,7 @@ and no more.
 
 | Depends on | State | Why |
 | --- | --- | --- |
-| [0045](0045-orders-core-crud-backend.md) — Orders core CRUD | **hard dependency, and itself ⛔ BLOCKED** | The dispatch call lands inside its `CreateOrder`; every Feature test here needs `Order`, `OrderItem` and `OrderFactory`. **Inherits 0045's full block** on [0024](done/0024-products-core-crud-backend.md), [0029](done/0029-product-variants-backend.md), [0035](done/0035-shipping-carriers-backend.md), [0036](done/0036-shipping-rate-rules-backend.md) and [0038](done/0038-payment-methods-bank-transfer-backend.md) |
+| [0045](done/0045-orders-core-crud-backend.md) — Orders core CRUD | **hard dependency, and itself ⛔ BLOCKED** | The dispatch call lands inside its `CreateOrder`; every Feature test here needs `Order`, `OrderItem` and `OrderFactory`. **Inherits 0045's full block** on [0024](done/0024-products-core-crud-backend.md), [0029](done/0029-product-variants-backend.md), [0035](done/0035-shipping-carriers-backend.md), [0036](done/0036-shipping-rate-rules-backend.md) and [0038](done/0038-payment-methods-bank-transfer-backend.md) |
 | [0043](done/0043-customers-new-customer-notification-backend.md) — new-customer notification | **hard dependency** | Owns the `notifications` table and its `uuidMorphs('notifiable')` correction. This story adds **no** migration and cannot run a single Feature test without it |
 | [0041](done/0041-customers-crud-backend.md) — Customers CRUD | **transitive, via 0045** | `customer_name` is read off the order's `customer` relation; `Customer` must exist with a resolvable display name |
 | `orders.view` in the seeded catalog | **shipped** | `RolePermissionSeeder::MODULES` carries `orders` (verified) — no seeder change needed |

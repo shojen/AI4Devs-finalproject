@@ -13,10 +13,10 @@ component, no Blade markup, no notification, no status transitions, no refunds, 
 > ## ⛔ BLOCKED — cross-epic dependency (read this before Phase 3)
 >
 > **This story is fully specified now, but its Phase 3 implementation cannot start until PRD Epic 2
-> stories [0024](../done/0024-products-core-crud-backend.md) (Products), [0029](../done/0029-product-variants-backend.md)
-> (Product Variants), [0035](../done/0035-shipping-carriers-backend.md) (Shipping Carriers),
-> [0036](../done/0036-shipping-rate-rules-backend.md) (Shipping Rates) and
-> [0038](../done/0038-payment-methods-bank-transfer-backend.md) (Payment Methods) are all `done`.**
+> stories [0024](0024-products-core-crud-backend.md) (Products), [0029](0029-product-variants-backend.md)
+> (Product Variants), [0035](0035-shipping-carriers-backend.md) (Shipping Carriers),
+> [0036](0036-shipping-rate-rules-backend.md) (Shipping Rates) and
+> [0038](0038-payment-methods-bank-transfer-backend.md) (Payment Methods) are all `done`.**
 >
 > `orders` and `order_items` carry foreign keys into `products`, `product_variants`, `shipping_rates`
 > and `payment_methods` — four tables that **do not exist in code yet**. Every FK in this repository,
@@ -247,7 +247,7 @@ Feature: Order records (backend)
 `database/migrations/<ts>_create_orders_table.php` — **new**. Shape confirmed by `database-expert`
 against this repo's greenfield-UUID precedent,
 [`create_sales_regions_table`](../../../docs/database/migrations.md#uuid-primary-keys), and against
-[`create_customers_table`](../done/0041-customers-crud-backend.md) for the address-column lengths.
+[`create_customers_table`](0041-customers-crud-backend.md) for the address-column lengths.
 
 ```php
 Schema::create('orders', function (Blueprint $table): void {
@@ -449,7 +449,7 @@ Scaffolded with `php artisan make:model Order -m -f --no-interaction`. Follows
 ### Validation trait — `app/Concerns/OrderValidationRules.php` (new)
 
 Mirrors [`UserValidationRules`](../../../app/Concerns/UserValidationRules.php) /
-[`CustomerValidationRules`](../done/0041-customers-crud-backend.md) exactly — `<Noun>ValidationRules` trait,
+[`CustomerValidationRules`](0041-customers-crud-backend.md) exactly — `<Noun>ValidationRules` trait,
 `<noun>Rules()` methods returning rule arrays, flat and single-concern
 ([naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)):
 
@@ -919,7 +919,7 @@ and it is recorded here in full rather than silently settled.**
 The problem: `orders` and `order_items` need FK columns into `products`, `product_variants`,
 `shipping_rates` and `payment_methods`. **None of those four tables exists in code.** Epic 2 is still
 in progress; of everything this story references, only `sales_regions` (task 0016) and `customers`
-(story [0041](../done/0041-customers-crud-backend.md)) are real, shipped tables.
+(story [0041](0041-customers-crud-backend.md)) are real, shipped tables.
 
 | Position | Proposed by | Shape |
 | --- | --- | --- |
@@ -1103,7 +1103,7 @@ rediscovery.
   does **not** apply the `SoftDeletingScope`
   ([schema.md](../../../docs/database/schema-users-auth.md#soft-deletes)), so a soft-deleted customer's id passes
   validation. That is the *correct* behaviour here and is left as-is: story
-  [0042](../done/0042-customers-soft-delete-backend.md) soft-deletes customers precisely so their order history
+  [0042](0042-customers-soft-delete-backend.md) soft-deletes customers precisely so their order history
   survives, and PRD §3.1's stated reason is "so a customer's orders are never orphaned". Refusing to
   record an order against a trashed customer would fight that. Recorded explicitly so `appsec-auditor`
   sees a decision rather than an oversight, and so a later story does not "fix" it. **If a product rule
@@ -1122,7 +1122,7 @@ rediscovery.
   `PaymentMethodPolicy` and `CustomerPolicy` are all flat, no-per-target-rule policies over exactly the
   "reduces to `$user->can()`" abilities the old text used as the argument *against* one.
   <br><br>
-  **Story [0036](../done/0036-shipping-rate-rules-backend.md) settles it, because it is this story's exact
+  **Story [0036](0036-shipping-rate-rules-backend.md) settles it, because it is this story's exact
   structural analogue**: backend-only, no route, no Livewire component, the action as the sole
   reachable enforcement point — and it created `ShippingRatePolicy` anyway, with four abilities from
   day one and all three write actions self-authorizing against it as their first statement. This story
@@ -1190,8 +1190,8 @@ rediscovery.
 
 | Depends on | State | Verified how |
 | --- | --- | --- |
-| `customers` table + `App\Models\Customer` | story [0041](../done/0041-customers-crud-backend.md) — **hard dependency; confirm it is `done` before Phase 3** | `orders.customer_id` FKs it; the address snapshot copies its twelve columns |
-| `customers.deleted_at` (soft delete) | story [0042](../done/0042-customers-soft-delete-backend.md) — **related; confirm its state at the same time** | **D-12** depends on it existing; 0042's own forward note prescribes `restrictOnDelete()` on `orders.customer_id`, which this story honours verbatim. If 0042 has not landed, **D-12** is simply not yet reachable — it does not change this story's schema |
+| `customers` table + `App\Models\Customer` | story [0041](0041-customers-crud-backend.md) — **hard dependency; confirm it is `done` before Phase 3** | `orders.customer_id` FKs it; the address snapshot copies its twelve columns |
+| `customers.deleted_at` (soft delete) | story [0042](0042-customers-soft-delete-backend.md) — **related; confirm its state at the same time** | **D-12** depends on it existing; 0042's own forward note prescribes `restrictOnDelete()` on `orders.customer_id`, which this story honours verbatim. If 0042 has not landed, **D-12** is simply not yet reachable — it does not change this story's schema |
 | `sales_regions` table | task 0016 — **done (shipped)** | `docs/database/schema.md` § `sales_regions`; `orders.tax_rate`'s `decimal(6,3)` mirrors `sales_regions.rate` |
 | `orders.*` permissions in the seeded catalog | **shipped** | `RolePermissionSeeder::MODULES` carries `orders` |
 | `Gate::before` Super Admin bypass | **shipped** (Epic 1) | `docs/architecture/authorization.md` |
@@ -1203,11 +1203,11 @@ rediscovery.
 
 | Blocking story | Provides | Consumed by |
 | --- | --- | --- |
-| [0024](../done/0024-products-core-crud-backend.md) — Products | `products` table, `products.price` / `.name` / `.sku`, `ProductFactory` | `order_items.product_id`; the price/name/SKU snapshots and their regression tests |
-| [0029](../done/0029-product-variants-backend.md) — Product Variants | `product_variants` table, `ProductVariantFactory` | `order_items.product_variant_id`; the variant line-item scenario |
-| [0035](../done/0035-shipping-carriers-backend.md) — Shipping Carriers | `shipping_carriers` | transitively, via `shipping_rates` |
-| [0036](../done/0036-shipping-rate-rules-backend.md) — Shipping Rates | `shipping_rates` table | `orders.shipping_rate_id` |
-| [0038](../done/0038-payment-methods-bank-transfer-backend.md) — Payment Methods | `payment_methods` table, the seeded bank-transfer row | `orders.payment_method_id` (NOT NULL — no order can be created without it) |
+| [0024](0024-products-core-crud-backend.md) — Products | `products` table, `products.price` / `.name` / `.sku`, `ProductFactory` | `order_items.product_id`; the price/name/SKU snapshots and their regression tests |
+| [0029](0029-product-variants-backend.md) — Product Variants | `product_variants` table, `ProductVariantFactory` | `order_items.product_variant_id`; the variant line-item scenario |
+| [0035](0035-shipping-carriers-backend.md) — Shipping Carriers | `shipping_carriers` | transitively, via `shipping_rates` |
+| [0036](0036-shipping-rate-rules-backend.md) — Shipping Rates | `shipping_rates` table | `orders.shipping_rate_id` |
+| [0038](0038-payment-methods-bank-transfer-backend.md) — Payment Methods | `payment_methods` table, the seeded bank-transfer row | `orders.payment_method_id` (NOT NULL — no order can be created without it) |
 
 The reasoning is [**DR-1**](#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns).
 **If any of the five is missing when Phase 3 starts, the story is not ready.** Do not stub a table, stub

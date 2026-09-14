@@ -5,7 +5,7 @@ Build the customer **detail** screen of PRD [§3.1 Customers](../../docs/PRD/PRD
 permission-gated `customers.show` route, the `App\Livewire\Customers\Show` component behind it, and the
 Blade/Flux view that renders a compact read-only identity header plus that customer's **read-only order
 history**. It also adds the `App\Models\Customer::orders()` relation that stories
-[0041](done/0041-customers-crud-backend.md) and [0045](0045-orders-core-crud-backend.md) both deliberately
+[0041](done/0041-customers-crud-backend.md) and [0045](done/0045-orders-core-crud-backend.md) both deliberately
 omitted and named this story as the owner of, and the "view detail" row affordance that
 [0044](0044-customers-list-create-edit-ui.md)'s list does not yet carry — without which the screen is
 unreachable.
@@ -13,7 +13,7 @@ unreachable.
 > ## ⛔ BLOCKED — inherited cross-epic dependency (read this before Phase 3)
 >
 > **This story is fully specified now, but its Phase 3 implementation cannot start until story
-> [0045](0045-orders-core-crud-backend.md) is `done` — and 0045 is itself ⛔ blocked on five PRD Epic 2
+> [0045](done/0045-orders-core-crud-backend.md) is `done` — and 0045 is itself ⛔ blocked on five PRD Epic 2
 > stories ([0024](done/0024-products-core-crud-backend.md), [0029](done/0029-product-variants-backend.md),
 > [0035](done/0035-shipping-carriers-backend.md), [0036](done/0036-shipping-rate-rules-backend.md),
 > [0038](done/0038-payment-methods-bank-transfer-backend.md)).**
@@ -751,7 +751,7 @@ names the customer. Reversible in one line if the product asks.
 | `customers` table + `App\Models\Customer` | story [0041](done/0041-customers-crud-backend.md) — **hard dependency** | the relation is declared on that model; the header reads its `name`/`email`/`phone` |
 | `customers.deleted_at` (soft delete) | story [0042](done/0042-customers-soft-delete-backend.md) — **hard dependency** | the 404-for-a-trashed-customer test asserts behaviour that only exists once `SoftDeletes` is on the model |
 | The Customers screen: route file, list view, lang files, registry entry | story [0044](0044-customers-list-create-edit-ui.md) — **hard dependency**, and this story **edits three of its files** (**D-6**) | `routes/customers.php`, `resources/views/livewire/customers.blade.php`, `lang/{en,es}/customers.php` |
-| `orders` table, `App\Models\Order`, `App\Enums\OrderStatus`, `orders.statuses.*` lang keys | story [0045](0045-orders-core-crud-backend.md) — **hard dependency, itself ⛔ blocked** | every order row column, the status badge label, and the `hasMany` target |
+| `orders` table, `App\Models\Order`, `App\Enums\OrderStatus`, `orders.statuses.*` lang keys | story [0045](done/0045-orders-core-crud-backend.md) — **hard dependency, itself ⛔ blocked** | every order row column, the status badge label, and the `hasMany` target |
 | `orders.view` in the seeded permission catalog | **shipped** (Epic 1) | `RolePermissionSeeder::MODULES` carries `orders`; all four CRUD actions are generated for it |
 | `Gate::before` Super Admin bypass | **shipped** (Epic 1) | [authorization.md](../../docs/architecture/authorization.md) |
 | The `can:`-gated Livewire route pattern | **shipped** (tasks 0004/0010/0040) | `routes/users.php`, `routes/roles.php` |
@@ -759,7 +759,7 @@ names the customer. Reversible in one line if the product asks.
 
 #### ⛔ Blocked — inherited cross-epic dependency
 
-**Phase 3 cannot begin until [0045](0045-orders-core-crud-backend.md) is `done`**, and 0045 is itself
+**Phase 3 cannot begin until [0045](done/0045-orders-core-crud-backend.md) is `done`**, and 0045 is itself
 blocked on [0024](done/0024-products-core-crud-backend.md), [0029](done/0029-product-variants-backend.md),
 [0035](done/0035-shipping-carriers-backend.md), [0036](done/0036-shipping-rate-rules-backend.md) and
 [0038](done/0038-payment-methods-bank-transfer-backend.md). The chain is **0047 → 0045 → five Epic 2 stories**.

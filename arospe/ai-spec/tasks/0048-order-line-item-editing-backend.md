@@ -6,13 +6,13 @@ Make an **open** order's line items editable from the backend, per PRD
 change one's quantity, and **the order's totals recalculate accordingly**. Editing is **hard-blocked**
 once the order is `Enviado` or `Entregado`, with no confirmation path around it. This story owns three
 single-purpose actions, one domain exception, and the recalculation rule — reusing story
-[0045](0045-orders-core-crud-backend.md)'s schema **entirely**. No new column, no migration, no route,
+[0045](done/0045-orders-core-crud-backend.md)'s schema **entirely**. No new column, no migration, no route,
 no Livewire component, no Blade markup, no status transition, no refund, no tax resolution.
 
 > ## ⛔ BLOCKED — inherited cross-epic dependency (read this before Phase 3)
 >
 > **This story is fully specified now, but its Phase 3 implementation cannot start until story
-> [0045](0045-orders-core-crud-backend.md) is `done` — and 0045 is itself blocked on five PRD Epic 2
+> [0045](done/0045-orders-core-crud-backend.md) is `done` — and 0045 is itself blocked on five PRD Epic 2
 > stories:** [0024](done/0024-products-core-crud-backend.md) (Products),
 > [0029](done/0029-product-variants-backend.md) (Product Variants),
 > [0035](done/0035-shipping-carriers-backend.md) (Shipping Carriers),
@@ -21,7 +21,7 @@ no Livewire component, no Blade markup, no status transition, no refund, no tax 
 >
 > This story writes to `orders` and `order_items`, resolves a **live product/variant** when a line item
 > is added, and reads `orders.status` — none of which exist in code. **The block is inherited whole
-> from 0045's [DR-1](0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns);
+> from 0045's [DR-1](done/0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns);
 > this story does not re-open that decision and must not work around it** by stubbing a table, a
 > factory, or a column.
 >
@@ -56,7 +56,7 @@ backend | includes database-expert: **no**
 - `backend-qa` — risk-based test design, the price-snapshot regression case, the both-statuses dataset,
   and the "no confirmation bypass exists" test.
 - `database-expert` — **not convened.** This story reuses story
-  [0045](0045-orders-core-crud-backend.md)'s `orders` / `order_items` schema column-for-column: no new
+  [0045](done/0045-orders-core-crud-backend.md)'s `orders` / `order_items` schema column-for-column: no new
   column, no migration, no index, no FK, no seeder. `refunded_quantity` — the one column 0045 shipped
   inert for a later story — stays inert here too; it is 0051/0052's, not this story's (see
   [scope fences](#scope-fences-what-this-story-must-not-do)).
@@ -290,7 +290,7 @@ same rule story 0015a's `PasswordConfirmationRequiredException` established
 
 ### Validation trait — `app/Concerns/OrderValidationRules.php` (**extend**, do not create)
 
-Story [0045](0045-orders-core-crud-backend.md) creates this trait; this story appends to it rather than
+Story [0045](done/0045-orders-core-crud-backend.md) creates this trait; this story appends to it rather than
 introducing a second one — `<Noun>ValidationRules` is named after the model whose input it describes,
 not after the screen or the action that submits it
 ([naming.md](../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)). Three additions:
@@ -647,7 +647,7 @@ rediscovery.
 
 - **D-1 — Removing an order's *last* remaining line item is rejected with a `ValidationException`.**
   *(Resolves `backend-qa`'s open question 1; `backend-qa` recommended rejecting and that recommendation
-  is adopted.)* This is **symmetry with 0045's [D-5](0045-orders-core-crud-backend.md#documented-functional-decisions)**,
+  is adopted.)* This is **symmetry with 0045's [D-5](done/0045-orders-core-crud-backend.md#documented-functional-decisions)**,
   and the symmetry is the argument: 0045 refuses to *create* an order with zero line items, for reasons
   that do not stop applying once the order exists.
   - **A zero-item order's tax basis is undefined.** Its `subtotal` is `0.00`, so stories 0053/0054 have
@@ -816,7 +816,7 @@ rediscovery.
 
 | Depends on | State | Verified how |
 | --- | --- | --- |
-| `orders` + `order_items` tables, `Order` / `OrderItem` models & factories, `OrderStatus`, `App\Concerns\OrderValidationRules`, `app/Actions/Orders/` | story [0045](0045-orders-core-crud-backend.md) — **hard dependency, and it is itself ⛔ blocked** | Every action here writes both tables, reads `orders.status`, and extends 0045's trait and folder |
+| `orders` + `order_items` tables, `Order` / `OrderItem` models & factories, `OrderStatus`, `App\Concerns\OrderValidationRules`, `app/Actions/Orders/` | story [0045](done/0045-orders-core-crud-backend.md) — **hard dependency, and it is itself ⛔ blocked** | Every action here writes both tables, reads `orders.status`, and extends 0045's trait and folder |
 | `products` / `product_variants` (live catalog) | stories [0024](done/0024-products-core-crud-backend.md) / [0029](done/0029-product-variants-backend.md) — **blocked, via 0045** | `AddOrderItem` resolves a real catalog row for its snapshot; the price-snapshot regression needs a mutable `products.price` |
 | `orders.edit` in the seeded catalog | **shipped** | `RolePermissionSeeder::MODULES` carries `orders`, so all four `orders.*` abilities exist (**D-2**) |
 | `Gate::before` Super Admin bypass | **shipped** (Epic 1) | [architecture/authorization.md](../../docs/architecture/authorization.md) — and this story tests both what it does and what it must not reach (**D-5**) |
@@ -938,7 +938,7 @@ Derived from this story, none of them in scope:
 - **Process:** [workflow.md](../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from
   `backend-expert` and `backend-qa`, composed by `product-owner` as facilitator. `database-expert` was
   **not convened** by the [task-classification rule](../../docs/workflow.md#task-classification-rule):
-  the story reuses [0045](0045-orders-core-crud-backend.md)'s schema entirely and adds no migration,
+  the story reuses [0045](done/0045-orders-core-crud-backend.md)'s schema entirely and adds no migration,
   column, index or query pattern. Two open questions were raised by the experts and resolved by the
   facilitator at composition: **D-1** (last-line-item removal) and **D-2** (permission reuse).
 - **Gherkin conventions:** every scenario opens with a named business-role actor ("an order

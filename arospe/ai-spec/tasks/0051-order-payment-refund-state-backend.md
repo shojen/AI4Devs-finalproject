@@ -13,7 +13,7 @@ markup, no auto-cancel.
 > ## ⛔ BLOCKED — inherited cross-epic dependency (read this before Phase 3)
 >
 > **This story is fully specified now, but its Phase 3 implementation cannot start until story
-> [0045](0045-orders-core-crud-backend.md) is `done`** — and 0045 is itself blocked on five Epic 2
+> [0045](done/0045-orders-core-crud-backend.md) is `done`** — and 0045 is itself blocked on five Epic 2
 > stories ([0024](done/0024-products-core-crud-backend.md), [0029](done/0029-product-variants-backend.md),
 > [0035](done/0035-shipping-carriers-backend.md), [0036](done/0036-shipping-rate-rules-backend.md),
 > [0038](done/0038-payment-methods-bank-transfer-backend.md)).
@@ -21,7 +21,7 @@ markup, no auto-cancel.
 > Every column this story reads — `orders.payment_status`, `order_items.quantity`,
 > `order_items.unit_price`, `order_items.refunded_quantity` — is created by 0045. `refunds.order_item_id`
 > FKs `order_items`, a table that does not exist in code yet, and this story honours
-> [0045's **DR-1**](0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns)
+> [0045's **DR-1**](done/0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns)
 > verbatim: **every FK is `constrained()` against an already-existing table, or the story waits.**
 > Do not stub `order_items` to proceed.
 >
@@ -253,7 +253,7 @@ State that in the migration's docblock so a reader can tell "considered and unne
 Non-negotiable properties of both files:
 
 - **Every FK is `constrained()` against a table that already exists** at the time these run — 0045's
-  [DR-1](0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns),
+  [DR-1](done/0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns),
   applied to this story's own table.
 - **No explicit `$table->index()` anywhere.** `constrained()` already indexes `order_item_id` and
   `refunded_by`; a hand-written one produces the redundant index recorded in
@@ -729,7 +729,7 @@ the story's central design question and is recorded here rather than settled sil
    An amount-based model cannot express that rule at all without a second, quantity-based mechanism
    underneath it, which is (a) with extra steps.
 2. **`order_items.refunded_quantity` was purpose-built for this.** 0045's
-   [**D-3**](0045-orders-core-crud-backend.md#documented-functional-decisions) shipped that column
+   [**D-3**](done/0045-orders-core-crud-backend.md#documented-functional-decisions) shipped that column
    early, with its default and its own test, precisely so this story would not need an `ALTER`
    against a table its siblings are already writing to. Adopting (b) would leave it as an
    unreferenced column and reopen exactly the deferred-schema-change pattern 0045's DR-1 argued
@@ -746,7 +746,7 @@ Recorded as backlog item 3.
 
 ### DR-2 — No `OrderPolicy` here, despite 0045's forward note naming this cluster
 
-[0045 **D-13**](0045-orders-core-crud-backend.md#documented-functional-decisions) says an
+[0045 **D-13**](done/0045-orders-core-crud-backend.md#documented-functional-decisions) says an
 `OrderPolicy` should be created by "whichever of stories 0048–0052 arrives first", because those
 stories introduce "genuinely row-state-dependent rules" — and it names the refund rule as one of
 them. **This story does not create one**, and the divergence is deliberate rather than an oversight.
@@ -892,11 +892,11 @@ a rediscovery.
 
 | Depends on | State | Verified how |
 | --- | --- | --- |
-| `orders` + `order_items` tables, `Order` / `OrderItem` models | story [0045](0045-orders-core-crud-backend.md) — **hard dependency; ⛔ blocked until `done`** | `refunds.order_item_id` FKs `order_items`; the derivation reads `payment_status`, `quantity`, `refunded_quantity` |
-| `order_items.refunded_quantity` column | story [0045](0045-orders-core-crud-backend.md) **D-3** — ships there, inert | This story is its **first and only** consumer; if 0045 shipped without it, this story adds it |
-| `App\Enums\PaymentStatus` with all four cases | story [0045](0045-orders-core-crud-backend.md) | `Paid`, `PartiallyRefunded`, `Refunded`, `PendingPayment` are all read here |
-| `App\Concerns\OrderValidationRules` | story [0045](0045-orders-core-crud-backend.md) | Extended, not replaced |
-| `app/Actions/Orders/` folder | story [0045](0045-orders-core-crud-backend.md) | `RecordRefund` lands beside `CreateOrder` |
+| `orders` + `order_items` tables, `Order` / `OrderItem` models | story [0045](done/0045-orders-core-crud-backend.md) — **hard dependency; ⛔ blocked until `done`** | `refunds.order_item_id` FKs `order_items`; the derivation reads `payment_status`, `quantity`, `refunded_quantity` |
+| `order_items.refunded_quantity` column | story [0045](done/0045-orders-core-crud-backend.md) **D-3** — ships there, inert | This story is its **first and only** consumer; if 0045 shipped without it, this story adds it |
+| `App\Enums\PaymentStatus` with all four cases | story [0045](done/0045-orders-core-crud-backend.md) | `Paid`, `PartiallyRefunded`, `Refunded`, `PendingPayment` are all read here |
+| `App\Concerns\OrderValidationRules` | story [0045](done/0045-orders-core-crud-backend.md) | Extended, not replaced |
+| `app/Actions/Orders/` folder | story [0045](done/0045-orders-core-crud-backend.md) | `RecordRefund` lands beside `CreateOrder` |
 | `users` table + soft deletes | **shipped** (Epic 1) | `refunds.refunded_by` FKs it; **D-10** depends on the soft delete existing |
 | `Gate::before` Super Admin bypass | **shipped** (Epic 1) | [authorization.md](../../docs/architecture/authorization.md) |
 | The seeded permission catalog + Roles screen label composition | **shipped** (tasks 0002, 0011) | **D-3** extends the first; the second is why `roles.actions.refund` is required |
@@ -997,7 +997,7 @@ overstating a sum that no longer has rows behind it.
 - **(b) `cascadeOnDelete()`** — as contributed, with a **forward constraint written into 0049**: a
   line item carrying refunds must not be deletable, enforced in the action. Cheaper here, but it moves
   the guarantee into a story that does not own this table, which is the shape
-  [0045's DR-1](0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns)
+  [0045's DR-1](done/0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns)
   spent three paragraphs refusing.
 
 Changing this later is an `ALTER` on a live table, so it is materially cheaper to answer now. The

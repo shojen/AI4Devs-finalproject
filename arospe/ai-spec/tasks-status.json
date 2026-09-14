@@ -1,55 +1,13 @@
 {
-  "generated_at": "2026-09-11T00:00:00Z",
+  "generated_at": "2026-09-14T00:00:00Z",
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
-    {
-      "id": "0044",
-      "slug": "0044-customers-list-create-edit-ui",
-      "title": "Customers — list + create/edit UI",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "app/Livewire/Customers/Index.php",
-        "resources/views/livewire/customers.blade.php",
-        "routes/customers.php",
-        "lang/en/customers.php",
-        "lang/es/customers.php",
-        "config/modules.php"
-      ],
-      "conflict_risk_with": []
-    },
-    {
-      "id": "0045",
-      "slug": "0045-orders-core-crud-backend",
-      "title": "Orders core CRUD backend",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "database/migrations/*_create_orders_table.php",
-        "database/migrations/*_create_order_items_table.php",
-        "app/Models/Order.php",
-        "app/Models/OrderItem.php",
-        "app/Enums/OrderStatus.php",
-        "app/Enums/PaymentStatus.php",
-        "app/Concerns/OrderValidationRules.php",
-        "app/Actions/Orders/CreateOrder.php",
-        "lang/en/orders.php",
-        "lang/es/orders.php"
-      ],
-      "conflict_risk_with": []
-    },
     {
       "id": "0046",
       "slug": "0046-orders-new-order-notification-backend",
       "title": "Orders — \"new order\" notification (backend)",
-      "depends_on": [
-        "0045"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -66,11 +24,8 @@
       "id": "0047",
       "slug": "0047-customer-order-history-view-ui",
       "title": "Customer detail — order history view UI",
-      "depends_on": [
-        "0044",
-        "0045"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -89,10 +44,8 @@
       "id": "0048",
       "slug": "0048-order-line-item-editing-backend",
       "title": "Order line-item editing backend",
-      "depends_on": [
-        "0045"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -108,10 +61,8 @@
       "id": "0049",
       "slug": "0049-order-status-transition-backend",
       "title": "Order status transition backend",
-      "depends_on": [
-        "0045"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -133,7 +84,6 @@
       "slug": "0050-order-manual-cancellation-backend",
       "title": "Order manual cancellation backend",
       "depends_on": [
-        "0045",
         "0049",
         "0051"
       ],
@@ -156,10 +106,8 @@
       "id": "0051",
       "slug": "0051-order-payment-refund-state-backend",
       "title": "Order payment/refund state backend",
-      "depends_on": [
-        "0045"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -201,10 +149,8 @@
       "id": "0053",
       "slug": "0053-order-tax-region-resolution-physical-backend",
       "title": "Order tax Sales-Region resolution — physical products (backend)",
-      "depends_on": [
-        "0045"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -219,10 +165,8 @@
       "id": "0054",
       "slug": "0054-order-tax-region-resolution-virtual-backend",
       "title": "Order tax Sales-Region resolution — virtual products (backend)",
-      "depends_on": [
-        "0045"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -243,7 +187,6 @@
       "slug": "0055-orders-list-detail-editor-ui",
       "title": "Orders list + detail/editor UI",
       "depends_on": [
-        "0045",
         "0048",
         "0049",
         "0050",

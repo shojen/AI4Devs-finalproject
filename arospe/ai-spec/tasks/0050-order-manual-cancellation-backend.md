@@ -12,11 +12,11 @@ markup, and **not** the 100%-refund auto-cancel, which is story 0052's.
 > ## ⛔ BLOCKED — inherited from stories 0045, 0049 and 0051
 >
 > **This story is fully specified now, but its Phase 3 implementation cannot start until stories
-> [0045](0045-orders-core-crud-backend.md), [0049](0049-order-status-transition-backend.md) and
+> [0045](done/0045-orders-core-crud-backend.md), [0049](0049-order-status-transition-backend.md) and
 > [0051](0051-order-payment-refund-state-backend.md) are all `done`** — and 0045 is itself blocked on
 > five Epic 2 stories (0024 Products, 0029 Product Variants, 0035 Shipping Carriers, 0036 Shipping
 > Rates, 0038 Payment Methods; see its
-> [**DR-1**](0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns)).
+> [**DR-1**](done/0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns)).
 >
 > There is nothing to cancel until an `orders` row exists (`App\Models\Order`, `OrderFactory`,
 > `App\Enums\OrderStatus`, `App\Enums\PaymentStatus` are all 0045's), and this story **extends**
@@ -896,10 +896,10 @@ a rediscovery.
 
 | Depends on | State | Verified how |
 | --- | --- | --- |
-| `orders` table, `App\Models\Order`, `OrderFactory` | story [0045](0045-orders-core-crud-backend.md) — **hard dependency; ⛔ inherited BLOCKED** | there is no row to cancel without it; every test creates its order through `OrderFactory` |
-| `App\Enums\OrderStatus` (five cases) and `App\Enums\PaymentStatus` (four cases) | story [0045](0045-orders-core-crud-backend.md) | the predicate reads both; **no case is added to either** |
+| `orders` table, `App\Models\Order`, `OrderFactory` | story [0045](done/0045-orders-core-crud-backend.md) — **hard dependency; ⛔ inherited BLOCKED** | there is no row to cancel without it; every test creates its order through `OrderFactory` |
+| `App\Enums\OrderStatus` (five cases) and `App\Enums\PaymentStatus` (four cases) | story [0045](done/0045-orders-core-crud-backend.md) | the predicate reads both; **no case is added to either** |
 | `app/Policies/OrderPolicy.php` | story [0049](0049-order-status-transition-backend.md) — **hard dependency** | this story adds an ability to that **existing** file and reuses its `ORDER_EDIT_PERMISSION` constant. **Not parallel-safe — see below** |
-| `app/Actions/Orders/` folder | story [0045](0045-orders-core-crud-backend.md) | `CancelOrder` lands beside `CreateOrder` and `TransitionOrderStatus` |
+| `app/Actions/Orders/` folder | story [0045](done/0045-orders-core-crud-backend.md) | `CancelOrder` lands beside `CreateOrder` and `TransitionOrderStatus` |
 | **`orders.refund` in the seeded catalog** | story [0051](0051-order-payment-refund-state-backend.md) — **hard dependency of the shipped guard** (**D-6**) | `OrderPolicy::cancel()` calls `hasPermissionTo('orders.refund')`, which throws `PermissionDoesNotExist` until `RolePermissionSeeder::ORDER_PERMISSIONS` exists. Verify by reading that constant at `HEAD`, not by assuming — see the note below |
 | `orders.payment_status` reaching `PartiallyRefunded` | story [0051](0051-order-payment-refund-state-backend.md) — **hard dependency for the highest-risk test** | the guard reads a value only `RecordRefund` can derive |
 | `orders.edit` in the seeded catalog | **shipped** | `RolePermissionSeeder::MODULES` carries `orders` |
@@ -1118,7 +1118,7 @@ Derived from this story, none of them in scope:
 - **Epic 3 decomposition:** the manual-cancellation story of the Orders cluster. Siblings are
   referenced by number (0045 orders foundation, 0048 line-item edit block, 0049 status transitions,
   0051 refunds, 0052 the 100%-refund auto-cancel, 0053–0054 tax resolution, 0055 UI) because several
-  of their files may not exist yet; [0045](0045-orders-core-crud-backend.md),
+  of their files may not exist yet; [0045](done/0045-orders-core-crud-backend.md),
   [0049](0049-order-status-transition-backend.md) and
   [0051](0051-order-payment-refund-state-backend.md) are the three that do.
 ```
