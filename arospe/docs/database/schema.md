@@ -39,6 +39,13 @@ erDiagram
     GEOGRAPHY_ENTRIES ||--o{ SHIPPING_ZONE_GEOGRAPHY_ENTRY : geography_entry_id
     SHIPPING_CARRIERS ||--o{ SHIPPING_RATES : shipping_carrier_id
     SHIPPING_ZONES ||--o{ SHIPPING_RATES : shipping_zone_id
+    CUSTOMERS ||--o{ ORDERS : customer_id
+    PAYMENT_METHODS ||--o{ ORDERS : payment_method_id
+    SALES_REGIONS ||--o{ ORDERS : "sales_region_id (nullable)"
+    SHIPPING_RATES ||--o{ ORDERS : "shipping_rate_id (nullable)"
+    ORDERS ||--o{ ORDER_ITEMS : order_id
+    PRODUCTS ||--o{ ORDER_ITEMS : "product_id (nullable)"
+    PRODUCT_VARIANTS ||--o{ ORDER_ITEMS : "product_variant_id (nullable)"
 
     USERS {
         uuid id PK
@@ -204,6 +211,70 @@ erDiagram
         decimal price
         string delivery_estimate
     }
+    CUSTOMERS {
+        uuid id PK
+        string name
+        string email UK
+        string phone
+        string shipping_address_line1
+        string shipping_address_line2
+        string shipping_city
+        string shipping_postal_code
+        string shipping_province
+        string shipping_country
+        string billing_address_line1
+        string billing_address_line2
+        string billing_city
+        string billing_postal_code
+        string billing_province
+        string billing_country
+        timestamp deleted_at
+    }
+    PAYMENT_METHODS {
+        uuid id PK
+        string code UK
+        string iban
+    }
+    ORDERS {
+        uuid id PK
+        string order_number UK
+        uuid customer_id FK
+        string status
+        string payment_status
+        uuid sales_region_id FK
+        uuid shipping_rate_id FK
+        uuid payment_method_id FK
+        decimal tax_rate
+        decimal subtotal
+        decimal tax_amount
+        decimal shipping_amount
+        decimal total
+        boolean flagged_for_review
+        string shipping_address_line1
+        string shipping_address_line2
+        string shipping_city
+        string shipping_postal_code
+        string shipping_province
+        string shipping_country
+        string billing_address_line1
+        string billing_address_line2
+        string billing_city
+        string billing_postal_code
+        string billing_province
+        string billing_country
+    }
+    ORDER_ITEMS {
+        uuid id PK
+        uuid order_id FK
+        uuid product_id FK
+        uuid product_variant_id FK
+        string product_name
+        string product_sku
+        int quantity
+        decimal unit_price
+        decimal line_total
+        int refunded_quantity
+    }
     NOTIFICATIONS {
         uuid id PK
         string type
@@ -224,13 +295,14 @@ Split by domain into separate files, per [contracts.md](../contracts.md#doc-grow
 - **[Products & Taxes](schema-products.md)** — read if the task touches [`sales_regions`](schema-products.md#sales_regions), [`media`](schema-products.md#media), [`product_categories`](schema-products.md#product_categories), [`products`](schema-products.md#products), [`product_media`](schema-products.md#product_media), [`product_sales_region`](schema-products.md#product_sales_region), [`product_attribute_types`](schema-products.md#product_attribute_types), [`product_attribute_values`](schema-products.md#product_attribute_values), [`product_variants`](schema-products.md#product_variants), or [`product_variant_values`](schema-products.md#product_variant_values). Example: a task about products only needs the [`products`](schema-products.md#products) anchor (plus [`product_media`](schema-products.md#product_media)/[`product_sales_region`](schema-products.md#product_sales_region) if it also touches the gallery or region assignment) — not the rest of the file.
 - **[Shipping](schema-shipping.md)** — read if the task touches [`geography_entries`](schema-shipping.md#geography_entries) (the shipping geography catalog, physically independent of `sales_regions`), [`shipping_zones`](schema-shipping.md#shipping_zones), [`shipping_zone_geography_entry`](schema-shipping.md#shipping_zone_geography_entry), [`shipping_carriers`](schema-shipping.md#shipping_carriers), or [`shipping_rates`](schema-shipping.md#shipping_rates).
 - **[Payment Methods, Customers & Notifications](schema-other.md)** — read if the task touches [`payment_methods`](schema-other.md#payment_methods), [`customers`](schema-other.md#customers), or [`notifications`](schema-other.md#notifications).
+- **[Orders](schema-orders.md)** — read if the task touches [`orders`](schema-orders.md#orders) or [`order_items`](schema-orders.md#order_items): the price-at-time-of-order and address-snapshot invariants, `order_number` generation, and the three-way delete-behaviour rule these two tables exercise together.
 
 ## Notes
 
-- `app/Models/` holds fifteen classes: `User` (Epic 1); thirteen Epic 2/3 domain models — `SalesRegion`, `Media`, `ProductCategory`, `Product`, `ProductAttributeType`, `ProductAttributeValue`, `ProductVariant`, `GeographyEntry` (the only `bigint`-PK model in this app), `ShippingZone`, `ShippingCarrier`, `ShippingRate`, `PaymentMethod`, `Customer`; and `Role`, a `spatie/laravel-permission` subclass over the package's own `roles` table — no column, no migration of its own (see [architecture/authorization.md](../architecture/authorization.md#the-super-admin-roles-invariants)). **Four pivot tables have no model class at all** — `product_media`, `product_sales_region`, `product_variant_values`, `shipping_zone_geography_entry` — reached only through the owning models' `BelongsToMany`, the same shape the vendored `role_has_permissions`/`model_has_roles` pivots use.
+- `app/Models/` holds seventeen classes (`ls app/Models/*.php`, recounted rather than incremented blind): `User` (Epic 1); fifteen Epic 2/3 domain models — `SalesRegion`, `Media`, `ProductCategory`, `Product`, `ProductAttributeType`, `ProductAttributeValue`, `ProductVariant`, `GeographyEntry` (the only `bigint`-PK model in this app), `ShippingZone`, `ShippingCarrier`, `ShippingRate`, `PaymentMethod`, `Customer`, `Order` and `OrderItem` (story 0045, [schema-orders.md](schema-orders.md)); and `Role`, a `spatie/laravel-permission` subclass over the package's own `roles` table — no column, no migration of its own (see [architecture/authorization.md](../architecture/authorization.md#the-super-admin-roles-invariants)). **Four pivot tables have no model class at all** — `product_media`, `product_sales_region`, `product_variant_values`, `shipping_zone_geography_entry` — reached only through the owning models' `BelongsToMany`, the same shape the vendored `role_has_permissions`/`model_has_roles` pivots use.
 - For migration authoring conventions (naming, `down()` requirements, real examples), see [database/migrations.md](migrations.md).
 - **UUID (v7) primary keys.** Each table's PK type (`uuid` vs `bigint`) is already visible directly in the ER diagram above, and each per-domain schema file states its own table's status against [ADR 0001](../decisions/0001-uuid-primary-keys.md) at the point that table is documented — so this section no longer restates a consolidated status list. The ADR is the single source of truth for the policy and its full history: which entities it covers, the one named `bigint` exception (`geography_entries`), and every amendment since. The model-side convention (`HasUuids`, `@property string $id`, no restated `$keyType`/`$incrementing`) is in [conventions/base-standards.md](../conventions/base-standards.md#uuid-primary-keys); the migration-side pattern is in [database/migrations.md](migrations.md#uuid-primary-keys).
 
-_Last updated: 2026-09-11 — Ad-hoc doc trim, not a story. Two changes. **(1)** The ER diagram above already states every table's PK type explicitly (`uuid` vs `bigint`), and every table's individual ADR-0001 status is independently documented at its own definition in `schema-products.md`/`schema-shipping.md`/`schema-other.md`/`schema-users-auth.md` — so the **Notes** section's consolidated "Done / Still future / Beyond the original seven / named `bigint` exception" status list was pure duplication and is now a short pointer at [ADR 0001](../decisions/0001-uuid-primary-keys.md) instead. Also condensed the model-class inventory bullet, dropping the accumulated per-model "first to..." narrative while keeping every model name, its table, and its one distinguishing fact (`GeographyEntry` as the only `bigint`-PK model; the four pivots with no model class). **(2)** The **Domain tables** section's per-domain bullets now link each individual table to its own anchor in its domain file, framed as conditional reading ("read if the task touches `<table>`") per the [Token-Efficient Reading and Dispatch Rule](../contracts.md#token-efficient-reading-and-dispatch-rule) — a task about `products` opens `schema-products.md#products`, not the whole file. No table, column, index, ER-diagram fact, or ADR status claim was changed in either case — only restated more directly, per [contracts.md](../contracts.md#doc-growth-management-rule)'s doc growth management rule.
+_Last updated: 2026-09-14 — Story 0045 (Orders core CRUD backend). Added `orders`, `order_items`, and — since both now have a real relationship for the first time — `customers` and `payment_methods` to the ER diagram above; neither of the latter two carried any FK in or out before this story, so per this file's own ER-diagram rule (only tables with a meaningful relationship are diagrammed) neither had earned an entity block until now. Added [Orders](schema-orders.md) as a new domain file to the **Domain tables** list — a new file rather than an appendix to [schema-other.md](schema-other.md), since Epic 3's remaining Orders stories (0046–0055) will all extend this domain. Recounted (not incremented blind) the **Notes** section's model-class inventory from fifteen to seventeen (`ls app/Models/*.php`), adding `Order`/`OrderItem`.
 
-_Previously: 2026-09-11 — Split this file into per-domain schema files (`database/schema-users-auth.md`, `database/schema-products.md`, `database/schema-shipping.md`, `database/schema-other.md`), per [contracts.md](../contracts.md#doc-growth-management-rule)'s doc growth management rule — this file had grown past the 150k-character size this project treats as a hard limit. This file's longer prior `_Previously:` chain is folded into this single line — no content changed or lost; see git history for the full prior chain if needed._
+_Previously: 2026-09-11 — Two passes the same day. Split this file into per-domain schema files (`database/schema-users-auth.md`, `database/schema-products.md`, `database/schema-shipping.md`, `database/schema-other.md`), per [contracts.md](../contracts.md#doc-growth-management-rule)'s doc growth management rule — this file had grown past the 150k-character size this project treats as a hard limit. Then an ad-hoc trim: replaced the **Notes** section's consolidated ADR-0001 status list with a pointer at [ADR 0001](../decisions/0001-uuid-primary-keys.md) (each table's status is independently documented at its own definition in the split files already), condensed the model-class inventory bullet down to every model name plus its one distinguishing fact, and reframed the **Domain tables** bullets as conditional reading ("read if the task touches `<table>`") per the [Token-Efficient Reading and Dispatch Rule](../contracts.md#token-efficient-reading-and-dispatch-rule). No table, column, index, ER-diagram fact, or ADR status claim changed in either pass — only restated more directly. This file's longer prior `_Previously:` chain is folded into this single line — no content changed or lost; see git history for the full prior chain if needed._

@@ -430,7 +430,52 @@ repo must follow — always with a real code example pulled from this repository
   and confirming the leak reproduces. `App\Livewire\ProductCategories\Index` is recorded there as the
   live example of the *first* failure mode, not as a pattern to copy.
 
-_Last updated: 2026-09-10 — Story 0036 (Shipping rate rules — backend), **Phase 4 re-audit, round 2**:
+- [Resolving a related pair of ids](related-id-pair-resolution.md) — the **sixteenth** page, from story
+  0045's Phase 4 audit (finding **F-1**, ❌→✅ closed within the same pass): when a payload carries
+  **two ids naming rows that must belong together** (a product and one of *its* variants), validating
+  each id's *existence* and re-reading each row from the database does not establish that the two rows
+  are **related** — and when the two rows contribute different columns to the same written record, the
+  caller chooses which row supplies which column. On `order_items` that is direct price manipulation:
+  `product_name` snapshotted from an expensive product while `unit_price`/`product_sku` come from an
+  unrelated cheap product's variant, producing a row that looks internally consistent to every
+  downstream reader. The page states the relation-query fix (`$product->variants()->findOrFail(...)`)
+  as the shape to reach for by default, **and** the shape `CreateOrder` actually ships instead — an
+  in-memory `product_id` comparison against a bulk-fetched variant collection — because the same audit's
+  **F-2** finding (resolve every product/variant in two bulk queries for the whole payload, never one
+  per item) rules the per-item relation query out for this specific caller. Both close the identical
+  hole; the page records why the two findings forced the less obvious of the two shapes here. It also
+  records why the suite cannot catch this by accident: `OrderItemFactory::forVariant()` sets
+  `product_id` *from* the variant's own parent, so every factory-built fixture is consistent by
+  construction and the mismatch is only reachable from a hand-built payload. Its review question —
+  *when a payload names two ids, is there anything that checks they belong together, or only that each
+  exists?* — is the one every page above leaves open, since all of them reason about one row at a time.
+
+_Last updated: 2026-09-14 — Story 0045 (Orders — core CRUD backend), closing the story: reconciled
+[related-id-pair-resolution.md](related-id-pair-resolution.md)'s **F-1** from ❌ OPEN to ✅ closed, and
+corrected its ✅ section to describe the shape `App\Actions\Orders\CreateOrder` actually ships (a
+bulk-fetch-then-compare check) rather than the simpler per-item relation query it had shown, once it
+became clear the same audit's **F-2** finding (bulk-query, not per-item) rules that simpler shape out for
+this caller — both close the identical hole; only the mechanism differs. Per
+[errors-log-archive.md](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
+audit-authored-page rule, the original ❌/OPEN framing is corrected in place rather than silently
+rewritten — see the page itself for what it said before.
+
+_Previously: 2026-09-11 — Story 0045 (Orders — core CRUD backend), **Phase 4**: added
+[related-id-pair-resolution.md](related-id-pair-resolution.md), the sixteenth page and the first about
+a **pair** of caller-supplied ids rather than a single untrusted row. Written as a ❌/✅ pair with the ❌
+marked **OPEN**, per
+[errors-log-archive.md](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
+audit-authored-page rule, so Phase 5's fix has a slot to land in rather than requiring the framing to be
+rewritten. The same audit's other findings produced no new durable rule and live in the audit response
+rather than here — an unbounded `items` array and an unbounded `quantity` are
+[array-validation-bounds.md](array-validation-bounds.md)'s existing rule and an ordinary missing
+ceiling; the float money arithmetic and the `Rule::exists()`/`findOrFail()` soft-delete divergence are
+per-review notes. Confirmed rather than assumed, with no finding: the `#[Fillable]` omission lists on
+both models, the authorize-before-anything ordering in `CreateOrder` (zero domain queries precede the
+refusal), the retry-safe transaction shape (every row built inside the closure via `forceCreate()`,
+totals computed before it opens, no `attempts:`), and the absence of any raw SQL._
+
+_Previously: 2026-09-10 — Story 0036 (Shipping rate rules — backend), **Phase 4 re-audit, round 2**:
 [livewire-error-bag-persistence.md](livewire-error-bag-persistence.md)'s own ❌ (Failure mode 2,
 `Zones::confirmDelete()` missing a reset) closed within the same audit pass that raised it, per
 [errors-log.md](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
