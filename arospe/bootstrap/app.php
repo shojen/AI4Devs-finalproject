@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureSitePasswordIsProvided;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -21,6 +22,15 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
+        ]);
+
+        // Site-wide Basic Auth gate (config('app.site_password_protection'),
+        // off unless SITE_PASSWORD_PROTECTED=true). Prepended to the whole
+        // "web" group so it runs before session/CSRF and covers every page,
+        // the coming-soon route included — there is no routes/api.php group
+        // to also cover.
+        $middleware->web(prepend: [
+            EnsureSitePasswordIsProvided::class,
         ]);
 
         // `signed` must validate before route-model binding resolves, or a
