@@ -58,7 +58,7 @@ Four deliverables land here and none is separable from the others:
 1. **The list route + component + view** — the module's entry point.
 2. **The detail route + component + view** — **not a modal.** An order's detail is line items plus two
    status dimensions plus refunds plus a tax panel: unbounded and list-shaped, exactly the reasoning
-   [0047](in-progress/0047-customer-order-history-view-ui.md)'s **D-2** applied to an order *history*, applying with
+   [0047](done/0047-customer-order-history-view-ui.md)'s **D-2** applied to an order *history*, applying with
    more force to an order *editor*.
 3. **The `config/modules.php` entry + `lang/{en,es}/navigation.php` leaf** — a gated module route
    without its registry entry is a screen nothing links to
@@ -1314,7 +1314,7 @@ Orders screen has no create button" reads as an oversight to anyone who has not 
 ### D-14 — Order rows link **out** to `customers.show`; this story does not add the reverse link
 
 The list's customer cell and the detail's customer block both link to `route('customers.show', …)`,
-which [0047](in-progress/0047-customer-order-history-view-ui.md) ships. That makes 0047 a hard dependency for the
+which [0047](done/0047-customer-order-history-view-ui.md) ships. That makes 0047 a hard dependency for the
 link specifically — see [Dependencies](#dependencies) for the fallback if it has not landed.
 
 The **reverse** link — an order row on 0047's history table linking to `orders.show` — is **0047's own
@@ -1395,7 +1395,7 @@ The rendered states are three, branched on `sales_region_id` and `tax_rate` and 
 | the 100%-refund auto-cancel | story [0052](0052-order-auto-cancel-full-refund-backend.md) — **hard, transitively via 0051** | this screen is where the auto-cancel first becomes visible; its test asserts the re-rendered status |
 | `orders.sales_region_id` / `tax_rate` / `flagged_for_review` resolution (physical), plus `tax_amount`/`total` computation for physical orders (**D-13**, added when the tax_amount gap was closed) | story [0053](0053-order-tax-region-resolution-physical-backend.md) — **hard** | the tax panel, the flag marker, **D-15**, **D-16** |
 | `orders.flag_reason` column + `orders.flag_reasons.*` lang group, virtual resolution, `tax_amount`/`total` computation for virtual orders (the identical shape 0053 mirrors) | story [0054](0054-order-tax-region-resolution-virtual-backend.md) — **hard** | the flag callout's copy; **the `flag_reason` column does not exist without it** |
-| `customers.show` route + `App\Models\Customer` | story [0047](in-progress/0047-customer-order-history-view-ui.md) — **hard, for the customer link only** — see below | **D-14** |
+| `customers.show` route + `App\Models\Customer` | story [0047](done/0047-customer-order-history-view-ui.md) — **hard, for the customer link only** — see below | **D-14** |
 | the `can:`-gated Livewire route pattern, the sidebar registry, `Gate::before`, UUID route-model binding, the two Flux/Blaze markup rules, `data-test` conventions | **shipped** (tasks 0004/0010/0012/0013/0040, 0006) | `routes/users.php`, `config/modules.php`, `users.blade.php`, `roles.blade.php` |
 
 #### ⛔ Blocked — the full inherited chain

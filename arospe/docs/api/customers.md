@@ -1,10 +1,11 @@
 # Customers Routes
 
-Part of [Routes](routes.md) — see [routes.md](routes.md#why-this-file-exists) for the full app-owned route table and the shared module-gate pattern. This file covers the Customers screen's permission-gated route.
+Part of [Routes](routes.md) — see [routes.md](routes.md#why-this-file-exists) for the full app-owned route table and the shared module-gate pattern. This file covers the Customers area's two permission-gated routes.
 
 ## Table of Contents
 
 - [`customers.index` — the ninth permission-gated route](#customersindex--the-ninth-permission-gated-route)
+- [`customers.show` — the tenth permission-gated route, and the first with a second, section-level ability](#customersshow--the-tenth-permission-gated-route-and-the-first-with-a-second-section-level-ability)
 
 ### `customers.index` — the ninth permission-gated route
 
@@ -43,3 +44,27 @@ Eleven consequences for anyone reading this table as a contract:
 - **The disabled-row-action markup reuses two Flux/Blaze rules verbatim from `users.blade.php`.** A disabled action is a separate `@if`/`@else` branch wrapped in an explicit `<flux:tooltip>`, never a conditionally-bound `:tooltip` prop (which `livewire/blaze` renders as present — and so produces an empty tooltip bubble — on every enabled row too); and `cursor-not-allowed!` sits on that `flux:tooltip` wrapper, never on the disabled `<flux:button>` itself, since Flux's own `disabled:pointer-events-none` takes a disabled button out of hit-testing. Both are recorded with their verification method in [errors-log.md](../errors-log.md); do not "simplify" either back into the obvious form.
 - **`/customers` is linked from the sidebar only to a holder of `customers.view`.** [`config/modules.php`](../../config/modules.php) gained an `items.customers` entry with `group: null, cluster: null` — the bare top-level shape `items.users` already uses, since Customers is a top-level operational module like Users rather than store configuration or a sub-resource of an existing cluster — `permissions` exactly `['customers.view']`, with matching `lang/{en,es}/navigation.php` leaves. `resources/views/components/sidebar-nav.blade.php` was **not** touched — the registry's "append data, never behavior" claim holding again. See [architecture/authorization.md#the-second-half-of-a-module-gate-the-sidebar-registry](../architecture/authorization.md#the-second-half-of-a-module-gate-the-sidebar-registry).
 - **Copy lives in the `lang/{en,es}/customers.php` files task 0041 deliberately deferred here (its D-14).** `index` (`summary` — a `trans_choice()` key, never a PHP ternary or two separate keys — `empty`, `shipping_location`, `action_not_allowed`), `form` (the shipping/billing headings, the "same as shipping" copy-affordance label, the six field labels and the country hint), and `delete` (`confirm_title`, `confirm_body`) — key-for-key identical across both locales. Generic chrome (`Save`, `Cancel`, `Name`, `Email`, `Phone`) stays as bare `__('…')` literals matching `users.blade.php`; only domain copy goes in this file.
+
+### `customers.show` — the tenth permission-gated route, and the first with a second, section-level ability
+
+Story 0047: a detail screen for one customer, added to the same [`routes/customers.php`](../../routes/customers.php), declared **after** `customers.index` in the same `['auth', 'verified']` group (so a bare `GET /customers` can never risk resolving as `{customer}`):
+
+```php
+// routes/customers.php
+Route::livewire('customers/{customer}', CustomersShow::class)
+    ->middleware(['can:customers.view'])
+    ->name('customers.show');
+```
+
+**The middleware column understates what protects this route in a new way** — not merely the usual "`/livewire/update` never replays route middleware" caveat every other gated route already carries, but a second ability the route's own `can:` never names at all. [`App\Livewire\Customers\Show`](../../app/Livewire/Customers/Show.php) authorizes `viewAny` against `Customer::class` in `mount()` (the same ability `Index::mount()` uses, so both screens agree on what "may see a customer" means), **and** authorizes `viewAny` against `Order::class` — [`App\Policies\OrderPolicy`](../../app/Policies/OrderPolicy.php)'s own `orders.view`-backed ability, shipped by story 0045 with no caller until this one — before rendering the order-history section. An actor holding `customers.view` but not `orders.view` still gets a **200**: the identity header renders, and the order-history section is **omitted entirely** (no heading, no empty state, no "insufficient permission" notice), never a 403. See [security/livewire-authorization.md](../security/livewire-authorization.md#a-screen-owned-by-one-module-disclosing-another-modules-records) for why a 403 here would itself be a worse disclosure than the one it prevents, and why this is the first cross-module instance of task 0015's disclosure-gate rule.
+
+Six more consequences:
+
+- **No public method mutates anything.** There is no `save()`, no `delete*()`, no modal state, no `wire:model`-bound property — the screen's central claim, pinned by a reflection test asserting the component's only public methods are `mount`, `customer`, `canViewOrderHistory` and `orders` (plus Livewire's own `render`).
+- **The order-history guard lives in the method that discloses, not only in the view.** `Show::orders()` returns an empty array before ever building the query when `canViewOrderHistory()` is false — the early return **is** the gate, matching [security/livewire-authorization.md](../security/livewire-authorization.md#gate-at-the-top-of-every-method-that-mutates-or-discloses)'s rule. The Blade view reads the identical `$this->canViewOrderHistory()` predicate for its own `@if`, so the two can never drift.
+- **No `CustomerPolicy` or `OrderPolicy` change was needed.** Both abilities already existed (`CustomerPolicy::viewAny()` since story 0041, `OrderPolicy::viewAny()` since story 0045) — this story is simply `OrderPolicy::viewAny()`'s first real caller.
+- **`App\Models\Customer::orders()` is new**: `hasMany(Order::class, 'customer_id')`, deliberately carrying **no default ordering** — the ordering (`created_at desc, id desc`, matching 0045's own detail-screen precedent) lives at `Show::orders()`'s own query call site, since the relation is shared infrastructure a future caller (an order count on the list, a lifetime-value summary) must not inherit someone else's view's ordering needs.
+- **Four columns, no row action, no row link** (order number, a status badge, the total as its raw `decimal:2` string, and the date) — order management belongs to story 0055's own screens, which do not exist yet; a link to a route that isn't there would be the exact ghost affordance story 0044 already refused to ship.
+- **`App\Enums\OrderStatus` gained its `label()` method in this story**, not story 0055 as originally planned when the enum shipped (story 0045's own docblock said as much) — this screen turned out to be the enum's first real rendering consumer, so it is the story that earns `label()` per [naming.md](../conventions/naming.md#translation-keys)'s "add `label()` when a second consumer appears" rule applied to whichever story actually renders first.
+
+The customers list itself gained a third row action alongside edit/delete — an icon-only `:href` link (not a `wire:click`) to `customers.show`, `data-test="view-customer-{id}"`, rendered enabled for every actor who can see the list at all, since the target route gates on the identical `customers.view` ability that rendered the row.

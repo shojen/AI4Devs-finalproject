@@ -263,6 +263,60 @@ Four properties, each of which is the answer to a question this shape reliably r
 > omitted these would fall back to the generic `[null, null]` pair and misattribute the refusal line.
 > See [architecture/authorization.md](../architecture/authorization.md#productcategorypolicy--the-fifth-policy-and-the-first-to-gain-its-call-site-in-a-later-story-than-the-one-that-created-it).
 
+### A screen owned by one module disclosing another module's records
+
+Every disclosure gate above asks an ability from the **same** model/policy the screen already
+belongs to. Story 0047's `App\Livewire\Customers\Show` is the first to disclose records that belong
+to a **different** module entirely: its order-history section renders `order_number`, `status` and
+`total` — columns `App\Policies\OrderPolicy` owns, not `CustomerPolicy`. The rule from above still
+applies unmodified — *"a disclosure gate must cover every attribute the method copies out"* — it
+just resolves to a different policy than the one gating the rest of the page:
+
+```php
+// app/Livewire/Customers/Show.php
+public function mount(Customer $customer): void
+{
+    Gate::authorize('viewAny', Customer::class);   // gates the whole page
+
+    $this->customerId = $customer->id;
+}
+
+#[Computed]
+public function canViewOrderHistory(): bool
+{
+    return Gate::allows('viewAny', Order::class);  // gates ONLY the order-history section
+}
+
+#[Computed]
+public function orders(): array
+{
+    if (! $this->canViewOrderHistory()) {
+        return [];                                  // the guard IS the disclosure gate
+    }
+    // ...
+}
+```
+
+Two things this instance adds that the same-module cases above never had to decide:
+
+- **The refusal is an omission, not a 403.** Every gate earlier on this page throws
+  `AuthorizationException` on failure — correct there, because the gated method is the *only* thing
+  the actor came to do (open a modal, delete a row). Here the page's primary content (the identity
+  header) is exactly what `customers.view` already grants, so refusing the whole request would deny
+  access the actor legitimately holds. Worse, a 403 specifically for the order-history section would
+  itself disclose that this customer has an order-history surface behind an ability the actor lacks —
+  a smaller leak than the order rows themselves, but a leak. The section is instead **omitted
+  entirely** — no heading, no empty-state message, no "insufficient permission" notice — so an actor
+  without `orders.view` cannot tell a customer with fifty orders from one with none. `canViewOrderHistory()`
+  is read by both the guard and the view's own `@if`, so the two can never independently drift.
+- **No new policy, and no policy call site was even new.** `App\Policies\OrderPolicy::viewAny()`
+  already existed (story 0045), shipped with no caller on purpose, its own docblock naming the
+  eventual first caller as a deliberate hand-off rather than a gap. This story is that caller — the
+  general rule this page states elsewhere, *[an authorization rule belongs to the action, not to one
+  of its callers](../conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)*,
+  extends unchanged to a rule belonging to the **model whose records are being disclosed**, regardless
+  of which module's screen happens to be the one asking.
+
 Two consequences for tests, both of which task 0015 had to absorb: a test that used to prove a
 mutating method refuses (`save()`, `deleteUser()`) can no longer reach it by calling the opener as an
 under-privileged actor, because the opener now throws first — and it cannot skip the opener either,
