@@ -4,9 +4,11 @@ namespace App\Models;
 
 use Database\Factories\CustomerFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
@@ -38,6 +40,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
+ * @property-read Collection<int, Order> $orders
  */
 #[Fillable([
     'name', 'email', 'phone',
@@ -50,4 +53,21 @@ class Customer extends Model
 {
     /** @use HasFactory<CustomerFactory> */
     use HasFactory, HasUuids, SoftDeletes;
+
+    /**
+     * This customer's orders (story 0047) -- 0041 D-15 and 0045 D-6 both
+     * deliberately deferred this relation to its first real reader rather
+     * than shipping it ahead of a consumer. No default ordering here
+     * (story 0047 D-4): the relation is shared infrastructure every future
+     * caller reuses, and a baked-in orderBy() would be a hidden global the
+     * next caller has to fight. The story's own order-history screen
+     * supplies its own `orderByDesc('created_at')->orderByDesc('id')` at
+     * the query call site instead.
+     *
+     * @return HasMany<Order, $this>
+     */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'customer_id');
+    }
 }
