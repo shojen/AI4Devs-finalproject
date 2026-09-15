@@ -204,3 +204,28 @@ test('the create/edit modal renders exactly the fifteen bound form inputs, and t
 test('no nested livewire/customers/index.blade.php view exists — the component resolves the flat path', function () {
     expect(file_exists(resource_path('views/livewire/customers/index.blade.php')))->toBeFalse();
 });
+
+// =====================================================================
+// Story 0047 — the "view detail" row action linking to customers.show.
+// =====================================================================
+
+test('each customer row renders a view-detail link pointing at customers.show', function () {
+    $customer = Customer::factory()->create();
+    $actor = customersIndexRenderingActor();
+    $this->actingAs($actor);
+
+    $html = Livewire::test(Index::class)->html();
+
+    expect($html)->toContain('data-test="view-customer-'.$customer->id.'"')
+        ->and($html)->toContain(route('customers.show', $customer));
+});
+
+test('the view-detail link renders for an actor holding only customers.view, with no disabled branch', function () {
+    Customer::factory()->create();
+    $actor = customersIndexRenderingActor(['customers.view']);
+    $this->actingAs($actor);
+
+    $html = Livewire::test(Index::class)->html();
+
+    expect($html)->toContain('data-test="view-customer-');
+});
