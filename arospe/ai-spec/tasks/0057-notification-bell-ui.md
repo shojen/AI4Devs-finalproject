@@ -332,7 +332,7 @@ Nothing another administrator received is ever visible.
 | --- | --- | --- |
 | [0056](0056-notification-viewing-backend.md) — notification viewing (backend) | **hard** | Defines the three query shapes this UI calls verbatim, and pins them with the regression suite. Building the view first means building against a contract that does not exist |
 | [0043](done/0043-customers-new-customer-notification-backend.md) — new-customer notification | **hard (transitively)** | Owns the `notifications` table itself, and supplies one of the two recognized types |
-| [0046](0046-orders-new-order-notification-backend.md) — new-order notification | **soft / informational** | Not required to build or pass this story. It supplies the *second* recognized type, which is what makes the mixed-type test meaningful; without it that test runs against one real type plus a test-local one, and the acceptance criteria are unchanged |
+| [0046](done/0046-orders-new-order-notification-backend.md) — new-order notification | **soft / informational** | Not required to build or pass this story. It supplies the *second* recognized type, which is what makes the mixed-type test meaningful; without it that test runs against one real type plus a test-local one, and the acceptance criteria are unchanged |
 | Task 0013's layout (`<x-sidebar-nav />`, `x-desktop-user-menu`) | **shipped** | Verified in the working tree; this story adds two lines beside them and changes neither |
 
 **This story depends on no Epic 2 and no Epic 4 story, and the fallback rendering path is precisely

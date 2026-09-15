@@ -686,7 +686,7 @@ rediscovery.
   which is itself a useful property to record, since it means this story cannot be blocked by that
   decision going either way.
 - **D-10 — An "order auto-cancelled" notification is out of scope, and this is `backend-expert`'s
-  explicit recommendation rather than an omission.** Story [0046](0046-orders-new-order-notification-backend.md)
+  explicit recommendation rather than an omission.** Story [0046](done/0046-orders-new-order-notification-backend.md)
   ships a "new order received" notification, and it is tempting to read a cancellation notice as the
   same feature's other half. It is not: it has a different recipient question (the customer? the
   administrator? both?), a different content question (does it explain *why*?), and a different

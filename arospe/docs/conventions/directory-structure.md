@@ -48,7 +48,14 @@ app/
                        from this story's own Phase 4 audit (see
                        docs/security/related-id-pair-resolution.md) -- and wraps the whole
                        DB::transaction() in its own retry loop rather than using `attempts:`,
-                       since every row it writes is BUILT INSIDE the closure via forceCreate())
+                       since every row it writes is BUILT INSIDE the closure via forceCreate();
+                       NotifyOrderCreated — story 0046, the recipient-resolution + dispatch
+                       action CreateOrder calls after its own persistence transaction commits
+                       and after order_number is finalized, authorizing NOTHING of its own --
+                       the codebase's next confirmed instance of "a collaborator invoked only by
+                       an already-authorized action needs no gate", after NotifyCustomerCreated
+                       (0043) and SyncProductGallery/SyncProductSalesRegions/
+                       SyncProductAttributeValues (Products))
   Actions/ProductCategories/ Domain actions for the Product Categories area (CreateProductCategory,
                        RenameProductCategory, DeleteProductCategory) — one action per operation
                        (story 0023). Unlike every other area's actions, none of the three authorize
@@ -202,7 +209,9 @@ app/
                        permission pivots use
   Notifications/       Notification classes (PendingEmailVerification, UserInvitation,
                        CustomerCreated — story 0043, `database` channel only, not ShouldQueue,
-                       dispatched by Actions/Customers/NotifyCustomerCreated)
+                       dispatched by Actions/Customers/NotifyCustomerCreated; OrderCreated —
+                       story 0046, the same shape as CustomerCreated: `database` channel only,
+                       not ShouldQueue, dispatched by Actions/Orders/NotifyOrderCreated)
   Policies/            Eloquent model policies (UserPolicy, RolePolicy, SalesRegionPolicy,
                        MediaPolicy, ProductCategoryPolicy, ProductPolicy,
                        ProductAttributeTypePolicy, ShippingZonePolicy — story 0033, a pre-existing
@@ -482,4 +491,6 @@ Three constraints that come with it, each learned from this story's audits:
 What the rules themselves say, and why a rule that must bind a Super Admin actor is a direct `throw` rather than a `Gate` check, belongs to [architecture/authorization.md](../architecture/authorization.md#the-guard-belongs-to-the-action-not-to-the-caller), not here.
 
 
-_Last updated: 2026-09-14 — Story 0045 (Orders core CRUD backend). Added `app/Actions/Orders/` (`CreateOrder`), `Order`/`OrderItem` to `app/Models/`, `OrderStatus`/`PaymentStatus` to `app/Enums/`, `OrderPolicy` (the twelfth policy) to `app/Policies/`, and `lang/{en,es}/orders.php` to the `lang/` bullet. This file had no footer of its own since its split out of `base-standards.md` on 2026-09-11 — this is its first.
+_Last updated: 2026-09-15 — Story 0046 (Orders — "new order" notification, backend). Extended `app/Actions/Orders/` with `NotifyOrderCreated` — the recipient-resolution + dispatch action `CreateOrder` calls after its own transaction commits, authorizing nothing of its own, the next confirmed instance of "a collaborator invoked only by an already-authorized action needs no gate" after `NotifyCustomerCreated` and the `Products/` sync actions — and `app/Notifications/` with `OrderCreated`, the same `database`-channel-only, not-`ShouldQueue` shape as `CustomerCreated`. No migration, no new model, no permission-catalog change: this story adds no schema.
+
+_Previously: 2026-09-14 — Story 0045 (Orders core CRUD backend). Added `app/Actions/Orders/` (`CreateOrder`), `Order`/`OrderItem` to `app/Models/`, `OrderStatus`/`PaymentStatus` to `app/Enums/`, `OrderPolicy` (the twelfth policy) to `app/Policies/`, and `lang/{en,es}/orders.php` to the `lang/` bullet. This file had no footer of its own since its split out of `base-standards.md` on 2026-09-11 — this is its first.

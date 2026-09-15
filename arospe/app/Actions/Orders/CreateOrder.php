@@ -53,6 +53,7 @@ class CreateOrder
      */
     public function __construct(
         private readonly LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt,
+        private readonly NotifyOrderCreated $notifyOrderCreated,
     ) {}
 
     /**
@@ -115,6 +116,27 @@ class CreateOrder
      * `attempts:` parameter: each retry opens a brand-new transaction and
      * builds brand-new rows from scratch, which is what makes retrying
      * safe here (see the task file's own note under the action's step 4).
+     *
+     * Story 0046: `NotifyOrderCreated` is dispatched strictly AFTER the
+     * retry loop below has converged and `DB::transaction()` has committed
+     * -- never inside the closure, and never inside the `catch` block that
+     * handles an `order_number` collision. Dispatching inside either of
+     * those would let a real failure from the notification write (an
+     * unrelated `QueryException`) be swallowed by the same catch that
+     * retries a `1062` collision, risking a second `orders` row for one
+     * logical create. `$order` is only ever notified once `order_number`
+     * has been definitively assigned.
+     *
+     * Phase 4 audit finding F-A (accepted, not fixed): the dispatch is not
+     * isolated from its own failure. `NotifyOrderCreated` can throw (an
+     * unseeded/renamed `orders.view` permission, a `notifications` insert
+     * failure) AFTER the order has already committed, so the caller
+     * receives an exception for an order that genuinely exists. A future
+     * caller (story 0055) must not read "an exception from this method"
+     * as "no order was created" and retry blindly -- it must check for an
+     * already-created order first. Left unguarded deliberately: a silent
+     * try/catch here would hide a real notification-delivery failure with
+     * no error path this story was asked to design.
      *
      * @param  array<string, mixed>  $attributes
      */
@@ -246,11 +268,13 @@ class CreateOrder
         $total = bcadd(bcadd($subtotal, $taxAmount, 2), $shippingAmount, 2);
         $this->assertWithinColumnCeiling($total, 'items');
 
+        $order = null;
+
         for ($attempt = 1; $attempt <= self::MAX_ORDER_NUMBER_ATTEMPTS; $attempt++) {
             $orderNumber = $this->generateOrderNumber();
 
             try {
-                return DB::transaction(function () use ($customer, $paymentMethodId, $resolvedItems, $subtotal, $taxAmount, $shippingAmount, $total, $orderNumber): Order {
+                $order = DB::transaction(function () use ($customer, $paymentMethodId, $resolvedItems, $subtotal, $taxAmount, $shippingAmount, $total, $orderNumber): Order {
                     // tax_rate stays NULL, never '0.000' -- "not configured" and "a
                     // legitimate 0%" must not share a representation. sales_region_id /
                     // shipping_rate_id stay NULL (D-9) -- nothing here resolves either.
@@ -295,6 +319,8 @@ class CreateOrder
 
                     return $order;
                 });
+
+                break;
             } catch (QueryException $e) {
                 // 1062 = MySQL ER_DUP_ENTRY on order_number's UNIQUE index -- the
                 // race D-1/R-1 describe. Retry with a freshly generated number;
@@ -315,7 +341,24 @@ class CreateOrder
             }
         }
 
-        throw new RuntimeException('Could not generate a unique order_number after '.self::MAX_ORDER_NUMBER_ATTEMPTS.' attempts.');
+        if ($order === null) {
+            throw new RuntimeException('Could not generate a unique order_number after '.self::MAX_ORDER_NUMBER_ATTEMPTS.' attempts.');
+        }
+
+        // Story 0046, Phase 4 audit finding F-B: DB::afterCommit(), not a direct call. This
+        // action's own transaction has already committed by this line, so today the two are
+        // behaviourally identical -- DatabaseTransactionsManager::addCallback() runs the
+        // callback immediately when no transaction is active. The difference only matters for
+        // a FUTURE caller (story 0055 is expected to be one) that wraps this whole __invoke()
+        // in its own outer transaction: a direct call here would then run inside that outer
+        // transaction, reopening exactly the pre-commit-dispatch hazard (R-1) this method's own
+        // docblock above describes -- afterCommit() defers to the outermost transaction's
+        // commit regardless of nesting, so the guarantee holds no matter what a future caller
+        // does. See this method's own docblock for why this may never move inside the closure
+        // or the catch block above.
+        DB::afterCommit(fn () => ($this->notifyOrderCreated)($order));
+
+        return $order;
     }
 
     /**

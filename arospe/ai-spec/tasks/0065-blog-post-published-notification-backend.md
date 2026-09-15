@@ -16,7 +16,7 @@ table is story [0043](done/0043-customers-new-customer-notification-backend.md)'
 > ### This story has **three** triggers, and that is what makes it different from its two siblings
 >
 > Stories [0043](done/0043-customers-new-customer-notification-backend.md) and
-> [0046](0046-orders-new-order-notification-backend.md) each announce a **row creation** reached from
+> [0046](done/0046-orders-new-order-notification-backend.md) each announce a **row creation** reached from
 > exactly one call site. This one announces a **publication** reached from **three independent
 > paths** — two of them state transitions and one a creation:
 >
@@ -1407,7 +1407,7 @@ none.
 | [0064](0064-scheduled-post-auto-publish-backend.md) — scheduled auto-publish | **hard, `new`** | Owns `App\Events\Blog\ScheduledBlogPostPublished` and the only automatic transition. **D-9** resolves its **OQ-2** |
 | [0078](0078-translatable-content-retrofit-blog-posts-backend.md) — translatable-content retrofit (Epic 5) | **hard once it lands, `new`** *(added 2026-08-30)* | Removes `blog_posts.title` and supplies `BlogPost::translated()`, which **D-4a**'s payload calls. Ordering is one-directional but **either order works**: if 0078 ships first this story is written against `translated()` from the outset; if this story ships first, 0078's retrofit changes one line here and the amendments above describe the end state. What must **not** happen is this story implementing `$post->title` after 0078 has landed — the property would be undefined and the payload would silently store `null` on a `?string` type. Transitively brings [0068](0068-store-languages-catalog-backend.md) (`StoreLanguage`) and [0070](0070-translatable-content-mechanism-product-categories-backend.md) (`HasTranslations`) |
 | [0058](0058-blog-categories-backend.md) / [0059](0059-blog-tags-backend.md) | **transitive, via 0061** | No direct use |
-| [0046](0046-orders-new-order-notification-backend.md) | **not a dependency** | This story copies its *shape*, not its code. Sequencing is free either way |
+| [0046](done/0046-orders-new-order-notification-backend.md) | **not a dependency** | This story copies its *shape*, not its code. Sequencing is free either way |
 | [0056](0056-notification-viewing-backend.md) / [0057](0057-notification-bell-ui.md) | **not a dependency, either direction** | 0056's **D-5** means the bell needs zero change for a new producer — verified for this payload (**R-8**) |
 | `blog.view` in the seeded catalog | **shipped** | **V-2** — no seeder change |
 | `App\Models\User` `Notifiable` + `SoftDeletes` | **shipped** (Epic 1) | **V-3** — no model change |
@@ -1642,7 +1642,7 @@ Recorded so they are not re-opened. Each was a real question at the start.
   as facilitator. **No `database-expert`** — see the Type section.
 - **Sibling stories this one copies the shape of:**
   [0043](done/0043-customers-new-customer-notification-backend.md) (the template and the `notifications`
-  table's origin) and [0046](0046-orders-new-order-notification-backend.md) (the second producer, which
+  table's origin) and [0046](done/0046-orders-new-order-notification-backend.md) (the second producer, which
   copied 0043 without a shared base class). This is the **third**, and 0046's **D-6** named it by
   number as the point at which the abstraction question must be re-asked — it is asked and answered in
   **D-13**.
