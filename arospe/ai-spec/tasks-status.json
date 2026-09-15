@@ -27,9 +27,9 @@
       "slug": "0048-order-line-item-editing-backend",
       "title": "Order line-item editing backend",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree-0048-order-line-item-editing-backend",
+      "claimed_at": "2026-09-15T23:33:00Z",
       "touches": [
         "app/Actions/Orders/AddOrderItem.php",
         "app/Actions/Orders/RemoveOrderItem.php",

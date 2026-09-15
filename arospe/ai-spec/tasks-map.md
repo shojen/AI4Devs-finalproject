@@ -295,13 +295,15 @@ flowchart LR
     P0068 --> P0079
 
     class P0050,P0052,P0055,P0057,P0060,P0061,P0062,P0063,P0064,P0065,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0047,P0048,P0049,P0051,P0053,P0054,P0056,P0058,P0059,P0068 ready;
+    class P0047,P0049,P0051,P0053,P0054,P0056,P0058,P0059,P0068 ready;
+    class P0048 claimed;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(no node is `claimed` in this snapshot); yellow (`pending`) = still blocked on at least one open
+(`0048` is the one node `claimed` in this snapshot, by a worktree session, per
+`tasks-status.json`); yellow (`pending`) = still blocked on at least one open
 pending dependency.
 
 ## Analysis
@@ -309,15 +311,16 @@ pending dependency.
 ### Pending tasks that are independent of each other and safe to parallelize
 
 These are the tasks whose **entire dependency chain is already `done/`** — nothing pending blocks
-them — the ten green `ready` nodes in the diagram above. (`0046` had the identical property — its
+them — the nine green `ready` nodes plus the one blue `claimed` node (`0048`) in the diagram
+above. (`0046` had the identical property — its
 only dependency, `0045`, was `done/` — but it is no longer listed anywhere in this section: it
 closed to `done/` itself in this same regeneration pass, so per this file's own "`done/` tasks are
 omitted from the graph" rule it has no node at all any more. See the note at the top of this file.)
 
 - **0047 — Customer detail — order history view UI.** Both of its dependencies, `0044` (Customers
   list + create/edit UI) and `0045`, are now `done/`. Depends on nothing else pending. Ready now.
-- **0048 — Order line-item editing backend.** Its only dependency, `0045`, is now `done/`. Ready
-  now.
+- **0048 — Order line-item editing backend.** Its only dependency, `0045`, is now `done/`. Claimed
+  by a worktree session (`tasks-status.json`), in progress.
 - **0049 — Order status transition backend.** Its only dependency, `0045`, is now `done/`. Ready
   now — but see [File/merge-conflict risk](#filemerge-conflict-risk-even-where-no-formal-dependency-exists)
   below: it creates `app/Policies/OrderPolicy.php`'s row-state branches that `0050`/`0051`/`0052`/
