@@ -18,12 +18,21 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
-As of this snapshot, `ai-spec/tasks/in-progress/` is empty again: `0044-customers-list-create-edit-ui.md`
-and `0045-orders-core-crud-backend.md` both completed Phase 7 and moved to `done/` since the prior
-regeneration pass (0044 on its own branch, merged via PR #9; 0045 checked out into
-`in-progress/` for Phase 3, then closed in this same pass). Together their closure frees `0046`,
-`0047`, `0048`, `0049`, `0051`, `0053` and `0054` into `ready` with no pending dependency left for
-any of them (see the note under
+As of this snapshot, `ai-spec/tasks/in-progress/` holds one file again: `0046-orders-new-order-
+notification-backend.md` was checked out into `in-progress/` at the start of its own Phase 3 (step
+0), the same day this regeneration pass runs — `docs-keeper` moved it and ran the
+[link-integrity check](../docs/workflow.md#link-integrity-check-on-every-stage-move) this same
+pass, per [`docs/workflow.md`'s task-coordination-file regeneration
+step](../docs/workflow.md#regenerating-the-task-coordination-files). It keeps its node in the
+dependency graph below and its entry in `tasks-status.json` — a task in `in-progress/` is still
+pending work, only checked out — but its entry is now `"claimed"` (`claimed_by`:
+`worktree:0046-orders-new-order-notification-backend`) rather than `"ready"`, and the node below is
+now styled blue (`claimed`) rather than green (`ready`): do not hand it to a second session. Before
+that, `0044-customers-list-create-edit-ui.md` and `0045-orders-core-crud-backend.md` both completed
+Phase 7 and moved to `done/` in the prior regeneration pass (0044 on its own branch, merged via PR
+#9; 0045 checked out into `in-progress/` for Phase 3, then closed in that same pass). Together their
+closure freed `0046`, `0047`, `0048`, `0049`, `0051`, `0053` and `0054` into `ready` with no pending
+dependency left for any of them (see the note under
 [Pending tasks that are independent](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
 for what else this closure unblocked) — `0045` was, before this pass, the single biggest hub in the
 backlog, so this is the largest one-story unblock this map has recorded to date. Every other task
@@ -33,8 +42,8 @@ infrastructure fix (not a PRD-derived user story) and is already marked `Status:
 documented` inside its own file, so it is listed for completeness but excluded from the dependency
 graph and from the parallelization analysis below.
 
-- **95 files total**: 94 numbered user stories (60 `done/`, 34 still in `ai-spec/tasks/`) + 1
-  non-numbered infrastructure doc (already resolved).
+- **95 files total**: 94 numbered user stories (60 `done/`, 33 still in `ai-spec/tasks/`, 1 checked
+  out to `ai-spec/tasks/in-progress/`) + 1 non-numbered infrastructure doc (already resolved).
 - For a machine-readable, per-task claim registry that two parallel Claude Code sessions can use
   to coordinate against this same dependency data, see
   [`ai-spec/tasks-status.json`](tasks-status.json) and its companion protocol,
@@ -44,7 +53,7 @@ graph and from the parallelization analysis below.
 
 - [Inventory](#inventory)
   - [Done (60) — shipped, out of scope for this graph](#done-60--shipped-out-of-scope-for-this-graph)
-  - [Pending — not started (34 numbered + 1 infra doc)](#pending--not-started-34-numbered--1-infra-doc)
+  - [Pending — not started (33 numbered + 1 infra doc), plus one checked out to `in-progress/`](#pending--not-started-33-numbered--1-infra-doc-plus-one-checked-out-to-in-progress)
 - [Dependency graph (pending tasks only)](#dependency-graph-pending-tasks-only)
 - [Analysis](#analysis)
   - [Pending tasks that are independent of each other and safe to parallelize](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
@@ -79,11 +88,11 @@ appears as a node in the dependency graph below:
   dependents (0046, 0047, 0048, 0049, 0051, 0053, 0054) are all re-derived against `done/` from
   here on.
 
-### Pending — not started (34 numbered + 1 infra doc)
+### Pending — not started (33 numbered + 1 infra doc), plus one checked out to `in-progress/`
 
 | ID | Title | Epic area |
 | --- | --- | --- |
-| 0046 | Orders — "new order" notification (backend) | Epic 3 — Orders |
+| 0046 *(in `ai-spec/tasks/in-progress/`, `claimed`)* | Orders — "new order" notification (backend) | Epic 3 — Orders |
 | 0047 | Customer detail — order history view UI | Epic 3 — Orders/Customers |
 | 0048 | Order line-item editing backend | Epic 3 — Orders |
 | 0049 | Order status transition backend | Epic 3 — Orders |
@@ -282,25 +291,26 @@ flowchart LR
     P0068 --> P0079
 
     class P0050,P0052,P0055,P0057,P0060,P0061,P0062,P0063,P0064,P0065,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0046,P0047,P0048,P0049,P0051,P0053,P0054,P0056,P0058,P0059,P0068 ready;
+    class P0047,P0048,P0049,P0051,P0053,P0054,P0056,P0058,P0059,P0068 ready;
+    class P0046 claimed;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(no node is `claimed` in this snapshot); yellow (`pending`) = still blocked on at least one open
-pending dependency.
+(`0046` is `claimed` in this snapshot, checked out into `in-progress/` for its own Phase 3); yellow
+(`pending`) = still blocked on at least one open pending dependency.
 
 ## Analysis
 
 ### Pending tasks that are independent of each other and safe to parallelize
 
 These are the tasks whose **entire dependency chain is already `done/`** — nothing pending blocks
-them — the eleven green `ready` nodes in the diagram above:
+them — the ten green `ready` nodes in the diagram above. (`0046` has the identical property —
+its only dependency, `0045`, is `done/` — but it is no longer counted here: it is checked out into
+`in-progress/` and `"claimed"` in `tasks-status.json`, so the blue `claimed` node, not this green
+list, is where it now belongs. See the note at the top of this file.)
 
-- **0046 — Orders "new order" notification (backend).** Its only dependency, `0045` (Orders core
-  CRUD backend), closed in this same regeneration pass — the dispatch call lands inside its
-  `CreateOrder`, which now exists. Depends on nothing else pending. Ready now.
 - **0047 — Customer detail — order history view UI.** Both of its dependencies, `0044` (Customers
   list + create/edit UI) and `0045`, are now `done/`. Depends on nothing else pending. Ready now.
 - **0048 — Order line-item editing backend.** Its only dependency, `0045`, is now `done/`. Ready

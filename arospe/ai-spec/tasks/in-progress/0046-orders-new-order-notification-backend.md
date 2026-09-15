@@ -3,41 +3,56 @@
 ## Description
 When an order record is created, generate a **database notification** for every administrator who
 holds `orders.view`. This closes the second of the four confirmed notification events in PRD
-[§ Cross-cutting: global search & notifications](../../docs/PRD/PRD.md#cross-cutting-global-search--notifications)
-and the "new order" acceptance criterion of [§3.2 Orders](../../docs/PRD/PRD.md#32-orders). This story
+[§ Cross-cutting: global search & notifications](../../../docs/PRD/PRD.md#cross-cutting-global-search--notifications)
+and the "new order" acceptance criterion of [§3.2 Orders](../../../docs/PRD/PRD.md#32-orders). This story
 owns the `OrderCreated` notification, the recipient-resolution rule, and the dispatch site inside story
-[0045](done/0045-orders-core-crud-backend.md)'s `CreateOrder`. **It renders nothing** — no bell, no dropdown,
+[0045](../done/0045-orders-core-crud-backend.md)'s `CreateOrder`. **It renders nothing** — no bell, no dropdown,
 no unread badge — and it adds **no migration**: the `notifications` table is story
-[0043](done/0043-customers-new-customer-notification-backend.md)'s deliverable and already exists once that
+[0043](../done/0043-customers-new-customer-notification-backend.md)'s deliverable and already exists once that
 story is `done`.
 
-> ## ⛔ BLOCKED — inherited cross-epic dependency (read this before Phase 3)
+> ## ✅ RESOLVED — inherited cross-epic dependency (was blocked; cleared for Phase 3)
 >
-> **This story is fully specified now, but its Phase 3 implementation cannot start until story
-> [0045](done/0045-orders-core-crud-backend.md) is `done` — and 0045 is itself blocked until PRD Epic 2
-> stories [0024](done/0024-products-core-crud-backend.md) (Products),
-> [0029](done/0029-product-variants-backend.md) (Product Variants),
-> [0035](done/0035-shipping-carriers-backend.md) (Shipping Carriers),
-> [0036](done/0036-shipping-rate-rules-backend.md) (Shipping Rates) and
-> [0038](done/0038-payment-methods-bank-transfer-backend.md) (Payment Methods) are all `done`.**
+> **Corrected 2026-09-15, at this story's own Phase 3 step 0 (moving to `in-progress/`) — this
+> banner originally read `⛔ BLOCKED`, and is quoted in full below rather than silently deleted,
+> per this project's audit-authored-page convention. Every dependency it names is now `done/`,
+> verified against `ai-spec/tasks/done/` rather than assumed, and Phase 3 is clear to proceed.**
 >
-> The dispatch call lands **inside** 0045's `CreateOrder`, and every Feature test here needs a real
-> `Order` — which needs `orders`, `order_items`, `OrderFactory` and the five tables those FK into. The
-> full reasoning is 0045's [**DR-1**](done/0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns);
-> this story does not re-litigate it and does not get to route around it. **Do not stub an `Order`
-> factory or a `notifications` table to make this story testable earlier** — that is option (b)
-> arriving by the back door.
+> It used to read:
 >
-> **What is *not* blocked:** this document. Specifying it now is deliberate, for the same reason 0045's
-> banner gives — it makes the forward dependency (a post-commit dispatch site inside `CreateOrder`)
-> visible while it is still cheap to honour, and 0045's own task file already flags it.
+> > **This story is fully specified now, but its Phase 3 implementation cannot start until story
+> > [0045](../done/0045-orders-core-crud-backend.md) is `done` — and 0045 is itself blocked until PRD Epic 2
+> > stories [0024](../done/0024-products-core-crud-backend.md) (Products),
+> > [0029](../done/0029-product-variants-backend.md) (Product Variants),
+> > [0035](../done/0035-shipping-carriers-backend.md) (Shipping Carriers),
+> > [0036](../done/0036-shipping-rate-rules-backend.md) (Shipping Rates) and
+> > [0038](../done/0038-payment-methods-bank-transfer-backend.md) (Payment Methods) are all `done`.**
+> >
+> > The dispatch call lands **inside** 0045's `CreateOrder`, and every Feature test here needs a real
+> > `Order` — which needs `orders`, `order_items`, `OrderFactory` and the five tables those FK into. The
+> > full reasoning is 0045's [**DR-1**](../done/0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns);
+> > this story does not re-litigate it and does not get to route around it. **Do not stub an `Order`
+> > factory or a `notifications` table to make this story testable earlier** — that is option (b)
+> > arriving by the back door.
+> >
+> > **What is *not* blocked:** this document. Specifying it now is deliberate, for the same reason 0045's
+> > banner gives — it makes the forward dependency (a post-commit dispatch site inside `CreateOrder`)
+> > visible while it is still cheap to honour, and 0045's own task file already flags it.
+>
+> **All six named dependencies are `done/` today**: [0045](../done/0045-orders-core-crud-backend.md),
+> [0024](../done/0024-products-core-crud-backend.md), [0029](../done/0029-product-variants-backend.md),
+> [0035](../done/0035-shipping-carriers-backend.md), [0036](../done/0036-shipping-rate-rules-backend.md)
+> and [0038](../done/0038-payment-methods-bank-transfer-backend.md). The real `Order`, `OrderItem`,
+> `OrderFactory` and every table `CreateOrder` FKs into exist now — the "do not stub" instruction
+> above no longer applies, since there is nothing left to stub around. Phase 3 (TDD) proceeds against
+> the real dependency chain.
 
 > **Scope boundary, stated up front rather than discovered at review.** This repository has **no
 > notification-viewing UI of any kind** — no bell, no dropdown, no unread indicator, no route that
 > lists notifications. "A new-order notification is generated" is therefore fully testable (a
 > `notifications` row plus `Notification::assertSentTo`) and produces **zero visible admin-facing
 > behaviour**. A reviewer must not read that absence as an unmet acceptance criterion. **The viewer-UI
-> gap is already tracked exactly once, at story 0043 ([its OQ-3](done/0043-customers-new-customer-notification-backend.md#open-questions)),
+> gap is already tracked exactly once, at story 0043 ([its OQ-3](../done/0043-customers-new-customer-notification-backend.md#open-questions)),
 > and this story deliberately does not reopen it as a second open question** — it is one cross-cutting
 > gap, not one per event producer.
 
@@ -61,7 +76,7 @@ notification at all, and this story's deliverable is a notification class and a 
 independently testable against an `Order` factory. What they share is exactly **one line** — the
 dispatch call — which is why the coupling is called out explicitly in
 [Dependencies](#dependencies-risks-and-open-questions) rather than left implicit. 0045's own
-[scope fences](done/0045-orders-core-crud-backend.md#scope-fences-what-this-story-must-not-do) already say it
+[scope fences](../done/0045-orders-core-crud-backend.md#scope-fences-what-this-story-must-not-do) already say it
 must *not* create, dispatch or listen for this notification.
 
 ### Why this is a shape copy of 0043, and what that means for review
@@ -155,7 +170,7 @@ Feature: New-order notification
 ### No migration — the `notifications` table is story 0043's
 
 **This story creates no migration and must not create one.** `notifications` is published, edited and
-owned by story [0043](done/0043-customers-new-customer-notification-backend.md), including the
+owned by story [0043](../done/0043-customers-new-customer-notification-backend.md), including the
 `$table->uuidMorphs('notifiable')` correction (the stock `morphs()` emits an `UNSIGNED BIGINT`
 `notifiable_id`, which cannot hold this app's `CHAR(36)` `users.id`). A second `create_notifications_table`
 migration would fail on `migrate:fresh` outright; a "safety" `Schema::hasTable()` guard around one would
@@ -170,7 +185,7 @@ be worse, because it would let this story ship against a table nobody in this st
 
 `app/Notifications/OrderCreated.php` — **new**. `app/Notifications/` is a stock Laravel location
 (`make:notification`), so no folder approval is needed
-([base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)). It will be the
+([base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure)). It will be the
 folder's **fourth** class (`PendingEmailVerification`, `UserInvitation`, 0043's `CustomerCreated`).
 
 ```php
@@ -198,7 +213,7 @@ class OrderCreated extends Notification
 
 - **`OrderCreated`, not `NewOrderCreated` or `OrderCreatedNotification`.** A statement of fact about what
   happened, matching `PendingEmailVerification` / `UserInvitation` / `CustomerCreated`, per
-  [naming.md](../../docs/conventions/naming.md#classes). No `Notification` suffix.
+  [naming.md](../../../docs/conventions/naming.md#classes). No `Notification` suffix.
 - **`['database']` only — no `mail` channel.** See decision **D-2**.
 - **Not `ShouldQueue`.** See decision **D-4**.
 - **Three keys, and every one of them is a literal-string snapshot.** See decision **D-5** — including
@@ -221,9 +236,9 @@ class OrderCreated extends Notification
 ### Recipient resolution + dispatch — `App\Actions\Orders\NotifyOrderCreated`
 
 `app/Actions/Orders/NotifyOrderCreated.php` — **new**, invokable, imperative verb-phrase name with no
-`Action`/`Service` suffix per [naming.md](../../docs/conventions/naming.md#classes). It lands in the
+`Action`/`Service` suffix per [naming.md](../../../docs/conventions/naming.md#classes). It lands in the
 `app/Actions/Orders/` subfolder **story 0045 creates** for `CreateOrder` — one subfolder per domain
-area, per [base-standards.md](../../docs/conventions/directory-structure.md#directory-structure).
+area, per [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure).
 
 ```php
 public function __invoke(Order $order): void
@@ -244,7 +259,7 @@ public function __invoke(Order $order): void
   users holding the permission through a role *or* directly, and it is a live query, never a cached or
   snapshotted list, so a grant revoked a minute ago takes effect immediately. This is the "gate on
   permissions, never role names" convention in
-  [architecture/authorization.md](../../docs/architecture/authorization.md) applied to a recipient set
+  [architecture/authorization.md](../../../docs/architecture/authorization.md) applied to a recipient set
   rather than to an access check. **`orders.view` already exists in the seeded catalog** —
   `RolePermissionSeeder::MODULES` carries `orders` (verified), so all four `orders.*` abilities exist;
   this story adds no permission and reseeds no grant.
@@ -277,7 +292,7 @@ Three constraints on **where** that call goes, all load-bearing:
    inside a `DB::afterCommit` registration), so a rollback cannot leave a notification announcing an
    order that does not exist. **0045's own task file already flags this forward-looking**, under its
    action's step 4, citing
-   [the `DB::transaction()` entry in errors-log.md](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21):
+   [the `DB::transaction()` entry in errors-log.md](../../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21):
    *wrapping existing code in a transaction is a change to every side effect that code already
    performed*. Read forward here rather than in hindsight.
 2. **After `order_number` is finalized — i.e. after the retry loop, not before it.** 0045 **D-1** makes
@@ -293,12 +308,12 @@ Three constraints on **where** that call goes, all load-bearing:
 - **Constructor injection, not a widened `__invoke()` signature.** `CreateOrder::__invoke(array $attributes)`
   is a public contract 0045's tests and story 0055's component must match verbatim; an internal
   collaborator belongs in the constructor, per the documented exception in
-  [code-style.md](../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract).
+  [code-style.md](../../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract).
   0045 already states `CreateOrder` must be resolved from the container and never `new`-ed, so this adds
   no new constraint on its call sites.
 - **No model event, no observer.** A `created` event on `Order` would fire for factories, seeders and
   imports too, and — per the blast-radius rule in
-  [base-standards.md](../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done) —
+  [base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done) —
   would bind every test in the repo. It would also fire for the `orders` row *before* its `order_items`
   and totals exist, violating constraint 1 by construction. The PRD's event is "an order was placed",
   which is an *action*, not a row insert.
@@ -341,7 +356,7 @@ identifier-shaped assertion follows 0045's own conventions (decimal strings, nev
 - [ ] **Rollback: a creation that throws after the `orders` row is written stores no notification.** Force a failure inside 0045's transaction and assert zero `notifications` rows. **This is the highest-value test in the story** — it pins dispatch-site constraint 1, and without it a dispatch moved inside the transaction, or before it, passes every other test here. 0045's own inherited transaction-ordering warning is what makes it non-negotiable.
 - [ ] Multiple eligible recipients each get their own row (count equals the number of holders), not one shared row.
 
-**Deliberately not tested** (per [what-not-to-test.md](../../docs/testing/qa/what-not-to-test.md)):
+**Deliberately not tested** (per [what-not-to-test.md](../../../docs/testing/qa/what-not-to-test.md)):
 the `notifications` migration's `up()`/`down()` mechanics (0043's, and `RefreshDatabase` runs every
 migration each run); Laravel's `DatabaseChannel` write itself as a framework behaviour — exercise it
 *through* the dispatch; the UUID generation of `notifications.id`; 0045's own order-creation behaviour
@@ -381,11 +396,11 @@ and no more.
 - [ ] **No notification-viewing UI is built**, and its absence is a gap already tracked once at story 0043 (OQ-3) rather than an unmet criterion here.
 
 ## Definition of Done
-- [ ] Tests written and green, plus the **full** existing suite run **unscoped** (`php artisan test`, not `--filter`), per [contracts.md](../../docs/contracts.md)'s Full Test Suite Gate Rule and [base-standards.md](../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
+- [ ] Tests written and green, plus the **full** existing suite run **unscoped** (`php artisan test`, not `--filter`), per [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule and [base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
 - [ ] `vendor/bin/pint --format agent` clean (unscoped, **not** `--dirty`) and Larastan level 7 passing.
 - [ ] Code reviewed (code-reviewer).
-- [ ] No security findings (appsec-auditor) — specifically: that the recipient query cannot be widened by caller-supplied input; that the payload leaks no customer or order field beyond `order_id` / `order_number` / `customer_name` (no email, no address, no total); that a dispatch cannot be triggered by an actor who failed the `orders.create` gate; and that adding this side effect to `CreateOrder` grants no capability to a less-privileged caller — the shared-code lesson from [errors-log.md](../../docs/errors-log-archive.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24). **`CreateOrder`'s caller list must be re-grepped at Phase 3** (`grep -rn "CreateOrder" app/`), not assumed to be one screen.
-- [ ] Documentation updated (docs-keeper) — [conventions/base-standards.md](../../docs/conventions/directory-structure.md#directory-structure) (`app/Notifications/` gains a fourth class; `app/Actions/Orders/` gains a second). **No schema or migration doc change**: this story adds no column, table or migration, and [database/schema.md](../../docs/database/schema.md)'s `notifications` section is story 0043's to write.
+- [ ] No security findings (appsec-auditor) — specifically: that the recipient query cannot be widened by caller-supplied input; that the payload leaks no customer or order field beyond `order_id` / `order_number` / `customer_name` (no email, no address, no total); that a dispatch cannot be triggered by an actor who failed the `orders.create` gate; and that adding this side effect to `CreateOrder` grants no capability to a less-privileged caller — the shared-code lesson from [errors-log.md](../../../docs/errors-log-archive.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24). **`CreateOrder`'s caller list must be re-grepped at Phase 3** (`grep -rn "CreateOrder" app/`), not assumed to be one screen.
+- [ ] Documentation updated (docs-keeper) — [conventions/base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure) (`app/Notifications/` gains a fourth class; `app/Actions/Orders/` gains a second). **No schema or migration doc change**: this story adds no column, table or migration, and [database/schema.md](../../../docs/database/schema.md)'s `notifications` section is story 0043's to write.
 - [ ] **The Definition of Done explicitly does NOT include a notification-viewer UI**, for this story or for the Epic 3 batch as currently decomposed. See 0043's OQ-3.
 - [ ] Acceptance criteria met.
 
@@ -395,13 +410,13 @@ and no more.
 
 | Depends on | State | Why |
 | --- | --- | --- |
-| [0045](done/0045-orders-core-crud-backend.md) — Orders core CRUD | **hard dependency, and itself ⛔ BLOCKED** | The dispatch call lands inside its `CreateOrder`; every Feature test here needs `Order`, `OrderItem` and `OrderFactory`. **Inherits 0045's full block** on [0024](done/0024-products-core-crud-backend.md), [0029](done/0029-product-variants-backend.md), [0035](done/0035-shipping-carriers-backend.md), [0036](done/0036-shipping-rate-rules-backend.md) and [0038](done/0038-payment-methods-bank-transfer-backend.md) |
-| [0043](done/0043-customers-new-customer-notification-backend.md) — new-customer notification | **hard dependency** | Owns the `notifications` table and its `uuidMorphs('notifiable')` correction. This story adds **no** migration and cannot run a single Feature test without it |
-| [0041](done/0041-customers-crud-backend.md) — Customers CRUD | **transitive, via 0045** | `customer_name` is read off the order's `customer` relation; `Customer` must exist with a resolvable display name |
+| [0045](../done/0045-orders-core-crud-backend.md) — Orders core CRUD | **hard dependency, and itself ⛔ BLOCKED** | The dispatch call lands inside its `CreateOrder`; every Feature test here needs `Order`, `OrderItem` and `OrderFactory`. **Inherits 0045's full block** on [0024](../done/0024-products-core-crud-backend.md), [0029](../done/0029-product-variants-backend.md), [0035](../done/0035-shipping-carriers-backend.md), [0036](../done/0036-shipping-rate-rules-backend.md) and [0038](../done/0038-payment-methods-bank-transfer-backend.md) |
+| [0043](../done/0043-customers-new-customer-notification-backend.md) — new-customer notification | **hard dependency** | Owns the `notifications` table and its `uuidMorphs('notifiable')` correction. This story adds **no** migration and cannot run a single Feature test without it |
+| [0041](../done/0041-customers-crud-backend.md) — Customers CRUD | **transitive, via 0045** | `customer_name` is read off the order's `customer` relation; `Customer` must exist with a resolvable display name |
 | `orders.view` in the seeded catalog | **shipped** | `RolePermissionSeeder::MODULES` carries `orders` (verified) — no seeder change needed |
 | `App\Models\User` `Notifiable` + `SoftDeletes` | **shipped** (Epic 1) | Verified; no model change in this story |
 
-Per the [task ordering rule](../../docs/workflow.md#task-ordering-rule), 0043's and 0045's lower numbers
+Per the [task ordering rule](../../../docs/workflow.md#task-ordering-rule), 0043's and 0045's lower numbers
 are not cosmetic — sequence both into Phase 3 ahead of this story.
 
 ### Risks
@@ -421,7 +436,7 @@ are not cosmetic — sequence both into Phase 3 ahead of this story.
   confusion.
 - **R-4 — Cross-story edit.** This story modifies a file story 0045 owns. If 0045 is still in flight
   when this reaches Phase 3, the two must not be implemented by concurrent agents, per the
-  [Parallel Agent File-Ownership Rule](../../docs/contracts.md#parallel-agent-file-ownership-rule).
+  [Parallel Agent File-Ownership Rule](../../../docs/contracts.md#parallel-agent-file-ownership-rule).
 - **R-5 — Unbounded row growth with no reader.** Every order creation writes N rows that nothing ever
   reads or marks read while 0043's OQ-3 stays open. Orders are higher-volume than customers, so this
   story makes an already-recorded consequence larger — still negligible at backoffice volumes, and
@@ -431,20 +446,20 @@ are not cosmetic — sequence both into Phase 3 ahead of this story.
   than treated as passed on first reading, and **`Customer`'s display-name attribute must be
   re-verified against the shipped model** — this file assumes `$order->customer->name`, read from
   0043's own usage, and 0041's task file is itself still `new`. A name is a reading aid, not a locator
-  ([errors-log.md](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
+  ([errors-log.md](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
 
 ### Open questions
 
 **None genuinely new.** This is stated explicitly rather than by omission: every question this story
-could raise was already asked and answered in [0043](done/0043-customers-new-customer-notification-backend.md),
+could raise was already asked and answered in [0043](../done/0043-customers-new-customer-notification-backend.md),
 and inventing a fresh one to fill the section would be noise. The three inherited items and their
 status here:
 
 | Inherited from 0043 | Status for this story |
 | --- | --- |
-| **OQ-1** — should a `suspended`/`inactive` administrator receive notifications? | **Inherited unchanged; same default: notify them (no status filter).** A notification is a record, not access, and `users.status` is enforced at sign-in ([architecture/authentication.md](../../docs/architecture/authentication.md)). If the human overrides it for 0043, this story changes identically — one `->where('status', …)` clause in each action, and the two must not diverge |
-| **OQ-2** — should the administrator who created the record be notified of their own action? | **Inherited unchanged; same default: no self-exclusion.** It keeps the recipient rule a single query with no actor parameter, and avoids reintroducing the caller-supplied-state shape [errors-log.md](../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20) warns about. An order created by a future storefront or import has no acting administrator at all, so a self-exclusion branch would be dead code on that path — **an argument that is actually stronger here than it was for customers** |
-| **OQ-3** — the missing notification-viewer UI | **Tracked once, at 0043. Deliberately not reopened here.** It is one cross-cutting gap covering all four event producers, not one gap per producer; re-raising it per story is how a single decision becomes four unresolved questions. This story is not blocked by it |
+| **OQ-1** — should a `suspended`/`inactive` administrator receive notifications? | **Inherited unchanged; same default: notify them (no status filter).** A notification is a record, not access, and `users.status` is enforced at sign-in ([architecture/authentication.md](../../../docs/architecture/authentication.md)). If the human overrides it for 0043, this story changes identically — one `->where('status', …)` clause in each action, and the two must not diverge |
+| **OQ-2** — should the administrator who created the record be notified of their own action? | **Inherited unchanged; same default: no self-exclusion.** It keeps the recipient rule a single query with no actor parameter, and avoids reintroducing the caller-supplied-state shape [errors-log.md](../../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20) warns about. An order created by a future storefront or import has no acting administrator at all, so a self-exclusion branch would be dead code on that path — **an argument that is actually stronger here than it was for customers** |
+| **OQ-3** — the missing notification-viewer UI | **Tracked once, at 0043. Deliberately not reopened here.** It is one cross-cutting gap covering all four event producers, not one gap per producer; re-raising it per story is how a single decision becomes four unresolved questions. This story is not blocked by it. *(Note, added 2026-09-15: that gap now has real decomposed stories — [0056](../0056-notification-viewing-backend.md) and [0057](../0057-notification-bell-ui.md) — rather than staying a bare open question at 0043 alone. This does not reopen the question or change this story's own scope; 0046 still ships no viewer of any kind.)* |
 
 **The one real open item this story carried is resolved below as D-5**, not left open: whether
 `customer_name` is a literal snapshot or a live read.
@@ -458,7 +473,7 @@ decision rather than a rediscovery.
 **D-1 — The Super Admin is deliberately excluded from this notification.** Same reasoning as 0043 D-1,
 unchanged: `User::permission('orders.view')` is a **data** query against `role_has_permissions` /
 `model_has_permissions`, while the Super Admin's access comes from the `Gate::before` bypass in
-[architecture/authorization.md](../../docs/architecture/authorization.md) — an authorization-layer
+[architecture/authorization.md](../../../docs/architecture/authorization.md) — an authorization-layer
 construct that grants **no rows** for any query to match. A Super Admin therefore falls out of the
 recipient set for free, and the decision is to **leave it that way**: the bypass exists so the account
 that administers the system is never locked out of it, not so that account receives routine CRUD
@@ -482,7 +497,11 @@ that point, not now.
 decomposed.** Stated as an explicit Definition-of-Done line rather than left implicit, and **not**
 re-escalated as an open question — 0043's OQ-3 owns it. The consequence a reviewer must accept: this
 story's acceptance criteria are satisfied by database rows and `Notification::assertSentTo`, with **no**
-admin-visible behaviour to click through and no browser test.
+admin-visible behaviour to click through and no browser test. *(Note, added 2026-09-15: the gap is now
+decomposed into real stories — [0056](../0056-notification-viewing-backend.md) (unread count/recent
+list/mark-as-read backend) and [0057](../0057-notification-bell-ui.md) (the topbar bell UI) — rather than
+sitting only as 0043's bare OQ-3. This is informational, not a scope change: this decision and this
+story's Definition of Done are unchanged.)*
 
 **D-4 — `OrderCreated` is not `ShouldQueue`.** The only channel is `database`, so the entire "delivery"
 is a local `INSERT`. Queueing it would write a `jobs` row (this app runs `QUEUE_CONNECTION=database`) to
@@ -490,7 +509,7 @@ defer a write cheaper than the job row itself, and would put the notification be
 be running for the feature to work at all — turning a synchronous, assertable side effect into an
 eventual one that every test would need `Queue::fake()` to observe. It would also interact badly with
 constraint 1: a queued dispatch registered inside a transaction is a second, subtler ordering hazard.
-The precedent in [architecture/authentication.md](../../docs/architecture/authentication.md) cuts the
+The precedent in [architecture/authentication.md](../../../docs/architecture/authentication.md) cuts the
 same way — `PendingEmailVerification` is queued because it performs an **outbound SMTP** call, while
 `UserInvitation` deliberately is not. There is no outbound call here. Revisit only if a `mail` channel
 is ever added (**D-2**).
@@ -561,29 +580,32 @@ string** — at which point the refactor is mechanical and safe, which is precis
 
 ## Provenance
 
-- **PRD source:** [§3.2 Orders](../../docs/PRD/PRD.md#32-orders) and
-  [§ Cross-cutting: global search & notifications](../../docs/PRD/PRD.md#cross-cutting-global-search--notifications).
-- **Process:** [workflow.md](../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from
+- **PRD source:** [§3.2 Orders](../../../docs/PRD/PRD.md#32-orders) and
+  [§ Cross-cutting: global search & notifications](../../../docs/PRD/PRD.md#cross-cutting-global-search--notifications).
+- **Process:** [workflow.md](../../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from
   `backend-expert` (confirming 0043's shape wholesale, the file list, the recipient query, the dispatch
   site and its constraints, and the no-abstraction constraint) and `backend-qa` (the mirrored recipient
   and negative sets, the faked/un-faked pair, the payload key-set assertion, the rollback case named as
   the highest-value test, and the inherited-block flag), composed by `product-owner` as facilitator.
   **No `database-expert`**: this story adds no schema (see the Type section).
-- **Sibling story this one mirrors:** [0043](done/0043-customers-new-customer-notification-backend.md) — its
+- **Sibling story this one mirrors:** [0043](../done/0043-customers-new-customer-notification-backend.md) — its
   decisions D-1 through D-5 and open questions OQ-1/OQ-2/OQ-3 apply here by direct analogy and are
   resolved above rather than re-debated.
 - **Gherkin conventions:** every scenario opens with a named business-role actor ("an order
   administrator", "a blog editor", "a Super Admin") and carries exactly one `When`, per
-  [gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 — mandatory
+  [gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 — mandatory
   across all Gherkin in this project, per the incident recorded in
-  [errors-log.md](../../docs/errors-log.md).
+  [errors-log.md](../../../docs/errors-log.md).
 - **Verified against the working tree by `product-owner` rather than relayed:** no `notifications`
   migration exists in `database/migrations/`; `app/Notifications/` holds exactly two classes today
   (`PendingEmailVerification`, `UserInvitation`), so this story's class is the fourth once 0043 lands;
   `RolePermissionSeeder::MODULES` carries `orders`, so all four `orders.*` abilities are seeded; and
   `App\Models\User` already carries `use Notifiable;` and `SoftDeletes`.
-- **Stage:** `new`, and **blocked** — see the banner under [Description](#description). It moves to
-  `ai-spec/tasks/in-progress/` at the start of Phase 3, and to `ai-spec/tasks/done/` at Phase 7 — both
-  moves change this file's directory depth, so every relative link above must be re-resolved on each
-  move (both directions), per
-  [workflow.md](../../docs/workflow.md#link-integrity-check-on-every-stage-move).
+- **Stage:** `in-progress` — moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` on
+  2026-09-15, at the start of Phase 3 (step 0), per
+  [workflow.md](../../../docs/workflow.md#phase-3--tdd-mandatory-in-this-order). No longer
+  **blocked**: the inherited cross-epic dependency the banner under [Description](#description)
+  named is resolved — see that banner's own correction — and this move is what triggered it. It
+  moves on to `ai-spec/tasks/done/` at Phase 7. Both moves change this file's directory depth, so
+  every relative link above was re-resolved on this move, and must be again on the next one, per
+  [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move).
