@@ -170,7 +170,7 @@ test('dispatching to three recipients resolves the order\'s customer relation on
     app(NotifyOrderCreated::class)($order);
 
     Notification::assertSentTo($recipients, OrderCreated::class);
-    expect($customerQueryCount)->toBeLessThanOrEqual(1);
+    expect($customerQueryCount)->toBe(1);
 });
 
 // =====================================================================
