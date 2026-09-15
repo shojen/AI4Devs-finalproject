@@ -295,7 +295,8 @@ flowchart LR
     P0068 --> P0079
 
     class P0050,P0052,P0055,P0057,P0060,P0061,P0062,P0063,P0064,P0065,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0047,P0048,P0049,P0051,P0053,P0054,P0056,P0058,P0059,P0068 ready;
+    class P0048,P0049,P0051,P0053,P0054,P0056,P0058,P0059,P0068 ready;
+    class P0047 claimed;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
