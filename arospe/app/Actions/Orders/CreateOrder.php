@@ -127,6 +127,17 @@ class CreateOrder
      * logical create. `$order` is only ever notified once `order_number`
      * has been definitively assigned.
      *
+     * Phase 4 audit finding F-A (accepted, not fixed): the dispatch is not
+     * isolated from its own failure. `NotifyOrderCreated` can throw (an
+     * unseeded/renamed `orders.view` permission, a `notifications` insert
+     * failure) AFTER the order has already committed, so the caller
+     * receives an exception for an order that genuinely exists. A future
+     * caller (story 0055) must not read "an exception from this method"
+     * as "no order was created" and retry blindly -- it must check for an
+     * already-created order first. Left unguarded deliberately: a silent
+     * try/catch here would hide a real notification-delivery failure with
+     * no error path this story was asked to design.
+     *
      * @param  array<string, mixed>  $attributes
      */
     public function __invoke(array $attributes): Order
@@ -334,10 +345,18 @@ class CreateOrder
             throw new RuntimeException('Could not generate a unique order_number after '.self::MAX_ORDER_NUMBER_ATTEMPTS.' attempts.');
         }
 
-        // Story 0046: strictly after the retry loop has converged and the transaction has
-        // committed -- see this method's own docblock for why this may never move inside the
-        // closure or the catch block above.
-        ($this->notifyOrderCreated)($order);
+        // Story 0046, Phase 4 audit finding F-B: DB::afterCommit(), not a direct call. This
+        // action's own transaction has already committed by this line, so today the two are
+        // behaviourally identical -- DatabaseTransactionsManager::addCallback() runs the
+        // callback immediately when no transaction is active. The difference only matters for
+        // a FUTURE caller (story 0055 is expected to be one) that wraps this whole __invoke()
+        // in its own outer transaction: a direct call here would then run inside that outer
+        // transaction, reopening exactly the pre-commit-dispatch hazard (R-1) this method's own
+        // docblock above describes -- afterCommit() defers to the outermost transaction's
+        // commit regardless of nesting, so the guarantee holds no matter what a future caller
+        // does. See this method's own docblock for why this may never move inside the closure
+        // or the catch block above.
+        DB::afterCommit(fn () => ($this->notifyOrderCreated)($order));
 
         return $order;
     }

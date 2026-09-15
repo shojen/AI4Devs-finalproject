@@ -36,15 +36,30 @@ class NotifyOrderCreated
         // plain belongsTo with no withTrashed(), and D-12 explicitly allows
         // an order against a soft-deleted customer so their order history
         // is never orphaned (see App\Actions\Orders\CreateOrder's own F-5).
-        // Resolved with Customer::withTrashed()->find() and set on the
-        // instance ONCE, here, before Notification::send() ever calls
-        // OrderCreated::toArray() -- Notification::send() invokes toArray()
-        // once per recipient, and each of those calls reads the relation
-        // already held in memory rather than re-querying, which is what
-        // keeps this a single customers query regardless of recipient
+        // Resolved with Customer::withTrashed()->findOrFail() -- findOrFail,
+        // not find(), because customer_id is read from an already-persisted
+        // Order (never caller input here) and restrictOnDelete() on
+        // orders.customer_id makes a missing row structurally impossible;
+        // findOrFail() states that as code rather than leaving a silently
+        // possible null to dereference (Phase 4 audit finding F-C) -- and
+        // set on the instance ONCE, here, before Notification::send() ever
+        // calls OrderCreated::toArray() -- Notification::send() invokes
+        // toArray() once per recipient, and each of those calls reads the
+        // relation already held in memory rather than re-querying, which is
+        // what keeps this a single customers query regardless of recipient
         // count (pinned by NotifyOrderCreatedTest.php's own query-count
         // assertion).
-        $order->setRelation('customer', Customer::withTrashed()->find($order->customer_id));
+        //
+        // Phase 4 audit finding F-D (accepted, not fixed): this mutates the
+        // SAME $order instance CreateOrder returns to its own caller, so
+        // that caller's Order->customer now resolves to a soft-deleted
+        // customer where the model's own belongsTo (no withTrashed()) would
+        // have given null. Not a data leak (D-12 already permits this, and
+        // the order row's own frozen address columns already expose more
+        // than the customer's name) -- but a caller of CreateOrder should
+        // not rely on $order->customer's loaded state; re-resolve it
+        // explicitly if a future screen needs it.
+        $order->setRelation('customer', Customer::withTrashed()->findOrFail($order->customer_id));
 
         // User::permission() -- Spatie's own scope, matching a permission
         // held via a role OR directly, resolved LIVE at dispatch time
