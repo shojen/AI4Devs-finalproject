@@ -162,7 +162,14 @@ app/
                        story, consuming story 0041/0042's Customer model/actions/validation trait
                        and soft delete; its deleteCustomer() authorization guard lives in this
                        component rather than in a dedicated DeleteCustomer action, since none
-                       exists — the same placement Users\Index::deleteUser() already establishes).
+                       exists — the same placement Users\Index::deleteUser() already establishes),
+                       Show.php (story 0047, a second class in the SAME Customers/ folder as
+                       Index.php but one level deeper in its view — the ordinary mirror rule, since
+                       the class is not named Index, the naming.md "second real instance" of the
+                       Index-flat/other-nested depth asymmetry Products/'s Index/Editor pair
+                       already established; read-only, no public method mutates anything, gates
+                       `customers.view` for the whole page and `orders.view` — OrderPolicy's own
+                       first real caller — for the order-history section alone).
                        Dev/ (story 0020, the media-gallery-harness
                        scaffolding) was RETIRED by story 0027 once Products/Editor supplied a real
                        host page — see below. Components/ (story 0021, extended by 0022) is not a module area
@@ -491,6 +498,8 @@ Three constraints that come with it, each learned from this story's audits:
 What the rules themselves say, and why a rule that must bind a Super Admin actor is a direct `throw` rather than a `Gate` check, belongs to [architecture/authorization.md](../architecture/authorization.md#the-guard-belongs-to-the-action-not-to-the-caller), not here.
 
 
-_Last updated: 2026-09-15 — Story 0046 (Orders — "new order" notification, backend). Extended `app/Actions/Orders/` with `NotifyOrderCreated` — the recipient-resolution + dispatch action `CreateOrder` calls after its own transaction commits, authorizing nothing of its own, the next confirmed instance of "a collaborator invoked only by an already-authorized action needs no gate" after `NotifyCustomerCreated` and the `Products/` sync actions — and `app/Notifications/` with `OrderCreated`, the same `database`-channel-only, not-`ShouldQueue` shape as `CustomerCreated`. No migration, no new model, no permission-catalog change: this story adds no schema.
+_Last updated: 2026-09-15 — Story 0047 (Customer detail — order history view UI). Added `App\Livewire\Customers\Show` to the `Customers/` entry — a second class in the same folder as `Index.php`, one view-depth level deeper (the ordinary mirror rule, naming.md's second confirming instance of the Index-flat/other-nested asymmetry), read-only, gating `customers.view` for the page and `orders.view` (`OrderPolicy`'s own first real caller) for the order-history section alone. No migration, no new model: this story adds `App\Models\Customer::orders()` (a relation, not a schema change) and `App\Enums\OrderStatus::label()`.
+
+_Previously: 2026-09-15 — Story 0046 (Orders — "new order" notification, backend). Extended `app/Actions/Orders/` with `NotifyOrderCreated` — the recipient-resolution + dispatch action `CreateOrder` calls after its own transaction commits, authorizing nothing of its own, the next confirmed instance of "a collaborator invoked only by an already-authorized action needs no gate" after `NotifyCustomerCreated` and the `Products/` sync actions — and `app/Notifications/` with `OrderCreated`, the same `database`-channel-only, not-`ShouldQueue` shape as `CustomerCreated`. No migration, no new model, no permission-catalog change: this story adds no schema.
 
 _Previously: 2026-09-14 — Story 0045 (Orders core CRUD backend). Added `app/Actions/Orders/` (`CreateOrder`), `Order`/`OrderItem` to `app/Models/`, `OrderStatus`/`PaymentStatus` to `app/Enums/`, `OrderPolicy` (the twelfth policy) to `app/Policies/`, and `lang/{en,es}/orders.php` to the `lang/` bullet. This file had no footer of its own since its split out of `base-standards.md` on 2026-09-11 — this is its first.

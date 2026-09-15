@@ -255,8 +255,9 @@ Public surface the view consumes:
   Customer::query()->orderBy('name')->get()
   ```
 
-  no eager loading (no relation exists), no query-level permission filter (the route gate and the
-  component own access), then mapped to per-row arrays carrying
+  no eager loading (no relation exists at this story — story 0047 later adds `Customer::orders()`,
+  read by its own detail screen, never by this list), no query-level permission filter (the route
+  gate and the component own access), then mapped to per-row arrays carrying
   `{id, name, email, phone, shippingCity, shippingCountry, canEdit, canDelete}`. **A test in this story
   re-asserts that contract at the component layer**, as 0041's Dependencies section requires.
 - **`#[Computed]`, not a `#[Locked] public array` populated by a `loadCustomers()` method** (**D-5**).

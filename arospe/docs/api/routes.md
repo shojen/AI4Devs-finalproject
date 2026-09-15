@@ -42,6 +42,7 @@ Declared in [`routes/web.php`](../../routes/web.php) and the per-area files it r
 | GET | `/shipping` | `shipping.index` | `auth`, `verified`, `can:shipping.view` | `App\Livewire\Shipping\Index` |
 | GET | `/payment-methods` | `payment-methods.index` | `auth`, `verified`, `can:payment-methods.view` | `App\Livewire\PaymentMethods\Index` |
 | GET | `/customers` | `customers.index` | `auth`, `verified`, `can:customers.view` | `App\Livewire\Customers\Index` |
+| GET | `/customers/{customer}` | `customers.show` | `auth`, `verified`, `can:customers.view` | `App\Livewire\Customers\Show` |
 | ANY | `/settings` | — | `auth` | redirect → `settings/profile` |
 | GET | `/settings/profile` | `profile.edit` | `auth` | `App\Livewire\Settings\Profile` |
 | GET | `/settings/appearance` | `appearance.edit` | `auth`, `verified` | `App\Livewire\Settings\Appearance` |
@@ -68,7 +69,7 @@ Each permission-gated route family has its own file, split out of what used to b
 - **[Products & Media routes](products.md)** — `product-categories.index` (the fourth), the `products.index`/`.create`/`.edit` family (the fifth), `product-attribute-types.index` (also the fifth, a separate route), and the two routeless, gated Products/Media shared components (`App\Livewire\Media\Gallery`, `App\Livewire\Components\WysiwygEditor`).
 - **[Shipping routes](shipping.md)** — `shipping.zones.index` (the sixth) and `shipping.index` (the seventh).
 - **[Payment Methods routes](payment-methods.md)** — `payment-methods.index` (the eighth).
-- **[Customers routes](customers.md)** — `customers.index` (the ninth).
+- **[Customers routes](customers.md)** — `customers.index` (the ninth) and `customers.show` (the tenth).
 
 ### `email-change.confirm` — the first app-owned route deliberately outside `auth`
 
@@ -133,6 +134,8 @@ Not listed: asset/dev-tool routes with no domain meaning (`flux/*`, `livewire-*/
 
 When `routes/api.php` and API resource controllers appear, replace this file's structure with one `api/<resource>.md` per resource, each documenting real request/response JSON pulled from the controller/resource classes — do not add one preemptively.
 
-_Last updated: 2026-09-11 — Story 0044 (Customers — list + create/edit UI). Added `customers.index` — the ninth permission-gated route — to the app-owned route table and the `routes/` list, and a new [Customers routes](customers.md) per-area file to the Per-area route documentation list, following the [Payment Methods routes](payment-methods.md) shape (a new business domain area, one gated route). No existing route, table row or per-area file was changed.
+_Last updated: 2026-09-15 — Story 0047 (Customer detail — order history view UI). Added `customers.show` — the tenth permission-gated route — to the app-owned route table and the [Customers routes](customers.md) list entry.
+
+_Previously: 2026-09-11 — Story 0044 (Customers — list + create/edit UI). Added `customers.index` — the ninth permission-gated route — to the app-owned route table and the `routes/` list, and a new [Customers routes](customers.md) per-area file to the Per-area route documentation list, following the [Payment Methods routes](payment-methods.md) shape (a new business domain area, one gated route). No existing route, table row or per-area file was changed.
 
 _Previously: 2026-09-11 — Split this file into per-area route files (`api/users-and-roles.md`, `api/sales-regions.md`, `api/products.md`, `api/shipping.md`, `api/payment-methods.md`), per [contracts.md](../contracts.md#doc-growth-management-rule)'s doc growth management rule — this file had grown past the 150k-character size this project treats as a hard limit. This file is now the index: the app-owned route table, the Fortify/Passkeys-owned route tables, `email-change.confirm`, and "Adding a real API". Every heading and its anchor moved unchanged into its new file, and every existing cross-reference by anchor — from `docs/`, `ai-spec/tasks/` and `app/` comments — was repointed at the new filename rather than left dangling. No route, permission, `data-test` hook or prose fact was rewritten. Earlier history folded per [contracts.md](../contracts.md#doc-growth-management-rule) — see git history if needed._

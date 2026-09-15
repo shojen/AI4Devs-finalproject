@@ -54,4 +54,24 @@ return [
         'confirm_body' => 'Are you sure you want to delete ":name"? This cannot be undone.',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Detail Screen
+    |--------------------------------------------------------------------------
+    |
+    | Copy for the customer detail screen (App\Livewire\Customers\Show, story
+    | 0047): the identity header, the order-history section and the list's
+    | "view detail" row action. Generic chrome (Order, Status, Total, Date,
+    | Email, Phone) stays as bare __('…') literals matching users.blade.php;
+    | only the copy specific to this screen lives here.
+    |
+    */
+
+    'detail' => [
+        'back_to_list' => 'Back to customers',
+        'order_history_heading' => 'Order history',
+        'no_orders' => 'This customer has no orders yet.',
+        'view_detail' => 'View :name',
+    ],
+
 ];
