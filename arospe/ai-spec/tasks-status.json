@@ -23,23 +23,6 @@
       ]
     },
     {
-      "id": "0048",
-      "slug": "0048-order-line-item-editing-backend",
-      "title": "Order line-item editing backend",
-      "depends_on": [],
-      "status": "claimed",
-      "claimed_by": "worktree-0048-order-line-item-editing-backend",
-      "claimed_at": "2026-09-15T23:33:00Z",
-      "touches": [
-        "app/Actions/Orders/AddOrderItem.php",
-        "app/Actions/Orders/RemoveOrderItem.php",
-        "app/Actions/Orders/UpdateOrderItemQuantity.php",
-        "app/Exceptions/OrderNotEditableException.php",
-        "app/Concerns/OrderValidationRules.php"
-      ],
-      "conflict_risk_with": []
-    },
-    {
       "id": "0049",
       "slug": "0049-order-status-transition-backend",
       "title": "Order status transition backend",
@@ -169,7 +152,6 @@
       "slug": "0055-orders-list-detail-editor-ui",
       "title": "Orders list + detail/editor UI",
       "depends_on": [
-        "0048",
         "0049",
         "0050",
         "0051",

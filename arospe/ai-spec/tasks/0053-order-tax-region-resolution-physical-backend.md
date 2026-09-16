@@ -1166,7 +1166,7 @@ Derived from this story, none of them in scope:
    action, in 0054's `ResolveVirtualOrderSalesRegion`, and in 0048's three line-item actions (its
    **D-8**). Three implementations of one formula is an accepted interim state, not a target; the
    extraction is a pure refactor with no contract change, and the trigger to take it is a fourth call
-   site or the first divergence between the three. Note 0048's own [backlog item 1](in-progress/0048-order-line-item-editing-backend.md)
+   site or the first divergence between the three. Note 0048's own [backlog item 1](done/0048-order-line-item-editing-backend.md)
    proposes the structurally identical extraction for its editable-state guard — the two are separate
    refactors of the same shape and should not be merged.
 2. **Surface `flagged_for_review` in the Orders list and detail** (0055) — and decide, per **OQ-2**,
