@@ -55,7 +55,22 @@ app/
                        the codebase's next confirmed instance of "a collaborator invoked only by
                        an already-authorized action needs no gate", after NotifyCustomerCreated
                        (0043) and SyncProductGallery/SyncProductSalesRegions/
-                       SyncProductAttributeValues (Products))
+                       SyncProductAttributeValues (Products); AddOrderItem, RemoveOrderItem,
+                       UpdateOrderItemQuantity — story 0048, each self-authorizing `update` on
+                       the Order via LogRefusedPrivilegedAttempt as its own first check, strictly
+                       BEFORE its own state-based hard block (assertEditable(), duplicated
+                       identically across all three per D-5 rather than extracted -- extract
+                       once a fourth call site appears), re-verified a SECOND time inside the
+                       transaction under lockForUpdate() (Phase 4 finding F-4);
+                       RecalculateOrderTotals — the shared D-7/D-8 totals-recomputation
+                       collaborator all three call from inside their own transaction, authorizing
+                       NOTHING of its own for the identical already-authorized-caller reason;
+                       ToNumericString and AssertWithinColumnCeiling — two pure, dependency-free,
+                       never-`new`-ed collaborators (a decimal-string narrower for bcmath, and
+                       the decimal(10,2) column-overflow guard) mirroring CreateOrder's own
+                       private methods of the same names rather than moving or duplicating them,
+                       since this story's scope fences forbid refactoring CreateOrder beyond its
+                       one named trait extraction)
   Actions/ProductCategories/ Domain actions for the Product Categories area (CreateProductCategory,
                        RenameProductCategory, DeleteProductCategory) — one action per operation
                        (story 0023). Unlike every other area's actions, none of the three authorize
@@ -145,10 +160,14 @@ app/
                        since a translation file is only ever correct relative to the value set it
                        covers and this story is what fixes that value set)
   Exceptions/          Domain exceptions that render their own response (ImmutableRoleException → 403,
-                       RoleInUseException → 409, PasswordConfirmationRequiredException → 423) —
-                       plus, since story 0022, one that deliberately does NOT: UnresolvedSelectionException
-                       carries no render() at all, because it must never reach the HTTP layer as a
-                       status code (see below)
+                       RoleInUseException → 409, PasswordConfirmationRequiredException → 423,
+                       OrderNotEditableException → 409 since story 0048 -- the state-based hard
+                       block on order line-item editing, a direct throw from each of
+                       AddOrderItem/RemoveOrderItem/UpdateOrderItemQuantity rather than a Gate
+                       ability, see architecture/authorization.md) — plus, since story 0022, one
+                       that deliberately does NOT: UnresolvedSelectionException carries no
+                       render() at all, because it must never reach the HTTP layer as a status
+                       code (see below)
   Http/Controllers/    Abstract base + domain controllers used as HTTP boundaries in front of actions
   Listeners/           Event listeners (ActivateVerifiedUser), registered in AppServiceProvider
   Livewire/            Livewire components, grouped by area (Users/, Roles/, SalesRegions/,
@@ -498,7 +517,9 @@ Three constraints that come with it, each learned from this story's audits:
 What the rules themselves say, and why a rule that must bind a Super Admin actor is a direct `throw` rather than a `Gate` check, belongs to [architecture/authorization.md](../architecture/authorization.md#the-guard-belongs-to-the-action-not-to-the-caller), not here.
 
 
-_Last updated: 2026-09-15 — Story 0047 (Customer detail — order history view UI). Added `App\Livewire\Customers\Show` to the `Customers/` entry — a second class in the same folder as `Index.php`, one view-depth level deeper (the ordinary mirror rule, naming.md's second confirming instance of the Index-flat/other-nested asymmetry), read-only, gating `customers.view` for the page and `orders.view` (`OrderPolicy`'s own first real caller) for the order-history section alone. No migration, no new model: this story adds `App\Models\Customer::orders()` (a relation, not a schema change) and `App\Enums\OrderStatus::label()`.
+_Last updated: 2026-09-16 — Story 0048 (Order line-item editing backend). Extended `app/Actions/Orders/` with six new classes: `AddOrderItem`, `RemoveOrderItem`, `UpdateOrderItemQuantity` (the three actions, each self-authorizing `update` on the `Order` before their own state-based hard block, re-verified a second time inside the transaction under `lockForUpdate()` per Phase 4 finding F-4), `RecalculateOrderTotals` (the shared totals-recomputation collaborator, authorizing nothing of its own — the same already-authorized-caller pattern as `SyncProductGallery`/`SyncProductSalesRegions`), and `ToNumericString`/`AssertWithinColumnCeiling` (two pure, dependency-free, never-`new`-ed collaborators mirroring `CreateOrder`'s own like-named private methods, per the story's scope fence against refactoring `CreateOrder` itself). Added `OrderNotEditableException → 409` to `app/Exceptions/`'s rendering-exception list, now four instances rather than three.
+
+_Previously: 2026-09-15 — Story 0047 (Customer detail — order history view UI). Added `App\Livewire\Customers\Show` to the `Customers/` entry — a second class in the same folder as `Index.php`, one view-depth level deeper (the ordinary mirror rule, naming.md's second confirming instance of the Index-flat/other-nested asymmetry), read-only, gating `customers.view` for the page and `orders.view` (`OrderPolicy`'s own first real caller) for the order-history section alone. No migration, no new model: this story adds `App\Models\Customer::orders()` (a relation, not a schema change) and `App\Enums\OrderStatus::label()`.
 
 _Previously: 2026-09-15 — Story 0046 (Orders — "new order" notification, backend). Extended `app/Actions/Orders/` with `NotifyOrderCreated` — the recipient-resolution + dispatch action `CreateOrder` calls after its own transaction commits, authorizing nothing of its own, the next confirmed instance of "a collaborator invoked only by an already-authorized action needs no gate" after `NotifyCustomerCreated` and the `Products/` sync actions — and `app/Notifications/` with `OrderCreated`, the same `database`-channel-only, not-`ShouldQueue` shape as `CustomerCreated`. No migration, no new model, no permission-catalog change: this story adds no schema.
 

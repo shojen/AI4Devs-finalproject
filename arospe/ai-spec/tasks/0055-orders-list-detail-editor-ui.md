@@ -5,7 +5,7 @@ Build the Orders screens of PRD [§3.2 Orders](../../docs/PRD/PRD.md#32-orders):
 `orders.index` list route, an `orders.show` detail route, the two Livewire components behind them, their
 Blade/Flux views, and the `config/modules.php` sidebar entry without which the module is unreachable.
 The detail screen is the **single consumer surface** for every write stories
-[0048](0048-order-line-item-editing-backend.md)–[0052](0052-order-auto-cancel-full-refund-backend.md)
+[0048](done/0048-order-line-item-editing-backend.md)–[0052](0052-order-auto-cancel-full-refund-backend.md)
 built — line-item editing, status transitions, manual cancellation, refunds — and the only place
 [0053](0053-order-tax-region-resolution-physical-backend.md)/[0054](0054-order-tax-region-resolution-virtual-backend.md)'s
 resolved tax basis and `flagged_for_review` flag become visible to a human. It adds **no backend rule**:
@@ -15,7 +15,7 @@ every control mirrors a predicate its own guard already reads.
 >
 > **This story is fully specified now, but its Phase 3 implementation cannot start until every Orders
 > backend story is `done`:** [0045](done/0045-orders-core-crud-backend.md),
-> [0048](0048-order-line-item-editing-backend.md), [0049](0049-order-status-transition-backend.md),
+> [0048](done/0048-order-line-item-editing-backend.md), [0049](0049-order-status-transition-backend.md),
 > [0050](0050-order-manual-cancellation-backend.md),
 > [0051](0051-order-payment-refund-state-backend.md),
 > [0052](0052-order-auto-cancel-full-refund-backend.md),
@@ -1388,7 +1388,7 @@ The rendered states are three, branched on `sales_region_id` and `tax_rate` and 
 | Depends on | State | Verified how |
 | --- | --- | --- |
 | `orders` / `order_items` tables, `Order` / `OrderItem`, `OrderStatus`, `PaymentStatus`, `orders.statuses.*` + `payment_statuses.*` lang keys, the **D-6** list and **D-14** detail retrieval contracts | story [0045](done/0045-orders-core-crud-backend.md) — **hard, and itself ⛔ blocked** | every column rendered, both badge label sets, both `#[Computed]` queries |
-| `AddOrderItem` / `RemoveOrderItem` / `UpdateOrderItemQuantity`, `OrderNotEditableException`, the `Enviado`/`Entregado` hard block | story [0048](0048-order-line-item-editing-backend.md) — **hard** | three controls and `canEditLineItems()` |
+| `AddOrderItem` / `RemoveOrderItem` / `UpdateOrderItemQuantity`, `OrderNotEditableException`, the `Enviado`/`Entregado` hard block | story [0048](done/0048-order-line-item-editing-backend.md) — **hard** | three controls and `canEditLineItems()` |
 | `TransitionOrderStatus`, `OrderPolicy` (+ `transitionStatus()`), `OrderStatus::rank()` / `isBackwardFrom()`, `OrderStatusRegressionRequiresConfirmationException`, `orders.transitions.*` | story [0049](0049-order-status-transition-backend.md) — **hard** | the status select, the backward dialog, **D-11** |
 | `CancelOrder`, `OrderPolicy::cancel()`, `Order::isManuallyCancellable()`, `OrderCancellationBlockedException`, `orders.cancellation.*` | story [0050](0050-order-manual-cancellation-backend.md) — **hard** | the Cancel control and **D-9** |
 | `RecordRefund`, `orders.refund` permission, `refunds` table, `orders.refunded_amount`, `order_items.refunded_quantity` | story [0051](0051-order-payment-refund-state-backend.md) — **hard** | the refund control, the refunded totals, **D-10** |

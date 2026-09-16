@@ -131,7 +131,69 @@ trait OrderValidationRules
         return [
             'product_id' => ['required', 'uuid', Rule::exists('products', 'id')],
             'product_variant_id' => ['nullable', 'uuid', Rule::exists('product_variants', 'id')],
-            'quantity' => ['required', 'integer', 'min:1', 'max:'.self::MAX_ITEM_QUANTITY],
+            'quantity' => $this->orderItemQuantityRules(),
         ];
+    }
+
+    /**
+     * Story 0048 -- extracted out of orderItemRules() above rather than
+     * duplicated, per the task file's own "Phase 3 must extract rather than
+     * duplicate" instruction: App\Actions\Orders\AddOrderItem and
+     * UpdateOrderItemQuantity both need this exact rule at the action
+     * level (a scalar $quantity argument, not an `items.*.quantity` array
+     * element), and two copies of "reject zero/negative" is precisely the
+     * drift this project's naming-validation-traits.md convention exists to
+     * prevent -- the create path silently rejecting `0` while a future edit
+     * to this method stopped would be invisible until it shipped.
+     *
+     * @return array<int, string>
+     */
+    protected function orderItemQuantityRules(): array
+    {
+        return ['required', 'integer', 'min:1', 'max:'.self::MAX_ITEM_QUANTITY];
+    }
+
+    /**
+     * Story 0048 -- AddOrderItem's own product/variant rule set. Unlike
+     * orderItemRules() above (which validates an `items.*` array element
+     * whose sibling `product_id` is not yet known at rule-construction
+     * time, per CreateOrder's own F-1 docblock), AddOrderItem receives
+     * `$productId` as a plain scalar argument already known before
+     * validation runs -- so the cross-field "the variant belongs to this
+     * product" invariant CAN be expressed as a bare, scoped
+     * Rule::exists()->where() here, rather than resolved after the fact
+     * the way CreateOrder has to.
+     *
+     * `$productId` has no default (Phase 5 code review finding F-B): a
+     * default here would silently degrade the cross-product variant
+     * scoping to a bare, unscoped `Rule::exists()` for any future caller
+     * that omits it -- exactly the shape
+     * docs/errors-log.md's "An action's own parameter default reintroduced
+     * the omission ambiguity its stricter collaborator was built to close"
+     * warns about. Its sibling `orderItemOwnershipRules(string $orderId)`
+     * below already makes the identical call correctly.
+     *
+     * @return array<string, array<int, ValidationRule|string>>
+     */
+    protected function orderItemProductRules(string $productId): array
+    {
+        return [
+            'product_id' => ['required', 'uuid', Rule::exists('products', 'id')],
+            'product_variant_id' => ['nullable', 'uuid', Rule::exists('product_variants', 'id')->where('product_id', $productId)],
+        ];
+    }
+
+    /**
+     * Story 0048 -- what makes the cross-order scenario a VALIDATION
+     * failure rather than a 404 or a silent no-op: the named order item
+     * must exist AND belong to the given order. Without this,
+     * RemoveOrderItem($orderA, $itemFromOrderB) would delete B's row and
+     * recompute A's totals -- two orders corrupted from one call (R-5).
+     *
+     * @return array<int, ValidationRule|string>
+     */
+    protected function orderItemOwnershipRules(string $orderId): array
+    {
+        return ['required', 'uuid', Rule::exists('order_items', 'id')->where('order_id', $orderId)];
     }
 }
