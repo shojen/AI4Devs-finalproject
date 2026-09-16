@@ -22,6 +22,13 @@
  *   4. cursor-not-allowed! lives on that <flux:tooltip> wrapper, never on the
  *      disabled <flux:button> itself (Flux's disabled:pointer-events-none
  *      takes the button out of hit-testing).
+ *
+ * Story 0047 adds the "view detail" row action -- a plain :href link to
+ * customers.show, not a wire:click, so it needs no @js() and no server round
+ * trip. It renders enabled for every actor who can see this list at all
+ * (customers.show's own route gate is `customers.view`, the same ability that
+ * rendered this row), unlike edit/delete beside it, which genuinely can be
+ * disabled per row.
  */
 ?>
 <div class="w-full">
@@ -84,6 +91,17 @@
 
                             <flux:table.cell>
                                 <div class="flex items-center gap-2">
+                                    <flux:button
+                                        variant="ghost"
+                                        size="sm"
+                                        icon="eye"
+                                        aria-label="{{ __('customers.detail.view_detail', ['name' => $customer['name']]) }}"
+                                        data-test="view-customer-{{ $customer['id'] }}"
+                                        :href="route('customers.show', $customer['id'])"
+                                        wire:navigate
+                                        class="cursor-pointer!"
+                                    />
+
                                     @if ($customer['canEdit'])
                                         <flux:button
                                             variant="ghost"

@@ -9,10 +9,12 @@ use Tests\TestCase;
 // specific test is expected to fail (file not found / undefined array key) until backend-expert
 // creates both lang files.
 //
-// N-4's resolution: NEITHER enum declares label() this story -- story 0055 adds it as their first
-// real consumer (docs/conventions/naming.md#translation-keys's "add label() when a second consumer
-// appears" rule). So this file asserts the lang-file leaves DIRECTLY against the raw array,
-// never through a label() method that does not exist.
+// N-4's resolution at story 0045: neither enum declared label() that story, expecting story 0055
+// to add it as their first real consumer. Story 0047's own order-history screen is what actually
+// renders OrderStatus first (a badge per order row, ahead of 0055), so it is the story that earned
+// label() -- per the identical naming.md rule the deferral was made under. PaymentStatus still has
+// no label() (OQ-1: payment_status is not rendered in this cut), so its own lang-key-parity test
+// below still asserts directly against the raw array.
 //
 // CI fix: `lang_path()` resolves through `app()->langPath()`, which needs the app container --
 // bound per-file here rather than directory-wide, so this stays a `tests/Unit/` test (no
@@ -57,6 +59,15 @@ test('every OrderStatus case has a statuses leaf in both lang/en/orders.php and 
     foreach (OrderStatus::cases() as $case) {
         expect($en['statuses'][$case->value])->toBeString()->not->toBeEmpty();
         expect($es['statuses'][$case->value])->toBeString()->not->toBeEmpty();
+    }
+});
+
+// Story 0047: OrderStatus::label() resolves the identical 'orders.statuses.<value>' key this
+// file's own lang-key-parity test above already pins -- matching UserStatus::label()'s shape.
+test('every OrderStatus case\'s label() resolves the matching statuses lang key', function () {
+    foreach (OrderStatus::cases() as $case) {
+        expect($case->label())->toBe(__('orders.statuses.'.$case->value))
+            ->toBeString()->not->toBeEmpty();
     }
 });
 

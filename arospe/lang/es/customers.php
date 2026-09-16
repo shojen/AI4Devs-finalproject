@@ -55,4 +55,22 @@ return [
         'confirm_body' => '¿Seguro que quieres eliminar a ":name"? Esta acción no se puede deshacer.',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Pantalla de detalle
+    |--------------------------------------------------------------------------
+    |
+    | Textos para la pantalla de detalle de cliente (App\Livewire\Customers\Show,
+    | historia 0047): la cabecera de identidad, la sección de historial de
+    | pedidos y la acción de fila "ver detalle" del listado.
+    |
+    */
+
+    'detail' => [
+        'back_to_list' => 'Volver a clientes',
+        'order_history_heading' => 'Historial de pedidos',
+        'no_orders' => 'Este cliente todavía no tiene pedidos.',
+        'view_detail' => 'Ver :name',
+    ],
+
 ];

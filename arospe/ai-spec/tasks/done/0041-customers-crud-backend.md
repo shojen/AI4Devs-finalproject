@@ -726,8 +726,9 @@ decision rather than a rediscovery.
   would then have to reconcile against its real labels.
 - **D-15 — The list-retrieval contract is a specification, not a query scope.** The contract 0044
   must implement: **`Customer::query()->orderBy('name')`, returning every row, with no eager loading
-  (no relation exists yet) and no query-level permission filter** (the route gate and the component
-  own access, per the module-gate pattern). Ordered by `name` ascending because the list's primary
+  (no relation exists yet — story 0047 later adds `Customer::orders()`, but 0044's own list still
+  eager-loads nothing, since it renders no order data) and no query-level permission filter** (the
+  route gate and the component own access, per the module-gate pattern). Ordered by `name` ascending because the list's primary
   job is looking a person up, not seeing what arrived most recently — and 0043's notification is
   what surfaces recency. **No scope method ships here**: a local scope whose only caller does not
   exist yet is speculative, and `Role::selectable()` — this repo's one local scope — exists for a

@@ -1,27 +1,27 @@
 # [0047] Customer detail — order history view UI
 
 ## Description
-Build the customer **detail** screen of PRD [§3.1 Customers](../../docs/PRD/PRD.md#31-customers): a new
+Build the customer **detail** screen of PRD [§3.1 Customers](../../../docs/PRD/PRD.md#31-customers): a new
 permission-gated `customers.show` route, the `App\Livewire\Customers\Show` component behind it, and the
 Blade/Flux view that renders a compact read-only identity header plus that customer's **read-only order
 history**. It also adds the `App\Models\Customer::orders()` relation that stories
-[0041](done/0041-customers-crud-backend.md) and [0045](done/0045-orders-core-crud-backend.md) both deliberately
+[0041](0041-customers-crud-backend.md) and [0045](0045-orders-core-crud-backend.md) both deliberately
 omitted and named this story as the owner of, and the "view detail" row affordance that
-[0044](done/0044-customers-list-create-edit-ui.md)'s list does not yet carry — without which the screen is
+[0044](0044-customers-list-create-edit-ui.md)'s list does not yet carry — without which the screen is
 unreachable.
 
 > ## ✅ UNBLOCKED — both cross-epic dependencies are now `done`
 >
 > **Resolved 2026-09-14.** This banner used to read (quoted in full, per this project's
 > audit-authored-page convention, rather than silently removed): *"This story is fully specified
-> now, but its Phase 3 implementation cannot start until story [0045](done/0045-orders-core-crud-backend.md)
-> is `done` — and 0045 is itself ⛔ blocked on five PRD Epic 2 stories ([0024](done/0024-products-core-crud-backend.md),
-> [0029](done/0029-product-variants-backend.md), [0035](done/0035-shipping-carriers-backend.md),
-> [0036](done/0036-shipping-rate-rules-backend.md), [0038](done/0038-payment-methods-bank-transfer-backend.md)).
+> now, but its Phase 3 implementation cannot start until story [0045](0045-orders-core-crud-backend.md)
+> is `done` — and 0045 is itself ⛔ blocked on five PRD Epic 2 stories ([0024](0024-products-core-crud-backend.md),
+> [0029](0029-product-variants-backend.md), [0035](0035-shipping-carriers-backend.md),
+> [0036](0036-shipping-rate-rules-backend.md), [0038](0038-payment-methods-bank-transfer-backend.md)).
 > This story renders `orders` rows, reads `App\Enums\OrderStatus`, and adds a `hasMany(Order::class)`
 > relation. None of `orders`, `order_items`, `App\Models\Order` or `OrderStatus` exists in code yet.
 > There is nothing here that can be stubbed to proceed: an order-history screen with no `orders`
-> table is the ghost affordance [0044](done/0044-customers-list-create-edit-ui.md) explicitly refused
+> table is the ghost affordance [0044](0044-customers-list-create-edit-ui.md) explicitly refused
 > to ship. The blocking chain is two links long, so state it once and check both: 0047 → 0045 →
 > {0024, 0029, 0035, 0036, 0038}. Confirm 0045 is `done` — not merely unblocked — before Phase 2 is
 > re-run."*
@@ -29,7 +29,7 @@ unreachable.
 > **Both links are now satisfied**: 0045 (Orders core CRUD backend) closed with `orders`,
 > `order_items`, `App\Models\Order`, `App\Models\OrderItem`, `App\Enums\OrderStatus` and
 > `App\Enums\PaymentStatus` all shipped exactly as this story's own file below assumes them (see
-> [database/schema-orders.md](../../docs/database/schema-orders.md) for the shipped shape), and its
+> [database/schema-orders.md](../../../docs/database/schema-orders.md) for the shipped shape), and its
 > own five upstream blockers were already `done` before it closed. 0044 (Customers list +
 > create/edit UI) is also `done`. **Phase 2 must still re-verify this file's assumed column
 > shapes and the `Order`/`OrderItem` model contracts against what actually shipped — R-4/R-5-style
@@ -49,7 +49,7 @@ Three deliverables land here and none of them is separable from the other two:
    0045 named this story as its owner rather than shipping a relation with no reader.
 3. **The "view detail" row affordance on 0044's list** — without it the route exists and nothing links
    to it, which is the same half-delivery a gated route without its `config/modules.php` entry would be
-   ([routes.md](../../docs/api/routes.md#app-owned-routes)).
+   ([routes.md](../../../docs/api/routes.md#app-owned-routes)).
 
 Splitting (3) out would ship a screen no administrator can reach; splitting (2) out would ship a
 relation with no caller, which this repo has already rejected twice (0041 **D-15**, 0045 **D-6**, both
@@ -167,21 +167,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
   second middleware — see D-1 for why, and for the alternative that was rejected.
 - **`can:`, never Spatie's `permission:`** — the rule the sibling route files already state inline; a
   `permission:`-gated route protects the initial `GET` only
-  ([authorization.md](../../docs/architecture/authorization.md#gating-a-livewire-route-use-can-never-permission)).
+  ([authorization.md](../../../docs/architecture/authorization.md#gating-a-livewire-route-use-can-never-permission)).
 - **Route order matters.** `customers/{customer}` must be declared **after** `customers`, or a literal
   `customers` request risks binding as a parameter under some route-cache orderings. Declared in this
   order above; a test pins that `GET /customers` still resolves to `customers.index`.
 - **Route-model binding on `{customer}`**, not a raw string id. `Customer` is UUID-keyed via `HasUuids`,
   whose `resolveRouteBindingQuery()` validates the segment with `Str::isUuid()` first — so a malformed
   parameter is a **404 without a query**
-  ([base-standards.md](../../docs/conventions/base-standards.md#uuid-primary-keys)).
+  ([base-standards.md](../../../docs/conventions/base-standards.md#uuid-primary-keys)).
 - ⚠️ **Do not plan a `verified`-middleware test.** `App\Models\User` does not implement `MustVerifyEmail`,
   so `verified` refuses nobody on any route in this app; a test asserting it carries no signal
-  ([errors-log.md](../../docs/errors-log-archive.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)).
+  ([errors-log.md](../../../docs/errors-log-archive.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)).
 
 ### Component — `app/Livewire/Customers/Show.php` (new)
 
-Class-based, `#[Title]` on the class ([base-standards.md](../../docs/conventions/base-standards.md#livewire-component-convention-class-based-not-single-file)).
+Class-based, `#[Title]` on the class ([base-standards.md](../../../docs/conventions/base-standards.md#livewire-component-convention-class-based-not-single-file)).
 
 | Member | Shape | Notes |
 | --- | --- | --- |
@@ -223,7 +223,7 @@ Class-based, `#[Title]` on the class ([base-standards.md](../../docs/conventions
   **The early return is the disclosure gate, not the view's `@if`.** A view-only conditional would leave
   the query running and the rows in the component's render context — gating a method that *discloses* is
   the shipped rule
-  ([livewire-authorization.md](../../docs/security/livewire-authorization.md#gate-at-the-top-of-every-method-that-mutates-or-discloses)),
+  ([livewire-authorization.md](../../../docs/security/livewire-authorization.md#gate-at-the-top-of-every-method-that-mutates-or-discloses)),
   and the view branches on the **same** `canViewOrderHistory()` predicate so the two cannot drift. This
   is the non-throwing-predicate / guarded-consumer shape `EnsureRecentPasswordConfirmation` established.
 - **Ordering is `orderByDesc('created_at')->orderByDesc('id')`** — 0045 **D-6**, applied to the relation
@@ -235,7 +235,7 @@ Class-based, `#[Title]` on the class ([base-standards.md](../../docs/conventions
   be copied here. Eager-loading relations nothing renders is a per-row cost for no output.
 - **`total` is a decimal string end to end.** Eloquent's `decimal:2` cast returns a string; a `(float)`
   anywhere in this component or its view is a defect (**D-9**, [R-4](#risks)).
-- **Boolean/computed naming** follows [naming.md](../../docs/conventions/naming.md#boolean-properties):
+- **Boolean/computed naming** follows [naming.md](../../../docs/conventions/naming.md#boolean-properties):
   a predicate (`canViewOrderHistory()`), never a noun, never a `get*` prefix — and the rule binds a
   `#[Computed]` method exactly as it binds a property.
 
@@ -245,7 +245,7 @@ Class-based, `#[Title]` on the class ([base-standards.md](../../docs/conventions
 normal component ↔ view mirror, so it resolves to `livewire/customers/show.blade.php` — while its
 sibling `App\Livewire\Customers\Index` resolves to the **flat** `livewire/customers.blade.php`. The two
 therefore live at different depths, which
-[naming.md](../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
+[naming.md](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
 records as expected rather than a mistake. **Resolve the path by running the component, not by reasoning
 about it** — stories 0010 and 0011 both wrote the wrong path into their own Phase 1 specs and found out
 at first render.
@@ -286,7 +286,7 @@ Markup rules inherited rather than invented:
 
 1. **`@js(...)` around any `wire:click` argument** — there are none on this page today, and if one is
    ever added the rule binds
-   ([blade-livewire-output-encoding.md](../../docs/security/blade-livewire-output-encoding.md)).
+   ([blade-livewire-output-encoding.md](../../../docs/security/blade-livewire-output-encoding.md)).
 2. **`data-test` hooks** on the elements the tests select: `data-test="customer-detail-header"`,
    `data-test="customer-order-history"` (the section wrapper — its **absence** is what the
    `orders.view`-less test asserts), and `data-test="customer-order-{id}"` per row.
@@ -322,7 +322,7 @@ public function orders(): HasMany
   relation rather than re-declaring one. It is added here because this story is its first *reader*, per
   the "no scope/relation ahead of its consumer" rule 0041 **D-15** and 0045 **D-6** both applied.
 - ⚠️ **`@property-read`**: add `Collection<int, Order> $orders` to the model's `@property` docblock,
-  which [base-standards.md](../../docs/conventions/base-standards.md#model-conventions) requires be kept
+  which [base-standards.md](../../../docs/conventions/base-standards.md#model-conventions) requires be kept
   in lockstep. Larastan level 7 will flag the relation's generics if the annotation is wrong, not merely
   missing.
 
@@ -357,7 +357,7 @@ One new key group, key-for-key identical across both locales, snake_case leaves:
   which 0045 ships; adding a status label here would be a second source of truth for the same string.
 - **No `trans_choice()` key needed** — nothing on this page is count-dependent. (Should an order count
   ever be shown, it is one `|`-delimited key resolved with `trans_choice()`, never a PHP ternary and
-  never inline in the Blade file — [naming.md](../../docs/conventions/naming.md#translation-keys).)
+  never inline in the Blade file — [naming.md](../../../docs/conventions/naming.md#translation-keys).)
 - Generic chrome (`Back`, `Email`, `Phone`, `Date`, `Total`) stays as bare `__('…')` literals matching
   `users.blade.php`; only domain copy goes in this file.
 - Both locale files ship in the same change. `APP_LOCALE=en` today, so everything renders English until
@@ -379,7 +379,7 @@ One new key group, key-for-key identical across both locales, snake_case leaves:
 
 ## Tests to perform
 
-Two suites. Per [testing/README.md](../../docs/testing/README.md), a `Livewire::test()` authorization
+Two suites. Per [testing/README.md](../../../docs/testing/README.md), a `Livewire::test()` authorization
 test and an HTTP one are **not substitutes for each other** — route middleware and the in-component gate
 fail in different places, and `/livewire/update` does not re-run every route middleware. Both are
 required wherever authorization is asserted.
@@ -391,7 +391,7 @@ required wherever authorization is asserted.
 - [ ] Negative test: a signed-in user holding no `customers.*` permission gets a **403**.
 - [ ] **Positive** test: a user holding exactly `customers.view` gets a **200**. Required, not optional —
       a misspelled ability denies everyone and denial is indistinguishable from a correct refusal
-      ([authorization.md](../../docs/architecture/authorization.md#the-copyable-module-gate-pattern-and-the-three-alternatives-rejected)).
+      ([authorization.md](../../../docs/architecture/authorization.md#the-copyable-module-gate-pattern-and-the-three-alternatives-rejected)).
 - [ ] Integration test: a Super Admin (holding zero permission rows) gets a **200** via `Gate::before`.
 - [ ] Negative test: `route('customers.show', $trashedCustomer)` is a **404**. Route-model binding
       resolves through the scoped query, so a soft-deleted customer simply does not bind — **confirmed
@@ -529,7 +529,7 @@ Orders-adjacent customer view reuses.
 
 - [ ] Tests written and green — the full suite unscoped (`php artisan test`, no `--filter`), not only the
       Customers-scoped run
-      ([base-standards.md](../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done)).
+      ([base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done)).
 - [ ] `vendor/bin/pint --format agent` run **unscoped** (not `--dirty`), and Larastan level 7 clean —
       the relation's generics are the likely finding.
 - [ ] Code reviewed (`code-reviewer`).
@@ -538,27 +538,27 @@ Orders-adjacent customer view reuses.
       that `$customerId` is `#[Locked]`; and that the absent-section branch discloses nothing about how
       many orders exist.
 - [ ] Documentation updated (`docs-keeper`):
-  - [`api/routes.md`](../../docs/api/routes.md) — `customers.show` added to the app-owned routes table,
+  - [`api/routes.md`](../../../docs/api/routes.md) — `customers.show` added to the app-owned routes table,
     with a subsection recording that its middleware column **understates** what protects the page: the
     order-history section additionally requires `orders.view`, enforced in-method and therefore invisible
     there. This is the same "the middleware column understates what protects this route" note
     `users.index` and `roles.index` both carry.
-  - [`architecture/authorization.md`](../../docs/architecture/authorization.md) — the
-    [disclosure-gate section](../../docs/security/livewire-authorization.md#the-shipped-disclosure-gates-and-why-the-disclosure-check-is-the-stronger-ability)'s
+  - [`architecture/authorization.md`](../../../docs/architecture/authorization.md) — the
+    [disclosure-gate section](../../../docs/security/livewire-authorization.md#the-shipped-disclosure-gates-and-why-the-disclosure-check-is-the-stronger-ability)'s
     rule gains its **first cross-module** case: a screen owned by one module disclosing another module's
     records asks that other module's ability, and refuses by **omitting the section**, not by 403.
-  - [`database/schema.md`](../../docs/database/schema.md) — the `customers` ⇄ `orders` relationship is now
+  - [`database/schema.md`](../../../docs/database/schema.md) — the `customers` ⇄ `orders` relationship is now
     live in the model layer. **Verify rather than assume:** 0045 adds the FK and the ER edge; this story
     adds only the Eloquent relation, so the schema page may need no change at all — check, and record
     that it was checked.
-  - [`conventions/naming.md`](../../docs/conventions/naming.md) — the `Index`-flat / `Show`-nested depth
+  - [`conventions/naming.md`](../../../docs/conventions/naming.md) — the `Index`-flat / `Show`-nested depth
     asymmetry now has a **shipped second case** in the same folder, which the existing "that asymmetry is
     expected, not a mistake" paragraph predicted but could not cite.
   - **Grep the tree for bare negative claims this story falsifies**, not only the change→doc mapping:
     `grep -rn "no relation exists\|no detail route\|only route\|does not exist yet" docs/` — 0041 **D-15**'s
     "no eager loading (no relation exists yet)" is quoted in at least two places and becomes an
     under-statement the moment `orders()` lands
-    ([errors-log-archive.md](../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)).
+    ([errors-log-archive.md](../../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)).
 - [ ] Acceptance criteria met.
 
 ## Documented functional decisions
@@ -579,7 +579,7 @@ reading the same predicate.
 module's records**. The precedent is exact and already shipped: task 0015 closed finding F7 by gating
 `App\Livewire\Users\Index`'s three modal openers, and the rule it established is *"a disclosure gate must
 cover every attribute the method copies out, not the operation the actor might go on to perform"*
-([livewire-authorization.md](../../docs/security/livewire-authorization.md#the-shipped-disclosure-gates-and-why-the-disclosure-check-is-the-stronger-ability)).
+([livewire-authorization.md](../../../docs/security/livewire-authorization.md#the-shipped-disclosure-gates-and-why-the-disclosure-check-is-the-stronger-ability)).
 `openEditModal()` asks `updateSensitiveAttributes` — a **stronger** ability than the base `users.view`
 that rendered the list — precisely because it copies out attributes that ability owns. Here the attributes
 being copied out are `order_number`, `status` and `total`: they are owned by `orders.view`, and no reading
@@ -596,7 +596,7 @@ entirely — no heading, no empty state, no "insufficient permission" notice —
 **Why the check is in the method, not only the view.** A view-only `@if` leaves the query running and the
 rows in the render context; a template change, a debug dump or a future partial could surface them. The
 guard belongs where the disclosure happens
-([livewire-authorization.md](../../docs/security/livewire-authorization.md#gate-at-the-top-of-every-method-that-mutates-or-discloses)),
+([livewire-authorization.md](../../../docs/security/livewire-authorization.md#gate-at-the-top-of-every-method-that-mutates-or-discloses)),
 and the view reads the **same** `canViewOrderHistory()` predicate so the hint and the rule cannot drift —
 the throwing-guard-around-non-throwing-predicate shape `EnsureRecentPasswordConfirmation` established.
 
@@ -671,7 +671,7 @@ affordance 0044 refused. Adding it is a one-line backlog item once 0055 lands ([
 Three files here belong to a sibling story: `resources/views/livewire/customers.blade.php`,
 `lang/{en,es}/customers.php` and `routes/customers.php`. This repo has a recorded incident about two
 agents writing the same Blade view
-([errors-log-archive.md](../../docs/errors-log-archive.md#two-agents-dispatched-in-parallel-both-wrote-to-the-same-blade-view--2026-08-16)),
+([errors-log-archive.md](../../../docs/errors-log-archive.md#two-agents-dispatched-in-parallel-both-wrote-to-the-same-blade-view--2026-08-16)),
 and 0044's own "Why this is one story" section refused to split its view for the same reason.
 
 **The rule for Phase 3: this story must not be implemented in parallel with 0044.** A *sequential* edit of
@@ -688,7 +688,7 @@ for a trashed or malformed id — and `mount()` then stores **only the id**, re-
 the Users screen uses for `$deletingUserId`. `#[Locked]` because a client-writable id would let any holder
 of `customers.view` re-point the component at a different customer over `/livewire/update` — which the
 route gate would not re-evaluate, since route middleware is only partially re-applied there
-([livewire-authorization.md](../../docs/security/livewire-authorization.md)).
+([livewire-authorization.md](../../../docs/security/livewire-authorization.md)).
 
 ### D-8 — No eager loading; 0045's **D-14** detail contract is story 0055's, not this one's
 
@@ -755,24 +755,24 @@ names the customer. Reversible in one line if the product asks.
 
 | Depends on | State | Verified how |
 | --- | --- | --- |
-| `customers` table + `App\Models\Customer` | story [0041](done/0041-customers-crud-backend.md) — **hard dependency** | the relation is declared on that model; the header reads its `name`/`email`/`phone` |
-| `customers.deleted_at` (soft delete) | story [0042](done/0042-customers-soft-delete-backend.md) — **hard dependency** | the 404-for-a-trashed-customer test asserts behaviour that only exists once `SoftDeletes` is on the model |
-| The Customers screen: route file, list view, lang files, registry entry | story [0044](done/0044-customers-list-create-edit-ui.md) — **hard dependency**, and this story **edits three of its files** (**D-6**) | `routes/customers.php`, `resources/views/livewire/customers.blade.php`, `lang/{en,es}/customers.php` |
-| `orders` table, `App\Models\Order`, `App\Enums\OrderStatus`, `orders.statuses.*` lang keys | story [0045](done/0045-orders-core-crud-backend.md) — **hard dependency, now `done`** | every order row column, the status badge label, and the `hasMany` target |
+| `customers` table + `App\Models\Customer` | story [0041](0041-customers-crud-backend.md) — **hard dependency** | the relation is declared on that model; the header reads its `name`/`email`/`phone` |
+| `customers.deleted_at` (soft delete) | story [0042](0042-customers-soft-delete-backend.md) — **hard dependency** | the 404-for-a-trashed-customer test asserts behaviour that only exists once `SoftDeletes` is on the model |
+| The Customers screen: route file, list view, lang files, registry entry | story [0044](0044-customers-list-create-edit-ui.md) — **hard dependency**, and this story **edits three of its files** (**D-6**) | `routes/customers.php`, `resources/views/livewire/customers.blade.php`, `lang/{en,es}/customers.php` |
+| `orders` table, `App\Models\Order`, `App\Enums\OrderStatus`, `orders.statuses.*` lang keys | story [0045](0045-orders-core-crud-backend.md) — **hard dependency, now `done`** | every order row column, the status badge label, and the `hasMany` target |
 | `orders.view` in the seeded permission catalog | **shipped** (Epic 1) | `RolePermissionSeeder::MODULES` carries `orders`; all four CRUD actions are generated for it |
-| `Gate::before` Super Admin bypass | **shipped** (Epic 1) | [authorization.md](../../docs/architecture/authorization.md) |
+| `Gate::before` Super Admin bypass | **shipped** (Epic 1) | [authorization.md](../../../docs/architecture/authorization.md) |
 | The `can:`-gated Livewire route pattern | **shipped** (tasks 0004/0010/0040) | `routes/users.php`, `routes/roles.php` |
 | UUID route-model binding | **shipped** (task 0001) | `HasUuids::resolveRouteBindingQuery()` — the malformed-id 404 |
 
 #### ✅ Unblocked — inherited cross-epic dependency, resolved
 
-[0045](done/0045-orders-core-crud-backend.md) is `done`, and its own five upstream blockers —
-[0024](done/0024-products-core-crud-backend.md), [0029](done/0029-product-variants-backend.md),
-[0035](done/0035-shipping-carriers-backend.md), [0036](done/0036-shipping-rate-rules-backend.md) and
-[0038](done/0038-payment-methods-bank-transfer-backend.md) — were already `done` before it closed.
+[0045](0045-orders-core-crud-backend.md) is `done`, and its own five upstream blockers —
+[0024](0024-products-core-crud-backend.md), [0029](0029-product-variants-backend.md),
+[0035](0035-shipping-carriers-backend.md), [0036](0036-shipping-rate-rules-backend.md) and
+[0038](0038-payment-methods-bank-transfer-backend.md) — were already `done` before it closed.
 The chain **0047 → 0045 → five Epic 2 stories** is fully satisfied. Phase 2 must still re-verify
 this story's assumed `orders`/`order_items` column shapes against
-[database/schema-orders.md](../../docs/database/schema-orders.md) (the shipped shape) before Phase
+[database/schema-orders.md](../../../docs/database/schema-orders.md) (the shipped shape) before Phase
 3 begins, per the same re-verification discipline this file's own Risks section already names.
 
 #### What depends on this story
@@ -799,7 +799,7 @@ this story's assumed `orders`/`order_items` column shapes against
 - **R-3 — This document goes stale while it waits.** It is blocked behind a story that is itself blocked
   behind five, each of which may change during its own Phase 4/5 — precisely the *"a deferred finding is a
   claim about a tree, and the task file freezes while the tree does not"* failure recorded in
-  [errors-log.md](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+  [errors-log.md](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
   This file quotes 0045's `order_number`, `status`, `total` and `created_at` column shapes, its
   `OrderStatus` case set, and 0044's `data-test` conventions — **all read from task files that are
   themselves still `new`**. *Mitigation:* Phase 2's INVEST review must be **re-run** immediately before
@@ -811,7 +811,7 @@ this story's assumed `orders`/`order_items` column shapes against
 - **R-5 — `Gate::allows('orders.view')` fails closed on a typo, silently.** A misspelled ability hides the
   section from everybody, and a hidden section is indistinguishable from a correct refusal — the
   fail-closed-and-unwarned hazard
-  [authorization.md](../../docs/architecture/authorization.md#the-copyable-module-gate-pattern-and-the-three-alternatives-rejected)
+  [authorization.md](../../../docs/architecture/authorization.md#the-copyable-module-gate-pattern-and-the-three-alternatives-rejected)
   already records for `can:`. *Mitigation:* a **positive** rendering test beside the negative one, and the
   ability asserted against the seeded catalog rather than typed twice.
 - **R-6 — The parameterised route shadowing the index route.** `customers/{customer}` declared before
@@ -875,14 +875,14 @@ Derived from this story, none of them in scope:
 
 ## Provenance
 
-- **PRD source:** [§3.1 Customers](../../docs/PRD/PRD.md#31-customers) — the *"View a customer's order
+- **PRD source:** [§3.1 Customers](../../../docs/PRD/PRD.md#31-customers) — the *"View a customer's order
   history"* scenario is adapted above as this story's main case and split into three single-`When`
   scenarios (the history renders, it is ordered, a row shows its fields), per the single-action rule. The
   §3.1 acceptance criterion *"a customer record … shows a read-only order-history view"* is the one this
   story satisfies; the create, duplicate-email, soft-delete and notification criteria belong to 0041–0044.
   The Epic 3 preamble's *"same list + detail/editor visual patterns established in Users and Products …
   a detail/editor view"* is what **D-3** cites for a fuller detail page.
-- **Process:** [workflow.md](../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from
+- **Process:** [workflow.md](../../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from
   `frontend-expert` (the new-route-vs-modal scope decision with its justification, the route/component/view
   shape, the column set and ordering, the `Customer::orders()` relation, and the missing-link gap on
   0044's list) and `frontend-qa` (the test set, the markup-level read-only assertion and why "no visible
@@ -898,13 +898,13 @@ Derived from this story, none of them in scope:
   **D-12** resolve shape and ordering questions the contributions raised but did not settle. The
   soft-deleted-customer question is resolved as *confirmed*, with a test replacing the assumption.
 - **Gherkin conventions:** every scenario opens with a named business-role actor and carries exactly one
-  `When`, per [gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 —
+  `When`, per [gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 —
   mandatory across all Gherkin in this project, per the incident recorded in
-  [errors-log.md](../../docs/errors-log.md).
+  [errors-log.md](../../../docs/errors-log.md).
 - **Stage:** `new`. Moves to `ai-spec/tasks/in-progress/` at the start of Phase 3 and to
   `ai-spec/tasks/done/` at Phase 7 — the first move changes this file's directory depth, so every relative
   link above must be re-resolved on each move, in **both** directions, per
-  [workflow.md](../../docs/workflow.md#link-integrity-check-on-every-stage-move).
+  [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move).
 - **Epic 3 decomposition:** story 7 of 15. Hard dependencies on 0041, 0042, 0044 and 0045; ⛔ blocked
   transitively through 0045 on Epic 2 stories 0024, 0029, 0035, 0036 and 0038. Referenced by number only,
   their files not yet existing: 0046 (new-order notification), 0048–0054 (status/refund/tax), 0055 (Orders
