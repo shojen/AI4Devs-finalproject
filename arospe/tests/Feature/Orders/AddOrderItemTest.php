@@ -300,3 +300,21 @@ test('adding a line item whose line_total would exceed the decimal column ceilin
 
     expect($order->items()->count())->toBe(0);
 });
+
+// F-7 (Phase 4 re-audit finding NEW-1): a blank-string product_variant_id (what a wire:model-bound
+// <select> with no selection submits, per Livewire's ConvertEmptyStringsToNull opt-out -- see
+// docs/errors-log.md's maxWeightKg entry for the identical mechanism) must behave exactly like a
+// real null, not reach Rule::exists()/findOrFail() as if it named a real variant.
+test('adding a line item with a blank-string product_variant_id behaves exactly like passing null', function () {
+    actingOrderEditor();
+
+    $order = Order::factory()->create();
+    $product = Product::factory()->create(['name' => 'Widget', 'sku' => 'WID-001', 'price' => '25.00']);
+
+    $item = app(AddOrderItem::class)($order, $product->id, '', 1);
+
+    expect($item->product_variant_id)->toBeNull()
+        ->and((string) $item->unit_price)->toBe('25.00')
+        ->and($item->product_name)->toBe('Widget')
+        ->and($item->product_sku)->toBe('WID-001');
+});
