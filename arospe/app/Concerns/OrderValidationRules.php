@@ -164,19 +164,22 @@ trait OrderValidationRules
      * Rule::exists()->where() here, rather than resolved after the fact
      * the way CreateOrder has to.
      *
+     * `$productId` has no default (Phase 5 code review finding F-B): a
+     * default here would silently degrade the cross-product variant
+     * scoping to a bare, unscoped `Rule::exists()` for any future caller
+     * that omits it -- exactly the shape
+     * docs/errors-log.md's "An action's own parameter default reintroduced
+     * the omission ambiguity its stricter collaborator was built to close"
+     * warns about. Its sibling `orderItemOwnershipRules(string $orderId)`
+     * below already makes the identical call correctly.
+     *
      * @return array<string, array<int, ValidationRule|string>>
      */
-    protected function orderItemProductRules(?string $productId = null): array
+    protected function orderItemProductRules(string $productId): array
     {
-        $variantExists = Rule::exists('product_variants', 'id');
-
-        if ($productId !== null) {
-            $variantExists = $variantExists->where('product_id', $productId);
-        }
-
         return [
             'product_id' => ['required', 'uuid', Rule::exists('products', 'id')],
-            'product_variant_id' => ['nullable', 'uuid', $variantExists],
+            'product_variant_id' => ['nullable', 'uuid', Rule::exists('product_variants', 'id')->where('product_id', $productId)],
         ];
     }
 

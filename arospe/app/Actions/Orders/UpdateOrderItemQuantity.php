@@ -62,7 +62,7 @@ class UpdateOrderItemQuantity
     {
         $order->refresh();
 
-        $this->logRefusedPrivilegedAttempt->authorize('update', $order);
+        $this->logRefusedPrivilegedAttempt->authorize('update', $order, targetType: 'order', targetId: $order->id);
 
         $this->assertEditable($order);
 
