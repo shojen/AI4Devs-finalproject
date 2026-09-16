@@ -256,3 +256,47 @@ test('adding a line item never writes tax_rate itself', function () {
 
     expect((string) $order->fresh()->tax_rate)->toBe('0.100');
 });
+
+// --- Phase 4 security audit fixes ---
+
+// F-2: an order already at MAX_ITEMS line items refuses a further add -- previously unbounded on
+// this edit path (CreateOrder's own `max:` rule only bounds a brand-new order's own `items` array).
+test('adding a line item to an order already at the line-item ceiling is rejected, and no row is stored', function () {
+    actingOrderEditor();
+
+    $order = Order::factory()->withItems(AddOrderItem::MAX_ITEMS)->create();
+    $product = Product::factory()->create();
+
+    expect(fn () => app(AddOrderItem::class)($order, $product->id, null, 1))
+        ->toThrow(ValidationException::class);
+
+    expect($order->items()->count())->toBe(AddOrderItem::MAX_ITEMS);
+});
+
+// The boundary from the other side -- a ceiling asserted only from its refusing side cannot
+// distinguish >= MAX_ITEMS from > MAX_ITEMS.
+test('adding a line item to an order one below the line-item ceiling succeeds', function () {
+    actingOrderEditor();
+
+    $order = Order::factory()->withItems(AddOrderItem::MAX_ITEMS - 1)->create();
+    $product = Product::factory()->create();
+
+    app(AddOrderItem::class)($order, $product->id, null, 1);
+
+    expect($order->items()->count())->toBe(AddOrderItem::MAX_ITEMS);
+});
+
+// F-1: the same decimal(10,2) column-overflow guard CreateOrder already applies at create time
+// (CreateOrderValidationTest.php's identical scenario) now also applies on this edit path.
+test('adding a line item whose line_total would exceed the decimal column ceiling is rejected, and no row is stored', function () {
+    actingOrderEditor();
+
+    $order = Order::factory()->create();
+    // The maximum a `decimal(10,2)` products.price column can hold.
+    $product = Product::factory()->create(['price' => '99999999.99']);
+
+    expect(fn () => app(AddOrderItem::class)($order, $product->id, null, 2))
+        ->toThrow(ValidationException::class);
+
+    expect($order->items()->count())->toBe(0);
+});

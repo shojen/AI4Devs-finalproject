@@ -213,3 +213,25 @@ test('changing a quantity never writes tax_rate itself', function () {
 
     expect((string) $order->fresh()->tax_rate)->toBe('0.100');
 });
+
+// --- Phase 4 security audit fixes ---
+
+// F-1: the same decimal(10,2) column-overflow guard CreateOrder/AddOrderItem already apply now
+// also applies on this edit path -- a near-maximum unit_price at a high enough quantity can still
+// overflow order_items.line_total even though `quantity` alone passed orderItemQuantityRules()'s
+// own max: bound.
+test('changing a quantity whose new line_total would exceed the decimal column ceiling is rejected, and the quantity is unchanged', function () {
+    actingOrderEditorForQuantity();
+
+    $product = Product::factory()->create(['price' => '99999999.99']);
+    $order = Order::factory()->create();
+    // The maximum a `decimal(10,2)` order_items.unit_price column can hold, at quantity 1 -- still
+    // within bounds until the change below multiplies it past the column ceiling.
+    $item = OrderItem::factory()->for($order)->create(['product_id' => $product->id, 'quantity' => 1]);
+    $originalQuantity = $item->quantity;
+
+    expect(fn () => app(UpdateOrderItemQuantity::class)($order, $item->id, 2))
+        ->toThrow(ValidationException::class);
+
+    expect($item->fresh()->quantity)->toBe($originalQuantity);
+});
