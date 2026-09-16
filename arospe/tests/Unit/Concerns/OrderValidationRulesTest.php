@@ -4,6 +4,16 @@ use App\Concerns\OrderValidationRules;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Exists;
+use Tests\TestCase;
+
+// This file drives Validator::make() directly (the facade, which needs a booted `validator`
+// binding) -- matching tests/Unit/Concerns/PaymentMethodValidationRulesTest.php's own precedent
+// for the identical reason. Unit tests are NOT bound to Tests\TestCase by default
+// (tests/Pest.php's pest()->extend(TestCase::class)->use(RefreshDatabase::class)->in('Feature',
+// 'Browser') only covers Feature/Browser), so without this the facade call fails with
+// "Target class [validator] does not exist." No RefreshDatabase needed -- nothing here touches
+// the database (this file's own banner comment above already states that).
+uses(TestCase::class);
 
 // Story 0048, Phase 3 (TDD "red" step): App\Concerns\OrderValidationRules does not yet declare
 // orderItemQuantityRules() or orderItemOwnershipRules() -- every test below is expected to fail

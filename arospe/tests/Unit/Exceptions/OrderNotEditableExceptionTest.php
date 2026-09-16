@@ -15,6 +15,17 @@
 
 use App\Exceptions\OrderNotEditableException;
 use Illuminate\Http\Request;
+use Tests\TestCase;
+
+// Unlike ImmutableRoleException/PasswordConfirmationRequiredException (whose messages are
+// caller-supplied strings), OrderNotEditableException's constructor itself calls
+// __('orders.errors.order_not_editable') -- resolving `app('translator')`. Unit tests are NOT
+// bound to Tests\TestCase by default (tests/Pest.php only covers Feature/Browser), so without
+// this the very first `new OrderNotEditableException` fails with "Target class [translator] does
+// not exist." Matches tests/Unit/Concerns/PaymentMethodValidationRulesTest.php's own precedent
+// for the identical class of problem. No RefreshDatabase needed -- nothing here touches the
+// database.
+uses(TestCase::class);
 
 test('it is a runtime exception', function () {
     expect(new OrderNotEditableException)->toBeInstanceOf(RuntimeException::class);

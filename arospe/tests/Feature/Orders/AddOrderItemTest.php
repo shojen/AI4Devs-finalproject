@@ -136,12 +136,18 @@ test('a line item naming a variant snapshots the variant own price and sku, not 
 
     $order = Order::factory()->create();
     $product = Product::factory()->create(['name' => 'Shirt', 'sku' => 'SHIRT-BASE', 'price' => '15.00']);
+    // ProductVariantFactory::configure()'s afterMaking() hook unconditionally re-derives `sku`
+    // from the parent product's own sku (DeriveVariantSku, per FP13) regardless of what is
+    // passed to create() here — 'SHIRT-RED-M' is never actually persisted. Assert against the
+    // variant's real, persisted sku instead of the literal that was overridden away. See
+    // docs/errors-log.md's "A GeographyEntryFactory override to `name` silently left
+    // `normalized_name` stale" entry for the same class of mistake.
     $variant = ProductVariant::factory()->for($product)->create(['sku' => 'SHIRT-RED-M', 'price' => '18.50']);
 
     $item = app(AddOrderItem::class)($order, $product->id, $variant->id, 1);
 
     expect((string) $item->unit_price)->toBe('18.50')
-        ->and($item->product_sku)->toBe('SHIRT-RED-M')
+        ->and($item->product_sku)->toBe($variant->sku)
         ->and($item->product_name)->toBe('Shirt')
         ->and($item->product_variant_id)->toBe($variant->id);
 });
