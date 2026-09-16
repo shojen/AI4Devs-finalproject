@@ -42,11 +42,14 @@ return [
     // Story 0048: order_not_editable is OrderNotEditableException's constant
     // message (D-5) -- never interpolated with the order's id, number or
     // status. last_line_item_cannot_be_removed is D-1's ValidationException
-    // message for RemoveOrderItem's own guard.
+    // message for RemoveOrderItem's own guard. too_many_line_items is Phase 4
+    // security audit finding F-2's AddOrderItem ceiling guard message,
+    // added against App\Concerns\OrderValidationRules::MAX_ITEMS.
     'errors' => [
         'total_exceeds_maximum' => 'One or more line items would produce a total that exceeds the maximum representable value.',
         'order_not_editable' => 'This order can no longer be edited.',
         'last_line_item_cannot_be_removed' => 'An order must keep at least one line item. Cancel the order instead of removing its last item.',
+        'too_many_line_items' => 'An order cannot hold more than :max line items.',
     ],
 
 ];

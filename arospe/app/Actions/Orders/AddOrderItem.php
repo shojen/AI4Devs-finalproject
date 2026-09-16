@@ -10,8 +10,11 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Story 0048 -- add a line item to an open order. `__invoke()`'s parameter
@@ -40,8 +43,28 @@ use Illuminate\Support\Facades\Validator;
  *    id and a quantity, never a price, a name or a SKU (D-4). When a
  *    variant is named, its own price/SKU are used, never the parent
  *    product's -- matching CreateOrder's identical D-15 rule.
- * 6. `DB::transaction()`: insert the `order_items` row, then recompute and
- *    persist the parent's totals (D-7/D-8) via RecalculateOrderTotals.
+ * 6. `DB::transaction()`: re-verify the hard block and the line-item ceiling
+ *    against the order's TRUE current state under `lockForUpdate()` (Phase 4
+ *    security audit finding F-4), insert the `order_items` row, then
+ *    recompute and persist the parent's totals (D-7/D-8) via
+ *    RecalculateOrderTotals.
+ *
+ * Phase 4 security audit fixes applied to this action:
+ * - F-2: refuses once the order is already at `OrderValidationRules::MAX_ITEMS`
+ *   line items -- previously unbounded on this edit path, unlike CreateOrder's
+ *   own `orderItemsRules()` `max:` rule, which only bounds a NEW order.
+ * - F-4: the hard block is re-checked a second time, inside the transaction,
+ *   against an order re-read under `lockForUpdate()` -- closing the window
+ *   between the pre-transaction check (against a merely `refresh()`ed, unlocked
+ *   instance) and the write.
+ * - F-5: the optional variant is resolved THROUGH `$product->variants()`
+ *   rather than a global `ProductVariant::query()`, a second, structural
+ *   layer on top of `orderItemProductRules()`'s own scoped `Rule::exists()`
+ *   (docs/security/related-id-pair-resolution.md).
+ * - F-7: a blank-string `$productVariantId` (Livewire's `''`, never a real
+ *   `null` -- see docs/errors-log.md's `maxWeightKg` entry for the identical
+ *   mechanism) is normalised to `null` before validation and resolution,
+ *   matching CreateOrder's own identical normalisation.
  */
 class AddOrderItem
 {
@@ -51,6 +74,7 @@ class AddOrderItem
         private readonly LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt,
         private readonly RecalculateOrderTotals $recalculateOrderTotals,
         private readonly ToNumericString $toNumericString,
+        private readonly AssertWithinColumnCeiling $assertWithinColumnCeiling,
     ) {}
 
     public function __invoke(Order $order, string $productId, ?string $productVariantId, int $quantity): OrderItem
@@ -60,6 +84,11 @@ class AddOrderItem
         $this->logRefusedPrivilegedAttempt->authorize('update', $order);
 
         $this->assertEditable($order);
+
+        // F-7: treat a blank string exactly like a real null, before validation ever runs --
+        // the normalised value, never the raw parameter, is what both the validation call and
+        // the resolution below use.
+        $productVariantId = $this->normalizeVariantId($productVariantId);
 
         Validator::make(
             [
@@ -74,8 +103,12 @@ class AddOrderItem
         )->validate();
 
         $product = Product::query()->findOrFail($productId);
+
+        // F-5: resolve THROUGH the parent product's own relation, never a global query -- a
+        // second, structural layer on top of orderItemProductRules()'s already-scoped
+        // Rule::exists()->where('product_id', ...) above, not a replacement for it.
         $variant = $productVariantId !== null
-            ? ProductVariant::query()->findOrFail($productVariantId)
+            ? $product->variants()->findOrFail($productVariantId)
             : null;
 
         // A plain `->` (not `?->`) on the left of `??` is intentional, not an oversight --
@@ -86,9 +119,39 @@ class AddOrderItem
         $productSku = (string) ($variant->sku ?? $product->sku);
         $lineTotal = bcmul($unitPrice, (string) $quantity, 2);
 
+        // F-8 (Phase 4 security audit, informational): $lockedOrder below must stay entirely
+        // closure-local, re-fetched INSIDE this transaction rather than mutated from the
+        // outer-scope $order. RecalculateOrderTotals mutates the Order instance it is given via
+        // forceFill()->save() -- if a future edit hoisted the order fetch back outside this
+        // closure and this transaction ever gained an `attempts: N` retry, a retried attempt
+        // could silently skip the write, the exact shape App\Actions\Products\UpdateProduct's own
+        // docblock describes (docs/security/derived-column-invariants.md, "What the remediation
+        // introduced"). No `attempts:` is used here today -- this is defensive documentation.
         return DB::transaction(function () use ($order, $product, $variant, $quantity, $unitPrice, $productSku, $lineTotal): OrderItem {
+            // F-4: re-verify against the order's TRUE current state under lock, not the
+            // possibly-stale instance the caller handed over (the plain refresh() above is not
+            // itself a lock, so a concurrent status change could still race it).
+            $lockedOrder = Order::query()->whereKey($order->id)->lockForUpdate()->first()
+                ?? throw (new ModelNotFoundException)->setModel(Order::class, [$order->id]);
+
+            $this->assertEditable($lockedOrder);
+
+            // F-2: refuse once the order is already at the line-item ceiling, checked against
+            // the same locked instance above -- no second, redundant lock.
+            if ($lockedOrder->items()->count() >= self::MAX_ITEMS) {
+                $this->logRefusedPrivilegedAttempt->log(Auth::user(), 'order_item_limit_reached', 'order', $lockedOrder->id);
+
+                throw ValidationException::withMessages([
+                    'items' => __('orders.errors.too_many_line_items', ['max' => self::MAX_ITEMS]),
+                ]);
+            }
+
+            // F-1: the same decimal(10,2) column-overflow guard CreateOrder already applies to
+            // every line_total it computes -- this edit path had none.
+            ($this->assertWithinColumnCeiling)($lineTotal, 'items');
+
             $item = OrderItem::forceCreate([
-                'order_id' => $order->id,
+                'order_id' => $lockedOrder->id,
                 'product_id' => $product->id,
                 'product_variant_id' => $variant?->id,
                 'product_name' => $product->name,
@@ -98,10 +161,30 @@ class AddOrderItem
                 'line_total' => $lineTotal,
             ]);
 
-            ($this->recalculateOrderTotals)($order);
+            ($this->recalculateOrderTotals)($lockedOrder);
 
             return $item;
         });
+    }
+
+    /**
+     * F-7: `isset()`/`!== null` alone treats a blank string as present --
+     * and a blank string, not a real null, is exactly what a `wire:model`-
+     * bound `<select>` with no selection submits, since Livewire opts
+     * `/livewire/update` requests out of Laravel's `ConvertEmptyStringsToNull`
+     * middleware. Matches `CreateOrder`'s own identical per-item
+     * normalisation (see that action's own docblock, Phase 4 re-audit
+     * finding F-8).
+     */
+    private function normalizeVariantId(?string $productVariantId): ?string
+    {
+        if ($productVariantId === null) {
+            return null;
+        }
+
+        $trimmed = trim($productVariantId);
+
+        return $trimmed === '' ? null : $trimmed;
     }
 
     /**
@@ -114,6 +197,11 @@ class AddOrderItem
     private function assertEditable(Order $order): void
     {
         if (in_array($order->status, [OrderStatus::Shipped, OrderStatus::Delivered], true)) {
+            // F-6 (Phase 4 security audit): logged as a refused privileged attempt, matching
+            // this project's story 0015b convention -- immediately before the existing throw, so
+            // the log entry and the refusal it describes can never disagree.
+            $this->logRefusedPrivilegedAttempt->log(Auth::user(), 'order_not_editable', 'order', $order->id);
+
             throw new OrderNotEditableException;
         }
     }

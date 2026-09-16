@@ -7,7 +7,8 @@ use App\Concerns\OrderValidationRules;
 use App\Enums\OrderStatus;
 use App\Exceptions\OrderNotEditableException;
 use App\Models\Order;
-use App\Models\OrderItem;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -18,15 +19,32 @@ use Illuminate\Validation\ValidationException;
  * with steps 4-6 differing:
  *
  * 4. Validate: the item exists AND belongs to `$order`
- *    (`orderItemOwnershipRules()`, R-5), AND the order would not be left
- *    with zero line items (D-1 -- a ValidationException, never the 409:
- *    `OrderNotEditableException` means "this order is closed to editing",
- *    and this order is not -- the specific edit is invalid).
+ *    (`orderItemOwnershipRules()`, R-5).
  * 5. No catalog resolution -- nothing is snapshotted on a removal.
- * 6. `DB::transaction()`: delete the row through the MODEL INSTANCE
- *    (`$item->delete()`, never `OrderItem::where(...)->delete()`, per
- *    base-standards.md's "deleting goes through the model" rule), then
+ * 6. `DB::transaction()`: re-verify the hard block against the order's TRUE
+ *    current state under `lockForUpdate()` (Phase 4 security audit finding
+ *    F-4); lock+fetch the item through the order's own relation; lock+count
+ *    the order's items and refuse (D-1 -- a ValidationException, never the
+ *    409: `OrderNotEditableException` means "this order is closed to
+ *    editing", and this order is not -- the specific edit is invalid) if
+ *    that would leave zero line items; otherwise delete the row through the
+ *    MODEL INSTANCE (`$item->delete()`, never `OrderItem::where(...)->delete()`,
+ *    per base-standards.md's "deleting goes through the model" rule), then
  *    recompute and persist the parent's totals.
+ *
+ * Phase 4 security audit fixes applied to this action:
+ * - F-3: D-1's last-item guard now runs INSIDE the transaction, under the
+ *   same row lock as the item fetch and the order lock below -- previously
+ *   an unlocked `count() <= 1` check run BEFORE the transaction opened,
+ *   which left a genuine TOCTOU race: two concurrent removals of the
+ *   order's last two items could both read `count() === 2` and both
+ *   proceed, leaving zero line items.
+ * - F-4: the hard block is re-checked a second time, inside the transaction,
+ *   against an order re-read under `lockForUpdate()`.
+ * - F-5: the line item is resolved THROUGH `$order->items()` rather than a
+ *   global `OrderItem::query()`, a second, structural layer on top of
+ *   `orderItemOwnershipRules()`'s own scoped `Rule::exists()`
+ *   (docs/security/related-id-pair-resolution.md).
  */
 class RemoveOrderItem
 {
@@ -50,20 +68,43 @@ class RemoveOrderItem
             ['order_item_id' => $this->orderItemOwnershipRules($order->id)]
         )->validate();
 
-        // D-1: symmetry with 0045's own zero-line-item creation guard -- enforced here, before the
-        // transaction opens, rather than as a database constraint (no engine expresses "a parent
-        // must have at least one child" without a trigger).
-        if ($order->items()->count() <= 1) {
-            throw ValidationException::withMessages([
-                'order_item_id' => __('orders.errors.last_line_item_cannot_be_removed'),
-            ]);
-        }
-
+        // F-8 (Phase 4 security audit, informational): $lockedOrder/$item below must stay
+        // entirely closure-local, locked and re-fetched INSIDE this transaction rather than
+        // mutated from an outer-scope instance. RecalculateOrderTotals mutates the Order
+        // instance it is given via forceFill()->save() -- if a future edit hoisted either fetch
+        // back outside this closure and this transaction ever gained an `attempts: N` retry, a
+        // retried attempt could silently skip the write, the exact shape
+        // App\Actions\Products\UpdateProduct's own docblock describes
+        // (docs/security/derived-column-invariants.md, "What the remediation introduced"). No
+        // `attempts:` is used here today -- this is defensive documentation.
         DB::transaction(function () use ($order, $orderItemId): void {
-            $item = OrderItem::query()->findOrFail($orderItemId);
+            // F-4: re-verify against the order's TRUE current state under lock.
+            $lockedOrder = Order::query()->whereKey($order->id)->lockForUpdate()->first()
+                ?? throw (new ModelNotFoundException)->setModel(Order::class, [$order->id]);
+
+            $this->assertEditable($lockedOrder);
+
+            // F-5: resolve THROUGH the order's own relation, never a global query -- a second,
+            // structural layer on top of orderItemOwnershipRules()'s already-scoped
+            // Rule::exists()->where('order_id', ...) above, not a replacement for it. F-3:
+            // locked, matching the order lock and the count below.
+            $item = $lockedOrder->items()->lockForUpdate()->findOrFail($orderItemId);
+
+            // F-3/D-1: moved inside the transaction, under the same lock as the item fetch
+            // above -- closes the TOCTOU race the original pre-transaction, unlocked count left
+            // open (two concurrent removals of the order's last two items could otherwise both
+            // read count() === 2 and both proceed).
+            if ($lockedOrder->items()->lockForUpdate()->count() <= 1) {
+                $this->logRefusedPrivilegedAttempt->log(Auth::user(), 'last_line_item', 'order', $lockedOrder->id);
+
+                throw ValidationException::withMessages([
+                    'order_item_id' => __('orders.errors.last_line_item_cannot_be_removed'),
+                ]);
+            }
+
             $item->delete();
 
-            ($this->recalculateOrderTotals)($order);
+            ($this->recalculateOrderTotals)($lockedOrder);
         });
     }
 
@@ -75,6 +116,10 @@ class RemoveOrderItem
     private function assertEditable(Order $order): void
     {
         if (in_array($order->status, [OrderStatus::Shipped, OrderStatus::Delivered], true)) {
+            // F-6 (Phase 4 security audit): logged as a refused privileged attempt, matching
+            // this project's story 0015b convention.
+            $this->logRefusedPrivilegedAttempt->log(Auth::user(), 'order_not_editable', 'order', $order->id);
+
             throw new OrderNotEditableException;
         }
     }

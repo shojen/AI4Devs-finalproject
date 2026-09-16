@@ -28,11 +28,22 @@ use App\Models\OrderItem;
  * `tax_amount` at `0.00` rather than inventing one. Nothing here resolves
  * a sales region or writes `tax_rate` itself; both stay exactly as they
  * were before this call.
+ *
+ * Phase 4 security audit finding F-1: `subtotal` and `total` are both
+ * checked against the same decimal(10,2) column ceiling
+ * `App\Actions\Orders\CreateOrder` already enforces at create time, via the
+ * shared `AssertWithinColumnCeiling` collaborator -- see that class's own
+ * docblock. `tax_amount` is deliberately NOT checked on its own: it is
+ * `subtotal x tax_rate`, strictly smaller than `subtotal` for any
+ * `tax_rate <= 1`, and `CreateOrder` itself checks only `line_total` /
+ * `subtotal` / `total`, never `tax_amount` in isolation -- this class
+ * mirrors exactly which three values that action checks, not a superset.
  */
 class RecalculateOrderTotals
 {
     public function __construct(
         private readonly ToNumericString $toNumericString,
+        private readonly AssertWithinColumnCeiling $assertWithinColumnCeiling,
     ) {}
 
     public function __invoke(Order $order): void
@@ -48,11 +59,15 @@ class RecalculateOrderTotals
             $subtotal = bcadd($subtotal, ($this->toNumericString)((string) $item->line_total), 2);
         }
 
+        ($this->assertWithinColumnCeiling)($subtotal, 'items');
+
         $taxAmount = $order->tax_rate !== null
             ? bcmul($subtotal, ($this->toNumericString)((string) $order->tax_rate), 2)
             : '0.00';
 
         $total = bcadd(bcadd($subtotal, $taxAmount, 2), ($this->toNumericString)((string) $order->shipping_amount), 2);
+
+        ($this->assertWithinColumnCeiling)($total, 'items');
 
         $order->forceFill([
             'subtotal' => $subtotal,

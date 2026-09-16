@@ -24,6 +24,7 @@ return [
         'total_exceeds_maximum' => 'Una o más líneas del pedido producirían un total que excede el valor máximo representable.',
         'order_not_editable' => 'Este pedido ya no se puede editar.',
         'last_line_item_cannot_be_removed' => 'Un pedido debe conservar al menos una línea. Cancele el pedido en lugar de eliminar su última línea.',
+        'too_many_line_items' => 'Un pedido no puede tener más de :max líneas.',
     ],
 
 ];
