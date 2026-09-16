@@ -45,6 +45,13 @@ use Illuminate\Validation\ValidationException;
  *   global `OrderItem::query()`, a second, structural layer on top of
  *   `orderItemOwnershipRules()`'s own scoped `Rule::exists()`
  *   (docs/security/related-id-pair-resolution.md).
+ *
+ * Post-condition (Phase 4 re-audit finding NEW-5): the `$order` PARAMETER is
+ * never the row this action's own writes end up reflected on -- see
+ * AddOrderItem's own docblock for the full reasoning (Laravel has no
+ * identity map; RecalculateOrderTotals mutates a distinct, closure-local
+ * `$lockedOrder`). This action returns `void`, so a caller has no handle at
+ * all on the updated order after calling it and must re-fetch it.
  */
 class RemoveOrderItem
 {
@@ -88,6 +95,14 @@ class RemoveOrderItem
             // structural layer on top of orderItemOwnershipRules()'s already-scoped
             // Rule::exists()->where('order_id', ...) above, not a replacement for it. F-3:
             // locked, matching the order lock and the count below.
+            //
+            // Deadlock note (Phase 4 re-audit finding NEW-3): locking one item row and then a
+            // whole-range item count, in that order, would be a textbook AB/BA deadlock if two
+            // concurrent removals targeted two DIFFERENT items on the same order -- it is
+            // unreachable only because the `orders` row lock taken above already serializes any
+            // two calls against the same order before either reaches this line. That order-row
+            // lock is therefore load-bearing for deadlock-freedom here, not merely for the
+            // count's own correctness -- do not drop it or reorder it below this point.
             $item = $lockedOrder->items()->lockForUpdate()->findOrFail($orderItemId);
 
             // F-3/D-1: moved inside the transaction, under the same lock as the item fetch

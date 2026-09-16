@@ -39,6 +39,13 @@ use Illuminate\Support\Facades\Validator;
  *   global `OrderItem::query()`, a second, structural layer on top of
  *   `orderItemOwnershipRules()`'s own scoped `Rule::exists()`
  *   (docs/security/related-id-pair-resolution.md).
+ *
+ * Post-condition (Phase 4 re-audit finding NEW-5): the `$order` PARAMETER is
+ * never the row this action's own writes end up reflected on -- see
+ * AddOrderItem's own docblock for the full reasoning (Laravel has no
+ * identity map; RecalculateOrderTotals mutates a distinct, closure-local
+ * `$lockedOrder`). Only the returned `OrderItem` is fresh; a caller needing
+ * the order's own updated totals must re-fetch it.
  */
 class UpdateOrderItemQuantity
 {

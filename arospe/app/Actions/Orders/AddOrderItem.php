@@ -9,7 +9,6 @@ use App\Exceptions\OrderNotEditableException;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
-use App\Models\ProductVariant;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -65,6 +64,18 @@ use Illuminate\Validation\ValidationException;
  *   `null` -- see docs/errors-log.md's `maxWeightKg` entry for the identical
  *   mechanism) is normalised to `null` before validation and resolution,
  *   matching CreateOrder's own identical normalisation.
+ *
+ * Post-condition (Phase 4 re-audit finding NEW-5): the `$order` PARAMETER is
+ * never the row this action's own writes end up reflected on -- the
+ * transaction re-fetches a distinct `$lockedOrder` PHP object (Laravel has
+ * no identity map) and RecalculateOrderTotals mutates THAT instance, not
+ * the caller's. The caller's own `$order` therefore keeps its PRE-edit
+ * `subtotal`/`tax_amount`/`total` after this call returns; only the
+ * returned `OrderItem` is fresh. A caller that needs the order's own
+ * updated totals must `$order->refresh()` (or re-fetch) itself -- this is
+ * not a bug to fix here, since nothing outside this story's own tests calls
+ * this action yet, but story 0055's UI must know it before it renders a
+ * total straight off the `$order` instance it passed in.
  */
 class AddOrderItem
 {
@@ -137,7 +148,13 @@ class AddOrderItem
             $this->assertEditable($lockedOrder);
 
             // F-2: refuse once the order is already at the line-item ceiling, checked against
-            // the same locked instance above -- no second, redundant lock.
+            // the same locked instance above -- no second, redundant lock. This count carries no
+            // lockForUpdate() of its own and is safe only because the `orders` row lock taken
+            // just above is already held to commit, which serializes any concurrent
+            // AddOrderItem/RemoveOrderItem call against this same order (Phase 4 re-audit
+            // finding NEW-2) -- this check must stay AFTER the order-row lock above, and any
+            // future order_items writer must lock the parent order first too, or this ceiling
+            // becomes racy.
             if ($lockedOrder->items()->count() >= self::MAX_ITEMS) {
                 $this->logRefusedPrivilegedAttempt->log(Auth::user(), 'order_item_limit_reached', 'order', $lockedOrder->id);
 
