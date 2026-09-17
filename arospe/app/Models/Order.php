@@ -32,6 +32,13 @@ use Illuminate\Support\Carbon;
  * the omitted columns are, and a legitimate future caller (an order-address
  * edit screen) could reasonably need to write them directly.
  *
+ * `refunded_amount` (story 0051) joins the omitted list too -- a running
+ * total written only via `forceFill()` by App\Actions\Orders\RecordRefund,
+ * kept consistent with the SUM of this order's line items' `refunds` rows'
+ * `amount`. It is a MERCHANDISE total only (quantity x unit_price): it
+ * excludes tax and shipping, which are both `0.00` on every order today, so
+ * the distinction is unobservable until 0053/0054 populate them (R-2).
+ *
  * No `SoftDeletes`: orders are never deleted this phase; `Cancelled` is a
  * `status` value, not a soft delete.
  *
@@ -48,6 +55,7 @@ use Illuminate\Support\Carbon;
  * @property string $tax_amount 'decimal:2' casts to a STRING, not a float
  * @property string $shipping_amount 'decimal:2' casts to a STRING, not a float
  * @property string $total 'decimal:2' casts to a STRING, not a float
+ * @property string $refunded_amount 'decimal:2' casts to a STRING, not a float
  * @property bool $flagged_for_review
  * @property string|null $shipping_address_line1
  * @property string|null $shipping_address_line2
@@ -97,6 +105,7 @@ class Order extends Model
             'tax_amount' => 'decimal:2',
             'shipping_amount' => 'decimal:2',
             'total' => 'decimal:2',
+            'refunded_amount' => 'decimal:2',
             'flagged_for_review' => 'boolean',
         ];
     }
@@ -151,5 +160,35 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    /**
+     * May this order be cancelled by an administrator right now?
+     *
+     * Non-throwing predicate over BOTH status dimensions (story 0050, PRD
+     * §3.2): permitted only from Pending/Processing, and never while the
+     * payment state is PartiallyRefunded. App\Actions\Orders\CancelOrder's
+     * guard and OrderPolicy::cancel()'s state clause are both wrappers
+     * around exactly this call, so the rule has ONE implementation and a
+     * later UI hint cannot drift from the rule that refuses -- the same
+     * predicate/wrapper shape as OrderStatus::isBackwardFrom() and
+     * App\Actions\Auth\EnsureRecentPasswordConfirmation.
+     *
+     * Deliberately says nothing about the ACTOR, and nothing about the
+     * already-Cancelled case, which CancelOrder rejects earlier and
+     * differently (as a ValidationException, not via this predicate).
+     * Reads `Cancelled` as simply not being in the permitted set --
+     * `in_array(..., strict: true)` rather than a `match`, since this
+     * method must answer for every OrderStatus case including Cancelled,
+     * unlike OrderStatus::rank().
+     *
+     * The 100%-refund auto-cancel (a future story) does NOT consult this
+     * predicate: it is a system side effect that cancels regardless of
+     * state, by design (PRD §3.2).
+     */
+    public function isManuallyCancellable(): bool
+    {
+        return in_array($this->status, [OrderStatus::Pending, OrderStatus::Processing], true)
+            && $this->payment_status !== PaymentStatus::PartiallyRefunded;
     }
 }

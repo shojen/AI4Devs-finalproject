@@ -3,54 +3,11 @@
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
     {
-      "id": "0050",
-      "slug": "0050-order-manual-cancellation-backend",
-      "title": "Order manual cancellation backend",
-      "depends_on": [
-        "0051"
-      ],
-      "status": "blocked",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "app/Actions/Orders/CancelOrder.php",
-        "app/Policies/OrderPolicy.php",
-        "app/Exceptions/OrderCancellationBlockedException.php",
-        "lang/en/orders.php",
-        "lang/es/orders.php"
-      ],
-      "conflict_risk_with": [
-        "0052",
-        "0054"
-      ]
-    },
-    {
-      "id": "0051",
-      "slug": "0051-order-payment-refund-state-backend",
-      "title": "Order payment/refund state backend",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "database/migrations/*_create_refunds_table.php",
-        "database/migrations/*_add_refunded_quantity_to_order_items_table.php",
-        "app/Models/Refund.php",
-        "app/Actions/Orders/RecordRefund.php",
-        "database/seeders/RolePermissionSeeder.php",
-        "lang/en/roles.php",
-        "lang/es/roles.php"
-      ],
-      "conflict_risk_with": []
-    },
-    {
       "id": "0052",
       "slug": "0052-order-auto-cancel-full-refund-backend",
       "title": "Order auto-cancel on full refund backend",
-      "depends_on": [
-        "0051"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -60,14 +17,12 @@
         "app/Providers/AppServiceProvider.php",
         "app/Actions/Orders/RecordRefund.php"
       ],
-      "conflict_risk_with": [
-        "0050"
-      ]
+      "conflict_risk_with": []
     },
     {
       "id": "0053",
       "slug": "0053-order-tax-region-resolution-physical-backend",
-      "title": "Order tax Sales-Region resolution \u2014 physical products (backend)",
+      "title": "Order tax Sales-Region resolution — physical products (backend)",
       "depends_on": [],
       "status": "ready",
       "claimed_by": null,
@@ -83,7 +38,7 @@
     {
       "id": "0054",
       "slug": "0054-order-tax-region-resolution-virtual-backend",
-      "title": "Order tax Sales-Region resolution \u2014 virtual products (backend)",
+      "title": "Order tax Sales-Region resolution — virtual products (backend)",
       "depends_on": [],
       "status": "ready",
       "claimed_by": null,
@@ -96,8 +51,7 @@
         "lang/es/orders.php"
       ],
       "conflict_risk_with": [
-        "0053",
-        "0050"
+        "0053"
       ]
     },
     {
@@ -105,8 +59,6 @@
       "slug": "0055-orders-list-detail-editor-ui",
       "title": "Orders list + detail/editor UI",
       "depends_on": [
-        "0050",
-        "0051",
         "0052",
         "0053",
         "0054"
@@ -148,7 +100,7 @@
     {
       "id": "0058",
       "slug": "0058-blog-categories-backend",
-      "title": "Blog categories \u2014 backend (table, model, create/rename/delete, name validation)",
+      "title": "Blog categories — backend (table, model, create/rename/delete, name validation)",
       "depends_on": [],
       "status": "ready",
       "claimed_by": null,
@@ -169,7 +121,7 @@
     {
       "id": "0059",
       "slug": "0059-blog-tags-backend",
-      "title": "Blog tags \u2014 backend (table, model, create/rename/delete, find-or-create, name validation)",
+      "title": "Blog tags — backend (table, model, create/rename/delete, find-or-create, name validation)",
       "depends_on": [],
       "status": "ready",
       "claimed_by": null,
@@ -191,7 +143,7 @@
     {
       "id": "0060",
       "slug": "0060-blog-tags-ui",
-      "title": "Blog tags \u2014 management screen (list, create/edit modal, unconditional delete)",
+      "title": "Blog tags — management screen (list, create/edit modal, unconditional delete)",
       "depends_on": [
         "0059"
       ],
@@ -214,7 +166,7 @@
     {
       "id": "0061",
       "slug": "0061-blog-posts-core-crud-backend",
-      "title": "Blog posts \u2014 core CRUD backend (+ the blog-category in-use delete guard)",
+      "title": "Blog posts — core CRUD backend (+ the blog-category in-use delete guard)",
       "depends_on": [
         "0058",
         "0059"
@@ -241,7 +193,7 @@
     {
       "id": "0062",
       "slug": "0062-blog-categories-ui",
-      "title": "Blog categories \u2014 management screen (list, create/edit modal, blocked delete)",
+      "title": "Blog categories — management screen (list, create/edit modal, blocked delete)",
       "depends_on": [
         "0058",
         "0061"
@@ -265,7 +217,7 @@
     {
       "id": "0063",
       "slug": "0063-blog-posts-list-editor-ui",
-      "title": "Blog posts \u2014 list + editor UI",
+      "title": "Blog posts — list + editor UI",
       "depends_on": [
         "0058",
         "0059",
@@ -295,7 +247,7 @@
     {
       "id": "0064",
       "slug": "0064-scheduled-post-auto-publish-backend",
-      "title": "Scheduled post auto-publish \u2014 backend (the app's first scheduled command)",
+      "title": "Scheduled post auto-publish — backend (the app's first scheduled command)",
       "depends_on": [
         "0061"
       ],
@@ -312,7 +264,7 @@
     {
       "id": "0065",
       "slug": "0065-blog-post-published-notification-backend",
-      "title": "Blog post published \u2014 notification (backend)",
+      "title": "Blog post published — notification (backend)",
       "depends_on": [
         "0061",
         "0064"
@@ -332,7 +284,7 @@
     {
       "id": "0066",
       "slug": "0066-admin-ui-locale-preference-backend",
-      "title": "Admin UI locale preference & resolution \u2014 backend",
+      "title": "Admin UI locale preference & resolution — backend",
       "depends_on": [
         "0068"
       ],
@@ -354,7 +306,7 @@
     {
       "id": "0067",
       "slug": "0067-admin-ui-language-switcher-ui",
-      "title": "Admin UI language switcher \u2014 frontend",
+      "title": "Admin UI language switcher — frontend",
       "depends_on": [
         "0066",
         "0068"
@@ -404,7 +356,7 @@
     {
       "id": "0069",
       "slug": "0069-store-languages-settings-ui",
-      "title": "Store Languages settings screen \u2014 frontend",
+      "title": "Store Languages settings screen — frontend",
       "depends_on": [
         "0066",
         "0068"
@@ -426,7 +378,7 @@
     {
       "id": "0070",
       "slug": "0070-translatable-content-mechanism-product-categories-backend",
-      "title": "Translatable content mechanism \u2014 backend, piloted on Product Categories",
+      "title": "Translatable content mechanism — backend, piloted on Product Categories",
       "depends_on": [
         "0068"
       ],
@@ -449,7 +401,7 @@
     {
       "id": "0071",
       "slug": "0071-product-categories-language-tabs-ui",
-      "title": "Product Categories taxonomy screen \u2014 language tabs (frontend)",
+      "title": "Product Categories taxonomy screen — language tabs (frontend)",
       "depends_on": [
         "0068",
         "0070"
@@ -467,7 +419,7 @@
     {
       "id": "0072",
       "slug": "0072-translatable-content-retrofit-blog-categories-backend",
-      "title": "Translatable content retrofit \u2014 Blog Categories backend",
+      "title": "Translatable content retrofit — Blog Categories backend",
       "depends_on": [
         "0058",
         "0068",
@@ -494,7 +446,7 @@
     {
       "id": "0073",
       "slug": "0073-blog-categories-language-tabs-ui",
-      "title": "Blog Categories screen \u2014 language tabs",
+      "title": "Blog Categories screen — language tabs",
       "depends_on": [
         "0062",
         "0068",
@@ -514,7 +466,7 @@
     {
       "id": "0074",
       "slug": "0074-translatable-content-retrofit-blog-tags-backend",
-      "title": "Translatable content retrofit \u2014 Blog Tags backend",
+      "title": "Translatable content retrofit — Blog Tags backend",
       "depends_on": [
         "0059",
         "0068",
@@ -542,7 +494,7 @@
     {
       "id": "0075",
       "slug": "0075-blog-tags-language-tabs-ui",
-      "title": "Blog Tags screen \u2014 language tabs",
+      "title": "Blog Tags screen — language tabs",
       "depends_on": [
         "0060",
         "0068",
@@ -562,7 +514,7 @@
     {
       "id": "0076",
       "slug": "0076-translatable-content-retrofit-products-backend",
-      "title": "Translatable content retrofit \u2014 Products backend",
+      "title": "Translatable content retrofit — Products backend",
       "depends_on": [
         "0068",
         "0070"
@@ -587,7 +539,7 @@
     {
       "id": "0077",
       "slug": "0077-product-editor-language-tabs-ui",
-      "title": "Product editor \u2014 language tabs (UI)",
+      "title": "Product editor — language tabs (UI)",
       "depends_on": [
         "0068",
         "0070",
@@ -607,7 +559,7 @@
     {
       "id": "0078",
       "slug": "0078-translatable-content-retrofit-blog-posts-backend",
-      "title": "Translatable content retrofit \u2014 Blog Posts backend",
+      "title": "Translatable content retrofit — Blog Posts backend",
       "depends_on": [
         "0061",
         "0068",
@@ -634,7 +586,7 @@
     {
       "id": "0079",
       "slug": "0079-blog-post-editor-language-tabs-ui",
-      "title": "Blog post editor \u2014 language tabs (frontend)",
+      "title": "Blog post editor — language tabs (frontend)",
       "depends_on": [
         "0063",
         "0068",

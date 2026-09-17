@@ -3,7 +3,7 @@
 ## Description
 Give the backoffice the ability to **record a refund against an order's line items** and have the
 order's `payment_status` follow from it, per PRD
-[§3.2 Orders](../../docs/PRD/PRD.md#32-orders). A refund is expressed as *units of specific line
+[§3.2 Orders](../../../docs/PRD/PRD.md#32-orders). A refund is expressed as *units of specific line
 items coming back*; the payment state (`Pagado` → `Parcialmente reembolsado` → `Reembolsado`) is
 **derived** from the resulting line-item state and is never submitted. This story owns the `refunds`
 event-log table, the `orders.refunded_amount` running total, the `orders.refund` permission,
@@ -13,15 +13,15 @@ markup, no auto-cancel.
 > ## ⛔ BLOCKED — inherited cross-epic dependency (read this before Phase 3)
 >
 > **This story is fully specified now, but its Phase 3 implementation cannot start until story
-> [0045](done/0045-orders-core-crud-backend.md) is `done`** — and 0045 is itself blocked on five Epic 2
-> stories ([0024](done/0024-products-core-crud-backend.md), [0029](done/0029-product-variants-backend.md),
-> [0035](done/0035-shipping-carriers-backend.md), [0036](done/0036-shipping-rate-rules-backend.md),
-> [0038](done/0038-payment-methods-bank-transfer-backend.md)).
+> [0045](../done/0045-orders-core-crud-backend.md) is `done`** — and 0045 is itself blocked on five Epic 2
+> stories ([0024](../done/0024-products-core-crud-backend.md), [0029](../done/0029-product-variants-backend.md),
+> [0035](../done/0035-shipping-carriers-backend.md), [0036](../done/0036-shipping-rate-rules-backend.md),
+> [0038](../done/0038-payment-methods-bank-transfer-backend.md)).
 >
 > Every column this story reads — `orders.payment_status`, `order_items.quantity`,
 > `order_items.unit_price`, `order_items.refunded_quantity` — is created by 0045. `refunds.order_item_id`
 > FKs `order_items`, a table that does not exist in code yet, and this story honours
-> [0045's **DR-1**](done/0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns)
+> [0045's **DR-1**](../done/0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns)
 > verbatim: **every FK is `constrained()` against an already-existing table, or the story waits.**
 > Do not stub `order_items` to proceed.
 >
@@ -198,7 +198,7 @@ Feature: Order payment and refund state (backend)
 
 `database/migrations/<ts>_create_refunds_table.php` — **new**. Adopted from `database-expert`'s
 contribution unchanged in shape; the greenfield-UUID precedent is
-[`create_sales_regions_table`](../../docs/database/migrations.md#uuid-primary-keys).
+[`create_sales_regions_table`](../../../docs/database/migrations.md#uuid-primary-keys).
 
 ```php
 Schema::create('refunds', function (Blueprint $table): void {
@@ -244,7 +244,7 @@ public function down(): void
 ```
 
 **No backfill statement, and that is a decision rather than an omission.** The rule in
-[migrations.md](../../docs/database/migrations.md#when-the-new-columns-default-is-wrong-for-existing-rows-backfill-in-the-same-up)
+[migrations.md](../../../docs/database/migrations.md#when-the-new-columns-default-is-wrong-for-existing-rows-backfill-in-the-same-up)
 is to backfill when the default chosen for *new* rows mis-states the *old* ones. Here it does not:
 no refund mechanism has ever existed, so `0.00` is the true value for every pre-existing order.
 State that in the migration's docblock so a reader can tell "considered and unnecessary" from
@@ -253,13 +253,13 @@ State that in the migration's docblock so a reader can tell "considered and unne
 Non-negotiable properties of both files:
 
 - **Every FK is `constrained()` against a table that already exists** at the time these run — 0045's
-  [DR-1](done/0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns),
+  [DR-1](../done/0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns),
   applied to this story's own table.
 - **No explicit `$table->index()` anywhere.** `constrained()` already indexes `order_item_id` and
   `refunded_by`; a hand-written one produces the redundant index recorded in
-  [errors-log-archive.md](../../docs/errors-log-archive.md#a-redundant-users_uuid_unique-index-survived-the-uuid-primary-key-conversion--2026-08-12).
+  [errors-log-archive.md](../../../docs/errors-log-archive.md#a-redundant-users_uuid_unique-index-survived-the-uuid-primary-key-conversion--2026-08-12).
   Verify with `php artisan db:table refunds` after migrating, **never** by reading the migration
-  ([migrations.md](../../docs/database/migrations.md#an-fk-column-does-not-also-get-an-explicit-index-here)).
+  ([migrations.md](../../../docs/database/migrations.md#an-fk-column-does-not-also-get-an-explicit-index-here)).
 - **No index on `created_at`** — the same cardinality argument 0045 applied to `status`: a
   backoffice-sized table where the index costs a write per insert and buys a scan the optimizer
   would likely decline.
@@ -272,7 +272,7 @@ Non-negotiable properties of both files:
 ### Model — `app/Models/Refund.php` (new)
 
 Scaffolded with `php artisan make:model Refund -f --no-interaction`. Follows
-[base-standards.md](../../docs/conventions/base-standards.md#model-conventions):
+[base-standards.md](../../../docs/conventions/base-standards.md#model-conventions):
 
 - `use HasFactory, HasUuids;`, `@property string $id`, and **no** `$keyType` / `$incrementing`.
 - `#[Fillable]` lists **nothing a caller may set that is not already a caller's own input** — in
@@ -339,10 +339,10 @@ Consequences, all of which are this story's job to carry:
   389, 487, 575) and `tests/Feature/Seeders/DatabaseSeederTest.php` (lines ~44, 94, 129). **Those
   line numbers are a reading aid, not a locator** — re-grep for `38` / `37` before editing, per the
   deferred-findings rule in
-  [errors-log.md](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+  [errors-log.md](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
   This alone is why the story's Definition of Done requires the **unscoped** suite run: a
   `--filter`ed run over `tests/Feature/Orders/` would report green while fourteen other tests are
-  red ([base-standards.md](../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done)).
+  red ([base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done)).
 
 ### Translations — `lang/en/roles.php` + `lang/es/roles.php` (modified)
 
@@ -354,7 +354,7 @@ files' `actions` group carries exactly six leaves today (`view`, `create`, `edit
 Roles screen renders the raw key `roles.actions.refund` next to a checkbox nobody can identify.
 
 Add one leaf to each, key-for-key identical
-([naming.md](../../docs/conventions/naming.md#translation-keys)):
+([naming.md](../../../docs/conventions/naming.md#translation-keys)):
 
 ```php
 // lang/en/roles.php — 'actions'
@@ -373,7 +373,7 @@ and `payment_statuses.partially_refunded` ship there.
 ### Validation trait — `app/Concerns/OrderValidationRules.php` (modified)
 
 Extends 0045's trait rather than creating a second one — same noun, same model's input
-([naming.md](../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)):
+([naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)):
 
 ```php
 protected function refundItemsRules(): array;     // ['required', 'array', 'min:1']
@@ -394,7 +394,7 @@ is a rule this repo already paid for:
 - More importantly, "how many units of this line have already come back" is *the state the guard
   exists to protect*, and a guard must **derive** that state rather than accept it or look it up
   loosely — the rule from
-  [errors-log.md](../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20).
+  [errors-log.md](../../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20).
   So both guards run inside `RecordRefund`, against the order's **own freshly-read, row-locked**
   `items` collection, and raise `ValidationException::withMessages(['items' => …])` on failure.
 
@@ -402,7 +402,7 @@ is a rule this repo already paid for:
 
 Invokable, imperative-verb-phrase class with no `Action` suffix, resolved from the container and
 never `new`-ed
-([code-style.md](../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)).
+([code-style.md](../../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)).
 
 ```php
 /**
@@ -415,7 +415,7 @@ Performing, **in this order**:
 
 1. **`Gate::authorize('orders.refund')` as the first statement.** The rule lives in the class that
    performs the operation, not in a caller that does not exist yet
-   ([base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
+   ([base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
    `orders.refund` is a **new** permission (**D-3**), not one of 0045's four.
 2. **Validate the payload shape** through the trait — the items array and every quantity.
 3. **Open a `DB::transaction()`.** Everything below runs inside it.
@@ -466,7 +466,7 @@ Performing, **in this order**:
 
 > **Phase 3 must re-read the transaction-side-effect rule before writing step 3.** Wrapping work in
 > a `DB::transaction()` relocates every side effect the wrapped code already performed — the mistake
-> in [errors-log.md](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
+> in [errors-log.md](../../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
 > Here the forward constraint is specific: **when story 0052 adds an auto-cancel side effect, or a
 > refund notification is ever added, it must fire *after* the commit**, or a rolled-back refund
 > cancels an order that was never refunded.
@@ -487,7 +487,7 @@ Performing, **in this order**:
 All Feature tests unless marked otherwise; new folder `tests/Feature/Orders/` (created by 0045),
 plus edits to two existing seeder test files. This story ships no route, so **every** authorization
 test here is action-level; story 0055 owns the HTTP-level ones
-([testing/README.md](../../docs/testing/README.md)).
+([testing/README.md](../../../docs/testing/README.md)).
 
 ### Schema, model & factory
 
@@ -579,7 +579,7 @@ test here is action-level; story 0055 owns the HTTP-level ones
       could be an unused string.
 - [ ] Integration test: an administrator holding `orders.refund` but **not** `orders.edit` succeeds.
       Independence in both directions, mirroring
-      [`ModuleRouteAccessTest`](../../tests/Feature/Authorization/ModuleRouteAccessTest.php)'s
+      [`ModuleRouteAccessTest`](../../../tests/Feature/Authorization/ModuleRouteAccessTest.php)'s
       cross-gate pattern.
 - [ ] Integration test: a Super Admin holding no individual `orders.*` grant succeeds, via
       `Gate::before`.
@@ -587,7 +587,7 @@ test here is action-level; story 0055 owns the HTTP-level ones
       gets the **`AuthorizationException`** — not the `ValidationException`. The permission refusal
       wins, so the state is never disclosed to someone with no business reading it. This mirrors the
       ordering rule established for step-up authentication
-      ([authorization.md](../../docs/architecture/authorization.md#step-up-authentication--the-third-layer)).
+      ([authorization.md](../../../docs/architecture/authorization.md#step-up-authentication--the-third-layer)).
 
 ### Scope fences, made executable
 
@@ -604,7 +604,7 @@ test here is action-level; story 0055 owns the HTTP-level ones
   defence-in-depth pair — that half is story 0055's; **this story owns the backend half only**, and
   its refusal tests are exactly that half.
 - Migration `up()`/`down()` mechanics — `RefreshDatabase` runs every migration each run
-  ([what-not-to-test.md](../../docs/testing/qa/what-not-to-test.md)).
+  ([what-not-to-test.md](../../../docs/testing/qa/what-not-to-test.md)).
 - Concurrency under real parallel load (**R-1**) — the row lock is a code-review item, not a
   reliably testable one.
 
@@ -667,9 +667,9 @@ column this story always writes `null` into. The permission catalog grows by exa
 
 ## Definition of Done
 - [ ] Tests written and green, plus the full existing suite (per
-      [contracts.md](../../docs/contracts.md)'s Full Test Suite Gate Rule) — run **unscoped**
+      [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule) — run **unscoped**
       (`php artisan test`, not `--filter`), per
-      [base-standards.md](../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
+      [base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
       **Non-optional here rather than merely recommended:** this story changes the seeded permission
       catalog, so it breaks fourteen assertions in two test files it does not otherwise touch — the
       exact whole-suite blast radius that rule was written for.
@@ -682,22 +682,22 @@ column this story always writes `null` into. The permission catalog grows by exa
       payload; and that the payment-state refusal is deliberately a `ValidationException` (**D-5**)
       rather than an authorization failure.
 - [ ] Documentation updated (docs-keeper):
-  - [`database/schema.md`](../../docs/database/schema.md) gains a `refunds` section, an
+  - [`database/schema.md`](../../../docs/database/schema.md) gains a `refunds` section, an
     `orders.refunded_amount` row, and the ER-diagram node plus its two edges
     (`REFUNDS }o--|| ORDER_ITEMS`, `REFUNDS }o--|| USERS`). **Its seeded-rows table also changes** —
     `permissions` 38 → 39 and `role_has_permissions` 37 → 38, with the note widened from "9 modules
     × 4 CRUD actions plus `roles.manage` and `roles.manage-administrators`".
-  - [`architecture/authorization.md`](../../docs/architecture/authorization.md) — the permission
+  - [`architecture/authorization.md`](../../../docs/architecture/authorization.md) — the permission
     catalog is 39, and this is the **first non-CRUD permission on a non-`roles` module**, which is
     the reusable fact: a module may carry an ability outside the four-verb grid, added via its own
     seeder constant, and it lands in the Roles screen's separately-rendered list rather than in the
     matrix. Three "38-permission catalog" mentions on that page.
-  - [`conventions/naming.md`](../../docs/conventions/naming.md) — its permission-names section quotes
+  - [`conventions/naming.md`](../../../docs/conventions/naming.md) — its permission-names section quotes
     the seeder's constants and states "16 keys per language … covering all 38 permissions"; both
     change, and `ORDER_PERMISSIONS` joins the quoted block.
-  - [`conventions/base-standards.md`](../../docs/conventions/base-standards.md)'s directory listing
+  - [`conventions/base-standards.md`](../../../docs/conventions/base-standards.md)'s directory listing
     gains `Refund` in `app/Models/`.
-  - [`database/migrations.md`](../../docs/database/migrations.md) — **verify rather than assume**
+  - [`database/migrations.md`](../../../docs/database/migrations.md) — **verify rather than assume**
     whether this story establishes anything new. Its "no backfill was needed, and why" note is the
     one candidate; a decimal column added with a correct default is otherwise the existing pattern.
   - **Grep the whole tree for the counts, not just the mapped files.** `38` / `37` appear in at least
@@ -705,7 +705,7 @@ column this story always writes `null` into. The permission catalog grows by exa
     `architecture/overview.md`, `database/schema.md`, `conventions/naming.md`,
     `testing/backend/datasets-and-factories.md`, `testing/backend/feature-integration-tests.md` and
     `security/authorization-patterns.md` — several in files the change→doc mapping routes nowhere.
-    This is the [bare-negative-claim](../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
+    This is the [bare-negative-claim](../../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
     failure mode arriving as arithmetic.
 - [ ] Acceptance criteria met.
 
@@ -729,7 +729,7 @@ the story's central design question and is recorded here rather than settled sil
    An amount-based model cannot express that rule at all without a second, quantity-based mechanism
    underneath it, which is (a) with extra steps.
 2. **`order_items.refunded_quantity` was purpose-built for this.** 0045's
-   [**D-3**](done/0045-orders-core-crud-backend.md#documented-functional-decisions) shipped that column
+   [**D-3**](../done/0045-orders-core-crud-backend.md#documented-functional-decisions) shipped that column
    early, with its default and its own test, precisely so this story would not need an `ALTER`
    against a table its siblings are already writing to. Adopting (b) would leave it as an
    unreferenced column and reopen exactly the deferred-schema-change pattern 0045's DR-1 argued
@@ -746,7 +746,7 @@ Recorded as backlog item 3.
 
 ### DR-2 — No `OrderPolicy` here, despite 0045's forward note naming this cluster
 
-[0045 **D-13**](done/0045-orders-core-crud-backend.md#documented-functional-decisions) says an
+[0045 **D-13**](../done/0045-orders-core-crud-backend.md#documented-functional-decisions) says an
 `OrderPolicy` should be created by "whichever of stories 0048–0052 arrives first", because those
 stories introduce "genuinely row-state-dependent rules" — and it names the refund rule as one of
 them. **This story does not create one**, and the divergence is deliberate rather than an oversight.
@@ -761,10 +761,10 @@ The forward note conflates two different questions, and separating them is what 
 The second question is not about the actor at all: **no** actor may refund an already-fully-refunded
 order, Super Admin included. Expressing it as a policy method would render it a 403, which is both
 semantically wrong and — by this repo's own step-up reasoning — *indistinguishable from "you lack the
-permission"* ([authorization.md](../../docs/architecture/authorization.md#step-up-authentication--the-third-layer)).
+permission"* ([authorization.md](../../../docs/architecture/authorization.md#step-up-authentication--the-third-layer)).
 Worse, `Gate::before`'s Super Admin bypass would make a policy-expressed state rule inert for the one
 actor most likely to try it, which is the pattern
-[security/authorization-patterns.md](../../docs/security/authorization-patterns.md#a-rule-that-must-bind-a-super-admin-actor-must-be-a-direct-throw-not-a-gate-check)
+[security/authorization-patterns.md](../../../docs/security/authorization-patterns.md#a-rule-that-must-bind-a-super-admin-actor-must-be-a-direct-throw-not-a-gate-check)
 already rules on.
 
 **This narrows 0045's backlog item 1 rather than closing it.** Stories 0048/0049/0050 — the hard
@@ -785,7 +785,7 @@ a rediscovery.
   the same line item over time — the same information-loss problem as a bare counter, which is why
   `refunded_quantity` alone is insufficient too. The two coexist by design: **`refunded_quantity` is
   the fast running total, `refunds` is the event log it is derived from**, and a test pins the
-  invariant that one equals the sum of the other. On [assumption 17](../../docs/PRD/PRD.md#assumptions--confirmed-decisions)'s
+  invariant that one equals the sum of the other. On [assumption 17](../../../docs/PRD/PRD.md#assumptions--confirmed-decisions)'s
   "no audit / change-history log this phase": that governs **observability logging of arbitrary field
   changes**, not core domain transactions. A refund is a business fact in the same category as an
   order itself — support and accounting genuinely need per-event history — and `refunds` is a domain
@@ -804,7 +804,7 @@ a rediscovery.
   stated in three places in this document.
 - **D-4 — `payment_status` is derived inside `RecordRefund`, never submitted.** The
   action-owns-the-rule convention
-  ([base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers))
+  ([base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers))
   applied to **state** rather than to authorization: a caller supplies units, never a status. The
   derivation is written out under the action's step 10, reads **final state rather than a delta**,
   and is total. PRD §3.2 calls payment state "a manual admin-set status" — that phrasing means *no
@@ -816,7 +816,7 @@ a rediscovery.
   turns on, and the precedent is this repo's own: `deleteRole()` refuses a role that still has
   holders with a `ValidationException`, and the model-level guard behind it raises a **409**
   `RoleInUseException` — neither is a 403, because neither is about who is asking
-  ([api/routes.md](../../docs/api/users-and-roles.md#rolesindex--the-second-permission-gated-route)). A
+  ([api/routes.md](../../../docs/api/users-and-roles.md#rolesindex--the-second-permission-gated-route)). A
   refund from `PendingPayment` or `Refunded` is refused for the same kind of reason. **A dedicated
   domain exception was considered and not adopted**: `RoleInUseException` exists because a *model
   event* needed to refuse from a place that could not raise a validation error; here the refusal
@@ -832,7 +832,7 @@ a rediscovery.
   covers both sides of the boundary.
 - **D-7 — Two migration files, not one combined.** This repo names table creation
   `create_<table>_table` and alteration `<verb>_<what>_to_<table>_table`
-  ([migrations.md](../../docs/database/migrations.md#file-naming)); a single file could carry only
+  ([migrations.md](../../../docs/database/migrations.md#file-naming)); a single file could carry only
   one of the two names and would leave the other invisible to anyone grepping for it. They also touch
   different tables with independent `down()` bodies. `create_refunds_table` takes the earlier
   timestamp for readability — either order works, since neither depends on the other.
@@ -892,13 +892,13 @@ a rediscovery.
 
 | Depends on | State | Verified how |
 | --- | --- | --- |
-| `orders` + `order_items` tables, `Order` / `OrderItem` models | story [0045](done/0045-orders-core-crud-backend.md) — **hard dependency; ⛔ blocked until `done`** | `refunds.order_item_id` FKs `order_items`; the derivation reads `payment_status`, `quantity`, `refunded_quantity` |
-| `order_items.refunded_quantity` column | story [0045](done/0045-orders-core-crud-backend.md) **D-3** — ships there, inert | This story is its **first and only** consumer; if 0045 shipped without it, this story adds it |
-| `App\Enums\PaymentStatus` with all four cases | story [0045](done/0045-orders-core-crud-backend.md) | `Paid`, `PartiallyRefunded`, `Refunded`, `PendingPayment` are all read here |
-| `App\Concerns\OrderValidationRules` | story [0045](done/0045-orders-core-crud-backend.md) | Extended, not replaced |
-| `app/Actions/Orders/` folder | story [0045](done/0045-orders-core-crud-backend.md) | `RecordRefund` lands beside `CreateOrder` |
+| `orders` + `order_items` tables, `Order` / `OrderItem` models | story [0045](../done/0045-orders-core-crud-backend.md) — **hard dependency; ⛔ blocked until `done`** | `refunds.order_item_id` FKs `order_items`; the derivation reads `payment_status`, `quantity`, `refunded_quantity` |
+| `order_items.refunded_quantity` column | story [0045](../done/0045-orders-core-crud-backend.md) **D-3** — ships there, inert | This story is its **first and only** consumer; if 0045 shipped without it, this story adds it |
+| `App\Enums\PaymentStatus` with all four cases | story [0045](../done/0045-orders-core-crud-backend.md) | `Paid`, `PartiallyRefunded`, `Refunded`, `PendingPayment` are all read here |
+| `App\Concerns\OrderValidationRules` | story [0045](../done/0045-orders-core-crud-backend.md) | Extended, not replaced |
+| `app/Actions/Orders/` folder | story [0045](../done/0045-orders-core-crud-backend.md) | `RecordRefund` lands beside `CreateOrder` |
 | `users` table + soft deletes | **shipped** (Epic 1) | `refunds.refunded_by` FKs it; **D-10** depends on the soft delete existing |
-| `Gate::before` Super Admin bypass | **shipped** (Epic 1) | [authorization.md](../../docs/architecture/authorization.md) |
+| `Gate::before` Super Admin bypass | **shipped** (Epic 1) | [authorization.md](../../../docs/architecture/authorization.md) |
 | The seeded permission catalog + Roles screen label composition | **shipped** (tasks 0002, 0011) | **D-3** extends the first; the second is why `roles.actions.refund` is required |
 
 #### What depends on this story
@@ -955,7 +955,7 @@ a rediscovery.
   blocked behind five Epic 2 stories, every one of which may change during its own Phase 4/5 — the
   "a deferred finding is a claim about a tree, and the task file freezes while the tree does not"
   failure recorded in
-  [errors-log.md](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+  [errors-log.md](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
   *Mitigation:* Phase 2's INVEST review must be **re-run** immediately before Phase 3, and it must
   re-verify against the shipped code: `order_items.refunded_quantity`'s existence and type,
   `unit_price`'s precision, `PaymentStatus`'s four cases and their backing values, the trait's real
@@ -997,7 +997,7 @@ overstating a sum that no longer has rows behind it.
 - **(b) `cascadeOnDelete()`** — as contributed, with a **forward constraint written into 0049**: a
   line item carrying refunds must not be deletable, enforced in the action. Cheaper here, but it moves
   the guarantee into a story that does not own this table, which is the shape
-  [0045's DR-1](done/0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns)
+  [0045's DR-1](../done/0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns)
   spent three paragraphs refusing.
 
 Changing this later is an `ALTER` on a live table, so it is materially cheaper to answer now. The
@@ -1018,7 +1018,7 @@ Non-blocking; settle in Phase 3.** **D-11** ships the column but this story neve
 `__invoke(Order $order, array $items)` is sufficient. **Recommended: add the trailing optional
 parameter now.** `__invoke()`'s signature is a **public contract** that direct-call tests and every
 future caller must match
-([code-style.md](../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)),
+([code-style.md](../../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)),
 so widening it later is a real cost, while a trailing optional parameter is free and breaks nothing.
 The counter-argument is equally valid and is why this is a question rather than a decision: an unused
 parameter is speculative, and this file has argued twice against speculation.
@@ -1038,7 +1038,7 @@ arithmetic against values that are always zero.
 **OQ-6 — Should `RecordRefund`'s gate use the refusal-logging helper? Non-blocking; recommended.**
 Task 0015b established `App\Actions\Auth\LogRefusedPrivilegedAttempt` as the copyable "recording a
 refusal" pattern a later epic's privileged action inherits rather than re-invents
-([authorization.md](../../docs/architecture/authorization.md#recording-a-refusal--what-every-gate-owes-the-audit-trail)).
+([authorization.md](../../../docs/architecture/authorization.md#recording-a-refusal--what-every-gate-owes-the-audit-trail)).
 **Recommended: adopt it here**, since a refused refund is the most consequential denied write in
 Epic 3 and the cost is one constructor dependency. Not decided unilaterally because **no amigo raised
 it** and sibling story 0045's `CreateOrder` does not use it — adopting it here alone creates an
@@ -1065,13 +1065,13 @@ Derived from this story, none of them in scope:
 
 ## Provenance
 
-- **PRD source:** [§3.2 Orders](../../docs/PRD/PRD.md#32-orders) — specifically the four refund
+- **PRD source:** [§3.2 Orders](../../../docs/PRD/PRD.md#32-orders) — specifically the four refund
   scenarios (`Record a full refund`, `Record a partial refund`, `A partially-refunded order can still
   be refunded`, and both `Scenario Outline`s over `Pendiente de pago` / `Reembolsado`) and the
   acceptance criterion that *"a refund is only permitted from `Pagado` or `Parcialmente reembolsado`
   … and the backend independently rejects a refund attempted in those states (defense in depth)"*.
   The auto-cancel scenario is deliberately **excluded** — it is story 0052's.
-- **Process:** [workflow.md](../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from
+- **Process:** [workflow.md](../../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from
   `backend-expert`, `backend-qa` and `database-expert`, composed by `product-owner` as facilitator.
   **Two questions were raised without being resolved by the amigos who raised them** — the refund
   model and the permission — and both are recorded as decisions with their rejected alternatives
@@ -1080,14 +1080,14 @@ Derived from this story, none of them in scope:
   resolves a tension with a decision recorded in a *sibling* story.
 - **Gherkin conventions:** every scenario opens with a named business-role actor ("an order
   administrator") and carries exactly one `When`, per
-  [gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 —
+  [gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 —
   mandatory across all Gherkin in this project, per the incident recorded in
-  [errors-log.md](../../docs/errors-log.md).
+  [errors-log.md](../../../docs/errors-log.md).
 - **Stage:** `new`, and **blocked** — see the banner under [Description](#description). It moves to
   `ai-spec/tasks/in-progress/` at the start of Phase 3, and to `ai-spec/tasks/done/` at Phase 7 —
   both moves change this file's directory depth, so every relative link above must be re-resolved on
   each move (both directions), per
-  [workflow.md](../../docs/workflow.md#link-integrity-check-on-every-stage-move).
+  [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move).
 - **Epic 3 decomposition:** the refund story of the Orders cluster. Siblings referenced by number
   (0045 orders foundation, 0048–0050 status transitions and cancellation guards, 0052 auto-cancel,
   0053–0054 tax resolution, 0055 UI) because several of their files may not exist yet.

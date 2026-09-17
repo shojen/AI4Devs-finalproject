@@ -42,7 +42,7 @@ test('seeding a production environment still populates the roles and permission 
     (new DatabaseSeeder)();
 
     expect(Role::count())->toBe(2)
-        ->and(Permission::count())->toBe(42);
+        ->and(Permission::count())->toBe(43);
 });
 
 // F-2 (Phase 5 review, story 0016): DatabaseSeeder::run() calls SalesRegionSeeder
@@ -107,7 +107,7 @@ test('seeding a staging environment still populates the roles and permission cat
     (new DatabaseSeeder)();
 
     expect(Role::count())->toBe(2)
-        ->and(Permission::count())->toBe(42);
+        ->and(Permission::count())->toBe(43);
 });
 
 test('seeding a local environment still creates the test@example.com fixture user', function () {
@@ -142,7 +142,7 @@ test('the production seeder also populates the roles and permission catalog', fu
     (new ProductionSeeder)();
 
     expect(Role::count())->toBe(2)
-        ->and(Permission::count())->toBe(42);
+        ->and(Permission::count())->toBe(43);
 });
 
 test('seeding a staging environment through the production seeder still populates the Sales Region catalog', function () {

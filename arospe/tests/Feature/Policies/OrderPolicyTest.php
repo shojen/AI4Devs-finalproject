@@ -1,7 +1,9 @@
 <?php
 
+use App\Actions\Orders\CancelOrder;
 use App\Actions\Orders\TransitionOrderStatus;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
 use App\Models\Order;
 use App\Models\User;
 use App\Policies\OrderPolicy;
@@ -181,4 +183,76 @@ test('transitionStatus is enforced through TransitionOrderStatus, not only throu
     app(TransitionOrderStatus::class)($order, OrderStatus::Processing);
 
     expect($order->fresh()->status)->toBe(OrderStatus::Processing);
+});
+
+// --- Story 0050, Phase 3 (TDD "red" step): cancel() does not exist on OrderPolicy yet -- every
+// test below is expected to fail until backend-expert adds it. D-6: cancel() requires BOTH
+// orders.edit AND orders.refund -- this repo's first ability composing two permissions rather
+// than one.
+
+test('cancel returns true for a holder of both orders.edit and orders.refund against a Pending order', function () {
+    $actor = User::factory()->create();
+    $actor->givePermissionTo(['orders.edit', 'orders.refund']);
+
+    $target = Order::factory()->create(['status' => OrderStatus::Pending]);
+
+    expect(Gate::forUser($actor)->allows('cancel', $target))->toBeTrue();
+});
+
+test('cancel returns false for a holder of exactly one of the two required permissions, and for neither', function (array $permissions) {
+    $actor = User::factory()->create();
+    $actor->givePermissionTo($permissions);
+
+    $target = Order::factory()->create(['status' => OrderStatus::Pending]);
+
+    expect(Gate::forUser($actor)->allows('cancel', $target))->toBeFalse();
+})->with([
+    'orders.edit only' => [['orders.edit']],
+    'orders.refund only' => [['orders.refund']],
+    'neither' => [[]],
+]);
+
+test('cancel returns false for a both-holder against a Shipped order and against a PartiallyRefunded one', function (OrderStatus $status, PaymentStatus $paymentStatus) {
+    $actor = User::factory()->create();
+    $actor->givePermissionTo(['orders.edit', 'orders.refund']);
+
+    $target = Order::factory()->create(['status' => $status, 'payment_status' => $paymentStatus]);
+
+    expect(Gate::forUser($actor)->allows('cancel', $target))->toBeFalse();
+})->with([
+    'Shipped' => [OrderStatus::Shipped, PaymentStatus::Paid],
+    'PartiallyRefunded' => [OrderStatus::Pending, PaymentStatus::PartiallyRefunded],
+]);
+
+// Documented as the bypass it is, not as correct behaviour -- the real enforcement is
+// CancelOrder's own direct throw (see tests/Feature/Orders/CancelOrderTest.php's
+// "a Super Admin is still refused against a Shipped order" test).
+test('cancel returns true for a Super Admin through Gate::before, even against a Shipped order', function () {
+    $superAdmin = User::factory()->create();
+    $superAdmin->assignRole('Super Admin');
+
+    $target = Order::factory()->create(['status' => OrderStatus::Shipped]);
+
+    expect($superAdmin->getAllPermissions())->toHaveCount(0)
+        ->and(Gate::forUser($superAdmin)->allows('cancel', $target))->toBeTrue();
+});
+
+// Two layers, per testing/README.md -- Gate::forUser() proves the ability resolves; this proves
+// CancelOrder actually calls Gate::authorize('cancel', $order).
+test('cancel is enforced through CancelOrder, not only through Gate::forUser', function () {
+    $order = Order::factory()->create(['status' => OrderStatus::Pending]);
+
+    $deniedActor = User::factory()->create();
+    test()->actingAs($deniedActor);
+
+    expect(fn () => app(CancelOrder::class)($order))->toThrow(AuthorizationException::class);
+    expect($order->fresh()->status)->toBe(OrderStatus::Pending);
+
+    $allowedActor = User::factory()->create();
+    $allowedActor->givePermissionTo(['orders.edit', 'orders.refund']);
+    test()->actingAs($allowedActor);
+
+    app(CancelOrder::class)($order);
+
+    expect($order->fresh()->status)->toBe(OrderStatus::Cancelled);
 });
