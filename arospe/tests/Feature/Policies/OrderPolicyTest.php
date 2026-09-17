@@ -1,5 +1,7 @@
 <?php
 
+use App\Actions\Orders\TransitionOrderStatus;
+use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\User;
 use App\Policies\OrderPolicy;
@@ -119,4 +121,64 @@ test('OrderPolicy exposes one VERB_PERMISSION constant per ability, matching the
         ->and(OrderPolicy::CREATE_PERMISSION)->toBe('orders.create')
         ->and(OrderPolicy::EDIT_PERMISSION)->toBe('orders.edit')
         ->and(OrderPolicy::DELETE_PERMISSION)->toBe('orders.delete');
+});
+
+// --- Story 0049, Phase 3 (TDD "red" step): transitionStatus() does not exist on OrderPolicy yet --
+// every test below is expected to fail (Gate::forUser()->allows() returns false for an unknown
+// ability rather than throwing, so the "allowed" half of each assertion below is what goes red;
+// the "through the action" test fails with "Target class [TransitionOrderStatus] does not exist")
+// until backend-expert adds the ability and the action. D-7: it reuses the EXISTING EDIT_PERMISSION
+// constant -- no new permission, no RolePermissionSeeder change.
+
+test('transitionStatus is allowed for an actor holding orders.edit and denied for one without it', function () {
+    $target = Order::factory()->create();
+
+    $allowedActor = User::factory()->create();
+    $allowedActor->givePermissionTo('orders.edit');
+
+    $deniedActor = User::factory()->create();
+
+    expect(Gate::forUser($allowedActor)->allows('transitionStatus', $target))->toBeTrue()
+        ->and(Gate::forUser($deniedActor)->allows('transitionStatus', $target))->toBeFalse();
+});
+
+test('Gate::forUser denies transitionStatus by throwing AuthorizationException, never merely returning false', function () {
+    $target = Order::factory()->create();
+    $deniedActor = User::factory()->create();
+
+    expect(fn () => Gate::forUser($deniedActor)->authorize('transitionStatus', $target))
+        ->toThrow(AuthorizationException::class);
+});
+
+test('a Super Admin actor passes transitionStatus while holding zero permission rows', function () {
+    $superAdmin = User::factory()->create();
+    $superAdmin->assignRole('Super Admin');
+
+    $target = Order::factory()->create();
+
+    expect($superAdmin->getAllPermissions())->toHaveCount(0)
+        ->and(Gate::forUser($superAdmin)->allows('transitionStatus', $target))->toBeTrue();
+});
+
+// Two layers, per testing/README.md's "asserted with Gate::forUser() as well as through the
+// action, since those are two different layers" instruction: Gate::forUser() proves the ability
+// itself resolves correctly; this proves TransitionOrderStatus actually calls
+// Gate::authorize('transitionStatus', $order) rather than a different ability or none at all.
+test('transitionStatus is enforced through TransitionOrderStatus, not only through Gate::forUser', function () {
+    $order = Order::factory()->create(['status' => OrderStatus::Pending]);
+
+    $deniedActor = User::factory()->create();
+    test()->actingAs($deniedActor);
+
+    expect(fn () => app(TransitionOrderStatus::class)($order, OrderStatus::Processing))
+        ->toThrow(AuthorizationException::class);
+    expect($order->fresh()->status)->toBe(OrderStatus::Pending);
+
+    $allowedActor = User::factory()->create();
+    $allowedActor->givePermissionTo('orders.edit');
+    test()->actingAs($allowedActor);
+
+    app(TransitionOrderStatus::class)($order, OrderStatus::Processing);
+
+    expect($order->fresh()->status)->toBe(OrderStatus::Processing);
 });
