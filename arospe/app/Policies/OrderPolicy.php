@@ -10,23 +10,20 @@ use App\Models\User;
  *
  * Gates on the already-seeded `orders.*` module permissions -- no new
  * permission and no RolePermissionSeeder change. Modelled on
- * App\Policies\ShippingRatePolicy (D-13): four flat abilities, no
- * per-target rule on any of them, and no `view`/`restore`/`forceDelete`
- * methods -- nothing in this app calls those for this model, and `orders`
- * has no `deleted_at` at all.
+ * App\Policies\ShippingRatePolicy (D-13): flat abilities, no per-target
+ * rule on any of them, and no `view`/`restore`/`forceDelete` methods --
+ * nothing in this app calls those for this model, and `orders` has no
+ * `deleted_at` at all.
  *
- * `create` is the only ability with a real caller in this story
+ * `create` is the only ability with a real caller from story 0045
  * (App\Actions\Orders\CreateOrder, self-authorizing through
- * App\Actions\Auth\LogRefusedPrivilegedAttempt as its own first statement --
- * this story ships no route and no Livewire component, so that action is
- * the ONLY reachable enforcement point). `viewAny`/`update`/`delete` ship
- * with no caller yet, deliberately: stories 0048-0052 introduce genuinely
- * row-state-dependent rules (editing line items blocked once Shipped, a
- * refund refused outside Paid/PartiallyRefunded, etc) that each add a
- * branch to update()/delete()'s EXISTING body rather than creating the
- * class and relocating every call site's target -- see D-13 in the task
- * file for the full reasoning and the Phase 2 reversal of the original
- * "no policy" decision.
+ * App\Actions\Auth\LogRefusedPrivilegedAttempt as its own first statement).
+ * `update` gained three real callers in story 0048
+ * (AddOrderItem/RemoveOrderItem/UpdateOrderItemQuantity). `transitionStatus`
+ * is story 0049's fifth ability, reusing EDIT_PERMISSION (see its own
+ * docblock below). `viewAny`/`delete` ship with no caller yet, deliberately
+ * -- see D-13 in story 0045's task file for the "add a branch to an
+ * existing ability's body rather than relocating a call site" reasoning.
  *
  * The Gate::before Super Admin bypass applies unchanged, exactly as it does
  * to the other eleven policies.
@@ -84,5 +81,22 @@ class OrderPolicy
     public function delete(User $actor, Order $target): bool
     {
         return $actor->hasPermissionTo(self::DELETE_PERMISSION);
+    }
+
+    /**
+     * Determine whether the user can transition an order's status.
+     *
+     * Story 0049's fifth ability, reusing the existing EDIT_PERMISSION
+     * constant rather than declaring a new one (D-7): changing an order's
+     * status is editing it, performed by the same administrator working the
+     * same order book. Reduces to `orders.edit` today and takes the Order
+     * anyway -- every sibling ability (0050-0052) is genuinely row-state-
+     * dependent, and a method that has to change its signature to acquire a
+     * target is a worse starting point than one that ignores an argument it
+     * already receives.
+     */
+    public function transitionStatus(User $actor, Order $order): bool
+    {
+        return $actor->hasPermissionTo(self::EDIT_PERMISSION);
     }
 }
