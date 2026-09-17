@@ -161,4 +161,34 @@ class Order extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
+
+    /**
+     * May this order be cancelled by an administrator right now?
+     *
+     * Non-throwing predicate over BOTH status dimensions (story 0050, PRD
+     * §3.2): permitted only from Pending/Processing, and never while the
+     * payment state is PartiallyRefunded. App\Actions\Orders\CancelOrder's
+     * guard and OrderPolicy::cancel()'s state clause are both wrappers
+     * around exactly this call, so the rule has ONE implementation and a
+     * later UI hint cannot drift from the rule that refuses -- the same
+     * predicate/wrapper shape as OrderStatus::isBackwardFrom() and
+     * App\Actions\Auth\EnsureRecentPasswordConfirmation.
+     *
+     * Deliberately says nothing about the ACTOR, and nothing about the
+     * already-Cancelled case, which CancelOrder rejects earlier and
+     * differently (as a ValidationException, not via this predicate).
+     * Reads `Cancelled` as simply not being in the permitted set --
+     * `in_array(..., strict: true)` rather than a `match`, since this
+     * method must answer for every OrderStatus case including Cancelled,
+     * unlike OrderStatus::rank().
+     *
+     * The 100%-refund auto-cancel (a future story) does NOT consult this
+     * predicate: it is a system side effect that cancels regardless of
+     * state, by design (PRD §3.2).
+     */
+    public function isManuallyCancellable(): bool
+    {
+        return in_array($this->status, [OrderStatus::Pending, OrderStatus::Processing], true)
+            && $this->payment_status !== PaymentStatus::PartiallyRefunded;
+    }
 }

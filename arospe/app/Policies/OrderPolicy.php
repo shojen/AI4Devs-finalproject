@@ -43,6 +43,17 @@ class OrderPolicy
     public const DELETE_PERMISSION = 'orders.delete';
 
     /**
+     * Story 0050 -- the first class to name `orders.refund` with a single
+     * constant. Story 0051 (`App\Actions\Orders\RecordRefund`) seeds and
+     * consumes this permission with a bare literal, deliberately, since
+     * that story creates no OrderPolicy ability of its own (its own DR-2).
+     * `cancel()` below is the first class to DECIDE with this permission,
+     * so per naming.md's "name a permission once on the class that owns
+     * the rule" convention, the constant lands here.
+     */
+    public const ORDER_REFUND_PERMISSION = 'orders.refund';
+
+    /**
      * Determine whether the user can view the order book.
      */
     public function viewAny(User $actor): bool
@@ -98,5 +109,40 @@ class OrderPolicy
     public function transitionStatus(User $actor, Order $order): bool
     {
         return $actor->hasPermissionTo(self::EDIT_PERMISSION);
+    }
+
+    /**
+     * Determine whether the user can manually cancel the order.
+     *
+     * Story 0050's sixth ability, and this repo's first requiring TWO
+     * permissions rather than one (D-6, a human product decision):
+     * cancelling an order is administratively paired with a refund in
+     * practice, so an actor trusted to cancel must also be trusted to
+     * handle the refund conversation that usually follows. Holding either
+     * permission alone is refused -- this is an intersection, not either
+     * permission being interchangeable with the other.
+     *
+     * The state clause (`isManuallyCancellable()`) is here so a later UI
+     * hint agrees with the guard by construction, but it is INERT for a
+     * Super Admin: Gate::before bypasses this whole method, state clause
+     * included, before it ever runs. The real enforcement is
+     * App\Actions\Orders\CancelOrder's own direct throw, which binds every
+     * actor including a Super Admin -- read this method's state clause as
+     * the hint half of that pair, never the authority.
+     *
+     * Practical consequence for an ORDINARY actor: because this state
+     * clause also runs inside Gate::authorize('cancel', $order) --
+     * CancelOrder's own first statement -- an ordinary, fully-permitted
+     * actor attempting to cancel a guarded-state order is refused right
+     * there, as an AuthorizationException, and never reaches
+     * CancelOrder's own already-cancelled/blocked-state checks at all.
+     * Those checks exist to bind the one actor this method's clause
+     * cannot: a Super Admin.
+     */
+    public function cancel(User $actor, Order $order): bool
+    {
+        return $actor->hasPermissionTo(self::EDIT_PERMISSION)
+            && $actor->hasPermissionTo(self::ORDER_REFUND_PERMISSION)
+            && $order->isManuallyCancellable();
     }
 }

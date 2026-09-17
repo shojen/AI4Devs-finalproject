@@ -39,4 +39,9 @@ return [
         'exceeds_outstanding_units' => 'Una o más líneas se reembolsarían por más unidades de las que quedan pendientes.',
     ],
 
+    'cancellation' => [
+        'blocked' => 'Este pedido ya no se puede cancelar.',
+        'already_cancelled' => 'Este pedido ya está cancelado.',
+    ],
+
 ];
