@@ -158,26 +158,11 @@
       "conflict_risk_with": []
     },
     {
-      "id": "0056",
-      "slug": "0056-notification-viewing-backend",
-      "title": "Notification viewing — unread count, recent list, mark-as-read (backend)",
-      "depends_on": [],
-      "status": "claimed",
-      "claimed_by": "worktree-0056-notification-viewing-backend",
-      "claimed_at": "2026-09-17T00:00:00Z",
-      "touches": [
-        "tests/Feature/Notifications/NotificationViewingTest.php"
-      ],
-      "conflict_risk_with": []
-    },
-    {
       "id": "0057",
       "slug": "0057-notification-bell-ui",
       "title": "Notification bell UI — topbar dropdown, unread indicator, generic per-type rendering",
-      "depends_on": [
-        "0056"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [

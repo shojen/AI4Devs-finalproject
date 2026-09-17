@@ -4,7 +4,7 @@
 
 Ship the **notification bell** an administrator actually sees: an unread indicator, a dropdown listing
 their fifteen most recent notifications newest-first, and mark-all-as-read on open. It is the UI half
-of [0056](in-progress/0056-notification-viewing-backend.md), consuming that story's three query shapes **verbatim**
+of [0056](done/0056-notification-viewing-backend.md), consuming that story's three query shapes **verbatim**
 — it adds no query of its own. Every row renders through a **generic** path with a fallback for any
 notification type this component has never seen, so the two event producers that do not exist yet need
 zero change here when they arrive.
@@ -24,7 +24,7 @@ zero change here when they arrive.
 > builds **no search functionality whatsoever**: no search field, no query, no result grouping, no
 > permission-filtered result set, no empty state for a search term. Global search's four PRD scenarios
 > and its three acceptance criteria remain **unowned by any story**, exactly as they were before this
-> file existed. See [0056's OQ-1](in-progress/0056-notification-viewing-backend.md#open-questions), which this file
+> file existed. See [0056's OQ-1](done/0056-notification-viewing-backend.md#open-questions), which this file
 > does not close.
 
 ## Type
@@ -330,7 +330,7 @@ Nothing another administrator received is ever visible.
 
 | Depends on | Kind | Why |
 | --- | --- | --- |
-| [0056](in-progress/0056-notification-viewing-backend.md) — notification viewing (backend) | **hard** | Defines the three query shapes this UI calls verbatim, and pins them with the regression suite. Building the view first means building against a contract that does not exist |
+| [0056](done/0056-notification-viewing-backend.md) — notification viewing (backend) | **hard** | Defines the three query shapes this UI calls verbatim, and pins them with the regression suite. Building the view first means building against a contract that does not exist |
 | [0043](done/0043-customers-new-customer-notification-backend.md) — new-customer notification | **hard (transitively)** | Owns the `notifications` table itself, and supplies one of the two recognized types |
 | [0046](done/0046-orders-new-order-notification-backend.md) — new-order notification | **soft / informational** | Not required to build or pass this story. It supplies the *second* recognized type, which is what makes the mixed-type test meaningful; without it that test runs against one real type plus a test-local one, and the acceptance criteria are unchanged |
 | Task 0013's layout (`<x-sidebar-nav />`, `x-desktop-user-menu`) | **shipped** | Verified in the working tree; this story adds two lines beside them and changes neither |
@@ -359,7 +359,7 @@ Per the [task ordering rule](../../docs/workflow.md#task-ordering-rule), sequenc
 answer without it. The PRD's cross-cutting section describes a topbar carrying *two* features, and this
 story delivers one of them into existing chrome instead. A real shared topbar is a layout decision
 affecting every screen, and it is the natural home for global search — so it plausibly belongs with
-[0056's OQ-1](in-progress/0056-notification-viewing-backend.md#open-questions) rather than being decided here.
+[0056's OQ-1](done/0056-notification-viewing-backend.md#open-questions) rather than being decided here.
 **Recommended: leave it open and decide it together with global search's owner _(recommended)_** — the
 two questions have the same answer, and deciding one without the other means deciding it twice. If a
 topbar story does land, relocating the bell is a **one-line move of the mount point**, which is exactly
@@ -470,7 +470,7 @@ payload.
 ## Provenance
 
 - **PRD source:** [§ Cross-cutting: global search & notifications](../../docs/PRD/PRD.md#cross-cutting-global-search--notifications) — the two bell-**state** scenarios ("The bell shows an unread indicator", "Reading notifications clears the unread indicator"), both covered above, plus the acceptance criterion *"The bell displays an unread indicator and clears it once notifications are read."* The section's `Scenario Outline: A confirmed event generates a notification` belongs to the four event producers, and the whole `Feature: Global panel search` is excluded and remains unowned.
-- **Backlog origin:** [0043's OQ-3](done/0043-customers-new-customer-notification-backend.md#open-questions), option (a). [0056](in-progress/0056-notification-viewing-backend.md) is that story's backend half and names **0057** as its paired UI story by number; this file is it.
+- **Backlog origin:** [0043's OQ-3](done/0043-customers-new-customer-notification-backend.md#open-questions), option (a). [0056](done/0056-notification-viewing-backend.md) is that story's backend half and names **0057** as its paired UI story by number; this file is it.
 - **Process:** [workflow.md](../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from `frontend-expert` (the layout finding, the two-mount-point recommendation, the generic-with-fallback rendering path, the mark-all-then-re-read-via-method rule, the poll cadence, the `data-test` hooks, and the explicit request for a placement decision rather than a deferral) and `frontend-qa` (the eleven browser cases, the two-path indicator-absence split, the durable-clear-across-reload assertion, the unrecognized-type case named highest-value, the one-dispatch isolation constraint, the ≥2-route presence case, and the D-1 permission-revocation case), composed by `product-owner` as facilitator. **No `database-expert`**: no schema, no query (see the Type section).
 - **Gherkin conventions:** every scenario opens with a named business-role actor and carries exactly one `When`, per [gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 — mandatory across all Gherkin in this project, per the incident in [errors-log.md](../../docs/errors-log.md).
 - **Verified against the working tree by `product-owner` rather than relayed:** `resources/views/layouts/app.blade.php` renders `<x-layouts::app.sidebar>` and nothing else; `resources/views/layouts/app/sidebar.blade.php` contains the entire shell, with `<flux:header class="lg:hidden">` as the only header and `<x-desktop-user-menu class="hidden lg:block" />` after a `flux:spacer` inside `<flux:sidebar>`; `app/Livewire/` contains `Actions/`, `Roles/`, `Settings/` and `Users/` with no `Notifications/`; `lang/en/` and `lang/es/` contain `navigation.php`, `roles.php` and `users.php` with no `notifications.php`; and `tests/Browser/` contains `Auth/`, `RolesIndexTest.php` and `UsersIndexTest.php` with no `Notifications/` folder.

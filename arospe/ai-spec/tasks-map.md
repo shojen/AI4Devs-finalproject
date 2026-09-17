@@ -18,12 +18,13 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
-As of this snapshot, `ai-spec/tasks/in-progress/` holds one file: `0056-notification-viewing-
-backend.md`, claimed (`worktree-0056-notification-viewing-backend`, 2026-09-17) and moved from
-`ai-spec/tasks/` at the start of its own Phase 3 — see its updated bullet under
-[Pending tasks that are independent](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
-and its `claimed` node/class in the graph below. Before that claim, `ai-spec/tasks/in-progress/`
-was empty: `0048-order-line-item-editing-
+As of this snapshot, `ai-spec/tasks/in-progress/` is empty again: `0056-notification-viewing-
+backend.md` completed Phase 7 and moved straight from `in-progress/` to `done/` in this same
+regeneration pass — its node and edge (`P0056 --> P0057`) are dropped from the graph below, its
+`tasks-status.json` entry was deleted outright, and its own former dependent (`0057`) is
+re-derived against `done/` and moves from `blocked` to `ready` (see its updated bullet under
+[Pending tasks that are independent](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)).
+Before that, `0048-order-line-item-editing-
 backend.md` completed Phase 7 and moved straight from `in-progress/` to `done/` in an earlier
 regeneration pass — `docs-keeper` moved it and ran the
 [link-integrity check](../docs/workflow.md#link-integrity-check-on-every-stage-move) this same
@@ -92,7 +93,7 @@ appears as a node in the dependency graph below:
 - **Epic 2 — Products, Taxes, Media, Shipping (35):** 0016, 0017, 0018, 0019, 0019a, 0019b,
   0019c, 0019d, 0020, 0021, 0022, 0023, 0024, 0024a, 0024b, 0025, 0026, 0027, 0028, 0029, 0029a,
   0029b, 0030, 0030a, 0031, 0031a, 0032, 0033, 0034, 0035, 0036, 0037, 0038, 0039, 0080.
-- **Epic 3 — Customers & Orders (8):** 0041 — the epic's foundation story (the first to close in
+- **Epic 3 — Customers & Orders (9):** 0041 — the epic's foundation story (the first to close in
   this epic); its own three former dependents (0042, 0043, 0045) are re-derived against `done/`
   rather than against this pending list from here on. 0042 — Customers soft delete (backend), the
   second story to close in this epic; its own two former dependents (0044, 0047) are re-derived
@@ -112,9 +113,11 @@ appears as a node in the dependency graph below:
   list but re-derives no `depends_on`/`status` change against this pending list. 0048 — Order
   line-item editing backend, the eighth story to close; its own only dependent, `0055`, is
   re-derived against `done/` from here on (`0055` still has six other pending dependencies, so it
-  stays `blocked`).
+  stays `blocked`). 0056 — Notification viewing (backend), the ninth story to close; its own only
+  dependent, `0057`, is re-derived against `done/` from here on — `0057` had no other pending
+  dependency, so it moves from `blocked` to `ready`.
 
-### Pending — not started (31 numbered + 1 infra doc)
+### Pending — not started (30 numbered + 1 infra doc)
 
 | ID | Title | Epic area |
 | --- | --- | --- |
@@ -125,7 +128,6 @@ appears as a node in the dependency graph below:
 | 0053 | Order tax Sales-Region resolution — physical products (backend) | Epic 3 — Orders |
 | 0054 | Order tax Sales-Region resolution — virtual products (backend) | Epic 3 — Orders |
 | 0055 | Orders list + detail/editor UI | Epic 3 — Orders |
-| 0056 | Notification viewing — unread count, recent list, mark-as-read (backend) | Epic 3 — Notifications |
 | 0057 | Notification bell UI — topbar dropdown, unread indicator, generic per-type rendering | Epic 3 — Notifications |
 | 0058 | Blog categories — backend (table, model, create/rename/delete, name validation) | Epic 4 — Blog |
 | 0059 | Blog tags — backend (table, model, create/rename/delete, find-or-create, name validation) | Epic 4 — Blog |
@@ -192,7 +194,6 @@ flowchart LR
 
     subgraph PEND_NOTIF["Epic 3 — Notifications"]
         direction TB
-        P0056["0056 Notification viewing BE"]
         P0057["0057 Notification bell UI"]
     end
 
@@ -248,13 +249,13 @@ flowchart LR
     P0054 --> P0055
 
     %% Notifications
-    %% (0046 -.-> P0056 and 0046 -.-> P0057 dropped: 0046 closed to done/ this pass, and per this
-    %% file's own "done/ tasks are omitted from the graph" rule its node and edges are removed
-    %% rather than redrawn against a done/ id)
+    %% (0046 -.-> P0056/P0057 dropped in an earlier pass: 0046 closed to done/ then. P0056 --> P0057
+    %% dropped in this pass: 0056 itself closed to done/, so per this file's own "done/ tasks are
+    %% omitted from the graph" rule its node and every edge touching it are removed rather than
+    %% redrawn against a done/ id — 0057's depends_on is now empty, recomputed to "ready" below)
     %% (P0047 -.-> P0055 dropped the same way: 0047 closed to done/ this pass — it was only a
     %% conflict_risk_with sibling of 0055, never a hard depends_on edge, so no dependent status
     %% recomputation follows from this removal)
-    P0056 --> P0057
 
     %% Blog
     P0059 --> P0060
@@ -315,15 +316,14 @@ flowchart LR
     P0070 --> P0079
     P0068 --> P0079
 
-    class P0050,P0052,P0055,P0057,P0060,P0061,P0062,P0063,P0064,P0065,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0049,P0051,P0053,P0054,P0058,P0059,P0068 ready;
-    class P0056 claimed;
+    class P0050,P0052,P0055,P0060,P0061,P0062,P0063,P0064,P0065,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
+    class P0049,P0051,P0053,P0054,P0057,P0058,P0059,P0068 ready;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(`0056` is `claimed` in this snapshot — see the note below); yellow (`pending`) = still blocked on at least one open
+(no node is `claimed` in this snapshot); yellow (`pending`) = still blocked on at least one open
 pending dependency.
 
 ## Analysis
@@ -353,12 +353,12 @@ the top of this file.)
   policy… the foundational story the other blog stories build on." Ready now.
 - **0059 — Blog tags (backend).** No hard dependency on 0058 in either direction (both depend only
   on already-shipped work plus `done/0022`'s `NormalizeForSearch`). Ready now.
-- **0056 — Notification viewing (backend).** Its only dependency, `0043`, is `done/` — depends on
-  nothing else pending. **Claimed** (`worktree-0056-notification-viewing-backend`, 2026-09-17) and
-  moved to `in-progress/`. Ships no new production class (D-2) — its own `touches` in
-  `tasks-status.json` is `tests/Feature/Notifications/NotificationViewingTest.php` only, not
-  `App\Models\User` or a new `app/Actions/Notifications/` namespace as an earlier snapshot of this
-  line assumed before Phase 1 settled on the no-new-class decision.
+- **0057 — Notification bell UI.** Its only dependency, `0056`, closed to `done/` in this same
+  pass — depends on nothing else pending. Ready now. Consumes 0056's three query shapes verbatim
+  (`unreadNotifications()->count()`, `notifications()->latest()->limit(15)->get()`,
+  `unreadNotifications->markAsRead()`), documented in
+  [database/schema-other.md](../docs/database/schema-other.md#notifications) as well as in
+  `done/0056`'s own task file.
 - **0068 — Store Languages catalog (backend).** Depends only on `done/0002` (the
   `store-languages.*` permissions) and cites `done/0016`/`0017`/`0018` only as a *precedent*, not a
   code dependency. Ready now — and, being the root of the entire Epic 5 chain (every i18n story
@@ -378,7 +378,7 @@ dependencies (`0050` on `0049`/`0051`; `0052` on `0051`; `0055` on its six remai
 stories) — recomputing a status, not merely stripping a satisfied id, per the same rule this file
 applied when `0043` closed (see the note further below).
 
-**0049, 0051, 0053, 0054, 0056 and 0068 are fully independent of each other and
+**0049, 0051, 0053, 0054, 0057 and 0068 are fully independent of each other and
 of 0058/0059** — no shared files, no shared tables, and none of them appears in the other's
 `conflict_risk_with` set in [`ai-spec/tasks-status.json`](tasks-status.json), with one caveat
 carried over unchanged from before this closure: `0049` and `0051` both write
@@ -454,11 +454,11 @@ parallelization one. The major chains, in the order they must be executed:
    `done` (`0045` itself already is). `0048` is the first of the seven to get there, closing in
    this same regeneration pass; the six remaining (`0049`, `0050`, `0051`, `0052`, `0053`, `0054`)
    are still pending.
-2. **Notifications (Epic 3).** `0043` (`done/`) is what unblocked `0056` — it is `ready` above with
-   no pending dependency left at all; `0056 → 0057` next. `0046` was never a hard blocker of either
-   — only a soft/informational, non-blocking sibling that made their "two distinct notification
-   types" test meaningful — and it is `done/` as of this pass too, so that soft reference is now
-   fully satisfied; `0056`'s and `0057`'s own status is unchanged either way.
+2. **Notifications (Epic 3).** `0043` (`done/`) unblocked `0056`, which closed to `done/` in this
+   same regeneration pass — its own only dependent, `0057`, is now `ready` above with no pending
+   dependency left at all. `0046` was never a hard blocker of either — only a soft/informational,
+   non-blocking sibling that made their "two distinct notification types" test meaningful — and it
+   too is `done/` as of an earlier pass, so that soft reference is fully satisfied either way.
 3. **Blog (Epic 4).** `{0058, 0059} → 0061 → {0062, 0063, 0064 → 0065}`, with `0059 → 0060` running
    in parallel to `0061` (0060 only needs 0059) and `0062`/`0063` each also softly preferring
    `0060` to land first (it creates the `groups.blog` sidebar entry both reuse).

@@ -459,7 +459,7 @@ status here:
 | --- | --- |
 | **OQ-1** — should a `suspended`/`inactive` administrator receive notifications? | **Inherited unchanged; same default: notify them (no status filter).** A notification is a record, not access, and `users.status` is enforced at sign-in ([architecture/authentication.md](../../../docs/architecture/authentication.md)). If the human overrides it for 0043, this story changes identically — one `->where('status', …)` clause in each action, and the two must not diverge |
 | **OQ-2** — should the administrator who created the record be notified of their own action? | **Inherited unchanged; same default: no self-exclusion.** It keeps the recipient rule a single query with no actor parameter, and avoids reintroducing the caller-supplied-state shape [errors-log.md](../../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20) warns about. An order created by a future storefront or import has no acting administrator at all, so a self-exclusion branch would be dead code on that path — **an argument that is actually stronger here than it was for customers** |
-| **OQ-3** — the missing notification-viewer UI | **Tracked once, at 0043. Deliberately not reopened here.** It is one cross-cutting gap covering all four event producers, not one gap per producer; re-raising it per story is how a single decision becomes four unresolved questions. This story is not blocked by it. *(Note, added 2026-09-15: that gap now has real decomposed stories — [0056](../in-progress/0056-notification-viewing-backend.md) and [0057](../0057-notification-bell-ui.md) — rather than staying a bare open question at 0043 alone. This does not reopen the question or change this story's own scope; 0046 still ships no viewer of any kind.)* |
+| **OQ-3** — the missing notification-viewer UI | **Tracked once, at 0043. Deliberately not reopened here.** It is one cross-cutting gap covering all four event producers, not one gap per producer; re-raising it per story is how a single decision becomes four unresolved questions. This story is not blocked by it. *(Note, added 2026-09-15: that gap now has real decomposed stories — [0056](0056-notification-viewing-backend.md) and [0057](../0057-notification-bell-ui.md) — rather than staying a bare open question at 0043 alone. This does not reopen the question or change this story's own scope; 0046 still ships no viewer of any kind.)* |
 
 **The one real open item this story carried is resolved below as D-5**, not left open: whether
 `customer_name` is a literal snapshot or a live read.
@@ -498,7 +498,7 @@ decomposed.** Stated as an explicit Definition-of-Done line rather than left imp
 re-escalated as an open question — 0043's OQ-3 owns it. The consequence a reviewer must accept: this
 story's acceptance criteria are satisfied by database rows and `Notification::assertSentTo`, with **no**
 admin-visible behaviour to click through and no browser test. *(Note, added 2026-09-15: the gap is now
-decomposed into real stories — [0056](../in-progress/0056-notification-viewing-backend.md) (unread count/recent
+decomposed into real stories — [0056](0056-notification-viewing-backend.md) (unread count/recent
 list/mark-as-read backend) and [0057](../0057-notification-bell-ui.md) (the topbar bell UI) — rather than
 sitting only as 0043's bare OQ-3. This is informational, not a scope change: this decision and this
 story's Definition of Done are unchanged.)*
