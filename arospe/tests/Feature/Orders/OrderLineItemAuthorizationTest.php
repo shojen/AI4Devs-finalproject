@@ -130,17 +130,24 @@ test('the orders.edit ability string is literally what the three actions authori
 
 // --- D-2: no new permission is added for line-item editing ---
 
+// Story 0051 note: RolePermissionSeeder::ORDER_PERMISSIONS (`orders.refund`) now also
+// contributes to the catalog and to the `orders.%` prefix -- that is a LATER story's own,
+// separately-scoped addition (a non-CRUD permission, not a line-item-editing one), so it is
+// counted alongside the module x action grid + ROLE_PERMISSIONS below rather than contradicting
+// this test's own "no new permission was added for line-item editing" guarantee.
 test('the seeded permission catalog is byte-identical to what RolePermissionSeeder alone produces -- no new permission was added for line-item editing', function () {
     $expectedCount = count(RolePermissionSeeder::MODULES) * count(RolePermissionSeeder::ACTIONS)
-        + count(RolePermissionSeeder::ROLE_PERMISSIONS);
+        + count(RolePermissionSeeder::ROLE_PERMISSIONS)
+        + count(RolePermissionSeeder::ORDER_PERMISSIONS);
 
     expect(Permission::query()->count())->toBe($expectedCount);
 
-    // Every `orders.*` permission present is exactly the four flat CRUD abilities -- never a
-    // fifth, line-item-specific one (e.g. `orders.edit-line-items`).
+    // Every `orders.*` permission present is exactly the four flat CRUD abilities plus
+    // ORDER_PERMISSIONS' own `orders.refund` -- never a line-item-specific one (e.g.
+    // `orders.edit-line-items`).
     $orderPermissions = Permission::query()->where('name', 'like', 'orders.%')->pluck('name')->sort()->values()->all();
 
-    expect($orderPermissions)->toBe(['orders.create', 'orders.delete', 'orders.edit', 'orders.view']);
+    expect($orderPermissions)->toBe(['orders.create', 'orders.delete', 'orders.edit', 'orders.refund', 'orders.view']);
 });
 
 // --- Ordering: the permission refusal wins over the 409 state refusal (D-6) ---
