@@ -70,7 +70,12 @@ app/
                        the decimal(10,2) column-overflow guard) mirroring CreateOrder's own
                        private methods of the same names rather than moving or duplicating them,
                        since this story's scope fences forbid refactoring CreateOrder beyond its
-                       one named trait extraction)
+                       one named trait extraction; TransitionOrderStatus — story 0049, the
+                       five-step ordered action moving an order along PRD 3.2's linear ladder
+                       (permission -> Cancelled guard -> same-status guard -> unconfirmed-
+                       regression guard -> forceFill write), self-authorizing `transitionStatus`
+                       on OrderPolicy as its own first statement with a bare Gate::authorize()
+                       rather than LogRefusedPrivilegedAttempt)
   Actions/ProductCategories/ Domain actions for the Product Categories area (CreateProductCategory,
                        RenameProductCategory, DeleteProductCategory) — one action per operation
                        (story 0023). Unlike every other area's actions, none of the three authorize
@@ -153,18 +158,29 @@ app/
                        all, per naming.md's "add label() when a second consumer appears" rule;
                        OrderStatus / PaymentStatus, story 0045 — two SEPARATE value sets rather
                        than one enum or one lang group, since PRD §3.2 treats fulfilment status
-                       and payment status as independently-evolving dimensions; neither declares
-                       label() either, for the identical GeographyLevel reason -- deferred to
-                       story 0055, their first real rendering consumer -- even though both
-                       already ship their lang/{en,es}/orders.php leaves now, pinned by a test,
-                       since a translation file is only ever correct relative to the value set it
-                       covers and this story is what fixes that value set)
+                       and payment status as independently-evolving dimensions; NEITHER declared
+                       label() at story 0045 (corrected here rather than left stale --
+                       OrderStatus gained label() at story 0047, its order-history screen being
+                       the first real rendering consumer, ahead of the originally-planned story
+                       0055; PaymentStatus still has none, deferred, for the identical
+                       GeographyLevel/naming.md "add label() when a second consumer appears"
+                       reason) -- both already shipped their lang/{en,es}/orders.php leaves from
+                       story 0045, pinned by a test, since a translation file is only ever correct
+                       relative to the value set it covers; OrderStatus gained two more methods at
+                       story 0049, rank()/isBackwardFrom(), covering only the four linear statuses
+                       -- Cancelled deliberately has no rank, see architecture/authorization.md)
   Exceptions/          Domain exceptions that render their own response (ImmutableRoleException → 403,
                        RoleInUseException → 409, PasswordConfirmationRequiredException → 423,
                        OrderNotEditableException → 409 since story 0048 -- the state-based hard
                        block on order line-item editing, a direct throw from each of
                        AddOrderItem/RemoveOrderItem/UpdateOrderItemQuantity rather than a Gate
-                       ability, see architecture/authorization.md) — plus, since story 0022, one
+                       ability, see architecture/authorization.md; OrderStatusRegressionRequires
+                       ConfirmationException → 409 since story 0049 -- thrown by
+                       TransitionOrderStatus when a backward status move is not confirmed,
+                       following RoleInUseException's shape exactly; deliberately not 423 (not a
+                       credential-freshness problem) and not 403 (not an authorization failure) --
+                       see architecture/authorization.md's "Order status regression confirmation"
+                       section) — plus, since story 0022, one
                        that deliberately does NOT: UnresolvedSelectionException carries no
                        render() at all, because it must never reach the HTTP layer as a status
                        code (see below)
@@ -262,7 +278,11 @@ app/
                        update/delete ship with no caller yet ON PURPOSE, since stories 0048-0052
                        add genuinely row-state-dependent rules (editing blocked once Shipped, a
                        refund refused outside Paid/PartiallyRefunded) as branches to update()'s/
-                       delete()'s EXISTING body rather than relocating every call site's target
+                       delete()'s EXISTING body rather than relocating every call site's target.
+                       Story 0049 grew OrderPolicy's ability roster to FIVE, adding
+                       transitionStatus (reusing EDIT_PERMISSION, no new constant), with a real
+                       caller from day one (TransitionOrderStatus) -- see
+                       architecture/authorization.md for the full, re-counted caller roster
   Providers/           Service providers (AppServiceProvider, FortifyServiceProvider)
   Rules/               Stock Laravel location (`make:rule`), not a new base folder — Iban.php,
                        story 0038, ISO 13616 structure plus the ISO 7064 mod-97 checksum,
@@ -517,10 +537,8 @@ Three constraints that come with it, each learned from this story's audits:
 What the rules themselves say, and why a rule that must bind a Super Admin actor is a direct `throw` rather than a `Gate` check, belongs to [architecture/authorization.md](../architecture/authorization.md#the-guard-belongs-to-the-action-not-to-the-caller), not here.
 
 
-_Last updated: 2026-09-16 — Story 0048 (Order line-item editing backend). Extended `app/Actions/Orders/` with six new classes: `AddOrderItem`, `RemoveOrderItem`, `UpdateOrderItemQuantity` (the three actions, each self-authorizing `update` on the `Order` before their own state-based hard block, re-verified a second time inside the transaction under `lockForUpdate()` per Phase 4 finding F-4), `RecalculateOrderTotals` (the shared totals-recomputation collaborator, authorizing nothing of its own — the same already-authorized-caller pattern as `SyncProductGallery`/`SyncProductSalesRegions`), and `ToNumericString`/`AssertWithinColumnCeiling` (two pure, dependency-free, never-`new`-ed collaborators mirroring `CreateOrder`'s own like-named private methods, per the story's scope fence against refactoring `CreateOrder` itself). Added `OrderNotEditableException → 409` to `app/Exceptions/`'s rendering-exception list, now four instances rather than three.
+_Last updated: 2026-09-17 — Story 0049 (Order status transition backend). Extended `app/Actions/Orders/` with `TransitionOrderStatus` (the five-step ordered action, self-authorizing `transitionStatus` on `OrderPolicy` as its own first statement via a bare `Gate::authorize()`). Added `OrderStatusRegressionRequiresConfirmationException → 409` to `app/Exceptions/`'s rendering-exception list, now five instances rather than four. Noted `OrderPolicy`'s ability roster grew to five (`transitionStatus`, reusing `EDIT_PERMISSION`) beside its existing `Policies/` entry. Noted `OrderStatus::rank()`/`isBackwardFrom()` beside the `Enums/` entry, and corrected that same entry's stale "neither declares `label()`" claim in place — `OrderStatus` gained `label()` at story 0047, a fact this file had never caught up to.
 
-_Previously: 2026-09-15 — Story 0047 (Customer detail — order history view UI). Added `App\Livewire\Customers\Show` to the `Customers/` entry — a second class in the same folder as `Index.php`, one view-depth level deeper (the ordinary mirror rule, naming.md's second confirming instance of the Index-flat/other-nested asymmetry), read-only, gating `customers.view` for the page and `orders.view` (`OrderPolicy`'s own first real caller) for the order-history section alone. No migration, no new model: this story adds `App\Models\Customer::orders()` (a relation, not a schema change) and `App\Enums\OrderStatus::label()`.
+_Previously: 2026-09-16 — Story 0048 (Order line-item editing backend). Extended `app/Actions/Orders/` with six new classes: `AddOrderItem`, `RemoveOrderItem`, `UpdateOrderItemQuantity` (the three actions, each self-authorizing `update` on the `Order` before their own state-based hard block, re-verified a second time inside the transaction under `lockForUpdate()` per Phase 4 finding F-4), `RecalculateOrderTotals` (the shared totals-recomputation collaborator, authorizing nothing of its own — the same already-authorized-caller pattern as `SyncProductGallery`/`SyncProductSalesRegions`), and `ToNumericString`/`AssertWithinColumnCeiling` (two pure, dependency-free, never-`new`-ed collaborators mirroring `CreateOrder`'s own like-named private methods, per the story's scope fence against refactoring `CreateOrder` itself). Added `OrderNotEditableException → 409` to `app/Exceptions/`'s rendering-exception list, now four instances rather than three.
 
-_Previously: 2026-09-15 — Story 0046 (Orders — "new order" notification, backend). Extended `app/Actions/Orders/` with `NotifyOrderCreated` — the recipient-resolution + dispatch action `CreateOrder` calls after its own transaction commits, authorizing nothing of its own, the next confirmed instance of "a collaborator invoked only by an already-authorized action needs no gate" after `NotifyCustomerCreated` and the `Products/` sync actions — and `app/Notifications/` with `OrderCreated`, the same `database`-channel-only, not-`ShouldQueue` shape as `CustomerCreated`. No migration, no new model, no permission-catalog change: this story adds no schema.
-
-_Previously: 2026-09-14 — Story 0045 (Orders core CRUD backend). Added `app/Actions/Orders/` (`CreateOrder`), `Order`/`OrderItem` to `app/Models/`, `OrderStatus`/`PaymentStatus` to `app/Enums/`, `OrderPolicy` (the twelfth policy) to `app/Policies/`, and `lang/{en,es}/orders.php` to the `lang/` bullet. This file had no footer of its own since its split out of `base-standards.md` on 2026-09-11 — this is its first.
+_Previously: 2026-09-15 — Stories 0046/0047 (Orders "new order" notification; Customer detail order-history view). Added `NotifyOrderCreated`/`OrderCreated` (0046) and `App\Livewire\Customers\Show` — `OrderPolicy`'s own first real `viewAny` caller (0047), plus `Customer::orders()` and `OrderStatus::label()`. Earlier history (story 0045 and before) folded per [contracts.md](../contracts.md#doc-growth-management-rule) — see git history if needed._
