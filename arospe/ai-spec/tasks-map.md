@@ -18,8 +18,13 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
-As of this snapshot, `ai-spec/tasks/in-progress/` is empty again: `0048-order-line-item-editing-
-backend.md` completed Phase 7 and moved straight from `in-progress/` to `done/` in this same
+As of this snapshot, `ai-spec/tasks/in-progress/` holds one file: `0056-notification-viewing-
+backend.md`, claimed (`worktree-0056-notification-viewing-backend`, 2026-09-17) and moved from
+`ai-spec/tasks/` at the start of its own Phase 3 — see its updated bullet under
+[Pending tasks that are independent](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
+and its `claimed` node/class in the graph below. Before that claim, `ai-spec/tasks/in-progress/`
+was empty: `0048-order-line-item-editing-
+backend.md` completed Phase 7 and moved straight from `in-progress/` to `done/` in an earlier
 regeneration pass — `docs-keeper` moved it and ran the
 [link-integrity check](../docs/workflow.md#link-integrity-check-on-every-stage-move) this same
 pass, per [`docs/workflow.md`'s task-coordination-file regeneration
@@ -311,13 +316,14 @@ flowchart LR
     P0068 --> P0079
 
     class P0050,P0052,P0055,P0057,P0060,P0061,P0062,P0063,P0064,P0065,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0049,P0051,P0053,P0054,P0056,P0058,P0059,P0068 ready;
+    class P0049,P0051,P0053,P0054,P0058,P0059,P0068 ready;
+    class P0056 claimed;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(no node is `claimed` in this snapshot); yellow (`pending`) = still blocked on at least one open
+(`0056` is `claimed` in this snapshot — see the note below); yellow (`pending`) = still blocked on at least one open
 pending dependency.
 
 ## Analysis
@@ -348,8 +354,11 @@ the top of this file.)
 - **0059 — Blog tags (backend).** No hard dependency on 0058 in either direction (both depend only
   on already-shipped work plus `done/0022`'s `NormalizeForSearch`). Ready now.
 - **0056 — Notification viewing (backend).** Its only dependency, `0043`, is `done/` — depends on
-  nothing else pending. Touches `App\Models\User` (the unread-count/mark-as-read surface) and a
-  new `app/Actions/Notifications/` namespace. Ready now.
+  nothing else pending. **Claimed** (`worktree-0056-notification-viewing-backend`, 2026-09-17) and
+  moved to `in-progress/`. Ships no new production class (D-2) — its own `touches` in
+  `tasks-status.json` is `tests/Feature/Notifications/NotificationViewingTest.php` only, not
+  `App\Models\User` or a new `app/Actions/Notifications/` namespace as an earlier snapshot of this
+  line assumed before Phase 1 settled on the no-new-class decision.
 - **0068 — Store Languages catalog (backend).** Depends only on `done/0002` (the
   `store-languages.*` permissions) and cites `done/0016`/`0017`/`0018` only as a *precedent*, not a
   code dependency. Ready now — and, being the root of the entire Epic 5 chain (every i18n story

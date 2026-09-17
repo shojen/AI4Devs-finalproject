@@ -162,12 +162,11 @@
       "slug": "0056-notification-viewing-backend",
       "title": "Notification viewing — unread count, recent list, mark-as-read (backend)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree-0056-notification-viewing-backend",
+      "claimed_at": "2026-09-17T00:00:00Z",
       "touches": [
-        "app/Models/User.php",
-        "app/Actions/Notifications/"
+        "tests/Feature/Notifications/NotificationViewingTest.php"
       ],
       "conflict_risk_with": []
     },
