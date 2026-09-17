@@ -196,4 +196,34 @@ trait OrderValidationRules
     {
         return ['required', 'uuid', Rule::exists('order_items', 'id')->where('order_id', $orderId)];
     }
+
+    /**
+     * Story 0051 -- bounds the SHAPE of RecordRefund's `items` payload
+     * only (`array<order_item_id, quantity_to_refund>`): non-empty and an
+     * array. Deliberately NOT a `Rule::exists()`/ownership/over-refund
+     * check -- a static rule array cannot see which order is being
+     * refunded, nor "how many units have already come back", which is
+     * exactly the state the guard exists to protect
+     * (docs/errors-log-archive.md's "a guard took the state it was
+     * guarding as a parameter" rule). Both guards run inside RecordRefund
+     * itself, against the order's own freshly-locked `items` collection.
+     *
+     * @return array<int, string>
+     */
+    protected function refundItemsRules(): array
+    {
+        return ['required', 'array', 'min:1'];
+    }
+
+    /**
+     * Story 0051 -- bounds each element of the `items` payload: a positive
+     * integer. `min:1` rejects `0` and every negative in one rule;
+     * `integer` rejects `1.5` and `'abc'`.
+     *
+     * @return array<int, string>
+     */
+    protected function refundQuantityRules(): array
+    {
+        return ['required', 'integer', 'min:1'];
+    }
 }

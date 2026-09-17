@@ -13,7 +13,7 @@ markup, and **not** the 100%-refund auto-cancel, which is story 0052's.
 >
 > **This story is fully specified now, but its Phase 3 implementation cannot start until stories
 > [0045](done/0045-orders-core-crud-backend.md), [0049](done/0049-order-status-transition-backend.md) and
-> [0051](0051-order-payment-refund-state-backend.md) are all `done`** — and 0045 is itself blocked on
+> [0051](done/0051-order-payment-refund-state-backend.md) are all `done`** — and 0045 is itself blocked on
 > five Epic 2 stories (0024 Products, 0029 Product Variants, 0035 Shipping Carriers, 0036 Shipping
 > Rates, 0038 Payment Methods; see its
 > [**DR-1**](done/0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns)).
@@ -239,7 +239,7 @@ public function cancel(User $user, Order $order): bool
 - **`ORDER_EDIT_PERMISSION` is 0049's existing constant**, reused rather than re-typed — the
   name-it-once rule from [naming.md](../../docs/conventions/naming.md#permission-names).
 - **`ORDER_REFUND_PERMISSION` is added by *this* story, and that is a correction to what D-6
-  originally assumed.** Story [0051](0051-order-payment-refund-state-backend.md) creates the
+  originally assumed.** Story [0051](done/0051-order-payment-refund-state-backend.md) creates the
   *permission* — `RolePermissionSeeder::ORDER_PERMISSIONS = ['orders.refund']` — but deliberately
   creates **no** `OrderPolicy` (its **DR-2**) and therefore no single-name constant for it;
   `RecordRefund` calls `Gate::authorize('orders.refund')` with a literal. `RolePermissionSeeder::ORDER_PERMISSIONS`
@@ -267,7 +267,7 @@ public function cancel(User $user, Order $order): bool
 > policy-expressed state rule cannot bind the one actor most likely to try it — the pattern
 > [security/authorization-patterns.md](../../docs/security/authorization-patterns.md#a-rule-that-must-bind-a-super-admin-actor-must-be-a-direct-throw-not-a-gate-check)
 > already rules on, and the same reasoning story
-> [0051](0051-order-payment-refund-state-backend.md)'s **DR-2** used to keep its refund-state refusal
+> [0051](done/0051-order-payment-refund-state-backend.md)'s **DR-2** used to keep its refund-state refusal
 > out of a policy entirely. **The enforcement is `CancelOrder`'s own direct throw**, which runs for
 > every actor including a Super Admin, and the "a Super Admin is still bound by the guarded states"
 > scenario above is what pins it. Read the policy clause as the *hint* half of the pair; deleting it
@@ -672,7 +672,7 @@ a rediscovery.
     with separate acceptance criteria, and the one place it *does* couple them runs the other way
     (a 100% refund auto-cancels; a cancellation does not auto-refund). Inventing the reverse coupling
     would be adding a requirement the PRD does not contain — the scope creep 0049's **D-8** names.
-  - **Story [0051](0051-order-payment-refund-state-backend.md) already owns the complete refund
+  - **Story [0051](done/0051-order-payment-refund-state-backend.md) already owns the complete refund
     mechanism**, and it is not a one-liner: a `refunds` event-log row per line item, `amount` derived
     from a snapshotted `unit_price`, `refunded_by` from `Auth::id()`, `refunded_quantity` and
     `refunded_amount` running totals, a row-locked over-refund guard, and a **derived**
@@ -713,7 +713,7 @@ a rediscovery.
   **not** `Reembolsado`. That reads as a gap until the flow is traced, so it is recorded here so a
   later reader does not "fix" it:
   - A fully `Refunded` payment state is reachable only through story
-    [0051](0051-order-payment-refund-state-backend.md)'s `RecordRefund`, whose derivation sets
+    [0051](done/0051-order-payment-refund-state-backend.md)'s `RecordRefund`, whose derivation sets
     `Refunded` exactly when every line item is fully refunded.
   - That is precisely the 100%-refund event story **0052** listens on, and 0052 sets
     `status = Cancelled` as a system side effect **regardless of the order's current status** (PRD
@@ -900,8 +900,8 @@ a rediscovery.
 | `App\Enums\OrderStatus` (five cases) and `App\Enums\PaymentStatus` (four cases) | story [0045](done/0045-orders-core-crud-backend.md) | the predicate reads both; **no case is added to either** |
 | `app/Policies/OrderPolicy.php` | story [0049](done/0049-order-status-transition-backend.md) — **hard dependency** | this story adds an ability to that **existing** file and reuses its `EDIT_PERMISSION` constant. **Not parallel-safe — see below** |
 | `app/Actions/Orders/` folder | story [0045](done/0045-orders-core-crud-backend.md) | `CancelOrder` lands beside `CreateOrder` and `TransitionOrderStatus` |
-| **`orders.refund` in the seeded catalog** | story [0051](0051-order-payment-refund-state-backend.md) — **hard dependency of the shipped guard** (**D-6**) | `OrderPolicy::cancel()` calls `hasPermissionTo('orders.refund')`, which throws `PermissionDoesNotExist` until `RolePermissionSeeder::ORDER_PERMISSIONS` exists. Verify by reading that constant at `HEAD`, not by assuming — see the note below |
-| `orders.payment_status` reaching `PartiallyRefunded` | story [0051](0051-order-payment-refund-state-backend.md) — **hard dependency for the highest-risk test** | the guard reads a value only `RecordRefund` can derive |
+| **`orders.refund` in the seeded catalog** | story [0051](done/0051-order-payment-refund-state-backend.md) — **hard dependency of the shipped guard** (**D-6**) | `OrderPolicy::cancel()` calls `hasPermissionTo('orders.refund')`, which throws `PermissionDoesNotExist` until `RolePermissionSeeder::ORDER_PERMISSIONS` exists. Verify by reading that constant at `HEAD`, not by assuming — see the note below |
+| `orders.payment_status` reaching `PartiallyRefunded` | story [0051](done/0051-order-payment-refund-state-backend.md) — **hard dependency for the highest-risk test** | the guard reads a value only `RecordRefund` can derive |
 | `orders.edit` in the seeded catalog | **shipped** | `RolePermissionSeeder::MODULES` carries `orders` |
 | `Gate::before` Super Admin bypass | **shipped** (Epic 1) | [authorization.md](../../docs/architecture/authorization.md#the-super-admin-bypass) |
 | The domain-exception-renders-its-own-status pattern | **shipped** | [`RoleInUseException`](../../app/Exceptions/RoleInUseException.php) → 409, copied in shape |
@@ -1120,5 +1120,5 @@ Derived from this story, none of them in scope:
   0051 refunds, 0052 the 100%-refund auto-cancel, 0053–0054 tax resolution, 0055 UI) because several
   of their files may not exist yet; [0045](done/0045-orders-core-crud-backend.md),
   [0049](done/0049-order-status-transition-backend.md) and
-  [0051](0051-order-payment-refund-state-backend.md) are the three that do.
+  [0051](done/0051-order-payment-refund-state-backend.md) are the three that do.
 ```

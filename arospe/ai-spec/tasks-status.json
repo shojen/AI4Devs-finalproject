@@ -6,10 +6,8 @@
       "id": "0050",
       "slug": "0050-order-manual-cancellation-backend",
       "title": "Order manual cancellation backend",
-      "depends_on": [
-        "0051"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -25,32 +23,11 @@
       ]
     },
     {
-      "id": "0051",
-      "slug": "0051-order-payment-refund-state-backend",
-      "title": "Order payment/refund state backend",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "database/migrations/*_create_refunds_table.php",
-        "database/migrations/*_add_refunded_quantity_to_order_items_table.php",
-        "app/Models/Refund.php",
-        "app/Actions/Orders/RecordRefund.php",
-        "database/seeders/RolePermissionSeeder.php",
-        "lang/en/roles.php",
-        "lang/es/roles.php"
-      ],
-      "conflict_risk_with": []
-    },
-    {
       "id": "0052",
       "slug": "0052-order-auto-cancel-full-refund-backend",
       "title": "Order auto-cancel on full refund backend",
-      "depends_on": [
-        "0051"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -106,7 +83,6 @@
       "title": "Orders list + detail/editor UI",
       "depends_on": [
         "0050",
-        "0051",
         "0052",
         "0053",
         "0054"

@@ -19,19 +19,27 @@ and cross-references what those files already state — if the two ever disagree
 task file is correct and this one needs a refresh.
 
 As of this snapshot, `ai-spec/tasks/in-progress/` is empty again:
-`0049-order-status-transition-backend.md` completed Phase 7 (its own `tasks-status.json` entry,
-previously `"claimed"`, matching the graph's blue `claimed` style on `P0049`) and moved straight
-from `in-progress/` to `done/` in this same regeneration pass — `docs-keeper` moved it and ran the
-[link-integrity check](../docs/workflow.md#link-integrity-check-on-every-stage-move) this same
-pass, per [`docs/workflow.md`'s task-coordination-file regeneration
+`0051-order-payment-refund-state-backend.md` completed Phase 7 (its own `tasks-status.json`
+entry, previously `"claimed"`, matching the graph's blue `claimed` style on `P0051`) and moved
+straight from `in-progress/` to `done/` in this same regeneration pass — `docs-keeper` moved it
+and ran the [link-integrity check](../docs/workflow.md#link-integrity-check-on-every-stage-move)
+this same pass, per [`docs/workflow.md`'s task-coordination-file regeneration
 step](../docs/workflow.md#regenerating-the-task-coordination-files). Its node is dropped from the
 dependency graph below (per this file's own "`done/` tasks are omitted from the graph" rule) and
 its entry in `tasks-status.json` was deleted outright — a `done/` task is never listed in that
-registry. `0049` had `depends_on: []` of its own (its only real prerequisite, `0045`, was already
-`done/` when it was claimed), and two stories named it as a hard (`depends_on`) blocker: `0050`
-dropped `"0049"` from its own `depends_on` array and now depends on `0051` alone (still
-`blocked`); `0055` dropped `"0049"` too and stays `blocked` on its five other still-pending Orders
-dependencies (`0050`/`0051`/`0052`/`0053`/`0054`).
+registry. `0051` had `depends_on: []` of its own (its only real prerequisite, `0045`, was already
+`done/` when it was claimed), and three stories named it as a hard (`depends_on`) blocker: `0050`
+dropped `"0051"` from its own `depends_on` array and moves to `ready` (its `0049` dependency was
+already dropped in a prior pass); `0052` dropped `"0051"` too and moves to `ready` (it had no
+other pending dependency); `0055` dropped `"0051"` and stays `blocked` on its four other
+still-pending Orders dependencies (`0050`/`0052`/`0053`/`0054`).
+
+Before that, `0049-order-status-transition-backend.md` completed Phase 7 and moved straight from
+`in-progress/` to `done/` in a prior regeneration pass — `0049` had `depends_on: []` of its own
+(its only real prerequisite, `0045`, was already `done/` when it was claimed), and two stories
+named it as a hard (`depends_on`) blocker: `0050` dropped `"0049"` from its own `depends_on`
+array (at the time, still `blocked` on `0051`); `0055` dropped `"0049"` too (at the time, still
+`blocked` on its five other pending Orders dependencies).
 
 Before that, `0048-order-line-item-editing-
 backend.md` completed Phase 7 and moved straight from `in-progress/` to `done/` in a prior
@@ -64,7 +72,7 @@ infrastructure fix (not a PRD-derived user story) and is already marked `Status:
 documented` inside its own file, so it is listed for completeness but excluded from the dependency
 graph and from the parallelization analysis below.
 
-- **95 files total**: 94 numbered user stories (64 `done/`, 30 still in `ai-spec/tasks/`, 0 checked
+- **95 files total**: 94 numbered user stories (65 `done/`, 29 still in `ai-spec/tasks/`, 0 checked
   out to `ai-spec/tasks/in-progress/`) + 1 non-numbered infrastructure doc (already resolved).
 - For a machine-readable, per-task claim registry that two parallel Claude Code sessions can use
   to coordinate against this same dependency data, see
@@ -74,8 +82,8 @@ graph and from the parallelization analysis below.
 ## Table of contents
 
 - [Inventory](#inventory)
-  - [Done (64) — shipped, out of scope for this graph](#done-64--shipped-out-of-scope-for-this-graph)
-  - [Pending — not started (30 numbered + 1 infra doc)](#pending--not-started-30-numbered--1-infra-doc)
+  - [Done (65) — shipped, out of scope for this graph](#done-65--shipped-out-of-scope-for-this-graph)
+  - [Pending — not started (29 numbered + 1 infra doc)](#pending--not-started-29-numbered--1-infra-doc)
 - [Dependency graph (pending tasks only)](#dependency-graph-pending-tasks-only)
 - [Analysis](#analysis)
   - [Pending tasks that are independent of each other and safe to parallelize](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
@@ -85,7 +93,7 @@ graph and from the parallelization analysis below.
 
 ## Inventory
 
-### Done (64) — shipped, out of scope for this graph
+### Done (65) — shipped, out of scope for this graph
 
 Already merged into `main`/`finalproject-ARP` and closed via the workflow's Phase 7; see
 [`ai-spec/tasks/done/`](tasks/done/) for each story's full file. Listed here only as IDs, grouped
@@ -97,7 +105,7 @@ appears as a node in the dependency graph below:
 - **Epic 2 — Products, Taxes, Media, Shipping (35):** 0016, 0017, 0018, 0019, 0019a, 0019b,
   0019c, 0019d, 0020, 0021, 0022, 0023, 0024, 0024a, 0024b, 0025, 0026, 0027, 0028, 0029, 0029a,
   0029b, 0030, 0030a, 0031, 0031a, 0032, 0033, 0034, 0035, 0036, 0037, 0038, 0039, 0080.
-- **Epic 3 — Customers & Orders (9):** 0041 — the epic's foundation story (the first to close in
+- **Epic 3 — Customers & Orders (10):** 0041 — the epic's foundation story (the first to close in
   this epic); its own three former dependents (0042, 0043, 0045) are re-derived against `done/`
   rather than against this pending list from here on. 0042 — Customers soft delete (backend), the
   second story to close in this epic; its own two former dependents (0044, 0047) are re-derived
@@ -118,16 +126,19 @@ appears as a node in the dependency graph below:
   line-item editing backend, the eighth story to close; its own only dependent, `0055`, is
   re-derived against `done/` from here on (`0055` still had six other pending dependencies at the
   time, so it stayed `blocked`). 0049 — Order status transition backend, the ninth story to
-  close; two stories named it as a hard dependent — `0050` (whose `depends_on` now reads `0051`
-  alone) and `0055` (still has five other pending dependencies, so it stays `blocked`) — both
-  re-derived against `done/` from here on.
+  close; two stories named it as a hard dependent — `0050` (whose `depends_on` then read `0051`
+  alone) and `0055` (still had five other pending dependencies, so it stayed `blocked`) — both
+  re-derived against `done/` at the time. 0051 — Order payment/refund state backend, the tenth
+  story to close; three stories named it as a hard dependent — `0050` and `0052` both drop it
+  from their own `depends_on` array and move to `ready` (neither has any other pending
+  dependency), and `0055` drops it too but stays `blocked` on its four other pending Orders
+  dependencies (`0050`/`0052`/`0053`/`0054`) — all three re-derived against `done/` from here on.
 
-### Pending — not started (30 numbered + 1 infra doc)
+### Pending — not started (29 numbered + 1 infra doc)
 
 | ID | Title | Epic area |
 | --- | --- | --- |
 | 0050 | Order manual cancellation backend | Epic 3 — Orders |
-| 0051 | Order payment/refund state backend | Epic 3 — Orders |
 | 0052 | Order auto-cancel on full refund backend | Epic 3 — Orders |
 | 0053 | Order tax Sales-Region resolution — physical products (backend) | Epic 3 — Orders |
 | 0054 | Order tax Sales-Region resolution — virtual products (backend) | Epic 3 — Orders |
@@ -189,7 +200,6 @@ flowchart LR
     subgraph PEND_ORD["Epic 3 — Orders"]
         direction TB
         P0050["0050 Manual cancellation BE"]
-        P0051["0051 Payment/refund state BE"]
         P0052["0052 Auto-cancel full refund BE"]
         P0053["0053 Tax region — physical BE"]
         P0054["0054 Tax region — virtual BE"]
@@ -239,15 +249,13 @@ flowchart LR
 
     %% Orders siblings
     %% (P0048 --> P0055 dropped: 0048 closed to done/ in a prior pass; P0049 --> P0050 and
-    %% P0049 --> P0055 dropped: 0049 closed to done/ this pass -- per this file's own "done/
-    %% tasks are omitted from the graph" rule each closed story's node and edges are removed
-    %% rather than redrawn against a done/ id)
-    P0051 --> P0050
-    P0051 --> P0052
+    %% P0049 --> P0055 dropped: 0049 closed to done/ in a prior pass; P0051 --> P0050,
+    %% P0051 --> P0052 and P0051 --> P0055 dropped: 0051 closed to done/ this pass -- per this
+    %% file's own "done/ tasks are omitted from the graph" rule each closed story's node and
+    %% edges are removed rather than redrawn against a done/ id)
     P0050 -.-> P0052
     P0053 -.-> P0054
     P0050 --> P0055
-    P0051 --> P0055
     P0052 --> P0055
     P0053 --> P0055
     P0054 --> P0055
@@ -320,8 +328,8 @@ flowchart LR
     P0070 --> P0079
     P0068 --> P0079
 
-    class P0050,P0052,P0055,P0057,P0060,P0061,P0062,P0063,P0064,P0065,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0051,P0053,P0054,P0056,P0058,P0059,P0068 ready;
+    class P0055,P0057,P0060,P0061,P0062,P0063,P0064,P0065,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
+    class P0050,P0052,P0053,P0054,P0056,P0058,P0059,P0068 ready;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
