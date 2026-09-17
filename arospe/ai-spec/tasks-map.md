@@ -83,7 +83,7 @@ graph and from the parallelization analysis below.
 
 - [Inventory](#inventory)
   - [Done (65) — shipped, out of scope for this graph](#done-65--shipped-out-of-scope-for-this-graph)
-  - [Pending — not started (29 numbered + 1 infra doc)](#pending--not-started-29-numbered--1-infra-doc)
+  - [Pending — not started (28 numbered + 1 infra doc)](#pending--not-started-28-numbered--1-infra-doc)
 - [Dependency graph (pending tasks only)](#dependency-graph-pending-tasks-only)
 - [Analysis](#analysis)
   - [Pending tasks that are independent of each other and safe to parallelize](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
@@ -93,7 +93,7 @@ graph and from the parallelization analysis below.
 
 ## Inventory
 
-### Done (65) — shipped, out of scope for this graph
+### Done (66) — shipped, out of scope for this graph
 
 Already merged into `main`/`finalproject-ARP` and closed via the workflow's Phase 7; see
 [`ai-spec/tasks/done/`](tasks/done/) for each story's full file. Listed here only as IDs, grouped
@@ -105,7 +105,7 @@ appears as a node in the dependency graph below:
 - **Epic 2 — Products, Taxes, Media, Shipping (35):** 0016, 0017, 0018, 0019, 0019a, 0019b,
   0019c, 0019d, 0020, 0021, 0022, 0023, 0024, 0024a, 0024b, 0025, 0026, 0027, 0028, 0029, 0029a,
   0029b, 0030, 0030a, 0031, 0031a, 0032, 0033, 0034, 0035, 0036, 0037, 0038, 0039, 0080.
-- **Epic 3 — Customers & Orders (10):** 0041 — the epic's foundation story (the first to close in
+- **Epic 3 — Customers & Orders (11):** 0041 — the epic's foundation story (the first to close in
   this epic); its own three former dependents (0042, 0043, 0045) are re-derived against `done/`
   rather than against this pending list from here on. 0042 — Customers soft delete (backend), the
   second story to close in this epic; its own two former dependents (0044, 0047) are re-derived
@@ -133,12 +133,17 @@ appears as a node in the dependency graph below:
   from their own `depends_on` array and move to `ready` (neither has any other pending
   dependency), and `0055` drops it too but stays `blocked` on its four other pending Orders
   dependencies (`0050`/`0052`/`0053`/`0054`) — all three re-derived against `done/` from here on.
+  0050 — Order manual cancellation backend, the eleventh story to close; one story named it as a
+  hard dependent — `0055`, which drops `"0050"` from its own `depends_on` array and stays
+  `blocked` on its three other pending Orders dependencies (`0052`/`0053`/`0054`) — and two named
+  it a soft `conflict_risk_with` sibling (`0052`, `0054`, both sharing `app/Policies/
+  OrderPolicy.php`/`lang/{en,es}/orders.php` with it), both now dropped since a done/ story is
+  never a conflict risk to anything still pending.
 
-### Pending — not started (29 numbered + 1 infra doc)
+### Pending — not started (28 numbered + 1 infra doc)
 
 | ID | Title | Epic area |
 | --- | --- | --- |
-| 0050 | Order manual cancellation backend | Epic 3 — Orders |
 | 0052 | Order auto-cancel on full refund backend | Epic 3 — Orders |
 | 0053 | Order tax Sales-Region resolution — physical products (backend) | Epic 3 — Orders |
 | 0054 | Order tax Sales-Region resolution — virtual products (backend) | Epic 3 — Orders |
@@ -199,7 +204,6 @@ flowchart LR
 
     subgraph PEND_ORD["Epic 3 — Orders"]
         direction TB
-        P0050["0050 Manual cancellation BE"]
         P0052["0052 Auto-cancel full refund BE"]
         P0053["0053 Tax region — physical BE"]
         P0054["0054 Tax region — virtual BE"]
@@ -250,12 +254,11 @@ flowchart LR
     %% Orders siblings
     %% (P0048 --> P0055 dropped: 0048 closed to done/ in a prior pass; P0049 --> P0050 and
     %% P0049 --> P0055 dropped: 0049 closed to done/ in a prior pass; P0051 --> P0050,
-    %% P0051 --> P0052 and P0051 --> P0055 dropped: 0051 closed to done/ this pass -- per this
+    %% P0051 --> P0052 and P0051 --> P0055 dropped: 0051 closed to done/ in a prior pass;
+    %% P0050 -.-> P0052 and P0050 --> P0055 dropped: 0050 closed to done/ this pass -- per this
     %% file's own "done/ tasks are omitted from the graph" rule each closed story's node and
     %% edges are removed rather than redrawn against a done/ id)
-    P0050 -.-> P0052
     P0053 -.-> P0054
-    P0050 --> P0055
     P0052 --> P0055
     P0053 --> P0055
     P0054 --> P0055
@@ -329,7 +332,7 @@ flowchart LR
     P0068 --> P0079
 
     class P0055,P0057,P0060,P0061,P0062,P0063,P0064,P0065,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0050,P0052,P0053,P0054,P0056,P0058,P0059,P0068 ready;
+    class P0052,P0053,P0054,P0056,P0058,P0059,P0068 ready;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
@@ -506,23 +509,18 @@ sides. Every pair below is also recorded, symmetrically, in each task's `conflic
 in [`ai-spec/tasks-status.json`](tasks-status.json):
 
 - **`app/Policies/OrderPolicy.php` is written by five different Epic 3 stories** — `0045` (created
-  it) and `0049` (added `transitionStatus`), both already `done/`, plus the three still pending:
-  `0050`, `0051` (adds no ability per its own decision, but was in scope before that), and `0052`,
-  and `0055`. `0050`'s own file states in an explicit warning block, written before `0049` closed:
-  *"This story is not parallel-safe with 0049, 0051, 0052 or 0055 — they all write
-  `app/Policies/OrderPolicy.php`."* — the `0049` half of that warning is now moot (a `done/` task
-  can no longer collide with anything). Of the remaining pending trio, `0050 → 0052` and
-  `0050 → 0055`/`0051 → 0055`/`0052 → 0055` are already sequenced by a hard dependency edge, so the
-  residual, *undeclared* risk is narrower than the whole cluster: **`0050` ~ `0051`** and **`0051`
-  ~ `0052`** are the pairs with no direct dependency edge between them, which is what the
-  project's own
-  [Parallel Agent File-Ownership Rule](../docs/contracts.md#parallel-agent-file-ownership-rule)
-  exists to prevent two sessions from hitting at once.
-- **`lang/{en,es}/orders.php` is written by `0045` and `0049` (both already `done/`), plus the
-  still-pending `0050`, `0054` and `0055`** — different key groups in the same file each time,
-  which is ordinary sequential maintenance where a hard dependency already orders the pair, and a
-  real (if minor) conflict risk for the one pending pair not already sequenced: **`0050` ~
-  `0054`**.
+  it), `0049` (added `transitionStatus`) and `0050` (added `cancel`), all three already `done/`,
+  plus the two still pending: `0052` and `0055`. `0050`'s own file states in an explicit warning
+  block, written before `0049`/`0051` closed: *"This story is not parallel-safe with 0049, 0051,
+  0052 or 0055 — they all write `app/Policies/OrderPolicy.php`."* — the `0049` and `0051` halves
+  of that warning are now moot (a `done/` task can no longer collide with anything), and so is
+  `0050`'s own half now that it has closed too. Of the remaining pending pair, `0052 → 0055` is
+  already sequenced by a hard dependency edge, so there is **no** undeclared residual risk left in
+  this cluster — the only two pending writers of this file are already ordered.
+- **`lang/{en,es}/orders.php` is written by `0045`, `0049` and `0050` (all already `done/`), plus
+  the still-pending `0054` and `0055`** — different key groups in the same file each time, and the
+  remaining pending pair is already sequenced by a hard dependency edge (`0054 → 0055`, see the
+  dependency graph above), so no undeclared risk is left here either.
 - **`App\Concerns\ResolvesSalesRegionFromAddress` is a create-if-absent shared trait between `0053`
   and `0054`.** Neither depends on the other, but whichever implementation phase runs first creates
   the file and the second must `use` it unchanged rather than duplicating it.

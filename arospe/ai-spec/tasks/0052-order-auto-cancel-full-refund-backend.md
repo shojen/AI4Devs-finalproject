@@ -4,7 +4,7 @@
 When every line item of an order becomes fully refunded, the order automatically transitions to
 `Cancelado` as a **system-triggered side effect**, per PRD
 [§3.2 Orders](../../docs/PRD/PRD.md#32-orders). This transition is deliberately **exempt from the
-manual-cancellation guard** story [0050](0050-order-manual-cancellation-backend.md) enforces: a
+manual-cancellation guard** story [0050](done/0050-order-manual-cancellation-backend.md) enforces: a
 shipped or delivered order cannot be cancelled by an administrator clicking a button, but it *is*
 auto-cancelled when its last outstanding unit comes back. This story owns the `OrderFullyRefunded`
 domain event, its listener, the `AutoCancelFullyRefundedOrder` action, and the one-line dispatch
@@ -723,7 +723,7 @@ rediscovery.
 | `RecordRefund` + the `payment_status` derivation | story [0051](done/0051-order-payment-refund-state-backend.md) — **hard dependency; ⛔ blocked until `done`** | This story adds the one-line dispatch 0051's **OQ-2** left for it, and hooks the `Refunded` transition it derives |
 | `orders` / `order_items` tables, `Order` model, `OrderStatus` enum | story [0045](done/0045-orders-core-crud-backend.md) — **hard dependency, transitively via 0051** | `orders.status` is written here; `OrderStatus::Cancelled` is read |
 | `app/Actions/Orders/` folder | story [0045](done/0045-orders-core-crud-backend.md) | `AutoCancelFullyRefundedOrder` lands beside `CreateOrder` and `RecordRefund` |
-| `CancelOrder` + `OrderPolicy::cancel()` | story [0050](0050-order-manual-cancellation-backend.md) — **soft dependency** | Needed for the **contrast test** and the regression guard only; **no code in this story calls, imports or modifies either.** If 0050 is not yet `done`, the two tests that reference it are the only blocked items, and they are blocked on a *test fixture*, not on this story's design |
+| `CancelOrder` + `OrderPolicy::cancel()` | story [0050](done/0050-order-manual-cancellation-backend.md) — **soft dependency** | Needed for the **contrast test** and the regression guard only; **no code in this story calls, imports or modifies either.** If 0050 is not yet `done`, the two tests that reference it are the only blocked items, and they are blocked on a *test fixture*, not on this story's design |
 | `App\Enums\PaymentStatus::Refunded` | story [0045](done/0045-orders-core-crud-backend.md) | The dispatch condition reads it |
 | `AppServiceProvider` listener registration precedent | **shipped** (Epic 1, `ActivateVerifiedUser`) | **D-8** copies its form; **R-2** is the hazard that comes with it |
 

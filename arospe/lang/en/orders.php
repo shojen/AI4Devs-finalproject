@@ -70,4 +70,11 @@ return [
         'exceeds_outstanding_units' => 'One or more line items would be refunded more units than remain outstanding.',
     ],
 
+    // Story 0050 -- App\Actions\Orders\CancelOrder's two refusals. No screen copy here (story 0055
+    // extends this group with button/dialog text and does not rename these keys).
+    'cancellation' => [
+        'blocked' => 'This order can no longer be cancelled.',
+        'already_cancelled' => 'This order is already cancelled.',
+    ],
+
 ];
