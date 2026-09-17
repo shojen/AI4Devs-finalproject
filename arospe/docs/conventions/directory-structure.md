@@ -75,7 +75,14 @@ app/
                        (permission -> Cancelled guard -> same-status guard -> unconfirmed-
                        regression guard -> forceFill write), self-authorizing `transitionStatus`
                        on OrderPolicy as its own first statement with a bare Gate::authorize()
-                       rather than LogRefusedPrivilegedAttempt)
+                       rather than LogRefusedPrivilegedAttempt; RecordRefund — story 0051, the
+                       eleven-step refund action (permission -> validate shape -> transaction ->
+                       lock order+items -> payment-state guard -> ownership guard -> over-refund
+                       guard -> write refunds rows + refunded_quantity -> increment
+                       refunded_amount -> derive+write payment_status -> return), gating on a
+                       BARE `Gate::authorize('orders.refund')` rather than an OrderPolicy ability
+                       (DR-2) -- the state-based refusal is a ValidationException raised inside
+                       the action itself, never a policy method)
   Actions/ProductCategories/ Domain actions for the Product Categories area (CreateProductCategory,
                        RenameProductCategory, DeleteProductCategory) — one action per operation
                        (story 0023). Unlike every other area's actions, none of the three authorize
@@ -242,6 +249,11 @@ app/
                        story owns); OrderItem — story 0045, five columns omitted
                        (product_name/product_sku/unit_price/line_total/refunded_quantity), since a
                        fillable unit_price would hand a caller the ability to set its own price;
+                       Refund — story 0051, the refund event log
+                       order_items.refunded_quantity/orders.refunded_amount derive from, with
+                       amount/refunded_by omitted (derived arithmetic over a snapshotted price, and
+                       the acting user's identity, respectively -- both written only via
+                       App\Actions\Orders\RecordRefund's forceCreate());
                        Role, which
                        subclasses
                        the package's role model). product_media, product_sales_region and
@@ -537,7 +549,9 @@ Three constraints that come with it, each learned from this story's audits:
 What the rules themselves say, and why a rule that must bind a Super Admin actor is a direct `throw` rather than a `Gate` check, belongs to [architecture/authorization.md](../architecture/authorization.md#the-guard-belongs-to-the-action-not-to-the-caller), not here.
 
 
-_Last updated: 2026-09-17 — Story 0049 (Order status transition backend). Extended `app/Actions/Orders/` with `TransitionOrderStatus` (the five-step ordered action, self-authorizing `transitionStatus` on `OrderPolicy` as its own first statement via a bare `Gate::authorize()`). Added `OrderStatusRegressionRequiresConfirmationException → 409` to `app/Exceptions/`'s rendering-exception list, now five instances rather than four. Noted `OrderPolicy`'s ability roster grew to five (`transitionStatus`, reusing `EDIT_PERMISSION`) beside its existing `Policies/` entry. Noted `OrderStatus::rank()`/`isBackwardFrom()` beside the `Enums/` entry, and corrected that same entry's stale "neither declares `label()`" claim in place — `OrderStatus` gained `label()` at story 0047, a fact this file had never caught up to.
+_Last updated: 2026-09-17 — Story 0051 (Order payment/refund state backend). Extended `app/Actions/Orders/` with `RecordRefund` (the eleven-step refund action, gating on a bare `Gate::authorize('orders.refund')` rather than an `OrderPolicy` ability). Added `Refund` to `app/Models/`'s inventory — the refund event log `order_items.refunded_quantity`/`orders.refunded_amount` derive from, with `amount`/`refunded_by` omitted from `#[Fillable]`.
+
+_Previously: 2026-09-17 — Story 0049 (Order status transition backend). Extended `app/Actions/Orders/` with `TransitionOrderStatus` (the five-step ordered action, self-authorizing `transitionStatus` on `OrderPolicy` as its own first statement via a bare `Gate::authorize()`). Added `OrderStatusRegressionRequiresConfirmationException → 409` to `app/Exceptions/`'s rendering-exception list, now five instances rather than four. Noted `OrderPolicy`'s ability roster grew to five (`transitionStatus`, reusing `EDIT_PERMISSION`) beside its existing `Policies/` entry. Noted `OrderStatus::rank()`/`isBackwardFrom()` beside the `Enums/` entry, and corrected that same entry's stale "neither declares `label()`" claim in place — `OrderStatus` gained `label()` at story 0047, a fact this file had never caught up to.
 
 _Previously: 2026-09-16 — Story 0048 (Order line-item editing backend). Extended `app/Actions/Orders/` with six new classes: `AddOrderItem`, `RemoveOrderItem`, `UpdateOrderItemQuantity` (the three actions, each self-authorizing `update` on the `Order` before their own state-based hard block, re-verified a second time inside the transaction under `lockForUpdate()` per Phase 4 finding F-4), `RecalculateOrderTotals` (the shared totals-recomputation collaborator, authorizing nothing of its own — the same already-authorized-caller pattern as `SyncProductGallery`/`SyncProductSalesRegions`), and `ToNumericString`/`AssertWithinColumnCeiling` (two pure, dependency-free, never-`new`-ed collaborators mirroring `CreateOrder`'s own like-named private methods, per the story's scope fence against refactoring `CreateOrder` itself). Added `OrderNotEditableException → 409` to `app/Exceptions/`'s rendering-exception list, now four instances rather than three.
 

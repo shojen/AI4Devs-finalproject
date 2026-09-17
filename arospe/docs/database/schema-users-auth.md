@@ -116,8 +116,8 @@ Models: `permissions` is the package's own `Spatie\Permission\Models\Permission`
 | Table | Seeded rows | Notes |
 | --- | --- | --- |
 | `roles` | 2 | `Super Admin`, `Administrator`, both `guard_name = web` — plus any custom role created from the [Roles screen](../api/users-and-roles.md#rolesindex--the-second-permission-gated-route), which the seeder neither creates nor touches |
-| `permissions` | 42 | 10 modules × 4 CRUD actions, plus `roles.manage` and `roles.manage-administrators` — 38 until story 0019 added the `media` module |
-| `role_has_permissions` | 41 | `Administrator` holds everything except `roles.manage-administrators`; `Super Admin` holds none — 37 until story 0019 |
+| `permissions` | 43 | 10 modules × 4 CRUD actions, plus `roles.manage`, `roles.manage-administrators` and `orders.refund` — 38 until story 0019 added the `media` module, 42 until story 0051 added `orders.refund` (its own `ORDER_PERMISSIONS` constant, not a new module or a new CRUD verb) |
+| `role_has_permissions` | 42 | `Administrator` holds everything except `roles.manage-administrators`; `Super Admin` holds none — 37 until story 0019, 41 until story 0051 |
 | `model_has_roles` | 0 or 1 | one row only when `SUPER_ADMIN_EMAIL` resolves to a user (see the bootstrap branches in [authorization.md](../architecture/authorization.md#super-admin-bootstrap)) |
 | `model_has_permissions` | 0 | no permission is granted directly to a user; grants are role-level only |
 

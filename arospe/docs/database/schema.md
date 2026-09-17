@@ -46,6 +46,8 @@ erDiagram
     ORDERS ||--o{ ORDER_ITEMS : order_id
     PRODUCTS ||--o{ ORDER_ITEMS : "product_id (nullable)"
     PRODUCT_VARIANTS ||--o{ ORDER_ITEMS : "product_variant_id (nullable)"
+    REFUNDS }o--|| ORDER_ITEMS : order_item_id
+    REFUNDS }o--|| USERS : refunded_by
 
     USERS {
         uuid id PK
@@ -249,6 +251,7 @@ erDiagram
         decimal tax_amount
         decimal shipping_amount
         decimal total
+        decimal refunded_amount
         boolean flagged_for_review
         string shipping_address_line1
         string shipping_address_line2
@@ -275,6 +278,14 @@ erDiagram
         decimal line_total
         int refunded_quantity
     }
+    REFUNDS {
+        uuid id PK
+        uuid order_item_id FK
+        int quantity
+        decimal amount
+        uuid refunded_by FK
+        text reason
+    }
     NOTIFICATIONS {
         uuid id PK
         string type
@@ -295,15 +306,17 @@ Split by domain into separate files, per [contracts.md](../contracts.md#doc-grow
 - **[Products & Taxes](schema-products.md)** — read if the task touches [`sales_regions`](schema-products.md#sales_regions), [`media`](schema-products.md#media), [`product_categories`](schema-products.md#product_categories), [`products`](schema-products.md#products), [`product_media`](schema-products.md#product_media), [`product_sales_region`](schema-products.md#product_sales_region), [`product_attribute_types`](schema-products.md#product_attribute_types), [`product_attribute_values`](schema-products.md#product_attribute_values), [`product_variants`](schema-products.md#product_variants), or [`product_variant_values`](schema-products.md#product_variant_values). Example: a task about products only needs the [`products`](schema-products.md#products) anchor (plus [`product_media`](schema-products.md#product_media)/[`product_sales_region`](schema-products.md#product_sales_region) if it also touches the gallery or region assignment) — not the rest of the file.
 - **[Shipping](schema-shipping.md)** — read if the task touches [`geography_entries`](schema-shipping.md#geography_entries) (the shipping geography catalog, physically independent of `sales_regions`), [`shipping_zones`](schema-shipping.md#shipping_zones), [`shipping_zone_geography_entry`](schema-shipping.md#shipping_zone_geography_entry), [`shipping_carriers`](schema-shipping.md#shipping_carriers), or [`shipping_rates`](schema-shipping.md#shipping_rates).
 - **[Payment Methods, Customers & Notifications](schema-other.md)** — read if the task touches [`payment_methods`](schema-other.md#payment_methods), [`customers`](schema-other.md#customers), or [`notifications`](schema-other.md#notifications).
-- **[Orders](schema-orders.md)** — read if the task touches [`orders`](schema-orders.md#orders) or [`order_items`](schema-orders.md#order_items): the price-at-time-of-order and address-snapshot invariants, `order_number` generation, the three-way delete-behaviour rule these two tables exercise together, and — since story 0048 — [why `orders.subtotal`/`.tax_amount`/`.total` are derived and *re-derived* rather than write-once, and `order_items.unit_price` is immutable after insert](schema-orders.md#totals-are-derived-and-re-derived-not-write-once).
+- **[Orders](schema-orders.md)** — read if the task touches [`orders`](schema-orders.md#orders), [`order_items`](schema-orders.md#order_items), or [`refunds`](schema-orders.md#refunds): the price-at-time-of-order and address-snapshot invariants, `order_number` generation, the three-way delete-behaviour rule these tables exercise together, [why `orders.subtotal`/`.tax_amount`/`.total` are derived and *re-derived* rather than write-once, and `order_items.unit_price` is immutable after insert](schema-orders.md#totals-are-derived-and-re-derived-not-write-once) (story 0048), and — since story 0051 — the refund event log `order_items.refunded_quantity`/`orders.refunded_amount` are derived from.
 
 ## Notes
 
-- `app/Models/` holds seventeen classes (`ls app/Models/*.php`, recounted rather than incremented blind): `User` (Epic 1); fifteen Epic 2/3 domain models — `SalesRegion`, `Media`, `ProductCategory`, `Product`, `ProductAttributeType`, `ProductAttributeValue`, `ProductVariant`, `GeographyEntry` (the only `bigint`-PK model in this app), `ShippingZone`, `ShippingCarrier`, `ShippingRate`, `PaymentMethod`, `Customer`, `Order` and `OrderItem` (story 0045, [schema-orders.md](schema-orders.md)); and `Role`, a `spatie/laravel-permission` subclass over the package's own `roles` table — no column, no migration of its own (see [architecture/authorization.md](../architecture/authorization.md#the-super-admin-roles-invariants)). **Four pivot tables have no model class at all** — `product_media`, `product_sales_region`, `product_variant_values`, `shipping_zone_geography_entry` — reached only through the owning models' `BelongsToMany`, the same shape the vendored `role_has_permissions`/`model_has_roles` pivots use.
+- `app/Models/` holds eighteen classes (`ls app/Models/*.php`, recounted rather than incremented blind): `User` (Epic 1); sixteen Epic 2/3 domain models — `SalesRegion`, `Media`, `ProductCategory`, `Product`, `ProductAttributeType`, `ProductAttributeValue`, `ProductVariant`, `GeographyEntry` (the only `bigint`-PK model in this app), `ShippingZone`, `ShippingCarrier`, `ShippingRate`, `PaymentMethod`, `Customer`, `Order`, `OrderItem` (story 0045) and `Refund` (story 0051, [schema-orders.md](schema-orders.md)); and `Role`, a `spatie/laravel-permission` subclass over the package's own `roles` table — no column, no migration of its own (see [architecture/authorization.md](../architecture/authorization.md#the-super-admin-roles-invariants)). **Four pivot tables have no model class at all** — `product_media`, `product_sales_region`, `product_variant_values`, `shipping_zone_geography_entry` — reached only through the owning models' `BelongsToMany`, the same shape the vendored `role_has_permissions`/`model_has_roles` pivots use.
 - For migration authoring conventions (naming, `down()` requirements, real examples), see [database/migrations.md](migrations.md).
 - **UUID (v7) primary keys.** Each table's PK type (`uuid` vs `bigint`) is already visible directly in the ER diagram above, and each per-domain schema file states its own table's status against [ADR 0001](../decisions/0001-uuid-primary-keys.md) at the point that table is documented — so this section no longer restates a consolidated status list. The ADR is the single source of truth for the policy and its full history: which entities it covers, the one named `bigint` exception (`geography_entries`), and every amendment since. The model-side convention (`HasUuids`, `@property string $id`, no restated `$keyType`/`$incrementing`) is in [conventions/base-standards.md](../conventions/base-standards.md#uuid-primary-keys); the migration-side pattern is in [database/migrations.md](migrations.md#uuid-primary-keys).
 
-_Last updated: 2026-09-16 — Story 0048 (Order line-item editing backend). Widened the **Domain tables** [Orders](schema-orders.md) bullet with a pointer at this story's own new section — `orders.subtotal`/`.tax_amount`/`.total` are derived and *re-derived* rather than write-once, and `order_items.unit_price` is immutable after insert. No table, column, index or ER-diagram fact changed — this story adds no schema.
+_Last updated: 2026-09-17 — Story 0051 (Order payment/refund state backend). Added `REFUNDS` to the ER diagram (`REFUNDS }o--|| ORDER_ITEMS`, `REFUNDS }o--|| USERS`) and its entity block, plus `orders.refunded_amount` to the `ORDERS` block. Widened the **Domain tables** [Orders](schema-orders.md) bullet to name [`refunds`](schema-orders.md#refunds). Recounted the **Notes** model-class inventory from seventeen to eighteen (`ls app/Models/*.php`), adding `Refund`.
+
+_Previously: 2026-09-16 — Story 0048 (Order line-item editing backend). Widened the **Domain tables** [Orders](schema-orders.md) bullet with a pointer at this story's own new section — `orders.subtotal`/`.tax_amount`/`.total` are derived and *re-derived* rather than write-once, and `order_items.unit_price` is immutable after insert. No table, column, index or ER-diagram fact changed — this story adds no schema.
 
 _Previously: 2026-09-14 — Story 0045 (Orders core CRUD backend). Added `orders`, `order_items`, and — since both now have a real relationship for the first time — `customers` and `payment_methods` to the ER diagram above; neither of the latter two carried any FK in or out before this story, so per this file's own ER-diagram rule (only tables with a meaningful relationship are diagrammed) neither had earned an entity block until now. Added [Orders](schema-orders.md) as a new domain file to the **Domain tables** list — a new file rather than an appendix to [schema-other.md](schema-other.md), since Epic 3's remaining Orders stories (0046–0055) will all extend this domain. Recounted (not incremented blind) the **Notes** section's model-class inventory from fifteen to seventeen (`ls app/Models/*.php`), adding `Order`/`OrderItem`.
 
