@@ -1135,15 +1135,14 @@ Derived from this story, none of them in scope:
   [gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 — mandatory
   across all Gherkin in this project, per the incident recorded in
   [errors-log.md](../../../docs/errors-log.md).
-- **Stage:** `new`, and **blocked** — see the banner under [Description](#description). It moves to
-  `ai-spec/tasks/in-progress/` at the start of Phase 3, and to `ai-spec/tasks/done/` at Phase 7 — both
-  moves change this file's directory depth, so every relative link above must be re-resolved on each
-  move (both directions), per
+- **Stage:** `done` — moved directly from `ai-spec/tasks/` to `ai-spec/tasks/done/` at Phase 7
+  closure (this story's Phase 3 began and finished in the same session its blockers all resolved,
+  so no intermediate `in-progress/` commit was needed), with every relative link above re-resolved
+  for the move, per
   [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move).
 - **Epic 3 decomposition:** the manual-cancellation story of the Orders cluster. Siblings are
   referenced by number (0045 orders foundation, 0048 line-item edit block, 0049 status transitions,
-  0051 refunds, 0052 the 100%-refund auto-cancel, 0053–0054 tax resolution, 0055 UI) because several
-  of their files may not exist yet; [0045](0045-orders-core-crud-backend.md),
-  [0049](0049-order-status-transition-backend.md) and
-  [0051](0051-order-payment-refund-state-backend.md) are the three that do.
+  0051 refunds, 0052 the 100%-refund auto-cancel, 0053–0054 tax resolution, 0055 UI);
+  [0045](0045-orders-core-crud-backend.md), [0049](0049-order-status-transition-backend.md) and
+  [0051](0051-order-payment-refund-state-backend.md) are all `done/` alongside this one.
 ```
