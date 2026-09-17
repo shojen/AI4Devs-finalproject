@@ -33,4 +33,10 @@ return [
         'cancellation_unsupported' => 'Cancelar o reabrir un pedido no está disponible aquí.',
     ],
 
+    'refunds' => [
+        'invalid_payment_state' => 'Este pedido no se puede reembolsar en su estado de pago actual.',
+        'item_not_owned' => 'Una o más líneas no pertenecen a este pedido.',
+        'exceeds_outstanding_units' => 'Una o más líneas se reembolsarían por más unidades de las que quedan pendientes.',
+    ],
+
 ];

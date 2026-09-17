@@ -40,6 +40,16 @@ class RolePermissionSeeder extends Seeder
     public const ROLE_PERMISSIONS = ['roles.manage', 'roles.manage-administrators'];
 
     /**
+     * Non-CRUD permissions on the orders module that sit outside the
+     * module x action grid (story 0051, D-3). `orders.refund` gates
+     * App\Actions\Orders\RecordRefund via a bare Gate::authorize() call --
+     * DR-2 -- rather than an OrderPolicy ability.
+     *
+     * @var array<int, string>
+     */
+    public const ORDER_PERMISSIONS = ['orders.refund'];
+
+    /**
      * Run the database seeds.
      */
     public function run(): void
@@ -121,7 +131,7 @@ class RolePermissionSeeder extends Seeder
             }
         }
 
-        return [...$modulePermissions, ...self::ROLE_PERMISSIONS];
+        return [...$modulePermissions, ...self::ROLE_PERMISSIONS, ...self::ORDER_PERMISSIONS];
     }
 
     /**

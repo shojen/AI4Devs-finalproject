@@ -32,6 +32,13 @@ use Illuminate\Support\Carbon;
  * the omitted columns are, and a legitimate future caller (an order-address
  * edit screen) could reasonably need to write them directly.
  *
+ * `refunded_amount` (story 0051) joins the omitted list too -- a running
+ * total written only via `forceFill()` by App\Actions\Orders\RecordRefund,
+ * kept consistent with the SUM of this order's line items' `refunds` rows'
+ * `amount`. It is a MERCHANDISE total only (quantity x unit_price): it
+ * excludes tax and shipping, which are both `0.00` on every order today, so
+ * the distinction is unobservable until 0053/0054 populate them (R-2).
+ *
  * No `SoftDeletes`: orders are never deleted this phase; `Cancelled` is a
  * `status` value, not a soft delete.
  *
@@ -48,6 +55,7 @@ use Illuminate\Support\Carbon;
  * @property string $tax_amount 'decimal:2' casts to a STRING, not a float
  * @property string $shipping_amount 'decimal:2' casts to a STRING, not a float
  * @property string $total 'decimal:2' casts to a STRING, not a float
+ * @property string $refunded_amount 'decimal:2' casts to a STRING, not a float
  * @property bool $flagged_for_review
  * @property string|null $shipping_address_line1
  * @property string|null $shipping_address_line2
@@ -97,6 +105,7 @@ class Order extends Model
             'tax_amount' => 'decimal:2',
             'shipping_amount' => 'decimal:2',
             'total' => 'decimal:2',
+            'refunded_amount' => 'decimal:2',
             'flagged_for_review' => 'boolean',
         ];
     }
