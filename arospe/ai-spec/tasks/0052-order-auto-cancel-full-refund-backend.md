@@ -8,13 +8,13 @@ manual-cancellation guard** story [0050](0050-order-manual-cancellation-backend.
 shipped or delivered order cannot be cancelled by an administrator clicking a button, but it *is*
 auto-cancelled when its last outstanding unit comes back. This story owns the `OrderFullyRefunded`
 domain event, its listener, the `AutoCancelFullyRefundedOrder` action, and the one-line dispatch
-story [0051](0051-order-payment-refund-state-backend.md) left for it. No route, no Livewire
+story [0051](done/0051-order-payment-refund-state-backend.md) left for it. No route, no Livewire
 component, no Blade markup, no notification, no schema change.
 
 > ## ⛔ BLOCKED — inherited cross-epic dependency (read this before Phase 3)
 >
 > **This story is fully specified now, but its Phase 3 implementation cannot start until story
-> [0051](0051-order-payment-refund-state-backend.md) is `done`** — and 0051 is itself blocked behind
+> [0051](done/0051-order-payment-refund-state-backend.md) is `done`** — and 0051 is itself blocked behind
 > [0045](done/0045-orders-core-crud-backend.md), which is blocked behind five Epic 2 stories
 > ([0024](done/0024-products-core-crud-backend.md), [0029](done/0029-product-variants-backend.md),
 > [0035](done/0035-shipping-carriers-backend.md), [0036](done/0036-shipping-rate-rules-backend.md),
@@ -26,7 +26,7 @@ component, no Blade markup, no notification, no schema change.
 > action exists.
 >
 > **What is *not* blocked:** this document. Specifying it now is what turns 0051's
-> [**OQ-2**](0051-order-payment-refund-state-backend.md#open-questions) from a recommendation into a
+> [**OQ-2**](done/0051-order-payment-refund-state-backend.md#open-questions) from a recommendation into a
 > settled binding, and it is what makes the two 0051 tests this story falsifies visible **before**
 > they are written rather than after.
 
@@ -67,7 +67,7 @@ re-fetch-under-lock, the direct `forceFill()` write past both status-transition 
 idempotent early return, and the absence of an authorization gate. `backend-qa`'s contrast test is
 the executable form of `backend-expert`'s central claim. Where a sibling story recorded a genuine
 expert conflict ([0045 **DR-1**](done/0045-orders-core-crud-backend.md#dr-1--resolved-disagreement--fk-sequencing-vs-unconstrained-placeholder-columns),
-[0051 **DR-1**](0051-order-payment-refund-state-backend.md#dr-1--the-refund-model-line-item-quantities-not-an-arbitrary-monetary-amount)),
+[0051 **DR-1**](done/0051-order-payment-refund-state-backend.md#dr-1--the-refund-model-line-item-quantities-not-an-arbitrary-monetary-amount)),
 this one has none, and inventing daylight between two aligned contributions would misrepresent the
 debate.
 
@@ -276,7 +276,7 @@ Performing, **in this order**:
 
 ### Action — `app/Actions/Orders/RecordRefund.php` (modified — one line)
 
-0051's own [**OQ-2**](0051-order-payment-refund-state-backend.md#open-questions) says this is *"a
+0051's own [**OQ-2**](done/0051-order-payment-refund-state-backend.md#open-questions) says this is *"a
 one-line change to `RecordRefund` that 0052 makes; nothing here needs to anticipate it."* This story
 makes it:
 
@@ -679,7 +679,7 @@ rediscovery.
 - **D-9 — No `OrderPolicy` is created here, narrowing 0045's backlog item 1 for a second time.**
   [0045 **D-13**](done/0045-orders-core-crud-backend.md#documented-functional-decisions) forecast that
   "whichever of stories 0048–0052 arrives first" would create one, and
-  [0051 **DR-2**](0051-order-payment-refund-state-backend.md#dr-2--no-orderpolicy-here-despite-0045s-forward-note-naming-this-cluster)
+  [0051 **DR-2**](done/0051-order-payment-refund-state-backend.md#dr-2--no-orderpolicy-here-despite-0045s-forward-note-naming-this-cluster)
   already declined on the grounds that its rules were about the *row*, not the *actor*. **This story
   declines for a stronger reason: it has no actor at all.** A policy method receives a `User` and this
   operation never has one. If 0049 or 0050 creates an `OrderPolicy`, nothing in this story changes —
@@ -720,7 +720,7 @@ rediscovery.
 
 | Depends on | State | Verified how |
 | --- | --- | --- |
-| `RecordRefund` + the `payment_status` derivation | story [0051](0051-order-payment-refund-state-backend.md) — **hard dependency; ⛔ blocked until `done`** | This story adds the one-line dispatch 0051's **OQ-2** left for it, and hooks the `Refunded` transition it derives |
+| `RecordRefund` + the `payment_status` derivation | story [0051](done/0051-order-payment-refund-state-backend.md) — **hard dependency; ⛔ blocked until `done`** | This story adds the one-line dispatch 0051's **OQ-2** left for it, and hooks the `Refunded` transition it derives |
 | `orders` / `order_items` tables, `Order` model, `OrderStatus` enum | story [0045](done/0045-orders-core-crud-backend.md) — **hard dependency, transitively via 0051** | `orders.status` is written here; `OrderStatus::Cancelled` is read |
 | `app/Actions/Orders/` folder | story [0045](done/0045-orders-core-crud-backend.md) | `AutoCancelFullyRefundedOrder` lands beside `CreateOrder` and `RecordRefund` |
 | `CancelOrder` + `OrderPolicy::cancel()` | story [0050](0050-order-manual-cancellation-backend.md) — **soft dependency** | Needed for the **contrast test** and the regression guard only; **no code in this story calls, imports or modifies either.** If 0050 is not yet `done`, the two tests that reference it are the only blocked items, and they are blocked on a *test fixture*, not on this story's design |
@@ -733,7 +733,7 @@ rediscovery.
 reconciliation** — the same shape as the 0053/0054 reconciliation done earlier in this epic.
 
 **Finding: 0051 needs no design change.** Its
-[**OQ-2**](0051-order-payment-refund-state-backend.md#open-questions) already recommends *exactly*
+[**OQ-2**](done/0051-order-payment-refund-state-backend.md#open-questions) already recommends *exactly*
 this mechanism, by name — *"a domain event (`OrderFullyRefunded`) dispatched by `RecordRefund` after
 the transaction commits"* — for exactly the two reasons `backend-expert` gave independently (a model
 event would fire for any `payment_status` write; a pre-commit listener could cancel an order whose
