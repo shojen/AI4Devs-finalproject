@@ -97,7 +97,7 @@ table is story [0043](done/0043-customers-new-customer-notification-backend.md)'
 >
 > Unlike 0043's and 0046's era, the notification **viewer now exists in the backlog**:
 > [0056](done/0056-notification-viewing-backend.md) (bell backend) and
-> [0057](0057-notification-bell-ui.md) (bell UI). So this story is **not** re-raising 0043's OQ-3, and
+> [0057](done/0057-notification-bell-ui.md) (bell UI). So this story is **not** re-raising 0043's OQ-3, and
 > a reviewer must not read the absence of a bell change here as a gap.
 >
 > What a reviewer **should** know, because it is a real and verified consequence: 0057's bell branches
@@ -871,7 +871,7 @@ link (**R-8**).
     documented `SetSalesRegionActive`-style exception, and worth its own sentence.
   - **No schema or migration doc change** — this story adds no column, table or migration, and
     [database/schema.md](../../docs/database/schema.md)'s `notifications` section is 0043's to write.
-- [ ] **Hand-off recorded for story [0057](0057-notification-bell-ui.md)** (notifications bell UI),
+- [ ] **Hand-off recorded for story [0057](done/0057-notification-bell-ui.md)** (notifications bell UI),
       stated as the three facts it needs and nothing more:
       1. A third notification `type` now exists: `App\Notifications\BlogPostPublished`.
       2. Its payload is `{blog_post_id, title}`. A recognized arm would render the title and link to
@@ -1408,7 +1408,7 @@ none.
 | [0078](0078-translatable-content-retrofit-blog-posts-backend.md) — translatable-content retrofit (Epic 5) | **hard once it lands, `new`** *(added 2026-08-30)* | Removes `blog_posts.title` and supplies `BlogPost::translated()`, which **D-4a**'s payload calls. Ordering is one-directional but **either order works**: if 0078 ships first this story is written against `translated()` from the outset; if this story ships first, 0078's retrofit changes one line here and the amendments above describe the end state. What must **not** happen is this story implementing `$post->title` after 0078 has landed — the property would be undefined and the payload would silently store `null` on a `?string` type. Transitively brings [0068](0068-store-languages-catalog-backend.md) (`StoreLanguage`) and [0070](0070-translatable-content-mechanism-product-categories-backend.md) (`HasTranslations`) |
 | [0058](0058-blog-categories-backend.md) / [0059](0059-blog-tags-backend.md) | **transitive, via 0061** | No direct use |
 | [0046](done/0046-orders-new-order-notification-backend.md) | **not a dependency** | This story copies its *shape*, not its code. Sequencing is free either way |
-| [0056](done/0056-notification-viewing-backend.md) / [0057](0057-notification-bell-ui.md) | **not a dependency, either direction** | 0056's **D-5** means the bell needs zero change for a new producer — verified for this payload (**R-8**) |
+| [0056](done/0056-notification-viewing-backend.md) / [0057](done/0057-notification-bell-ui.md) | **not a dependency, either direction** | 0056's **D-5** means the bell needs zero change for a new producer — verified for this payload (**R-8**) |
 | `blog.view` in the seeded catalog | **shipped** | **V-2** — no seeder change |
 | `App\Models\User` `Notifiable` + `SoftDeletes` | **shipped** (Epic 1) | **V-3** — no model change |
 

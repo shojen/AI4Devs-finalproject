@@ -19,6 +19,12 @@
 
             <flux:spacer />
 
+            {{-- Story 0057: the bell mounts by name, byte-identical in both places (here and
+            the mobile header below), so the two mounts cannot drift. --}}
+            <div class="hidden lg:block">
+                <livewire:notifications.bell />
+            </div>
+
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
         </flux:sidebar>
 
@@ -27,6 +33,8 @@
             <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
             <flux:spacer />
+
+            <livewire:notifications.bell />
 
             <flux:dropdown position="top" align="end">
                 <flux:profile

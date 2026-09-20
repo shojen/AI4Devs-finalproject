@@ -130,11 +130,23 @@ Consumed from `App\Livewire\Settings\Security` (list/add/delete UI) — see [arc
 
 Not listed: asset/dev-tool routes with no domain meaning (`flux/*`, `livewire-*/js|css/*`, `storage/{path}`, `up`, Boost's `_boost/browser-logs`).
 
+## Layout-mounted Livewire components (no route)
+
+Not a route, so it has no row in the table above — recorded here because a route-shaped reader would otherwise conclude the app has no such thing.
+
+| Component | Mounted from | Route | Gate |
+| --- | --- | --- | --- |
+| `App\Livewire\Notifications\Bell` (story 0057) | `resources/views/layouts/app/sidebar.blade.php`, **twice** by name (`<livewire:notifications.bell />`): the desktop sidebar (wrapped in `hidden lg:block`) and the mobile `flux:header` | none | `auth` only, inherited from the layout. No `can:` middleware, no `config/modules.php` entry, no policy — every query is scoped to `Auth::user()`, and no id from the client reaches a query |
+
+Both mounts are in the DOM at every viewport with one hidden by Tailwind, so its `data-test` hooks appear twice per document. The view branches on `notifications.type` for presentation only, with a permanent generic fallback for any unrecognized type.
+
 ## Adding a real API
 
 When `routes/api.php` and API resource controllers appear, replace this file's structure with one `api/<resource>.md` per resource, each documenting real request/response JSON pulled from the controller/resource classes — do not add one preemptively.
 
-_Last updated: 2026-09-15 — Story 0047 (Customer detail — order history view UI). Added `customers.show` — the tenth permission-gated route — to the app-owned route table and the [Customers routes](customers.md) list entry.
+_Last updated: 2026-09-20 — Story 0057 (notification bell UI). Added the "Layout-mounted Livewire components" section: the app's first non-page Livewire component, mounted from the layout. No route, schema or permission change._
+
+_Previously: 2026-09-15 — Story 0047 (Customer detail — order history view UI). Added `customers.show` — the tenth permission-gated route — to the app-owned route table and the [Customers routes](customers.md) list entry.
 
 _Previously: 2026-09-11 — Story 0044 (Customers — list + create/edit UI). Added `customers.index` — the ninth permission-gated route — to the app-owned route table and the `routes/` list, and a new [Customers routes](customers.md) per-area file to the Per-area route documentation list, following the [Payment Methods routes](payment-methods.md) shape (a new business domain area, one gated route). No existing route, table row or per-area file was changed.
 

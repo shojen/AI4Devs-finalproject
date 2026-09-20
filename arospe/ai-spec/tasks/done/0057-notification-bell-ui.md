@@ -4,18 +4,18 @@
 
 Ship the **notification bell** an administrator actually sees: an unread indicator, a dropdown listing
 their fifteen most recent notifications newest-first, and mark-all-as-read on open. It is the UI half
-of [0056](done/0056-notification-viewing-backend.md), consuming that story's three query shapes **verbatim**
+of [0056](../done/0056-notification-viewing-backend.md), consuming that story's three query shapes **verbatim**
 — it adds no query of its own. Every row renders through a **generic** path with a fallback for any
 notification type this component has never seen, so the two event producers that do not exist yet need
 zero change here when they arrive.
 
 > **This is a cross-cutting concern, folded into Epic 3's decomposition at the human's explicit
 > request — it is not a native Epic-3 feature.** Its PRD home is
-> [§ Cross-cutting: global search & notifications](../../docs/PRD/PRD.md#cross-cutting-global-search--notifications),
+> [§ Cross-cutting: global search & notifications](../../../docs/PRD/PRD.md#cross-cutting-global-search--notifications),
 > which sits **above** the epics because the bell's contents are produced by Epic 2 (low/zero stock),
 > Epic 3 (new customer, new order) and Epic 4 (blog post published) alike. It is filed here because
 > Epic 3 owns two of the four producers and is where the gap became visible
-> ([0043](done/0043-customers-new-customer-notification-backend.md)'s **OQ-3**, option (a)) — not because a
+> ([0043](../done/0043-customers-new-customer-notification-backend.md)'s **OQ-3**, option (a)) — not because a
 > notifications bell belongs to Customers or Orders. It is the last story of this session's extended
 > Epic 3 decomposition.
 
@@ -24,7 +24,7 @@ zero change here when they arrive.
 > builds **no search functionality whatsoever**: no search field, no query, no result grouping, no
 > permission-filtered result set, no empty state for a search term. Global search's four PRD scenarios
 > and its three acceptance criteria remain **unowned by any story**, exactly as they were before this
-> file existed. See [0056's OQ-1](done/0056-notification-viewing-backend.md#open-questions), which this file
+> file existed. See [0056's OQ-1](../done/0056-notification-viewing-backend.md#open-questions), which this file
 > does not close.
 
 ## Type
@@ -154,7 +154,7 @@ tests/Feature/Notifications/BellTest.php                   -- component-level as
 > `Bell`, not `Index`, so Livewire's normal component ↔ view mirror applies and the view is
 > `resources/views/livewire/notifications/bell.blade.php` — **nested**, unlike
 > `livewire/users.blade.php` and `livewire/roles.blade.php`, which are flat only because their classes
-> are named `Index`. See [conventions/naming.md](../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name),
+> are named `Index`. See [conventions/naming.md](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name),
 > whose closing paragraph names exactly this asymmetry as expected rather than a mistake. Story 0010's
 > own spec got this wrong in the opposite direction and cost real time; **resolve the path by running
 > the component, not by reasoning about it.**
@@ -224,7 +224,7 @@ Three constraints on that branch, each of which a Phase 3 implementer would othe
 Copy lives in `lang/{en,es}/notifications.php` — the summary templates and the fallback label as
 translation keys, never literal strings in the view (a `|`-delimited plural anywhere outside `lang/` is
 the giveaway that this rule was broken; see
-[conventions/naming.md](../../docs/conventions/naming.md#translation-keys)).
+[conventions/naming.md](../../../docs/conventions/naming.md#translation-keys)).
 
 ## Component behaviour
 
@@ -280,7 +280,7 @@ test cannot make cheaply: that opening the dropdown writes `read_at`, that the r
 within the same request, and that the component performs no query against a user other than
 `Auth::user()`.
 
-**Deliberately not tested** (per [what-not-to-test.md](../../docs/testing/qa/what-not-to-test.md)):
+**Deliberately not tested** (per [what-not-to-test.md](../../../docs/testing/qa/what-not-to-test.md)):
 
 - 0056's three query shapes as queries — that is 0056's suite, and duplicating it here pins the same behaviour twice.
 - Laravel's `DatabaseNotification` model, its casts, scopes and `markAsRead()` in isolation.
@@ -316,10 +316,10 @@ Nothing another administrator received is ever visible.
 
 ## Definition of Done
 
-- [ ] Tests written and green, plus the **full** existing suite run **unscoped** (`php artisan test`, not `--filter`), per [contracts.md](../../docs/contracts.md)'s Full Test Suite Gate Rule and [base-standards.md](../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done). **This story edits the shared layout, so its blast radius is every rendered page in the suite by construction** — the unscoped run is not optional here.
+- [ ] Tests written and green, plus the **full** existing suite run **unscoped** (`php artisan test`, not `--filter`), per [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule and [base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done). **This story edits the shared layout, so its blast radius is every rendered page in the suite by construction** — the unscoped run is not optional here.
 - [ ] `vendor/bin/pint --format agent` clean (unscoped, **not** `--dirty`) and Larastan level 7 passing.
 - [ ] Code reviewed (code-reviewer) — including an explicit confirmation that the fallback rendering path exists, is reachable, and is not an exhaustive type switch wearing a `default` arm.
-- [ ] No security findings (appsec-auditor) — specifically: that no notification id, user id, type filter, limit or offset reaches a query from the client; that the mark-all path cannot be aimed at another user's rows; that a payload value rendered into the DOM is correctly encoded, and that any value interpolated into a `wire:*` directive goes through `@js()` per [security/blade-livewire-output-encoding.md](../../docs/security/blade-livewire-output-encoding.md); and that the fallback path cannot render an attacker-influenced `type` string as markup.
+- [ ] No security findings (appsec-auditor) — specifically: that no notification id, user id, type filter, limit or offset reaches a query from the client; that the mark-all path cannot be aimed at another user's rows; that a payload value rendered into the DOM is correctly encoded, and that any value interpolated into a `wire:*` directive goes through `@js()` per [security/blade-livewire-output-encoding.md](../../../docs/security/blade-livewire-output-encoding.md); and that the fallback path cannot render an attacker-influenced `type` string as markup.
 - [ ] Documentation updated (docs-keeper) — this story adds the app's **first non-page Livewire component mounted from the layout**, which the routes doc's route-shaped table has no row for; record what it is and where it mounts. **No schema, migration, routes or permission change.**
 - [ ] **The Definition of Done explicitly does NOT include any global search**, nor a desktop topbar.
 - [ ] Acceptance criteria met.
@@ -330,9 +330,9 @@ Nothing another administrator received is ever visible.
 
 | Depends on | Kind | Why |
 | --- | --- | --- |
-| [0056](done/0056-notification-viewing-backend.md) — notification viewing (backend) | **hard** | Defines the three query shapes this UI calls verbatim, and pins them with the regression suite. Building the view first means building against a contract that does not exist |
-| [0043](done/0043-customers-new-customer-notification-backend.md) — new-customer notification | **hard (transitively)** | Owns the `notifications` table itself, and supplies one of the two recognized types |
-| [0046](done/0046-orders-new-order-notification-backend.md) — new-order notification | **soft / informational** | Not required to build or pass this story. It supplies the *second* recognized type, which is what makes the mixed-type test meaningful; without it that test runs against one real type plus a test-local one, and the acceptance criteria are unchanged |
+| [0056](../done/0056-notification-viewing-backend.md) — notification viewing (backend) | **hard** | Defines the three query shapes this UI calls verbatim, and pins them with the regression suite. Building the view first means building against a contract that does not exist |
+| [0043](../done/0043-customers-new-customer-notification-backend.md) — new-customer notification | **hard (transitively)** | Owns the `notifications` table itself, and supplies one of the two recognized types |
+| [0046](../done/0046-orders-new-order-notification-backend.md) — new-order notification | **soft / informational** | Not required to build or pass this story. It supplies the *second* recognized type, which is what makes the mixed-type test meaningful; without it that test runs against one real type plus a test-local one, and the acceptance criteria are unchanged |
 | Task 0013's layout (`<x-sidebar-nav />`, `x-desktop-user-menu`) | **shipped** | Verified in the working tree; this story adds two lines beside them and changes neither |
 
 **This story depends on no Epic 2 and no Epic 4 story, and the fallback rendering path is precisely
@@ -341,17 +341,17 @@ exist in code. Nothing here enumerates the type list, so when either ships it re
 fallback immediately and through a recognized arm whenever someone chooses to add one — an additive
 change, never a blocking one. That is why this story must not be sequenced behind them.
 
-Per the [task ordering rule](../../docs/workflow.md#task-ordering-rule), sequence
+Per the [task ordering rule](../../../docs/workflow.md#task-ordering-rule), sequence
 0043 → 0046 → 0056 → **0057** into Phase 3.
 
 ### Risks
 
 - **R-1 — Two mount points can drift.** The same component is mounted twice in one file; a later change made to one mount and not the other produces a bell that works on desktop and not on mobile (or vice versa), which no single-viewport test observes. Mitigation: mount **by name** with no per-mount configuration, so the two lines are byte-identical and there is nothing to drift; and keep the "renders on ≥2 routes" test viewport-explicit.
-- **R-2 — A hook that appears twice makes a naive count assertion wrong.** Both instances are in the DOM at every viewport, with one hidden by Tailwind rather than absent. A `substr_count`-style assertion over rendered HTML will therefore read **two** where the author expected one. This is the exact failure shape [errors-log.md](../../docs/errors-log-archive.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21) records — an over-count by a constant reads as the true number. Mitigation: assert *presence/absence scoped to the visible instance*, never a document-wide count, and prove any count assertion can move before trusting it.
+- **R-2 — A hook that appears twice makes a naive count assertion wrong.** Both instances are in the DOM at every viewport, with one hidden by Tailwind rather than absent. A `substr_count`-style assertion over rendered HTML will therefore read **two** where the author expected one. This is the exact failure shape [errors-log.md](../../../docs/errors-log-archive.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21) records — an over-count by a constant reads as the true number. Mitigation: assert *presence/absence scoped to the visible instance*, never a document-wide count, and prove any count assertion can move before trusting it.
 - **R-3 — A future story adds per-type grouping and silently breaks the generic property.** "Group the dropdown by module" is a small, reasonable-sounding feature that would end the "zero changes for a new event type" guarantee. Mitigation: the unrecognized-type test is the tripwire, and the no-type-branching rule is an acceptance criterion here as it is in 0056 (**D-5**).
 - **R-4 — `wire:poll.30s` on every authenticated page is a standing request load.** One extra `COUNT` per user per 30 seconds, on a query 0043's composite index already covers, at backoffice concurrency. Recorded as a known consequence rather than a defect; **D-2** names the reversal path if it ever matters.
 - **R-5 — Mark-all-on-open loses information** (0056 **R-4**, inherited unchanged). Opening the bell to glance at one entry marks the other fourteen read. Accepted; the stored data supports per-row read state already, so only the trigger would move.
-- **R-6 — This document goes stale while it waits.** It sits behind three stories. Re-run the Phase 2 INVEST review immediately before Phase 3 rather than treating it as passed on first reading, and **re-verify the layout finding above against the real files at that point** — a topbar could plausibly arrive from another story in the interim, which would change **D-1**'s premise rather than its conclusion. A stale quote is a claim about a tree that no longer exists ([errors-log.md](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
+- **R-6 — This document goes stale while it waits.** It sits behind three stories. Re-run the Phase 2 INVEST review immediately before Phase 3 rather than treating it as passed on first reading, and **re-verify the layout finding above against the real files at that point** — a topbar could plausibly arrive from another story in the interim, which would change **D-1**'s premise rather than its conclusion. A stale quote is a claim about a tree that no longer exists ([errors-log.md](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
 
 ### Open questions
 
@@ -359,7 +359,7 @@ Per the [task ordering rule](../../docs/workflow.md#task-ordering-rule), sequenc
 answer without it. The PRD's cross-cutting section describes a topbar carrying *two* features, and this
 story delivers one of them into existing chrome instead. A real shared topbar is a layout decision
 affecting every screen, and it is the natural home for global search — so it plausibly belongs with
-[0056's OQ-1](done/0056-notification-viewing-backend.md#open-questions) rather than being decided here.
+[0056's OQ-1](../done/0056-notification-viewing-backend.md#open-questions) rather than being decided here.
 **Recommended: leave it open and decide it together with global search's owner _(recommended)_** — the
 two questions have the same answer, and deciding one without the other means deciding it twice. If a
 topbar story does land, relocating the bell is a **one-line move of the mount point**, which is exactly
@@ -469,9 +469,9 @@ payload.
 
 ## Provenance
 
-- **PRD source:** [§ Cross-cutting: global search & notifications](../../docs/PRD/PRD.md#cross-cutting-global-search--notifications) — the two bell-**state** scenarios ("The bell shows an unread indicator", "Reading notifications clears the unread indicator"), both covered above, plus the acceptance criterion *"The bell displays an unread indicator and clears it once notifications are read."* The section's `Scenario Outline: A confirmed event generates a notification` belongs to the four event producers, and the whole `Feature: Global panel search` is excluded and remains unowned.
-- **Backlog origin:** [0043's OQ-3](done/0043-customers-new-customer-notification-backend.md#open-questions), option (a). [0056](done/0056-notification-viewing-backend.md) is that story's backend half and names **0057** as its paired UI story by number; this file is it.
-- **Process:** [workflow.md](../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from `frontend-expert` (the layout finding, the two-mount-point recommendation, the generic-with-fallback rendering path, the mark-all-then-re-read-via-method rule, the poll cadence, the `data-test` hooks, and the explicit request for a placement decision rather than a deferral) and `frontend-qa` (the eleven browser cases, the two-path indicator-absence split, the durable-clear-across-reload assertion, the unrecognized-type case named highest-value, the one-dispatch isolation constraint, the ≥2-route presence case, and the D-1 permission-revocation case), composed by `product-owner` as facilitator. **No `database-expert`**: no schema, no query (see the Type section).
-- **Gherkin conventions:** every scenario opens with a named business-role actor and carries exactly one `When`, per [gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 — mandatory across all Gherkin in this project, per the incident in [errors-log.md](../../docs/errors-log.md).
+- **PRD source:** [§ Cross-cutting: global search & notifications](../../../docs/PRD/PRD.md#cross-cutting-global-search--notifications) — the two bell-**state** scenarios ("The bell shows an unread indicator", "Reading notifications clears the unread indicator"), both covered above, plus the acceptance criterion *"The bell displays an unread indicator and clears it once notifications are read."* The section's `Scenario Outline: A confirmed event generates a notification` belongs to the four event producers, and the whole `Feature: Global panel search` is excluded and remains unowned.
+- **Backlog origin:** [0043's OQ-3](../done/0043-customers-new-customer-notification-backend.md#open-questions), option (a). [0056](../done/0056-notification-viewing-backend.md) is that story's backend half and names **0057** as its paired UI story by number; this file is it.
+- **Process:** [workflow.md](../../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from `frontend-expert` (the layout finding, the two-mount-point recommendation, the generic-with-fallback rendering path, the mark-all-then-re-read-via-method rule, the poll cadence, the `data-test` hooks, and the explicit request for a placement decision rather than a deferral) and `frontend-qa` (the eleven browser cases, the two-path indicator-absence split, the durable-clear-across-reload assertion, the unrecognized-type case named highest-value, the one-dispatch isolation constraint, the ≥2-route presence case, and the D-1 permission-revocation case), composed by `product-owner` as facilitator. **No `database-expert`**: no schema, no query (see the Type section).
+- **Gherkin conventions:** every scenario opens with a named business-role actor and carries exactly one `When`, per [gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 — mandatory across all Gherkin in this project, per the incident in [errors-log.md](../../../docs/errors-log.md).
 - **Verified against the working tree by `product-owner` rather than relayed:** `resources/views/layouts/app.blade.php` renders `<x-layouts::app.sidebar>` and nothing else; `resources/views/layouts/app/sidebar.blade.php` contains the entire shell, with `<flux:header class="lg:hidden">` as the only header and `<x-desktop-user-menu class="hidden lg:block" />` after a `flux:spacer` inside `<flux:sidebar>`; `app/Livewire/` contains `Actions/`, `Roles/`, `Settings/` and `Users/` with no `Notifications/`; `lang/en/` and `lang/es/` contain `navigation.php`, `roles.php` and `users.php` with no `notifications.php`; and `tests/Browser/` contains `Auth/`, `RolesIndexTest.php` and `UsersIndexTest.php` with no `Notifications/` folder.
-- **Stage:** `new`. It moves to `ai-spec/tasks/in-progress/` at the start of Phase 3, and to `ai-spec/tasks/done/` at Phase 7 — the first move changes this file's directory depth, so every relative link above must be re-resolved in **both** directions on each move, per [workflow.md](../../docs/workflow.md#link-integrity-check-on-every-stage-move).
+- **Stage:** `new`. It moves to `ai-spec/tasks/in-progress/` at the start of Phase 3, and to `ai-spec/tasks/done/` at Phase 7 — the first move changes this file's directory depth, so every relative link above must be re-resolved in **both** directions on each move, per [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move).
