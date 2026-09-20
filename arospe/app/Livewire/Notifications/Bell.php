@@ -7,6 +7,7 @@ use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 /**
@@ -26,6 +27,7 @@ class Bell extends Component
     private const RECENT_LIMIT = 15;
 
     /** Whether the dropdown has been opened since mount; gates the list query. */
+    #[Locked]
     public bool $opened = false;
 
     /**
@@ -54,21 +56,20 @@ class Bell extends Component
     }
 
     /**
+     * 0056's call 2. A computed so the query runs only if the view reads it
+     * (inside `@if ($opened)`), never as a side effect of render() -- a poll
+     * must not re-run the fifteen-row query (D-2).
+     *
      * @return Collection<int, DatabaseNotification>
      */
-    private function recentNotifications(): Collection
+    #[Computed]
+    public function recentNotifications(): Collection
     {
-        if (! $this->opened) {
-            return new Collection;
-        }
-
         return Auth::user()->notifications()->latest()->limit(self::RECENT_LIMIT)->get();
     }
 
     public function render(): View
     {
-        return view('livewire.notifications.bell', [
-            'notifications' => $this->recentNotifications(),
-        ]);
+        return view('livewire.notifications.bell');
     }
 }

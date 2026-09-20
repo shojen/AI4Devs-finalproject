@@ -29,13 +29,13 @@
 
         <flux:menu class="w-80 max-w-[calc(100vw-2rem)] !p-0">
             @if ($opened)
-                @if ($notifications->isEmpty())
+                @if ($this->recentNotifications->isEmpty())
                     <flux:text class="p-4 text-center" data-test="notification-empty-state">
                         {{ __('notifications.bell.empty') }}
                     </flux:text>
                 @else
                     <ul class="divide-y divide-zinc-200 dark:divide-zinc-700">
-                        @foreach ($notifications as $notification)
+                        @foreach ($this->recentNotifications as $notification)
                             {{-- Presentational branch only (D-3): a recognized arm is an enhancement
                             over the fallback, never a precondition for a type to display. A missing
                             payload key degrades to the fallback rather than raising. --}}
