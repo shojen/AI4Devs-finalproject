@@ -3,6 +3,7 @@
 use App\Actions\Orders\RecordRefund;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
+use App\Events\OrderFullyRefunded;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -10,6 +11,7 @@ use App\Models\Refund;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\PermissionRegistrar;
@@ -411,7 +413,9 @@ test('a missing permission is refused before the orders payment state is conside
 
 // --- What this story deliberately leaves alone ---
 
-test('a full refund leaves orders.status unchanged, including for a shipped order', function () {
+// Story 0052 inverted the full-refund half of this 0051 scope fence: a full refund now
+// auto-cancels the order, from every status including Shipped. The partial-refund half survives.
+test('a full refund auto-cancels the order, including a shipped one', function () {
     actingOrderRefunder();
     $item = paidOrderWithItem('10.00', 3);
     $order = $item->order;
@@ -419,7 +423,28 @@ test('a full refund leaves orders.status unchanged, including for a shipped orde
 
     app(RecordRefund::class)($order->fresh(), [$item->id => 3]);
 
+    expect($order->fresh()->status)->toBe(OrderStatus::Cancelled);
+});
+
+test('a partial refund leaves orders.status unchanged, including for a shipped order', function () {
+    actingOrderRefunder();
+    $item = paidOrderWithItem('10.00', 3);
+    $order = $item->order;
+    $order->forceFill(['status' => OrderStatus::Shipped])->save();
+
+    app(RecordRefund::class)($order->fresh(), [$item->id => 2]);
+
     expect($order->fresh()->status)->toBe(OrderStatus::Shipped);
+});
+
+test('a partial refund dispatches no OrderFullyRefunded event', function () {
+    Event::fake([OrderFullyRefunded::class]);
+    actingOrderRefunder();
+    $item = paidOrderWithItem('10.00', 3);
+
+    app(RecordRefund::class)($item->order, [$item->id => 1]);
+
+    Event::assertNotDispatched(OrderFullyRefunded::class);
 });
 
 // No bare Event::fake()/assertNothingDispatched() here -- Eloquent's own internal model
