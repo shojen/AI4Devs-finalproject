@@ -7,7 +7,7 @@ Blade/Flux views, and the `config/modules.php` sidebar entry without which the m
 The detail screen is the **single consumer surface** for every write stories
 [0048](done/0048-order-line-item-editing-backend.md)–[0052](done/0052-order-auto-cancel-full-refund-backend.md)
 built — line-item editing, status transitions, manual cancellation, refunds — and the only place
-[0053](0053-order-tax-region-resolution-physical-backend.md)/[0054](0054-order-tax-region-resolution-virtual-backend.md)'s
+[0053](done/0053-order-tax-region-resolution-physical-backend.md)/[0054](0054-order-tax-region-resolution-virtual-backend.md)'s
 resolved tax basis and `flagged_for_review` flag become visible to a human. It adds **no backend rule**:
 every control mirrors a predicate its own guard already reads.
 
@@ -19,7 +19,7 @@ every control mirrors a predicate its own guard already reads.
 > [0050](done/0050-order-manual-cancellation-backend.md),
 > [0051](done/0051-order-payment-refund-state-backend.md),
 > [0052](done/0052-order-auto-cancel-full-refund-backend.md),
-> [0053](0053-order-tax-region-resolution-physical-backend.md) and
+> [0053](done/0053-order-tax-region-resolution-physical-backend.md) and
 > [0054](0054-order-tax-region-resolution-virtual-backend.md) — **and 0045 is itself ⛔ blocked** on five
 > PRD Epic 2 stories ([0024](done/0024-products-core-crud-backend.md),
 > [0029](done/0029-product-variants-backend.md), [0035](done/0035-shipping-carriers-backend.md),
@@ -1393,7 +1393,7 @@ The rendered states are three, branched on `sales_region_id` and `tax_rate` and 
 | `CancelOrder`, `OrderPolicy::cancel()`, `Order::isManuallyCancellable()`, `OrderCancellationBlockedException`, `orders.cancellation.*` | story [0050](done/0050-order-manual-cancellation-backend.md) — **hard** | the Cancel control and **D-9** |
 | `RecordRefund`, `orders.refund` permission, `refunds` table, `orders.refunded_amount`, `order_items.refunded_quantity` | story [0051](done/0051-order-payment-refund-state-backend.md) — **hard** | the refund control, the refunded totals, **D-10** |
 | the 100%-refund auto-cancel | story [0052](done/0052-order-auto-cancel-full-refund-backend.md) — **hard, transitively via 0051** | this screen is where the auto-cancel first becomes visible; its test asserts the re-rendered status |
-| `orders.sales_region_id` / `tax_rate` / `flagged_for_review` resolution (physical), plus `tax_amount`/`total` computation for physical orders (**D-13**, added when the tax_amount gap was closed) | story [0053](0053-order-tax-region-resolution-physical-backend.md) — **hard** | the tax panel, the flag marker, **D-15**, **D-16** |
+| `orders.sales_region_id` / `tax_rate` / `flagged_for_review` resolution (physical), plus `tax_amount`/`total` computation for physical orders (**D-13**, added when the tax_amount gap was closed) | story [0053](done/0053-order-tax-region-resolution-physical-backend.md) — **hard** | the tax panel, the flag marker, **D-15**, **D-16** |
 | `orders.flag_reason` column + `orders.flag_reasons.*` lang group, virtual resolution, `tax_amount`/`total` computation for virtual orders (the identical shape 0053 mirrors) | story [0054](0054-order-tax-region-resolution-virtual-backend.md) — **hard** | the flag callout's copy; **the `flag_reason` column does not exist without it** |
 | `customers.show` route + `App\Models\Customer` | story [0047](done/0047-customer-order-history-view-ui.md) — **hard, for the customer link only** — see below | **D-14** |
 | the `can:`-gated Livewire route pattern, the sidebar registry, `Gate::before`, UUID route-model binding, the two Flux/Blaze markup rules, `data-test` conventions | **shipped** (tasks 0004/0010/0012/0013/0040, 0006) | `routes/users.php`, `config/modules.php`, `users.blade.php`, `roles.blade.php` |
@@ -1490,7 +1490,7 @@ hard dependency of this story, the ordering constraint costs nothing — it only
   resolved rate on any line-item edit. So a freshly created physical order showed `tax_rate 21.000%`
   beside `tax_amount 0.00` — until someone edited a line item, at which point the amount appeared.
 
-  **Closed by** [0053](0053-order-tax-region-resolution-physical-backend.md)'s decision **D-13**, which
+  **Closed by** [0053](done/0053-order-tax-region-resolution-physical-backend.md)'s decision **D-13**, which
   extends `ResolveOrderTaxRegion` to derive `tax_amount` and re-derive `total` in the same write, using
   0054's computation verbatim. A resolved physical order and a resolved virtual order now carry the same
   five columns, so this panel has nothing inconsistent left to render. **This story is unchanged by the
@@ -1548,12 +1548,12 @@ hard dependency of this story, the ordering constraint costs nothing — it only
 resolvable by this story.** This question bundled two things, and they have come apart.
 
 **✅ Closed — who computes `tax_amount` for a physical order.**
-[0053](0053-order-tax-region-resolution-physical-backend.md)'s decision **D-13** answers it: its own
+[0053](done/0053-order-tax-region-resolution-physical-backend.md)'s decision **D-13** answers it: its own
 `ResolveOrderTaxRegion` derives `tax_amount` and re-derives `total` in the same write, using 0054's
 computation verbatim, so the two resolvers agree column-for-column. That closes **R-6**'s visible
 inconsistency **without any change to this story** — this screen still renders what the columns hold
 and invents nothing (**D-7**). The `RecalculateOrderTotals` extraction below survives as 0053's
-[backlog item 1](0053-order-tax-region-resolution-physical-backend.md), re-pointed from *"decide who
+[backlog item 1](done/0053-order-tax-region-resolution-physical-backend.md), re-pointed from *"decide who
 computes this"* to *"consolidate the three call sites that now do"*.
 
 **◻ Still open — when resolution is triggered at all.** 0054's **OQ-2** deferred the *trigger* question
