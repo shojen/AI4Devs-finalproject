@@ -23,6 +23,7 @@ An agent working on a specific domain can jump straight to the 1-3 relevant entr
 - [A conditionally-bound `tooltip` prop rendered an empty tooltip on every enabled row](errors-log-archive.md#a-conditionally-bound-fluxbutton-tooltip-prop-rendered-an-empty-tooltip-on-every-enabled-row--2026-08-16) — 2026-08-16 (archive)
 
 **Testing/QA process & infrastructure**
+- [A test that restates the implementation's formula cannot catch a units error](#a-test-that-restates-the-implementations-formula-cannot-catch-a-units-error--2026-09-20) — 2026-09-20
 - [A SECOND `->call()` on an already-mounted `Livewire::test()` component does not re-throw `AuthorizationException` the way the first one does](#a-second--call-on-an-already-mounted-livewiretest-component-does-not-re-throw-authorizationexception-the-way-the-first-one-does--2026-09-10) — 2026-09-10
 - [Two `php artisan test` invocations against the same worktree's testing database, run concurrently, produced ~47 spurious failures across completely unrelated tests](#two-php-artisan-test-invocations-against-the-same-worktrees-testing-database-run-concurrently-produced-47-spurious-failures-across-completely-unrelated-tests--2026-09-10) — 2026-09-10
 - [A geography-entry factory override to `name` silently left `normalized_name` stale, making a search test fail against real search code](#a-geographyentryfactory-override-to-name-silently-left-normalized_name-stale-making-a-search-test-fail-against-real-search-code--2026-09-07) — 2026-09-07
@@ -84,6 +85,14 @@ Newest entry first, directly below this line. Every entry uses this exact struct
 - **Fix applied**: what changed, with a file path or commit/PR reference
 - **How to avoid it next time**: a concrete, actionable rule — link to a `conventions/` doc if one covers it
 ```
+
+## A test that restates the implementation's formula cannot catch a units error — 2026-09-20
+
+- **Context**: implementing story 0053 (`ResolveOrderTaxRegion`), which derives `tax_amount` from `orders.tax_rate`, a percentage.
+- **What happened**: story 0048's `RecalculateOrderTotals` computed `subtotal × tax_rate` with no `÷ 100`. Its three tests passed anyway: they used `tax_rate = '0.210'` and asserted `bcmul($subtotal, '0.210', 2)` — the same formula as the code, on a rate only correct when read as a fraction. Nothing exercised a real `21.000`.
+- **Root cause**: the expected value was derived with the implementation's own arithmetic, so the test could only ever agree with it; and the fixture rate was chosen to fit the formula rather than the column's real semantics.
+- **Fix applied**: story 0053a — `CalculateTaxAmount` is now the single implementation, both actions compose it, and the tests assert hand-computed literals (`21.00`, `42.00`, `242.00`) plus a resolution-vs-recalculation parity test.
+- **How to avoid it next time**: assert money and rates as literal values computed by hand, never with the formula under test, and use fixtures that match the column's documented unit (`21.000` for a percentage). When two actions must agree, add a parity test rather than trusting the specs to match.
 
 ## CSS Grid's default `align-items: stretch` lets one tall sibling cell distort a Flux `<ui-field>`'s own internal row heights in its unrelated neighbours — 2026-09-11
 

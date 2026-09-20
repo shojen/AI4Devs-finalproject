@@ -319,7 +319,8 @@ It performs, in this order:
    owns the two-tier assigned-entry/catalog-default fallback and honours `null` and `'0.000'` as
    distinct answers — **this story re-implements none of it**.
 5. **Write the outcome inside a `DB::transaction()`**: `sales_region_id`, `tax_rate`, the derived
-   `tax_amount`, and the recomputed `total` — via `forceFill()`, since every one of those columns is
+   `tax_amount` (computed by the shared `App\Actions\Orders\CalculateTaxAmount`, story
+   [0053a](done/0053a-order-totals-tax-rate-percentage-backend.md) — never a re-implementation), and the recomputed `total` — via `forceFill()`, since every one of those columns is
    deliberately non-fillable.
 
 > **Phase 3 must re-read the transaction-side-effect rule before writing step 5**, per
