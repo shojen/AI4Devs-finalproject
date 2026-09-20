@@ -95,6 +95,10 @@ app/
                        refuses them via OrderPolicy::cancel()'s own parallel state clause before
                        this guard is ever reached, see architecture/authorization.md's Manual
                        order cancellation section)
+                       ; AutoCancelFullyRefundedOrder — story 0052, the system-triggered
+                       cancel a full refund causes: deliberately UNGATED (no Gate, no actor
+                       read) and deliberately past both TransitionOrderStatus and CancelOrder,
+                       see architecture/authorization.md
   Actions/ProductCategories/ Domain actions for the Product Categories area (CreateProductCategory,
                        RenameProductCategory, DeleteProductCategory) — one action per operation
                        (story 0023). Unlike every other area's actions, none of the three authorize
@@ -211,7 +215,16 @@ app/
                        render() at all, because it must never reach the HTTP layer as a status
                        code (see below)
   Http/Controllers/    Abstract base + domain controllers used as HTTP boundaries in front of actions
-  Listeners/           Event listeners (ActivateVerifiedUser), registered in AppServiceProvider
+  Events/              Domain events dispatched by actions (OrderFullyRefunded — story 0052, the
+                       app's first: carries only `string $orderId`, never a hydrated Order, not
+                       queued, dispatched by RecordRefund AFTER its transaction commits). A stock
+                       Laravel location (`make:event`), no approval needed
+  Listeners/           Event listeners (ActivateVerifiedUser; CancelFullyRefundedOrder — story
+                       0052, a thin synchronous adapter to Actions/Orders/AutoCancelFullyRefunded
+                       Order). ActivateVerifiedUser is registered in AppServiceProvider; the new
+                       listener is NOT — Laravel's listener auto-discovery already registers any
+                       app/Listeners handle() that type-hints an event, and an explicit
+                       Event::listen() on top would fire it twice (verified with `event:list`)
   Livewire/            Livewire components, grouped by area (Users/, Roles/, SalesRegions/,
                        Media/, ProductCategories/, Products/, Products/AttributeTypes/, Components/,
                        Settings/, Settings/TwoFactor/, Actions/, Shipping/ — Zones.php (story 0033/
