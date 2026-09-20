@@ -768,6 +768,7 @@ rediscovery.
   not notify anyone.
 
 - **D-8 — Tax is recomputed only when a rate is already resolved; it is never *resolved* here.**
+  > **Correction (story [0053a](0053a-order-totals-tax-rate-percentage-backend.md), 2026-09-20):** every `subtotal × tax_rate` below is shorthand for `subtotal × (tax_rate ÷ 100)` — `orders.tax_rate` is a percentage. The shipped code omitted the `÷ 100` until 0053a fixed it and moved the formula into `CalculateTaxAmount`.
   *(`backend-expert`.)* Two branches, and the second is the load-bearing one:
   - **`orders.tax_rate` is non-null** → recompute `tax_amount = subtotal × tax_rate` on every subtotal
     change. Leaving a stale `tax_amount` beside a changed `subtotal` would ship a wrong total, which is
