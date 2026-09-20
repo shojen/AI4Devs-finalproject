@@ -113,6 +113,7 @@ Documented once, linked everywhere else — do not duplicate these explanations 
 | Cross-cutting auth-state actions | `app/Actions/Auth/**` — the step-up freshness guard and the refusal audit line; not a module area and not Fortify's, see [conventions/base-standards.md](../conventions/directory-structure.md#directory-structure) |
 | Policies | `app/Policies/**` (auto-discovered by name) |
 | Domain exceptions that render their own response | `app/Exceptions/**` (`ImmutableRoleException` → 403, `RoleInUseException` → 409, `PasswordConfirmationRequiredException` → 423, `OrderNotEditableException` → 409 since story 0048 — four, not three; see [authorization.md](authorization.md#order-editability--the-second-state-based-refusal-and-the-shape-three-more-stories-copy)) |
+| Domain events and listeners | `app/Events/**` (story 0052's `OrderFullyRefunded` — the app's first domain event, dispatched by an action after its transaction commits) and `app/Listeners/**` |
 | Notifications | `app/Notifications/**` |
 | Shared validation rules | `app/Concerns/**` (e.g. [`ProfileValidationRules`](../../app/Concerns/ProfileValidationRules.php), [`PasswordValidationRules`](../../app/Concerns/PasswordValidationRules.php), [`UserValidationRules`](../../app/Concerns/UserValidationRules.php), [`RoleValidationRules`](../../app/Concerns/RoleValidationRules.php), [`SalesRegionValidationRules`](../../app/Concerns/SalesRegionValidationRules.php), [`MediaValidationRules`](../../app/Concerns/MediaValidationRules.php)) |
 | Models | `app/Models/**` |

@@ -1536,6 +1536,16 @@ The load-bearing property is unchanged from `update()`/`transitionStatus()`'s ow
 
 Cancelling an order already in `Cancelled` is a **fourth** distinct refusal shape on this page — a `ValidationException` on `status`, following `TransitionOrderStatus`'s own same-status precedent (D-4 there, D-3 here) rather than a silent no-op — and it runs *above* the blocked-state check inside `CancelOrder`, so an already-cancelled order (not in `{Pending, Processing}`) is refused for the right reason rather than falling into the blocked branch by coincidence.
 
+### A system-triggered write may be ungated — `AutoCancelFullyRefundedOrder`, and the three conditions that make it safe
+
+`App\Actions\Orders\AutoCancelFullyRefundedOrder` (story 0052) cancels an order whose every line item is fully refunded, and it contains **no `Gate::authorize()`, no `Auth::user()` read and no policy call** — a documented exception to "an authorization rule belongs to the action", not an omission. It is reached only through `RecordRefund` → `OrderFullyRefunded` (dispatched after the refund transaction commits) → `CancelFullyRefundedOrder` (synchronous listener). Three conditions make the exemption safe, and all three must hold for any future system-triggered write that copies this shape:
+
+- **It reads no actor.** The trigger is a state transition, not a person.
+- **Its only reachable entry point is gated.** `RecordRefund` authorizes `orders.refund` as its first statement. A later story adding a second caller inherits the obligation to gate that caller.
+- **The exemption is written in the class's own docblock**, so "exempt" is distinguishable from "forgotten".
+
+It also bypasses both `CancelOrder` (which blocks `Shipped`/`Delivered`/`PartiallyRefunded`, exactly the states the PRD says auto-cancel must handle) and `TransitionOrderStatus`, writing `status` via `forceFill()`. A `$systemTriggered` flag on `CancelOrder` was rejected: a boolean that switches a guard off is a one-argument bypass of the rule the guard exists to enforce. The manual guard is unchanged and pinned by a regression test.
+
 ## Configuration
 
 Teams support is **disabled** (single-tenant permission model):

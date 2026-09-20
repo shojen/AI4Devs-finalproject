@@ -615,7 +615,7 @@ says the rule lives in the class performing the operation. Both were written for
   so the sweep would not "sometimes fail", it would **silently publish nothing, forever**, and the
   symptom would be indistinguishable from "the scheduler isn't running". Making it work would require
   a `$systemTriggered` bypass parameter, which is precisely the shape
-  [story 0052's **D-2**](0052-order-auto-cancel-full-refund-backend.md) considered and rejected: *a
+  [story 0052's **D-2**](done/0052-order-auto-cancel-full-refund-backend.md) considered and rejected: *a
   rule does not get a bypass parameter.* It would also drag in validation, sanitization and tag sync
   the sweep has no business running (**D-11**, and three of this story's tests exist to catch exactly
   that).
@@ -634,7 +634,7 @@ exactly that distinction:
 [A domain invariant is not an authorization rule and does not live here](../../docs/architecture/authorization.md#a-domain-invariant-is-not-an-authorization-rule-and-does-not-live-here),
 written for `SalesRegions` but stated generically.
 
-> ✅ **This is not a new idiom for this project.** [Story 0052](0052-order-auto-cancel-full-refund-backend.md)'s
+> ✅ **This is not a new idiom for this project.** [Story 0052](done/0052-order-auto-cancel-full-refund-backend.md)'s
 > **D-1** already debated and documented it for `AutoCancelFullyRefundedOrder`, down to rejecting the
 > same three alternatives (*"a `Gate::before`-style bypass, a system-user account, and a
 > `Gate::forUser(null)` call were all considered and rejected as ceremony that would make the absence
@@ -1186,7 +1186,7 @@ accepted**, per this project's rule that a second-hand claim is a flag that nobo
    overturned.** This story was briefed — reasonably — as a genuinely novel case deserving its own
    invented rule, on the grounds that this repo's conventions never anticipated a write with no actor.
    `backend-qa` cited story **0052** in passing as a precedent; the facilitator verified that claim
-   directly against `ai-spec/tasks/0052-order-auto-cancel-full-refund-backend.md` rather than
+   directly against `ai-spec/tasks/done/0052-order-auto-cancel-full-refund-backend.md` rather than
    accepting it, and it turned out to be **much stronger than cited**: 0052's **D-1** is a fully
    argued decision that rejects the *same three alternatives by name* (a `Gate::before` bypass, a
    system-user account, a `Gate::forUser(null)` call), its **D-9** declines a policy for the same

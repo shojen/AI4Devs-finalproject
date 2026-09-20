@@ -4,6 +4,7 @@ namespace App\Actions\Orders;
 
 use App\Concerns\OrderValidationRules;
 use App\Enums\PaymentStatus;
+use App\Events\OrderFullyRefunded;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Refund;
@@ -66,9 +67,11 @@ use Illuminate\Validation\ValidationException;
  *     flips PartiallyRefunded -> Refunded within the same call.
  * 11. Return the refreshed Order.
  *
- * No event, no notification, no listener -- this story ships the
- * derivation and its observable outcome, not the seam story 0052 listens
- * on (OQ-2). `orders.status` is never written.
+ * 12. AFTER the transaction commits (never inside it), dispatch
+ *     OrderFullyRefunded when the committed payment_status is Refunded, so
+ *     a rolled-back refund can never cancel an order (story 0052, D-5).
+ *
+ * `orders.status` is never written here -- the listener's action owns that.
  */
 class RecordRefund
 {
@@ -94,7 +97,7 @@ class RecordRefund
             ['items' => $this->refundItemsRules(), 'items.*' => $this->refundQuantityRules()],
         )->validate();
 
-        return DB::transaction(function () use ($order, $items): Order {
+        $refreshedOrder = DB::transaction(function () use ($order, $items): Order {
             $order->refresh();
 
             /** @var Collection<string, OrderItem> $lockedItems */
@@ -177,5 +180,11 @@ class RecordRefund
 
             return $order->refresh();
         });
+
+        if ($refreshedOrder->payment_status === PaymentStatus::Refunded) {
+            OrderFullyRefunded::dispatch($refreshedOrder->id);
+        }
+
+        return $refreshedOrder;
     }
 }
