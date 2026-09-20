@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserStatus;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -218,9 +219,15 @@ class RolePermissionSeeder extends Seeder
             'password' => Str::password(32),
         ]);
 
-        // email_verified_at is not in User's #[Fillable] attribute, so force it. The address
-        // came from server configuration, not from user input, so it is trusted.
-        $user->forceFill(['email_verified_at' => now()])->save();
+        // email_verified_at and status are not in User's #[Fillable] attribute, so force them.
+        // The address came from server configuration, not from user input, so it is trusted.
+        // status must be Active explicitly: the column defaults to Inactive, and neither the
+        // password reset nor ActivateVerifiedUser can activate an already-verified account,
+        // which would leave the provisioned Super Admin unable to sign in.
+        $user->forceFill([
+            'email_verified_at' => now(),
+            'status' => UserStatus::Active,
+        ])->save();
 
         $user->assignRole($superAdminRole);
 
