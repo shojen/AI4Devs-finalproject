@@ -5,7 +5,7 @@ Build the Orders screens of PRD [§3.2 Orders](../../docs/PRD/PRD.md#32-orders):
 `orders.index` list route, an `orders.show` detail route, the two Livewire components behind them, their
 Blade/Flux views, and the `config/modules.php` sidebar entry without which the module is unreachable.
 The detail screen is the **single consumer surface** for every write stories
-[0048](done/0048-order-line-item-editing-backend.md)–[0052](0052-order-auto-cancel-full-refund-backend.md)
+[0048](done/0048-order-line-item-editing-backend.md)–[0052](done/0052-order-auto-cancel-full-refund-backend.md)
 built — line-item editing, status transitions, manual cancellation, refunds — and the only place
 [0053](0053-order-tax-region-resolution-physical-backend.md)/[0054](0054-order-tax-region-resolution-virtual-backend.md)'s
 resolved tax basis and `flagged_for_review` flag become visible to a human. It adds **no backend rule**:
@@ -18,7 +18,7 @@ every control mirrors a predicate its own guard already reads.
 > [0048](done/0048-order-line-item-editing-backend.md), [0049](done/0049-order-status-transition-backend.md),
 > [0050](done/0050-order-manual-cancellation-backend.md),
 > [0051](done/0051-order-payment-refund-state-backend.md),
-> [0052](0052-order-auto-cancel-full-refund-backend.md),
+> [0052](done/0052-order-auto-cancel-full-refund-backend.md),
 > [0053](0053-order-tax-region-resolution-physical-backend.md) and
 > [0054](0054-order-tax-region-resolution-virtual-backend.md) — **and 0045 is itself ⛔ blocked** on five
 > PRD Epic 2 stories ([0024](done/0024-products-core-crud-backend.md),
@@ -1392,7 +1392,7 @@ The rendered states are three, branched on `sales_region_id` and `tax_rate` and 
 | `TransitionOrderStatus`, `OrderPolicy` (+ `transitionStatus()`), `OrderStatus::rank()` / `isBackwardFrom()`, `OrderStatusRegressionRequiresConfirmationException`, `orders.transitions.*` | story [0049](done/0049-order-status-transition-backend.md) — **hard** | the status select, the backward dialog, **D-11** |
 | `CancelOrder`, `OrderPolicy::cancel()`, `Order::isManuallyCancellable()`, `OrderCancellationBlockedException`, `orders.cancellation.*` | story [0050](done/0050-order-manual-cancellation-backend.md) — **hard** | the Cancel control and **D-9** |
 | `RecordRefund`, `orders.refund` permission, `refunds` table, `orders.refunded_amount`, `order_items.refunded_quantity` | story [0051](done/0051-order-payment-refund-state-backend.md) — **hard** | the refund control, the refunded totals, **D-10** |
-| the 100%-refund auto-cancel | story [0052](0052-order-auto-cancel-full-refund-backend.md) — **hard, transitively via 0051** | this screen is where the auto-cancel first becomes visible; its test asserts the re-rendered status |
+| the 100%-refund auto-cancel | story [0052](done/0052-order-auto-cancel-full-refund-backend.md) — **hard, transitively via 0051** | this screen is where the auto-cancel first becomes visible; its test asserts the re-rendered status |
 | `orders.sales_region_id` / `tax_rate` / `flagged_for_review` resolution (physical), plus `tax_amount`/`total` computation for physical orders (**D-13**, added when the tax_amount gap was closed) | story [0053](0053-order-tax-region-resolution-physical-backend.md) — **hard** | the tax panel, the flag marker, **D-15**, **D-16** |
 | `orders.flag_reason` column + `orders.flag_reasons.*` lang group, virtual resolution, `tax_amount`/`total` computation for virtual orders (the identical shape 0053 mirrors) | story [0054](0054-order-tax-region-resolution-virtual-backend.md) — **hard** | the flag callout's copy; **the `flag_reason` column does not exist without it** |
 | `customers.show` route + `App\Models\Customer` | story [0047](done/0047-customer-order-history-view-ui.md) — **hard, for the customer link only** — see below | **D-14** |
