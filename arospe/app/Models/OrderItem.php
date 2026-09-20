@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Database\Factories\OrderItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -40,6 +42,7 @@ use Illuminate\Support\Carbon;
  * @property-read Order $order
  * @property-read Product|null $product
  * @property-read ProductVariant|null $productVariant
+ * @property-read Collection<int, Refund> $refunds
  */
 #[Fillable(['product_id', 'product_variant_id', 'quantity'])]
 class OrderItem extends Model
@@ -93,5 +96,17 @@ class OrderItem extends Model
     public function productVariant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class);
+    }
+
+    /**
+     * The refund events recorded against this line item (story 0051) --
+     * `refunded_quantity` above is the fast running total; this is the
+     * event log it is derived from (D-2).
+     *
+     * @return HasMany<Refund, $this>
+     */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class);
     }
 }

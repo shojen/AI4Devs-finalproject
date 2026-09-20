@@ -73,6 +73,7 @@ return [
         'delete' => 'Delete',
         'manage' => 'Manage',
         'manage_administrators' => 'Manage administrator-level roles/users',
+        'refund' => 'Refund',
     ],
 
 ];

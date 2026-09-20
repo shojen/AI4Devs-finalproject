@@ -75,7 +75,26 @@ app/
                        (permission -> Cancelled guard -> same-status guard -> unconfirmed-
                        regression guard -> forceFill write), self-authorizing `transitionStatus`
                        on OrderPolicy as its own first statement with a bare Gate::authorize()
-                       rather than LogRefusedPrivilegedAttempt)
+                       rather than LogRefusedPrivilegedAttempt; RecordRefund — story 0051, the
+                       eleven-step refund action (permission -> validate shape -> transaction ->
+                       lock order+items -> payment-state guard -> ownership guard -> over-refund
+                       guard -> write refunds rows + refunded_quantity -> increment
+                       refunded_amount -> derive+write payment_status -> return), gating on a
+                       BARE `Gate::authorize('orders.refund')` rather than an OrderPolicy ability
+                       (DR-2) -- the state-based refusal is a ValidationException raised inside
+                       the action itself, never a policy method; CancelOrder — story 0050, the
+                       four-step action (permission -> already-Cancelled guard -> blocked-state
+                       guard -> forceFill write) self-authorizing `cancel` on OrderPolicy as its
+                       own first statement with a bare Gate::authorize(), NOT a call into or out
+                       of TransitionOrderStatus (D-5) -- takes exactly one parameter, an Order,
+                       with NO confirmation parameter (D-7, pinned by a reflection test); its
+                       blocked-state guard (Order::isManuallyCancellable(), reading BOTH status
+                       and payment_status) is a DIRECT THROW of OrderCancellationBlockedException
+                       rather than a second Gate check, so it binds a Super Admin too -- unlike
+                       an ordinary actor, whose Gate::authorize('cancel', ...) call already
+                       refuses them via OrderPolicy::cancel()'s own parallel state clause before
+                       this guard is ever reached, see architecture/authorization.md's Manual
+                       order cancellation section)
   Actions/ProductCategories/ Domain actions for the Product Categories area (CreateProductCategory,
                        RenameProductCategory, DeleteProductCategory) — one action per operation
                        (story 0023). Unlike every other area's actions, none of the three authorize
@@ -180,6 +199,13 @@ app/
                        following RoleInUseException's shape exactly; deliberately not 423 (not a
                        credential-freshness problem) and not 403 (not an authorization failure) --
                        see architecture/authorization.md's "Order status regression confirmation"
+                       section; OrderCancellationBlockedException → 409 since story 0050 -- a
+                       DIRECT THROW from CancelOrder when Order::isManuallyCancellable() is
+                       false, never a Gate check, so it binds a Super Admin actor too; a
+                       DIFFERENT class from OrderStatusRegressionRequiresConfirmationException
+                       despite both rendering 409 -- that one is retryable (confirmed: true),
+                       this one is terminal, since CancelOrder takes no confirmation parameter
+                       at all -- see architecture/authorization.md's "Manual order cancellation"
                        section) — plus, since story 0022, one
                        that deliberately does NOT: UnresolvedSelectionException carries no
                        render() at all, because it must never reach the HTTP layer as a status
@@ -242,6 +268,11 @@ app/
                        story owns); OrderItem — story 0045, five columns omitted
                        (product_name/product_sku/unit_price/line_total/refunded_quantity), since a
                        fillable unit_price would hand a caller the ability to set its own price;
+                       Refund — story 0051, the refund event log
+                       order_items.refunded_quantity/orders.refunded_amount derive from, with
+                       amount/refunded_by omitted (derived arithmetic over a snapshotted price, and
+                       the acting user's identity, respectively -- both written only via
+                       App\Actions\Orders\RecordRefund's forceCreate());
                        Role, which
                        subclasses
                        the package's role model). product_media, product_sales_region and
@@ -281,7 +312,11 @@ app/
                        delete()'s EXISTING body rather than relocating every call site's target.
                        Story 0049 grew OrderPolicy's ability roster to FIVE, adding
                        transitionStatus (reusing EDIT_PERMISSION, no new constant), with a real
-                       caller from day one (TransitionOrderStatus) -- see
+                       caller from day one (TransitionOrderStatus). Story 0050 grew it to SIX,
+                       adding cancel (CancelOrder) -- this policy's first ability requiring TWO
+                       permissions (EDIT_PERMISSION AND the new ORDER_REFUND_PERMISSION
+                       constant, D-6) and the first whose boolean genuinely depends on the
+                       target row (Order::isManuallyCancellable()) -- see
                        architecture/authorization.md for the full, re-counted caller roster
   Providers/           Service providers (AppServiceProvider, FortifyServiceProvider)
   Rules/               Stock Laravel location (`make:rule`), not a new base folder — Iban.php,
@@ -537,8 +572,8 @@ Three constraints that come with it, each learned from this story's audits:
 What the rules themselves say, and why a rule that must bind a Super Admin actor is a direct `throw` rather than a `Gate` check, belongs to [architecture/authorization.md](../architecture/authorization.md#the-guard-belongs-to-the-action-not-to-the-caller), not here.
 
 
-_Last updated: 2026-09-17 — Story 0049 (Order status transition backend). Extended `app/Actions/Orders/` with `TransitionOrderStatus` (the five-step ordered action, self-authorizing `transitionStatus` on `OrderPolicy` as its own first statement via a bare `Gate::authorize()`). Added `OrderStatusRegressionRequiresConfirmationException → 409` to `app/Exceptions/`'s rendering-exception list, now five instances rather than four. Noted `OrderPolicy`'s ability roster grew to five (`transitionStatus`, reusing `EDIT_PERMISSION`) beside its existing `Policies/` entry. Noted `OrderStatus::rank()`/`isBackwardFrom()` beside the `Enums/` entry, and corrected that same entry's stale "neither declares `label()`" claim in place — `OrderStatus` gained `label()` at story 0047, a fact this file had never caught up to.
+_Last updated: 2026-09-17 — Story 0050 (Order manual cancellation backend). Extended `app/Actions/Orders/` with `CancelOrder` (the four-step action, self-authorizing `cancel` on `OrderPolicy` as its own first statement via a bare `Gate::authorize()`, taking exactly one parameter with no confirmation path, D-7). Added `OrderCancellationBlockedException → 409` to `app/Exceptions/`'s rendering-exception list, now six instances rather than five — a direct throw, not a `Gate` check, so it binds a Super Admin actor too. Noted `OrderPolicy`'s ability roster grew to six (`cancel`, the first requiring TWO permissions and the first whose result depends on the target row) beside its existing `Policies/` entry.
 
-_Previously: 2026-09-16 — Story 0048 (Order line-item editing backend). Extended `app/Actions/Orders/` with six new classes: `AddOrderItem`, `RemoveOrderItem`, `UpdateOrderItemQuantity` (the three actions, each self-authorizing `update` on the `Order` before their own state-based hard block, re-verified a second time inside the transaction under `lockForUpdate()` per Phase 4 finding F-4), `RecalculateOrderTotals` (the shared totals-recomputation collaborator, authorizing nothing of its own — the same already-authorized-caller pattern as `SyncProductGallery`/`SyncProductSalesRegions`), and `ToNumericString`/`AssertWithinColumnCeiling` (two pure, dependency-free, never-`new`-ed collaborators mirroring `CreateOrder`'s own like-named private methods, per the story's scope fence against refactoring `CreateOrder` itself). Added `OrderNotEditableException → 409` to `app/Exceptions/`'s rendering-exception list, now four instances rather than three.
+_Previously: 2026-09-17 — Story 0051 (Order payment/refund state backend). Extended `app/Actions/Orders/` with `RecordRefund` (the eleven-step refund action, gating on a bare `Gate::authorize('orders.refund')` rather than an `OrderPolicy` ability). Added `Refund` to `app/Models/`'s inventory — the refund event log `order_items.refunded_quantity`/`orders.refunded_amount` derive from, with `amount`/`refunded_by` omitted from `#[Fillable]`.
 
-_Previously: 2026-09-15 — Stories 0046/0047 (Orders "new order" notification; Customer detail order-history view). Added `NotifyOrderCreated`/`OrderCreated` (0046) and `App\Livewire\Customers\Show` — `OrderPolicy`'s own first real `viewAny` caller (0047), plus `Customer::orders()` and `OrderStatus::label()`. Earlier history (story 0045 and before) folded per [contracts.md](../contracts.md#doc-growth-management-rule) — see git history if needed._
+_Previously: 2026-09-17 — Story 0049 (Order status transition backend). Extended `app/Actions/Orders/` with `TransitionOrderStatus` (the five-step ordered action, self-authorizing `transitionStatus` on `OrderPolicy` as its own first statement via a bare `Gate::authorize()`). Added `OrderStatusRegressionRequiresConfirmationException → 409` to `app/Exceptions/`'s rendering-exception list, now five instances rather than four. Noted `OrderStatus::rank()`/`isBackwardFrom()` beside the `Enums/` entry, and corrected that same entry's stale "neither declares `label()`" claim in place — `OrderStatus` gained `label()` at story 0047, a fact this file had never caught up to. Earlier history (story 0048 and before) folded per [contracts.md](../contracts.md#doc-growth-management-rule) — see git history if needed._

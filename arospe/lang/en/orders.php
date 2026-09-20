@@ -60,4 +60,21 @@ return [
         'cancellation_unsupported' => 'Cancelling or reopening an order is not available here.',
     ],
 
+    // Story 0051 -- App\Actions\Orders\RecordRefund's three ValidationException
+    // refusals, all raised on the `items` field (D-5: never an AuthorizationException,
+    // since none of the three is about who is asking). No screen copy here -- story
+    // 0055 extends this group with button/dialog text and does not rename these keys.
+    'refunds' => [
+        'invalid_payment_state' => 'This order cannot be refunded in its current payment state.',
+        'item_not_owned' => 'One or more line items do not belong to this order.',
+        'exceeds_outstanding_units' => 'One or more line items would be refunded more units than remain outstanding.',
+    ],
+
+    // Story 0050 -- App\Actions\Orders\CancelOrder's two refusals. No screen copy here (story 0055
+    // extends this group with button/dialog text and does not rename these keys).
+    'cancellation' => [
+        'blocked' => 'This order can no longer be cancelled.',
+        'already_cancelled' => 'This order is already cancelled.',
+    ],
+
 ];

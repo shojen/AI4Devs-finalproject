@@ -1,11 +1,12 @@
 # Database Schema — Orders
 
-Part of [Database Schema](schema.md) — see [schema.md](schema.md#er-diagram) for the full ER diagram and [schema.md#notes](schema.md#notes) for the UUID/ADR-0001 status notes. This file covers `orders` and `order_items` (story 0045, PRD [§3.2 Orders](../PRD/PRD.md#32-orders)) — Epic 3's second and third domain tables, and the first pair in this codebase whose *only* reason to ship together is a single cross-table invariant: an order is a customer plus one or more priced line items, and every price is frozen at the moment of ordering. Split into its own file rather than appended to [schema-other.md](schema-other.md) because the invariant needs enough prose (the price snapshot, the address snapshot, the three-way delete-behaviour split, a security fix on the write path) to be worth a dedicated page, per [contracts.md](../contracts.md#doc-growth-management-rule)'s doc growth management rule — and because Epic 3's remaining Orders stories (0046–0055) will all extend this same domain rather than `payment_methods`/`customers`/`notifications`.
+Part of [Database Schema](schema.md) — see [schema.md](schema.md#er-diagram) for the full ER diagram and [schema.md#notes](schema.md#notes) for the UUID/ADR-0001 status notes. This file covers `orders` and `order_items` (story 0045) plus `refunds` (story 0051, PRD [§3.2 Orders](../PRD/PRD.md#32-orders)). `orders`/`order_items` are the first pair in this codebase whose *only* reason to ship together is a single cross-table invariant: an order is a customer plus one or more priced line items, and every price is frozen at the moment of ordering. Split into its own file rather than appended to [schema-other.md](schema-other.md) because the invariant needs enough prose (the price snapshot, the address snapshot, the three-way delete-behaviour split, a security fix on the write path) to be worth a dedicated page, per [contracts.md](../contracts.md#doc-growth-management-rule)'s doc growth management rule — and because Epic 3's remaining Orders stories (0046–0055) will all extend this same domain rather than `payment_methods`/`customers`/`notifications`.
 
 ## Table of Contents
 
 - [`orders`](#orders)
 - [`order_items`](#order_items)
+- [`refunds`](#refunds)
 - [The price snapshot — read from the variant, never the parent, when one is named](#the-price-snapshot--read-from-the-variant-never-the-parent-when-one-is-named)
 - [Totals are derived and re-derived, not write-once](#totals-are-derived-and-re-derived-not-write-once)
 - [The address snapshot](#the-address-snapshot)
@@ -35,6 +36,7 @@ Model: [`App\Models\Order`](../../app/Models/Order.php). Columns in real physica
 | `tax_amount` | `DECIMAL(10,2)` | `0.00` at creation, always — tax computation is stories 0053/0054's. Re-derived alongside `subtotal` on every line-item edit since story 0048, but only when `tax_rate` is already resolved (D-8's own conditional, unchanged) |
 | `shipping_amount` | `DECIMAL(10,2)` | `0.00` at creation, always — shipping selection is stories 0037/0054's. Read and summed, never itself recomputed, by story 0048's re-derivation |
 | `total` | `DECIMAL(10,2)` | `subtotal + tax_amount + shipping_amount`, written out as that arithmetic identity rather than as a copy of `subtotal`, so it stays true unchanged once a later story populates the other two terms (**D-8**). Re-derived alongside `subtotal`/`tax_amount` since story 0048 |
+| `refunded_amount` | `DECIMAL(10,2)`, default `0.00` | story 0051 — the running total `App\Actions\Orders\RecordRefund` keeps consistent with the SUM of this order's `refunds` rows' `amount`; a **merchandise-only** total (`quantity × unit_price`), excluding tax and shipping, which are both `0.00` on every order today (R-2) — see [`refunds`](#refunds) below. No backfill on the adding migration: no refund mechanism existed before this story, so `0.00` is the true value for every pre-existing row |
 | `flagged_for_review` | `BOOLEAN`, default `false` | the geo/fraud review flag PRD §3.2 defines for tax resolution (**D-10**); this story never sets it `true` |
 | `shipping_address_line1` / `shipping_address_line2` | `VARCHAR(255)`, nullable | frozen copy of the customer's shipping address at order time (**D-4**) — see [The address snapshot](#the-address-snapshot) below |
 | `shipping_city` | `VARCHAR(100)`, nullable | " |
@@ -75,7 +77,7 @@ Model: [`App\Models\OrderItem`](../../app/Models/OrderItem.php). Columns in real
 | `quantity` | `INT UNSIGNED` | required, `≥ 1` |
 | `unit_price` | `DECIMAL(10,2)` | the price **at the time of order** — this story's core invariant. See [The price snapshot](#the-price-snapshot--read-from-the-variant-never-the-parent-when-one-is-named) below. **Immutable after insert** — story 0048's `UpdateOrderItemQuantity` is the first (and, as of that story, only) writer of an existing line item, and it never touches this column; see [Totals are derived and re-derived, not write-once](#totals-are-derived-and-re-derived-not-write-once) |
 | `line_total` | `DECIMAL(10,2)` | `unit_price × quantity`, computed once at creation |
-| `refunded_quantity` | `INT UNSIGNED`, default `0` | the column ships now; nothing reads it yet — stories 0051/0052's per-line-item refund bookkeeping (**D-3**) |
+| `refunded_quantity` | `INT UNSIGNED`, default `0` | story 0051's own running total, incremented by `App\Actions\Orders\RecordRefund` on every refund written against this line item — always equal to the SUM of this item's `refunds` rows' `quantity`. Shipped inert at 0045 (**D-3**); this is its first and only consumer |
 | `created_at` / `updated_at` | timestamp, nullable | |
 
 **No `deleted_at`.** A line item's lifecycle is tied entirely to its parent order (`cascadeOnDelete()`), never deleted independently.
@@ -85,6 +87,30 @@ Model: [`App\Models\OrderItem`](../../app/Models/OrderItem.php). Columns in real
 #### Indexes — exactly the FK-created ones, no others
 
 `php artisan db:table order_items` reports exactly four indexes: `primary` on `id`, and three FK-created indexes (`order_items_order_id_foreign`, `order_items_product_id_foreign`, `order_items_product_variant_id_foreign`) — verified against a live, migrated instance. No hand-written index anywhere on this table either.
+
+### `refunds`
+
+Source: `database/migrations/2026_09_17_120000_create_refunds_table.php` (story 0051) — a greenfield UUID `create_*` migration, the same shape as `create_sales_regions_table`. `database/migrations/2026_09_17_120001_add_refunded_amount_to_orders_table.php`, one timestamp later, adds `orders.refunded_amount` above.
+
+Model: [`App\Models\Refund`](../../app/Models/Refund.php). Columns in real physical order (verified with `php artisan db:table refunds`):
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | uuid (v7) PK | `CHAR(36)`; generated by `HasUuids` |
+| `order_item_id` | `CHAR(36)` FK → `order_items.id`, `restrictOnDelete()` | **OQ-1, settled by this story's own implementer** — see [Delete behaviour](#delete-behaviour--the-same-three-way-rule-stated-once) below; overrides the `cascadeOnDelete()` the task file's own migration snippet originally shipped |
+| `quantity` | `INT UNSIGNED` | units of this line item returned by this one refund event |
+| `amount` | `DECIMAL(10,2)` | `quantity × order_items.unit_price`, snapshotted at refund time (**D-8**) — never re-derived, matching [the price snapshot](#the-price-snapshot--read-from-the-variant-never-the-parent-when-one-is-named) rule below. Scope is **merchandise only** — see `orders.refunded_amount`'s own note above and R-2 |
+| `refunded_by` | `CHAR(36)` FK → `users.id`, **not** nullable, `restrictOnDelete()` | the administrator who performed the refund, derived from `Auth::id()` — never accepted as a parameter (**D-10**). `restrictOnDelete()` is effectively insurance: `users` is soft-deleted, so `User::delete()` never fires this FK |
+| `reason` | `TEXT`, nullable | the column ships now; this story always writes `null` into it — see `App\Actions\Orders\RecordRefund`'s own `$reason` parameter note (**D-11**, OQ-3) |
+| `created_at` / `updated_at` | timestamp, nullable | `created_at` **is** the refund's own event timestamp — no separate `refunded_at` column exists (**D-2**): `refunds` is an event log, and `order_items.refunded_quantity` / `orders.refunded_amount` are the fast running totals derived from it, never the other way around |
+
+**No `deleted_at`.** A refund is a recorded, immutable fact; correcting one is a business decision nobody has asked for (backlog).
+
+**`#[Fillable]`** covers only `order_item_id`, `quantity` and `reason` — the caller's own input. `amount` and `refunded_by` are **deliberately omitted**: `amount` is derived arithmetic over a snapshotted price, and `refunded_by` is the actor's identity, which must be derived from `Auth::id()` and never accepted as input (the 0008a rule). Written only via `Refund::forceCreate()` from `App\Actions\Orders\RecordRefund` alone. Pinned by a test that fails if either omission is undone.
+
+#### Indexes — exactly the FK-created ones, no others
+
+`php artisan db:table refunds` reports exactly three indexes: `primary` on `id`, and two FK-created indexes (`refunds_order_item_id_foreign`, `refunds_refunded_by_foreign`) — verified against a live, migrated instance. No hand-written index anywhere on this table, and no index on `created_at` either — the same low-cardinality/write-cost argument `orders.status` already establishes.
 
 ### The price snapshot — read from the variant, never the parent, when one is named
 
@@ -127,6 +153,8 @@ Both `AssertWithinColumnCeiling` (the shared `decimal(10,2)` overflow guard `Cre
 
 `orders` and `order_items` are the first pair of tables in this codebase to exercise all three of this project's foreign-key delete behaviours **at once**, which is what makes the rule behind them statable as one rule rather than left to be inferred from three separate examples scattered across the schema. See [migrations.md](migrations.md#the-three-way-delete-behaviour-rule-cascade-restrict-or-null) for the full statement and every table on either side of it.
 
+`refunds` adds two more **restrict** instances (story 0051, OQ-1 settled): `order_item_id` refuses to let a line item that already carries refund records be deleted — a hard database invariant rather than a rule a future line-item-removal story would have to remember, matching `sales_regions.parent_id`'s "restrict where a cascade would destroy configured/financial data" precedent — and `refunded_by` restricts for the identical "insurance against a soft-deleted parent" reason `orders.customer_id` already establishes.
+
 ### Nothing is resolved that this story does not own
 
 A newly created order's `sales_region_id`, `shipping_rate_id` and `tax_rate` are all `null` (never `0`/`0.000` — see above); `flagged_for_review` is `false`; `tax_amount` and `shipping_amount` are `0.00`; and `total` equals `subtotal`. Every one of these is asserted by a dedicated test rather than left to inspection, because a populated column here would look exactly like a working feature while silently masking stories 0037/0053/0054's actual, not-yet-built work.
@@ -137,6 +165,14 @@ Gated by [`App\Policies\OrderPolicy`](../../app/Policies/OrderPolicy.php) — se
 
 Story 0048's `AddOrderItem`/`RemoveOrderItem`/`UpdateOrderItemQuantity` self-authorize `update` on the `Order` the identical way, and each layers a **second**, state-based refusal (`App\Exceptions\OrderNotEditableException`, 409) strictly after the permission check when `status` is `Shipped`/`Delivered` — see [architecture/authorization.md](../architecture/authorization.md#order-editability--the-second-state-based-refusal-and-the-shape-three-more-stories-copy) for the full pattern and why it is a direct throw rather than a `Gate`/`OrderPolicy` method.
 
-_Last updated: 2026-09-16 — Story 0048 (Order line-item editing backend). Added [Totals are derived and re-derived, not write-once](#totals-are-derived-and-re-derived-not-write-once): `subtotal`/`tax_amount`/`total` are no longer write-once (`App\Actions\Orders\RecalculateOrderTotals` recomputes all three from scratch, inside the transaction, on every `AddOrderItem`/`RemoveOrderItem`/`UpdateOrderItemQuantity` call), and `order_items.unit_price` is immutable after insert (`UpdateOrderItemQuantity` re-multiplies the existing column, never re-reads the catalog). Noted both directly on the `orders`/`order_items` column tables too. Extended the **Authorization** section with this story's second, state-based refusal (`OrderNotEditableException`, 409) alongside `OrderPolicy`'s permission check. No column, type or index change.
+Story 0051's `App\Actions\Orders\RecordRefund` gates on a **bare** `Gate::authorize('orders.refund')` — a non-CRUD permission (`RolePermissionSeeder::ORDER_PERMISSIONS`), not an `OrderPolicy` ability of its own. Its own second, state-based refusal (payment status must be `Paid`/`PartiallyRefunded`) is a `ValidationException`, not a policy method or a domain exception — see [architecture/authorization.md](../architecture/authorization.md#orderpolicy--the-twelfth-policy) for why that refusal is deliberately kept out of `OrderPolicy`.
+
+Story 0050's `App\Actions\Orders\CancelOrder` **does** gate through an `OrderPolicy` ability — `cancel`, the policy's **sixth** and this app's first requiring TWO permissions (`orders.edit` **and** `orders.refund`, D-6). `App\Models\Order::isManuallyCancellable()` (reading both `status` and `payment_status`) is the state clause both `OrderPolicy::cancel()`'s hint and `CancelOrder`'s own `OrderCancellationBlockedException` direct-throw wrap — see [architecture/authorization.md](../architecture/authorization.md#manual-order-cancellation--the-third-state-based-refusal-and-the-first-ability-requiring-two-permissions) for the full mechanism, including why an ordinary actor's blocked-state refusal (403, via the Gate) differs from a Super Admin's (409, via the direct throw).
+
+_Last updated: 2026-09-17 — Story 0050 (Order manual cancellation backend). Extended **Authorization** with `CancelOrder`'s `cancel` ability (this policy's sixth, and the first requiring two permissions) and `Order::isManuallyCancellable()`. No column, table, index or schema change of any kind — verified rather than assumed, since this story reuses `orders.status`/`orders.payment_status` entirely.
+
+_Previously: 2026-09-17 — Story 0051 (Order payment/refund state backend). Added [`refunds`](#refunds): the refund event log, `orders.refunded_amount` (the running merchandise-only total it is summed into), and `order_items.refunded_quantity`'s first real consumer. Extended [Delete behaviour](#delete-behaviour--the-same-three-way-rule-stated-once) with `refunds`' two `restrictOnDelete()` FKs (OQ-1, settled in this story's own migration — overriding the task file's originally-contributed `cascadeOnDelete()`). Extended **Authorization** with `RecordRefund`'s bare-permission-string gate and its `ValidationException` state refusal.
+
+_Previously: 2026-09-16 — Story 0048 (Order line-item editing backend). Added [Totals are derived and re-derived, not write-once](#totals-are-derived-and-re-derived-not-write-once): `subtotal`/`tax_amount`/`total` are no longer write-once (`App\Actions\Orders\RecalculateOrderTotals` recomputes all three from scratch, inside the transaction, on every `AddOrderItem`/`RemoveOrderItem`/`UpdateOrderItemQuantity` call), and `order_items.unit_price` is immutable after insert (`UpdateOrderItemQuantity` re-multiplies the existing column, never re-reads the catalog). Noted both directly on the `orders`/`order_items` column tables too. Extended the **Authorization** section with this story's second, state-based refusal (`OrderNotEditableException`, 409) alongside `OrderPolicy`'s permission check. No column, type or index change.
 
 _Previously: 2026-09-14 — Story 0045 (Orders core CRUD backend). New file — `orders`/`order_items` split out from the outset rather than appended to [schema-other.md](schema-other.md), per [contracts.md](../contracts.md#doc-growth-management-rule)'s doc growth management rule, since Epic 3's remaining Orders stories (0046–0055) will all extend this domain rather than the payment-methods/customers/notifications one. Linked from [schema.md](schema.md#domain-tables)._
