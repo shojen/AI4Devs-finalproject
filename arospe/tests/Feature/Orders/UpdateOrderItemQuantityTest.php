@@ -179,14 +179,18 @@ test('changing the quantity of a line item that belongs to a different order is 
 test('changing a quantity recomputes tax_amount from the new subtotal when a rate is already resolved', function () {
     actingOrderEditorForQuantity();
 
-    $order = Order::factory()->withItems(1)->create(['tax_rate' => '0.210']);
-    $item = $order->items()->sole();
+    $order = Order::factory()->create(['tax_rate' => '21.000']);
+    $product = Product::factory()->create(['price' => '50.00']);
+    $item = OrderItem::factory()->for($order)->create(['product_id' => $product->id, 'quantity' => 1]);
 
-    app(UpdateOrderItemQuantity::class)($order, $item->id, 3);
+    app(UpdateOrderItemQuantity::class)($order, $item->id, 2);
 
     $fresh = $order->fresh();
 
-    expect((string) $fresh->tax_amount)->toBe(bcmul((string) $fresh->subtotal, '0.210', 2));
+    // Literal amounts, never a re-derived formula: 21% of 100.00 (story 0053a).
+    expect((string) $fresh->subtotal)->toBe('100.00')
+        ->and((string) $fresh->tax_amount)->toBe('21.00')
+        ->and((string) $fresh->total)->toBe('121.00');
 });
 
 test('changing a quantity on an order with no resolved tax rate leaves tax_amount at zero and resolves no sales region', function () {
@@ -206,12 +210,12 @@ test('changing a quantity on an order with no resolved tax rate leaves tax_amoun
 test('changing a quantity never writes tax_rate itself', function () {
     actingOrderEditorForQuantity();
 
-    $order = Order::factory()->withItems(1)->create(['tax_rate' => '0.100']);
+    $order = Order::factory()->withItems(1)->create(['tax_rate' => '10.000']);
     $item = $order->items()->sole();
 
     app(UpdateOrderItemQuantity::class)($order, $item->id, 3);
 
-    expect((string) $order->fresh()->tax_rate)->toBe('0.100');
+    expect((string) $order->fresh()->tax_rate)->toBe('10.000');
 });
 
 // --- Phase 4 security audit fixes ---

@@ -33,6 +33,7 @@ class ResolveOrderTaxRegion
 
     public function __construct(
         private readonly ToNumericString $toNumericString,
+        private readonly CalculateTaxAmount $calculateTaxAmount,
         private readonly AssertWithinColumnCeiling $assertWithinColumnCeiling,
     ) {}
 
@@ -93,9 +94,10 @@ class ResolveOrderTaxRegion
         }
 
         $subtotal = ($this->toNumericString)((string) $order->subtotal);
-        $taxAmount = $taxRate !== null
-            ? $this->percentageOf($subtotal, ($this->toNumericString)($taxRate))
-            : '0.00';
+        $taxAmount = ($this->calculateTaxAmount)(
+            $subtotal,
+            $taxRate !== null ? ($this->toNumericString)($taxRate) : null,
+        );
         $total = bcadd(
             bcadd($subtotal, $taxAmount, 2),
             ($this->toNumericString)((string) $order->shipping_amount),
@@ -128,21 +130,5 @@ class ResolveOrderTaxRegion
     {
         return SalesRegion::query()->where('is_default', true)->first()
             ?? throw new RuntimeException('The Sales Region catalog has no default entry; cannot resolve an order\'s tax region.');
-    }
-
-    /**
-     * `$amount x ($percentage / 100)`, rounded half-up to two decimals. `$percentage` is a
-     * percentage (`21.000` means 21%), matching `sales_regions.rate`. bcmath truncates, so the
-     * exact 5-decimal product is scaled and nudged by half a cent before truncating.
-     *
-     * @param  numeric-string  $amount
-     * @param  numeric-string  $percentage
-     * @return numeric-string
-     */
-    private function percentageOf(string $amount, string $percentage): string
-    {
-        $exact = bcdiv(bcmul($amount, $percentage, 5), '100', 7);
-
-        return bcadd($exact, '0.005', 2);
     }
 }

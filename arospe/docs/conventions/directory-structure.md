@@ -62,6 +62,9 @@ app/
                        identically across all three per D-5 rather than extracted -- extract
                        once a fourth call site appears), re-verified a SECOND time inside the
                        transaction under lockForUpdate() (Phase 4 finding F-4);
+                       CalculateTaxAmount — story 0053a, the ONE `subtotal × (tax_rate ÷ 100)`
+                       computation (percentage, half-up) composed by RecalculateOrderTotals and
+                       ResolveOrderTaxRegion so the two cannot drift;
                        RecalculateOrderTotals — the shared D-7/D-8 totals-recomputation
                        collaborator all three call from inside their own transaction, authorizing
                        NOTHING of its own for the identical already-authorized-caller reason;

@@ -148,7 +148,6 @@ appears as a node in the dependency graph below:
 | ID | Title | Epic area |
 | --- | --- | --- |
 | 0052 | Order auto-cancel on full refund backend | Epic 3 — Orders |
-| 0053a | Order totals — `tax_rate` is a percentage: fix `RecalculateOrderTotals`, share one tax computation | Epic 3 — Orders |
 | 0054 | Order tax Sales-Region resolution — virtual products (backend) | Epic 3 — Orders |
 | 0055 | Orders list + detail/editor UI | Epic 3 — Orders |
 | 0057 | Notification bell UI — topbar dropdown, unread indicator, generic per-type rendering | Epic 3 — Notifications |

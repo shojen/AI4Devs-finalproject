@@ -1,14 +1,14 @@
 # [0053a] Order totals — `tax_rate` is a percentage: fix `RecalculateOrderTotals` and share one tax computation
 
-> **Follow-up to [0053](done/0053-order-tax-region-resolution-physical-backend.md)**, found while
+> **Follow-up to [0053](0053-order-tax-region-resolution-physical-backend.md)**, found while
 > implementing it (its **D-13** warns about exactly this) and recorded in PR #20. It corrects a defect
-> **shipped by [0048](done/0048-order-line-item-editing-backend.md)** and removes the second copy of the
+> **shipped by [0048](0048-order-line-item-editing-backend.md)** and removes the second copy of the
 > tax formula that 0053 was forced to introduce.
 
 ## Description
 
 `orders.tax_rate` is a **percentage** (`21.000` means 21%), mirroring `sales_regions.rate`
-([schema](../../docs/database/schema-products.md#sales_regions)). 0053's `ResolveOrderTaxRegion`
+([schema](../../../docs/database/schema-products.md#sales_regions)). 0053's `ResolveOrderTaxRegion`
 derives `tax_amount = subtotal × (tax_rate ÷ 100)`. `App\Actions\Orders\RecalculateOrderTotals` —
 run by `AddOrderItem`, `RemoveOrderItem` and `UpdateOrderItemQuantity` — computes
 `bcmul($subtotal, $tax_rate, 2)` with **no `÷ 100`**, following 0048's own **D-8** shorthand
@@ -17,7 +17,7 @@ run by `AddOrderItem`, `RemoveOrderItem` and `UpdateOrderItemQuantity` — compu
 Consequence: resolve an order at 21% (`tax_amount 21.00` on a `100.00` subtotal), then add one line —
 the recalculation multiplies by `21.000` instead of `0.21` and writes a tax **100× too large**, or
 throws the column-ceiling `ValidationException` on a modest order. It surfaces the moment story
-[0055](0055-orders-list-detail-editor-ui.md) wires resolution to the UI; **today nothing invokes
+[0055](../0055-orders-list-detail-editor-ui.md) wires resolution to the UI; **today nothing invokes
 `ResolveOrderTaxRegion`, so no order carries a non-null `tax_rate` and no stored data is wrong.**
 
 Why nobody saw it: the shipped tests use `tax_rate = '0.210'` and assert
@@ -26,7 +26,7 @@ correct if read as a fraction. They restate the code instead of pinning a number
 
 This story is a bug fix plus one extraction: `RecalculateOrderTotals` gets the `÷ 100`, and the
 formula lives in **one** collaborator both it and `ResolveOrderTaxRegion` compose — the extraction
-0053's **D-13** and [0054](0054-order-tax-region-resolution-virtual-backend.md)'s step 5 named as
+0053's **D-13** and [0054](../0054-order-tax-region-resolution-virtual-backend.md)'s step 5 named as
 backlog item 1 and risk **R-7** ("the three copies of the tax arithmetic drift"). Already visible drift:
 `ResolveOrderTaxRegion` rounds half-up, `RecalculateOrderTotals` truncates.
 
@@ -165,8 +165,8 @@ third copy.
 - [ ] `vendor/bin/pint --format agent` clean (unscoped) and Larastan level 7 passing.
 - [ ] Code reviewed (code-reviewer); appsec-auditor: no new write path, only the arithmetic changes.
 - [ ] Documentation updated (docs-keeper) per the list above, plus the grep for the wrong formula.
-- [ ] [0054](0054-order-tax-region-resolution-virtual-backend.md)'s step 5 is amended to compose
-      `CalculateTaxAmount`; [0055](0055-orders-list-detail-editor-ui.md) lists this story as a hard
+- [ ] [0054](../0054-order-tax-region-resolution-virtual-backend.md)'s step 5 is amended to compose
+      `CalculateTaxAmount`; [0055](../0055-orders-list-detail-editor-ui.md) lists this story as a hard
       dependency.
 
 ## Documented functional decisions
@@ -212,10 +212,9 @@ implementation (should compose the collaborator from the start).
 
 ## Provenance
 
-- **Source:** [0053](done/0053-order-tax-region-resolution-physical-backend.md) **D-13**'s warning and
+- **Source:** [0053](0053-order-tax-region-resolution-physical-backend.md) **D-13**'s warning and
   **R-7**, PR #20's "Qué impacto tiene" note; the defect in `app/Actions/Orders/RecalculateOrderTotals.php`
   and its three test files, read on 2026-09-20.
-- **Stage:** `new`. Moves to `ai-spec/tasks/in-progress/` at Phase 3 and `done/` at Phase 7; re-resolve
-  every relative link on each move ([workflow.md](../../docs/workflow.md#link-integrity-check-on-every-stage-move)).
+- **Stage:** `done`. Re-resolve every relative link on each move ([workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move)).
 - **Gherkin:** named business-role actor and exactly one `When` per scenario, per
-  [gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md).
+  [gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md).

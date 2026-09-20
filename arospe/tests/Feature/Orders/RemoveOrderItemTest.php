@@ -178,14 +178,19 @@ test('an operation that fails after the transaction opens leaves neither table m
 test('removing a line item recomputes tax_amount from the new subtotal when a rate is already resolved', function () {
     actingOrderEditorForRemoval();
 
-    $order = Order::factory()->withItems(2)->create(['tax_rate' => '0.210']);
-    $itemToRemove = $order->items()->first();
+    $order = Order::factory()->create(['tax_rate' => '21.000']);
+    $product = Product::factory()->create(['price' => '100.00']);
+    $itemToRemove = OrderItem::factory()->for($order)->create(['product_id' => $product->id, 'quantity' => 1]);
+    OrderItem::factory()->for($order)->create(['product_id' => $product->id, 'quantity' => 1]);
 
     app(RemoveOrderItem::class)($order, $itemToRemove->id);
 
     $fresh = $order->fresh();
 
-    expect((string) $fresh->tax_amount)->toBe(bcmul((string) $fresh->subtotal, '0.210', 2));
+    // Literal amounts, never a re-derived formula: 21% of 100.00 (story 0053a).
+    expect((string) $fresh->subtotal)->toBe('100.00')
+        ->and((string) $fresh->tax_amount)->toBe('21.00')
+        ->and((string) $fresh->total)->toBe('121.00');
 });
 
 test('removing a line item from an order with no resolved tax rate leaves tax_amount at zero and resolves no sales region', function () {
@@ -205,10 +210,10 @@ test('removing a line item from an order with no resolved tax rate leaves tax_am
 test('removing a line item never writes tax_rate itself', function () {
     actingOrderEditorForRemoval();
 
-    $order = Order::factory()->withItems(2)->create(['tax_rate' => '0.100']);
+    $order = Order::factory()->withItems(2)->create(['tax_rate' => '10.000']);
     $itemToRemove = $order->items()->first();
 
     app(RemoveOrderItem::class)($order, $itemToRemove->id);
 
-    expect((string) $order->fresh()->tax_rate)->toBe('0.100');
+    expect((string) $order->fresh()->tax_rate)->toBe('10.000');
 });

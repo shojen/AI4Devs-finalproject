@@ -221,14 +221,17 @@ test('adding a line item with a garbage quantity value never stores a row', func
 test('adding a line item recomputes tax_amount from the new subtotal when a rate is already resolved', function () {
     actingOrderEditor();
 
-    $order = Order::factory()->create(['tax_rate' => '0.210']);
+    $order = Order::factory()->create(['tax_rate' => '21.000']);
     $product = Product::factory()->create(['price' => '20.00']);
 
     app(AddOrderItem::class)($order, $product->id, null, 1);
 
     $fresh = $order->fresh();
 
-    expect((string) $fresh->tax_amount)->toBe(bcmul((string) $fresh->subtotal, '0.210', 2));
+    // Literal amounts, never a re-derived formula: 21% of 20.00 (story 0053a).
+    expect((string) $fresh->subtotal)->toBe('20.00')
+        ->and((string) $fresh->tax_amount)->toBe('4.20')
+        ->and((string) $fresh->total)->toBe('24.20');
 });
 
 // The negative half is the point (R-2): this story must not resolve a sales region.
@@ -249,12 +252,12 @@ test('adding a line item to an order with no resolved tax rate leaves tax_amount
 test('adding a line item never writes tax_rate itself', function () {
     actingOrderEditor();
 
-    $order = Order::factory()->create(['tax_rate' => '0.100']);
+    $order = Order::factory()->create(['tax_rate' => '10.000']);
     $product = Product::factory()->create();
 
     app(AddOrderItem::class)($order, $product->id, null, 1);
 
-    expect((string) $order->fresh()->tax_rate)->toBe('0.100');
+    expect((string) $order->fresh()->tax_rate)->toBe('10.000');
 });
 
 // --- Phase 4 security audit fixes ---
