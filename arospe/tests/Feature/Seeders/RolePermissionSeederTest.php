@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\RoleName;
+use App\Enums\UserStatus;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -290,6 +291,18 @@ test('a provisioned Super Admin account is created already verified', function (
     $provisioned = User::where('email', 'ghost@example.test')->firstOrFail();
 
     expect($provisioned->email_verified_at)->not->toBeNull();
+});
+
+test('a provisioned Super Admin account is created Active so it can sign in after claiming its password', function () {
+    Notification::fake();
+    config(['auth.super_admin.email' => 'ghost@example.test']);
+
+    $this->seed(RolePermissionSeeder::class);
+
+    $provisioned = User::where('email', 'ghost@example.test')->firstOrFail();
+
+    expect($provisioned->status)->toBe(UserStatus::Active)
+        ->and($provisioned->isActive())->toBeTrue();
 });
 
 test('a provisioned Super Admin account is never given a guessable or disclosed password', function () {
