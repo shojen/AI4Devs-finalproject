@@ -99,6 +99,12 @@ app/
                        cancel a full refund causes: deliberately UNGATED (no Gate, no actor
                        read) and deliberately past both TransitionOrderStatus and CancelOrder,
                        see architecture/authorization.md
+                       ; ResolveOrderTaxRegion — story 0053, resolves a physical order's tax
+                       Sales Region from its OWN frozen shipping address, snapshots tax_rate and
+                       derives tax_amount/total in one write. Deliberately UNGATED (D-11, callable
+                       from a queued job) and deliberately NOT layered on Products\ResolveProductTaxRate
+                       (D-1): that resolver answers a per-product display question, this one an
+                       order's destination-based tax — two resolvers, neither calling the other
   Actions/ProductCategories/ Domain actions for the Product Categories area (CreateProductCategory,
                        RenameProductCategory, DeleteProductCategory) — one action per operation
                        (story 0023). Unlike every other area's actions, none of the three authorize
@@ -171,7 +177,7 @@ app/
                        `update` as its own first statement, corrected during this story's own
                        Phase 4 security audit after shipping ungated on a since-disproven premise
                        — see database/schema-other.md#payment_methods)
-  Concerns/            Shared traits (validation rule sets)
+  Concerns/            Shared traits (validation rule sets; ResolvesSalesRegionFromAddress — the country/Spain-postal-prefix → Sales Region mapping shared by the physical and virtual tax-region resolvers)
   Console/Commands/    Artisan commands
   Enums/               Backed enums for domain value sets (UserStatus, RoleName, SalesRegionKind,
                        ProductType, ProductStatus — exactly two persisted cases — and

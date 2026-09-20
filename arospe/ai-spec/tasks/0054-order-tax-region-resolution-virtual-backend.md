@@ -312,7 +312,7 @@ It performs, in this order:
 4. **Map the billing address to a Sales Region catalog row** through the shared
    `ResolvesSalesRegionFromAddress` trait (below) —
    `$this->resolveSalesRegionFromAddress($order->billing_country, $order->billing_postal_code)`, the
-   *same* call [0053](0053-order-tax-region-resolution-physical-backend.md) makes with its
+   *same* call [0053](done/0053-order-tax-region-resolution-physical-backend.md) makes with its
    **shipping** columns — then ask
    [0026](done/0026-product-sales-region-assignment-and-tax-resolution-backend.md)'s
    `ResolveProductTaxRate(Product, SalesRegion): ResolvedTaxRate` for the rate. That action already
@@ -356,7 +356,7 @@ row as a fallback case, this story hands the row to `ResolveProductTaxRate` and 
 0026 defines for an inactive entry.
 
 **The country→`slug` rule and the Spain postal-prefix map are
-[0053's **D-4** and **D-5**](0053-order-tax-region-resolution-physical-backend.md#documented-functional-decisions),
+[0053's **D-4** and **D-5**](done/0053-order-tax-region-resolution-physical-backend.md#documented-functional-decisions),
 which reasoned them out first and rejected the alternatives (a `sales_region_postal_prefixes` table, a
 `config/` file, `sales_regions.code`). This file references them and deliberately restates neither.**
 The map is `SPAIN_POSTAL_PREFIX_TERRITORIES`, a `public const` on the trait itself — on the trait
@@ -685,7 +685,7 @@ override is a decision rather than a rediscovery.
 | Depends on | State | Verified how |
 | --- | --- | --- |
 | **[0045](done/0045-orders-core-crud-backend.md) — Orders core CRUD** | **HARD dependency; `new` and ⛔ BLOCKED** | This story `ALTER`s `orders`, reads its `billing_*` snapshot and writes `sales_region_id` / `tax_rate` / `tax_amount` / `flagged_for_review`. **This story inherits 0045's blocked status in full** — including its five Epic 2 blockers (0024, 0029, 0035, 0036, 0038) |
-| **0053 — physical-product tax resolution** | **SIBLING, not a dependency** | Both depend only on 0045; **there is no dependency between 0053 and 0054 in either direction**, and either may be implemented first. They share exactly one artifact — the `App\Concerns\ResolvesSalesRegionFromAddress` trait, specified as create-if-absent (**D-7**), whose country→`slug` rule and Spain postal-prefix map are [0053's **D-4**/**D-5**](0053-order-tax-region-resolution-physical-backend.md#documented-functional-decisions) and are referenced here, never restated |
+| **0053 — physical-product tax resolution** | **SIBLING, not a dependency** | Both depend only on 0045; **there is no dependency between 0053 and 0054 in either direction**, and either may be implemented first. They share exactly one artifact — the `App\Concerns\ResolvesSalesRegionFromAddress` trait, specified as create-if-absent (**D-7**), whose country→`slug` rule and Spain postal-prefix map are [0053's **D-4**/**D-5**](done/0053-order-tax-region-resolution-physical-backend.md#documented-functional-decisions) and are referenced here, never restated |
 | [0026](done/0026-product-sales-region-assignment-and-tax-resolution-backend.md) — product↔region assignment + `ResolveProductTaxRate` | `new` | Provides the `ResolveProductTaxRate` / `ResolvedTaxRate` / `TaxRateResolutionTier` contract this story consumes verbatim; its scope fence explicitly hands address→region mapping to Epic 3 |
 | [0024](done/0024-products-core-crud-backend.md) — Products | `new` | Provides `App\Enums\ProductType` (`Physical` / `Virtual`), which is how "the order is virtual" is determined at all |
 | `sales_regions` catalog | **done** (task 0016) | [`schema.md`](../../docs/database/schema-products.md#sales_regions); the fiscal territories the postal mapping targets, and the `is_default` row the fallback tier needs |
@@ -771,7 +771,7 @@ so deferring to a human reviewer is the same conservative default this story alr
 not a new inconsistent rule. Option (b) (per-line-item resolution) remains rejected as materially
 larger than either story's scope; option (c) (refuse mixed baskets at creation) remains rejected as
 changing an already-reviewed sibling (0045) and forbidding a legitimate real-world order. Recorded
-identically in **[0053's D-2/D-3](0053-order-tax-region-resolution-physical-backend.md)** — the two
+identically in **[0053's D-2/D-3](done/0053-order-tax-region-resolution-physical-backend.md)** — the two
 files state one rule, not two half-implementations of it, per **D-7**'s own reasoning.
 
 **OQ-2 — When is resolution triggered? Non-blocking; story 0055's.** Automatically after `CreateOrder`
