@@ -12,11 +12,19 @@ class EnsureSitePasswordIsProvided
      * Gate the whole site behind a single shared HTTP Basic Auth credential,
      * read from config('app.site_password_protection'). A no-op unless
      * `enabled` is true, so it stays off unless SITE_PASSWORD_PROTECTED=true
-     * is set for the environment that needs it.
+     * is set for the environment that needs it. The landing page (`/`) is
+     * exempt and always public.
      */
     public function handle(Request $request, Closure $next): Response
     {
         if (! config('app.site_password_protection.enabled')) {
+            return $next($request);
+        }
+
+        // The public landing page is the only route left open. Matched by
+        // path, not routeIs(): this middleware is prepended, so no route has
+        // been resolved yet when it runs.
+        if ($request->is('/')) {
             return $next($request);
         }
 

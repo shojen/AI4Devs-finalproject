@@ -24,7 +24,7 @@ test('the site is reachable unauthenticated when the gate is disabled', function
 test('an unauthenticated request is refused with a 401 and a WWW-Authenticate header when the gate is enabled', function () {
     enableSitePasswordProtection('demo', 'secret');
 
-    $this->get('/')
+    $this->get('/login')
         ->assertUnauthorized()
         ->assertHeader('WWW-Authenticate');
 });
@@ -34,7 +34,7 @@ test('the wrong credentials are refused', function () {
 
     $this->withHeaders([
         'Authorization' => 'Basic '.base64_encode('demo:wrong-password'),
-    ])->get('/')->assertUnauthorized();
+    ])->get('/login')->assertUnauthorized();
 });
 
 test('the correct credentials are admitted', function () {
@@ -42,7 +42,7 @@ test('the correct credentials are admitted', function () {
 
     $this->withHeaders([
         'Authorization' => 'Basic '.base64_encode('demo:secret'),
-    ])->get('/')->assertOk();
+    ])->get('/login')->assertOk();
 });
 
 test('enabling the gate with no username or password configured fails closed rather than admitting blank credentials', function () {
@@ -56,5 +56,17 @@ test('enabling the gate with no username or password configured fails closed rat
 
     $this->withHeaders([
         'Authorization' => 'Basic '.base64_encode(':'),
-    ])->get('/')->assertUnauthorized();
+    ])->get('/login')->assertUnauthorized();
+});
+
+test('the landing page stays public when the gate is enabled', function () {
+    enableSitePasswordProtection('demo', 'secret');
+
+    $this->get('/')->assertOk();
+});
+
+test('only the exact root path is exempt from the gate', function () {
+    enableSitePasswordProtection('demo', 'secret');
+
+    $this->get('/dashboard')->assertUnauthorized();
 });
