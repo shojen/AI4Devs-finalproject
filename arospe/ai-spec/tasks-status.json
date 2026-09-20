@@ -45,22 +45,6 @@
       "conflict_risk_with": []
     },
     {
-      "id": "0057",
-      "slug": "0057-notification-bell-ui",
-      "title": "Notification bell UI — topbar dropdown, unread indicator, generic per-type rendering",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "app/Livewire/Notifications/Bell.php",
-        "resources/views/livewire/notifications/bell.blade.php",
-        "resources/views/components/desktop-user-menu.blade.php",
-        "resources/views/layouts/app/sidebar.blade.php"
-      ],
-      "conflict_risk_with": []
-    },
-    {
       "id": "0058",
       "slug": "0058-blog-categories-backend",
       "title": "Blog categories — backend (table, model, create/rename/delete, name validation)",
