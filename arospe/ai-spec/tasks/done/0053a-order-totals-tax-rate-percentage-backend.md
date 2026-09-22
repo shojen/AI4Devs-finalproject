@@ -26,7 +26,7 @@ correct if read as a fraction. They restate the code instead of pinning a number
 
 This story is a bug fix plus one extraction: `RecalculateOrderTotals` gets the `÷ 100`, and the
 formula lives in **one** collaborator both it and `ResolveOrderTaxRegion` compose — the extraction
-0053's **D-13** and [0054](../0054-order-tax-region-resolution-virtual-backend.md)'s step 5 named as
+0053's **D-13** and [0054](0054-order-tax-region-resolution-virtual-backend.md)'s step 5 named as
 backlog item 1 and risk **R-7** ("the three copies of the tax arithmetic drift"). Already visible drift:
 `ResolveOrderTaxRegion` rounds half-up, `RecalculateOrderTotals` truncates.
 
@@ -165,7 +165,7 @@ third copy.
 - [ ] `vendor/bin/pint --format agent` clean (unscoped) and Larastan level 7 passing.
 - [ ] Code reviewed (code-reviewer); appsec-auditor: no new write path, only the arithmetic changes.
 - [ ] Documentation updated (docs-keeper) per the list above, plus the grep for the wrong formula.
-- [ ] [0054](../0054-order-tax-region-resolution-virtual-backend.md)'s step 5 is amended to compose
+- [ ] [0054](0054-order-tax-region-resolution-virtual-backend.md)'s step 5 is amended to compose
       `CalculateTaxAmount`; [0055](../0055-orders-list-detail-editor-ui.md) lists this story as a hard
       dependency.
 

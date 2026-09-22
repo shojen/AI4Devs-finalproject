@@ -44,4 +44,12 @@ return [
         'already_cancelled' => 'Este pedido ya está cancelado.',
     ],
 
+    // Story 0054 -- tokens written to `orders.flag_reason` by
+    // App\Actions\Orders\ResolveVirtualOrderSalesRegion, keyed by its REASON_* constants.
+    'flag_reasons' => [
+        'billing_ip_country_mismatch' => 'El país de facturación no coincide con el país derivado de la dirección IP del comprador.',
+        'ip_country_missing' => 'No se capturó un país derivado de la IP para este pedido, por lo que no se pudo validar la dirección de facturación.',
+        'mixed_basket' => 'Este pedido mezcla productos físicos y virtuales, por lo que su región fiscal no se puede resolver automáticamente.',
+    ],
+
 ];

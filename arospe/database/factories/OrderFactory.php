@@ -69,6 +69,11 @@ class OrderFactory extends Factory
             'shipping_amount' => '0.00',
             'total' => '0.00',
             'flagged_for_review' => false,
+            // Story 0054: the virtual-product geo check requires an IP-derived country, and no
+            // storefront exists yet to capture one. A documentation-range (RFC 5737 TEST-NET-3)
+            // address stands in; states override it to exercise a mismatch or an absence.
+            'ip_address' => '203.0.113.10',
+            'ip_derived_country' => 'ES',
         ];
     }
 

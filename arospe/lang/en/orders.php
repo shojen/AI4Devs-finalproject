@@ -77,4 +77,12 @@ return [
         'already_cancelled' => 'This order is already cancelled.',
     ],
 
+    // Story 0054 -- tokens written to `orders.flag_reason` by
+    // App\Actions\Orders\ResolveVirtualOrderSalesRegion, keyed by its REASON_* constants.
+    'flag_reasons' => [
+        'billing_ip_country_mismatch' => 'The billing country does not match the country derived from the purchaser\'s IP address.',
+        'ip_country_missing' => 'No IP-derived country was captured for this order, so the billing address could not be validated.',
+        'mixed_basket' => 'This order mixes physical and virtual products, so its tax region cannot be resolved automatically.',
+    ],
+
 ];
