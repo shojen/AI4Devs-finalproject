@@ -374,6 +374,8 @@ independently and both recommend the same answer.
 
 ## Documented functional decisions
 
+> **Superseded by [0057a](0057a-notification-bell-topbar.md)** (2026-09-21): the project owner rejected this placement; the bell now mounts once, in a persistent topbar at the top right. The text below is kept as the decision record.
+
 **D-1 — The bell mounts in the two places chrome already exists: the mobile `flux:header` and the
 desktop sidebar. No topbar is built.** *`frontend-expert`'s recommendation, confirmed and adopted as
 the shipped decision.*

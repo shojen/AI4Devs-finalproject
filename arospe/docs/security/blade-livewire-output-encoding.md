@@ -12,6 +12,7 @@ the inside of a `wire:*` / `x-on:*` directive value, which is JavaScript.**
 
 - [`{{ }}` inside a `wire:` directive is not escaping — it is an injection sink](#--inside-a-wire-directive-is-not-escaping--it-is-an-injection-sink)
 - [The client can rewrite any public property that is not `#[Locked]`, including the one feeding the loop](#the-client-can-rewrite-any-public-property-that-is-not-locked-including-the-one-feeding-the-loop)
+- [A layout slot is echoed unescaped](#a-layout-slot-is-echoed-unescaped--its-body-must-be-encoded-where-it-is-written)
 - [What is already safe and needs no change](#what-is-already-safe-and-needs-no-change)
 
 ## `{{ }}` inside a `wire:` directive is not escaping — it is an injection sink
@@ -154,6 +155,12 @@ Two consequences to carry forward:
   everywhere its siblings are — here both `openCreateModal()` and `closeModal()` — or the previous
   target's address leaks into the next modal opening.
 
+## A layout slot is echoed unescaped — its body must be encoded where it is written
+
+Story 0057a's topbar renders each screen's title and subtitle from Livewire named slots (`<x-slot:heading>` / `<x-slot:subheading>`), which `layouts/app/sidebar.blade.php` echoes with `{{ $heading }}`. A slot is a `ComponentSlot`, which implements `Htmlable`, so that echo does **not** escape it again: the slot body is a captured Blade fragment, and the encoding happens once, **inside the fragment, where the value is written**. That is safe today because every slot body uses `{{ }}` — including the one user-controlled value, the customer detail screen's `{{ $this->customer->name }}`, pinned by a Feature test with a `<b>` in the name.
+
+**Rule: a slot body must contain only `{{ }}` (or `__()` output through it) — never `{!! !!}` and never a value built from user input outside `{{ }}`.** The layout's echo is not a second line of defence, so a `{!! !!}` slot body would be a direct stored-XSS sink.
+
 ## What is already safe and needs no change
 
 Recorded so a future audit does not re-litigate them:
@@ -185,7 +192,9 @@ Recorded so a future audit does not re-litigate them:
   Alpine auto-invokes the returned function. This is the same pattern already in
   `resources/views/livewire/settings/security.blade.php`; it is not a silently-dead handler.
 
-_Last updated: 2026-08-24 — Task 0015 (Users CRUD security hardening), found by grepping this tree rather than by the story's Definition of Done, which does not name this file. The `#[Locked]` bullet described `$users` as **deliberately left unlocked**, an accepted residual with the cost of locking it spelled out; finding F4 locked it and rewrote the two tests that cost referred to, so the paragraph now records the residual as **closed** while keeping the reasoning that made it acceptable for two stories. Added a note that the same bullet's "every mutating **and disclosing** method re-authorizes" clause was **aspirational** when written — the three modal openers carried no authorization until this story's finding F7 — since a reader would otherwise take it as a verified fact about the code at the time. Nothing else on this page changed: the `@js()` rule, the removed `$users`-derived pending-address anti-pattern and the `openEditModal()` quote were re-verified against the real files and are unaffected._
+_Last updated: 2026-09-21 — Story 0057a (topbar). Added the rule that a layout slot body is echoed unescaped, so it must be encoded with `{{ }}` where it is written; from that story's Phase 4 audit (Low hardening, no finding against shipped code)._
+
+_Previously: 2026-08-24 — Task 0015 (Users CRUD security hardening), found by grepping this tree rather than by the story's Definition of Done, which does not name this file. The `#[Locked]` bullet described `$users` as **deliberately left unlocked**, an accepted residual with the cost of locking it spelled out; finding F4 locked it and rewrote the two tests that cost referred to, so the paragraph now records the residual as **closed** while keeping the reasoning that made it acceptable for two stories. Added a note that the same bullet's "every mutating **and disclosing** method re-authorizes" clause was **aspirational** when written — the three modal openers carried no authorization until this story's finding F7 — since a reader would otherwise take it as a verified fact about the code at the time. Nothing else on this page changed: the `@js()` rule, the removed `$users`-derived pending-address anti-pattern and the `openEditModal()` quote were re-verified against the real files and are unaffected._
 
 _Previously: 2026-08-22 — Task 0013, Phase 6 docs sync: **corrected** the "Translation calls never take user data as the key" claim, which asserted that "every `__()` in this repo passes a **literal** first argument". That was already imprecise before this story (`App\Enums\UserStatus::label()` concatenates, and task 0011's composed `roles.modules.*` labels do too) and this story adds the first **fully variable** key — `__($item['label'])` in `resources/views/components/sidebar-nav.blade.php`, read from `config/modules.php`. The rule is restated by **provenance** rather than by syntax: a key may be computed, but every term must come from code, config or a seeded catalog. The rest of this page was re-verified against the real files in the same pass and needed no change — the layout this story rewrote still contains no `{!! !!}`, and the new component interpolates nothing into a `wire:*` directive (`wire:navigate` takes no argument), so the `@js()` rule is not engaged by it._
 
