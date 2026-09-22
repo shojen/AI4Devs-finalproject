@@ -1,6 +1,7 @@
 <div class="w-full">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <flux:heading size="xl">{{ __('shipping.zones.index.heading') }}</flux:heading>
+    <x-slot:heading>{{ __('shipping.zones.index.heading') }}</x-slot:heading>
+    <x-slot:subheading>{{ __('topbar.shipping_zones.subtitle') }}</x-slot:subheading>
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
 
         @if ($this->canCreate)
             <flux:button variant="primary" icon="plus" wire:click="openCreateModal" data-test="new-zone-button">

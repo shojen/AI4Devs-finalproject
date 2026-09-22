@@ -10,10 +10,8 @@
     PaymentMethodPolicy::create()/delete() both return false unconditionally.
 --}}
 <div>
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <flux:heading size="xl">{{ __('payment-methods.index.heading') }}</flux:heading>
-    </div>
-
+    <x-slot:heading>{{ __('payment-methods.index.heading') }}</x-slot:heading>
+    <x-slot:subheading>{{ __('topbar.payment_methods.subtitle') }}</x-slot:subheading>
     <div class="grid grid-cols-1 gap-4 mt-6 sm:grid-cols-2">
         @foreach ($paymentMethods as $method)
             @php

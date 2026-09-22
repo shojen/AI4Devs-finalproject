@@ -32,9 +32,10 @@
  */
 ?>
 <div class="w-full">
+    <x-slot:heading>{{ __('topbar.customers.title') }}</x-slot:heading>
+    <x-slot:subheading>{{ __('topbar.customers.subtitle') }}</x-slot:subheading>
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <flux:heading size="xl">{{ __('Customers') }}</flux:heading>
             <flux:subheading>
                 {{ $this->customersSummary }}
             </flux:subheading>
