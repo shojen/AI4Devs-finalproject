@@ -23,7 +23,9 @@ use Illuminate\Support\Carbon;
  * App\Actions\Orders\CreateOrder alone: `order_number` (derived, D-1),
  * `status`, `payment_status`, `subtotal`, `tax_amount`, `shipping_amount`,
  * `total`, `tax_rate`, `flagged_for_review`, `sales_region_id`,
- * `shipping_rate_id`. Every one of these is either derived arithmetic, a
+ * `shipping_rate_id`, and (story 0054) `ip_address`, `ip_derived_country`,
+ * `flag_reason` -- a caller able to set its own `ip_derived_country` could
+ * mirror its billing country and disable the geo check from outside. Every one of these is either derived arithmetic, a
  * status a later story owns, or a tax input -- none may ever arrive from a
  * form. `customer_id` and `payment_method_id` are the operator-supplied
  * inputs a new order genuinely needs; the twelve address columns are
@@ -57,6 +59,9 @@ use Illuminate\Support\Carbon;
  * @property string $total 'decimal:2' casts to a STRING, not a float
  * @property string $refunded_amount 'decimal:2' casts to a STRING, not a float
  * @property bool $flagged_for_review
+ * @property string|null $ip_address
+ * @property string|null $ip_derived_country
+ * @property string|null $flag_reason
  * @property string|null $shipping_address_line1
  * @property string|null $shipping_address_line2
  * @property string|null $shipping_city
