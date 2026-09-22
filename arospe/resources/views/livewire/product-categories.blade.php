@@ -1,9 +1,7 @@
 <div class="w-full">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-            <flux:heading size="xl">{{ __('Product categories') }}</flux:heading>
-        </div>
-
+    <x-slot:heading>{{ __('topbar.product_categories.title') }}</x-slot:heading>
+    <x-slot:subheading>{{ __('topbar.product_categories.subtitle') }}</x-slot:subheading>
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
         <flux:button variant="primary" icon="plus" wire:click="openCreateModal">
             {{ __('New category') }}
         </flux:button>

@@ -15,6 +15,7 @@
  */
 ?>
 <div class="w-full">
+    <x-slot:heading>{{ $this->customer->name }}</x-slot:heading>
     <div>
         <flux:button variant="ghost" size="sm" icon="arrow-left" :href="route('customers.index')" wire:navigate>
             {{ __('customers.detail.back_to_list') }}
@@ -22,8 +23,6 @@
     </div>
 
     <div class="mt-4" data-test="customer-detail-header">
-        <flux:heading size="xl">{{ $this->customer->name }}</flux:heading>
-
         <div class="mt-2 space-y-1">
             <flux:text>
                 <span class="font-medium">{{ __('Email') }}:</span> {{ $this->customer->email }}

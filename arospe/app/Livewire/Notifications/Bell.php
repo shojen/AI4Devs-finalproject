@@ -12,8 +12,8 @@ use Livewire\Component;
 
 /**
  * Story 0057 -- the notification bell mounted from the shared layout
- * (resources/views/layouts/app/sidebar.blade.php, twice: desktop sidebar and
- * the mobile header). Not a page: no route, no `can:` gate, no
+ * (resources/views/layouts/app/sidebar.blade.php, once, in the topbar.
+ * Not a page: no route, no `can:` gate, no
  * config/modules.php entry (D-4) -- `auth`, already satisfied by the layout,
  * is the whole boundary, and every query below is scoped to Auth::user()'s
  * own morph key, so no id from the client ever reaches a query.

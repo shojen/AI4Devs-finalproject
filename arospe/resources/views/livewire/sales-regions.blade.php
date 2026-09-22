@@ -86,9 +86,10 @@
 @endphp
 
 <div class="w-full">
+    <x-slot:heading>{{ __('sales-regions.index.title') }}</x-slot:heading>
+    <x-slot:subheading>{{ __('topbar.sales_regions.subtitle') }}</x-slot:subheading>
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <flux:heading size="xl">{{ __('sales-regions.index.title') }}</flux:heading>
             <flux:subheading>
                 {{-- F-2: counted from real isActive state across every row, never from which
                 table a row happens to render in -- $activeTopLevelRegions now deliberately

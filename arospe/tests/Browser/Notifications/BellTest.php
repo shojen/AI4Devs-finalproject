@@ -13,15 +13,14 @@ use Illuminate\Support\Str;
 use Spatie\Permission\PermissionRegistrar;
 
 /*
- * Story 0057 -- the notification bell, at browser level. Every case is one
- * named administrator performing one action, and every case ends with
+ * Story 0057 (+ 0057a) -- the notification bell, at browser level. Every case is
+ * one named administrator performing one action, and every case ends with
  * assertNoJavaScriptErrors().
  *
- * The bell is mounted TWICE in the layout (desktop sidebar + mobile header),
- * so every data-test hook exists twice in the document at every viewport,
- * one instance hidden by Tailwind. Every assertion below is therefore scoped
- * to the VISIBLE instance through visible*() -- never a document-wide count
- * (story 0057 R-2). Selection is always by hook, never by translated copy.
+ * Since 0057a the bell is mounted ONCE, in the topbar, so every data-test hook
+ * is unique per document and plain counts are exact (0057's visible-instance
+ * workarounds are gone; placement is covered by Layout/TopbarTest.php). Selection
+ * is always by hook, never by translated copy.
  */
 
 beforeEach(function () {
@@ -29,22 +28,22 @@ beforeEach(function () {
     $this->seed(RolePermissionSeeder::class);
 });
 
-/** JS expression: how many elements with this data-test hook are actually visible. */
-function visibleCountJs(string $hook): string
+/** JS expression: how many elements carry this data-test hook. */
+function hookCountJs(string $hook): string
 {
-    return "Array.from(document.querySelectorAll('[data-test=\"{$hook}\"]')).filter(e => e.getClientRects().length > 0).length";
+    return "document.querySelectorAll('[data-test=\"{$hook}\"]').length";
 }
 
-/** JS expression: the data-test hooks of every visible notification row, in DOM order. */
-function visibleRowHooksJs(): string
+/** JS expression: the data-test hooks of every notification row, in DOM order. */
+function rowHooksJs(): string
 {
-    return "Array.from(document.querySelectorAll('[data-test^=\"notification-item-\"]')).filter(e => e.getClientRects().length > 0).map(e => e.dataset.test).join(',')";
+    return "Array.from(document.querySelectorAll('[data-test^=\"notification-item-\"]')).map(e => e.dataset.test).join(',')";
 }
 
-/** Clicks the visible bell toggle -- the hidden twin would time out a plain click(). */
-function openVisibleBell($page)
+/** Clicks the bell toggle and gives Livewire a moment to answer. */
+function openBell($page)
 {
-    $page->script("Array.from(document.querySelectorAll('[data-test=\"notification-bell\"]')).find(e => e.getClientRects().length > 0).click()");
+    $page->script("document.querySelector('[data-test=\"notification-bell\"]').click()");
 
     return $page->wait(1);
 }
@@ -89,7 +88,7 @@ test('an administrator holding an unread notification sees the unread indicator'
     $this->actingAs($administrator);
 
     visit('/dashboard')
-        ->assertScript(visibleCountJs('notification-bell-unread-indicator'), 1)
+        ->assertScript(hookCountJs('notification-bell-unread-indicator'), 1)
         ->assertNoJavaScriptErrors();
 });
 
@@ -98,7 +97,7 @@ test('an administrator with no notification rows at all sees no indicator', func
     $this->actingAs(bellAdministrator());
 
     visit('/dashboard')
-        ->assertScript(visibleCountJs('notification-bell'), 1)
+        ->assertScript(hookCountJs('notification-bell'), 1)
         ->assertNotPresent('@notification-bell-unread-indicator')
         ->assertNoJavaScriptErrors();
 });
@@ -110,7 +109,7 @@ test('an administrator whose notifications are all read sees no indicator', func
     $this->actingAs($administrator);
 
     visit('/dashboard')
-        ->assertScript(visibleCountJs('notification-bell'), 1)
+        ->assertScript(hookCountJs('notification-bell'), 1)
         ->assertNotPresent('@notification-bell-unread-indicator')
         ->assertNoJavaScriptErrors();
 });
@@ -121,10 +120,9 @@ test('opening the bell clears the unread indicator and it stays cleared after a 
     $administrator->notify(new CustomerCreated(Customer::factory()->create()));
     $this->actingAs($administrator);
 
-    $page = visit('/dashboard')->assertScript(visibleCountJs('notification-bell-unread-indicator'), 1);
-    openVisibleBell($page)
-        // Visible instance only: the hidden twin is a separate component and catches up on its next poll.
-        ->assertScript(visibleCountJs('notification-bell-unread-indicator'), 0)
+    $page = visit('/dashboard')->assertScript(hookCountJs('notification-bell-unread-indicator'), 1);
+    openBell($page)
+        ->assertScript(hookCountJs('notification-bell-unread-indicator'), 0)
         // The reload is the point: it proves read_at was written, not a client flag flipped.
         ->refresh()
         ->assertNotPresent('@notification-bell-unread-indicator')
@@ -141,12 +139,12 @@ test('a new-customer and a new-order notification are both listed with their sum
     $administrator->notify(new OrderCreated(Order::factory()->create()));
     $this->actingAs($administrator);
 
-    $page = openVisibleBell(visit('/dashboard'));
+    $page = openBell(visit('/dashboard'));
 
-    $page->assertScript("Array.from(document.querySelectorAll('[data-test^=\"notification-item-\"] a')).filter(e => e.getClientRects().length > 0).some(e => e.href.endsWith('".route('customers.show', $customer, false)."'))", true)
+    $page->assertScript("Array.from(document.querySelectorAll('[data-test^=\"notification-item-\"] a')).some(e => e.href.endsWith('".route('customers.show', $customer, false)."'))", true)
         // The order screen (story 0055) does not exist yet, so its row links only once the route does.
-        ->assertScript("Array.from(document.querySelectorAll('[data-test^=\"notification-item-\"] a')).filter(e => e.getClientRects().length > 0).length", Route::has('orders.show') ? 2 : 1)
-        ->assertScript(visibleRowHooksJs().".split(',').length", 2)
+        ->assertScript("Array.from(document.querySelectorAll('[data-test^=\"notification-item-\"] a')).length", Route::has('orders.show') ? 2 : 1)
+        ->assertScript(rowHooksJs().".split(',').length", 2)
         ->assertNoJavaScriptErrors();
 });
 
@@ -157,11 +155,11 @@ test('a notification of a type the bell has never seen renders a generic row wit
     $id = bellRow($administrator, 'App\\Notifications\\SomeFutureEvent', ['whatever' => 'shape']);
     $this->actingAs($administrator);
 
-    $page = openVisibleBell(visit('/dashboard'));
+    $page = openBell(visit('/dashboard'));
     $page->assertScript("document.querySelectorAll('[data-test=\"notification-item-{$id}\"]').length > 0", true)
-        ->assertScript("Array.from(document.querySelectorAll('[data-test=\"notification-item-{$id}\"]')).filter(e => e.getClientRects().length > 0).length", 1)
+        ->assertScript("Array.from(document.querySelectorAll('[data-test=\"notification-item-{$id}\"]')).length", 1)
         ->assertScript("document.querySelectorAll('[data-test=\"notification-item-{$id}\"] a').length", 0)
-        ->assertScript("Array.from(document.querySelectorAll('[data-test=\"notification-item-{$id}\"]')).find(e => e.getClientRects().length > 0).textContent.trim().length > 0", true)
+        ->assertScript("Array.from(document.querySelectorAll('[data-test=\"notification-item-{$id}\"]'))[0].textContent.trim().length > 0", true)
         ->assertNoJavaScriptErrors();
 });
 
@@ -170,15 +168,15 @@ test('a notification of a type the bell has never seen renders a generic row wit
 test('the empty state shows only when there are no notifications, not when all are read', function () {
     $empty = bellAdministrator();
     $this->actingAs($empty);
-    $page = openVisibleBell(visit('/dashboard'));
-    $page->assertScript(visibleCountJs('notification-empty-state'), 1)->assertNoJavaScriptErrors();
+    $page = openBell(visit('/dashboard'));
+    $page->assertScript(hookCountJs('notification-empty-state'), 1)->assertNoJavaScriptErrors();
 
     $populated = bellAdministrator();
     $id = bellRow($populated, CustomerCreated::class, ['customer_id' => 'x', 'customer_name' => 'Ana'], read: true);
     $this->actingAs($populated);
-    $page = openVisibleBell(visit('/dashboard'));
-    $page->assertScript(visibleCountJs('notification-empty-state'), 0)
-        ->assertScript(visibleCountJs("notification-item-{$id}"), 1)
+    $page = openBell(visit('/dashboard'));
+    $page->assertScript(hookCountJs('notification-empty-state'), 0)
+        ->assertScript(hookCountJs("notification-item-{$id}"), 1)
         ->assertNoJavaScriptErrors();
 });
 
@@ -191,10 +189,10 @@ test('with seventeen notifications the bell lists exactly fifteen, newest first'
     }
     $this->actingAs($administrator);
 
-    $page = openVisibleBell(visit('/dashboard'));
-    $page->assertScript(visibleRowHooksJs().".split(',').length", 15)
-        ->assertScript(visibleRowHooksJs().".startsWith('notification-item-{$ids[1]},')", true)
-        ->assertScript(visibleRowHooksJs().".includes('{$ids[16]}')", false)
+    $page = openBell(visit('/dashboard'));
+    $page->assertScript(rowHooksJs().".split(',').length", 15)
+        ->assertScript(rowHooksJs().".startsWith('notification-item-{$ids[1]},')", true)
+        ->assertScript(rowHooksJs().".includes('{$ids[16]}')", false)
         ->assertNoJavaScriptErrors();
 });
 
@@ -212,8 +210,8 @@ test('one fan-out dispatch gives each administrator only their own row, and read
     expect($firstRow->id)->not->toBe($secondRow->id);
 
     $this->actingAs($first);
-    $page = openVisibleBell(visit('/dashboard'));
-    $page->assertScript(visibleCountJs("notification-item-{$firstRow->id}"), 1)
+    $page = openBell(visit('/dashboard'));
+    $page->assertScript(hookCountJs("notification-item-{$firstRow->id}"), 1)
         ->assertScript("document.querySelectorAll('[data-test=\"notification-item-{$secondRow->id}\"]').length", 0)
         ->assertNoJavaScriptErrors();
 
@@ -221,24 +219,7 @@ test('one fan-out dispatch gives each administrator only their own row, and read
 
     $this->actingAs($second);
     visit('/dashboard')
-        ->assertScript(visibleCountJs('notification-bell-unread-indicator'), 1)
-        ->assertNoJavaScriptErrors();
-});
-
-// The PRD's "every screen": two routes is the minimum that distinguishes "in the layout" from "on one page".
-test('the bell renders on the dashboard and on the users screen', function () {
-    $this->actingAs(bellAdministrator());
-
-    visit('/dashboard')->assertScript(visibleCountJs('notification-bell'), 1)->assertNoJavaScriptErrors();
-    visit('/users')->assertScript(visibleCountJs('notification-bell'), 1)->assertNoJavaScriptErrors();
-});
-
-test('the bell is also visible at mobile width', function () {
-    $this->actingAs(bellAdministrator());
-
-    visit('/dashboard')
-        ->resize(390, 800)
-        ->assertScript(visibleCountJs('notification-bell'), 1)
+        ->assertScript(hookCountJs('notification-bell-unread-indicator'), 1)
         ->assertNoJavaScriptErrors();
 });
 
@@ -252,6 +233,6 @@ test('a new-customer notification stays listed after its customers.view permissi
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->actingAs($administrator);
 
-    $page = openVisibleBell(visit('/dashboard'));
-    $page->assertScript(visibleCountJs("notification-item-{$notificationId}"), 1)->assertNoJavaScriptErrors();
+    $page = openBell(visit('/dashboard'));
+    $page->assertScript(hookCountJs("notification-item-{$notificationId}"), 1)->assertNoJavaScriptErrors();
 });

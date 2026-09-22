@@ -20,9 +20,10 @@
  */
 ?>
 <div class="w-full">
+    <x-slot:heading>{{ __('topbar.roles.title') }}</x-slot:heading>
+    <x-slot:subheading>{{ __('topbar.roles.subtitle') }}</x-slot:subheading>
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <flux:heading size="xl">{{ __('Roles & permissions') }}</flux:heading>
             <flux:subheading>
                 {{ trans_choice('roles.index.summary', $this->roles->count(), ['count' => $this->roles->count()]) }}
             </flux:subheading>

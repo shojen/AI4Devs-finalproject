@@ -11,9 +11,10 @@
     resources/views/livewire/products/attribute-types/index.blade.php.
 --}}
 <div class="w-full">
+    <x-slot:heading>{{ __('topbar.attribute_types.title') }}</x-slot:heading>
+    <x-slot:subheading>{{ __('topbar.attribute_types.subtitle') }}</x-slot:subheading>
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <flux:heading size="xl">{{ __('Attribute types') }}</flux:heading>
             <flux:subheading>
                 {{ __('products.attribute_types.summary', ['total' => $this->typesSummary['total'], 'values' => $this->typesSummary['values']]) }}
             </flux:subheading>

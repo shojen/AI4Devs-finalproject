@@ -1,9 +1,7 @@
 <div class="w-full max-w-5xl">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <flux:heading size="xl">
-            {{ $productId === null ? __('products.editor.title_create') : __('products.editor.title_edit') }}
-        </flux:heading>
-
+    <x-slot:heading>{{ $productId === null ? __('products.editor.title_create') : __('products.editor.title_edit') }}</x-slot:heading>
+    <x-slot:subheading>{{ __('topbar.product_editor.subtitle') }}</x-slot:subheading>
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
         <flux:button variant="outline" :href="route('products.index')" wire:navigate>
             {{ __('products.editor.cancel') }}
         </flux:button>

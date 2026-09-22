@@ -1,5 +1,5 @@
 <div>
-    <flux:dropdown position="top" align="end">
+    <flux:dropdown position="bottom" align="end">
         <flux:button
             variant="ghost"
             icon="bell"

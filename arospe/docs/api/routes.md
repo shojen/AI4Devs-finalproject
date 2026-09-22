@@ -136,15 +136,19 @@ Not a route, so it has no row in the table above — recorded here because a rou
 
 | Component | Mounted from | Route | Gate |
 | --- | --- | --- | --- |
-| `App\Livewire\Notifications\Bell` (story 0057) | `resources/views/layouts/app/sidebar.blade.php`, **twice** by name (`<livewire:notifications.bell />`): the desktop sidebar (wrapped in `hidden lg:block`) and the mobile `flux:header` | none | `auth` only, inherited from the layout. No `can:` middleware, no `config/modules.php` entry, no policy — every query is scoped to `Auth::user()`, and no id from the client reaches a query |
+| `App\Livewire\Notifications\Bell` (story 0057, relocated by 0057a) | `resources/views/layouts/app/sidebar.blade.php`, **once**, by name (`<livewire:notifications.bell />`), inside the persistent topbar (`data-test="topbar"`), at its right-hand end | none | `auth` only, inherited from the layout. No `can:` middleware, no `config/modules.php` entry, no policy — every query is scoped to `Auth::user()`, and no id from the client reaches a query |
 
-Both mounts are in the DOM at every viewport with one hidden by Tailwind, so its `data-test` hooks appear twice per document. The view branches on `notifications.type` for presentation only, with a permanent generic fallback for any unrecognized type.
+Story 0057 first mounted it twice (desktop sidebar + mobile header) because no desktop topbar existed; story 0057a replaced that with one sticky topbar at every breakpoint, so its `data-test` hooks are unique per document again. The view branches on `notifications.type` for presentation only, with a permanent generic fallback for any unrecognized type.
+
+**The topbar's title and subtitle** are declared per screen as Livewire named slots (`<x-slot:heading>` / `<x-slot:subheading>`, forwarded by `layouts/app.blade.php` to `layouts/app/sidebar.blade.php`); `#[Title]` still feeds `<title>` only. The topbar title is the page's only `<h1>`; a screen without a `subheading` renders no `topbar-subtitle` element at all (the customer detail screen, whose title is the customer's name). Copy lives in `lang/{en,es}/topbar.php` unless a screen already owned a title key. `resources/views/layouts/app/header.blade.php` (a horizontal-nav layout) is referenced by nothing and was left untouched.
 
 ## Adding a real API
 
 When `routes/api.php` and API resource controllers appear, replace this file's structure with one `api/<resource>.md` per resource, each documenting real request/response JSON pulled from the controller/resource classes — do not add one preemptively.
 
-_Last updated: 2026-09-20 — Story 0057 (notification bell UI). Added the "Layout-mounted Livewire components" section: the app's first non-page Livewire component, mounted from the layout. No route, schema or permission change._
+_Last updated: 2026-09-21 — Story 0057a (topbar). Rewrote the "Layout-mounted Livewire components" section: the bell now mounts once, in a persistent topbar that also carries each screen's title and subtitle. No route, schema or permission change._
+
+_Previously: 2026-09-20 — Story 0057 (notification bell UI). Added the "Layout-mounted Livewire components" section: the app's first non-page Livewire component, mounted from the layout. No route, schema or permission change._
 
 _Previously: 2026-09-15 — Story 0047 (Customer detail — order history view UI). Added `customers.show` — the tenth permission-gated route — to the app-owned route table and the [Customers routes](customers.md) list entry.
 
