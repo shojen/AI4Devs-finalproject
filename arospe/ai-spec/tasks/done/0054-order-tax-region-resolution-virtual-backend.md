@@ -3,21 +3,21 @@
 ## Description
 Resolve an order's tax **Sales Region** from its own frozen **billing** address snapshot when the
 order is for a **virtual** (digital) product, write the resolved region, rate and tax amount onto the
-order, and ship the **geo/fraud-check mechanism** PRD [§3.2](../../docs/PRD/PRD.md#32-orders)
+order, and ship the **geo/fraud-check mechanism** PRD [§3.2](../../../docs/PRD/PRD.md#32-orders)
 describes — three new `orders` columns plus the billing-country-vs-IP-country comparison that sets
 `flagged_for_review`. This story is the virtual-product sibling of story 0053 (physical products,
 shipping address); the two are independent of each other and both depend only on
-[0045](done/0045-orders-core-crud-backend.md).
+[0045](0045-orders-core-crud-backend.md).
 
 > ## ⛔ BLOCKED — inherited cross-epic dependency (read this before Phase 3)
 >
 > **This story is fully specified now, but its Phase 3 implementation cannot start until
-> [0045](done/0045-orders-core-crud-backend.md) is `done` — and 0045 is itself blocked on PRD Epic 2
+> [0045](0045-orders-core-crud-backend.md) is `done` — and 0045 is itself blocked on PRD Epic 2
 > stories 0024, 0029, 0035, 0036 and 0038.** There is no `orders` table, no `Order` model and no
 > `billing_*` snapshot to read until 0045 ships. This story adds columns to a table that does not
 > exist yet.
 >
-> It additionally consumes [0026](done/0026-product-sales-region-assignment-and-tax-resolution-backend.md)'s
+> It additionally consumes [0026](0026-product-sales-region-assignment-and-tax-resolution-backend.md)'s
 > `ResolveProductTaxRate` / `ResolvedTaxRate` contract and 0024's `ProductType` enum. See
 > [Dependencies](#dependencies).
 >
@@ -43,7 +43,7 @@ backend | includes database-expert: **yes**
 
 **All three contributors independently flagged this as the single most important open question and
 each refused to guess at a default. It is resolved here, as facilitator, under
-[contracts.md](../../docs/contracts.md)'s Uncertainty Handling Rule — with both the interim default
+[contracts.md](../../../docs/contracts.md)'s Uncertainty Handling Rule — with both the interim default
 *and* an explicit escalation, so the human can overturn it as a decision rather than rediscover it as
 a surprise.**
 
@@ -105,7 +105,7 @@ Two consequences worth stating plainly:
 - **No IP-geolocation dependency is added by this story.** `backend-expert` correctly flagged that
   adding one needs human approval per project `CLAUDE.md` ("do not change the application's
   dependencies without approval"), and recommended a bundled GeoLite2-style database file mirroring
-  this repo's [`database/data/`](../../docs/conventions/directory-structure.md#directory-structure)
+  this repo's [`database/data/`](../../../docs/conventions/directory-structure.md#directory-structure)
   fixture precedent over a third-party API call. **Under this resolution that question does not need
   answering yet**: this story stores an *already-derived* country code and compares it. Deriving a
   country **from** an IP address is explicitly out of scope and is
@@ -226,7 +226,7 @@ Feature: Sales Region tax resolution for virtual-product orders (backend)
 shipped `flagged_for_review` anticipating this story (its **D-10**) but **not** the three columns the
 check itself needs, because nothing then knew what they should hold. This story is what needs them, so
 this story adds them — an `ALTER` against a table 0045 already created, per
-[migrations.md](../../docs/database/migrations.md#adding-a-column-to-an-existing-table).
+[migrations.md](../../../docs/database/migrations.md#adding-a-column-to-an-existing-table).
 
 ```php
 public function up(): void
@@ -259,7 +259,7 @@ a backoffice-sized table, and `flag_reason` is `NULL` on effectively every row. 
 "flagged orders" list filter appears, its index belongs to that story with a measurement behind it —
 [backlog item 2](#technical-tasks-for-the-backlog). Verify with `php artisan db:table orders` after
 migrating, never by reading the migration
-([migrations.md](../../docs/database/migrations.md#an-fk-column-does-not-also-get-an-explicit-index-here)).
+([migrations.md](../../../docs/database/migrations.md#an-fk-column-does-not-also-get-an-explicit-index-here)).
 
 ### Model — `app/Models/Order.php` (modify)
 
@@ -267,7 +267,7 @@ migrating, never by reading the migration
 - **All three are deliberately omitted from `#[Fillable]`**, joining `flagged_for_review`,
   `sales_region_id`, `tax_rate`, `tax_amount` and `total` in 0045's omission list. Omission **is**
   this codebase's mass-assignment guard
-  ([base-standards.md](../../docs/conventions/base-standards.md#model-conventions)): a caller that
+  ([base-standards.md](../../../docs/conventions/base-standards.md#model-conventions)): a caller that
   could set its own `ip_derived_country` could set it equal to whatever billing country it submitted
   and disable the check from the outside, which is the single sharpest write this story adds.
 - **No cast** on any of the three: two are plain strings and `flag_reason` is a token compared as a
@@ -278,7 +278,7 @@ migrating, never by reading the migration
 
 Invokable, imperative-verb-phrase class with no `Action`/`Service` suffix, resolved from the container
 and never `new`-ed
-([code-style.md](../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)).
+([code-style.md](../../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)).
 
 ```php
 public function __invoke(Order $order): void
@@ -312,25 +312,25 @@ It performs, in this order:
 4. **Map the billing address to a Sales Region catalog row** through the shared
    `ResolvesSalesRegionFromAddress` trait (below) —
    `$this->resolveSalesRegionFromAddress($order->billing_country, $order->billing_postal_code)`, the
-   *same* call [0053](done/0053-order-tax-region-resolution-physical-backend.md) makes with its
+   *same* call [0053](0053-order-tax-region-resolution-physical-backend.md) makes with its
    **shipping** columns — then ask
-   [0026](done/0026-product-sales-region-assignment-and-tax-resolution-backend.md)'s
+   [0026](0026-product-sales-region-assignment-and-tax-resolution-backend.md)'s
    `ResolveProductTaxRate(Product, SalesRegion): ResolvedTaxRate` for the rate. That action already
    owns the two-tier assigned-entry/catalog-default fallback and honours `null` and `'0.000'` as
    distinct answers — **this story re-implements none of it**.
 5. **Write the outcome inside a `DB::transaction()`**: `sales_region_id`, `tax_rate`, the derived
    `tax_amount` (computed by the shared `App\Actions\Orders\CalculateTaxAmount`, story
-   [0053a](done/0053a-order-totals-tax-rate-percentage-backend.md) — never a re-implementation), and the recomputed `total` — via `forceFill()`, since every one of those columns is
+   [0053a](0053a-order-totals-tax-rate-percentage-backend.md) — never a re-implementation), and the recomputed `total` — via `forceFill()`, since every one of those columns is
    deliberately non-fillable.
 
 > **Phase 3 must re-read the transaction-side-effect rule before writing step 5**, per
-> [errors-log.md](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
+> [errors-log.md](../../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
 > The forward-looking constraint here is specific: **if a later story notifies on a flag, that
 > dispatch must happen after the commit**, or a rolled-back resolution mails somebody about a flag
 > that does not exist — the same rule 0045 states for its own "new order received" notification.
 
 **This action self-authorizes nothing** (**D-6**), following
-[0026](done/0026-product-sales-region-assignment-and-tax-resolution-backend.md)'s precedent rather than
+[0026](0026-product-sales-region-assignment-and-tax-resolution-backend.md)'s precedent rather than
 0045's: it is a pipeline step that Epic 3 may run with **no acting user at all** (the future external
 channel), and a `Gate::authorize()` there would either fail closed for every machine-originated order
 or be satisfied by a fictional actor. The gate belongs to whichever caller a human actually drives —
@@ -357,7 +357,7 @@ row as a fallback case, this story hands the row to `ResolveProductTaxRate` and 
 0026 defines for an inactive entry.
 
 **The country→`slug` rule and the Spain postal-prefix map are
-[0053's **D-4** and **D-5**](done/0053-order-tax-region-resolution-physical-backend.md#documented-functional-decisions),
+[0053's **D-4** and **D-5**](0053-order-tax-region-resolution-physical-backend.md#documented-functional-decisions),
 which reasoned them out first and rejected the alternatives (a `sales_region_postal_prefixes` table, a
 `config/` file, `sales_regions.code`). This file references them and deliberately restates neither.**
 The map is `SPAIN_POSTAL_PREFIX_TERRITORIES`, a `public const` on the trait itself — on the trait
@@ -373,17 +373,17 @@ of their effort preventing.
 Two shape notes for whichever story writes it. It is a **trait composed by both actions**, not a
 fourth invokable action, because a shared invokable would have to be injected into two actions whose
 `__invoke()` signatures are already public contracts
-([code-style.md](../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)),
+([code-style.md](../../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)),
 while `app/Concerns/` is where this repo already puts logic two classes compose. And it stays **flat
 and single-concern**, `use`ing no other trait, per
-[naming.md](../../docs/conventions/naming-validation-traits.md#traits-and-their-methods) — note its name follows the
+[naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods) — note its name follows the
 third-person-verb-phrase shape rather than the `<Noun>ValidationRules` shape, which is specific to
 validation rule sets and does not apply here.
 
 ### Translations — `lang/en/orders.php` + `lang/es/orders.php` (modify)
 
 One new key group, `flag_reasons`, key-for-key identical across both locales
-([naming.md](../../docs/conventions/naming.md#translation-keys)), with exactly one leaf today:
+([naming.md](../../../docs/conventions/naming.md#translation-keys)), with exactly one leaf today:
 `billing_ip_country_mismatch`. It ships here rather than with the UI story for the same reason 0045
 shipped `statuses` / `payment_statuses` here rather than with 0055 — the value set is this story's, and
 the screen that renders it is not. **No screen copy, no button labels, no validation-message
@@ -472,7 +472,7 @@ optional.
 - [ ] **Integration test: `null` and `'0.000'` resolve differently** — a region with no configured
       rate writes `tax_rate = null` and `tax_amount = 0.00`; a region configured at `0.000` writes
       `tax_rate = '0.000'` and `tax_amount = 0.00`. The two must not share a representation, exactly as
-      [`sales_regions.rate`](../../docs/database/schema-products.md#sales_regions) establishes. **A test
+      [`sales_regions.rate`](../../../docs/database/schema-products.md#sales_regions) establishes. **A test
       asserting only the amounts would pass against an implementation that conflates them.**
 - [ ] Integration test: `subtotal` `100.00` at a 21% rate writes `tax_amount` `21.00` and `total`
       `121.00`, as decimal strings — proving 0045 **D-8**'s written-out
@@ -502,7 +502,7 @@ optional.
   trait's internals twice.
 - `ResolveProductTaxRate`'s two-tier algorithm — 0026's, entirely. This story asserts it is *called
   with the right destination*, not that it is internally correct.
-- Migration `up()`/`down()` mechanics ([what-not-to-test.md](../../docs/testing/qa/what-not-to-test.md)).
+- Migration `up()`/`down()` mechanics ([what-not-to-test.md](../../../docs/testing/qa/what-not-to-test.md)).
 
 ## Expected outcome
 
@@ -553,9 +553,9 @@ code change, the day a channel begins populating those columns.
 
 ## Definition of Done
 - [ ] Tests written and green, plus the full existing suite (per
-      [contracts.md](../../docs/contracts.md)'s Full Test Suite Gate Rule) — run **unscoped**
+      [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule) — run **unscoped**
       (`php artisan test`, not `--filter`), per
-      [base-standards.md](../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
+      [base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
 - [ ] `vendor/bin/pint --format agent` clean (unscoped, **not** `--dirty`) and Larastan level 7 passing.
 - [ ] Code reviewed (code-reviewer).
 - [ ] No security findings (appsec-auditor) — specifically: that `ip_derived_country` and `flag_reason`
@@ -567,16 +567,16 @@ code change, the day a channel begins populating those columns.
 - [x] **[OQ-1](#open-questions) (mixed-basket orders) is settled** — defer-and-flag, recorded
       identically in this file and in 0053's D-2/D-3.
 - [ ] Documentation updated (docs-keeper):
-  - [`database/schema.md`](../../docs/database/schema.md)'s `orders` section gains the three columns,
+  - [`database/schema.md`](../../../docs/database/schema.md)'s `orders` section gains the three columns,
     with the "`NULL` means no IP was captured" note and the no-index reasoning.
-  - [`conventions/base-standards.md`](../../docs/conventions/base-standards.md)'s directory listing
+  - [`conventions/base-standards.md`](../../../docs/conventions/base-standards.md)'s directory listing
     gains this story's action under `app/Actions/Orders/` and — if this story is the one that creates
     it (**D-7**) — `ResolvesSalesRegionFromAddress` under `app/Concerns/`, whose listed purpose there
     ("Shared traits (validation rule sets)") stops being accurate the day the first non-validation
     trait lands in that folder.
   - The dormancy is recorded **where a reader will meet it** — in `schema.md` beside the columns, not
     only in this task file — so nobody later reads `flagged_for_review` being universally `false` as a
-    broken feature. This is the [bare-negative-claim](../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
+    broken feature. This is the [bare-negative-claim](../../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
     failure mode inverted: a **positive** claim ("orders are flagged on an IP mismatch") that is true
     of the code and false of every row.
 - [ ] Acceptance criteria met.
@@ -603,12 +603,12 @@ override is a decision rather than a rediscovery.
   prose.** `database-expert` recommended a "companion text column"; the *column* is adopted unchanged
   and only its type is refined, recorded here as a decision rather than a silent edit. Two reasons:
   every string column in this repo is length-capped
-  ([migrations.md](../../docs/database/migrations.md#uuid-primary-keys)), and a token resolved through
+  ([migrations.md](../../../docs/database/migrations.md#uuid-primary-keys)), and a token resolved through
   `lang/{en,es}/orders.php`'s `flag_reasons` group is reachable from `lang/es/` while an English
   sentence written into the column is not — the same rule that keeps copy out of `config/modules.php`.
   **No `OrderFlagReason` enum is created**: it would have exactly one case, currently unreachable, and
   a one-case enum is speculation. The token is a `public const` on the action that writes it, per the
-  [name-a-string-once-on-the-class-that-owns-the-rule](../../docs/conventions/naming.md#permission-names)
+  [name-a-string-once-on-the-class-that-owns-the-rule](../../../docs/conventions/naming.md#permission-names)
   convention. A second reason arriving is what justifies the enum, and that is
   [backlog item 3](#technical-tasks-for-the-backlog).
 - **D-5 — An order is never both flagged and tax-resolved.** PRD §3.2 says a mismatch flags the order
@@ -616,7 +616,7 @@ override is a decision rather than a rediscovery.
   flagged order carrying a confident-looking `tax_rate` is materially worse than an unflagged one,
   because manual review reads a populated column as a working answer. Asserted from both sides.
 - **D-6 — The resolution action self-authorizes nothing**, following
-  [0026](done/0026-product-sales-region-assignment-and-tax-resolution-backend.md)'s precedent rather than
+  [0026](0026-product-sales-region-assignment-and-tax-resolution-backend.md)'s precedent rather than
   0045's `CreateOrder`. It is a pipeline step Epic 3 may run with **no acting user at all** — the whole
   premise of the external channel PRD §3.2 assumes. A `Gate::authorize()` here would fail closed for
   every machine-originated order. The gate belongs to the human-driven caller (story 0055's re-resolve
@@ -664,6 +664,18 @@ override is a decision rather than a rediscovery.
   **When resolution is triggered — automatically after creation, or by an administrator action — is
   story 0055's, and is deliberately not decided here.**
 
+- **D-9 — OVERRIDES D-1 (owner decision, 2026-09-21): the IP-derived country is mandatory.** An
+  order with no `ip_derived_country` is flagged (`flag_reason = ip_country_missing`) and resolved no
+  tax, i.e. option (b) of the central decision. Because no checkout exists to capture a purchaser IP,
+  `OrderFactory` supplies a test IP (`203.0.113.10`, RFC 5737 TEST-NET-3, country `ES`). Consequence:
+  an order created through `CreateOrder` today carries no IP and is flagged when resolved, until a
+  channel or story 0055 supplies one. The dormant-mechanism framing above is superseded.
+- **D-10 — The rate is the resolved region's own `rate`, as in 0053's D-1** (owner decision,
+  2026-09-21): `ResolveProductTaxRate` is not called (an order has many products, so a per-product
+  rate is ambiguous). An unmapped, inactive or heading region falls back to the `is_default` row
+  without flagging; a missing default throws `NoDefaultSalesRegionException`. `flag_reasons` carries
+  three leaves (`billing_ip_country_mismatch`, `ip_country_missing`, `mixed_basket`).
+
 ### Scope fences: what this story must NOT do
 
 - Must **not** derive a country from an IP address, add any geolocation library, service, API call or
@@ -685,11 +697,11 @@ override is a decision rather than a rediscovery.
 
 | Depends on | State | Verified how |
 | --- | --- | --- |
-| **[0045](done/0045-orders-core-crud-backend.md) — Orders core CRUD** | **HARD dependency; `new` and ⛔ BLOCKED** | This story `ALTER`s `orders`, reads its `billing_*` snapshot and writes `sales_region_id` / `tax_rate` / `tax_amount` / `flagged_for_review`. **This story inherits 0045's blocked status in full** — including its five Epic 2 blockers (0024, 0029, 0035, 0036, 0038) |
-| **0053 — physical-product tax resolution** | **SIBLING, not a dependency** | Both depend only on 0045; **there is no dependency between 0053 and 0054 in either direction**, and either may be implemented first. They share exactly one artifact — the `App\Concerns\ResolvesSalesRegionFromAddress` trait, specified as create-if-absent (**D-7**), whose country→`slug` rule and Spain postal-prefix map are [0053's **D-4**/**D-5**](done/0053-order-tax-region-resolution-physical-backend.md#documented-functional-decisions) and are referenced here, never restated |
-| [0026](done/0026-product-sales-region-assignment-and-tax-resolution-backend.md) — product↔region assignment + `ResolveProductTaxRate` | `new` | Provides the `ResolveProductTaxRate` / `ResolvedTaxRate` / `TaxRateResolutionTier` contract this story consumes verbatim; its scope fence explicitly hands address→region mapping to Epic 3 |
-| [0024](done/0024-products-core-crud-backend.md) — Products | `new` | Provides `App\Enums\ProductType` (`Physical` / `Virtual`), which is how "the order is virtual" is determined at all |
-| `sales_regions` catalog | **done** (task 0016) | [`schema.md`](../../docs/database/schema-products.md#sales_regions); the fiscal territories the postal mapping targets, and the `is_default` row the fallback tier needs |
+| **[0045](0045-orders-core-crud-backend.md) — Orders core CRUD** | **HARD dependency; `new` and ⛔ BLOCKED** | This story `ALTER`s `orders`, reads its `billing_*` snapshot and writes `sales_region_id` / `tax_rate` / `tax_amount` / `flagged_for_review`. **This story inherits 0045's blocked status in full** — including its five Epic 2 blockers (0024, 0029, 0035, 0036, 0038) |
+| **0053 — physical-product tax resolution** | **SIBLING, not a dependency** | Both depend only on 0045; **there is no dependency between 0053 and 0054 in either direction**, and either may be implemented first. They share exactly one artifact — the `App\Concerns\ResolvesSalesRegionFromAddress` trait, specified as create-if-absent (**D-7**), whose country→`slug` rule and Spain postal-prefix map are [0053's **D-4**/**D-5**](0053-order-tax-region-resolution-physical-backend.md#documented-functional-decisions) and are referenced here, never restated |
+| [0026](0026-product-sales-region-assignment-and-tax-resolution-backend.md) — product↔region assignment + `ResolveProductTaxRate` | `new` | Provides the `ResolveProductTaxRate` / `ResolvedTaxRate` / `TaxRateResolutionTier` contract this story consumes verbatim; its scope fence explicitly hands address→region mapping to Epic 3 |
+| [0024](0024-products-core-crud-backend.md) — Products | `new` | Provides `App\Enums\ProductType` (`Physical` / `Virtual`), which is how "the order is virtual" is determined at all |
+| `sales_regions` catalog | **done** (task 0016) | [`schema.md`](../../../docs/database/schema-products.md#sales_regions); the fiscal territories the postal mapping targets, and the `is_default` row the fallback tier needs |
 
 ### ⚠️ Forward-compatibility framing — read this before treating the feature as broken
 
@@ -710,7 +722,7 @@ its trigger, deliberately, so that:
 
 **Anyone reviewing this system and finding `flagged_for_review` `false` on 100% of rows is looking at
 correct behaviour**, and the Definition of Done requires that sentence to live in
-[`database/schema.md`](../../docs/database/schema.md) beside the columns — not only in this file —
+[`database/schema.md`](../../../docs/database/schema.md) beside the columns — not only in this file —
 precisely so it is met by the reader who needs it.
 
 ### Risks
@@ -740,7 +752,7 @@ precisely so it is met by the reader who needs it.
   `ProductType` enum, the `ResolveProductTaxRate` signature and the `billing_*` column shapes this file
   quotes. *Mitigation:* **the Phase 2 INVEST review must be re-run immediately before Phase 3**, with
   every cited contract re-verified against `HEAD`, per
-  [errors-log.md](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+  [errors-log.md](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
   This file's shapes are a reading aid, not a locator.
 - **R-7 — The central decision is overturned after Phase 3.** *Mitigation:* the decision is isolated to
   **one branch** in one action (`ip_derived_country === null ⇒ continue` vs `⇒ flag`) plus its tests.
@@ -753,7 +765,7 @@ precisely so it is met by the reader who needs it.
 items? RESOLVED by the facilitator during 0053's Phase 1 composition — recorded here for consistency,
 not left as a choice between this file's original three options.**
 
-Story [0045](done/0045-orders-core-crud-backend.md) permits an order to carry any number of line items
+Story [0045](0045-orders-core-crud-backend.md) permits an order to carry any number of line items
 naming any products, so an order containing **one physical and one virtual product** is creatable
 today with no rule covering it. PRD §3.2 states the resolution rule per **product type** and is silent
 on a basket holding both.
@@ -772,7 +784,7 @@ so deferring to a human reviewer is the same conservative default this story alr
 not a new inconsistent rule. Option (b) (per-line-item resolution) remains rejected as materially
 larger than either story's scope; option (c) (refuse mixed baskets at creation) remains rejected as
 changing an already-reviewed sibling (0045) and forbidding a legitimate real-world order. Recorded
-identically in **[0053's D-2/D-3](done/0053-order-tax-region-resolution-physical-backend.md)** — the two
+identically in **[0053's D-2/D-3](0053-order-tax-region-resolution-physical-backend.md)** — the two
 files state one rule, not two half-implementations of it, per **D-7**'s own reasoning.
 
 **OQ-2 — When is resolution triggered? Non-blocking; story 0055's.** Automatically after `CreateOrder`
@@ -821,23 +833,23 @@ Derived from this story, none of them in scope:
 
 ## Provenance
 
-- **PRD source:** [§3.2 Orders](../../docs/PRD/PRD.md#32-orders) — specifically the "Sales Region
+- **PRD source:** [§3.2 Orders](../../../docs/PRD/PRD.md#32-orders) — specifically the "Sales Region
   resolution for tax" paragraph, its two virtual-product Gherkin scenarios, and the acceptance
   criterion "virtual → billing address validated against the purchaser's IP-derived location, with a
   mismatch flagged for manual review". PRD's own parenthetical marks the flagging behaviour as "a
   conservative default chosen here … adjust if the business prefers hard-reject or hold", which is the
   licence under which this story's central decision is recorded rather than assumed.
-- **Process:** [workflow.md](../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from
+- **Process:** [workflow.md](../../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from
   `backend-expert`, `backend-qa` and `database-expert`, composed by `product-owner` as facilitator.
   **All three contributors independently flagged the same central open question and all three declined
   to guess at a default**; it is resolved above as an explicitly-labelled interim default plus an
-  escalation, per [contracts.md](../../docs/contracts.md)'s Uncertainty Handling Rule, rather than
+  escalation, per [contracts.md](../../../docs/contracts.md)'s Uncertainty Handling Rule, rather than
   settled silently.
 - **Gherkin conventions:** every scenario opens with a named business-role actor ("an order
   administrator") and carries exactly one `When`, per
-  [gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 — mandatory
+  [gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 — mandatory
   across all Gherkin in this project, per the incident recorded in
-  [errors-log.md](../../docs/errors-log.md). PRD's two virtual-product scenarios are adapted rather than
+  [errors-log.md](../../../docs/errors-log.md). PRD's two virtual-product scenarios are adapted rather than
   copied: the "mismatched billing address" case cannot currently occur in this application, so it is
   specified as the dormant mechanism's test rather than as the primary path, and the
   no-IP-data case — which is *every* case today — is written as a first-class scenario it did not have.
@@ -845,7 +857,7 @@ Derived from this story, none of them in scope:
   `ai-spec/tasks/in-progress/` at the start of Phase 3 and to `ai-spec/tasks/done/` at Phase 7 — both
   moves change this file's directory depth, so every relative link above must be re-resolved on each
   move (both directions), per
-  [workflow.md](../../docs/workflow.md#link-integrity-check-on-every-stage-move).
+  [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move).
 - **Epic 3 decomposition:** the virtual-product half of tax resolution. Story 0053 (physical products)
   is its sibling and is referenced by number without a link because its file may not exist yet — the
-  same convention [0045](done/0045-orders-core-crud-backend.md) uses for its own unwritten siblings.
+  same convention [0045](0045-orders-core-crud-backend.md) uses for its own unwritten siblings.
