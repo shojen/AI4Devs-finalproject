@@ -253,6 +253,9 @@ erDiagram
         decimal total
         decimal refunded_amount
         boolean flagged_for_review
+        string ip_address
+        string ip_derived_country
+        string flag_reason
         string shipping_address_line1
         string shipping_address_line2
         string shipping_city
@@ -314,7 +317,9 @@ Split by domain into separate files, per [contracts.md](../contracts.md#doc-grow
 - For migration authoring conventions (naming, `down()` requirements, real examples), see [database/migrations.md](migrations.md).
 - **UUID (v7) primary keys.** Each table's PK type (`uuid` vs `bigint`) is already visible directly in the ER diagram above, and each per-domain schema file states its own table's status against [ADR 0001](../decisions/0001-uuid-primary-keys.md) at the point that table is documented — so this section no longer restates a consolidated status list. The ADR is the single source of truth for the policy and its full history: which entities it covers, the one named `bigint` exception (`geography_entries`), and every amendment since. The model-side convention (`HasUuids`, `@property string $id`, no restated `$keyType`/`$incrementing`) is in [conventions/base-standards.md](../conventions/base-standards.md#uuid-primary-keys); the migration-side pattern is in [database/migrations.md](migrations.md#uuid-primary-keys).
 
-_Last updated: 2026-09-17 — Story 0051 (Order payment/refund state backend). Added `REFUNDS` to the ER diagram (`REFUNDS }o--|| ORDER_ITEMS`, `REFUNDS }o--|| USERS`) and its entity block, plus `orders.refunded_amount` to the `ORDERS` block. Widened the **Domain tables** [Orders](schema-orders.md) bullet to name [`refunds`](schema-orders.md#refunds). Recounted the **Notes** model-class inventory from seventeen to eighteen (`ls app/Models/*.php`), adding `Refund`.
+_Last updated: 2026-09-21 — Story 0054 (Order tax Sales-Region resolution — virtual products, backend). Added `ip_address`, `ip_derived_country` and `flag_reason` to the `ORDERS` entity block — see [Orders](schema-orders.md) for what each holds and why the geo/fraud check they enable is dormant today. No new table, no ER-diagram relationship change.
+
+_Previously: 2026-09-17 — Story 0051 (Order payment/refund state backend). Added `REFUNDS` to the ER diagram (`REFUNDS }o--|| ORDER_ITEMS`, `REFUNDS }o--|| USERS`) and its entity block, plus `orders.refunded_amount` to the `ORDERS` block. Widened the **Domain tables** [Orders](schema-orders.md) bullet to name [`refunds`](schema-orders.md#refunds). Recounted the **Notes** model-class inventory from seventeen to eighteen (`ls app/Models/*.php`), adding `Refund`.
 
 _Previously: 2026-09-16 — Story 0048 (Order line-item editing backend). Widened the **Domain tables** [Orders](schema-orders.md) bullet with a pointer at this story's own new section — `orders.subtotal`/`.tax_amount`/`.total` are derived and *re-derived* rather than write-once, and `order_items.unit_price` is immutable after insert. No table, column, index or ER-diagram fact changed — this story adds no schema.
 

@@ -13,7 +13,7 @@ returns. No route, no Livewire component, no Blade markup, no migration and no n
 
 > **Amended after composition (D-13).** As first composed, this story deliberately wrote **no** tax
 > arithmetic and left `tax_amount` / `total` to whichever story answered its own **OQ-1**. That gap is
-> now closed here, because sibling story [0054](../0054-order-tax-region-resolution-virtual-backend.md) —
+> now closed here, because sibling story [0054](0054-order-tax-region-resolution-virtual-backend.md) —
 > composed later — computes both in its own resolution action, so leaving them out here would ship a
 > freshly-created **physical** order displaying a resolved `tax_rate` of `21.000` beside a
 > `tax_amount` of `0.00` while an otherwise-identical **virtual** order showed both. Story
@@ -263,7 +263,7 @@ detail**:
    makes those columns exist).
 4. **Resolve the region**, mapping through the shared `ResolvesSalesRegionFromAddress` trait (below) —
    `$this->resolveSalesRegionFromAddress($order->shipping_country, $order->shipping_postal_code)`,
-   which is the *same* call [0054](../0054-order-tax-region-resolution-virtual-backend.md) makes with its
+   which is the *same* call [0054](0054-order-tax-region-resolution-virtual-backend.md) makes with its
    **billing** columns:
    - `shipping_country` blank/`null` ⇒ the trait returns `null` ⇒ fallback (**D-6**);
    - `shipping_country` is `ES` (case-insensitively) ⇒ the trait takes the **first two characters** of
@@ -288,7 +288,7 @@ detail**:
      than as `subtotal + tax_amount`, so `shipping_amount` becoming non-zero later needs no edit here.
 
    This step is **identical to step 5 of
-   [0054](../0054-order-tax-region-resolution-virtual-backend.md)'s `ResolveVirtualOrderSalesRegion`** —
+   [0054](0054-order-tax-region-resolution-virtual-backend.md)'s `ResolveVirtualOrderSalesRegion`** —
    deliberately so, per **D-13**. A reader of one action must be able to predict the other without
    re-deriving it, and the two must not round differently.
 
@@ -322,7 +322,7 @@ protected function resolveSalesRegionFromAddress(?string $countryCode, ?string $
 ```
 
 The country→region and Spain-postal-prefix mapping of step 4, extracted so that **one implementation
-serves both this action and [0054](../0054-order-tax-region-resolution-virtual-backend.md)'s
+serves both this action and [0054](0054-order-tax-region-resolution-virtual-backend.md)'s
 `ResolveVirtualOrderSalesRegion`**, which applies the identical rules to an order's **billing**
 columns. It maps and nothing more: the ISO alpha-2 code lower-cased and matched against
 `sales_regions.slug` (**D-4**), the Spain branch keyed on `SPAIN_POSTAL_PREFIX_TERRITORIES` (**D-5**),
@@ -485,7 +485,7 @@ produces a *plausible* region and a *plausible* rate, and nothing looks wrong un
 ### The computed tax amount and total (D-13)
 
 **This group is copied from
-[0054](../0054-order-tax-region-resolution-virtual-backend.md)'s own "The rate and the totals" group and
+[0054](0054-order-tax-region-resolution-virtual-backend.md)'s own "The rate and the totals" group and
 must stay assertion-for-assertion equivalent to it.** If the two ever disagree about a rounding, a
 `null` or an idempotency, one of them is wrong — and the pair is the only thing that will say so.
 
@@ -582,7 +582,7 @@ is the basis `tax_amount` is derived from — re-summing the line items into it 
       **not** a config file, and **not** `sales_regions.code`.
 - [ ] The country→region and Spain-prefix mapping exists in **exactly one** place,
       `App\Concerns\ResolvesSalesRegionFromAddress`, composed by this action and by
-      [0054](../0054-order-tax-region-resolution-virtual-backend.md)'s
+      [0054](0054-order-tax-region-resolution-virtual-backend.md)'s
       `ResolveVirtualOrderSalesRegion` — no second copy, and no re-declaration of the map in either
       action. The fallback, the `is_active` check and the flag stay in **this** action, not in the
       trait.
@@ -614,7 +614,7 @@ is the basis `tax_amount` is derived from — re-summing the line items into it 
       the same `tax_amount` and the same `total`, pinned by a test that reaches the arithmetic rather
       than only **D-10**'s early return.
 - [ ] **The computation is identical to
-      [0054](../0054-order-tax-region-resolution-virtual-backend.md)'s step 5** — same formula, same
+      [0054](0054-order-tax-region-resolution-virtual-backend.md)'s step 5** — same formula, same
       `null` handling, same three-term `total` identity, same transaction placement. A future reader of
       either action must be able to predict the other (**D-13**).
 - [ ] `orders.shipping_amount` and `orders.subtotal` are **read and never written** by this action, and
@@ -656,7 +656,7 @@ is the basis `tax_amount` is derived from — re-summing the line items into it 
     is not. **Add to that grep, since D-13:** anything phrased as "0053 does not compute a tax amount",
     "`tax_amount` is only written by 0048/0054", or "a resolved physical order carries a rate and no
     amount" — all three were true of this story as first composed and none of them is now.
-- [ ] **Parity with [0054](../0054-order-tax-region-resolution-virtual-backend.md) is verified, not
+- [ ] **Parity with [0054](0054-order-tax-region-resolution-virtual-backend.md) is verified, not
       assumed** (**D-13**). Whichever of the two reaches Phase 3 second must diff its own step 5 against
       the shipped one and reconcile any difference in the formula, the `null` handling, the rounding or
       the transaction placement **in code**, not by amending one task file. If 0054 shipped first and
@@ -757,7 +757,7 @@ rediscovery.
   subdivision column and that adding one is not warranted for a five-entry mapping. The map mirrors
   `SalesRegionSeeder::SPAIN_TERRITORIES`' own "constant on the class that owns it" convention — and
   the class that owns it is the trait that *reads* it, so
-  [0054](../0054-order-tax-region-resolution-virtual-backend.md) resolves the identical five territories
+  [0054](0054-order-tax-region-resolution-virtual-backend.md) resolves the identical five territories
   from a **billing** address without importing this action or re-declaring the map. **Only the host
   class moved; the three alternatives below are rejected exactly as first reasoned:**
 
@@ -896,7 +896,7 @@ rediscovery.
   answer here and is a caller-side optimisation, not this story's.
 
 - **D-13 — This action also derives `orders.tax_amount` and re-derives `orders.total`, in the same
-  write, using exactly [0054](../0054-order-tax-region-resolution-virtual-backend.md)'s computation.**
+  write, using exactly [0054](0054-order-tax-region-resolution-virtual-backend.md)'s computation.**
   *(Added after composition. Resolves **OQ-1**'s "who computes `tax_amount`" half, and closes story
   [0055](../0055-orders-list-detail-editor-ui.md)'s **R-6** / **OQ-1**, which that story recorded as
   "BLOCKING for the epic".)*
@@ -1136,7 +1136,7 @@ applies to `subtotal` alone, and `shipping_amount` enters only as the third term
 question arises here.
 
 > **Still open, and deliberately not touched by D-13: *when* resolution is triggered at all.** That is
-> [0054](../0054-order-tax-region-resolution-virtual-backend.md)'s **OQ-2** and story
+> [0054](0054-order-tax-region-resolution-virtual-backend.md)'s **OQ-2** and story
 > [0055](../0055-orders-list-detail-editor-ui.md)'s **OQ-1**, and it is a different question — this action
 > remains "callable against a persisted order" (**D-8**) with no opinion about who calls it. Answering
 > "who computes the amount" does not answer "who invokes the resolver", and 0055's **OQ-1** stays open
@@ -1191,7 +1191,7 @@ Derived from this story, none of them in scope:
   resolver, and mixed-type carts — and both were resolved by the facilitator as documented functional
   decisions **D-1** and **D-2** rather than left open, with the reversal path named in each.
 - **Amended after composition, once — decision D-13 (tax amount and total).** Not a re-debate and not a
-  second Phase 1: sibling story [0054](../0054-order-tax-region-resolution-virtual-backend.md) was
+  second Phase 1: sibling story [0054](0054-order-tax-region-resolution-virtual-backend.md) was
   composed *after* this file and computed `tax_amount` / `total` in its own resolution action, leaving
   the two halves of one feature inconsistent in a way an administrator would see on screen. Story
   [0055](../0055-orders-list-detail-editor-ui.md)'s Phase 1 found it, recorded it as that story's **R-6** /

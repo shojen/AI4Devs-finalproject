@@ -108,6 +108,17 @@ app/
                        from a queued job) and deliberately NOT layered on Products\ResolveProductTaxRate
                        (D-1): that resolver answers a per-product display question, this one an
                        order's destination-based tax — two resolvers, neither calling the other
+                       ; ResolveVirtualOrderSalesRegion — story 0054, the virtual-product sibling
+                       of ResolveOrderTaxRegion: resolves tax from the order's OWN frozen BILLING
+                       address instead of its shipping one, after a geo/fraud check comparing
+                       `billing_country` against a captured `ip_derived_country` (mandatory per
+                       this story's own D-9, overriding the task file's interim default) --
+                       missing or mismatched IP data flags the order and resolves no tax, never
+                       both (D-5). Composes the same ResolvesSalesRegionFromAddress trait as its
+                       sibling and the same CalculateTaxAmount collaborator; a mixed physical/
+                       virtual basket is flagged by whichever of the two actions runs (D-2, the
+                       identical REASON_MIXED_BASKET token on both). Deliberately UNGATED, same
+                       reasoning as ResolveOrderTaxRegion
   Actions/ProductCategories/ Domain actions for the Product Categories area (CreateProductCategory,
                        RenameProductCategory, DeleteProductCategory) — one action per operation
                        (story 0023). Unlike every other area's actions, none of the three authorize
@@ -594,7 +605,9 @@ Three constraints that come with it, each learned from this story's audits:
 What the rules themselves say, and why a rule that must bind a Super Admin actor is a direct `throw` rather than a `Gate` check, belongs to [architecture/authorization.md](../architecture/authorization.md#the-guard-belongs-to-the-action-not-to-the-caller), not here.
 
 
-_Last updated: 2026-09-17 — Story 0050 (Order manual cancellation backend). Extended `app/Actions/Orders/` with `CancelOrder` (the four-step action, self-authorizing `cancel` on `OrderPolicy` as its own first statement via a bare `Gate::authorize()`, taking exactly one parameter with no confirmation path, D-7). Added `OrderCancellationBlockedException → 409` to `app/Exceptions/`'s rendering-exception list, now six instances rather than five — a direct throw, not a `Gate` check, so it binds a Super Admin actor too. Noted `OrderPolicy`'s ability roster grew to six (`cancel`, the first requiring TWO permissions and the first whose result depends on the target row) beside its existing `Policies/` entry.
+_Last updated: 2026-09-21 — Story 0054 (Order tax Sales-Region resolution — virtual products, backend). Extended `app/Actions/Orders/` with `ResolveVirtualOrderSalesRegion` (the virtual-product sibling of story 0053's `ResolveOrderTaxRegion`, resolving from the order's own frozen billing address after a geo/fraud check). `App\Concerns\ResolvesSalesRegionFromAddress` already existed (created by story 0053) — this story consumes it unchanged, adding no new trait.
+
+_Previously: 2026-09-17 — Story 0050 (Order manual cancellation backend). Extended `app/Actions/Orders/` with `CancelOrder` (the four-step action, self-authorizing `cancel` on `OrderPolicy` as its own first statement via a bare `Gate::authorize()`, taking exactly one parameter with no confirmation path, D-7). Added `OrderCancellationBlockedException → 409` to `app/Exceptions/`'s rendering-exception list, now six instances rather than five — a direct throw, not a `Gate` check, so it binds a Super Admin actor too. Noted `OrderPolicy`'s ability roster grew to six (`cancel`, the first requiring TWO permissions and the first whose result depends on the target row) beside its existing `Policies/` entry.
 
 _Previously: 2026-09-17 — Story 0051 (Order payment/refund state backend). Extended `app/Actions/Orders/` with `RecordRefund` (the eleven-step refund action, gating on a bare `Gate::authorize('orders.refund')` rather than an `OrderPolicy` ability). Added `Refund` to `app/Models/`'s inventory — the refund event log `order_items.refunded_quantity`/`orders.refunded_amount` derive from, with `amount`/`refunded_by` omitted from `#[Fillable]`.
 
