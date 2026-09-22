@@ -47,7 +47,13 @@ test('the order history section renders every order\'s number, status label and 
     }
 });
 
-test('the identity header renders the customer\'s name, email and phone as visible text', function () {
+// Story 0057a moved the customer's name out of this component's own markup and
+// into the topbar's `heading` slot (see the view's `<x-slot:heading>`), which
+// Livewire::test() never renders -- it is pinned instead by
+// tests/Feature/Layout/TopbarTest.php ('the customer detail screen titles the
+// topbar...') and tests/Browser/Layout/TopbarTest.php. This test keeps the two
+// fields this component still renders itself.
+test('the identity header renders the customer\'s email and phone as visible text', function () {
     $customer = Customer::factory()->create([
         'name' => 'Ada Lovelace',
         'email' => 'ada@example.com',
@@ -57,7 +63,6 @@ test('the identity header renders the customer\'s name, email and phone as visib
     $this->actingAs(customersShowRenderingActor());
 
     Livewire::test(Show::class, ['customer' => $customer])
-        ->assertSee('Ada Lovelace')
         ->assertSee('ada@example.com')
         ->assertSee('+34600000000');
 });
