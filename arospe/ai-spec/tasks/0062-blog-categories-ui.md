@@ -6,7 +6,7 @@ counts, a create/edit modal carrying a single `name` field, and a delete-confirm
 renders the **hard-block-with-count** refusal ("This category is used by 5 posts — reassign them
 before deleting") when the category still has posts assigned. This is the **first and only call
 site** of the `BlogCategoryPolicy` and the three `app/Actions/Blog/*BlogCategory` actions that story
-[0058](in-progress/0058-blog-categories-backend.md) shipped with zero consumers, and it is the screen the delete
+[0058](done/0058-blog-categories-backend.md) shipped with zero consumers, and it is the screen the delete
 guard story [0061](0061-blog-posts-core-crud-backend.md) built its `blogCategoryId` error-bag
 contract for.
 
@@ -1290,7 +1290,7 @@ links to, or shares anything with the product taxonomy.
 
 ### Dependencies
 
-- **[0058](in-progress/0058-blog-categories-backend.md) — hard, blocking.** The model, the three actions, the
+- **[0058](done/0058-blog-categories-backend.md) — hard, blocking.** The model, the three actions, the
   validation trait and the policy this screen calls. **Not yet implemented (F-2).**
 - **[0061](0061-blog-posts-core-crud-backend.md) — hard, blocking (F-1).** The delete guard, the
   `posts()` relation, the `blogCategoryId` error key and `lang/{en,es}/blog.php`. **Not yet
@@ -1486,7 +1486,7 @@ component surface, the delete-modal markup and the `withTrashed()` count analysi
 `database-expert` was convened — this story adds no backend or schema artifact. Derived from
 [PRD](../../docs/PRD/PRD.md#epic-4--blog) Epic 4's `Feature: Blog categories (extends the prototype)`
 block and the CRUD half of Blog acceptance criterion 2, grounded in full readings of
-[0058](in-progress/0058-blog-categories-backend.md) and [0061](0061-blog-posts-core-crud-backend.md), with
+[0058](done/0058-blog-categories-backend.md) and [0061](0061-blog-posts-core-crud-backend.md), with
 [0025](done/0025-product-categories-ui.md) as the structural template and [0060](0060-blog-tags-ui.md) as
 the Blog-area convention source.
 

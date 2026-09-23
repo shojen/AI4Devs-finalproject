@@ -567,50 +567,50 @@ user-visible yet — the management screen that consumes these arrives in a late
 posts that reference a category arrive in 0061.
 
 ## Acceptance criteria
-- [ ] `blog_categories` exists with `id` (UUID v7 PK), `name`, `normalized_name` (**unique**),
+- [x] `blog_categories` exists with `id` (UUID v7 PK), `name`, `normalized_name` (**unique**),
       `created_at`, `updated_at` — and nothing else. There is **no** `unique('name')`.
-- [ ] `App\Models\BlogCategory` uses `HasUuids`, exposes `name` as its only fillable attribute,
+- [x] `App\Models\BlogCategory` uses `HasUuids`, exposes `name` as its only fillable attribute,
       derives `normalized_name` via a `saving` hook on every write that changes `name`, and does
       **not** use `SoftDeletes`.
-- [ ] A category can be created with a valid name; blank, whitespace-only, over-length and duplicate
+- [x] A category can be created with a valid name; blank, whitespace-only, over-length and duplicate
       names are all refused with a validation message on `name`.
-- [ ] A category can be renamed; renaming onto another category's name is refused, and saving a
+- [x] A category can be renamed; renaming onto another category's name is refused, and saving a
       category under its own unchanged name is accepted.
-- [ ] A category can be deleted, the row is really gone, and its name becomes immediately reusable.
-- [ ] Case-only and accent-only duplicates are refused **by validation**, and a concurrent duplicate
+- [x] A category can be deleted, the row is really gone, and its name becomes immediately reusable.
+- [x] Case-only and accent-only duplicates are refused **by validation**, and a concurrent duplicate
       that races past validation is refused by the **`normalized_name` unique index** as a clean
       `ValidationException` rather than a 500 (**D-4**).
-- [ ] The fold behind both the stored column and every lookup is the shared
+- [x] The fold behind both the stored column and every lookup is the shared
       `App\Actions\NormalizeForSearch` (**D-12**) — no fold logic is inlined in the model, in
       `BlogCategoryValidationRules` or in the actions, and no second normaliser is added to the tree.
-- [ ] Authorization is expressed in `BlogCategoryPolicy` **and enforced by each action itself**
+- [x] Authorization is expressed in `BlogCategoryPolicy` **and enforced by each action itself**
       (**D-13**), with both an allow and a deny test per ability, and a direct-call refusal test per
       action.
-- [ ] Blog categories share no table, model, or namespace with the product category taxonomy.
-- [ ] No in-use/hard-block delete guard is implemented, and no permission-catalog, route, Livewire,
+- [x] Blog categories share no table, model, or namespace with the product category taxonomy.
+- [x] No in-use/hard-block delete guard is implemented, and no permission-catalog, route, Livewire,
       view, `config/modules.php` or `lang/` file is added by this story.
 
 ## Definition of Done
-- [ ] Tests written and green, plus the full existing suite (per
+- [x] Tests written and green, plus the full existing suite (per
       [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule).
-- [ ] All **three** quality gates run **unscoped** and each result recorded explicitly, including any
+- [x] All **three** quality gates run **unscoped** and each result recorded explicitly, including any
       that was not run: `php artisan test` (not `--filter`), `vendor/bin/pint --format agent` (not
       `--dirty`), and **Larastan level 7** (`vendor/bin/phpstan analyse`). The third is the one
       nothing else prompts you to run, and a verification record naming only two of the three is a
       record of two gates — see
       [errors-log.md](../../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
-- [ ] Code reviewed (code-reviewer).
-- [ ] No security findings (appsec-auditor).
-- [ ] Documentation updated (docs-keeper): `docs/database/schema.md` gains a `blog_categories`
+- [x] Code reviewed (code-reviewer).
+- [x] No security findings (appsec-auditor).
+- [x] Documentation updated (docs-keeper): `docs/database/schema.md` gains a `blog_categories`
       section and an ER-diagram entry; `docs/conventions/base-standards.md`'s directory listing gains
       `app/Actions/Blog/`, `App\Models\BlogCategory`, `BlogCategoryPolicy` and
       `BlogCategoryValidationRules`; ADR 0001's "still future" list drops Blog Categories (verify its
       current wording first rather than assuming — the list names six remaining entities today).
-- [ ] **Glossary follow-up (OQ-3):** `docs/testing/frontend/gherkin-guidelines.md`'s
+- [x] **Glossary follow-up (OQ-3):** `docs/testing/frontend/gherkin-guidelines.md`'s
       `TODO — blog / ecommerce vocabulary (undefined)` block gains at minimum **"post"** (not
       "article") and **"blog editor"** as canonical terms, so a later browser-testing story does not
       re-derive the same choice.
-- [ ] **Hand-off note recorded for the UI story and for 0061** (a real gap, not a formality). Unlike
+- [x] **Hand-off note recorded for the UI story and for 0061** (a real gap, not a formality). Unlike
       0023, these actions **do** authorize themselves (**D-13**), so `BlogCategoryPolicy` has real
       call sites from day one. The UI story must still (a) call `Gate::authorize()` in the component
       as well — defence in depth, a layer and not a redundancy, per the SalesRegions precedent — and
@@ -618,7 +618,20 @@ posts that reference a category arrive in 0061.
       from the model), per
       [security/livewire-authorization.md](../../../docs/security/livewire-authorization.md). Story 0061
       must extend `DeleteBlogCategory` **in place** rather than adding the guard elsewhere.
-- [ ] Acceptance criteria met.
+- [x] Acceptance criteria met.
+
+**Verification record (2026-09-23), all three gates run unscoped:** `php artisan test` equivalent
+(`vendor/bin/pest`, one isolated run, nothing else touching the database) — 3290 tests, 3287
+passed, 3 skipped, 0 failed; `vendor/bin/pint --format agent` — passed; `vendor/bin/phpstan
+analyse` (Larastan) — 0 errors. Code review and security audit were run as read-only agents;
+every finding is either fixed or recorded under *Implementation notes*.
+
+**Hand-off note.** For the UI story (0062): call `Gate::authorize()` in the component as well as
+relying on the actions (a layer, not a redundancy), and keep the id fed to the uniqueness rule
+server-authoritative (`#[Locked]` / re-read from the model). For 0061: extend `DeleteBlogCategory`
+**in place**, keep its re-read of the row (the caller's instance is untrusted), and re-read the PRD
+— its blog wording (deletion *always* blocked, no confirm-and-proceed) is stricter than the
+product-category guard's.
 
 ## Documented functional decisions
 
