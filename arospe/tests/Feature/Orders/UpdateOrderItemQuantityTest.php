@@ -239,3 +239,28 @@ test('changing a quantity whose new line_total would exceed the decimal column c
 
     expect($item->fresh()->quantity)->toBe($originalQuantity);
 });
+
+// --- Story 0055 prep (D-4 / amendment 3): the quantity can never drop below what was refunded ---
+
+test('lowering a quantity below the refunded quantity is refused as a validation error on quantity and writes nothing', function () {
+    actingOrderEditorForQuantity();
+
+    $order = Order::factory()->paid()->create(['status' => OrderStatus::Processing]);
+    $item = OrderItem::factory()->for($order)->create(['quantity' => 5, 'refunded_quantity' => 3]);
+
+    expect(fn () => app(UpdateOrderItemQuantity::class)($order, $item->id, 2))
+        ->toThrow(fn (ValidationException $e) => isset($e->errors()['quantity']));
+
+    expect($item->fresh()->quantity)->toBe(5);
+});
+
+test('setting the quantity exactly equal to the refunded quantity is allowed', function () {
+    actingOrderEditorForQuantity();
+
+    $order = Order::factory()->paid()->create(['status' => OrderStatus::Processing]);
+    $item = OrderItem::factory()->for($order)->create(['quantity' => 5, 'refunded_quantity' => 3]);
+
+    app(UpdateOrderItemQuantity::class)($order, $item->id, 3);
+
+    expect($item->fresh()->quantity)->toBe(3);
+});

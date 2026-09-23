@@ -217,3 +217,34 @@ test('removing a line item never writes tax_rate itself', function () {
 
     expect((string) $order->fresh()->tax_rate)->toBe('10.000');
 });
+
+// --- Story 0055 prep (D-4 / amendment 3): a refunded line can never be deleted ---
+// `refunds.order_item_id` is restrictOnDelete() (0051 OQ-1), so deleting a line that carries a
+// refunds row is a QueryException 500 unless the action refuses first. The refusal is a
+// ValidationException on `order_item_id` (an invalid *specific* edit, like the last-item rule),
+// never the 409 that means "this order is closed".
+
+test('removing a line item that has refunded units is refused as a validation error and the row remains', function () {
+    actingOrderEditorForRemoval();
+
+    $order = Order::factory()->paid()->create(['status' => OrderStatus::Processing]);
+    $refundedItem = OrderItem::factory()->for($order)->create(['quantity' => 2, 'refunded_quantity' => 1]);
+    OrderItem::factory()->for($order)->create();
+
+    expect(fn () => app(RemoveOrderItem::class)($order, $refundedItem->id))
+        ->toThrow(fn (ValidationException $e) => isset($e->errors()['order_item_id']));
+
+    expect(OrderItem::query()->whereKey($refundedItem->id)->exists())->toBeTrue();
+});
+
+test('removing an unrefunded line on a partially refunded order still succeeds', function () {
+    actingOrderEditorForRemoval();
+
+    $order = Order::factory()->paid()->create(['status' => OrderStatus::Processing]);
+    OrderItem::factory()->for($order)->create(['quantity' => 2, 'refunded_quantity' => 1]);
+    $plainItem = OrderItem::factory()->for($order)->create();
+
+    app(RemoveOrderItem::class)($order, $plainItem->id);
+
+    expect(OrderItem::query()->whereKey($plainItem->id)->exists())->toBeFalse();
+});

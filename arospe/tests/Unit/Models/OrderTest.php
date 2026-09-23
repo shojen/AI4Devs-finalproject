@@ -61,3 +61,29 @@ test('isManuallyCancellable never throws for any OrderStatus case, Cancelled inc
     'Delivered' => [OrderStatus::Delivered],
     'Cancelled' => [OrderStatus::Cancelled],
 ]);
+
+// Story 0055, Phase 3 (TDD "red" step): Order::isLineItemEditable() does not exist yet. It is the
+// single predicate AddOrderItem / RemoveOrderItem / UpdateOrderItemQuantity read in place of their
+// three private in_array(Shipped, Delivered) copies (D-4, shape (b)), and that the Show screen's
+// canEditLineItems() reads too -- so the rule has one implementation. It reproduces the CURRENT
+// guard exactly (PRD §3.2 blocks Shipped/Delivered only): Cancelled is deliberately not blocked.
+
+test('isLineItemEditable is true for Pending, Processing and Cancelled', function (OrderStatus $status) {
+    expect(makeOrder($status, PaymentStatus::Paid)->isLineItemEditable())->toBeTrue();
+})->with([
+    'Pending' => [OrderStatus::Pending],
+    'Processing' => [OrderStatus::Processing],
+    'Cancelled' => [OrderStatus::Cancelled],
+]);
+
+test('isLineItemEditable is false for Shipped and Delivered regardless of payment state', function (OrderStatus $status, PaymentStatus $paymentStatus) {
+    expect(makeOrder($status, $paymentStatus)->isLineItemEditable())->toBeFalse();
+})->with([
+    'Shipped' => [OrderStatus::Shipped],
+    'Delivered' => [OrderStatus::Delivered],
+])->with([
+    'PendingPayment' => [PaymentStatus::PendingPayment],
+    'Paid' => [PaymentStatus::Paid],
+    'PartiallyRefunded' => [PaymentStatus::PartiallyRefunded],
+    'Refunded' => [PaymentStatus::Refunded],
+]);
