@@ -17,7 +17,7 @@ returns. No route, no Livewire component, no Blade markup, no migration and no n
 > composed later — computes both in its own resolution action, so leaving them out here would ship a
 > freshly-created **physical** order displaying a resolved `tax_rate` of `21.000` beside a
 > `tax_amount` of `0.00` while an otherwise-identical **virtual** order showed both. Story
-> [0055](../0055-orders-list-detail-editor-ui.md) recorded exactly that as its **R-6** / **OQ-1**,
+> [0055](../in-progress/0055-orders-list-detail-editor-ui.md) recorded exactly that as its **R-6** / **OQ-1**,
 > *"BLOCKING for the epic"*. **D-13** adopts 0054's computation verbatim; **OQ-1** below is marked
 > resolved rather than deleted.
 
@@ -898,7 +898,7 @@ rediscovery.
 - **D-13 — This action also derives `orders.tax_amount` and re-derives `orders.total`, in the same
   write, using exactly [0054](0054-order-tax-region-resolution-virtual-backend.md)'s computation.**
   *(Added after composition. Resolves **OQ-1**'s "who computes `tax_amount`" half, and closes story
-  [0055](../0055-orders-list-detail-editor-ui.md)'s **R-6** / **OQ-1**, which that story recorded as
+  [0055](../in-progress/0055-orders-list-detail-editor-ui.md)'s **R-6** / **OQ-1**, which that story recorded as
   "BLOCKING for the epic".)*
 
   **What changed and why.** As first composed this story held its scope to *resolution* — a region and
@@ -1137,7 +1137,7 @@ question arises here.
 
 > **Still open, and deliberately not touched by D-13: *when* resolution is triggered at all.** That is
 > [0054](0054-order-tax-region-resolution-virtual-backend.md)'s **OQ-2** and story
-> [0055](../0055-orders-list-detail-editor-ui.md)'s **OQ-1**, and it is a different question — this action
+> [0055](../in-progress/0055-orders-list-detail-editor-ui.md)'s **OQ-1**, and it is a different question — this action
 > remains "callable against a persisted order" (**D-8**) with no opinion about who calls it. Answering
 > "who computes the amount" does not answer "who invokes the resolver", and 0055's **OQ-1** stays open
 > on that half. *(Note this story has no open question of its own about the trigger — **D-8** settled it
@@ -1194,7 +1194,7 @@ Derived from this story, none of them in scope:
   second Phase 1: sibling story [0054](0054-order-tax-region-resolution-virtual-backend.md) was
   composed *after* this file and computed `tax_amount` / `total` in its own resolution action, leaving
   the two halves of one feature inconsistent in a way an administrator would see on screen. Story
-  [0055](../0055-orders-list-detail-editor-ui.md)'s Phase 1 found it, recorded it as that story's **R-6** /
+  [0055](../in-progress/0055-orders-list-detail-editor-ui.md)'s Phase 1 found it, recorded it as that story's **R-6** /
   **OQ-1**, and marked it *"BLOCKING for the epic"*. This file was amended to adopt 0054's computation
   verbatim. **The amendment is additive and reversible:** **OQ-1** is marked resolved rather than
   deleted, the superseded scope fence is flagged in place rather than removed, the old

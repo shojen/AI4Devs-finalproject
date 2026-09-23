@@ -34,7 +34,7 @@ Phase-3 blocker (`0048`–`0054`) is now `done/` — so it moves from `blocked` 
 terminal node finally unblocked. `0057`'s own node is likewise dropped from the graph; it had no pending dependent of its own to
 re-derive against `done/`.
 
-As of this snapshot, `ai-spec/tasks/in-progress/` is empty again: `0056-notification-viewing-
+As of this snapshot, `ai-spec/tasks/in-progress/` holds `0055-orders-list-detail-editor-ui.md` (checked out in Phase 3 by worktree `0055-orders-list-detail-editor-ui`; it keeps its node and its `claimed` JSON entry). Before that checkout it was empty: `0056-notification-viewing-
 backend.md` completed Phase 7 and moved straight from `in-progress/` to `done/` in this same
 regeneration pass — its node and edge (`P0056 --> P0057`) are dropped from the graph below, its
 `tasks-status.json` entry was deleted outright, and its own former dependent (`0057`) is

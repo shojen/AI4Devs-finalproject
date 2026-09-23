@@ -17,7 +17,7 @@ run by `AddOrderItem`, `RemoveOrderItem` and `UpdateOrderItemQuantity` — compu
 Consequence: resolve an order at 21% (`tax_amount 21.00` on a `100.00` subtotal), then add one line —
 the recalculation multiplies by `21.000` instead of `0.21` and writes a tax **100× too large**, or
 throws the column-ceiling `ValidationException` on a modest order. It surfaces the moment story
-[0055](../0055-orders-list-detail-editor-ui.md) wires resolution to the UI; **today nothing invokes
+[0055](../in-progress/0055-orders-list-detail-editor-ui.md) wires resolution to the UI; **today nothing invokes
 `ResolveOrderTaxRegion`, so no order carries a non-null `tax_rate` and no stored data is wrong.**
 
 Why nobody saw it: the shipped tests use `tax_rate = '0.210'` and assert
@@ -166,7 +166,7 @@ third copy.
 - [ ] Code reviewed (code-reviewer); appsec-auditor: no new write path, only the arithmetic changes.
 - [ ] Documentation updated (docs-keeper) per the list above, plus the grep for the wrong formula.
 - [ ] [0054](0054-order-tax-region-resolution-virtual-backend.md)'s step 5 is amended to compose
-      `CalculateTaxAmount`; [0055](../0055-orders-list-detail-editor-ui.md) lists this story as a hard
+      `CalculateTaxAmount`; [0055](../in-progress/0055-orders-list-detail-editor-ui.md) lists this story as a hard
       dependency.
 
 ## Documented functional decisions
