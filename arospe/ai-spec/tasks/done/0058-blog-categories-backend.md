@@ -1073,11 +1073,13 @@ stated rather than left for a reviewer to discover.
   takes an already-resolved model, so an unknown id can never reach it; that case belongs to route
   binding in the UI story, and asserting it here would test `HasUuids`/framework behaviour
   (what-not-to-test.md).
-- **No ER-diagram entry**, contrary to the Definition of Done's wording: `schema.md`'s own rule is
-  that a table with no relationship earns no entity block until an FK gives it one (story 0061).
-  The section lives in the new `docs/database/schema-blog.md`, following the per-domain split.
-  ADR 0001's "still future" list was three entries (Blog Categories/Tags/Posts), not six; it is now
-  two.
+- **ER diagram: an entity block for `blog_categories` is included**, as the Definition of Done asks.
+  The first pass of this story omitted it, citing `schema.md`'s then-rule that only tables with a
+  relationship are diagrammed — overriding the story's own DoD on a reading the project owner did
+  not share. Corrected on their instruction: every application table is diagrammed, relationships
+  or not, and `schema.md`'s rule now says so. The section lives in the new
+  `docs/database/schema-blog.md`, following the per-domain split. ADR 0001's "still future" list was
+  three entries (Blog Categories/Tags/Posts), not six; it is now two.
 - **R-3's stated mechanism is wrong; the trim matters for other reasons.** The text above says
   Laravel's `required` treats `'   '` as present. Verified false in the installed framework
   (`validateRequired` refuses a string whose `trim()` is empty), so a whitespace-only name is
