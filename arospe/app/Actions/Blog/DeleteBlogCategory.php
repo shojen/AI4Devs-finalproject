@@ -32,7 +32,7 @@ class DeleteBlogCategory
             targetId: $blogCategory->id,
         );
 
-        $current = BlogCategory::query()->findOrFail($blogCategory->getKey());
+        $current = BlogCategory::query()->whereKey($blogCategory->getKey())->firstOrFail();
 
         return (bool) $current->delete();
     }

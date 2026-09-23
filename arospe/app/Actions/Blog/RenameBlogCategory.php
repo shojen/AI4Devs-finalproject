@@ -46,7 +46,7 @@ class RenameBlogCategory
 
         $name = $this->trimName($name);
 
-        $current = BlogCategory::query()->findOrFail($blogCategory->getKey());
+        $current = BlogCategory::query()->whereKey($blogCategory->getKey())->firstOrFail();
 
         Validator::make(
             ['name' => $name],
