@@ -5,6 +5,7 @@ use App\Actions\Blog\DeleteBlogCategory;
 use App\Models\BlogCategory;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 // Story 0058, Phase 3 (TDD "red" step). D-13: DeleteBlogCategory authorizes itself first, so every
 // test runs actingAs() an actor holding blog.delete (and blog.create for the reuse test).
@@ -38,6 +39,15 @@ test('the freed name can immediately be reused by a new category', function () {
 
     expect($reused->fresh()->name)->toBe('Guías')
         ->and(BlogCategory::count())->toBe(1);
+});
+
+// The action takes an already-resolved model, so a malformed or unknown id cannot reach it (that is
+// route binding's job in the UI story). What CAN reach it is an instance whose row has since gone.
+test('deleting a category whose row is already gone fails cleanly instead of reporting success', function () {
+    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    app(DeleteBlogCategory::class)($category);
+
+    expect(fn () => app(DeleteBlogCategory::class)($category))->toThrow(ModelNotFoundException::class);
 });
 
 test('deleting one category leaves the others untouched', function () {

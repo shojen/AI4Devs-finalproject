@@ -63,6 +63,15 @@ test('saving a blog category without touching name does not rewrite normalized_n
     expect($fresh->fresh()->normalized_name)->toBe('sentinel');
 });
 
+test('a directly assigned normalized_name is overwritten by the derived one on save', function () {
+    $category = BlogCategory::create(['name' => 'Guías']);
+
+    $category->normalized_name = 'hijacked';
+    $category->save();
+
+    expect($category->fresh()->normalized_name)->toBe('guias');
+});
+
 test('a name whose fold differs from it stores both columns correctly', function () {
     $category = BlogCategory::create(['name' => 'Guías  De   Compra']);
 

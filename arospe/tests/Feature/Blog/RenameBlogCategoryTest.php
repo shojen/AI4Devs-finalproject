@@ -4,6 +4,7 @@ use App\Actions\Blog\RenameBlogCategory;
 use App\Models\BlogCategory;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -113,6 +114,53 @@ test('a rename trims surrounding whitespace before storing', function () {
     app(RenameBlogCategory::class)($category, '  Tutoriales  ');
 
     expect($category->fresh()->name)->toBe('Tutoriales');
+});
+
+test('a rename trims surrounding whitespace before validation, so it never counts toward the maximum', function () {
+    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+
+    app(RenameBlogCategory::class)($category, '  '.str_repeat('a', 255).'  ');
+
+    expect($category->fresh()->name)->toBe(str_repeat('a', 255));
+});
+
+test('a rename cannot dodge the duplicate check with a non-breaking space', function () {
+    BlogCategory::factory()->create(['name' => 'Guías']);
+    $target = BlogCategory::factory()->create(['name' => 'Novedades']);
+
+    expect(blogCategoryRenameOutcome($target, "\u{00A0}Guías"))->toBeInstanceOf(ValidationException::class)
+        ->and($target->fresh()->name)->toBe('Novedades');
+});
+
+// The caller's instance is untrusted (docs/security/model-instance-trust.md): the action re-reads the
+// row. With the stale instance still saying "Guías" while the row was renamed behind its back, a
+// rename "back" to "Guías" would otherwise see no dirty attribute, write nothing, and report success.
+test('renaming through a stale instance writes to the real row instead of silently doing nothing', function () {
+    $stale = BlogCategory::factory()->create(['name' => 'Guías']);
+
+    DB::table('blog_categories')->where('id', $stale->id)->update(['name' => 'Otra', 'normalized_name' => 'otra']);
+
+    app(RenameBlogCategory::class)($stale, 'Guías');
+
+    expect(DB::table('blog_categories')->where('id', $stale->id)->value('name'))->toBe('Guías');
+});
+
+test('an attribute left dirty on the caller\'s instance is not persisted by a rename', function () {
+    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $originalCreatedAt = DB::table('blog_categories')->where('id', $category->id)->value('created_at');
+
+    $category->created_at = now()->subYears(5);
+
+    app(RenameBlogCategory::class)($category, 'Tutoriales');
+
+    expect(DB::table('blog_categories')->where('id', $category->id)->value('created_at'))->toBe($originalCreatedAt);
+});
+
+test('renaming a category whose row is already gone fails cleanly instead of reporting success', function () {
+    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    DB::table('blog_categories')->where('id', $category->id)->delete();
+
+    expect(fn () => app(RenameBlogCategory::class)($category, 'Tutoriales'))->toThrow(ModelNotFoundException::class);
 });
 
 test('a rename accepts exactly 255 characters and refuses 256', function () {

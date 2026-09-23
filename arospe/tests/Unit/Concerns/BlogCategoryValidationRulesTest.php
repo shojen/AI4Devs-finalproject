@@ -34,23 +34,24 @@ function blogCategoryValidationRulesHarness(): object
     };
 }
 
-it('nameRules() returns required/string/max:255 followed by the two closure rules', function () {
+it('nameRules() returns bail/required/string/max:255 followed by the two closure rules', function () {
     $rules = blogCategoryValidationRulesHarness()->exposedNameRules(app(NormalizeForSearch::class));
 
-    expect($rules)->toHaveCount(5)
-        ->and($rules[0])->toBe('required')
-        ->and($rules[1])->toBe('string')
-        ->and($rules[2])->toBe('max:255')
-        ->and($rules[3])->toBeInstanceOf(Closure::class)
-        ->and($rules[4])->toBeInstanceOf(Closure::class);
+    expect($rules)->toHaveCount(6)
+        ->and($rules[0])->toBe('bail')
+        ->and($rules[1])->toBe('required')
+        ->and($rules[2])->toBe('string')
+        ->and($rules[3])->toBe('max:255')
+        ->and($rules[4])->toBeInstanceOf(Closure::class)
+        ->and($rules[5])->toBeInstanceOf(Closure::class);
 });
 
 it('nameRules($id) threads the id into the uniqueness closure\'s captured state, distinct from nameRules(null)', function () {
     $normalizeForSearch = app(NormalizeForSearch::class);
     $harness = blogCategoryValidationRulesHarness();
 
-    $withoutId = (new ReflectionFunction($harness->exposedNameRules($normalizeForSearch, null)[4]))->getStaticVariables();
-    $withId = (new ReflectionFunction($harness->exposedNameRules($normalizeForSearch, 'a-blog-category-id')[4]))->getStaticVariables();
+    $withoutId = (new ReflectionFunction($harness->exposedNameRules($normalizeForSearch, null)[5]))->getStaticVariables();
+    $withId = (new ReflectionFunction($harness->exposedNameRules($normalizeForSearch, 'a-blog-category-id')[5]))->getStaticVariables();
 
     expect($withoutId)->toHaveKey('blogCategoryId')
         ->and($withoutId['blogCategoryId'])->toBeNull()
@@ -62,5 +63,5 @@ it('blogCategoryRules() wraps nameRules() under the "name" key', function () {
 
     expect($rules)->toHaveKey('name')
         ->and($rules)->toHaveCount(1)
-        ->and($rules['name'])->toHaveCount(5);
+        ->and($rules['name'])->toHaveCount(6);
 });

@@ -138,3 +138,12 @@ arch('App\Livewire\Shipping\Index does not use the rate-precedence resolver')
 arch('App\Models\BlogCategory does not reference the product category taxonomy')
     ->expect('App\Models\BlogCategory')
     ->not->toUse('App\Models\ProductCategory');
+
+// The other direction of the same fence. The product-taxonomy rules above name the namespace
+// `App\Models\Blog`, but Pest matches a string target exactly, not by prefix, and the blog taxonomy
+// lives in the flat class App\Models\BlogCategory -- so those rules cannot see it (verified by
+// temporarily importing BlogCategory into ProductCategory: they stayed green). This one names the
+// real class.
+arch('App\Models\ProductCategory does not reference the blog category taxonomy')
+    ->expect('App\Models\ProductCategory')
+    ->not->toUse('App\Models\BlogCategory');

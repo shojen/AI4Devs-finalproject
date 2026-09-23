@@ -5,6 +5,7 @@ use App\Models\BlogCategory;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 // Story 0058, Phase 3 (TDD "red" step): the action, model, factory, trait and migration do not exist yet.
@@ -72,14 +73,55 @@ test('creating with a blank name throws ValidationException on name and writes n
         ->and(BlogCategory::count())->toBe(0);
 });
 
-// Laravel's `required` treats a string of spaces as present, so a bare rule set would let this
-// through. Proves the trim happens BEFORE validation.
 test('creating with a whitespace-only name is refused and writes no row', function () {
     $caught = blogCategoryCreateOutcome('   ');
 
     expect($caught)->toBeInstanceOf(ValidationException::class)
         ->and($caught->errors())->toHaveKey('name')
         ->and(BlogCategory::count())->toBe(0);
+});
+
+// Laravel's own `required` already refuses '   ', so the test above cannot prove the trim runs
+// first. This one can: padded to 261 characters, the name only passes `max:255` if it is trimmed
+// BEFORE validation.
+test('surrounding whitespace is trimmed before validation, so it never counts toward the maximum', function () {
+    $category = app(CreateBlogCategory::class)('  '.str_repeat('a', 255).'  ');
+
+    expect($category->fresh()->name)->toBe(str_repeat('a', 255));
+});
+
+// PHP's trim() leaves these in place and the shared normaliser then folds them to a plain space, so
+// without a Unicode-aware trim "\u{00A0}Guías" folds to " guias" and slips past the duplicate check.
+test('a non-breaking or zero-width space around a name is stripped, so it cannot dodge the duplicate check', function (string $padded) {
+    BlogCategory::factory()->create(['name' => 'Guías']);
+
+    $caught = blogCategoryCreateOutcome($padded);
+
+    expect($caught)->toBeInstanceOf(ValidationException::class)
+        ->and($caught->errors())->toHaveKey('name')
+        ->and(BlogCategory::count())->toBe(1);
+})->with([
+    'leading NBSP' => ["\u{00A0}Guías"],
+    'trailing NBSP' => ["Guías\u{00A0}"],
+    'trailing zero-width space' => ["Guías\u{200B}"],
+]);
+
+test('a name that is only invisible characters, or that folds to nothing, is refused', function (string $invisible) {
+    $caught = blogCategoryCreateOutcome($invisible);
+
+    expect($caught)->toBeInstanceOf(ValidationException::class)
+        ->and($caught->errors())->toHaveKey('name')
+        ->and(BlogCategory::count())->toBe(0);
+})->with([
+    'zero-width space' => ["\u{200B}"],
+    'non-breaking spaces' => ["\u{00A0}\u{00A0}"],
+    'a symbol the fold drops' => ['™'],
+]);
+
+test('a name over the maximum reports the length error exactly once', function () {
+    $caught = blogCategoryCreateOutcome(str_repeat('b', 256));
+
+    expect($caught->errors()['name'])->toHaveCount(1);
 });
 
 test('a name with leading and trailing whitespace is stored trimmed', function () {
@@ -172,7 +214,7 @@ test('an accent-only duplicate is refused by validation, not by the unique index
 test('a duplicate that races past validation is refused by the unique index as a ValidationException', function () {
     BlogCategory::creating(function (BlogCategory $incoming): void {
         DB::table('blog_categories')->insert([
-            'id' => (string) Illuminate\Support\Str::uuid7(),
+            'id' => (string) Str::uuid7(),
             'name' => 'GUÍAS',
             'normalized_name' => 'guias',
             'created_at' => now(),
