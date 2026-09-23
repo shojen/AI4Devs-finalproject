@@ -4,7 +4,6 @@ namespace App\Actions\Orders;
 
 use App\Actions\Auth\LogRefusedPrivilegedAttempt;
 use App\Concerns\OrderValidationRules;
-use App\Enums\OrderStatus;
 use App\Exceptions\OrderNotEditableException;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -12,6 +11,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Story 0048 -- change a line item's quantity on an open order. Same
@@ -94,6 +94,14 @@ class UpdateOrderItemQuantity
             // Rule::exists()->where('order_id', ...) above, not a replacement for it.
             $item = $lockedOrder->items()->findOrFail($orderItemId);
 
+            // Story 0055 (D-4 prep): the quantity can never drop below the units already refunded --
+            // that would leave `refunded_quantity > quantity` and a negative outstanding balance.
+            if ($quantity < $item->refunded_quantity) {
+                throw ValidationException::withMessages([
+                    'quantity' => __('orders.errors.quantity_below_refunded', ['refunded' => $item->refunded_quantity]),
+                ]);
+            }
+
             // D-4/R-1: the EXISTING unit_price column, never the product's live price. No
             // relation on $item is ever touched here -- that is the whole point of this line.
             $lineTotal = bcmul(($this->toNumericString)((string) $item->unit_price), (string) $quantity, 2);
@@ -116,10 +124,13 @@ class UpdateOrderItemQuantity
      * D-5: a direct throw, never a Gate ability -- duplicated identically
      * across all three of this story's actions rather than extracted; see
      * AddOrderItem::assertEditable()'s own docblock.
+     *
+     * Story 0055 (D-4): the status set now lives once, in Order::isLineItemEditable(); this
+     * method keeps only the refusal logging and the throw.
      */
     private function assertEditable(Order $order): void
     {
-        if (in_array($order->status, [OrderStatus::Shipped, OrderStatus::Delivered], true)) {
+        if (! $order->isLineItemEditable()) {
             // F-6 (Phase 4 security audit): logged as a refused privileged attempt, matching
             // this project's story 0015b convention.
             $this->logRefusedPrivilegedAttempt->log(Auth::user(), 'order_not_editable', 'order', $order->id);

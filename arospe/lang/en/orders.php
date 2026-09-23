@@ -49,6 +49,8 @@ return [
         'total_exceeds_maximum' => 'One or more line items would produce a total that exceeds the maximum representable value.',
         'order_not_editable' => 'This order can no longer be edited.',
         'last_line_item_cannot_be_removed' => 'An order must keep at least one line item. Cancel the order instead of removing its last item.',
+        'refunded_line_item_cannot_be_removed' => 'The line item cannot be removed because some of its units have already been refunded.',
+        'quantity_below_refunded' => 'The quantity cannot be lower than the :refunded units already refunded.',
         'too_many_line_items' => 'An order cannot hold more than :max line items.',
     ],
 

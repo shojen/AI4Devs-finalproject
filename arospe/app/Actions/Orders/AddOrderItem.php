@@ -4,7 +4,6 @@ namespace App\Actions\Orders;
 
 use App\Actions\Auth\LogRefusedPrivilegedAttempt;
 use App\Concerns\OrderValidationRules;
-use App\Enums\OrderStatus;
 use App\Exceptions\OrderNotEditableException;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -210,10 +209,13 @@ class AddOrderItem
      * three call sites in one folder do not yet justify the indirection
      * (the same threshold D-5 states explicitly; extract once a fourth
      * appears).
+     *
+     * Story 0055 (D-4): the status set now lives once, in Order::isLineItemEditable(); this
+     * method keeps only the refusal logging and the throw.
      */
     private function assertEditable(Order $order): void
     {
-        if (in_array($order->status, [OrderStatus::Shipped, OrderStatus::Delivered], true)) {
+        if (! $order->isLineItemEditable()) {
             // F-6 (Phase 4 security audit): logged as a refused privileged attempt, matching
             // this project's story 0015b convention -- immediately before the existing throw, so
             // the log entry and the refusal it describes can never disagree.

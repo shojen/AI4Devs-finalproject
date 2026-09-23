@@ -4,7 +4,6 @@ namespace App\Actions\Orders;
 
 use App\Actions\Auth\LogRefusedPrivilegedAttempt;
 use App\Concerns\OrderValidationRules;
-use App\Enums\OrderStatus;
 use App\Exceptions\OrderNotEditableException;
 use App\Models\Order;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -105,6 +104,15 @@ class RemoveOrderItem
             // count's own correctness -- do not drop it or reorder it below this point.
             $item = $lockedOrder->items()->lockForUpdate()->findOrFail($orderItemId);
 
+            // Story 0055 (D-4 prep): `refunds.order_item_id` is restrictOnDelete() (0051 OQ-1), so a
+            // line that has refunded units can never be deleted -- refuse it as an invalid specific
+            // edit (a ValidationException, like the last-item rule below), never as a 500.
+            if ($item->refunded_quantity > 0) {
+                throw ValidationException::withMessages([
+                    'order_item_id' => __('orders.errors.refunded_line_item_cannot_be_removed'),
+                ]);
+            }
+
             // F-3/D-1: moved inside the transaction, under the same lock as the item fetch
             // above -- closes the TOCTOU race the original pre-transaction, unlocked count left
             // open (two concurrent removals of the order's last two items could otherwise both
@@ -127,10 +135,13 @@ class RemoveOrderItem
      * D-5: a direct throw, never a Gate ability -- duplicated identically
      * across all three of this story's actions rather than extracted; see
      * AddOrderItem::assertEditable()'s own docblock.
+     *
+     * Story 0055 (D-4): the status set now lives once, in Order::isLineItemEditable(); this
+     * method keeps only the refusal logging and the throw.
      */
     private function assertEditable(Order $order): void
     {
-        if (in_array($order->status, [OrderStatus::Shipped, OrderStatus::Delivered], true)) {
+        if (! $order->isLineItemEditable()) {
             // F-6 (Phase 4 security audit): logged as a refused privileged attempt, matching
             // this project's story 0015b convention.
             $this->logRefusedPrivilegedAttempt->log(Auth::user(), 'order_not_editable', 'order', $order->id);

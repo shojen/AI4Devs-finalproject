@@ -24,6 +24,8 @@ return [
         'total_exceeds_maximum' => 'Una o más líneas del pedido producirían un total que excede el valor máximo representable.',
         'order_not_editable' => 'Este pedido ya no se puede editar.',
         'last_line_item_cannot_be_removed' => 'Un pedido debe conservar al menos una línea. Cancele el pedido en lugar de eliminar su última línea.',
+        'refunded_line_item_cannot_be_removed' => 'La línea no se puede eliminar porque ya se han reembolsado algunas de sus unidades.',
+        'quantity_below_refunded' => 'La cantidad no puede ser inferior a las :refunded unidades ya reembolsadas.',
         'too_many_line_items' => 'Un pedido no puede tener más de :max líneas.',
     ],
 
