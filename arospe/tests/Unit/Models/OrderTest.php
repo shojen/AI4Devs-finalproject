@@ -87,3 +87,19 @@ test('isLineItemEditable is false for Shipped and Delivered regardless of paymen
     'PartiallyRefunded' => [PaymentStatus::PartiallyRefunded],
     'Refunded' => [PaymentStatus::Refunded],
 ]);
+
+// Story 0055 (D-10): the refund control's STATE half. Order::isRefundable() is the single payment-
+// state predicate RecordRefund's guard reads and the detail screen's refund control reads, so the
+// screen never writes the {Paid, PartiallyRefunded} set a second time.
+
+test('isRefundable is true only for Paid and PartiallyRefunded, whatever the fulfilment status', function (OrderStatus $status, PaymentStatus $paymentStatus, bool $expected) {
+    expect(makeOrder($status, $paymentStatus)->isRefundable())->toBe($expected);
+})->with([
+    'Pending / PendingPayment' => [OrderStatus::Pending, PaymentStatus::PendingPayment, false],
+    'Pending / Paid' => [OrderStatus::Pending, PaymentStatus::Paid, true],
+    'Processing / PartiallyRefunded' => [OrderStatus::Processing, PaymentStatus::PartiallyRefunded, true],
+    'Shipped / Paid' => [OrderStatus::Shipped, PaymentStatus::Paid, true],
+    'Cancelled / Paid' => [OrderStatus::Cancelled, PaymentStatus::Paid, true],
+    'Processing / Refunded' => [OrderStatus::Processing, PaymentStatus::Refunded, false],
+    'Cancelled / Refunded' => [OrderStatus::Cancelled, PaymentStatus::Refunded, false],
+]);
