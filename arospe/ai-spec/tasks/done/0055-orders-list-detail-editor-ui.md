@@ -1693,6 +1693,22 @@ Derived from this story, none of them in scope:
 7. **A manual-review workflow** — how an administrator clears `flagged_for_review`, and whether clearing
    it re-triggers resolution. 0054's backlog item 4 already names it; this screen is what makes it
    visibly missing.
+8. **Fix the lock-order inversion between `RecordRefund` and the three line-item actions.** `RecordRefund`
+   locks the `order_items` rows before the `orders` row; `AddOrderItem`/`RemoveOrderItem`/
+   `UpdateOrderItemQuantity` lock the order first. A refund and a line-item edit on the same order can
+   therefore deadlock and surface as a 500. Pre-existing, but this story is the first place one screen makes
+   both reachable. Recommended: a small backend story that makes every action lock the order first.
+9. **Interim product picker discloses more than `products.view`.** It hands every active product's id, name
+   and SKU to any `orders.edit` holder even without `products.view` (R-4's premise is only partly true).
+   Accepted for now; replaced by backlog item 1 (story 0022's picker).
+10. **The three `assertEditable()` bodies remain triplicated** (log the refusal, then throw). The status set
+    is single now (`Order::isLineItemEditable()`), but the fourth-call-site extraction D-4 anticipated was
+    taken for the predicate only, not the guard.
+11. **Product question: `canEditLineItems` is true on a `Cancelled` order.** `Order::isLineItemEditable()`
+    mirrors the shipped guard and the PRD blocks only `Shipped`/`Delivered`; decide whether a cancelled order
+    should be editable, then change the predicate in one place.
+12. **The order list is unbounded** (`get()`, OQ-4). Pagination, search and filters belong with backlog
+    item 6.
 
 ## Provenance
 
@@ -1743,3 +1759,19 @@ Derived from this story, none of them in scope:
   and 0054; ⛔ blocked transitively through 0045 on Epic 2 stories 0024, 0029, 0035, 0036 and 0038; and
   a documented **soft** dependency on Epic 2's pending [0022](../done/0022-searchable-multi-select-component.md),
   worked around per **D-1** rather than waited on.
+
+## Closure record (2026-09-23)
+
+- **Shipped as amended** (see the "Phase 2 amendments" block at the top, which supersedes conflicting text).
+  Human decision at Phase 2: D-4 taken as shape (b) inside this branch as a small backend prep —
+  `Order::isLineItemEditable()`, refunded-line guards in `RemoveOrderItem`/`UpdateOrderItemQuantity`, and,
+  by the same reasoning, `Order::isRefundable()` read by `RecordRefund`. D-2 kept (shared anonymous
+  `confirm-dialog`, two call sites, `@close` bound to the dismiss method).
+- **Review rounds:** Phase 2 INVEST FAIL as written → amended; Phase 4 security audit PASS (five Low/Info
+  findings, folded in or backlogged); Phase 5 code review FAIL on three blocking items (blank-quantity 500,
+  un-memoised `$this->order()` calls, persisted error bags) → fixed and pinned by tests, then all criteria met.
+- **Verification:** full unscoped suite green (3427 tests, 3 skipped, 0 failed, browser suite included), Pint
+  clean, Larastan level 7 clean; the six browser files under `tests/Browser/Orders/` and the key feature
+  assertions were each proven able to fail with a targeted mutation.
+- **Backlog raised by this story:** items 8–12 above (refund lock order, picker disclosure, triplicated
+  `assertEditable()` bodies, editing a Cancelled order, unbounded list).
