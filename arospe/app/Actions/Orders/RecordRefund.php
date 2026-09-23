@@ -103,7 +103,7 @@ class RecordRefund
             /** @var Collection<string, OrderItem> $lockedItems */
             $lockedItems = $order->items()->lockForUpdate()->get()->keyBy('id');
 
-            if (! in_array($order->payment_status, [PaymentStatus::Paid, PaymentStatus::PartiallyRefunded], true)) {
+            if (! $order->isRefundable()) {
                 throw ValidationException::withMessages([
                     'items' => __('orders.refunds.invalid_payment_state'),
                 ]);

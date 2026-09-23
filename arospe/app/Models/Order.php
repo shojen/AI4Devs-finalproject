@@ -184,6 +184,21 @@ class Order extends Model
     }
 
     /**
+     * Is this order in a payment state that can take a refund?
+     *
+     * Non-throwing predicate (story 0055, D-10): PRD §3.2 accepts a refund from Paid and
+     * PartiallyRefunded only, and refuses PendingPayment and Refunded. App\Actions\Orders\RecordRefund's
+     * state guard and the order-detail screen's refund control both read this ONE method, so the UI
+     * (which omits the control entirely in the two refused states) cannot drift from the rule that
+     * refuses. Says nothing about the ACTOR -- `orders.refund` is a separate dimension -- and
+     * nothing about the fulfilment status, which a refund never consults.
+     */
+    public function isRefundable(): bool
+    {
+        return in_array($this->payment_status, [PaymentStatus::Paid, PaymentStatus::PartiallyRefunded], true);
+    }
+
+    /**
      * May this order be cancelled by an administrator right now?
      *
      * Non-throwing predicate over BOTH status dimensions (story 0050, PRD
