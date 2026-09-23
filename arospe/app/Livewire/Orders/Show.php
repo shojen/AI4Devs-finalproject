@@ -46,6 +46,21 @@ use Livewire\Component;
  * Every `#[Computed]` is memoised for the request and the write actions never refresh the instance
  * they are handed, so `refreshOrderState()` runs after EVERY successful write -- a screen that kept
  * the pre-write `$order` would show a stale total, and would hide 0052's auto-cancel.
+ *
+ * @property-read Order $order
+ * @property-read array<int, array{id: string, productName: string, productSku: string, quantity: int, outstandingQuantity: int, unitPrice: string, lineTotal: string, refundedQuantity: int, canRemove: bool}> $lineItems
+ * @property-read bool $canLinkCustomer
+ * @property-read bool $canEditLineItems
+ * @property-read bool $canTransitionStatus
+ * @property-read bool $canCancel
+ * @property-read bool $canRefund
+ * @property-read bool $isRefundable
+ * @property-read array<int, array{value: string, label: string}> $statusOptions
+ * @property-read array<int, array{id: string, name: string, sku: string}> $productOptions
+ * @property-read bool $productCatalogTruncated
+ * @property-read array<int, array{id: string, label: string}> $variantOptions
+ * @property-read array{regionName: string|null, rate: string|null, isFlagged: bool, flagLabel: string|null} $taxBasis
+ * @property-read array<int, string> $shippingAddressLines
  */
 #[Title('Order detail')]
 class Show extends Component
@@ -72,7 +87,12 @@ class Show extends Component
 
     public string $newProductVariantId = '';
 
-    public int $newQuantity = 1;
+    /**
+     * A string, not an int: a cleared number input arrives as '', which Livewire's int synthesizer
+     * turns into null and then UNSETS the typed property, so reading it would be an uninitialized-
+     * property 500 instead of a validation error. Cast at the call; the action validates `min:1`.
+     */
+    public string $newQuantity = '1';
 
     /**
      * Per-line-item quantity inputs, keyed by line-item id.
@@ -110,6 +130,14 @@ class Show extends Component
     #[Locked]
     public string $pendingStatus = '';
 
+    /**
+     * The order's status when the backward confirmation opened. `applyStatusChange()` refuses to
+     * confirm when it no longer matches: another administrator may have moved the order while the
+     * dialog was open, and `confirmed: true` would then apply a regression the user never saw.
+     */
+    #[Locked]
+    public string $pendingFromStatus = '';
+
     public function mount(Order $order): void
     {
         Gate::authorize('viewAny', Order::class);
@@ -134,18 +162,19 @@ class Show extends Component
     }
 
     /**
-     * @return array<int, array{id: string, productName: string, productSku: string, quantity: int, unitPrice: string, lineTotal: string, refundedQuantity: int, canRemove: bool}>
+     * @return array<int, array{id: string, productName: string, productSku: string, quantity: int, outstandingQuantity: int, unitPrice: string, lineTotal: string, refundedQuantity: int, canRemove: bool}>
      */
     #[Computed]
     public function lineItems(): array
     {
-        return $this->order()->items
+        return $this->order->items
             ->sortBy('id')
             ->map(fn (OrderItem $item): array => [
                 'id' => $item->id,
                 'productName' => $item->product_name,
                 'productSku' => $item->product_sku,
                 'quantity' => $item->quantity,
+                'outstandingQuantity' => $item->quantity - $item->refunded_quantity,
                 'unitPrice' => $item->unit_price,
                 'lineTotal' => $item->line_total,
                 'refundedQuantity' => $item->refunded_quantity,
@@ -164,7 +193,7 @@ class Show extends Component
     #[Computed]
     public function canLinkCustomer(): bool
     {
-        return ! $this->order()->customer->trashed() && Gate::allows('viewAny', Customer::class);
+        return ! $this->order->customer->trashed() && Gate::allows('viewAny', Customer::class);
     }
 
     /**
@@ -175,13 +204,13 @@ class Show extends Component
     #[Computed]
     public function canEditLineItems(): bool
     {
-        return Gate::allows('update', $this->order()) && $this->order()->isLineItemEditable();
+        return Gate::allows('update', $this->order) && $this->order->isLineItemEditable();
     }
 
     #[Computed]
     public function canTransitionStatus(): bool
     {
-        return Gate::allows('transitionStatus', $this->order());
+        return Gate::allows('transitionStatus', $this->order);
     }
 
     /**
@@ -191,7 +220,7 @@ class Show extends Component
     #[Computed]
     public function canCancel(): bool
     {
-        return Gate::allows('cancel', $this->order());
+        return Gate::allows('cancel', $this->order);
     }
 
     /**
@@ -211,7 +240,7 @@ class Show extends Component
     #[Computed]
     public function isRefundable(): bool
     {
-        return $this->order()->isRefundable();
+        return $this->order->isRefundable();
     }
 
     /**
@@ -224,7 +253,7 @@ class Show extends Component
     #[Computed]
     public function statusOptions(): array
     {
-        $current = $this->order()->status;
+        $current = $this->order->status;
 
         if ($current === OrderStatus::Cancelled) {
             return [];
@@ -247,7 +276,7 @@ class Show extends Component
     #[Computed]
     public function productOptions(): array
     {
-        if (! Gate::allows('update', $this->order())) {
+        if (! Gate::allows('update', $this->order)) {
             return [];
         }
 
@@ -267,7 +296,7 @@ class Show extends Component
     #[Computed]
     public function productCatalogTruncated(): bool
     {
-        return Gate::allows('update', $this->order())
+        return Gate::allows('update', $this->order)
             && Product::query()->where('status', ProductStatus::Active)->count() > self::PRODUCT_PICKER_LIMIT;
     }
 
@@ -308,7 +337,7 @@ class Show extends Component
     #[Computed]
     public function taxBasis(): array
     {
-        $order = $this->order();
+        $order = $this->order;
 
         return [
             'regionName' => $order->salesRegion?->name,
@@ -326,7 +355,7 @@ class Show extends Component
     #[Computed]
     public function shippingAddressLines(): array
     {
-        $order = $this->order();
+        $order = $this->order;
 
         return array_values(array_filter([
             $order->shipping_address_line1,
@@ -343,7 +372,8 @@ class Show extends Component
 
     public function addLineItem(AddOrderItem $addOrderItem): void
     {
-        Gate::authorize('update', $this->order());
+        Gate::authorize('update', $this->order);
+        $this->resetErrorBag();
 
         if (! $this->isOfferedProduct($this->newProductId)) {
             $this->addError('newProductId', __('orders.line_items.product_unavailable'));
@@ -351,7 +381,7 @@ class Show extends Component
             return;
         }
 
-        if ($this->variantOptions() !== [] && $this->newProductVariantId === '') {
+        if ($this->variantOptions !== [] && $this->newProductVariantId === '') {
             $this->addError('newProductVariantId', __('orders.line_items.variant_required'));
 
             return;
@@ -359,12 +389,13 @@ class Show extends Component
 
         try {
             $addOrderItem(
-                $this->order(),
+                $this->order,
                 $this->newProductId,
                 $this->newProductVariantId === '' ? null : $this->newProductVariantId,
-                $this->newQuantity,
+                (int) $this->newQuantity,
             );
         } catch (OrderNotEditableException $exception) {
+            $this->refreshOrderState();
             $this->addError('lineItems', $exception->getMessage());
 
             return;
@@ -376,11 +407,13 @@ class Show extends Component
 
     public function removeLineItem(string $itemId, RemoveOrderItem $removeOrderItem): void
     {
-        Gate::authorize('update', $this->order());
+        Gate::authorize('update', $this->order);
+        $this->resetErrorBag();
 
         try {
-            $removeOrderItem($this->order(), $itemId);
+            $removeOrderItem($this->order, $itemId);
         } catch (OrderNotEditableException $exception) {
+            $this->refreshOrderState();
             $this->addError('lineItems', $exception->getMessage());
 
             return;
@@ -391,11 +424,13 @@ class Show extends Component
 
     public function updateLineItemQuantity(string $itemId, UpdateOrderItemQuantity $updateOrderItemQuantity): void
     {
-        Gate::authorize('update', $this->order());
+        Gate::authorize('update', $this->order);
+        $this->resetErrorBag();
 
         try {
-            $updateOrderItemQuantity($this->order(), $itemId, (int) ($this->editingQuantities[$itemId] ?? 0));
+            $updateOrderItemQuantity($this->order, $itemId, (int) ($this->editingQuantities[$itemId] ?? 0));
         } catch (OrderNotEditableException $exception) {
+            $this->refreshOrderState();
             $this->addError('lineItems', $exception->getMessage());
 
             return;
@@ -415,7 +450,8 @@ class Show extends Component
      */
     public function requestStatusChange(TransitionOrderStatus $transitionOrderStatus): void
     {
-        Gate::authorize('transitionStatus', $this->order());
+        Gate::authorize('transitionStatus', $this->order);
+        $this->resetErrorBag();
 
         $target = $this->selectedStatus;
 
@@ -430,6 +466,7 @@ class Show extends Component
 
         if ($this->isBackwardTransition($target)) {
             $this->pendingStatus = $target;
+            $this->pendingFromStatus = $this->order->status->value;
             $this->showBackwardConfirm = true;
 
             return;
@@ -446,10 +483,19 @@ class Show extends Component
      */
     public function applyStatusChange(TransitionOrderStatus $transitionOrderStatus): void
     {
-        Gate::authorize('transitionStatus', $this->order());
+        Gate::authorize('transitionStatus', $this->order);
+        $this->resetErrorBag();
 
         $confirmed = $this->pendingStatus !== '';
         $target = $confirmed ? $this->pendingStatus : $this->selectedStatus;
+
+        if ($confirmed && $this->pendingFromStatus !== $this->order->status->value) {
+            // The order moved while the dialog was open: the confirmation was for a different move.
+            $this->clearPendingConfirmation();
+            $this->addError('selectedStatus', __('orders.transitions.stale_confirmation'));
+
+            return;
+        }
 
         if (! $this->isOfferedStatus($target)) {
             $this->rejectStatusSelection($target);
@@ -467,9 +513,8 @@ class Show extends Component
      */
     public function dismissBackwardConfirm(): void
     {
-        $this->pendingStatus = '';
-        $this->showBackwardConfirm = false;
-        $this->selectedStatus = $this->order()->status->value;
+        $this->clearPendingConfirmation();
+        $this->resetErrorBag();
     }
 
     // ---------------------------------------------------------------------
@@ -478,7 +523,7 @@ class Show extends Component
 
     public function confirmCancel(): void
     {
-        Gate::authorize('cancel', $this->order());
+        Gate::authorize('cancel', $this->order);
 
         $this->showCancelConfirm = true;
     }
@@ -490,19 +535,22 @@ class Show extends Component
 
     public function cancelOrder(CancelOrder $cancelOrder): void
     {
-        Gate::authorize('cancel', $this->order());
+        Gate::authorize('cancel', $this->order);
+        $this->resetErrorBag();
 
         try {
-            $cancelOrder($this->order());
+            $cancelOrder($this->order);
         } catch (OrderCancellationBlockedException $exception) {
             // Reachable without tampering only for the one actor the policy's state clause cannot
             // bind -- a Super Admin (Gate::before) -- or through a race; rendered, never a 500.
             $this->showCancelConfirm = false;
+            $this->refreshOrderState();
             $this->addError('cancel', $exception->getMessage());
 
             return;
         } catch (ValidationException $exception) {
             $this->showCancelConfirm = false;
+            $this->refreshOrderState();
             $this->addError('cancel', $this->firstMessage($exception));
 
             return;
@@ -520,7 +568,7 @@ class Show extends Component
     {
         Gate::authorize('orders.refund');
 
-        if (! $this->order()->isRefundable()) {
+        if (! $this->order->isRefundable()) {
             return;
         }
 
@@ -531,11 +579,13 @@ class Show extends Component
     {
         $this->showRefundModal = false;
         $this->resetErrorBag('refund');
+        $this->syncRefundInputs();
     }
 
     public function recordRefund(RecordRefund $recordRefund): void
     {
         Gate::authorize('orders.refund');
+        $this->resetErrorBag();
 
         $items = collect($this->refundQuantities)
             ->map(fn ($quantity): int => (int) $quantity)
@@ -549,7 +599,7 @@ class Show extends Component
         }
 
         try {
-            $recordRefund($this->order(), $items);
+            $recordRefund($this->order, $items);
         } catch (ValidationException $exception) {
             $this->addError('refund', $this->firstMessage($exception));
 
@@ -567,7 +617,7 @@ class Show extends Component
     private function transitionTo(string $target, bool $confirmed, TransitionOrderStatus $transitionOrderStatus): void
     {
         try {
-            $transitionOrderStatus($this->order(), OrderStatus::from($target), $confirmed);
+            $transitionOrderStatus($this->order, OrderStatus::from($target), $confirmed);
         } catch (OrderStatusRegressionRequiresConfirmationException $exception) {
             $this->clearPendingConfirmation();
             $this->addError('selectedStatus', $exception->getMessage());
@@ -589,12 +639,12 @@ class Show extends Component
      */
     private function isOfferedStatus(string $target): bool
     {
-        return collect($this->statusOptions())->contains('value', $target);
+        return collect($this->statusOptions)->contains('value', $target);
     }
 
     private function isOfferedProduct(string $productId): bool
     {
-        return $productId !== '' && collect($this->productOptions())->contains('id', $productId);
+        return $productId !== '' && collect($this->productOptions)->contains('id', $productId);
     }
 
     /**
@@ -604,7 +654,7 @@ class Show extends Component
      */
     private function isBackwardTransition(string $target): bool
     {
-        return OrderStatus::from($target)->isBackwardFrom($this->order()->status);
+        return OrderStatus::from($target)->isBackwardFrom($this->order->status);
     }
 
     /**
@@ -612,7 +662,7 @@ class Show extends Component
      */
     private function rejectStatusSelection(string $target): void
     {
-        $current = $this->order()->status;
+        $current = $this->order->status;
 
         $message = match (true) {
             $current === OrderStatus::Cancelled, $target === OrderStatus::Cancelled->value => __('orders.transitions.cancellation_unsupported'),
@@ -631,8 +681,9 @@ class Show extends Component
     private function clearPendingConfirmation(?string $resetSelectionTo = null): void
     {
         $this->pendingStatus = '';
+        $this->pendingFromStatus = '';
         $this->showBackwardConfirm = false;
-        $this->selectedStatus = $resetSelectionTo ?? $this->order()->status->value;
+        $this->selectedStatus = $resetSelectionTo ?? $this->order->status->value;
     }
 
     /**
@@ -658,16 +709,25 @@ class Show extends Component
             $this->shippingAddressLines,
         );
 
-        $this->selectedStatus = $this->order()->status->value;
+        $this->selectedStatus = $this->order->status->value;
         $this->syncQuantityInputs();
     }
 
     private function syncQuantityInputs(): void
     {
-        $items = $this->order()->items;
+        $items = $this->order->items;
 
         $this->editingQuantities = $items->mapWithKeys(fn (OrderItem $item): array => [$item->id => $item->quantity])->all();
-        $this->refundQuantities = $items->mapWithKeys(fn (OrderItem $item): array => [$item->id => 0])->all();
+
+        $this->syncRefundInputs();
+    }
+
+    /**
+     * Zero every refund input: a failed attempt's numbers must not survive a close and a reopen.
+     */
+    private function syncRefundInputs(): void
+    {
+        $this->refundQuantities = $this->order->items->mapWithKeys(fn (OrderItem $item): array => [$item->id => 0])->all();
     }
 
     private function firstMessage(ValidationException $exception): string

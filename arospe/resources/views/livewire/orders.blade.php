@@ -50,6 +50,7 @@
                                             <span
                                                 class="inline-flex"
                                                 role="img"
+                                                tabindex="0"
                                                 aria-label="{{ __('orders.index.flagged') }}"
                                                 data-test="order-flagged-{{ $order['id'] }}"
                                             >

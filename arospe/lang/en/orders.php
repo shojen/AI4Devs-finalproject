@@ -63,6 +63,7 @@ return [
         'confirm_backward_heading' => 'Move this order backward?',
         'confirm_backward_body' => 'This moves the order to an earlier status than its current one. Confirm only if that is what you intend.',
         'confirm_backward_action' => 'Move it back',
+        'stale_confirmation' => 'This order was changed by someone else while you were confirming. Review its status and try again.',
     ],
 
     // Story 0051 -- App\Actions\Orders\RecordRefund's three ValidationException
@@ -76,7 +77,8 @@ return [
         'action' => 'Record refund',
         'modal_title' => 'Record a refund',
         'units_to_refund' => 'Units to refund',
-        'outstanding' => ':count outstanding',
+        'outstanding' => ':count unit outstanding|:count units outstanding',
+        'dismiss' => 'Cancel',
         'confirm' => 'Refund',
         'nothing_selected' => 'Enter at least one unit to refund.',
     ],

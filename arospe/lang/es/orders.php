@@ -36,6 +36,7 @@ return [
         'confirm_backward_heading' => '¿Mover este pedido hacia atrás?',
         'confirm_backward_body' => 'Esto lleva el pedido a un estado anterior al actual. Confirma solo si es lo que pretendes.',
         'confirm_backward_action' => 'Moverlo atrás',
+        'stale_confirmation' => 'Otra persona ha cambiado este pedido mientras confirmabas. Revisa su estado e inténtalo de nuevo.',
     ],
 
     'refunds' => [
@@ -45,7 +46,8 @@ return [
         'action' => 'Registrar reembolso',
         'modal_title' => 'Registrar un reembolso',
         'units_to_refund' => 'Unidades a reembolsar',
-        'outstanding' => ':count pendientes',
+        'outstanding' => ':count unidad pendiente|:count unidades pendientes',
+        'dismiss' => 'Cancelar',
         'confirm' => 'Reembolsar',
         'nothing_selected' => 'Introduce al menos una unidad a reembolsar.',
     ],

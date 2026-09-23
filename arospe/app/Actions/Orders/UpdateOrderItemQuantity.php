@@ -92,7 +92,7 @@ class UpdateOrderItemQuantity
             // F-5: resolve THROUGH the order's own relation, never a global query -- a second,
             // structural layer on top of orderItemOwnershipRules()'s already-scoped
             // Rule::exists()->where('order_id', ...) above, not a replacement for it.
-            $item = $lockedOrder->items()->findOrFail($orderItemId);
+            $item = $lockedOrder->items()->lockForUpdate()->findOrFail($orderItemId);
 
             // Story 0055 (D-4 prep): the quantity can never drop below the units already refunded --
             // that would leave `refunded_quantity > quantity` and a negative outstanding balance.

@@ -25,6 +25,9 @@ use Livewire\Component;
  * still sort deterministically. The customer is loaded `withTrashed()` because orders may
  * legitimately reference a soft-deleted customer (0045 D-12) and `Order::customer()` carries no
  * such scope -- without it `customerName` would fatal on a null.
+ *
+ * @property-read bool $canViewCustomers
+ * @property-read array<int, array{id: string, orderNumber: string, customerId: string, customerName: string, customerLinkable: bool, status: string, statusLabel: string, paymentStatus: string, paymentStatusLabel: string, total: string, createdAt: string, isFlagged: bool, flagReasonLabel: string|null}> $orders
  */
 #[Title('Orders')]
 class Index extends Component
@@ -59,7 +62,7 @@ class Index extends Component
     #[Computed]
     public function orders(): array
     {
-        $canLinkCustomers = $this->canViewCustomers();
+        $canLinkCustomers = $this->canViewCustomers;
 
         return Order::query()
             ->with(['customer' => fn ($query) => $query->withTrashed()])
@@ -90,7 +93,7 @@ class Index extends Component
     #[Computed]
     public function ordersSummary(): string
     {
-        $count = count($this->orders());
+        $count = count($this->orders);
 
         return trans_choice('orders.index.summary', $count, ['count' => $count]);
     }

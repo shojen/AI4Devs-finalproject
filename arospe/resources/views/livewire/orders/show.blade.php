@@ -257,7 +257,7 @@
         @endif
 
         <div data-test="line-items-errors" class="space-y-1">
-            @foreach (['lineItems', 'order_item_id', 'quantity', 'items', 'product_id', 'product_variant_id', 'newProductId', 'newProductVariantId'] as $errorKey)
+            @foreach (['lineItems', 'order_item_id', 'quantity', 'items', 'product_id', 'product_variant_id'] as $errorKey)
                 @error($errorKey)
                     <flux:text class="text-red-600 dark:text-red-400">{{ $message }}</flux:text>
                 @enderror
@@ -311,7 +311,8 @@
             @endif
         </div>
 
-        <flux:error name="selectedStatus" />
+        {{-- selectedStatus, newProductId and newProductVariantId errors render under their own labelled
+             select (Flux's field wrapper); only errors with no field of their own are listed here. --}}
         <flux:error name="cancel" />
     </div>
 
@@ -427,12 +428,12 @@
 
                 <div class="space-y-3">
                     @foreach ($this->lineItems as $item)
-                        @php($outstanding = $item['quantity'] - $item['refundedQuantity'])
+                        @php($outstanding = $item['outstandingQuantity'])
                         @if ($outstanding > 0)
                             <div class="flex items-center justify-between gap-4">
                                 <div>
                                     <div class="font-medium">{{ $item['productName'] }}</div>
-                                    <flux:text size="sm">{{ __('orders.refunds.outstanding', ['count' => $outstanding]) }}</flux:text>
+                                    <flux:text size="sm">{{ trans_choice('orders.refunds.outstanding', $outstanding, ['count' => $outstanding]) }}</flux:text>
                                 </div>
                                 <flux:input
                                     type="number"
@@ -452,7 +453,7 @@
 
                 <div class="flex gap-3 justify-end">
                     <flux:button variant="outline" wire:click="closeRefundModal" data-test="refund-dismiss">
-                        {{ __('Cancel') }}
+                        {{ __('orders.refunds.dismiss') }}
                     </flux:button>
                     <flux:button variant="primary" wire:click="recordRefund" wire:loading.attr="disabled" wire:target="recordRefund" data-test="refund-confirm">
                         {{ __('orders.refunds.confirm') }}
