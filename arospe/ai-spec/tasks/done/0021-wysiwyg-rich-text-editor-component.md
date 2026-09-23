@@ -20,7 +20,7 @@ frontend | includes database-expert: **no**
 Not full-stack and not split: this story creates no table, no migration, no query, no action, no
 policy, no permission and no server-side domain logic. Its only PHP is a Livewire component class
 whose public surface is a `#[Modelable]` string. `database-expert` and `backend-*` are therefore
-deliberately not convened, per [workflow.md](../../../docs/workflow.md#task-classification-rule).
+deliberately not convened, per [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule).
 
 ## Three Amigos participants
 
@@ -37,7 +37,7 @@ deliberately not convened, per [workflow.md](../../../docs/workflow.md#task-clas
 
 ## PRD coverage
 
-This story owns **one** of [§2.3](../../../docs/PRD/PRD.md#23-shared-media-gallery)'s Gherkin scenarios
+This story owns **one** of [§2.3](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#23-shared-media-gallery)'s Gherkin scenarios
 and **half** of one acceptance criterion:
 
 - *"Inserting an image inline from the WYSIWYG editor"*
@@ -45,7 +45,7 @@ and **half** of one acceptance criterion:
   featured mode sets the featured image"*) belongs to **0027**.
 
 It also realises the toolbar named in the PRD's
-[Design reference & the dashboard shell](../../../docs/PRD/PRD.md#design-reference--the-dashboard-shell)
+[Design reference & the dashboard shell](../../../docs/PRD/sections/foundations.md#design-reference--the-dashboard-shell)
 section — *"the **WYSIWYG toolbar** (Bold, Italic, Underline, H2, bullet list, numbered list, link,
 Insert image)"* — which fixes the button set exactly and is why this story adds no ninth button.
 
@@ -282,10 +282,10 @@ while this editor only ever emits the short forms. That is fine — the allow-li
 ### D3 — Component identity and public surface
 
 `App\Livewire\Components\WysiwygEditor`, class-based per
-[base-standards.md](../../../docs/conventions/base-standards.md#livewire-component-convention-class-based-not-single-file),
+[base-standards.md](../../../docs/conventions/base-standards/livewire-and-flux-conventions.md#livewire-component-convention-class-based-not-single-file),
 with the ordinary kebab-case view mirror `resources/views/livewire/components/wysiwyg-editor.blade.php`
 (the class is not named `Index`, so the
-[subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
+[subfolder exception](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
 does not apply). The folder is the one 0022 also targets — see [D12](#d12--translation-keys-and-the-shared-ownership-hand-off-with-0022).
 
 ```php
@@ -831,7 +831,7 @@ collapsing them into one test would hide which side drifted.
   `->wait()`, recorded as a trade-off rather than a stray sleep. **A longer `->wait()` is not
   automatically safer**: `Playwright::$timeout` is 5000 ms, and 0020 documented a real case where
   widening a `->wait(2)` to `->wait(5)` made a flaky test *worse* because the call raced its own
-  budget (see [playwright-setup.md](../../../docs/testing/frontend/playwright-setup.md#a-bare-waitn-is-not-a-polling-primitive-and-a-longer-one-can-fail-because-it-is-longer)).
+  budget (see [playwright-setup.md](../../../docs/testing/frontend/playwright-setup/waiting-rules.md#a-bare-waitn-is-not-a-polling-primitive-and-a-longer-one-can-fail-because-it-is-longer)).
   If a `->wait()` here flakes, do not "fix" it by increasing the number — re-read that section first.
 - **A `window.prompt()` link action is untestable here** (V12) — a trap in the *implementation*, not
   just the test. D8 exists to prevent it.
@@ -985,7 +985,7 @@ Ordered. Steps 0 and 1 are hard gates.
     `docs/api/routes.md` or wherever 0024's coordination point ends up documented, so the follow-up is
     discoverable from 0024's own side.
 11. Quality gates in order per
-    [base-standards](../../../docs/conventions/base-standards.md#quality-gates): filtered tests →
+    [base-standards](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#quality-gates): filtered tests →
     `vendor/bin/pint --dirty --format agent` → Larastan level 7 → full suite.
 
 ---
@@ -998,7 +998,7 @@ Ordered. Steps 0 and 1 are hard gates.
   complete, implementation not started.** This story consumes its D2 contract and (recommended)
   extends its D16 harness. 0020 itself is blocked on **0019**, so the real chain is
   0019 → 0020 → 0021. Numbering already satisfies
-  [workflow.md](../../../docs/workflow.md#task-ordering-rule)'s ordering rule.
+  [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule)'s ordering rule.
 - **[0024a — product description HTML sanitization](0024a-product-description-html-sanitization.md) —
   coordination, not a build blocker.** *(Repointed 2026-09-01: this named story 0024, whose **D-16**
   was split into its own story on that date; 0024a depends on 0024 in turn.)* Its D-16 allow-list
@@ -1093,13 +1093,13 @@ unexpected answer is treated as new information rather than as a defect in this 
 ## Provenance
 
 Written in Phase 1 (Three Amigos) on 2026-08-18 for Epic 2, from
-[PRD §2.3](../../../docs/PRD/PRD.md#23-shared-media-gallery) and the
-[Design reference](../../../docs/PRD/PRD.md#design-reference--the-dashboard-shell) section, against the
+[PRD §2.3](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#23-shared-media-gallery) and the
+[Design reference](../../../docs/PRD/sections/foundations.md#design-reference--the-dashboard-shell) section, against the
 finalized contracts in [0020](../done/0020-shared-media-gallery-modal-ui.md) (D2, D3, D12, D14, D16) and
 [0024a](0024a-product-description-html-sanitization.md) (D-16, split out of
 [0024](0024-products-core-crud-backend.md) on 2026-09-01). Participants: `product-owner` (lead),
 `frontend-expert`, `frontend-qa` — classified **frontend** per
-[workflow.md](../../../docs/workflow.md#task-classification-rule)'s task-classification rule, with
+[workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule)'s task-classification rule, with
 `database-expert` and the backend roles deliberately **not** convened, since the story creates no
 table, migration, query or server-side domain logic.
 
@@ -1135,7 +1135,7 @@ demonstrable against the fixed D2 allow-list without the real package installed.
 ## Phase 4 record (security audit)
 
 `appsec-auditor` audited the shipped component on 2026-08-31 against D2/D3/D8, the routeless-component
-authorization pattern ([security/livewire-authorization.md](../../../docs/security/livewire-authorization.md#the-routeless-case-a-component-with-no-route-has-no-per-request-backstop-at-all)),
+authorization pattern ([security/livewire-authorization.md](../../../docs/security/livewire-authorization/entry-point-and-method-gates.md#the-routeless-case-a-component-with-no-route-has-no-per-request-backstop-at-all)),
 and `model-instance-trust.md`'s "derive the state, never accept it" rule. **Verdict: FAIL** — 1 High
 (latent, zero reachability today since no production consumer mounts this component yet), 2 Medium, 3
 Low, 1 Info.
@@ -1368,7 +1368,7 @@ run 70% of the time."*
   is under sustained memory pressure, not only when this one test is slow) — the composed-actions test
   itself, the one with hard 7/10 data, is marked `->flaky(3)`. This is this codebase's **first use** of
   Pest's built-in retry, and it is the exact lever story 0020's own flaky-test investigation
-  ([docs/testing/frontend/playwright-setup.md](../../../docs/testing/frontend/playwright-setup.md#a-bare-waitn-is-not-a-polling-primitive-and-a-longer-one-can-fail-because-it-is-longer))
+  ([docs/testing/frontend/playwright-setup.md](../../../docs/testing/frontend/playwright-setup/waiting-rules.md#a-bare-waitn-is-not-a-polling-primitive-and-a-longer-one-can-fail-because-it-is-longer))
   named as "the next lever" after exhausting the wait/assertion-permutation space, without ever applying
   it. `->flaky(3)` only retries on a genuine assertion failure — it cannot mask a real allow-list
   regression, only environment timing variance. The other 8 gated sites are unmeasured individually (the

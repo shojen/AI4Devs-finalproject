@@ -1,6 +1,6 @@
 # Epic 2 decision digest (Products, Taxes & Sales Regions, Shipping)
 
-Append-only. See [workflow.md#decision-digest-per-epic](../../../docs/workflow.md#decision-digest-per-epic)
+Append-only. See [workflow.md#decision-digest-per-epic](../../../docs/workflow/agents-and-epic-digests.md#decision-digest-per-epic)
 for what belongs here and what doesn't — facts and decisions a later story in this epic must not
 re-derive, never the full prose of a finalized story.
 
@@ -69,7 +69,7 @@ re-derive, never the full prose of a finalized story.
   story 0024b (originating in 0023/0024).
 - Full mechanism, the exception-type reasoning (`ValidationException` not a domain exception, since a
   Livewire error bag needs no per-call-site try/catch), and the residual count-disclosure note are
-  documented at [docs/database/schema-products.md#product_categories](../../../docs/database/schema-products.md#product_categories).
+  documented at [docs/database/schema-products/categories-and-products.md#product_categories](../../../docs/database/schema-products/categories-and-products.md#product_categories).
 
 ## Story 0025 — Product categories management screen (list, create/edit modal, blocked delete)
 
@@ -106,8 +106,8 @@ re-derive, never the full prose of a finalized story.
   and there's no second dimension to summarise like Users has "active") — story 0025.
 - Full mechanism (the two-layer gating, the `#[Locked]`/unlocked property split, the row-hint
   parity) is documented at
-  [docs/api/products.md#product-categoriesindex--the-fourth-permission-gated-route](../../../docs/api/products.md#product-categoriesindex--the-fourth-permission-gated-route)
-  and [docs/architecture/authorization.md#productcategorypolicy--the-fifth-policy-and-the-first-to-gain-its-call-site-in-a-later-story-than-the-one-that-created-it](../../../docs/architecture/authorization.md#productcategorypolicy--the-fifth-policy-and-the-first-to-gain-its-call-site-in-a-later-story-than-the-one-that-created-it).
+  [docs/api/products/product-categories.md#product-categoriesindex--the-fourth-permission-gated-route](../../../docs/api/products/product-categories.md#product-categoriesindex--the-fourth-permission-gated-route)
+  and [docs/architecture/authorization/policies-sales-media-categories.md#productcategorypolicy--the-fifth-policy-and-the-first-to-gain-its-call-site-in-a-later-story-than-the-one-that-created-it](../../../docs/architecture/authorization/policies-sales-media-categories.md#productcategorypolicy--the-fifth-policy-and-the-first-to-gain-its-call-site-in-a-later-story-than-the-one-that-created-it).
 
 ## Story 0026 — Product ↔ Sales Region assignment and tax resolution backend (blocks story 0027)
 
@@ -186,7 +186,7 @@ re-derive, never the full prose of a finalized story.
   all** — removed project-wide by story 0016's own scope-change amendment (D11 there). The resolver
   and the picker have exactly two/no grouping tiers respectively — do not reintroduce a
   grouping-membership concept anywhere in story 0027 — story 0026 (D10).
-- Full mechanism is documented at [docs/database/schema-products.md#product_sales_region](../../../docs/database/schema-products.md#product_sales_region).
+- Full mechanism is documented at [docs/database/schema-products/gallery-and-region-pivots.md#product_sales_region](../../../docs/database/schema-products/gallery-and-region-pivots.md#product_sales_region).
 
 ## Story 0027 — Products list + editor UI (discharges 0026's hand-off; the first real caller of ProductPolicy/CreateProduct/UpdateProduct/DeleteProduct/SyncProductGallery/SyncProductSalesRegions/SearchSalesRegions)
 
@@ -229,7 +229,7 @@ re-derive, never the full prose of a finalized story.
   the finer `media.view` these two listeners actually need. Generalises: **a route's `can:` replay
   covers only the ability it names; a method inside that route asking a different, finer ability still
   needs its own gate.** Full write-up:
-  [docs/security/livewire-authorization.md](../../../docs/security/livewire-authorization.md#the-routeless-case-a-component-with-no-route-has-no-per-request-backstop-at-all) — story 0027.
+  [docs/security/livewire-authorization.md](../../../docs/security/livewire-authorization/entry-point-and-method-gates.md#the-routeless-case-a-component-with-no-route-has-no-per-request-backstop-at-all) — story 0027.
 - `addGalleryImages()` carries `self::MAX_GALLERY_SIZE = 20` (matching
   `productGalleryMediaIdsRules()`'s `max:20`) as a **mutation-point** cap, not only a `save()`-time
   validation cap — a public, client-dispatchable method with no other bound would otherwise let the
@@ -260,7 +260,7 @@ re-derive, never the full prose of a finalized story.
   $perElementRules])->validate()` — never combined, because Laravel expands a `.*` wildcard against
   every element regardless of whether the parent's own `max:` already failed. Full measurements (one
   combined call = one `Rule::exists()` query per submitted id before the cap is ever consulted) at
-  [docs/security/array-validation-bounds.md](../../../docs/security/array-validation-bounds.md#story-0027-the-two-pass-shape-is-only-half-the-bound--the-mutation-point-needs-one-too) — story 0027.
+  [docs/security/array-validation-bounds.md](../../../docs/security/array-validation-bounds/story-history.md#story-0027-the-two-pass-shape-is-only-half-the-bound--the-mutation-point-needs-one-too) — story 0027.
 - `ProductPolicy` now has real call sites for **all four** abilities (`viewAny` via `Index::mount()`;
   `create`/`update`/`delete` as a **second** layer over 0024's already-self-authorizing actions, via
   `Editor::mount()`/`::save()` and `Index::confirmDelete()`/`::deleteProduct()`) — story 0027.
@@ -284,8 +284,8 @@ re-derive, never the full prose of a finalized story.
   its view, its `routes/web.php` registration block and `tests/Feature/Dev/MediaGalleryHarnessRouteTest.php`
   were deleted. No later story should expect `app/Livewire/Dev/` to exist — story 0027.
 - Full mechanism is documented at
-  [docs/api/products.md#productsindex-productscreate-and-productsedit--the-fifth-permission-gated-route-family](../../../docs/api/products.md#productsindex-productscreate-and-productsedit--the-fifth-permission-gated-route-family)
-  and [docs/architecture/authorization.md#productpolicy--the-sixth-policy-and-the-second-built-entirely-for-a-screen-that-does-not-exist-yet](../../../docs/architecture/authorization.md#productpolicy--the-sixth-policy-and-the-second-built-entirely-for-a-screen-that-does-not-exist-yet).
+  [docs/api/products/products-index-and-editor.md#productsindex-productscreate-and-productsedit--the-fifth-permission-gated-route-family](../../../docs/api/products/products-index-and-editor.md#productsindex-productscreate-and-productsedit--the-fifth-permission-gated-route-family)
+  and [docs/architecture/authorization/policies-products.md#productpolicy--the-sixth-policy-and-the-second-built-entirely-for-a-screen-that-does-not-exist-yet](../../../docs/architecture/authorization/policies-products.md#productpolicy--the-sixth-policy-and-the-second-built-entirely-for-a-screen-that-does-not-exist-yet).
 
 ## Story 0028 — Product variant attribute types & values backend (gap-filled at story 0029's Phase 6 — missing since 0028's own closure)
 
@@ -352,8 +352,8 @@ re-derive, never the full prose of a finalized story.
   authorization/validation/action wiring shipped, no real markup, matching `sales-regions.index`'s own
   precedent between tasks 0017/0018. **No `config/modules.php` sidebar entry** — third time this
   linkless half-state has occurred (after `roles.index`, `sales-regions.index`) — story 0028.
-- Full mechanism at [docs/database/schema-products.md#product_attribute_types](../../../docs/database/schema-products.md#product_attribute_types)
-  / [#product_attribute_values](../../../docs/database/schema-products.md#product_attribute_values).
+- Full mechanism at [docs/database/schema-products/attribute-types-and-values.md#product_attribute_types](../../../docs/database/schema-products/attribute-types-and-values.md#product_attribute_types)
+  / [#product_attribute_values](../../../docs/database/schema-products/attribute-types-and-values.md#product_attribute_values).
 
 ## Story 0029 — Product variants core backend (two tables, derived SKU, combination-hash duplicate guard, read-time image inheritance, self-authorizing actions)
 
@@ -462,17 +462,17 @@ re-derive, never the full prose of a finalized story.
   inside the closure. **`attempts` is silently inert on a nested `DB::transaction()`** — only the
   outermost transaction's `attempts` ever fires, so story 0031's `Editor::save()` must NOT add its own
   `attempts:` without first re-deriving this analysis — full history at
-  [derived-column-invariants.md](../../../docs/security/derived-column-invariants.md#what-the-remediation-introduced-a-retried-transaction-is-a-retry-safe-unit-or-it-is-a-lost-update)
-  and [errors-log.md](../../../docs/errors-log.md#dbtransactionfn-attempts-n-retried-a-closure-that-mutated-a-model-created-outside-it-producing-a-silent-lost-update-reported-as-success--2026-09-04).
+  [derived-column-invariants.md](../../../docs/security/derived-column-invariants/retry-and-transaction-hazards.md#what-the-remediation-introduced-a-retried-transaction-is-a-retry-safe-unit-or-it-is-a-lost-update)
+  and [errors-log.md](../../../docs/errors-log/2026-09-01-to-2026-09-07.md#dbtransactionfn-attempts-n-retried-a-closure-that-mutated-a-model-created-outside-it-producing-a-silent-lost-update-reported-as-success--2026-09-04).
 - **This story ships NO Livewire component, NO route, NO in-use delete guard change.** Story 0031
   owns the editor UI; story 0029a is planned to own the attribute-value/type in-use guards (see the
   0028 section above — D7's "0029" reference actually resolves to 0029a); story 0029b is planned to
   own a combination generator. Neither 0029a nor 0029b had started as of this story's own closure
   (both still sit at the top level of `ai-spec/tasks/`, not `in-progress/`) — a later story must not
   assume either has shipped.
-- Full mechanism at [docs/database/schema-products.md#product_variants](../../../docs/database/schema-products.md#product_variants)
-  / [#product_variant_values](../../../docs/database/schema-products.md#product_variant_values), and
-  [docs/architecture/authorization.md#product-variant-actions-gate-against-the-parent-product-not-a-new-policy](../../../docs/architecture/authorization.md#product-variant-actions-gate-against-the-parent-product-not-a-new-policy).
+- Full mechanism at [docs/database/schema-products/variants.md#product_variants](../../../docs/database/schema-products/variants.md#product_variants)
+  / [#product_variant_values](../../../docs/database/schema-products/variants.md#product_variant_values), and
+  [docs/architecture/authorization/policies-variants-and-routeless.md#product-variant-actions-gate-against-the-parent-product-not-a-new-policy](../../../docs/architecture/authorization/policies-variants-and-routeless.md#product-variant-actions-gate-against-the-parent-product-not-a-new-policy).
 
 ## Story 0029a — Attribute type & value in-use delete guards backend (split out of 0029's D-10; discharges 0028's own Q3/D7 hand-off)
 
@@ -526,9 +526,9 @@ re-derive, never the full prose of a finalized story.
 - **This story ships NO migration, NO new column, NO permission, NO policy change, NO Livewire
   component, NO route, NO Blade view and NO browser test** — every FK it counts against is story
   0029's. Full mechanism at
-  [docs/database/schema-products.md#product_attribute_types](../../../docs/database/schema-products.md#product_attribute_types)
+  [docs/database/schema-products/attribute-types-and-values.md#product_attribute_types](../../../docs/database/schema-products/attribute-types-and-values.md#product_attribute_types)
   and
-  [docs/database/schema-products.md#since-story-0029a-deleting-a-value-in-use-is-hard-refused-per-value-with-a-message-naming-the-exact-count](../../../docs/database/schema-products.md#since-story-0029a-deleting-a-value-in-use-is-hard-refused-per-value-with-a-message-naming-the-exact-count).
+  [docs/database/schema-products/attribute-types-and-values.md#since-story-0029a-deleting-a-value-in-use-is-hard-refused-per-value-with-a-message-naming-the-exact-count](../../../docs/database/schema-products/attribute-types-and-values.md#since-story-0029a-deleting-a-value-in-use-is-hard-refused-per-value-with-a-message-naming-the-exact-count).
 
 ## Story 0029b — Product variant combination generator backend (the cartesian "generate all combinations" action; split out of 0029 at Phase 2 on INVEST "Small")
 
@@ -551,7 +551,7 @@ re-derive, never the full prose of a finalized story.
   `CreateProductVariant`'s own per-row gate still runs on every generated combination and is not
   redundant (0029's action-owns-the-rule guarantee holding for every caller). No "skip the gate"
   parameter exists or may be added to `CreateProductVariant` to bypass it. No `ProductVariantPolicy` —
-  see [docs/architecture/authorization.md#product-variant-actions-gate-against-the-parent-product-not-a-new-policy](../../../docs/architecture/authorization.md#product-variant-actions-gate-against-the-parent-product-not-a-new-policy).
+  see [docs/architecture/authorization/policies-variants-and-routeless.md#product-variant-actions-gate-against-the-parent-product-not-a-new-policy](../../../docs/architecture/authorization/policies-variants-and-routeless.md#product-variant-actions-gate-against-the-parent-product-not-a-new-policy).
 - **`attributeTypeIds` is validated in TWO sequential `Validator::make(...)->validate()` passes**
   (`variantAttributeTypeIdsRules()` — `required, array, min:1, max:5` — then, only once bounded,
   `variantAttributeTypeIdRules()` — `string, uuid, distinct, Rule::exists(...)`), appended to 0029's
@@ -579,7 +579,7 @@ re-derive, never the full prose of a finalized story.
   it, regardless of which class opened the outer transaction. This is the *same* mechanism story 0029's
   own `UpdateProduct`/`Editor::save()` nesting already exercises, now confirmed on a second, independent
   call path — full generalized rule at
-  [docs/security/derived-column-invariants.md#second-confirming-instance-a-generators-own-outer-transaction--attempts-fires-only-at-nesting-level-1](../../../docs/security/derived-column-invariants.md#second-confirming-instance-a-generators-own-outer-transaction--attempts-fires-only-at-nesting-level-1).
+  [docs/security/derived-column-invariants/retry-and-transaction-hazards.md#second-confirming-instance-a-generators-own-outer-transaction--attempts-fires-only-at-nesting-level-1](../../../docs/security/derived-column-invariants/retry-and-transaction-hazards.md#second-confirming-instance-a-generators-own-outer-transaction--attempts-fires-only-at-nesting-level-1).
   **Story 0031 must NOT add its own `attempts:` to `Editor::save()`'s transaction without first
   re-deriving this analysis** — doing so blindly risks converting a rare loud failure into a silent
   lost update, the exact shape story 0029's own `errors-log.md` 2026-09-04 entry records (a *different*
@@ -588,8 +588,8 @@ re-derive, never the full prose of a finalized story.
 - **This story ships NO Livewire component, NO route, NO Blade view, NO browser test, NO new
   permission and NO `product_product_attribute_type` declaration table** — story 0031 owns the
   generator's UI. Full mechanism at
-  [docs/database/schema-products.md#product_variants](../../../docs/database/schema-products.md#product_variants) and
-  [docs/architecture/authorization.md#product-variant-actions-gate-against-the-parent-product-not-a-new-policy](../../../docs/architecture/authorization.md#product-variant-actions-gate-against-the-parent-product-not-a-new-policy).
+  [docs/database/schema-products/variants.md#product_variants](../../../docs/database/schema-products/variants.md#product_variants) and
+  [docs/architecture/authorization/policies-variants-and-routeless.md#product-variant-actions-gate-against-the-parent-product-not-a-new-policy](../../../docs/architecture/authorization/policies-variants-and-routeless.md#product-variant-actions-gate-against-the-parent-product-not-a-new-policy).
 
 ## Story 0030a — Attribute value rename: usage warning and SKU-collision error rendering (amendment to 0030, found and recommended by 0031's Phase 1 debate)
 
@@ -604,7 +604,7 @@ re-derive, never the full prose of a finalized story.
   `ProductAttributeType::variantUsageCount()` (public, single scalar, `DISTINCT`-summed across a whole
   type — story 0029a) both exist to **refuse cheaply**; `variantUsageCounts()` exists to **display**
   a count per row without an N+1. Full three-way table at
-  [docs/database/schema-products.md#product_attribute_values](../../../docs/database/schema-products.md#product_attribute_values) —
+  [docs/database/schema-products/attribute-types-and-values.md#product_attribute_values](../../../docs/database/schema-products/attribute-types-and-values.md#product_attribute_values) —
   story 0030a.
 - **A generic, single `@error('sku')` outlet is the established convention for rendering ANY
   `sku`-keyed `ValidationException` on a screen that has no SKU field of its own.** Reuse this pattern
@@ -636,9 +636,9 @@ re-derive, never the full prose of a finalized story.
 - **This story ships NO migration, NO new column, NO new permission, NO route, NO new translation
   key for any of the four SKU-refusal messages (all reused as-is from story 0029), and does NOT touch
   `SyncProductAttributeValues::firstValueInUse()`.** Full mechanism at
-  [docs/api/products.md#product-attribute-typesindex--the-fifth-permission-gated-route](../../../docs/api/products.md#product-attribute-typesindex--the-fifth-permission-gated-route)
+  [docs/api/products/product-attribute-types.md#product-attribute-typesindex--the-fifth-permission-gated-route](../../../docs/api/products/product-attribute-types.md#product-attribute-typesindex--the-fifth-permission-gated-route)
   and
-  [docs/database/schema-products.md#product_attribute_values](../../../docs/database/schema-products.md#product_attribute_values).
+  [docs/database/schema-products/attribute-types-and-values.md#product_attribute_values](../../../docs/database/schema-products/attribute-types-and-values.md#product_attribute_values).
 
 ## Story 0031a — Product variant generator: the cartesian combination builder UI (composes onto 0031's `VariantBuilder`; `GenerateProductVariantCombinations`'s first and only UI call site; Epic 2's product arc closes)
 
@@ -657,7 +657,7 @@ re-derive, never the full prose of a finalized story.
   `flux:fieldset` with its own `:legend` instead.** `:label`/`:description` must go directly on the
   bound component (here, `flux:checkbox.group`), matching `roles.blade.php`'s own precedent
   (`<flux:checkbox.group wire:model="..." :label="...">`) — see
-  [docs/errors-log.md#a-fluxfieldset-wrapping-a-flux-field-silently-swallows-its-auto-rendered-validation-error--2026-09-07](../../../docs/errors-log.md#a-fluxfieldset-wrapping-a-flux-field-silently-swallows-its-auto-rendered-validation-error--2026-09-07)
+  [docs/errors-log/2026-09-01-to-2026-09-07.md#a-fluxfieldset-wrapping-a-flux-field-silently-swallows-its-auto-rendered-validation-error--2026-09-07](../../../docs/errors-log/2026-09-01-to-2026-09-07.md#a-fluxfieldset-wrapping-a-flux-field-silently-swallows-its-auto-rendered-validation-error--2026-09-07)
   for the full mechanism, vendor source citation and fix — story 0031a.
 - **A client-writable array reached from a `#[Computed]` render-path property (not only from a
   `validate()` call) still needs a mutation-point cap, matching
@@ -672,6 +672,6 @@ re-derive, never the full prose of a finalized story.
 - **This story ships NO migration, NO model, NO action, NO policy, NO validation rule, NO permission-
   catalog change, NO reorder control, and NO "regenerate and overwrite" affordance** — every one of
   those is 0029b's or 0031's, unchanged and reused as-is. Full mechanism at
-  [docs/api/products.md#productsindex-productscreate-and-productsedit--the-fifth-permission-gated-route-family](../../../docs/api/products.md#productsindex-productscreate-and-productsedit--the-fifth-permission-gated-route-family)
+  [docs/api/products/products-index-and-editor.md#productsindex-productscreate-and-productsedit--the-fifth-permission-gated-route-family](../../../docs/api/products/products-index-and-editor.md#productsindex-productscreate-and-productsedit--the-fifth-permission-gated-route-family)
   and
-  [docs/database/schema-products.md#product_variants](../../../docs/database/schema-products.md#product_variants).
+  [docs/database/schema-products/variants.md#product_variants](../../../docs/database/schema-products/variants.md#product_variants).

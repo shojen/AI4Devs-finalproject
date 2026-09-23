@@ -2,7 +2,7 @@
 
 ## Description
 Build the Livewire **view layer** for the Sales Regions screen of
-[PRD Epic 2 §2.1](../../../docs/PRD/PRD.md#21-sales-regions--taxes): a list of seeded region entries
+[PRD Epic 2 §2.1](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#21-sales-regions--taxes): a list of seeded region entries
 (code chip, name, description, rate %), Spain's five fiscal sub-territories grouped and expandable
 beneath the "España" row, an edit modal (`code` / `description` / `rate`), an enable-disable control,
 and the default-toggle UX that makes the single-default invariant legible — attempting to disable the
@@ -21,7 +21,7 @@ frontend (related_task_id: **0017**) | includes database-expert: **no**
 > affordances, sidebar entry, two test files), but every candidate split lands in the **same single
 > Blade file**, `resources/views/livewire/sales-regions.blade.php`. Splitting it would mean a second
 > story editing the first story's markup — the two-stories-one-file collision
-> [contracts.md](../../../docs/contracts.md#parallel-agent-file-ownership-rule) exists to prevent, and
+> [contracts.md](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule) exists to prevent, and
 > the same reasoning [story 0006](../done/0006-users-list-editor-ui.md) recorded for the Users screen.
 
 > ✅ **Dependency-state, updated 2026-08-26.** At the time this debate ran, the brief that commissioned it
@@ -58,7 +58,7 @@ have since been resolved by the product owner (2026-08-26), three of them with b
 
 Resolved directly from the docs, no decision needed: the view path is the **flat**
 `resources/views/livewire/sales-regions.blade.php` per the
-[`Index`-in-a-subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
+[`Index`-in-a-subfolder exception](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
 (0017 flags the same trap); Flux **Free** v2 ships **no accordion / disclosure / tree component**
 (verified against `vendor/livewire/flux/stubs/resources/views/flux/`), so D3's expansion is
 hand-rolled Alpine; no prototype HTML/CSS is ported — images 09/10 are layout reference only.
@@ -310,7 +310,7 @@ Feature: Sales Regions screen — configuring seeded entries and moving the defa
   ```
   > 🔑 **The registry key is `sales_regions`, snake_case — corrected at Phase 2.** The original sketch
   > wrote `sales-regions`, and this is the project's **first genuinely multi-word registry key**, so it is
-  > the first entry that has to choose. [naming.md](../../../docs/conventions/naming.md#translation-keys)
+  > the first entry that has to choose. [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)
   > already decided it and even names this exact case: *"A future registry key that is genuinely
   > multi-word is snake_case on both sides (`items.sales_regions`), never kebab-case — unlike the
   > permission names above, whose kebab-case is imposed by the seeded catalog and mapped at lookup."*
@@ -328,7 +328,7 @@ Feature: Sales Regions screen — configuring seeded entries and moving the defa
   > `shield-check`). Both icon stubs verified present in `vendor/livewire/flux/stubs/.../flux/icon/`.
 - `lang/en/navigation.php`, `lang/es/navigation.php` — **modify, additively.** New leaves
   `groups.taxes` and `items.sales_regions`, mirroring the registry's own keys exactly per
-  [naming.md](../../../docs/conventions/naming.md#translation-keys)'s registry-mirroring rule — not new files,
+  [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)'s registry-mirroring rule — not new files,
   0013 already created both, each holding exactly two `groups` leaves and three `items` leaves today.
 - `lang/en/sales-regions.php`, `lang/es/sales-regions.php` — **modify, additively.** 0017 creates both
   for its `errors.*` copy; this story adds the list/label/field copy under new top-level groups, keeping
@@ -364,7 +364,7 @@ Feature: Sales Regions screen — configuring seeded entries and moving the defa
 > so the fallback path (an ungated `flux:sidebar.group` hand-added to `sidebar.blade.php`) must not be taken;
 > use the registry, per the corrected entry above. A `groups.taxes` heading satisfies PRD §2.1's *"lives as a
 > section **inside the Taxes area** (not a top-level sidebar item)"* exactly the way `groups.settings` does
-> for Roles — see [architecture/authorization.md](../../../docs/architecture/authorization.md#the-second-half-of-a-module-gate-the-sidebar-registry)
+> for Roles — see [architecture/authorization.md](../../../docs/architecture/authorization/how-to-gate.md#the-second-half-of-a-module-gate-the-sidebar-registry)
 > for the registry's five rules in full.
 
 **Explicitly NOT this story** (listed so the boundary is unambiguous):
@@ -628,7 +628,7 @@ mutating control disabled and explained.
 - [ ] The screen is reachable from a **Taxes** navigation heading, not as a top-level item, through a
       `config/modules.php` registry entry keyed **`sales_regions`** (snake_case) whose `permissions` is
       exactly `['sales-regions.view']` — the single ability `routes/sales-regions.php` gates the route on.
-      *(PRD AC 1; [naming.md](../../../docs/conventions/naming.md#translation-keys)'s registry-key rule)*
+      *(PRD AC 1; [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)'s registry-key rule)*
 - [ ] Every row control carries its `data-test` hook on **both** the enabled and the disabled branch. *(D8)*
 - [ ] All UI copy is English source strings through `__()`, added key-for-key to both
       `lang/en/sales-regions.php` and `lang/es/sales-regions.php`; no hardcoded Spanish literals. *(D9)*
@@ -684,7 +684,7 @@ mutating control disabled and explained.
    precision hazard 0017's Larastan notes warn about even on a read-only path.
 4. **File collision with 0017** on `lang/{en,es}/sales-regions.php`: 0017 **creates** them, 0018 grows
    them additively. If the two ever run concurrently,
-   [contracts.md](../../../docs/contracts.md#parallel-agent-file-ownership-rule)'s Parallel Agent
+   [contracts.md](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule)'s Parallel Agent
    File-Ownership Rule governs. D7 removes the second collision point (`app/Enums/SalesRegionKind.php`)
    by keeping this story out of `app/` entirely.
 5. **DOM size.** 254 rows in one table. Mitigated by [Q1](#q1--how-should-the-screen-handle-the-248-inactive-unconfigured-country-rows--resolved-a-with-two-additions)'s
@@ -710,7 +710,7 @@ follows. Three carry **additions** beyond the recommended option; those addition
 and are cross-referenced into [Acceptance criteria](#acceptance-criteria) and
 [Tests to perform](#tests-to-perform).
 
-> **Seeded row counts, corrected against [database/schema.md](../../../docs/database/schema-products.md#sales_regions)
+> **Seeded row counts, corrected against [database/schema.md](../../../docs/database/schema-products/sales-regions-and-media.md#sales_regions)
 > and `database/data/iso-3166-countries.json` (249 entries, España among them).** The catalog is
 > **254 rows**: 249 ISO countries + Spain's 5 fiscal territories. **6 are active** (España + its 5
 > territories); **248 countries are inactive with a `NULL` rate**. The "~249 inactive / ~255 rows"
@@ -739,7 +739,7 @@ than when the debate ran**:
 - **It matches how the data model already divides the catalog.** The split is `is_active`, a real
   column with a real meaning, not an invented UI concept. That is the same test Q2 below fails, and it
   is why the two questions resolve in opposite directions rather than together.
-- **It matches the PRD's framing.** [PRD §2.1](../../../docs/PRD/PRD.md#21-sales-regions--taxes) describes
+- **It matches the PRD's framing.** [PRD §2.1](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#21-sales-regions--taxes) describes
   administrators configuring seeded entries and enabling/disabling them; it never describes browsing
   249 countries as the primary task. Burying the 6 rows that carry rates under 248 that do not — option
   (c) — inverts the screen's purpose on first paint.
@@ -788,7 +788,7 @@ concept the data model does not have"). Two facts settle it outright:
    about *what* is unconfigured (rate? code? description?), where the Rate column is precise.
 2. **The two axes are genuinely orthogonal in the seeded data, and conflating them would misrepresent a
    real row.** "España" ships **active with a `NULL` rate** — deliberately, as a disclosure/parent node
-   that is not independently rateable ([schema.md](../../../docs/database/schema-products.md#sales_regions)). An
+   that is not independently rateable ([schema.md](../../../docs/database/schema-products/sales-regions-and-media.md#sales_regions)). An
    Active control that also meant "configured" would have to render España as some third thing, or lie
    about it. That single row is sufficient to refuse (b).
 
@@ -930,7 +930,7 @@ The Definition of Done's *"open questions answered by the product owner and fold
 starts"* gate is **met**. All four questions are resolved in
 [Open questions](#open-questions--resolved-before-phase-3): **Q1 (a)** client-side collapse + filter,
 **Q2 (a)** no second visual axis on the Active control, **Q3** keep **D4**, **Q4** keep **D5**. Each was
-evaluated against [PRD §2.1](../../../docs/PRD/PRD.md#21-sales-regions--taxes) and the **shipped** code of
+evaluated against [PRD §2.1](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#21-sales-regions--taxes) and the **shipped** code of
 stories 0016/0017 rather than against the recommendation alone, which is what produced the four items
 Phase 3 inherits beyond the recommended options — **A1-a**, **A1-b**, **A3-a**, **A4-a**, and the
 `setActive()` three-argument correction. Two of those (**A4-a**, and the contract correction) exist only
@@ -944,7 +944,7 @@ earlier state. This directly strengthened Q1 and Q3: both had an alternative who
 "amends a 0017 contract confirmed at Phase 1", and for both that alternative is now a **new backend
 story with its own seven phases** instead. Neither is worth that. The counts used in the questions as
 drafted (~249 inactive, ~255 rows) were also verified and corrected to **248 inactive of 254 rows, 6
-active**, against [database/schema.md](../../../docs/database/schema-products.md#sales_regions) and the 249-entry
+active**, against [database/schema.md](../../../docs/database/schema-products/sales-regions-and-media.md#sales_regions) and the 249-entry
 ISO fixture.
 
 **The two adjacent items this pass flagged have since been applied.** They were left out of the
@@ -1324,7 +1324,7 @@ proving inertness by construction (no `wire:click` to act on) rather than by an 
   follow one. Left as a gap for a future story to pick up deliberately.
 - **N8** — attempted (unify `wire:click` argument encoding on `@js()` for consistency with the file's other
   calls) and **reverted** after it silently broke `setActive()`'s wire:click across all three row copies —
-  see the write-up immediately below and [docs/errors-log.md](../../../docs/errors-log-archive.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26).
+  see the write-up immediately below and [docs/errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26).
   Not "fixed" — the pre-existing `{{ \Illuminate\Support\Js::from(...) }}` form was correct and is kept.
 - **N7** and **N9** — recorded as known, accepted, deliberately not addressed in this pass: N7 (the
   triplicated row markup, of which F-5 and this pass's N8 mistake are both direct symptoms) is a real
@@ -1351,7 +1351,7 @@ component tag's attribute value do not compile; a single one does, and so do two
 same attribute**, which is exactly why the pre-existing `Js::from()` form had always worked. Reverted to
 that form in all three copies, each with an inline comment recording the finding so a future pass doesn't
 "fix" it back to `@js()` a second time. Full write-up, the minimal repro, and the generalised rule are in
-[docs/errors-log.md](../../../docs/errors-log-archive.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26).
+[docs/errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26).
 
 **An unrelated environment incident surfaced during this investigation and is recorded for completeness,
 not because it reflects a story defect.** Several ad-hoc `docker exec ... php artisan tinker` /

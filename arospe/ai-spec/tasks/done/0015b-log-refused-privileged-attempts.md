@@ -226,7 +226,7 @@ file if it does:**
 > Phase 3 must therefore decide explicitly whether `mount()` gets a refusal log at all, and any test
 > for it must be **proven able to fail** (temporarily remove the route gate and confirm the assertion
 > goes red) before it counts as coverage — this is exactly the trap
-> [`docs/errors-log.md`](../../../docs/errors-log-archive.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)
+> [`docs/errors-log.md`](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)
 > records for the `verified` middleware. Defence in depth is still the right reason to keep the
 > check; it is not automatically a reason to log it.
 
@@ -239,7 +239,7 @@ not negotiable:
 - **One implementation of the rule, not fourteen-plus.** Hand-written `try { … } catch { Log::…;
   throw; }` blocks at every call site is drift waiting to happen, and it is precisely the
   copy-the-rule pattern
-  [`base-standards.md`](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+  [`base-standards.md`](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
   forbids for authorization rules themselves. Move the rule into one place; call it from many. **Model
   the helper on the shipped `App\Actions\Auth\EnsureRecentPasswordConfirmation` pair**: a
   non-throwing predicate (its `isRecentlyConfirmed()`) plus a throwing wrapper (its `__invoke()`) — the
@@ -406,7 +406,7 @@ documented exception) — but found three concrete, mechanical gaps:
       rate-limit refusal, assert the recorded context contains no password, no invitation token, no
       email-change hash and no session id. Assert on the **recorded context array**, not on a
       rendered string, so an added key cannot slip past a substring check — and per
-      [`docs/errors-log.md`](../../../docs/errors-log-archive.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21),
+      [`docs/errors-log.md`](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21),
       prove the assertion can fail before trusting it.
 - [x] **Must-not-over-log — the success path is unchanged.** A permitted create, edit and delete on
       each screen still produce **exactly** their existing single `Log::info` success line and **no**
@@ -421,7 +421,7 @@ documented exception) — but found three concrete, mechanical gaps:
 - [x] **Regression-proof each new assertion.** For at least one refusal test per screen, temporarily
       remove the logging call and confirm the test goes red, per this repo's standing convention. A
       logging assertion that has never been observed failing is the same vacuous coverage
-      [`docs/errors-log.md`](../../../docs/errors-log-archive.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18)
+      [`docs/errors-log.md`](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18)
       records twice.
 - [x] **Domain actions — authorization refusal is logged, matching the components' shape.** Per the
       Q5 decision above, `App\Actions\Users\CreateUser`'s `promoteToAdministrator` refusal,
@@ -438,7 +438,7 @@ documented exception) — but found three concrete, mechanical gaps:
       independently callable) still throws the same exception class with the same message; logging
       never intercepts or swallows it.
 - [x] **Full-suite regression.** Per
-      [base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done),
+      [base-standards.md](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done),
       the record is an **unscoped** `php artisan test` and an **unscoped** `vendor/bin/pint --format
       agent` — not `--filter` / `--dirty`. If Q2 is answered with a global exception hook, the blast
       radius is the **whole suite** by construction, not the two screens.
@@ -457,7 +457,7 @@ rate-limited action, is detectable after the fact by filtering the log. Every re
 > refused'` (this story) and `'Step-up password confirmation required'` (story 0015a, deliberately
 > left unfolded). Both are `Log::warning` on the default channel, so a **level** filter does cover
 > all of them; a **message** filter needs both strings. Stated with its table in
-> [`docs/architecture/authorization.md`](../../../docs/architecture/authorization.md#-a-refusal-on-these-screens-produces-one-of-two-message-strings).
+> [`docs/architecture/authorization.md`](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#-a-refusal-on-these-screens-produces-one-of-two-message-strings).
 
 Nothing else changes: every refusal returns the same status, the same message
 and the same timing it does today, no credential or token reaches the log, every existing success-path
@@ -479,7 +479,7 @@ unmodified.
       `RequestEmailChange`, `EnforceAdministratorPermissionGrant`, `EnforceGrantorPermissionScope`)
       log their own refusals with the **same shape and level** as the two components, callable
       independently of the Livewire layer — so a future non-dashboard caller inherits the logging for
-      free, the same reasoning [`base-standards.md`](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+      free, the same reasoning [`base-standards.md`](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
       already applies to the authorization rules themselves. `App\Models\Role`'s model-event guards
       (`ImmutableRoleException`, `RoleInUseException`) are explicitly **not** in this pass — recorded
       as a deferred decision, not an oversight.
@@ -522,7 +522,7 @@ unmodified.
         of change was a *class* those screens share. `docs-keeper` judged the Phase 3 off-by-one loop
         bound **below the bar** (caught inside its own phase, absent from this file's record, no
         lasting convention), and 0015's finding **I-2** likewise — it is already covered by
-        [the deferred-findings entry](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
+        [the deferred-findings entry](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
         whose rule ("write a finding as the property that must hold, and re-verify it against `HEAD`")
         is exactly what this story's own enumeration tables did.
       - **Four files this DoD does not name were also corrected**, found by grepping rather than by the
@@ -572,7 +572,7 @@ All five open questions below are now **answered**. Phase 3 may start.
   refusals of their own (enumerated in [Files to create/modify](#files-to-createmodify) above), and a
   future non-dashboard caller (API endpoint, Artisan command, queued job) must inherit the same
   logging the dashboard gets — mirroring the [action-owns-the-rule
-  convention](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+  convention](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
   this repo already applies to authorization itself. **Explicitly still out of scope in this pass:**
   `App\Models\Role`'s own model-event guards (`ImmutableRoleException`, `RoleInUseException`) — these
   are deterministic state-based refusals with no per-attempt disclosure risk beyond what the Gate
@@ -653,7 +653,7 @@ Decisions section above for the exact scope (which five actions, and what stays 
   `ai-spec/tasks/in-progress/` is empty, and this file's refusal-point tables were re-read directly
   against `HEAD` rather than assumed — Phase 3 may start.
 - **Task ordering:** `0015` sorts before `0015a` and `0015b`, satisfying
-  [`docs/workflow.md`](../../../docs/workflow.md#task-ordering-rule)'s rule. 0015a and 0015b were
+  [`docs/workflow.md`](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule)'s rule. 0015a and 0015b were
   siblings, not a dependency pair, and both are now closed independently.
 - **Depends on shipped code only** — both screens' existing `Gate::authorize()` calls, their existing
   `Log::info` success lines, and the five domain actions' own `Gate::authorize()` / validation-shaped

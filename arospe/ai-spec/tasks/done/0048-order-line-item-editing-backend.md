@@ -2,7 +2,7 @@
 
 ## Description
 Make an **open** order's line items editable from the backend, per PRD
-[§3.2 Orders](../../../docs/PRD/PRD.md#32-orders): an administrator may add a line item, remove one, or
+[§3.2 Orders](../../../docs/PRD/sections/epic-3-customers-orders.md#32-orders): an administrator may add a line item, remove one, or
 change one's quantity, and **the order's totals recalculate accordingly**. Editing is **hard-blocked**
 once the order is `Enviado` or `Entregado`, with no confirmation path around it. This story owns three
 single-purpose actions, one domain exception, and the recalculation rule — reusing story
@@ -320,7 +320,7 @@ Invokable, imperative verb phrase, no `Action` suffix, **resolved from the conta
 `new`-ed** ([code-style.md](../../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)).
 `__invoke(Order $order, string $productId, ?string $productVariantId, int $quantity): OrderItem`,
 performing **in this order** (the ordering is part of the guard, not an implementation detail — see
-[errors-log-archive.md](../../../docs/errors-log-archive.md#two-of-the-three-security-audit-rounds-found-the-flaw-in-the-previous-rounds-fix--2026-08-19)):
+[errors-log-archive.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#two-of-the-three-security-audit-rounds-found-the-flaw-in-the-previous-rounds-fix--2026-08-19)):
 
 1. **`$order->refresh()` / `$order->load('items')`** — read the state every later step decides on, from
    the database, before the first check reads it. A caller may hand over a stale instance.
@@ -346,7 +346,7 @@ performing **in this order** (the ordering is part of the guard, not an implemen
 5. No catalog resolution — nothing is snapshotted on a removal.
 6. **`DB::transaction()`**: delete the row through the **model instance**
    (`$item->delete()`, never `OrderItem::where(...)->delete()`, per
-   [base-standards.md](../../../docs/conventions/base-standards.md#deleting-a-user-goes-through-the-model-not-the-query-builder)),
+   [base-standards.md](../../../docs/conventions/base-standards/stack-and-model-conventions.md#deleting-a-user-goes-through-the-model-not-the-query-builder)),
    then recompute and persist the parent's totals.
 
 ### Action — `app/Actions/Orders/UpdateOrderItemQuantity.php` (new)
@@ -459,7 +459,7 @@ All Feature tests unless marked otherwise, in `tests/Feature/Orders/`. This stor
 - [ ] Negative test: a **Super Admin** is refused identically for all three operations. This is the test
       that proves the block is a direct throw rather than a `Gate` ability — a `Gate`-mediated check is
       inert for this actor via `Gate::before`
-      ([security/authorization-patterns.md](../../../docs/security/authorization-patterns.md#a-rule-that-must-bind-a-super-admin-actor-must-be-a-direct-throw-not-a-gate-check)),
+      ([security/authorization-patterns.md](../../../docs/security/authorization-patterns/ability-coverage-and-guards.md#a-rule-that-must-bind-a-super-admin-actor-must-be-a-direct-throw-not-a-gate-check)),
       and every other authorization test in this file would still pass while the block was open.
 - [ ] Integration test (positive control): the same three operations **succeed** against `Pendiente` and
       `Procesando`. Without it, a guard that blocks *everything* passes every negative case above.
@@ -539,7 +539,7 @@ All Feature tests unless marked otherwise, in `tests/Feature/Orders/`. This stor
       **`AuthorizationException`** — not `OrderNotEditableException`. Both refusals apply; the
       authorization one must come first, exactly as story 0015a's step-up layer runs strictly after
       every `Gate::authorize()` on its branch
-      ([architecture/authorization.md](../../../docs/architecture/authorization.md#step-up-authentication--the-third-layer)).
+      ([architecture/authorization.md](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#step-up-authentication--the-third-layer)).
       A 409 here would disclose the order's state to somebody with no permission to read it (**D-6**).
 
 ### Deliberately not tested
@@ -608,7 +608,7 @@ found.
 - [ ] Tests written and green, plus the full existing suite (per
       [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule) — run **unscoped**
       (`php artisan test`, not `--filter`), per
-      [base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
+      [base-standards.md](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
 - [ ] `vendor/bin/pint --format agent` clean (unscoped, **not** `--dirty`) and Larastan level 7 passing.
 - [ ] Code reviewed (code-reviewer).
 - [ ] No security findings (appsec-auditor) — specifically: that no price, name, SKU or total can be
@@ -625,7 +625,7 @@ found.
     `app/Actions/Orders/` entry gains the three actions, and `app/Exceptions/` gains
     `OrderNotEditableException → 409` beside its three siblings (an enumeration that becomes an
     **under-count** the moment this ships — the exact
-    [bare-negative-claim](../../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
+    [bare-negative-claim](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
     failure mode arriving as arithmetic).
   - [`database/schema.md`](../../../docs/database/schema.md) — the `orders` / `order_items` sections gain a
     note that `subtotal` / `tax_amount` / `total` are **derived and re-derived** rather than
@@ -697,7 +697,7 @@ rediscovery.
   configured for "orders" behaves coherently. **The reversal path:** if a product rule ever separates
   them, it is a new catalog constant plus one changed `Gate::authorize()` argument per action — the
   ability's *location* (in the action, per
-  [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers))
+  [base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers))
   does not move.
 
 - **D-3 — Three single-purpose actions, not one diff-taking action.** *(`backend-expert`.)* The full
@@ -728,12 +728,12 @@ rediscovery.
     so a `Gate`-mediated check is **inert** against precisely the actor most likely to try. This is the
     same reasoning story 0008a's Super-Admin refusal and story 0015a's step-up guard both reached, and
     it is documented as a rule:
-    [a rule that must bind a Super Admin actor must be a direct throw](../../../docs/security/authorization-patterns.md#a-rule-that-must-bind-a-super-admin-actor-must-be-a-direct-throw-not-a-gate-check).
+    [a rule that must bind a Super Admin actor must be a direct throw](../../../docs/security/authorization-patterns/ability-coverage-and-guards.md#a-rule-that-must-bind-a-super-admin-actor-must-be-a-direct-throw-not-a-gate-check).
   - **It is not about the actor at all.** A policy answers "may *this actor* do this to *this target*";
     this rule answers "is this order editable", and the answer is the same for everyone. Putting it in
     an `OrderPolicy` would encode an actor-shaped question that has no actor-shaped answer.
   - **It lives in each action, not in a caller**, per
-    [the action-owns-the-rule convention](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers).
+    [the action-owns-the-rule convention](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers).
     Three copies of the `if` is the cost; the alternative — one guard in story 0055's component — leaves
     every non-dashboard caller (an API endpoint, an Artisan command, a queued job) completely unguarded.
     **If the three `if`s ever become four, extract a shared guard class** in the shape
@@ -753,7 +753,7 @@ rediscovery.
   rule story 0015a established for its step-up layer, and it generalises — **a refusal that reveals
   something about the target must never precede the check on whether the caller may look at the target
   at all.** Ordering is part of the guard, not an implementation detail
-  ([errors-log-archive.md](../../../docs/errors-log-archive.md#two-of-the-three-security-audit-rounds-found-the-flaw-in-the-previous-rounds-fix--2026-08-19)).
+  ([errors-log-archive.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#two-of-the-three-security-audit-rounds-found-the-flaw-in-the-previous-rounds-fix--2026-08-19)).
 
 - **D-7 — Totals are recomputed by summing `order_items.line_total`, inside the same transaction as the
   write.** *(`backend-expert`.)* Not incrementally adjusted (`subtotal += $newLine`), which drifts the
@@ -762,7 +762,7 @@ rediscovery.
   every time** — the set is a handful of rows and the arithmetic is free relative to the correctness.
   ⚠️ **Phase 3 must read the transaction-side-effect rule before writing this**: wrapping work in a
   `DB::transaction()` relocates every side effect the wrapped code already performs
-  ([errors-log.md](../../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)).
+  ([errors-log.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)).
   The specific forward constraint here: **if story 0046's notification, or any later order-changed
   event, is ever hooked to these actions, it dispatches *after* the commit** — a rolled-back edit must
   not notify anyone.
@@ -776,7 +776,7 @@ rediscovery.
   - **`orders.tax_rate` is `NULL`** → leave `tax_amount` at `0.00`, write nothing to `tax_rate`, and
     **never resolve a sales region**. `NULL` means *not configured* and `0.000` means *a legitimate 0%*
     — the distinction `sales_regions.rate` established
-    ([schema.md](../../../docs/database/schema-products.md#sales_regions)) and 0045's **D-8** carried onto `orders`.
+    ([schema.md](../../../docs/database/schema-products/sales-regions-and-media.md#sales_regions)) and 0045's **D-8** carried onto `orders`.
     Resolution is stories 0053/0054's **entire** scope, and a story that resolves one "helpfully" masks
     their work while looking like working behaviour (0045's **D-9**, and **R-2** below).
 
@@ -822,7 +822,7 @@ rediscovery.
 | `orders.edit` in the seeded catalog | **shipped** | `RolePermissionSeeder::MODULES` carries `orders`, so all four `orders.*` abilities exist (**D-2**) |
 | `Gate::before` Super Admin bypass | **shipped** (Epic 1) | [architecture/authorization.md](../../../docs/architecture/authorization.md) — and this story tests both what it does and what it must not reach (**D-5**) |
 | The rendering-domain-exception pattern | **shipped** (tasks 0008 / 0010 / 0015a) | [`RoleInUseException`](../../../app/Exceptions/RoleInUseException.php)'s 409 `render()` is copied shape-for-shape |
-| The direct-throw-for-Super-Admin-binding rule | **shipped** (task 0008a) | [security/authorization-patterns.md](../../../docs/security/authorization-patterns.md#a-rule-that-must-bind-a-super-admin-actor-must-be-a-direct-throw-not-a-gate-check) |
+| The direct-throw-for-Super-Admin-binding rule | **shipped** (task 0008a) | [security/authorization-patterns.md](../../../docs/security/authorization-patterns/ability-coverage-and-guards.md#a-rule-that-must-bind-a-super-admin-actor-must-be-a-direct-throw-not-a-gate-check) |
 
 **Not a dependency, stated explicitly:** story **0049** (status transitions). See the
 [⚠️ banner](#not-depend-on-0049)
@@ -838,7 +838,7 @@ finds it needs a column, the story is wrong and comes back to Phase 1**, it does
 - **0055** — the Orders detail UI, whose line-item editor calls these three actions and renders the 409
   as a disabled/absent control on a shipped order (the `Gate::allows()`-is-a-UI-hint pattern, extended
   to a **state** hint — and note the hint must mirror the same predicate the guard reads, per
-  [authorization.md](../../../docs/architecture/authorization.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)).
+  [authorization.md](../../../docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)).
 - **0050/0051/0052** — each adds another state-based refusal on `orders`; the first of them with a real
   actor/target rule creates `OrderPolicy` (**D-9**), and all of them should copy this story's
   direct-throw-plus-409 shape rather than re-deriving it.
@@ -877,7 +877,7 @@ finds it needs a column, the story is wrong and comes back to Phase 1**, it does
 - **R-7 — This document goes stale while it waits.** It is blocked behind 0045, which is itself blocked
   behind five stories, any of which may change during their own Phase 4/5 — and this file quotes 0045's
   column names, its trait's method names, and its folder. That is exactly the
-  [stale-deferred-finding](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+  [stale-deferred-finding](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
   failure. *Mitigation:* **Phase 3 re-verifies every referenced name against the shipped code before
   writing a line**, and the Phase 2 INVEST review is **re-run** immediately before Phase 3 rather than
   treated as passed on first reading. This file's identifiers are a reading aid, not a locator.
@@ -908,10 +908,10 @@ what the PRD states and does not speculate a fourth blocked state.** Recorded so
 deliberate omission rather than an oversight.
 
 **OQ-2 — Should a line-item edit be recorded anywhere for audit? Non-blocking, backlog.** PRD's
-[Out of scope](../../../docs/PRD/PRD.md#out-of-scope) explicitly excludes an audit/change-history log this
+[Out of scope](../../../docs/PRD/sections/roadmap-scope-open-questions.md#out-of-scope) explicitly excludes an audit/change-history log this
 phase, so the answer today is no. Noted only because "who changed this order and when" is the single
 most commonly requested addition to an editable order, and because story 0015b's
-[refusal-logging pattern](../../../docs/architecture/authorization.md#recording-a-refusal--what-every-gate-owes-the-audit-trail)
+[refusal-logging pattern](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail)
 already exists for the *refused* half — so if a later story wants the successful half, it starts from a
 shape this repo already has.
 
@@ -930,7 +930,7 @@ Derived from this story, none of them in scope:
 
 ## Provenance
 
-- **PRD source:** [§3.2 Orders](../../../docs/PRD/PRD.md#32-orders) — specifically the `Scenario Outline:
+- **PRD source:** [§3.2 Orders](../../../docs/PRD/sections/epic-3-customers-orders.md#32-orders) — specifically the `Scenario Outline:
   Edit the line items of an open order` (add / remove / change quantity, "the order totals and tax
   recalculate accordingly") and `Scenario: Editing line items after an order has shipped is
   hard-blocked` ("always blocked, with no confirmation path around it"), plus the two matching
@@ -938,7 +938,7 @@ Derived from this story, none of them in scope:
   refunds are the **siblings'** scenarios and are deliberately absent from this story's Gherkin.
 - **Process:** [workflow.md](../../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from
   `backend-expert` and `backend-qa`, composed by `product-owner` as facilitator. `database-expert` was
-  **not convened** by the [task-classification rule](../../../docs/workflow.md#task-classification-rule):
+  **not convened** by the [task-classification rule](../../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule):
   the story reuses [0045](../done/0045-orders-core-crud-backend.md)'s schema entirely and adds no migration,
   column, index or query pattern. Two open questions were raised by the experts and resolved by the
   facilitator at composition: **D-1** (last-line-item removal) and **D-2** (permission reuse).
@@ -953,7 +953,7 @@ Derived from this story, none of them in scope:
   `ai-spec/tasks/in-progress/` at the start of Phase 3, and to `ai-spec/tasks/done/` at Phase 7 — both
   moves change this file's directory depth, so every relative link above must be re-resolved on each
   move (both directions), per
-  [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move).
+  [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move).
 - **Epic 3 decomposition:** one of the Orders editing stories. Siblings referenced by number (0046
   notification, 0047 order history, 0049 status transitions, 0050 cancellation guards, 0051–0052
   refunds, 0053–0054 tax resolution, 0055 UI) because their files may not exist yet.

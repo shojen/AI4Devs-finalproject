@@ -8,13 +8,13 @@ this repository under `database/data/`, loaded by a chunked seeder. This is pure
 infrastructure — no admin CRUD, no Livewire component, no picker UI, and no `shipping_zones`
 table; those belong to the follow-up stories. The catalog is **physically independent** of the
 future `sales_regions` (fiscal) catalog: no shared table and no foreign key between them, per
-[PRD assumption 4](../../../docs/PRD/PRD.md#assumptions--confirmed-decisions), reaffirmed in the
-rewritten [§2.4 Shipping](../../../docs/PRD/PRD.md#24-shipping).
+[PRD assumption 4](../../../docs/PRD/sections/foundations.md#assumptions--confirmed-decisions), reaffirmed in the
+rewritten [§2.4 Shipping](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#24-shipping).
 
 ## Type
 backend | includes database-expert: yes
 
-**PRD coverage.** [§2.4 Shipping](../../../docs/PRD/PRD.md#24-shipping) (rewritten 2026-08-17). This
+**PRD coverage.** [§2.4 Shipping](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#24-shipping) (rewritten 2026-08-17). This
 story has **no Gherkin scenarios of its own in the PRD** — the zone CRUD and picker scenarios
 there belong to the follow-up stories. It enables exactly one PRD acceptance criterion:
 
@@ -151,14 +151,14 @@ engines at once. The **collation** half of OQ-6 remains open and is unaffected.
 
 - `database/migrations/<timestamp>_create_geography_entries_table.php` — **new**. One table with a
   `level` discriminator and a nullable self-referencing `parent_id`. `down()` is
-  `Schema::dropIfExists('geography_entries')`, per [migrations.md](../../../docs/database/migrations.md#structure).
+  `Schema::dropIfExists('geography_entries')`, per [migrations.md](../../../docs/database/migrations/basics-and-alterations.md#structure).
 
   Column set agreed in the debate:
 
   | Column | Type | Notes |
   | --- | --- | --- |
   | `id` | `bigint` auto-increment PK | **confirmed** — the one deliberate exception to this project's UUIDv7 policy; see *Primary-key type* below |
-  | `level` | `VARCHAR(20)` | cast to `App\Enums\GeographyLevel`; string + PHP enum, never a native MySQL `enum`, per [migrations.md](../../../docs/database/migrations.md#when-the-new-columns-default-is-wrong-for-existing-rows-backfill-in-the-same-up) |
+  | `level` | `VARCHAR(20)` | cast to `App\Enums\GeographyLevel`; string + PHP enum, never a native MySQL `enum`, per [migrations.md](../../../docs/database/migrations/basics-and-alterations.md#when-the-new-columns-default-is-wrong-for-existing-rows-backfill-in-the-same-up) |
   | `parent_id` | nullable, self-FK, `restrictOnDelete` | null for countries; country for comunidades; comunidad for municipios |
   | `name` | `VARCHAR(255)` | display name exactly as sourced |
   | `normalized_name` | `VARCHAR(255)` | the search column, computed once at seed time by the project's centralized text-normalizer utility, **`App\Actions\NormalizeForSearch`** (`app/Actions/NormalizeForSearch.php`) — this story defines **no normalization rule of its own**; see **D-N1** |
@@ -188,7 +188,7 @@ engines at once. The **collation** half of OQ-6 remains open and is unaffected.
 ### Model
 
 - `app/Models/GeographyEntry.php` — **new**. Attribute-based `#[Fillable]` / `casts()` style per
-  [base-standards.md](../../../docs/conventions/base-standards.md#model-conventions) and
+  [base-standards.md](../../../docs/conventions/base-standards/stack-and-model-conventions.md#model-conventions) and
   `app/Models/User.php`. `casts()` carries `'level' => GeographyLevel::class`. Relations:
   `parent()` (`belongsTo` self) and `children()` (`hasMany` self).
 
@@ -524,7 +524,7 @@ utility; do not resolve them separately.
 - **A hardcoded municipio count is the most likely mistake in Phase 3** — see OQ-1.
 
 ## Provenance
-Written in Phase 1 (Three Amigos) on 2026-08-17 for Epic 2, from the [§2.4 Shipping](../../../docs/PRD/PRD.md#24-shipping)
+Written in Phase 1 (Three Amigos) on 2026-08-17 for Epic 2, from the [§2.4 Shipping](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#24-shipping)
 section rewritten the same day. Participants: `product-owner`, `backend-expert`, `backend-qa`,
 `database-expert` (added per [workflow.md](../../../docs/workflow.md)'s classification rule, since the
 task creates a table and a seeder). No application code was written in this phase.

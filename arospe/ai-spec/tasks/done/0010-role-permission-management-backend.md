@@ -162,7 +162,7 @@ Feature: Roles and permissions management
   > **Corrected 2026-08-20 (found while running this story's own test suite) — the paired view path
   > quoted above is wrong; it is the flat file, not a nested one.** `App\Livewire\Roles\Index` is an
   > `Index` class inside a subfolder (`Roles/`), which is exactly the case
-  > [`docs/conventions/naming.md`](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
+  > [`docs/conventions/naming.md`](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
   > documents as an exception to the normal class↔view mirror: Livewire's `Finder::generateNameFromClass()`
   > strips a trailing `.index` segment, so the component resolves to the **flat**
   > `resources/views/livewire/roles.blade.php` — the direct analogue of
@@ -283,10 +283,10 @@ Feature: Roles and permissions management
   >    holder-count guard that is doubly perverse, since the very holders it counts are what the
   >    package's listener has just removed. Put this story's `deleting` closure in the **same** `boot()`
   >    method, alongside 0008's, so registration order stays explicit and reviewable in one place. See
-  >    [`docs/architecture/authorization.md`](../../../docs/architecture/authorization.md#layer-1-registration-order-is-the-whole-point)
+  >    [`docs/architecture/authorization.md`](../../../docs/architecture/authorization/super-admin.md#layer-1-registration-order-is-the-whole-point)
   >    (which shows the real `boot()` body, plus the `booted()` anti-pattern) and the mechanism overview
   >    in the same page's
-  >    [Super Admin role's invariants](../../../docs/architecture/authorization.md#the-super-admin-roles-invariants)
+  >    [Super Admin role's invariants](../../../docs/architecture/authorization/super-admin.md#the-super-admin-roles-invariants)
   >    section.
   > 2. **Reading the row's protected identity.** 0008's re-audit (finding R1) found a working bypass in a
   >    guard that read an in-memory attribute where it needed the *persisted* one, and that used `??` to
@@ -297,7 +297,7 @@ Feature: Roles and permissions management
   >    (the cached relation, possibly loaded before the holders changed) and a `users_count` attribute
   >    carried over from a `withCount()` on the *listing* query are both stale-by-construction inside a
   >    `deleting` listener. The rule and its worked example are in
-  >    [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns.md#a-guard-that-reads-a-rows-protected-identity-must-distinguish-not-hydrated-from-hydrated-but-null).
+  >    [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns/ability-coverage-and-guards.md#a-guard-that-reads-a-rows-protected-identity-must-distinguish-not-hydrated-from-hydrated-but-null).
   >
   > A test for this guard must assert the same thing 0008's does: after a refused delete, the
   > `model_has_roles` rows are **still there**, not merely that the `roles` row is.
@@ -349,7 +349,7 @@ Feature: Roles and permissions management
   > described below is already done and is not this story's job.** This section originally specified
   > that *this story* would replace `$role->name === Role::superAdminName()` with a persisted-identity
   > helper it would also build (`Role::isSuperAdminRole()`), closing the ⚠️ residual in
-  > [`docs/architecture/authorization.md`](../../../docs/architecture/authorization.md#known-limitations--what-is-not-closed)
+  > [`docs/architecture/authorization.md`](../../../docs/architecture/authorization/super-admin.md#known-limitations--what-is-not-closed)
   > that named stories 0010/0011 by number. That did not happen the way this section predicted: 0008a's
   > own Phase 4 audit rounds built the equivalent helper first, under the name
   > `Role::isSuperAdminRoleRow(self $role): bool` (see the `app/Models/Role.php` bullet above), and 0009
@@ -358,7 +358,7 @@ Feature: Roles and permissions management
   > 0009's own Phase 4 security audit also upgraded to the same helper (finding F4). The underlying bug
   > class this residual was about is exactly 0008's Phase 4 re-audit finding **R1**, a working rename
   > bypass, documented in
-  > [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns.md#a-guard-that-reads-a-rows-protected-identity-must-distinguish-not-hydrated-from-hydrated-but-null)
+  > [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns/ability-coverage-and-guards.md#a-guard-that-reads-a-rows-protected-identity-must-distinguish-not-hydrated-from-hydrated-but-null)
   > — it is fully closed now, not partially. **This story touches neither method's Super Admin branch
   > nor its Administrator-level branch.** The old coordination warning about 0009 and 0010 racing to
   > build the same helper no longer applies (0009 already closed, so there is nothing left to race for),
@@ -429,7 +429,7 @@ Feature: Roles and permissions management
   `config('auth.defaults.guard')` to supply it implicitly would make the value environment-dependent
   for no benefit; write `['name' => …, 'guard_name' => 'web']` at the creation call site so the row
   and the validation rules above provably agree. See
-  [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns.md#always-pass-the-guard-to-hasrole--hasanyrole)
+  [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns/bypass-cache-and-guards.md#always-pass-the-guard-to-hasrole--hasanyrole)
   for the same "always name the guard" rule on the read side.
 - `tests/Feature/Roles/IndexTest.php` — **create** (backend-qa, Phase 3).
 - **No migration.** All five permission tables already exist; the catalog rows come from 0002.
@@ -463,7 +463,7 @@ Feature: Roles and permissions management
   [`bootstrap/app.php`](../../../bootstrap/app.php)'s `withMiddleware()` is **not** empty; it registers
   `'role'`, `'permission'` and `'role_or_permission'` via `$middleware->alias([...])` (story 0002's
   work, documented in
-  [`docs/architecture/authorization.md`](../../../docs/architecture/authorization.md#middleware-aliases)).
+  [`docs/architecture/authorization.md`](../../../docs/architecture/authorization/administrator-tier.md#middleware-aliases)).
   A route gated with `permission:roles.manage` would therefore boot fine, and a manual check of
   `GET /roles` would show it correctly refusing an unprivileged user. **That is precisely what makes
   it dangerous here** — it looks like it works.
@@ -512,7 +512,7 @@ Feature: Roles and permissions management
   component would let a forged `editingRoleId` targeting the Super Admin role past this layer entirely
   and leave the model-event guard as the only thing standing, converting a clean 403 into an
   `ImmutableRoleException`. See
-  [`docs/architecture/authorization.md`](../../../docs/architecture/authorization.md#gateauthorize-at-the-call-site-not-only-at-the-route).
+  [`docs/architecture/authorization.md`](../../../docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#gateauthorize-at-the-call-site-not-only-at-the-route).
 
   The mapping — one authorize call per entry point, matching the sketch above:
 
@@ -596,7 +596,7 @@ Feature: Roles and permissions management
   > returns in full, with a 200 response); and a caller that syncs a *different* role than the one it
   > passed as the third argument reopens the class of hole 0009's re-audit finding N2 closed. This is
   > the same shape 0008a's story ruled on one story ago, in
-  > [`docs/architecture/authorization.md`](../../../docs/architecture/authorization.md#the-guard-belongs-to-the-action-not-to-the-caller)'s
+  > [`docs/architecture/authorization.md`](../../../docs/architecture/authorization/administrator-tier.md#the-guard-belongs-to-the-action-not-to-the-caller)'s
   > "the guard belongs to the action, not to the caller" section — `CreateUser`/`UpdateUser` authorize
   > and write inside one call for exactly this reason. Two ways to resolve it, in order of preference:
   > **(a)** fold the write into the action for the update path (e.g.
@@ -620,7 +620,7 @@ Feature: Roles and permissions management
   > - **(recommended, and the decision taken) the Administrator-level permission-grant story
   >   ([0009](../done/0009-administrator-level-permission-grant.md)) lands first** — which is why it now
   >   carries the **lower** number: the two stories were renumbered on 2026-08-19 so the dependency
-  >   precedes its dependent, per [`docs/workflow.md`](../../../docs/workflow.md#task-ordering-rule)'s
+  >   precedes its dependent, per [`docs/workflow.md`](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule)'s
   >   task-ordering rule. It is a small backend-only story whose only dependency this story has is
   >   that one action class plus the policy branch. Sequencing it ahead removes the question entirely
   >   and matches 0011's DoD, which already requires 0002, 0008, 0009 **and** this story to have
@@ -808,9 +808,9 @@ The Super Admin role is absent from every list this component produces, and is r
       > **Phase 6 outcome, against what this bullet originally predicted.** The prediction was
       > verified rather than assumed, and it was **half right**. 0009's own docs pass *had* closed the
       > partial-hydration residual in
-      > [`docs/architecture/authorization.md`](../../../docs/architecture/authorization.md#known-limitations--what-is-not-closed)
+      > [`docs/architecture/authorization.md`](../../../docs/architecture/authorization/super-admin.md#known-limitations--what-is-not-closed)
       > correctly. It had **not** corrected that page's
-      > [`RolePolicy` — the second policy](../../../docs/architecture/authorization.md#rolepolicy--the-second-policy)
+      > [`RolePolicy` — the second policy](../../../docs/architecture/authorization/policies-users-roles.md#rolepolicy--the-second-policy)
       > section, which still claimed the policy "has three abilities" and "no call site in `app/`" —
       > both falsified by this story, both now rewritten (**five** abilities, first call site
       > `App\Livewire\Roles\Index`). Note the count in this bullet was itself wrong: it predicted
@@ -868,7 +868,7 @@ separated by `|`, resolved with
 the singular/plural rule lives in the translation file where a locale with different plural rules can
 express it. The suite carries a dedicated singular case (`deleting a role held by exactly 1 user is
 refused with a correct singular message`) alongside the 3-holder one. The convention this established
-is now written up in [`docs/conventions/naming.md`](../../../docs/conventions/naming.md#translation-keys)
+is now written up in [`docs/conventions/naming.md`](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)
 — a count-dependent message is never two keys and never a `$count === 1 ? … : …` branch in PHP.
 
 **~~C. Shared `RoleFactory` / `PermissionFactory`~~ — resolved in Phase 3 by what shipped: C2 taken,
@@ -1023,7 +1023,7 @@ remediation asked for as implementation rules).
   - **N2.** The two transformers handle an **omission** in opposite ways (one preserves, one lets the
     sync revoke), which is safe only because `permissionOptions()` renders the *unfiltered* catalog —
     a property that lives in neither guard. Written up as a forward-looking rule in
-    [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns.md#two-guards-on-one-payload-must-agree-on-what-an-omission-means),
+    [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns/payload-omission-and-registries.md#two-guards-on-one-payload-must-agree-on-what-an-omission-means),
     because the obvious next move for story 0011 (hiding permissions the actor cannot grant) is
     exactly what would turn it into a silent-revoke bug.
   - **N3.** `RolePolicy::delete()`'s categorical Administrator refusal is **unreachable for a Super
@@ -1040,12 +1040,12 @@ remediation asked for as implementation rules).
 **Phase 5 (`code-reviewer`).**
 
 - **F-1 (blocking) — three test files failed a real Pint run.** `vendor/bin/pint --dirty` — the exact
-  command this project's own [conventions](../../../docs/conventions/base-standards.md#quality-gates)
+  command this project's own [conventions](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#quality-gates)
   mandate — reported clean, because `--dirty` inspects only *uncommitted* changes and therefore
   no-ops entirely once the tree is committed. A plain `vendor/bin/pint --format agent` found
   `fully_qualified_strict_types` and `ordered_imports` violations immediately. Fixed by that unscoped
   run. **This is a project-wide gate weakness, not a mistake specific to this story**, and is recorded
-  as such in [`docs/errors-log.md`](../../../docs/errors-log-archive.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)
+  as such in [`docs/errors-log.md`](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)
   together with its sibling (`test --filter`, below), with the corresponding correction to the
   conventions page's gate list.
 - **F-2 — a disclosure test that asserted nothing.** The `openEditModal()` test was written against
@@ -1124,7 +1124,7 @@ and the holder-count 409 guard), `docs/conventions/base-standards.md` (the unsco
 `README.md`, and the course delivery document `../readme.md`. `CLAUDE.md` and `AGENTS.md` needed no
 change — this story adds no new doc file and no new pointer.
 
-The [link-integrity check](../../../docs/workflow.md#link-integrity-check-on-every-stage-move) was run over
+The [link-integrity check](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move) was run over
 this file even though it has not moved since Phase 3, and it **found two real breaks**: both references to
 sibling story 0012 were written as bare `](0012-module-access-gating-backend.md)`, which resolved correctly
 from `ai-spec/tasks/` and stopped resolving the moment this file moved to `in-progress/`. Corrected to

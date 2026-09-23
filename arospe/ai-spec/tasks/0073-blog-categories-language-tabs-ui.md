@@ -3,7 +3,7 @@
 ## Description
 Retrofit story [0062](0062-blog-categories-ui.md)'s Blog Categories management screen so a category's
 name is authored **per active store language** through language tabs, satisfying
-[PRD Epic 5, Layer 2](../../docs/PRD/PRD.md#epic-5--internationalization)'s *"each active store
+[PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization)'s *"each active store
 language surfaces as a tab … in the taxonomy management screens"* and its `Taxonomy names are
 translatable per store language` scenario for the **Blog category** row. Consumes story
 [0072](0072-translatable-content-retrofit-blog-categories-backend.md)'s retrofit — which **deletes
@@ -47,7 +47,7 @@ story by number.
 > directory**, so nothing below was settled by executing Laravel, Livewire, Alpine or Flux code.
 > Stories 0058, 0061, 0062, 0068, 0070, 0071 and 0072 are all Phase 1 files. **Phase 3 must
 > re-verify every signature named here against `HEAD` before writing a line** — the
-> [deferred-findings failure mode](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
+> [deferred-findings failure mode](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
 > at this story's widest exposure yet (**R-3**).
 
 ## Type
@@ -56,7 +56,7 @@ frontend | includes database-expert: **no** | consumes **0072** (the retrofit), 
 ## Three Amigos participants
 
 `product-owner` (facilitator) + `frontend-expert` + `frontend-qa`, per
-[workflow.md](../../docs/workflow.md#task-classification-rule)'s Frontend classification. **Both
+[workflow.md](../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule)'s Frontend classification. **Both
 amigos were dispatched as real subagent calls and both returned.** Their contributions are reflected
 below, including **three divergences between them** (**V-1**–**V-3**) and **four points where 0071
 overruled the debate's own conclusion** (**C-1**–**C-4**), each recorded with what it used to say.
@@ -288,7 +288,7 @@ moves with the other three. The class **name** is fixed regardless, by 0071 **D-
 > ⚠️ **Four stories now write `lang/*/blog.php`** (0061 creates it, 0062 appends `categories.index`,
 > 0063 appends its own, 0073 appends `categories.index.tabs`). Their Phase 3 work must **never** be
 > dispatched in the same batch, per the
-> [Parallel Agent File-Ownership Rule](../../docs/contracts.md#parallel-agent-file-ownership-rule).
+> [Parallel Agent File-Ownership Rule](../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule).
 > 0062 already carries the two-story form of this fence; this story makes it four. Note 0071 records
 > the identical hazard for `lang/*/products.php` at three stories — this is the worse of the two.
 
@@ -396,7 +396,7 @@ rather than ported from 0071**:
   passing the category's own id compiles, runs and matches nothing.
 - **The error key is derived internally as `"names.{$language->id}"`**, never accepted as a
   parameter (0071 **D-13**). A caller-supplied key is the shape this project's errors log records as
-  [a guard taking the state it guards as a parameter](../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20).
+  [a guard taking the state it guards as a parameter](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20).
 - **Then calls `SetTranslation`**, whose `updateOrCreate()` on the `(category, language)` natural key
   makes re-translating replace rather than duplicate, and whose write fires 0072's
   `normalized_name` derivation hook on `BlogCategoryTranslation`.
@@ -699,7 +699,7 @@ first.
 - [ ] Tests written and green (**full suite unscoped**, not `--filter`)
 - [ ] `vendor/bin/pint --format agent` run **unscoped**, not `--dirty`
 - [ ] **Larastan level 7 run and recorded** — named explicitly because
-      [errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
+      [errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
       records three consecutive stories whose verification notes listed two of three gates and were
       read as records of all three
 - [ ] Code reviewed (code-reviewer) — ⚠️ **the two authorization/validation layers (D-8) are
@@ -744,7 +744,7 @@ conditional-requiredness branch: a forged value would let an actor blank away a 
 translation without tripping the blank-is-refused rule, silently destroying content. That is a
 data-integrity concern, locked for the same reason `$editingCategoryId` is. **No entry in `$names` is
 ever `null`** — every active language gets a real `''` key at modal-open, extending this repo's
-[never-`null`-bound-property rule](../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
+[never-`null`-bound-property rule](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
 from scalars to array **values**.
 
 **D-3 — Tabs switch on a server round trip via `public string $activeLanguageId`, not client-side
@@ -817,7 +817,7 @@ here verbatim — superseding this story's earlier component-only shape; see **C
 | **2 — action** | `App\Actions\Blog\SetBlogCategoryTranslation` | `Gate::authorize('update', $blogCategory)` then its own `Validator::make(...)->validate()` | binds **every** caller — a future importer, Artisan command or queued job inherits the whole rule with no component in sight |
 
 **Why both.** This repo has ruled on the identical question twice, in the same direction.
-[base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+[base-standards.md](../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 establishes that *"if an operation must not happen without a permission, the check lives in the class
 that performs the operation"* — layer 2 — and task 0017's Sales Regions precedent adds the converse in
 as many words: ***"a component that authorizes as well is a layer, not a redundancy … a reviewer who
@@ -952,7 +952,7 @@ user meets it, 0058 **D-13**'s authorize-before-validate trap (absent from 0071 
 - **R-2 — 0071's R-1/R-2 gap has a Blog twin, and the window is a broken screen.** 0072 drops
   `blog_categories.name` while 0062's shipped `loadCategories()` reads `->orderBy('name')`. If 0062
   ships first (it must — it is Epic 4) and 0072 then lands, **0062's suite goes red at 0072's own
-  Phase 3**, which [contracts.md](../../docs/contracts.md#full-test-suite-gate-rule)'s Full Test Suite
+  Phase 3**, which [contracts.md](../../docs/contracts/testing-and-parallel-agents.md#full-test-suite-gate-rule)'s Full Test Suite
   Gate Rule forbids it closing through. 0072's **R-1** names the amendment and explicitly declines to
   own it. **D-12** supplies the replacement query; **Q-2** asks who owns applying it — the direct
   analogue of 0071's **Q-3**, which resolved as *"0071 owns it for its own screen"*, and the same
@@ -963,7 +963,7 @@ user meets it, 0058 **D-13**'s authorize-before-validate trap (absent from 0071 
   actions self-authorize as their first statement; 0071's descend from 0023 and do not, so a reader
   diffing this story against its sibling could reasonably conclude it does not apply. It does.
 - **R-5 — Browser-test traps**, verbatim from
-  [playwright-setup.md](../../docs/testing/frontend/playwright-setup.md#waiting-one-call-is-banned-in-this-repo-and-one-is-bounded).
+  [playwright-setup.md](../../docs/testing/frontend/playwright-setup/waiting-rules.md#waiting-one-call-is-banned-in-this-repo-and-one-is-bounded).
   `->waitForEvent('networkidle')` is **banned outright** — it never settles here, and one session's
   hangs leaked ~60 `playwright run-server` processes and OOM-killed the MySQL container. A short
   bounded `->wait(n)` with a stated reason is the only accepted mitigation, and only after the
@@ -1116,7 +1116,7 @@ exist** when this debate opened and **did** exist when it closed.
 > in a table rather than silently replaced. **The lesson for the coordinator is not about this story:
 > dispatching two Phase 1 debates for stories that share a pattern, concurrently, produces two
 > independent designs and makes one of them wasted work.** That is the
-> [Parallel Agent File-Ownership Rule](../../docs/contracts.md#parallel-agent-file-ownership-rule)'s
+> [Parallel Agent File-Ownership Rule](../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule)'s
 > reasoning applied to *design* rather than to files — the write sets did not overlap, but the
 > decision spaces did.
 

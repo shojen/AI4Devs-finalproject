@@ -234,18 +234,18 @@ Feature: Configuring a Sales Region entry's tax rate and availability
 > `permission:sales-regions.view` would protect the initial `GET` only, leaving every `save()` /
 > `setDefault()` / `setActive()` round-trip unauthorized at the route layer. Use **`can:`**, plus explicit
 > per-method authorization inside the component. See
-> [authorization.md](../../../docs/architecture/authorization.md#gating-a-livewire-route-use-can-never-permission)
+> [authorization.md](../../../docs/architecture/authorization/how-to-gate.md#gating-a-livewire-route-use-can-never-permission)
 > and [security/livewire-authorization.md](../../../docs/security/livewire-authorization.md).
 
 ### `app/Livewire/SalesRegions/Index.php` — **create**
 
 Class-based component (never single-file), per
-[base-standards.md](../../../docs/conventions/base-standards.md#livewire-component-convention-class-based-not-single-file).
+[base-standards.md](../../../docs/conventions/base-standards/livewire-and-flux-conventions.md#livewire-component-convention-class-based-not-single-file).
 
 > 📌 **View-path trap — `Index` in a subfolder resolves one level shallower.** `App\Livewire\SalesRegions\Index`
 > resolves to **`resources/views/livewire/sales-regions.blade.php`**, *not* `livewire/sales-regions/index.blade.php`
 > — Livewire's `Finder::generateNameFromClass()` strips the trailing `.index`. This is the documented
-> [exception in naming.md](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name).
+> [exception in naming.md](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name).
 > A file at the nested path would be a silently unused duplicate.
 
 ### `resources/views/livewire/sales-regions.blade.php` — **create (placeholder)**
@@ -303,7 +303,7 @@ protected function replacementDefaultRules(): array
 > ⚠️ **The rule alone is not the enforcement.** `SetSalesRegionActive` re-checks the replacement's
 > `is_active` inside its own transaction, because this validation rule runs only on the component path —
 > and a rule enforced only in a component is bypassed by every other call site of the action
-> ([livewire-authorization.md](../../../docs/security/livewire-authorization.md#authorization-that-lives-only-in-the-component-is-bypassed-by-every-other-call-site-of-the-action)).
+> ([livewire-authorization.md](../../../docs/security/livewire-authorization/action-level-authorization.md#authorization-that-lives-only-in-the-component-is-bypassed-by-every-other-call-site-of-the-action)).
 > The same applies to `setDefault()`: an inactive target is refused **in the action**, not only in the form.
 
 Four things about `rateRules()`, each **verified by reading this repo's installed vendor source** rather
@@ -361,7 +361,7 @@ public function update(User $actor, SalesRegion $target): bool
 - **`hasPermissionTo()` inside a policy body is correct here**, even though it does not itself reach
   `Gate::before` — a policy method is only ever reached *through* the Gate, and the Super Admin is granted
   before the policy is consulted at all. This is the documented rule, not an oversight; see
-  [authorization.md](../../../docs/architecture/authorization.md#policies).
+  [authorization.md](../../../docs/architecture/authorization/policies-users-roles.md#policies).
 - **Two abilities only.** `sales-regions.create` / `sales-regions.delete` are seeded but have no affordance
   in this story or 0018 (D8). Defining policy methods for abilities nothing calls is untested surface.
 - **No target-dependent branch**, unlike `UserPolicy::update()`'s Super Admin exclusion — there is no
@@ -560,7 +560,7 @@ require __DIR__.'/sales-regions.php';
 ### `lang/en/sales-regions.php`, `lang/es/sales-regions.php` — **create**
 
 Both files, in the same change, **key-for-key identical** — the hard rule in
-[naming.md](../../../docs/conventions/naming.md#translation-keys). This story creates them for the
+[naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys). This story creates them for the
 **domain-error copy its own actions produce** (`errors.default_deactivation_requires_replacement` and
 `errors.default_must_be_active`, plus the
 validation attribute names), the same way `users.email_change.*` is owned by the story that owns the action
@@ -667,7 +667,7 @@ Seven properties of this surface are load-bearing (grew from six at Phase 2, fin
 - **`setActive()` authorizes BOTH rows it writes — now doubly, by design.** The component's own
   `$log->authorize('update', $target, ...)` **and** `$log->authorize('update', $replacement, ...)` (when
   supplied) are the same "cover every thing the operation actually achieves" principle
-  [authorization-patterns.md](../../../docs/security/authorization-patterns.md#an-ability-must-cover-every-attribute-that-achieves-its-effect-not-only-the-operation-it-is-named-after)
+  [authorization-patterns.md](../../../docs/security/authorization-patterns/ability-coverage-and-guards.md#an-ability-must-cover-every-attribute-that-achieves-its-effect-not-only-the-operation-it-is-named-after)
   established for attributes, applied here to a second *row*. **Per the Phase 1 reconciliation,
   `SetSalesRegionActive` now authorizes both rows itself too** — this is deliberate defense-in-depth, not
   redundant duplication to remove: the action's check is what a non-dashboard caller inherits, the
@@ -951,7 +951,7 @@ catalog whose "exactly one default" precondition is now enforced rather than mer
   tinker session, a bulk tool) into an implicit trigger. An action class is "one named place"; an observer is
   "triggered by everything".
 - *Component-level logic* is the exact failure mode
-  [security/livewire-authorization.md](../../../docs/security/livewire-authorization.md#authorization-that-lives-only-in-the-component-is-bypassed-by-every-other-call-site-of-the-action)
+  [security/livewire-authorization.md](../../../docs/security/livewire-authorization/action-level-authorization.md#authorization-that-lives-only-in-the-component-is-bypassed-by-every-other-call-site-of-the-action)
   documents: a future Artisan command, queued job or controller calling the model directly would produce two
   defaults, or zero.
 - *A database constraint* (0016's `STORED` generated column + UNIQUE, which genuinely works on MySQL 8.4
@@ -1083,7 +1083,7 @@ alternatives in [Locked decisions](#locked-decisions-confirmed-at-phase-1) rathe
 8. **File ownership with 0018.** This story owns `app/Livewire/SalesRegions/Index.php` and both
    `lang/*/sales-regions.php`; 0018 owns `resources/views/livewire/sales-regions.blade.php` and grows the
    lang files additively. If the two ever run concurrently, that is precisely what
-   [contracts.md](../../../docs/contracts.md#parallel-agent-file-ownership-rule)'s Parallel Agent
+   [contracts.md](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule)'s Parallel Agent
    File-Ownership Rule governs.
 
 ### Locked decisions (confirmed at Phase 1)
@@ -1178,7 +1178,7 @@ convened for this story's Phase 1 debate, but **neither had returned its contrib
 composed**. Everything above is therefore the work of `product-owner` alone, derived from:
 
 - [story 0016](../done/0016-sales-region-catalog-schema-and-seeder.md) read in full (the data contract),
-- [PRD §2.1](../../../docs/PRD/PRD.md#21-sales-regions--taxes),
+- [PRD §2.1](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#21-sales-regions--taxes),
 - the real shipped code this story mirrors — `app/Livewire/Users/Index.php`, `app/Policies/UserPolicy.php`,
   `app/Concerns/UserValidationRules.php`, `app/Actions/Users/UpdateUser.php`, `routes/web.php`,
 - the `docs/` set (architecture, conventions, security, testing, contracts, errors-log),
@@ -1217,7 +1217,7 @@ this project's own standing practice. Findings and how each was folded in:
 `UpdateSalesRegion`, `SetDefaultSalesRegion` and `SetSalesRegionActive` as originally drafted contained
 zero `Gate::authorize()` calls, with `sales-regions.edit` checked only inside the *component*. This is the
 exact gap story **0008a** closed for `CreateUser`/`UpdateUser` (see
-[base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)) —
+[base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)) —
 a future Artisan command, queued job or second component calling these actions directly would bypass the
 permission entirely. **Fixed**: all three actions now authorize themselves as their first statement (see
 the rewritten action code blocks under "Files to create/modify" below).
@@ -1462,7 +1462,7 @@ caller-supplied one, after the re-fetch.
 ### Phase 4 re-audit round 2 (`appsec-auditor`, 2026-08-26)
 
 Per this repo's own rule — [a security fix must be re-audited as new code, not merely confirmed to close the
-original finding](../../../docs/errors-log-archive.md#two-of-the-three-security-audit-rounds-found-the-flaw-in-the-previous-rounds-fix--2026-08-19) —
+original finding](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#two-of-the-three-security-audit-rounds-found-the-flaw-in-the-previous-rounds-fix--2026-08-19) —
 the F-1/F-2 fix above was re-audited the next day. **Verdict: PASS**, four Low findings, none reopening F-1
 or F-2. Full detail (including the two-live-MySQL-session deadlock reproduction) is in
 [`docs/security/model-instance-trust.md`](../../../docs/security/model-instance-trust.md#re-audit-round-2-what-the-fix-itself-got-subtly-wrong).
@@ -1511,7 +1511,7 @@ found wrong.
 **Verdict: FAIL** — one blocking finding, five non-blocking, three nits. All applied the same day.
 
 - **F-1 — Blocking. Larastan level 7 had never actually run against this story.** `phpstan.neon` names it as
-  gate 3 of 3 in [base-standards.md](../../../docs/conventions/base-standards.md#quality-gates), and none of
+  gate 3 of 3 in [base-standards.md](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#quality-gates), and none of
   the three prior verification passes (Phase 3 reconciliation, the Phase 4 fix, the Phase 4 re-audit round 2)
   record running it — each recorded `sail artisan test` and `pint --test` and stopped there. Run for the
   first time at Phase 5: **2 errors**, both in `Index::save()` — `SalesRegion::find($replacementDefaultId)`

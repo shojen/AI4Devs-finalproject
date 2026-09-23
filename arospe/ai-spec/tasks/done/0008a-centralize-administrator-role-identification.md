@@ -252,7 +252,7 @@ not write an `administratorName()` resolver mirroring `superAdminName()`.
 - `app/Enums/RoleName.php` (**modify** — created by 0008) — add `case Administrator = 'Administrator';`
   alongside the existing `SuperAdmin` case. TitleCase key, backing value matching the seeded role name
   exactly (including case), per project `CLAUDE.md` and
-  [naming.md](../../../docs/conventions/naming.md#classes). This case is the **one and only place the
+  [naming.md](../../../docs/conventions/naming/classes.md#classes). This case is the **one and only place the
   literal string `'Administrator'` is written** anywhere in the guard path. Note the asymmetry with
   `SuperAdmin`, and do not "normalise" it away: `RoleName::SuperAdmin` is a compiled-in *default* for a
   config key and is never an identity check, whereas `RoleName::Administrator` **is** the identity.
@@ -266,7 +266,7 @@ not write an `administratorName()` resolver mirroring `superAdminName()`.
   `Administrator` case is the locked identity itself and is compared against directly), rather than
   leaving a sentence that has quietly gone stale. Same obligation on the docs side — see the Definition
   of Done's `docs-keeper` bullet — and the general rule in
-  [`docs/errors-log.md`](../../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13).
+  [`docs/errors-log.md`](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13).
 
 - `app/Models/Role.php` (**modify** — created by 0008) — add one `public static` helper. It takes a role
   **row** and answers whether that row is the Administrator role, by exact, case-sensitive comparison
@@ -336,7 +336,7 @@ not write an `administratorName()` resolver mirroring `superAdminName()`.
     see the boxed note directly below.
 
   > **⚠️ Why the helper hardens itself instead of trusting its callers — the answer to
-  > [`docs/architecture/authorization.md`](../../../docs/architecture/authorization.md#known-limitations--what-is-not-closed)'s
+  > [`docs/architecture/authorization.md`](../../../docs/architecture/authorization/super-admin.md#known-limitations--what-is-not-closed)'s
   > open residual.** That page ends with a warning aimed squarely at this story's consumers: `RolePolicy`
   > and the `Gate::before` deferral identify their target with the **in-memory** `$role->name`, so a
   > partially-hydrated instance (`Role::query()->select('id')->find($id)`) passed to `Gate::authorize()`
@@ -363,7 +363,7 @@ not write an `administratorName()` resolver mirroring `superAdminName()`.
   > branch by construction, still open on the Super Admin branch. The Definition of Done's `docs-keeper`
   > bullet requires that page's ⚠️ to be updated to say exactly that, rather than left describing a state
   > that no longer fully holds. The underlying rule is
-  > [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns.md#a-guard-that-reads-a-rows-protected-identity-must-distinguish-not-hydrated-from-hydrated-but-null).
+  > [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns/ability-coverage-and-guards.md#a-guard-that-reads-a-rows-protected-identity-must-distinguish-not-hydrated-from-hydrated-but-null).
 
   **The four sites that need a name string, not a row.** `hasRole()` and `firstOrCreate(['name' => …])`
   take the name itself, so they read `RoleName::Administrator->value` directly — the same single literal
@@ -411,7 +411,7 @@ not write an `administratorName()` resolver mirroring `superAdminName()`.
   `Role::isAdministratorRole()`.
 
   The explicit `'web'` guard argument stays on every one of them, per
-  [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns.md#always-pass-the-guard-to-hasrole--hasanyrole).
+  [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns/bypass-cache-and-guards.md#always-pass-the-guard-to-hasrole--hasanyrole).
   Import `App\Models\Role` (never `Spatie\Permission\Models\Role` — 0008 establishes that convention and
   enforces it in [`tests/Unit/ArchitectureTest.php`](../../../tests/Unit/ArchitectureTest.php) with **two
   separate single-namespace `arch()` rules**, one `->expect('App')` and one
@@ -421,11 +421,11 @@ not write an `administratorName()` resolver mirroring `superAdminName()`.
   > array of targets **disjunctively** — the rule passes as soon as any one target satisfies it — so the
   > merged form is vacuous over half its stated scope. That is not a hypothetical: it is how the test
   > shipped green the first time, and it is a recorded entry in
-  > [`docs/errors-log.md`](../../../docs/errors-log-archive.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18).
+  > [`docs/errors-log.md`](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18).
   > The split form is deliberate and carries a comment in the test file saying so.
 
   Note this is a *policy-body* `hasRole()` against the **target**, which
-  [`docs/architecture/authorization.md`](../../../docs/architecture/authorization.md#userpolicy-abilities)
+  [`docs/architecture/authorization.md`](../../../docs/architecture/authorization/policies-users-roles.md#userpolicy-abilities)
   explicitly carves out of the "gate on permissions, never role names" convention: it asks *does this
   target hold the role?*, not *may this actor do X?*. Centralizing the name does not change which side of
   that line the check sits on.
@@ -635,16 +635,16 @@ configuration.
       *not* config-driven the way `auth.super_admin.role` is**, so the asymmetry between the two reads as
       a decision rather than an oversight to a future reader of that page — and (b) that the
       Administrator-level authorization now lives in `app/Actions/Users/` rather than in the Livewire
-      component — its [`UserPolicy` abilities](../../../docs/architecture/authorization.md#userpolicy-abilities)
-      and [`Gate::authorize` at the call site](../../../docs/architecture/authorization.md#gateauthorize-at-the-call-site-not-only-at-the-route)
+      component — its [`UserPolicy` abilities](../../../docs/architecture/authorization/policies-users-roles.md#userpolicy-abilities)
+      and [`Gate::authorize` at the call site](../../../docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#gateauthorize-at-the-call-site-not-only-at-the-route)
       sections both describe the current, about-to-change placement.
 
       **Three specific statements elsewhere become false the day this ships and must be corrected in
       the same pass — named here so they are not left to be discovered later**, per the "don't leave a
       bare negative claim to go stale into a lie" rule in
-      [`docs/errors-log.md`](../../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13):
+      [`docs/errors-log.md`](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13):
 
-      1. [`docs/architecture/authorization.md`](../../../docs/architecture/authorization.md#one-name-one-resolution-path)'s
+      1. [`docs/architecture/authorization.md`](../../../docs/architecture/authorization/super-admin.md#one-name-one-resolution-path)'s
          **"One name, one resolution path"** section closes with "`App\Enums\RoleName` supplies **only**
          the compiled-in default … and it is never an identity check." True of the `SuperAdmin` case,
          false of the `Administrator` case this story adds. Rewrite it per case rather than deleting the
@@ -655,7 +655,7 @@ configuration.
          it is listed in [Files to create/modify](#files-to-createmodify) under the enum bullet and
          repeated here only so the two halves are corrected together.
       3. The ⚠️ residual at the end of that page's
-         [Known limitations](../../../docs/architecture/authorization.md#known-limitations--what-is-not-closed)
+         [Known limitations](../../../docs/architecture/authorization/super-admin.md#known-limitations--what-is-not-closed)
          section — "a partially-hydrated `Role` … would evade the **policy** layer" — is **half-closed**
          by this story and must say so: hydration-safe wherever identity resolves through
          `Role::isAdministratorRole()`, still open on `RolePolicy`'s Super Admin branch and the
@@ -665,7 +665,7 @@ configuration.
       Secondary:
       [`docs/api/routes.md`](../../../docs/api/routes.md)'s `users.index` entry describes where the
       component re-authorizes, and
-      [`docs/conventions/base-standards.md`](../../../docs/conventions/directory-structure.md#controllers-sit-in-front-of-actions-not-instead-of-them)'s
+      [`docs/conventions/base-standards.md`](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#controllers-sit-in-front-of-actions-not-instead-of-them)'s
       action conventions gain the rule this story establishes: **an authorization rule belongs to the
       action, not to one of its callers.**
 - [ ] Acceptance criteria met
@@ -700,7 +700,7 @@ each site rather than trusting a number. And 0008 shipped guards that its own Ph
 security audit added `creating`/`updating` name-assumption guards, `firstOrCreateSuperAdminRole()`, and
 the `assignToModels()` / `removeFromModels()` / `syncModels()` overrides), so read
 [`app/Models/Role.php`](../../../app/Models/Role.php) itself before adding a method to it. Per
-[`docs/workflow.md`](../../../docs/workflow.md#task-ordering-rule)'s task-ordering rule, a dependency's
+[`docs/workflow.md`](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule)'s task-ordering rule, a dependency's
 number must sort below its dependents': `0008` sorts before `0008a`, so the filename ordering is
 already correct and no renumbering is needed.
 
@@ -797,7 +797,7 @@ asserted, because it was not executed during this debate.
     not because config indirection is the house pattern for role identity.
   - *A permission-based check* (ask what the target *holds* rather than which role it *is*). Rejected
     because the question these five call sites ask is a target-side **identity** question, not an actor-side
-    capability question. [`docs/architecture/authorization.md`](../../../docs/architecture/authorization.md#userpolicy-abilities)
+    capability question. [`docs/architecture/authorization.md`](../../../docs/architecture/authorization/policies-users-roles.md#userpolicy-abilities)
     already carves this out explicitly: the "gate on permissions, never role names" convention "governs the
     **call sites**", while "inside a policy body … `hasRole()` [is appropriate] for asking a literal
     question about the *target*, which is exactly what the Super Admin and Administrator exclusions do."
@@ -864,7 +864,7 @@ asserted, because it was not executed during this debate.
 ## Phase 2 review record
 
 **2026-08-19 — Phase 2 (INVEST + doc-consistency, `code-reviewer`): ❌ rejected, revised, resubmitted.**
-Per [`docs/workflow.md`](../../../docs/workflow.md#governance-notes)'s governance note that no task advances
+Per [`docs/workflow.md`](../../../docs/workflow/user-story-template-and-governance.md#governance-notes)'s governance note that no task advances
 without an explicit recorded reason, this is the record of that rejection and of how each point was
 closed. No Phase 3 work had started; the file was in the `new` stage throughout.
 

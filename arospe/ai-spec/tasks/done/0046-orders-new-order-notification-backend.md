@@ -3,8 +3,8 @@
 ## Description
 When an order record is created, generate a **database notification** for every administrator who
 holds `orders.view`. This closes the second of the four confirmed notification events in PRD
-[§ Cross-cutting: global search & notifications](../../../docs/PRD/PRD.md#cross-cutting-global-search--notifications)
-and the "new order" acceptance criterion of [§3.2 Orders](../../../docs/PRD/PRD.md#32-orders). This story
+[§ Cross-cutting: global search & notifications](../../../docs/PRD/sections/foundations.md#cross-cutting-global-search--notifications)
+and the "new order" acceptance criterion of [§3.2 Orders](../../../docs/PRD/sections/epic-3-customers-orders.md#32-orders). This story
 owns the `OrderCreated` notification, the recipient-resolution rule, and the dispatch site inside story
 [0045](../done/0045-orders-core-crud-backend.md)'s `CreateOrder`. **It renders nothing** — no bell, no dropdown,
 no unread badge — and it adds **no migration**: the `notifications` table is story
@@ -213,7 +213,7 @@ class OrderCreated extends Notification
 
 - **`OrderCreated`, not `NewOrderCreated` or `OrderCreatedNotification`.** A statement of fact about what
   happened, matching `PendingEmailVerification` / `UserInvitation` / `CustomerCreated`, per
-  [naming.md](../../../docs/conventions/naming.md#classes). No `Notification` suffix.
+  [naming.md](../../../docs/conventions/naming/classes.md#classes). No `Notification` suffix.
 - **`['database']` only — no `mail` channel.** See decision **D-2**.
 - **Not `ShouldQueue`.** See decision **D-4**.
 - **Three keys, and every one of them is a literal-string snapshot.** See decision **D-5** — including
@@ -236,7 +236,7 @@ class OrderCreated extends Notification
 ### Recipient resolution + dispatch — `App\Actions\Orders\NotifyOrderCreated`
 
 `app/Actions/Orders/NotifyOrderCreated.php` — **new**, invokable, imperative verb-phrase name with no
-`Action`/`Service` suffix per [naming.md](../../../docs/conventions/naming.md#classes). It lands in the
+`Action`/`Service` suffix per [naming.md](../../../docs/conventions/naming/classes.md#classes). It lands in the
 `app/Actions/Orders/` subfolder **story 0045 creates** for `CreateOrder` — one subfolder per domain
 area, per [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure).
 
@@ -292,7 +292,7 @@ Three constraints on **where** that call goes, all load-bearing:
    inside a `DB::afterCommit` registration), so a rollback cannot leave a notification announcing an
    order that does not exist. **0045's own task file already flags this forward-looking**, under its
    action's step 4, citing
-   [the `DB::transaction()` entry in errors-log.md](../../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21):
+   [the `DB::transaction()` entry in errors-log.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21):
    *wrapping existing code in a transaction is a change to every side effect that code already
    performed*. Read forward here rather than in hindsight.
 2. **After `order_number` is finalized — i.e. after the retry loop, not before it.** 0045 **D-1** makes
@@ -313,7 +313,7 @@ Three constraints on **where** that call goes, all load-bearing:
   no new constraint on its call sites.
 - **No model event, no observer.** A `created` event on `Order` would fire for factories, seeders and
   imports too, and — per the blast-radius rule in
-  [base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done) —
+  [base-standards.md](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done) —
   would bind every test in the repo. It would also fire for the `orders` row *before* its `order_items`
   and totals exist, violating constraint 1 by construction. The PRD's event is "an order was placed",
   which is an *action*, not a row insert.
@@ -396,10 +396,10 @@ and no more.
 - [ ] **No notification-viewing UI is built**, and its absence is a gap already tracked once at story 0043 (OQ-3) rather than an unmet criterion here.
 
 ## Definition of Done
-- [ ] Tests written and green, plus the **full** existing suite run **unscoped** (`php artisan test`, not `--filter`), per [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule and [base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
+- [ ] Tests written and green, plus the **full** existing suite run **unscoped** (`php artisan test`, not `--filter`), per [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule and [base-standards.md](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
 - [ ] `vendor/bin/pint --format agent` clean (unscoped, **not** `--dirty`) and Larastan level 7 passing.
 - [ ] Code reviewed (code-reviewer).
-- [ ] No security findings (appsec-auditor) — specifically: that the recipient query cannot be widened by caller-supplied input; that the payload leaks no customer or order field beyond `order_id` / `order_number` / `customer_name` (no email, no address, no total); that a dispatch cannot be triggered by an actor who failed the `orders.create` gate; and that adding this side effect to `CreateOrder` grants no capability to a less-privileged caller — the shared-code lesson from [errors-log.md](../../../docs/errors-log-archive.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24). **`CreateOrder`'s caller list must be re-grepped at Phase 3** (`grep -rn "CreateOrder" app/`), not assumed to be one screen.
+- [ ] No security findings (appsec-auditor) — specifically: that the recipient query cannot be widened by caller-supplied input; that the payload leaks no customer or order field beyond `order_id` / `order_number` / `customer_name` (no email, no address, no total); that a dispatch cannot be triggered by an actor who failed the `orders.create` gate; and that adding this side effect to `CreateOrder` grants no capability to a less-privileged caller — the shared-code lesson from [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24). **`CreateOrder`'s caller list must be re-grepped at Phase 3** (`grep -rn "CreateOrder" app/`), not assumed to be one screen.
 - [ ] Documentation updated (docs-keeper) — [conventions/base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure) (`app/Notifications/` gains a fourth class; `app/Actions/Orders/` gains a second). **No schema or migration doc change**: this story adds no column, table or migration, and [database/schema.md](../../../docs/database/schema.md)'s `notifications` section is story 0043's to write.
 - [ ] **The Definition of Done explicitly does NOT include a notification-viewer UI**, for this story or for the Epic 3 batch as currently decomposed. See 0043's OQ-3.
 - [ ] Acceptance criteria met.
@@ -416,7 +416,7 @@ and no more.
 | `orders.view` in the seeded catalog | **shipped** | `RolePermissionSeeder::MODULES` carries `orders` (verified) — no seeder change needed |
 | `App\Models\User` `Notifiable` + `SoftDeletes` | **shipped** (Epic 1) | Verified; no model change in this story |
 
-Per the [task ordering rule](../../../docs/workflow.md#task-ordering-rule), 0043's and 0045's lower numbers
+Per the [task ordering rule](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule), 0043's and 0045's lower numbers
 are not cosmetic — sequence both into Phase 3 ahead of this story.
 
 ### Risks
@@ -436,7 +436,7 @@ are not cosmetic — sequence both into Phase 3 ahead of this story.
   confusion.
 - **R-4 — Cross-story edit.** This story modifies a file story 0045 owns. If 0045 is still in flight
   when this reaches Phase 3, the two must not be implemented by concurrent agents, per the
-  [Parallel Agent File-Ownership Rule](../../../docs/contracts.md#parallel-agent-file-ownership-rule).
+  [Parallel Agent File-Ownership Rule](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule).
 - **R-5 — Unbounded row growth with no reader.** Every order creation writes N rows that nothing ever
   reads or marks read while 0043's OQ-3 stays open. Orders are higher-volume than customers, so this
   story makes an already-recorded consequence larger — still negligible at backoffice volumes, and
@@ -446,7 +446,7 @@ are not cosmetic — sequence both into Phase 3 ahead of this story.
   than treated as passed on first reading, and **`Customer`'s display-name attribute must be
   re-verified against the shipped model** — this file assumes `$order->customer->name`, read from
   0043's own usage, and 0041's task file is itself still `new`. A name is a reading aid, not a locator
-  ([errors-log.md](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
+  ([errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
 
 ### Open questions
 
@@ -458,7 +458,7 @@ status here:
 | Inherited from 0043 | Status for this story |
 | --- | --- |
 | **OQ-1** — should a `suspended`/`inactive` administrator receive notifications? | **Inherited unchanged; same default: notify them (no status filter).** A notification is a record, not access, and `users.status` is enforced at sign-in ([architecture/authentication.md](../../../docs/architecture/authentication.md)). If the human overrides it for 0043, this story changes identically — one `->where('status', …)` clause in each action, and the two must not diverge |
-| **OQ-2** — should the administrator who created the record be notified of their own action? | **Inherited unchanged; same default: no self-exclusion.** It keeps the recipient rule a single query with no actor parameter, and avoids reintroducing the caller-supplied-state shape [errors-log.md](../../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20) warns about. An order created by a future storefront or import has no acting administrator at all, so a self-exclusion branch would be dead code on that path — **an argument that is actually stronger here than it was for customers** |
+| **OQ-2** — should the administrator who created the record be notified of their own action? | **Inherited unchanged; same default: no self-exclusion.** It keeps the recipient rule a single query with no actor parameter, and avoids reintroducing the caller-supplied-state shape [errors-log.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20) warns about. An order created by a future storefront or import has no acting administrator at all, so a self-exclusion branch would be dead code on that path — **an argument that is actually stronger here than it was for customers** |
 | **OQ-3** — the missing notification-viewer UI | **Tracked once, at 0043. Deliberately not reopened here.** It is one cross-cutting gap covering all four event producers, not one gap per producer; re-raising it per story is how a single decision becomes four unresolved questions. This story is not blocked by it. *(Note, added 2026-09-15: that gap now has real decomposed stories — [0056](0056-notification-viewing-backend.md) and [0057](0057-notification-bell-ui.md) — rather than staying a bare open question at 0043 alone. This does not reopen the question or change this story's own scope; 0046 still ships no viewer of any kind.)* |
 
 **The one real open item this story carried is resolved below as D-5**, not left open: whether
@@ -580,8 +580,8 @@ string** — at which point the refactor is mechanical and safe, which is precis
 
 ## Provenance
 
-- **PRD source:** [§3.2 Orders](../../../docs/PRD/PRD.md#32-orders) and
-  [§ Cross-cutting: global search & notifications](../../../docs/PRD/PRD.md#cross-cutting-global-search--notifications).
+- **PRD source:** [§3.2 Orders](../../../docs/PRD/sections/epic-3-customers-orders.md#32-orders) and
+  [§ Cross-cutting: global search & notifications](../../../docs/PRD/sections/foundations.md#cross-cutting-global-search--notifications).
 - **Process:** [workflow.md](../../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from
   `backend-expert` (confirming 0043's shape wholesale, the file list, the recipient query, the dispatch
   site and its constraints, and the no-abstraction constraint) and `backend-qa` (the mirrored recipient
@@ -603,9 +603,9 @@ string** — at which point the refactor is mechanical and safe, which is precis
   `App\Models\User` already carries `use Notifiable;` and `SoftDeletes`.
 - **Stage:** `in-progress` — moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` on
   2026-09-15, at the start of Phase 3 (step 0), per
-  [workflow.md](../../../docs/workflow.md#phase-3--tdd-mandatory-in-this-order). No longer
+  [workflow.md](../../../docs/workflow/phases.md#phase-3--tdd-mandatory-in-this-order). No longer
   **blocked**: the inherited cross-epic dependency the banner under [Description](#description)
   named is resolved — see that banner's own correction — and this move is what triggered it. It
   moves on to `ai-spec/tasks/done/` at Phase 7. Both moves change this file's directory depth, so
   every relative link above was re-resolved on this move, and must be again on the next one, per
-  [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move).
+  [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move).

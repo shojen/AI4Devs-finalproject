@@ -233,7 +233,7 @@ Line numbers are the verified `HEAD` (`00dd9c7`) ones as of 2026-08-23 and are a
 
 - **`app/Actions/Users/UpdateUser.php` (modify)** — call the guard from inside
   `authorizeRoleAndStatusChange()` (declared 132), so it binds the operation rather than one caller,
-  per [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers).
+  per [base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers).
   Two placement rules, both load-bearing:
   - **It must fire when a role change, a status change, or a third-party email change is actually
     happening — never on a name-only edit, and never on a self-edit of any kind.** *(Widened by the
@@ -271,7 +271,7 @@ Line numbers are the verified `HEAD` (`00dd9c7`) ones as of 2026-08-23 and are a
      later story extracts one, the guard moves with it.
   2. A `#[Computed]` boolean (e.g. `requiresPasswordConfirmation()`) reading the guard's non-throwing
      predicate, for the view's warnings. Name it as a predicate per
-     [naming.md](../../../docs/conventions/naming.md#boolean-properties).
+     [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#boolean-properties).
   3. Catch `PasswordConfirmationRequiredException` in `save()` and `deleteUser()` and route the actor
      to re-confirm: set the intended URL back to `users.index` explicitly
      (`redirect()->setIntendedUrl(route('users.index'))`) and issue the redirect through Livewire's own
@@ -329,7 +329,7 @@ Line numbers are the verified `HEAD` (`00dd9c7`) ones as of 2026-08-23 and are a
   group, key-for-key identical across both files: the edit-modal warning (now covering role, status
   *and* email per F2), the delete-modal warning, the create-modal Administrator-tier warning (F1), plus
   any flash message shown on return. `snake_case` leaves, per
-  [naming.md](../../../docs/conventions/naming.md#translation-keys).
+  [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys).
 
 **Confirmed *not* needed**, recorded so reviewers do not re-open them: **no `config/auth.php` change**
 and **no new timeout key** (the existing `auth.password_timeout` is reused verbatim); **no
@@ -540,7 +540,7 @@ assertion in any of these files was removed or loosened.
       with a fresh confirmation neither does. Prove the assertion can fail — flip the condition once
       and confirm the test goes red — per this repo's regression-proof convention.
 - [x] **Full-suite regression:** run `php artisan test` and `vendor/bin/pint --format agent` **unscoped**
-      (see [base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done)).
+      (see [base-standards.md](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done)).
       This story adds a guard inside an action that many existing tests exercise, so its blast radius
       is the whole Users suite by construction — expect existing tests that change a role or status to
       need the session key seeded, and treat each such amendment as a deliberate, listed change rather
@@ -748,14 +748,14 @@ closed until **both** sub-tasks have completed their Phase 7" clause therefore d
   > [`docs/contracts.md`](../../../docs/contracts.md)'s Parallel Agent File-Ownership Rule two agents
   > writing one file is a lost-edit bug waiting to happen — a rule this project adopted after a real
   > incident on this exact Blade file (see
-  > [`docs/errors-log.md`](../../../docs/errors-log-archive.md#two-agents-dispatched-in-parallel-both-wrote-to-the-same-blade-view--2026-08-16)).
+  > [`docs/errors-log.md`](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#two-agents-dispatched-in-parallel-both-wrote-to-the-same-blade-view--2026-08-16)).
   > Whichever story reaches Phase 3 second rebases onto the first and re-verifies its own line
   > citations.
 - **Depends on shipped code only** — `laravel/fortify`'s password-confirmation flow (live, and the
   sole protection on `settings/security`), `App\Actions\Users\UpdateUser`'s post-0008a shape, and
   story 0006's Users modals. Nothing unfinished.
 - **Task ordering:** `0015` sorts before `0015a`, satisfying
-  [`docs/workflow.md`](../../../docs/workflow.md#task-ordering-rule)'s rule, and the two are siblings
+  [`docs/workflow.md`](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule)'s rule, and the two are siblings
   rather than a dependency pair.
 
 ## Human decisions (recorded before Phase 3)

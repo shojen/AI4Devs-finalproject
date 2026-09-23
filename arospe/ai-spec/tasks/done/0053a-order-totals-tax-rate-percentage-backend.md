@@ -8,7 +8,7 @@
 ## Description
 
 `orders.tax_rate` is a **percentage** (`21.000` means 21%), mirroring `sales_regions.rate`
-([schema](../../../docs/database/schema-products.md#sales_regions)). 0053's `ResolveOrderTaxRegion`
+([schema](../../../docs/database/schema-products/sales-regions-and-media.md#sales_regions)). 0053's `ResolveOrderTaxRegion`
 derives `tax_amount = subtotal × (tax_rate ÷ 100)`. `App\Actions\Orders\RecalculateOrderTotals` —
 run by `AddOrderItem`, `RemoveOrderItem` and `UpdateOrderItemQuantity` — computes
 `bcmul($subtotal, $tax_rate, 2)` with **no `÷ 100`**, following 0048's own **D-8** shorthand
@@ -215,6 +215,6 @@ implementation (should compose the collaborator from the start).
 - **Source:** [0053](0053-order-tax-region-resolution-physical-backend.md) **D-13**'s warning and
   **R-7**, PR #20's "Qué impacto tiene" note; the defect in `app/Actions/Orders/RecalculateOrderTotals.php`
   and its three test files, read on 2026-09-20.
-- **Stage:** `done`. Re-resolve every relative link on each move ([workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move)).
+- **Stage:** `done`. Re-resolve every relative link on each move ([workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move)).
 - **Gherkin:** named business-role actor and exactly one `When` per scenario, per
   [gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md).

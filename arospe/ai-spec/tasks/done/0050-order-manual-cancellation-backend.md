@@ -2,7 +2,7 @@
 
 ## Description
 Give an administrator a way to **manually cancel an order**, per PRD
-[§3.2 Orders](../../../docs/PRD/PRD.md#32-orders): cancellation is permitted only while the order is
+[§3.2 Orders](../../../docs/PRD/sections/epic-3-customers-orders.md#32-orders): cancellation is permitted only while the order is
 `Pendiente` or `Procesando`, and is **blocked** — with no confirmation path around it — while it is
 `Enviado`, `Entregado`, or `Parcialmente reembolsado`. This story owns `CancelOrder`, the
 `OrderPolicy::cancel()` ability it authorizes against, the `Order::isManuallyCancellable()` predicate
@@ -50,7 +50,7 @@ markup, and **not** the 100%-refund auto-cancel, which is story 0052's.
 > whose `Gate::before` bypass skips `cancel()`'s body entirely, ever reaches `CancelOrder`'s own
 > direct throw and sees the 409. Both refusals leave the order unchanged and offer no confirmation
 > path, satisfying PRD §3.2 either way; see
-> [architecture/authorization.md](../../../docs/architecture/authorization.md#manual-order-cancellation--the-third-state-based-refusal-and-the-first-ability-requiring-two-permissions)
+> [architecture/authorization.md](../../../docs/architecture/authorization/domain-invariants.md#manual-order-cancellation--the-third-state-based-refusal-and-the-first-ability-requiring-two-permissions)
 > for the full mechanism and the table contrasting it with `update()`/`transitionStatus()`. This is
 > recorded here because it changes what a caller should expect from the "Cancelling — the guarded
 > states" scenarios below in a way the Gherkin itself does not distinguish by actor.
@@ -235,7 +235,7 @@ public function isManuallyCancellable(): bool
 - **The method lives on the model, not on either enum.** It reads two columns of one row, and 0049
   established that `App\Enums\OrderStatus` "stays a value set with an ordering; every rule about
   *rows* lives in the action and the policy". A cross-dimension rule is a row rule.
-- Named per [naming.md](../../../docs/conventions/naming.md#boolean-properties)'s rule that a predicate
+- Named per [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#boolean-properties)'s rule that a predicate
   must read unambiguously **out** of its class: `$order->isManuallyCancellable()` — "manually" is what
   separates it from 0052's auto-cancel, and dropping it would make the name a lie the moment 0052
   ships.
@@ -262,7 +262,7 @@ public function cancel(User $user, Order $order): bool
   follows. This is a **precondition on the actor**, not a coupling of the operations: cancellation
   still triggers no refund whatsoever (**D-1**, unchanged).
 - **`ORDER_EDIT_PERMISSION` is 0049's existing constant**, reused rather than re-typed — the
-  name-it-once rule from [naming.md](../../../docs/conventions/naming.md#permission-names).
+  name-it-once rule from [naming.md](../../../docs/conventions/naming/routes-and-permissions.md#permission-names).
 - **`ORDER_REFUND_PERMISSION` is added by *this* story, and that is a correction to what D-6
   originally assumed.** Story [0051](0051-order-payment-refund-state-backend.md) creates the
   *permission* — `RolePermissionSeeder::ORDER_PERMISSIONS = ['orders.refund']` — but deliberately
@@ -270,7 +270,7 @@ public function cancel(User $user, Order $order): bool
   `RecordRefund` calls `Gate::authorize('orders.refund')` with a literal. `RolePermissionSeeder::ORDER_PERMISSIONS`
   is an *array* of catalog names, so it is not a reference a guard can name a single permission
   through, and indexing it (`ORDER_PERMISSIONS[0]`) would be worse than the literal. Per
-  [naming.md](../../../docs/conventions/naming.md#permission-names) — *name a permission once on the
+  [naming.md](../../../docs/conventions/naming/routes-and-permissions.md#permission-names) — *name a permission once on the
   class that owns the rule, as a `public const` on the policy that decides with it* — this story is
   now the first class to decide with `orders.refund`, so the constant lands on `OrderPolicy` beside
   `ORDER_EDIT_PERMISSION`. **This story still adds no permission** to the catalog; it adds one
@@ -290,7 +290,7 @@ public function cancel(User $user, Order $order): bool
 > ⚠️ **This policy's state clause is inert for a Super Admin, and that is why the action does not rely
 > on it.** `Gate::before` returns `true` for a Super Admin before `cancel()` is ever called, so a
 > policy-expressed state rule cannot bind the one actor most likely to try it — the pattern
-> [security/authorization-patterns.md](../../../docs/security/authorization-patterns.md#a-rule-that-must-bind-a-super-admin-actor-must-be-a-direct-throw-not-a-gate-check)
+> [security/authorization-patterns.md](../../../docs/security/authorization-patterns/ability-coverage-and-guards.md#a-rule-that-must-bind-a-super-admin-actor-must-be-a-direct-throw-not-a-gate-check)
 > already rules on, and the same reasoning story
 > [0051](0051-order-payment-refund-state-backend.md)'s **DR-2** used to keep its refund-state refusal
 > out of a policy entirely. **The enforcement is `CancelOrder`'s own direct throw**, which runs for
@@ -319,7 +319,7 @@ Follows [`RoleInUseException`](../../../app/Exceptions/RoleInUseException.php) a
   status.
 - **The message is a constant** resolved from `lang/{en,es}/orders.php`, never interpolated with the
   order's number or either status — the message-is-a-constant rule from
-  [authorization.md](../../../docs/architecture/authorization.md#recording-a-refusal--what-every-gate-owes-the-audit-trail).
+  [authorization.md](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail).
   It must **not** reuse `orders.transitions.cancellation_unsupported`, which is 0049's key for a
   different refusal (**D-4**).
 
@@ -341,7 +341,7 @@ detail:
 
 1. **`Gate::authorize('cancel', $order)` as the first statement.** The rule lives in the class that
    performs the operation, not in a caller that does not exist yet
-   ([base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
+   ([base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
    Story 0055's Livewire component will re-authorize on top of this, never instead of it.
 2. **Reject if `$order->status === OrderStatus::Cancelled`** with a `ValidationException` on the
    `status` field, resolving `orders.cancellation.already_cancelled` (**D-3**). **This must run above
@@ -357,7 +357,7 @@ detail:
   effect; a transaction would wrap nothing. Recorded rather than left to inference, because 0045's
   `CreateOrder` opens one and a reader may expect symmetry — and because adding one later relocates
   every side effect the wrapped code performs, the mistake recorded in
-  [errors-log.md](../../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
+  [errors-log.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
   If story 0052 or a "cancellation notification" story ever adds a side effect here, it fires **after**
   any commit, never inside it.
 - **`payment_status` is never read for a decision beyond the predicate, and never written** (**D-1**).
@@ -368,7 +368,7 @@ detail:
 ### Translations — `lang/en/orders.php` + `lang/es/orders.php` (**modify**, created by 0045)
 
 One new key group, `cancellation`, key-for-key identical across both locales
-([naming.md](../../../docs/conventions/naming.md#translation-keys)):
+([naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)):
 
 ```php
 'cancellation' => [
@@ -497,7 +497,7 @@ hard dependency of the code, not only of a fixture (see [Dependencies](#dependen
       the second `hasPermissionTo()` can be deleted with the suite staying green.
 - [ ] Integration test: an administrator holding **both** `orders.edit` and `orders.refund` succeeds
       — the positive case beside the two 403s, without which a mistyped ability passes silently
-      ([authorization.md](../../../docs/architecture/authorization.md#the-copyable-module-gate-pattern-and-the-three-alternatives-rejected)).
+      ([authorization.md](../../../docs/architecture/authorization/how-to-gate.md#the-copyable-module-gate-pattern-and-the-three-alternatives-rejected)).
       With two abilities in the guard there are now **two** strings that fail closed on a typo, so the
       positive case carries twice the weight it did.
 - [ ] Integration test: a Super Admin holding no individual `orders.*` grant succeeds against a
@@ -514,7 +514,7 @@ hard dependency of the code, not only of a fixture (see [Dependencies](#dependen
 - [ ] **Ordering test:** an actor lacking `orders.edit`, against an order in `Enviado`, gets the
       `AuthorizationException` — **never** `OrderCancellationBlockedException`. The permission refusal
       always wins
-      ([authorization.md](../../../docs/architecture/authorization.md#ordering-the-permission-refusal-always-wins)),
+      ([authorization.md](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#ordering-the-permission-refusal-always-wins)),
       and an inverted order would tell an unauthorized caller that the order exists and what state it
       is in. Assert the same for an actor lacking `orders.refund` — the ordering property belongs to
       the guard as a whole, not to whichever permission happens to be checked first.
@@ -636,7 +636,7 @@ branch in `TransitionOrderStatus` is left standing rather than deleted (**D-4**)
 - [ ] Tests written and green, plus the full existing suite (per
       [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule) — run **unscoped**
       (`php artisan test`, not `--filter`), per
-      [base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
+      [base-standards.md](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
       Note this story adds a **policy ability**, which binds every `Gate::allows('cancel', …)` /
       `authorize()` call against an `Order` anywhere in the suite — narrower blast radius than 0049's
       policy creation, but not zero.
@@ -649,10 +649,10 @@ branch in `TransitionOrderStatus` is left standing rather than deleted (**D-4**)
       that the already-cancelled and blocked refusals cannot be transposed; and that the 409 discloses
       no more about the order than that the caller's own requested cancellation is not permitted.
 - [ ] Documentation updated (docs-keeper):
-  - [`architecture/authorization.md`](../../../docs/architecture/authorization.md#policies) — `OrderPolicy`
+  - [`architecture/authorization.md`](../../../docs/architecture/authorization/policies-users-roles.md#policies) — `OrderPolicy`
     now has **two** abilities, not one; **re-count rather than assume**, the under-count failure mode
     recorded in
-    [errors-log-archive.md](../../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13).
+    [errors-log-archive.md](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13).
     Record the **hint-in-the-policy / authority-in-the-action** split and why it does not contradict
     0051's **DR-2** — that pairing is the reusable fact a later epic inherits. **Also record that
     `cancel()` is this repo's first ability requiring *two* permissions** (**D-6**), with the product
@@ -665,7 +665,7 @@ branch in `TransitionOrderStatus` is left standing rather than deleted (**D-4**)
     directory listing gains `OrderCancellationBlockedException → 409` beside the exceptions already
     listed there. **Note two app exceptions now render 409** — check whether any nearby sentence
     claims `RoleInUseException` is the only one.
-  - [`conventions/naming.md`](../../../docs/conventions/naming.md#classes) gains the new exception row,
+  - [`conventions/naming.md`](../../../docs/conventions/naming/classes.md#classes) gains the new exception row,
     and its boolean-predicate rule gains `isManuallyCancellable()` as the case where the *adverb*
     carries the meaning (dropping "manually" would make the name false once 0052 ships).
   - [`database/schema.md`](../../../docs/database/schema.md) — **verify rather than assume**: this story
@@ -715,7 +715,7 @@ a rediscovery.
   > *"Decisively: the two operations are authorized differently. Cancellation reduces to `orders.edit`;
   > a refund requires `orders.refund`, created precisely so a business can grant order maintenance to
   > staff who may not move money. Auto-refunding from a cancellation would let an actor holding only
-  > `orders.edit` cause a refund"* — the [least-privileged-caller capability grant](../../../docs/errors-log-archive.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24)
+  > `orders.edit` cause a refund"* — the [least-privileged-caller capability grant](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24)
   > failure arriving as a feature request. **That argument is now moot: under D-6 as decided, every
   > actor who can reach `CancelOrder` already holds `orders.refund`,** so an auto-refund would grant
   > that actor nothing they did not already have. Recorded rather than deleted, because a reader who
@@ -928,7 +928,7 @@ a rediscovery.
 | **`orders.refund` in the seeded catalog** | story [0051](0051-order-payment-refund-state-backend.md) — **hard dependency of the shipped guard** (**D-6**) | `OrderPolicy::cancel()` calls `hasPermissionTo('orders.refund')`, which throws `PermissionDoesNotExist` until `RolePermissionSeeder::ORDER_PERMISSIONS` exists. Verify by reading that constant at `HEAD`, not by assuming — see the note below |
 | `orders.payment_status` reaching `PartiallyRefunded` | story [0051](0051-order-payment-refund-state-backend.md) — **hard dependency for the highest-risk test** | the guard reads a value only `RecordRefund` can derive |
 | `orders.edit` in the seeded catalog | **shipped** | `RolePermissionSeeder::MODULES` carries `orders` |
-| `Gate::before` Super Admin bypass | **shipped** (Epic 1) | [authorization.md](../../../docs/architecture/authorization.md#the-super-admin-bypass) |
+| `Gate::before` Super Admin bypass | **shipped** (Epic 1) | [authorization.md](../../../docs/architecture/authorization/super-admin.md#the-super-admin-bypass) |
 | The domain-exception-renders-its-own-status pattern | **shipped** | [`RoleInUseException`](../../../app/Exceptions/RoleInUseException.php) → 409, copied in shape |
 
 **On the 0051 dependency, precisely — and this is what the human's D-6 override changed most.** There
@@ -957,7 +957,7 @@ and every name in this document is a reading aid rather than a locator (**R-5**)
 > ⚠️ **This story is not parallel-safe with 0049, 0051, 0052 or 0055 — they all write
 > `app/Policies/OrderPolicy.php`.** 0049's **D-5** flagged this in advance: *"0050, 0051, 0052 and 0055
 > all add abilities to **this same file**"*, and it is the same-file-ownership hazard recorded in
-> [errors-log-archive.md](../../../docs/errors-log-archive.md#two-agents-dispatched-in-parallel-both-wrote-to-the-same-blade-view--2026-08-16)
+> [errors-log-archive.md](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#two-agents-dispatched-in-parallel-both-wrote-to-the-same-blade-view--2026-08-16)
 > and governed by `contracts.md`'s Parallel Agent File-Ownership Rule. **Sequence them, or name the
 > file's owner explicitly in both briefs.** Note 0051's **DR-2** has since decided that story adds
 > **no** ability, so today the contended set is 0049 → 0050 → (0052, 0055). `lang/{en,es}/orders.php`
@@ -976,7 +976,7 @@ and every name in this document is a reading aid rather than a locator (**R-5**)
   **D-2** additionally depends on 0052 cancelling on *every* 100%-refund; if it does not, D-2 reopens.
 - **0055 — the Orders UI.** Renders the cancel control and disables it in the guarded states, reusing
   `Gate::allows('cancel', $order)` rather than re-deriving the rule
-  ([authorization.md](../../../docs/architecture/authorization.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)),
+  ([authorization.md](../../../docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)),
   and renders the 409's message. Note the one accepted drift it inherits: a **Super Admin** sees the
   control render *enabled* on a `Shipped` order (`Gate::before` grants it) and gets a 409 on click —
   the same enabled-then-refused shape this repo already documents for the Users and Roles screens, and
@@ -1022,7 +1022,7 @@ and every name in this document is a reading aid rather than a locator (**R-5**)
 - **R-5 — This document goes stale while it waits.** It is blocked behind 0045 and 0049, and 0045 is
   itself blocked behind five Epic 2 stories — the "a deferred finding is a claim about a tree, and the
   task file freezes while the tree does not" failure recorded in
-  [errors-log.md](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+  [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
   *Mitigation:* the Phase 2 INVEST review must be **re-run** immediately before Phase 3 and must
   re-verify against the **shipped code**, not against sibling task files: that `OrderPolicy` exists and
   what its constant is really called, **that `orders.refund` is really in the seeded catalog and
@@ -1058,7 +1058,7 @@ covering `CreateOrder`, `TransitionOrderStatus`, `CancelOrder` and `RecordRefund
 **only** the authorization refusal — not the domain refusals (blocked state, already cancelled), which
 are ordinary outcomes an authorized administrator reaches during normal work and which would make the
 `'Privileged action refused'` channel unreadable
-([authorization.md](../../../docs/architecture/authorization.md#recording-a-refusal--what-every-gate-owes-the-audit-trail)).
+([authorization.md](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail)).
 
 **OQ-2 — Does cancelling an order restore stock? Non-blocking; recorded so it is not assumed.** PRD
 §3.2 says nothing about it, and — verified against story 0045 rather than assumed — **`CreateOrder`
@@ -1098,13 +1098,13 @@ Derived from this story, none of them in scope:
 6. **Align `RecordRefund`'s `Gate::authorize('orders.refund')` literal onto the constant** this story
    adds to `OrderPolicy` (**D-6**). 0051 shipped that call with a literal because it deliberately
    created no policy (its **DR-2**); once `OrderPolicy::ORDER_REFUND_PERMISSION` exists, the
-   name-it-once rule in [naming.md](../../../docs/conventions/naming.md#permission-names) wants the one
+   name-it-once rule in [naming.md](../../../docs/conventions/naming/routes-and-permissions.md#permission-names) wants the one
    remaining literal pointed at it. Cosmetic, one line, and explicitly **not** this story's job —
    0051's file is out of scope here.
 
 ## Provenance
 
-- **PRD source:** [§3.2 Orders](../../../docs/PRD/PRD.md#32-orders) — specifically the two manual
+- **PRD source:** [§3.2 Orders](../../../docs/PRD/sections/epic-3-customers-orders.md#32-orders) — specifically the two manual
   cancellation scenarios (`Manually cancel an order in an early status`; the `Scenario Outline`
   `Manual cancellation is blocked in guarded states` over `Enviado` / `Entregado` /
   `Parcialmente reembolsado`) and the matching acceptance criterion. The `Fully refunding all line
@@ -1139,7 +1139,7 @@ Derived from this story, none of them in scope:
   closure (this story's Phase 3 began and finished in the same session its blockers all resolved,
   so no intermediate `in-progress/` commit was needed), with every relative link above re-resolved
   for the move, per
-  [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move).
+  [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move).
 - **Epic 3 decomposition:** the manual-cancellation story of the Orders cluster. Siblings are
   referenced by number (0045 orders foundation, 0048 line-item edit block, 0049 status transitions,
   0051 refunds, 0052 the 100%-refund auto-cancel, 0053–0054 tax resolution, 0055 UI);

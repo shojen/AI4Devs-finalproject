@@ -5,7 +5,7 @@ Let an administrator choose the **interface language** (Spanish or English) from
 switcher in the dashboard chrome's account menu, and a dedicated **Language tab in the account
 Settings area** beside Profile / Security / Appearance. Both write through the same
 `App\Actions\Users\SetUserUiLocale` and share one locale-resolution implementation, so they cannot
-drift. This is the UI half of [PRD](../../docs/PRD/PRD.md#epic-5--internationalization) Epic 5's
+drift. This is the UI half of [PRD](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization) Epic 5's
 **Layer 1 — Admin UI language switcher**; the storage, the offered pair and the per-request
 resolution are sibling story **0066**'s contract, which this story **consumes and never re-derives**.
 Strictly Layer 1: no relationship to Layer 2's `store_languages` catalog (story 0068), which the PRD
@@ -94,7 +94,7 @@ Feature: Admin UI language switcher (Layer 1)
 
 > **Deliberately absent:** there is **no** scenario asserting *"the menus, labels, and buttons are
 > shown in English"* as a claim about the **whole** interface, even though
-> [PRD](../../docs/PRD/PRD.md#epic-5--internationalization) Layer 1's own Gherkin says exactly that.
+> [PRD](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization) Layer 1's own Gherkin says exactly that.
 > Most dashboard chrome — including the Settings area's own tab labels — is hardcoded English with no
 > translation key at all. The scenarios above are scoped to *"labels that have translations"*, a real
 > and non-empty set, and the story does **not** check off the PRD clause. See **D-11**, **D-21**,
@@ -105,7 +105,7 @@ Feature: Admin UI language switcher (Layer 1)
 ### Surface 1 — the chrome switcher
 
 **Livewire component** — class-based, per
-[base-standards.md](../../docs/conventions/base-standards.md#livewire-component-convention-class-based-not-single-file)
+[base-standards.md](../../docs/conventions/base-standards/livewire-and-flux-conventions.md#livewire-component-convention-class-based-not-single-file)
 
 - `app/Livewire/Settings/LanguageSwitcher.php` — new.
 
@@ -134,7 +134,7 @@ Feature: Admin UI language switcher (Layer 1)
 
 - `resources/views/livewire/settings/language-switcher.blade.php` — new. **Nested**, per the
   *ordinary* kebab-case mirror rule — the class is not named `Index`, so the
-  [`Index`-in-a-subfolder exception](../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
+  [`Index`-in-a-subfolder exception](../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
   does **not** apply. `App\Livewire\Media\Gallery` → `livewire/media/gallery.blade.php` is the
   precedent. **Do not create a flat `livewire/language-switcher.blade.php`.**
 
@@ -201,7 +201,7 @@ Feature: Admin UI language switcher (Layer 1)
 ### Shared enum and translations
 
 - `app/Enums/UiLocale.php` — **modified** (0066's file), gaining `label(): string` and nothing else.
-  The *second consumer* [naming.md](../../docs/conventions/naming.md#translation-keys)'s "add `label()`
+  The *second consumer* [naming.md](../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)'s "add `label()`
   when a second consumer appears" rule anticipates; 0066 deferred it here explicitly. Returns
   `'English'` / `'Español'` — **not** via `__()` (**D-9**). No new case, no `default()`.
 - `lang/en/localization.php`, `lang/es/localization.php` — new pair, one key
@@ -278,7 +278,7 @@ app structure, **D-22**)
 - [ ] ⚠️ **Do NOT write a `verified`-refusal test.** `App\Models\User` does not implement
       `MustVerifyEmail`, so `verified` refuses **nobody** on any route in this app — a test asserting
       it cannot go red however it is written. This is a recorded, previously-paid-for lesson
-      ([errors-log.md](../../docs/errors-log-archive.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)).
+      ([errors-log.md](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)).
 
 **Feature — `tests/Feature/Localization/LanguageSwitcherTest.php`** (new; the shared behaviour, tested
 once)
@@ -360,7 +360,7 @@ that and does not claim to.
 - [ ] All **three** quality gates run **unscoped** and each result recorded explicitly, including any
       not run: `php artisan test` (not `--filter`), `vendor/bin/pint --format agent` (not `--dirty`),
       and **Larastan level 7** (`vendor/bin/phpstan analyse`)
-      ([errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)).
+      ([errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)).
 - [ ] All **three** prove-it-can-fail steps performed and their red result recorded.
 - [ ] Code reviewed (code-reviewer).
 - [ ] No security findings (appsec-auditor).
@@ -439,7 +439,7 @@ See [Tests to perform](#tests-to-perform). The five that would otherwise pass fo
 
 ⚠️ **Waiting rule, load-bearing here rather than merely cited.** Both round-trip tests assert *after* a
 navigation — exactly the shape that tempts `->waitForEvent('networkidle')`, the one call
-[playwright-setup.md](../../docs/testing/frontend/playwright-setup.md#waiting-one-call-is-banned-in-this-repo-and-one-is-bounded)
+[playwright-setup.md](../../docs/testing/frontend/playwright-setup/waiting-rules.md#waiting-one-call-is-banned-in-this-repo-and-one-is-bounded)
 **bans outright** (it never settles here; one session leaked ~60 `playwright run-server` processes and
 OOM-killed the MySQL container). The accepted mitigation is a short **bounded** `->wait(n)` with an
 inline comment stating what it compensates for — and before reaching for even that, check whether the
@@ -464,14 +464,14 @@ timing.
   better end state, but it widens the diff into an unrelated cleanup.
 - **D-2 — `App\Livewire\Settings\LanguageSwitcher` → `livewire/settings/language-switcher.blade.php`,
   nested.** Not named `Index`, so the `Index`-in-a-subfolder exception does not apply.
-  [naming.md](../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
+  [naming.md](../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
   flags this over-application as the live trap ("the exception keys on the class name, never on living
   in a subfolder"). **Resolve the view path by running the component**, and check no `artisan make:`
   scaffold has left a second unused stub at the wrong path — task 0017 hit that half.
 - **D-3 — No `wire:model`-bound property; each option is a `wire:click` action.** Not a form collecting
   a pending choice but a list of act-now controls, the idiom every row action in this app already uses.
   It also sidesteps
-  [the `null`-property/native-`<select>` failure class](../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
+  [the `null`-property/native-`<select>` failure class](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
   **structurally rather than by discipline** — there is no bound property for a stale `null` to sit in.
 - **D-4 — ⚠️ CORRECTED: the fallback is `LocaleSetting::defaultUiLocale()->value`, not
   `config('app.locale')`.** Read the current value with
@@ -494,7 +494,7 @@ timing.
   ⚠️ **Explicitly hedged; Phase 3 must settle it by execution:** `frontend-expert` could not verify
   whether `$this->redirect($url)` defaults to a hard browser redirect or a soft `wire:navigate` morph,
   because `vendor/` is absent (**R-7**), and said so rather than asserting. Per
-  [the hedge rule](../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24),
+  [the hedge rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24),
   **do not build a fix around either answer** — run the browser test and assert the sidebar re-renders.
 - **D-6 — `SetUserUiLocale` is method-injected into `setLocale()`.** The
   [constructor-injection exception](../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)
@@ -524,7 +524,7 @@ timing.
   switcher lives in — have **no** matching key and render identical English in both locales. See
   **D-21** and **R-5**.
 - **D-12 — `tests/Browser/Localization/AdminUiLanguageSwitcherTest.php` for the chrome surface.**
-  [playwright-setup.md](../../docs/testing/frontend/playwright-setup.md#folder-structure) records that
+  [playwright-setup.md](../../docs/testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure) records that
   **a story file naming a test path is making a convention decision**, that the mirrored subfolder is
   the convention, and that the two flat files are *debt, not precedent*. The chrome switcher is not a
   screen, so a cross-cutting `Localization/` folder is right for it — mirroring 0066's own
@@ -642,7 +642,7 @@ timing.
   test on "the technique differs materially" grounds. That reasoning is sound for the *chrome*
   switcher, which is not a screen — but the Settings tab **is** a screen backed by
   `App\Livewire\Settings\Language`, and
-  [playwright-setup.md](../../docs/testing/frontend/playwright-setup.md#folder-structure) names
+  [playwright-setup.md](../../docs/testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure) names
   **`tests/Browser/Settings/`** explicitly as an example of the mirrored structure it says is still the
   convention. Following the documented convention where it plainly applies beats extending a
   cross-cutting folder, especially in a repo that has recorded the mirrored convention "losing by
@@ -652,7 +652,7 @@ timing.
 ### Scope fences: what this story must NOT do
 
 Stated in terms of **classes**, per the
-[errors-log rule](../../docs/errors-log-archive.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24)
+[errors-log rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24)
 that a screen-shaped exclusion cannot bind shared code:
 
 - `App\Http\Middleware\SetUiLocale` — **untouched**. Already global via 0066's `bootstrap/app.php`
@@ -683,7 +683,7 @@ that a screen-shaped exclusion cannot bind shared code:
   `ui_locale` reference in `app/Models/User.php` **do not exist**, and 0066 sits at
   `ai-spec/tasks/0066-…md` — the **new** stage, not `done/`. The real build order is **0068's
   `LocaleSetting` → 0066 → 0067**, which 0066's own **R-2a** records as a deliberate, documented
-  inversion of [workflow.md](../../docs/workflow.md#task-ordering-rule)'s numbering rule. **Phase 2
+  inversion of [workflow.md](../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule)'s numbering rule. **Phase 2
   must confirm both predecessors have closed before this story is picked up.**
 - **R-2 — This story is written against a contract that has not survived its own implementation.**
   Because 0066 is unshipped, its Phase 2/3 could still move what this story binds to. Findings here are
@@ -700,7 +700,7 @@ that a screen-shaped exclusion cannot bind shared code:
   applying**: the conditionally-bound `tooltip` prop and the `disabled:cursor-*` /
   `pointer-events-none` interaction both require a disabled branch, and neither control has one.
   `@js()` **is** safe in a `flux:` tag's attribute — the
-  [corrected errors-log entry](../../docs/errors-log-archive.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
+  [corrected errors-log entry](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
   establishes by execution that only an anonymous `<x-…>` tag fails to compile it.
 - **R-5 — OPEN, for Phase 2: who owns extracting the hardcoded English chrome?** The PRD's Layer 1
   `Then` clause is only partially satisfiable, and neither 0066 nor 0067 satisfies it. This story makes

@@ -27,7 +27,7 @@ description** — 0027, 0061, 0076, 0077 and 0079 (**D-A2**). Until it ships, `p
 an unsanitized column, which [0024](../done/0024-products-core-crud-backend.md)'s own scope fence keeps safe
 only by forbidding any reader.
 
-Covers [PRD](../../../docs/PRD/PRD.md#22-products) §2.2's rich-text description implicitly rather than by
+Covers [PRD](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#22-products) §2.2's rich-text description implicitly rather than by
 a named acceptance criterion: the PRD describes the editor, and this is the server-side guarantee that
 makes storing its output defensible.
 
@@ -92,7 +92,7 @@ Feature: A product description is stored as safe HTML
 | Path | What & why |
 | --- | --- |
 | `composer.json` / `composer.lock` | **Modify.** Add `symfony/html-sanitizer` (**D-16** — a new dependency, **explicitly approved** by the coordinator when resolving 0024's RQ-1, satisfying project `CLAUDE.md`'s "do not change dependencies without approval" rule). Record the **resolved** constraint after running `composer require`; 0019's D1 sets the precedent that the exact version is settled by running it, not asserted in a task file. |
-| `config/html-sanitizer.php` | **New.** The allow-list configuration — the WYSIWYG toolbar's tag set and nothing else, plus explicit `allowedLinkSchemes` / `allowedMediaSchemes`. See **D-16**. This is the app's **second** app-owned config file after `config/modules.php`, and it inherits that file's two hard rules: no closures anywhere (`config:cache` serialises with `var_export()`), and no user-facing copy — see [base-standards.md](../../../docs/conventions/directory-structure.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache). |
+| `config/html-sanitizer.php` | **New.** The allow-list configuration — the WYSIWYG toolbar's tag set and nothing else, plus explicit `allowedLinkSchemes` / `allowedMediaSchemes`. See **D-16**. This is the app's **second** app-owned config file after `config/modules.php`, and it inherits that file's two hard rules: no closures anywhere (`config:cache` serialises with `var_export()`), and no user-facing copy — see [base-standards.md](../../../docs/conventions/directory-structure/config-registry.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache). |
 | `app/Actions/Products/SanitizeProductDescription.php` | **New.** Invokable, `__invoke(?string $html): ?string`. The **only** class in the app that imports the sanitizer, mirroring how 0019 confines the imaging library to `GenerateImageConversions`. |
 | `app/Actions/Products/CreateProduct.php` | **Modify** ([0024](../done/0024-products-core-crud-backend.md) creates it). Constructor-injects `SanitizeProductDescription` and calls it on `$description` **before** `validate()` — see **D-A1**. |
 | `app/Actions/Products/UpdateProduct.php` | **Modify.** Identical wiring, asserted independently rather than assumed symmetric (**D-A1**). |
@@ -216,7 +216,7 @@ to render the description unescaped at all.
 - [x] Tests written and green, plus the **full** existing suite in a single isolated run, per
       [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule.
 - [x] **All three quality gates run unscoped and each result recorded — including "not run"**, per
-      [errors-log.md](../../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26):
+      [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26):
       `php artisan test`, `vendor/bin/pint --format agent`, `vendor/bin/phpstan analyse`.
 - [x] Code reviewed (code-reviewer).
 - [x] **No security findings (appsec-auditor) — and this is the story's centre, not a formality.**
@@ -245,7 +245,7 @@ to render the description unescaped at all.
       unusually large inbound citation fan-in — thirteen sibling task files (including `done/0021` and
       `done/0024`) link to it by path — so both the `in-progress/` move and the `done/` closure move
       needed the full two-direction check from
-      [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move), not an
+      [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move), not an
       abbreviated one. **The `in-progress/` half**: 12 sibling files + `docs/database/schema.md`
       repointed, confirmed by both `docs-keeper` and `code-reviewer` independently. **The `done/` half
       (Phase 7, 2026-09-02)**: 10 open task files, `done/0021`, `done/0024` and `docs/api/routes.md`
@@ -382,7 +382,7 @@ as its own unit rather than as a nice-to-have:
 
 | Consumer | Why it is blocked |
 | --- | --- |
-| **0027** (products list/editor UI) | Renders `description` unescaped and binds 0021's `WysiwygEditor` to it. [api/routes.md](../../../docs/api/products.md#applivewirecomponentswysiwygeditor--the-gallerys-first-real-consumer-and-the-second-routeless-gated-component) states the rule directly: *"no consumer may bind `wire:model` to a persisted column until that column's own write path runs a server-side sanitizer first."* |
+| **0027** (products list/editor UI) | Renders `description` unescaped and binds 0021's `WysiwygEditor` to it. [api/routes.md](../../../docs/api/products/routeless-components.md#applivewirecomponentswysiwygeditor--the-gallerys-first-real-consumer-and-the-second-routeless-gated-component) states the rule directly: *"no consumer may bind `wire:model` to a persisted column until that column's own write path runs a server-side sanitizer first."* |
 | **0061** (blog posts backend) | Reuses this exact class and config for the blog `body` column. |
 | **0076** (products i18n retrofit) | Adds a second call site plus a model-event layer over the same value. |
 | **0077**, **0079** (language-tab editors) | Each injects `SanitizeProductDescription` directly. |
@@ -394,7 +394,7 @@ so a reader can tell "lifted" from "forgotten".
 
 ### D-A3 — No backfill, and why that is a decision rather than an omission
 
-[migrations.md](../../../docs/database/migrations.md#when-the-new-columns-default-is-wrong-for-existing-rows-backfill-in-the-same-up)
+[migrations.md](../../../docs/database/migrations/basics-and-alterations.md#when-the-new-columns-default-is-wrong-for-existing-rows-backfill-in-the-same-up)
 establishes that a change whose effect is wrong for pre-existing rows backfills in the same `up()`. It
 does not apply here, and a reader applying it by reflex would write a migration this story must not
 have:

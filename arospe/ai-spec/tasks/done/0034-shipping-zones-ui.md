@@ -16,7 +16,7 @@ database-expert: **no**
 This story creates no table, no migration and no query of its own beyond the resolver's two bounded
 reads over an existing, indexed table (`geography_entries`, owned by
 [0032](done/0032-shipping-geography-catalog-seed.md)), so `database-expert` is deliberately **not**
-convened, per [workflow.md](../../../docs/workflow.md#task-classification-rule).
+convened, per [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule).
 
 > **Scope was widened, deliberately and on record.** Earlier Epic 2 documents describe 0034 as *"the
 > zone geography picker"* ([0032](done/0032-shipping-geography-catalog-seed.md)) or as owning *"its
@@ -27,7 +27,7 @@ convened, per [workflow.md](../../../docs/workflow.md#task-classification-rule).
 > which also closes 0033's OQ-C and names this story as the consumer 0033's Definition-of-Done
 > hand-off requires. A picker with no screen to live in cannot be delivered independently.
 
-**PRD coverage.** [§2.4 Shipping](../../../docs/PRD/PRD.md#24-shipping), rewritten 2026-08-17. This
+**PRD coverage.** [§2.4 Shipping](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#24-shipping), rewritten 2026-08-17. This
 story owns the **rendered UI** for: *Create a shipping zone*, *Rename a shipping zone*, *Delete a
 shipping zone no rate rule references*, the *Assign geography entries to a zone at any level*
 `Scenario Outline` (all three levels), *The geography picker filters as the administrator searches*,
@@ -76,7 +76,7 @@ Adopted exactly as [0033 **D-8**](done/0033-shipping-zones-backend.md) prescribe
 class `App\Livewire\Shipping\Zones` → view `resources/views/livewire/shipping/zones.blade.php`,
 route `Route::livewire('shipping/zones', ...)->middleware(['can:shipping.view'])->name('shipping.zones.index')`.
 
-The [`Index`-in-a-subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
+The [`Index`-in-a-subfolder exception](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
 does **not** apply — it keys off the class literally being named `Index`, and this one is `Zones`. So
 the ordinary kebab-case mirror rule holds and the view sits one level deeper than 0035's flat
 `livewire/shipping.blade.php`. That asymmetry is expected, and `naming.md` already documents it.
@@ -85,7 +85,7 @@ the ordinary kebab-case mirror rule holds and the view sits one level deeper tha
 
 1. **It would mean editing files 0035 owns** — `App\Livewire\Shipping\Index` and
    `resources/views/livewire/shipping.blade.php` — which is the shared-file hazard
-   [contracts.md](../../../docs/contracts.md#parallel-agent-file-ownership-rule) exists to prevent, on
+   [contracts.md](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule) exists to prevent, on
    a file that 0036 is *also* queued to rewrite for the grouped rate table.
 2. **It would make one component own three unrelated concerns** — carrier toggles (0035), zone CRUD
    (here) and rate rules (0036) — each with its own modal, its own validation surface and its own
@@ -668,7 +668,7 @@ Feature: Shipping zone screen access
     and there is a test asserting no ungated path reaches it.
   - **`$editingZoneId` is `#[Locked]` *and* re-read from the database in `save()`.** 0033's hand-off
     requires the id feeding `Rule::unique()->ignore()` to stay server-authoritative, per
-    [livewire-authorization.md](../../../docs/security/livewire-authorization.md#locked-is-what-makes-ruleunique-ignore-safe-here).
+    [livewire-authorization.md](../../../docs/security/livewire-authorization/locked-properties.md#locked-is-what-makes-ruleunique-ignore-safe-here).
     A client-writable id there is a rule that can be pointed at someone else's row.
 
   Actions are injected **per method** as trailing container-resolved parameters, matching
@@ -718,12 +718,12 @@ Feature: Shipping zone screen access
   group for screen copy: headings, the "New zone" button, column labels, the coverage summary and
   its per-level counts, both empty states, the delete-confirmation copy, the row-action
   `aria-label`s, and the "action not allowed" tooltip. Key-for-key identical across both locales,
-  English source, per [naming.md](../../../docs/conventions/naming.md#translation-keys).
+  English source, per [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys).
   **No `zones.delete_blocked` key** (**D-6**).
 
   > **Triple shared-file hazard.** `lang/en|es/shipping.php` is **created by 0035**, **modified by
   > 0033** (the `zones.*` domain keys) and **modified again here**. Per
-  > [contracts.md](../../../docs/contracts.md#parallel-agent-file-ownership-rule)'s Parallel Agent
+  > [contracts.md](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule)'s Parallel Agent
   > File-Ownership Rule, these three stories must never be implemented by concurrently-dispatched
   > agents. Sequential only: 0035 → 0033 → 0034.
   >
@@ -1192,7 +1192,7 @@ because this is the second such link and a pattern is forming.
 > other file was touched from here; 0022, 0026, 0032 and 0033 are amended by their own owners.
 
 Phase 1 Three Amigos debate, 2026-08-18, for Epic 2. Classified **frontend** per
-[workflow.md](../../../docs/workflow.md#task-classification-rule), so `frontend-expert` and
+[workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule), so `frontend-expert` and
 `frontend-qa` were the participants convened and `database-expert` was deliberately not (the story
 creates no table, migration or index — its two reads run against 0032's existing one).
 
@@ -1207,7 +1207,7 @@ creates no table, migration or index — its two reads run against 0032's existi
 > D-2, D-3, D-5 and OQ-A as carrying less scrutiny than the equivalents in 0033, which had four real
 > participants.**
 
-Scope derives from [PRD §2.4 Shipping](../../../docs/PRD/PRD.md#24-shipping) as rewritten 2026-08-17,
+Scope derives from [PRD §2.4 Shipping](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#24-shipping) as rewritten 2026-08-17,
 and from the widening [0033's **OQ-C**](done/0033-shipping-zones-backend.md) recommended and this debate
 accepts — which also names this story as the consumer 0033's Definition-of-Done hand-off required,
 closing that open question. Grounding read in full: 0033, 0032, 0022 and 0035; PRD §2.4;

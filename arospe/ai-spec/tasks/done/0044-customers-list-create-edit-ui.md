@@ -306,7 +306,7 @@ Public surface the view consumes:
   rather than rejecting it — see [errors-log.md](../../docs/errors-log.md#livewire-skips-convertemptystringstonulltrimstrings-and-laravel-skips-non-implicit-rules-for-a-blank-string--the-two-combine-to-let-a-raw--reach-a-decimal-column--2026-09-10)),
   and a country typed as `' es '` would fail this component's own `size:2` check while the action would
   have accepted and normalised it to `'ES'`. See
-  [docs/database/schema-other.md#customers](../../docs/database/schema-other.md#customers) for the full mechanism.
+  [docs/database/schema-other/customers.md#customers](../../docs/database/schema-other.md#customers) for the full mechanism.
 
 ### View — `resources/views/livewire/customers.blade.php` (new)
 

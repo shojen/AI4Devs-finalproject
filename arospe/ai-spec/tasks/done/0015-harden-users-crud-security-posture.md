@@ -253,7 +253,7 @@ reason `Roles\Index` captures `$beforePermissionNames` before its own sync.
 Add a `RateLimiter::attempt()` guard mirroring `RequestEmailChange`'s existing pattern exactly (same
 facade, same `ValidationException` conversion), keyed on `Auth::id()`, `maxAttempts: 10`,
 `decaySeconds: 3600`. It belongs in the action (not the component), per
-[base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers) —
+[base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers) —
 a rate limit protecting an operation is a property of the operation. Place it **after**
 `Gate::authorize('create', User::class)` (line 41) and **before** the `DB::transaction()` (line 63),
 so an unauthorized caller is refused without consuming quota and no refused attempt opens a
@@ -338,7 +338,7 @@ classifies as sensitive.
 > target: it asks the Livewire component to re-derive tier membership, which is exactly the pattern
 > story 0008a removed from this very component (`administratorRoleId()` and `authorizeRoleChange()`
 > were **deleted**, not relocated — see
-> [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+> [base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 > and [security/livewire-authorization.md](../../../docs/security/livewire-authorization.md)).
 > No branch is needed there, because the policy already contains it —
 > verified at [`app/Policies/UserPolicy.php:56-67`](../../../app/Policies/UserPolicy.php):
@@ -402,7 +402,7 @@ story turns into an unexplained regression:
    another Administrator-holding target the actor lacks the stricter permission for. The
    `Gate::allows()`-is-a-UI-hint rule requires the hint to reuse *the same rule* the guarded call
    authorizes against — see
-   [architecture/authorization.md](../../../docs/architecture/authorization.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer).
+   [architecture/authorization.md](../../../docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer).
    This changes `IndexTest.php:110-112`, which asserts `canEdit->toBeTrue()` for an
    Administrator-holding target viewed by an actor lacking the stricter permission — that assertion's
    fixture is an *other* target, so it becomes `toBeFalse()` unchanged by the self-row exemption; a
@@ -436,7 +436,7 @@ public UserStatus $status = UserStatus::Inactive;
 
 That non-nullability is **deliberate and load-bearing**, established by
 [`docs/errors-log.md` — "A `null` Livewire property bound to a native `<select>` silently dropped the
-user's own pick"](../../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16).
+user's own pick"](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16).
 This story's first draft said to retype it to `public ?UserStatus $status` → `public ?string $status`.
 **That instruction was wrong and is withdrawn**: the nullable retype reintroduces exactly that bug,
 in which a user's first-option pick is silently discarded with the correct value still displayed.
@@ -564,7 +564,7 @@ Gherkin scenario forbids, and it is live today.
   existing `DB::transaction()` closure satisfies the required outcome but violates this constraint,
   and it is the precise shape
   [`docs/errors-log.md` — "Wrapping existing code in a `DB::transaction()` moved a cache flush nobody
-  had written"](../../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
+  had written"](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
   warns about: a wrapper relocates every side effect of the wrapped code, including the ones the diff
   does not show. Read that entry before choosing a shape.
 - **Recommended shape:** run the email-change delegation **after `authorizeRoleAndStatusChange()` and
@@ -798,7 +798,7 @@ no acceptance criterion.**
       invitation token, or an email-change hash. Assert the before-values are the pre-write ones (a
       log line written after `save()` from the model instance would report the new value as the old).
 - [ ] **Full-suite regression:** the whole existing suite passes. Per
-      [base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done),
+      [base-standards.md](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done),
       the record is an **unscoped** `php artisan test` and an **unscoped** `vendor/bin/pint --format
       agent` — not `--filter` / `--dirty`. This story changes a validation-facing property type and a
       permission-facing UI hint, so its blast radius is wider than its own feature by construction.

@@ -1,7 +1,7 @@
 # [0049] Order status transition backend
 
 ## Description
-Give an existing order a way to move through PRD [§3.2 Orders](../../../docs/PRD/PRD.md#32-orders)'s
+Give an existing order a way to move through PRD [§3.2 Orders](../../../docs/PRD/sections/epic-3-customers-orders.md#32-orders)'s
 linear status vocabulary (`Pendiente → Procesando → Enviado → Entregado`): a self-authorizing
 `TransitionOrderStatus` action that advances an order freely, and refuses a **backward** move unless
 the caller explicitly confirms it. This story also extends the already-existing **`OrderPolicy`**
@@ -206,7 +206,7 @@ public function isBackwardFrom(self $current): bool
   position compared against four that have one" bug **D-3** exists to prevent.
 - `isBackwardFrom()` is asked of the **target**: `$newStatus->isBackwardFrom($order->status)`. Named
   as a predicate that reads unambiguously out of its class, per
-  [naming.md](../../../docs/conventions/naming.md#boolean-properties)'s `isRecentlyConfirmed()` rule.
+  [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#boolean-properties)'s `isRecentlyConfirmed()` rule.
 - Neither method reads the database, and neither knows what an `Order` is. The enum stays a value
   set with an ordering; every rule about *rows* lives in the action and the policy.
 
@@ -241,7 +241,7 @@ class OrderPolicy
 - **The permission name reuses the existing `EDIT_PERMISSION` class constant** — no
   `ORDER_EDIT_PERMISSION` is declared. Declaring a second, differently-named constant for the same
   `'orders.edit'` string would violate
-  [naming.md](../../../docs/conventions/naming.md#permission-names)'s "name a permission once on the
+  [naming.md](../../../docs/conventions/naming/routes-and-permissions.md#permission-names)'s "name a permission once on the
   class that owns the rule" convention, which this class already follows correctly.
 - **`transitionStatus()` reduces to `orders.edit` today and takes the `Order` anyway.** The parameter
   is unused by the current body and that is deliberate: every sibling ability *will* be
@@ -251,7 +251,7 @@ class OrderPolicy
 - `orders.edit` is **already seeded** — `RolePermissionSeeder::MODULES` carries `orders`, so all four
   `orders.*` abilities exist. **No catalog change, no new permission, no re-seed.**
 - The `Gate::before` Super Admin bypass reaches this method like any other
-  ([authorization.md](../../../docs/architecture/authorization.md#the-super-admin-bypass)); no special
+  ([authorization.md](../../../docs/architecture/authorization/super-admin.md#the-super-admin-bypass)); no special
   case is written and one is asserted by test.
 - **Why a distinct `transitionStatus` ability rather than reusing `update` directly.** `update()`
   already gates line-item editing (story 0048) and will keep growing its own row-state branches for
@@ -294,7 +294,7 @@ public function render(Request $request): SymfonyResponse
   "you may not do this", which is the opposite of PRD §3.2's *"it is not flatly forbidden"*.
 - The thrown message is a constant resolved from `lang/{en,es}/orders.php`, never interpolated with
   the order's number or either status — the message-is-a-constant rule from
-  [authorization.md](../../../docs/architecture/authorization.md#recording-a-refusal--what-every-gate-owes-the-audit-trail).
+  [authorization.md](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail).
 
 ### Action — `app/Actions/Orders/TransitionOrderStatus.php` (**new**, in 0045's subfolder)
 
@@ -311,7 +311,7 @@ detail (**D-3**):
 
 1. **`Gate::authorize('transitionStatus', $order)` as the first statement.** The rule lives in the
    class that performs the operation, not in a caller that does not exist yet
-   ([base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
+   ([base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
    Story 0055's Livewire component will re-authorize on top of this, never instead of it.
 2. **Refuse if `$order->status` *or* `$newStatus` is `OrderStatus::Cancelled`** — both directions,
    with **no confirmation path** and before any `rank()` call can be reached (**D-3**, **D-6**).
@@ -330,14 +330,14 @@ detail (**D-3**):
   no side effect, so a transaction would wrap nothing. Deliberately recorded rather than left to
   inference, because 0045's `CreateOrder` opens one and a reader may expect symmetry — and because
   adding one later relocates every side effect the wrapped code performs, the mistake recorded in
-  [errors-log.md](../../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
+  [errors-log.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
 - **Nothing else is written.** `payment_status`, `updated_at` aside, is untouched; no
   `refunded_quantity`, no totals, no `flagged_for_review`.
 
 ### Translations — `lang/en/orders.php` + `lang/es/orders.php` (**modify**, created by 0045)
 
 One new key group, `transitions`, key-for-key identical across both locales
-([naming.md](../../../docs/conventions/naming.md#translation-keys)):
+([naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)):
 
 ```php
 'transitions' => [
@@ -453,7 +453,7 @@ pre-emption of 0050's design.
       `TransitionOrderStatus` with an `AuthorizationException`, and the order's status is unchanged.
 - [ ] Integration test: an administrator holding `orders.edit` succeeds — the positive case beside the
       403, without which a mistyped ability passes silently
-      ([authorization.md](../../../docs/architecture/authorization.md#the-copyable-module-gate-pattern-and-the-three-alternatives-rejected)).
+      ([authorization.md](../../../docs/architecture/authorization/how-to-gate.md#the-copyable-module-gate-pattern-and-the-three-alternatives-rejected)).
 - [ ] Integration test: a Super Admin holding no individual `orders.*` grant succeeds, via
       `Gate::before`.
 - [ ] Test: the ability string is asserted **literally** (`OrderPolicy::EDIT_PERMISSION ===
@@ -462,7 +462,7 @@ pre-emption of 0050's design.
 - [ ] **Ordering test:** an actor lacking `orders.edit` attempting an *unconfirmed backward*
       transition gets the `AuthorizationException`, **never** the confirmation exception. The
       permission refusal always wins — the same ordering rule step-up authentication documents
-      ([authorization.md](../../../docs/architecture/authorization.md#ordering-the-permission-refusal-always-wins)),
+      ([authorization.md](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#ordering-the-permission-refusal-always-wins)),
       and an inverted order would tell an unauthorized caller that the order exists and what state it
       is in.
 - [ ] `tests/Feature/Policies/OrderPolicyTest.php` (**existing file, extended**): `transitionStatus()`
@@ -479,7 +479,7 @@ pre-emption of 0050's design.
       **no model argument** — which resolves through Spatie's permission gate, not through this
       policy's `create()` method, regardless of how many other abilities the policy carries. **Verify
       that by execution rather than by reasoning** (the hedge rule from
-      [errors-log.md](../../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)).
+      [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)).
 
 ### Deliberately not tested
 
@@ -552,7 +552,7 @@ with a caller.
 - [ ] Tests written and green, plus the full existing suite (per
       [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule) — run **unscoped**
       (`php artisan test`, not `--filter`), per
-      [base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
+      [base-standards.md](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
       Note this story introduces a **policy**, which binds every `Gate` call against an `Order`
       anywhere in the suite — blast radius by construction, so the unscoped run is not optional.
 - [ ] `vendor/bin/pint --format agent` clean (unscoped, **not** `--dirty`) and Larastan level 7 passing.
@@ -563,17 +563,17 @@ with a caller.
       and that the 409 refusal discloses no more about the order than the fact that the caller's own
       requested transition is backward.
 - [ ] Documentation updated (docs-keeper):
-  - [`architecture/authorization.md`](../../../docs/architecture/authorization.md#orderpolicy--the-twelfth-policy)'s
+  - [`architecture/authorization.md`](../../../docs/architecture/authorization/policies-customers-orders.md#orderpolicy--the-twelfth-policy)'s
     existing `OrderPolicy` section (the already-documented **twelfth** policy) is updated to record its
     **fifth** ability, `transitionStatus`, and its own "three of four abilities have no caller" running
     claim is re-counted rather than assumed — the same under-count failure mode recorded in
-    [errors-log-archive.md](../../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13).
+    [errors-log-archive.md](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13).
   - [`conventions/directory-structure.md`](../../../docs/conventions/directory-structure.md#directory-structure)'s
     `app/Actions/Orders/` listing gains `TransitionOrderStatus`, and its exception list gains
     `OrderStatusRegressionRequiresConfirmationException → 409` beside the ones already listed there —
     `OrderPolicy` itself is already listed and needs no new entry, only its ability roster noted as
     grown.
-  - [`conventions/naming.md`](../../../docs/conventions/naming.md#classes) gains the two new class rows.
+  - [`conventions/naming.md`](../../../docs/conventions/naming/classes.md#classes) gains the two new class rows.
   - **Record the confirmation-versus-step-up distinction** somewhere a later story will find it: this
     is the app's **second** "are you sure" mechanism and the first that is *not* about identity, and a
     reader who knows only `EnsureRecentPasswordConfirmation` will reach for 423 by reflex (**D-2**).
@@ -591,7 +591,7 @@ a rediscovery.
   *(Resolves `backend-expert`'s fourth open question, referred to `database-expert`, whose
   recommendation is adopted as given.)* Four reasons, in order of weight.
   - **This repository has no audit-log table anywhere, and that is a stated project position, not an
-    omission.** [PRD assumption 17](../../../docs/PRD/PRD.md#assumptions--confirmed-decisions) says "no
+    omission.** [PRD assumption 17](../../../docs/PRD/sections/foundations.md#assumptions--confirmed-decisions) says "no
     audit / change-history log this phase", and
     [schema.md](../../../docs/database/schema-users-auth.md#soft-deletes) states it again in the concrete — "this
     app has no audit-log table" is the reason a deleted user's original address is gone rather than
@@ -640,7 +640,7 @@ a rediscovery.
   pinned by its own test rather than by a comment:
   - **The permission refusal always wins.** An unauthorized caller must not learn the order's current
     status from a confirmation prompt — the identical ordering rule step-up authentication documents
-    ([authorization.md](../../../docs/architecture/authorization.md#ordering-the-permission-refusal-always-wins)).
+    ([authorization.md](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#ordering-the-permission-refusal-always-wins)).
   - **The cancellation guard runs above every `rank()` call**, which is what makes
     `OrderStatus::rank()`'s missing `Cancelled` arm safe rather than a latent 500. A branch with no
     preceding guard is not an exemption.
@@ -682,7 +682,7 @@ a rediscovery.
   - **Scheduling consequence, unchanged by the correction:** 0050, 0051, 0052 and 0055 all add
     abilities to **this same file**, which already carries five abilities once this story lands. Two of
     them running in parallel is the same-file-ownership hazard recorded in
-    [errors-log-archive.md](../../../docs/errors-log-archive.md#two-agents-dispatched-in-parallel-both-wrote-to-the-same-blade-view--2026-08-16)
+    [errors-log-archive.md](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#two-agents-dispatched-in-parallel-both-wrote-to-the-same-blade-view--2026-08-16)
     and governed by `contracts.md`'s Parallel Agent File-Ownership Rule — sequence them, or name the
     owner explicitly in both briefs.
 - **D-6 — Any transition to or from `Cancelled` is refused outright, with no confirmation path.**
@@ -756,7 +756,7 @@ a rediscovery.
 | `orders` table, `App\Models\Order`, `OrderFactory` | story [0045](../done/0045-orders-core-crud-backend.md) — **hard dependency, and the only one; ⛔ inherited BLOCKED** | there is no row to transition without it; every test creates its order through `OrderFactory` |
 | `App\Enums\OrderStatus` with its five cases | story [0045](../done/0045-orders-core-crud-backend.md) | this story adds two methods to it and no case |
 | `orders.*` permissions in the seeded catalog | **shipped** | `RolePermissionSeeder::MODULES` carries `orders` |
-| `Gate::before` Super Admin bypass | **shipped** (Epic 1) | [authorization.md](../../../docs/architecture/authorization.md#the-super-admin-bypass) |
+| `Gate::before` Super Admin bypass | **shipped** (Epic 1) | [authorization.md](../../../docs/architecture/authorization/super-admin.md#the-super-admin-bypass) |
 | Policy auto-discovery by name | **shipped** (Epic 1, task 0004) | `UserPolicy` / `RolePolicy` bind with no `AuthServiceProvider` |
 | The domain-exception-renders-its-own-status pattern | **shipped** | [`RoleInUseException`](../../../app/Exceptions/RoleInUseException.php) → 409 is copied verbatim in shape |
 
@@ -777,7 +777,7 @@ it inherits their block only through 0045, and adds no sixth dependency of its o
   per **D-7**), **0052** (the auto-cancel path's authorization, if any — a system-triggered transition
   may legitimately have no actor) and **0055** (per-row `Gate::allows()` UI hints, which must reuse the
   same ability methods rather than re-deriving the rules —
-  [authorization.md](../../../docs/architecture/authorization.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)).
+  [authorization.md](../../../docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)).
   Any of 0050–0052/0055 running in parallel with this story are no longer file-independent: they would
   all write `app/Policies/OrderPolicy.php`, and the parallel-write hazard in **D-5** applies. Sequence
   them, or name the file's owner in both briefs.
@@ -805,14 +805,14 @@ it inherits their block only through 0045, and adds no sixth dependency of its o
 - **R-4 — Introducing a policy has whole-suite blast radius.** `OrderPolicy` binds every `Gate` call
   against an `Order` anywhere in the repository, present and future — the same property that made
   story 0010's role-model event guard break an unrelated test
-  ([errors-log.md](../../../docs/errors-log-archive.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)).
+  ([errors-log.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)).
   *Mitigation:* the unscoped `php artisan test` run is called out in the Definition of Done with the
   reason attached, and the `CreateOrder` regression test is specified explicitly rather than left to
   the full-suite run to discover.
 - **R-5 — This document goes stale while it waits.** It is blocked behind 0045, which is itself
   blocked behind five stories, each of which may change during its own Phase 4/5 — the "a deferred
   finding is a claim about a tree, and the task file freezes while the tree does not" failure
-  ([errors-log.md](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
+  ([errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
   *Mitigation:* the Phase 2 INVEST review must be **re-run** immediately before Phase 3, and must
   re-verify against the shipped code — not against 0045's task file — that `OrderStatus` still has
   exactly those five cases, that `Order::$status` is still cast to the enum and still omitted from
@@ -845,7 +845,7 @@ it inherits their block only through 0045, and adds no sixth dependency of its o
 **OQ-1 — Should this action's authorization refusal be recorded through
 `App\Actions\Auth\LogRefusedPrivilegedAttempt`? Non-blocking; settle at Phase 2 or Phase 4.** Story
 0015b established
-[recording a refusal](../../../docs/architecture/authorization.md#recording-a-refusal--what-every-gate-owes-the-audit-trail)
+[recording a refusal](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail)
 as the copyable pattern *"a third admin screen inherits"*, and this is a privileged write on a
 financial record. Neither this story's contributions nor story 0045's raised it, and 0045's
 `CreateOrder` does **not** log its own `Gate` refusal — so adopting it here without also retrofitting
@@ -856,12 +856,12 @@ than logging neither. Two options:
   (same-status, cancellation-unsupported, unconfirmed regression), which are ordinary outcomes an
   authorized administrator reaches during normal work and which would make the
   `'Privileged action refused'` channel unreadable. This is consistent with 0015b's own
-  [deliberate exclusions](../../../docs/architecture/authorization.md#what-is-deliberately-not-logged).
+  [deliberate exclusions](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#what-is-deliberately-not-logged).
 - Defer both to a single "instrument the Orders area" story, keeping this story's diff to exactly
   what was debated.
 It is raised rather than decided because it edits a file this story otherwise declares out of scope
 (**D-5**), and a scope exclusion that a decision quietly crosses is the exact failure recorded in
-[errors-log.md](../../../docs/errors-log-archive.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24).
+[errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24).
 
 **OQ-2 — Should a forward transition ever be confirmable too? Non-blocking, backlog.** PRD §3.2 asks
 for confirmation on backward moves only, and this story implements exactly that. Recorded because
@@ -885,7 +885,7 @@ Derived from this story, none of them in scope:
 
 ## Provenance
 
-- **PRD source:** [§3.2 Orders](../../../docs/PRD/PRD.md#32-orders) — specifically the two
+- **PRD source:** [§3.2 Orders](../../../docs/PRD/sections/epic-3-customers-orders.md#32-orders) — specifically the two
   status-transition scenarios ("Advance an order to the next status"; "Moving an order's status
   backward requires explicit confirmation", including its *"it is not flatly forbidden"* clause) and
   the status vocabulary `Pendiente → Procesando → Enviado → Entregado` plus `Cancelado`. The
@@ -905,7 +905,7 @@ Derived from this story, none of them in scope:
   `ai-spec/tasks/in-progress/` at the start of Phase 3, and to `ai-spec/tasks/done/` at Phase 7 — both
   moves change this file's directory depth, so every relative link above must be re-resolved on each
   move (both directions), per
-  [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move).
+  [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move).
 - **Epic 3 decomposition:** the first of the status-and-refund stories. Siblings are referenced by
   number (0048 line-item edit block, 0050 cancellation, 0051 refunds, 0052 the 100%-refund
   auto-cancel, 0053–0054 tax resolution, 0055 UI) because their files may not exist yet; story

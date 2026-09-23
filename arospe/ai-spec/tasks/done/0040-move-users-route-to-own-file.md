@@ -247,7 +247,7 @@ superseding an earlier placeholder draft written outside the formal process.
 - Phase 7 (closure) — this file moves to `ai-spec/tasks/done/`. No relative markdown links in this
   file at any point in its lifecycle (verified by grepping for `](` before both the `new` →
   `in-progress/` move and again here before `in-progress/` → `done/`), so the
-  [link-integrity check](../../../docs/workflow.md#link-integrity-check-on-every-stage-move)
+  [link-integrity check](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move)
   required on every stage move has nothing to fix.
 
 ### Environment note, out of scope for this story

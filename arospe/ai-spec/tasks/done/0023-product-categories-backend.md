@@ -8,7 +8,7 @@ validation. This is the foundational Epic 2 story every other product story buil
 **backend only** (no screen, no route) and deliberately **independent from any future blog
 taxonomy**: no shared table, no shared model, no polymorphic taxonomy.
 
-Covers [PRD](../../../docs/PRD/PRD.md#22-products) §2.2's "Product categories (extends the prototype)"
+Covers [PRD](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#22-products) §2.2's "Product categories (extends the prototype)"
 scenarios *Create*, *Rename*, *Delete an unused category*, and *independent from blog categories*,
 plus the CRUD half of Products acceptance criterion 2 and acceptance criterion 7. It does **not**
 cover the "deleting a category still in use is hard-blocked with a count" scenario — see
@@ -92,7 +92,7 @@ Feature: Product categories
 
 **Migration**
 - `database/migrations/<timestamp>_create_product_categories_table.php` — new. Greenfield UUID
-  table per [migrations.md](../../../docs/database/migrations.md#uuid-primary-keys):
+  table per [migrations.md](../../../docs/database/migrations/uuid-primary-keys.md#uuid-primary-keys):
 
   ```php
   public function up(): void
@@ -125,7 +125,7 @@ Feature: Product categories
 **Model**
 - `app/Models/ProductCategory.php` — new. `use HasFactory, HasUuids;`, `#[Fillable(['name'])]`,
   `@property string $id` (string, not int) per
-  [base-standards.md](../../../docs/conventions/base-standards.md#uuid-primary-keys). No
+  [base-standards.md](../../../docs/conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys). No
   `$keyType`/`$incrementing` properties (the trait already overrides them as methods), no
   `SoftDeletes`, no `#[Hidden]` (nothing sensitive), no `casts()` beyond Eloquent's default
   timestamp handling.
@@ -414,8 +414,8 @@ consumes these arrives in a later UI story, and the products that reference a ca
       keeps `#[Locked] $editingCategoryId` assigned only from `$target->id`. `ProductCategoryPolicy`'s
       "zero call sites" is likewise false as of story 0025 — it is `App\Livewire\ProductCategories\Index`'s
       first and only caller, for all four abilities. See
-      [docs/architecture/authorization.md](../../../docs/architecture/authorization.md#productcategorypolicy--the-fifth-policy-and-the-first-to-gain-its-call-site-in-a-later-story-than-the-one-that-created-it)
-      and [docs/database/schema.md](../../../docs/database/schema-products.md#product_categories).
+      [docs/architecture/authorization.md](../../../docs/architecture/authorization/policies-sales-media-categories.md#productcategorypolicy--the-fifth-policy-and-the-first-to-gain-its-call-site-in-a-later-story-than-the-one-that-created-it)
+      and [docs/database/schema.md](../../../docs/database/schema-products/categories-and-products.md#product_categories).
 - [x] Acceptance criteria met.
 
 ## Documented functional decisions
@@ -485,7 +485,7 @@ consumes these arrives in a later UI story, and the products that reference a ca
   inside InnoDB's 3072-byte limit under the DYNAMIC row format. Consistency with the existing
   precedent won over the narrower indexed 100.
   The earlier draft argued for 100 on the strength of
-  [migrations.md](../../../docs/database/migrations.md#adding-a-column-to-an-existing-table)'s
+  [migrations.md](../../../docs/database/migrations/basics-and-alterations.md#adding-a-column-to-an-existing-table)'s
   bare-`string()` warning; that rule is recorded here as **considered and not applied**, because its
   worked example is a 10-character *enum token* (`users.status`) whose ceiling is knowable from the
   value set, not a free-text human label with no natural maximum. The migration length and the
@@ -605,7 +605,7 @@ consumes these arrives in a later UI story, and the products that reference a ca
   auto-discovery convention (story 0004).
 - **Story 0024 (products-core-crud-backend) depends on this one** and is the story that adds
   `products.product_category_id` and retrofits the hard-block-with-count guard onto
-  `DeleteProductCategory`. Per [workflow.md](../../../docs/workflow.md#task-ordering-rule)'s task
+  `DeleteProductCategory`. Per [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule)'s task
   ordering rule, this story's lower id is deliberate.
 - **Story 0025 (`product-categories-ui`)** is the dedicated management screen that consumes the
   actions and the policy built here — confirmed in Phase 0 as a screen of its own, not merely an
@@ -628,7 +628,7 @@ consumes these arrives in a later UI story, and the products that reference a ca
   `.github/workflows/tests.yml` line 42 sets a job-level `DB_CONNECTION: mysql` against a
   `mysql` service container. **One engine, everywhere: MySQL, `utf8mb4_unicode_ci`** (per
   `config/database.php`). This story was debated on 2026-08-17/18 and the environment has changed
-  under it since; that is the [deferred-findings failure mode](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+  under it since; that is the [deferred-findings failure mode](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
   this project already records — a claim about a tree, outliving the tree.
   **The real risk, which survives the correction and still justifies two layers.**
   `utf8mb4_unicode_ci` is case- **and** accent-insensitive, so the `UNIQUE(name)` index really does
@@ -661,7 +661,7 @@ consumes these arrives in a later UI story, and the products that reference a ca
   caller, and the residual risk named here did not materialise: the actions self-authorize (not
   only the UI story's own component), so an actions-level authorization test now exists alongside
   the component-level ones — see
-  [docs/architecture/authorization.md](../../../docs/architecture/authorization.md#productcategorypolicy--the-fifth-policy-and-the-first-to-gain-its-call-site-in-a-later-story-than-the-one-that-created-it).
+  [docs/architecture/authorization.md](../../../docs/architecture/authorization/policies-sales-media-categories.md#productcategorypolicy--the-fifth-policy-and-the-first-to-gain-its-call-site-in-a-later-story-than-the-one-that-created-it).
 - **R-4 — The migration length and the validation `max:` drifting apart.** Both are 255 today
   (**D-5**); if either moves without the other, a validation refusal becomes a truncation or a
   `22001` database error. Caught by the length-boundary pair only if that test's boundary is
@@ -722,7 +722,7 @@ confirmed answer, so a later reader sees what was decided and why the alternativ
   name-like columns rather than a narrower indexed 100. `users.email` is already a `VARCHAR(255)`
   carrying a `unique` index here, so the resulting 1020-byte utf8mb4 key is a shape this schema has
   accepted before. Implemented by **D-5**, which also records why
-  [migrations.md](../../../docs/database/migrations.md#adding-a-column-to-an-existing-table)'s
+  [migrations.md](../../../docs/database/migrations/basics-and-alterations.md#adding-a-column-to-an-existing-table)'s
   bare-`string()` warning was considered and not applied.
 
 - **RQ-4 (was OQ-4) — Who owns the product category management screen? → story 0025
@@ -734,8 +734,8 @@ confirmed answer, so a later reader sees what was decided and why the alternativ
 ## Provenance
 Phase 1 (Three Amigos) debate run on 2026-08-17 with `backend-expert` (files and approach),
 `database-expert` (schema, index and soft-delete decisions) and `backend-qa` (test design), per
-[workflow.md](../../../docs/workflow.md#phase-1--three-amigos-debate). Derived from
-[PRD](../../../docs/PRD/PRD.md#22-products) §2.2's "Product categories (extends the prototype)"
+[workflow.md](../../../docs/workflow/phases.md#phase-1--three-amigos-debate). Derived from
+[PRD](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#22-products) §2.2's "Product categories (extends the prototype)"
 Gherkin block and assumptions 8, 14, 17 and 19. The `products`-does-not-exist-yet scoping and the
 0024 hand-off of the in-use delete guard are a confirmed Phase 0 decomposition decision, recorded
 here so the missing guard is never read as an oversight.
@@ -786,11 +786,11 @@ in this file that reasoned from a CI/local split was reasoning from something th
 
 **Why it happened, and why it is not a normal staleness.** This story was debated on 2026-08-17/18,
 and the claim may well have held then; the environment has been changed by other work since. That is
-precisely the [deferred-story failure mode](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+precisely the [deferred-story failure mode](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
 this project already records — *a finding is a claim about a tree, and the task file freezes while
 the tree does not* — with the aggravating detail that the claim was written up as
 **verified against three named files**, which is the hedge shape
-[the 2026-08-29 entry](../../../docs/errors-log.md#one-docs-pass-reported-two-gaps-that-were-not-there-both-marked-verified--2026-08-29)
+[the 2026-08-29 entry](../../../docs/errors-log/2026-08-28-to-2026-08-31.md#one-docs-pass-reported-two-gaps-that-were-not-there-both-marked-verified--2026-08-29)
 identifies as making a false claim *more* trusted rather than less.
 
 **What changed, and what deliberately did not.** **No shipped behaviour changes.** The two-layer
@@ -839,7 +839,7 @@ files plus the extended `tests/Unit/ArchitectureTest.php`. Re-run at closure:
   holds (the index alone can only refuse with a raw `23000`, never a field-level
   `ValidationException`), and the case/accent tests were kept with their assertions sharpened from
   "holds on both engines" to the **exception class**. This is the
-  [deferred-story failure mode](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+  [deferred-story failure mode](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
   caught by the phase designed to catch it.
 - **Phase 3 (TDD): green.** Migration, model, factory, validation trait, three actions, policy, plus
   40 new tests.
@@ -877,4 +877,4 @@ closed as of 2026-09-03.** The delete guard shipped as story **0024b** (split ou
 hand-off closed with story **0025**: all three actions now self-authorize, `App\Livewire\ProductCategories\Index`
 is `ProductCategoryPolicy`'s first and only caller for all four abilities, and `#[Locked] $editingCategoryId`
 is assigned only from `$target->id`, exactly as D-9 specified. See
-[docs/architecture/authorization.md](../../../docs/architecture/authorization.md#productcategorypolicy--the-fifth-policy-and-the-first-to-gain-its-call-site-in-a-later-story-than-the-one-that-created-it).
+[docs/architecture/authorization.md](../../../docs/architecture/authorization/policies-sales-media-categories.md#productcategorypolicy--the-fifth-policy-and-the-first-to-gain-its-call-site-in-a-later-story-than-the-one-that-created-it).

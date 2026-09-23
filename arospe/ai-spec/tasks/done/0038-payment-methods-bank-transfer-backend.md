@@ -2,7 +2,7 @@
 
 ## Description
 Introduce the `payment_methods` table and the store-settings backend behind PRD [§2.5 Payment
-Methods](../../../docs/PRD/PRD.md#25-payment-methods-store-settings): a catalog seeded with exactly one
+Methods](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#25-payment-methods-store-settings): a catalog seeded with exactly one
 method — **bank transfer** — carrying a single configurable field, an **IBAN**. This story owns the
 schema, the seeder, the save/edit path, and IBAN validation (structure **plus** the ISO 7064 mod-97
 checksum). No Blade/Flux markup and no browser tests: the screen's real UI is a paired frontend
@@ -162,7 +162,7 @@ public function down(): void
   `payment-methods` as a full CRUD module, so a type-specific table would force a breaking rename the
   moment method #2 exists. Method #2, when it comes, gets its own alteration migration adding its own
   nullable columns — the real precedent being `add_two_factor_columns_to_users_table` and
-  `add_status_to_users_table` (see [migrations.md](../../../docs/database/migrations.md#adding-a-column-to-an-existing-table)).
+  `add_status_to_users_table` (see [migrations.md](../../../docs/database/migrations/basics-and-alterations.md#adding-a-column-to-an-existing-table)).
   Recorded explicitly so a reviewer does not read a discriminator on a one-row table as scope creep
   that slipped past unexamined.
 - **`$table->uuid('id')->primary()` — UUID v7, per an explicit user decision that overrides this
@@ -170,7 +170,7 @@ public function down(): void
   (bigint), and so did `product-owner`; the user resolved it the other way. See
   [Documented functional decisions](#documented-functional-decisions) for the reasoning and the ADR
   consequence. The migration-side pattern is the one in
-  [migrations.md](../../../docs/database/migrations.md#uuid-primary-keys); the key is a `CHAR(36)`
+  [migrations.md](../../../docs/database/migrations/uuid-primary-keys.md#uuid-primary-keys); the key is a `CHAR(36)`
   string, so Epic 3's `orders.payment_method_id` is a `foreignUuid(...)`, never a `foreignId(...)`.
 - **`string(30)` and `string(34)`, not bare `string()`** — same reasoning `add_status_to_users_table`
   applies: a bare `string()` is `VARCHAR(255)`. `34` is IBAN's real ISO 13616 maximum (not Spain's
@@ -197,7 +197,7 @@ public function down(): void
   "configured-but-hidden" a real distinction.
 - **No `deleted_at` / `SoftDeletes`** — no AC in this story deletes a payment method, and the delete
   path is refused outright (see the policy below).
-- **`down()` is the exact inverse of `up()`**, per [migrations.md](../../../docs/database/migrations.md#structure).
+- **`down()` is the exact inverse of `up()`**, per [migrations.md](../../../docs/database/migrations/basics-and-alterations.md#structure).
 
 ### Enum and translations
 
@@ -206,13 +206,13 @@ public function down(): void
   `__('payment_methods.names.'.$this->value)`. This mirrors
   [`App\Enums\UserStatus`](../../../app/Enums/UserStatus.php) exactly, including the deliberate
   "`string` column + PHP enum, never a native MySQL `enum`" choice recorded in
-  [migrations.md](../../../docs/database/migrations.md#when-the-new-columns-default-is-wrong-for-existing-rows-backfill-in-the-same-up).
+  [migrations.md](../../../docs/database/migrations/basics-and-alterations.md#when-the-new-columns-default-is-wrong-for-existing-rows-backfill-in-the-same-up).
   The class is named after the column it casts (`code`), so the two cannot drift.
 - **No `name` / `label` column on the table.** Following `UserStatus`'s precedent, the human-readable
   label is a translation key off the `code`, not stored data — a stored label would have to be kept
   in sync with `lang/en/` and `lang/es/` *and* the database by hand.
 - `lang/en/payment_methods.php` + `lang/es/payment_methods.php` — **new**, key-for-key identical per
-  [naming.md](../../../docs/conventions/naming.md#translation-keys). Keys: `names.bank_transfer`, the
+  [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys). Keys: `names.bank_transfer`, the
   `iban.invalid` validation message, and the "not yet configured" copy. Both files ship in this story
   even though it renders no real UI, because `PaymentMethodCode::label()` is a backend concern.
   `APP_LOCALE=en` today, so everything renders English until Epic 5 — accepted and documented, not a
@@ -247,13 +247,13 @@ public function down(): void
 
   - **`code` is deliberately omitted from `#[Fillable]`** — the same omission-as-mass-assignment-guard
     convention `users.status` and `users.pending_email` use
-    ([base-standards.md](../../../docs/conventions/base-standards.md#model-conventions)). It is an
+    ([base-standards.md](../../../docs/conventions/base-standards/stack-and-model-conventions.md#model-conventions)). It is an
     identity column written only by the seeder, never by an admin form. `iban` is the single
     admin-settable column, so it *is* fillable — unlike `users.status`, an administrator setting it
     through a form is precisely the intended path.
   - **`use HasUuids;` and `@property string $id`, with no `$keyType` / `$incrementing` properties** —
     the trait's `HasUniqueStringIds` concern already overrides those as *methods*, so restating them
-    is the redundancy [base-standards.md](../../../docs/conventions/base-standards.md#uuid-primary-keys)
+    is the redundancy [base-standards.md](../../../docs/conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys)
     calls out. `Str::uuid7()` is the trait's default `newUniqueId()`; do not override it or
     substitute `HasUlids`. The factory needs no change — the trait populates the key just before
     insert. One behavioural consequence to expect once the frontend story adds route-model binding:
@@ -392,11 +392,11 @@ decouples it from the component's expectations; the rule's docblock says so.
 
 - `app/Actions/PaymentMethods/UpdatePaymentMethodIban.php` — **new**, invokable, imperative
   verb-phrase name with no `Action`/`Service` suffix per
-  [naming.md](../../../docs/conventions/naming.md#classes). `__invoke(PaymentMethod $method, string $iban): void`.
+  [naming.md](../../../docs/conventions/naming/classes.md#classes). `__invoke(PaymentMethod $method, string $iban): void`.
   Normalises (step 2 above) and persists. A new `app/Actions/PaymentMethods/` subfolder is the
   per-domain grouping `app/Actions/` already uses (`Fortify/`, `Users/`).
 - `app/Livewire/PaymentMethods/Index.php` — **new**, class-based per
-  [base-standards.md](../../../docs/conventions/base-standards.md#livewire-component-convention-class-based-not-single-file),
+  [base-standards.md](../../../docs/conventions/base-standards/livewire-and-flux-conventions.md#livewire-component-convention-class-based-not-single-file),
   with `#[Title('Payment methods')]`.
 
   **This component's public surface is a contract the paired frontend story (0039) builds against, so
@@ -435,7 +435,7 @@ decouples it from the component's expectations; the rule's docblock says so.
     hardcoded lookup: the component queries the table normally, and the "only one method" guarantee
     comes from the three enforcement layers below. Do not special-case it.
   - **`canEdit` is a per-row `Gate::allows('update', $method)`**, following the pattern
-    [authorization.md](../../../docs/architecture/authorization.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)
+    [authorization.md](../../../docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)
     documents from the Users list, and it must satisfy that section's four rules. Two are easy to get
     wrong here: it must call **the same policy method `save()` authorizes against**, never a re-stated
     `$user->can('payment-methods.edit')` — a restatement goes stale the first time
@@ -459,7 +459,7 @@ decouples it from the component's expectations; the rule's docblock says so.
   - **`closeModal()` resets `$editingMethodId`, `$iban` and `$showModal`**, so a cancelled edit
     cannot leak the previous target's value into the next one.
 - `resources/views/livewire/payment-methods.blade.php` — **new, minimal placeholder only.** Note the
-  [`Index`-in-a-subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name):
+  [`Index`-in-a-subfolder exception](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name):
   `App\Livewire\PaymentMethods\Index` resolves to this **flat** path, one level shallower than its
   class — not `payment-methods/index.blade.php`. The placeholder exists so `Livewire::test()` can
   render; the real card/list + edit UI is **story 0039**, which consumes the contract above and which
@@ -675,7 +675,7 @@ foreign key, a relation, or an `orders` table** — those are Epic 3's to create
 ## Dependencies and related work
 - **Depends on story 0002** (the seeded roles/permissions catalog) only in that `payment-methods.*` must already exist. It does; no seeder change is needed.
 - **No dependency within Epic 2.** This story touches no products, taxes, sales regions or shipping.
-- **Story 0039 (the paired frontend half) depends on this one** and is numbered after it, per the [task ordering rule](../../../docs/workflow.md#task-ordering-rule): its Blade markup binds to this component's public surface, which is why that surface is specified in full above rather than discovered during Phase 3. Any change to it after 0039's Phase 1 is a change to 0039's contract and must be relayed, not made silently.
+- **Story 0039 (the paired frontend half) depends on this one** and is numbered after it, per the [task ordering rule](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule): its Blade markup binds to this component's public surface, which is why that surface is specified in full above rather than discovered during Phase 3. Any change to it after 0039's Phase 1 is a change to 0039's contract and must be relayed, not made silently.
 - **Epic 3 (Orders) depends on this one** for the record it will reference. Three notes to carry forward, none actionable here: `orders.payment_method_id` is a **`foreignUuid(...)`**, not a `foreignId(...)`, since this table keys on a UUID (decision D-1); it should be `restrictOnDelete()`, never `cascadeOnDelete()`; and if a future story ever wires the unused `payment-methods.delete` permission to a real delete action, deleting the only row would leave the store with zero payment methods and break order creation — that guard belongs to whichever story introduces the delete path, not to this one. Nothing in this schema forecloses either.
 
 ## Resolved in the debate
@@ -702,7 +702,7 @@ mirroring how `routes/settings.php` isolates personal-account screens — may be
 **D-1 — UUID v7 primary key. Explicit user decision, overriding this debate's unanimous
 recommendation.** `database-expert`, `backend-expert` and `product-owner` all recommended
 `$table->id()` (bigint), reasoning that [ADR 0001](../../../docs/decisions/0001-uuid-primary-keys.md)
-and PRD [assumption 19](../../../docs/PRD/PRD.md#assumptions--confirmed-decisions) enumerate **exactly
+and PRD [assumption 19](../../../docs/PRD/sections/foundations.md#assumptions--confirmed-decisions) enumerate **exactly
 seven** UUID entities by name — `payment_methods` not among them — and that the ADR's stated
 rationale (enumeration-safe public identifiers) does not bite for an admin-only table holding a
 handful of rows in an app with no storefront and no REST API.

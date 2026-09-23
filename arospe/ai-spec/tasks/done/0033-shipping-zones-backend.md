@@ -6,7 +6,7 @@ create / rename / delete domain actions, plus the **zone↔geography membership*
 zone bundle one or more entries from the seeded geography catalog **at any level** — country,
 comunidad autónoma, or municipio. This is the data and domain layer only: no route, no Livewire
 component, no Blade view, no picker. It is the story that turns
-[PRD §2.4](../../../docs/PRD/PRD.md#24-shipping)'s confirmed divergence — zones are admin-created and
+[PRD §2.4](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#24-shipping)'s confirmed divergence — zones are admin-created and
 fully editable, not a fixed list of badges — into schema and behaviour.
 
 > **Phase 2 correction (code-reviewer INVEST validation, 2026-09-07).** Six things drifted between
@@ -55,7 +55,7 @@ fully editable, not a fixed list of badges — into schema and behaviour.
 backend | related_task_id: **0034** (paired UI — see OQ-C, its exact scope is not settled — **RESOLVED, see the Phase 2 correction above**) |
 includes database-expert: **yes**
 
-**PRD coverage.** [§2.4 Shipping](../../../docs/PRD/PRD.md#24-shipping), rewritten 2026-08-17. This
+**PRD coverage.** [§2.4 Shipping](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#24-shipping), rewritten 2026-08-17. This
 story owns these scenarios from its `Feature: Shipping zones (extends the prototype)` block:
 *Create a shipping zone*, *Rename a shipping zone*, *Delete a shipping zone no rate rule
 references* (the delete half — see the table in **Tests to perform**), the *Assign geography
@@ -342,7 +342,7 @@ Three consequences recorded now:
   informational notice — *"Gijón is already covered by Zona Norte"* — computed on save. That is a
   **UI hint**, structurally the same as the per-row `Gate::allows()` hints in
   [`App\Livewire\Users\Index`](../../../app/Livewire/Users/Index.php)
-  ([authorization.md](../../../docs/architecture/authorization.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)):
+  ([authorization.md](../../../docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)):
   helpful, never a validation failure. Named here so nobody builds it as a blocking rule.
 
 **Where precedence is owned — a correction to the brief this story was given.** The instruction was
@@ -439,7 +439,7 @@ It follows [0023](../done/0023-product-categories-backend.md)'s pure-domain-laye
 1. **The route and the view path are already taken.** 0035 ships
    `Route::livewire('shipping', ShippingIndex::class)->name('shipping.index')` and
    `resources/views/livewire/shipping.blade.php` — which is *the* path Livewire's
-   [`Index`-in-a-subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
+   [`Index`-in-a-subfolder exception](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
    forces for `App\Livewire\Shipping\Index`. A zone component here either collides on it or invents
    a second shipping route nobody has asked for.
 2. **The zone editor's core interaction is blocked on unbuilt work.** Without the geography picker
@@ -482,7 +482,7 @@ with `can:`, never `permission:`.
 > authorization artifacts..."* The "actions deliberately self-authorize nothing, matching
 > `CreateUser`/`UpdateUser`" premise was **false when written**: `CreateUser`/`UpdateUser` both
 > self-authorize as their own first statement, per
-> [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+> [base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
 > "an authorization rule belongs to the action, not to one of its callers" convention — there was
 > never a precedent in this codebase for an action that authorizes nothing while having no
 > collaborator relationship excusing it. Phase 4 corrected this: all four actions in
@@ -499,7 +499,7 @@ enforcement surface. **Neither half holds here.** This story ships no component,
 policy this story's only-just-corrected self-authorizing actions would still be this app's *sole*
 authorization artifact for the shipping zone catalog, with no `Gate::authorize()`-reachable ability
 a consuming UI story can bind a per-row hint to — and
-[`livewire-authorization.md`](../../../docs/security/livewire-authorization.md#authorization-that-lives-only-in-the-component-is-bypassed-by-every-other-call-site-of-the-action)'s
+[`livewire-authorization.md`](../../../docs/security/livewire-authorization/action-level-authorization.md#authorization-that-lives-only-in-the-component-is-bypassed-by-every-other-call-site-of-the-action)'s
 rule says the policy is the right home regardless of which consumer arrives first. 0023 hit exactly
 this and shipped `ProductCategoryPolicy`.
 
@@ -812,7 +812,7 @@ therefore asserts *this story's use of* the shared utility, while the utility's 
   group, key-for-key identical across both locales. **No `zones.delete_blocked` key** (D-1).
 
   > **Shared-file hazard.** These two files are created by 0035 and modified here. Per
-  > [contracts.md](../../../docs/contracts.md#parallel-agent-file-ownership-rule)'s Parallel Agent
+  > [contracts.md](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule)'s Parallel Agent
   > File-Ownership Rule, 0033 and 0035 must **not** be implemented by concurrently-dispatched
   > agents. Sequential only.
 
@@ -1107,7 +1107,7 @@ action.
       action, including the sync action, so a real HTTP actor is refused by the *route*/component
       layer rather than only by the action deep in the call stack — and (b) keep the zone id
       feeding `Rule::unique()->ignore()` server-authoritative via `#[Locked]` plus a re-read, per
-      [livewire-authorization.md](../../../docs/security/livewire-authorization.md#locked-is-what-makes-ruleunique-ignore-safe-here)
+      [livewire-authorization.md](../../../docs/security/livewire-authorization/locked-properties.md#locked-is-what-makes-ruleunique-ignore-safe-here)
       — a concern about validation-bypass safety that no action-level authorization fix touches.
 - [ ] **Obligations written into 0036's task file**: un-skip the delete stub; implement the
       count guard in `DeleteShippingZone`; `restrictOnDelete` on `shipping_rates.shipping_zone_id`;
@@ -1152,7 +1152,7 @@ action.
   from parallel branches can produce a pivot migration timestamped *before* the catalog's; the
   developer who already ran `migrate` sees nothing, and the failure lands on the next clean run.
   Guard: after merging, run a full fresh migration against a **throwaway** database — which, per
-  [contracts.md](../../../docs/contracts.md#destructive-database-command-rule)'s Destructive Database
+  [contracts.md](../../../docs/contracts/safety-rules.md#destructive-database-command-rule)'s Destructive Database
   Command Rule, must be a deliberate, separately-authorized step, never assumed.
 - **R-7 — `restrictOnDelete` on the catalog side turns an INE vintage refresh into a hard failure**
   when a merged/removed municipio is held by a zone. That is the *correct* failure (a human must
@@ -1221,9 +1221,9 @@ consumer, so any class using both is a fatal error. This story avoids it with
 
 ## Provenance
 Phase 1 Three Amigos debate, 2026-08-18: `product-owner` + `backend-expert` + `backend-qa` +
-`database-expert` (added per [workflow.md](../../../docs/workflow.md#task-classification-rule)'s
+`database-expert` (added per [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule)'s
 classification rule — the task creates two tables). Scope derives from PRD
-[§2.4 Shipping](../../../docs/PRD/PRD.md#24-shipping) as rewritten 2026-08-17, and this debate
+[§2.4 Shipping](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#24-shipping) as rewritten 2026-08-17, and this debate
 **closes the two items that section marked `pending Phase 1 confirmation`** — the in-use delete
 rule (**D-1**) and the overlap policy (**D-2**). Every expert disagreement is recorded in place
 rather than resolved silently: the pivot name (**D-10**), the policy-vs-permission divergence from

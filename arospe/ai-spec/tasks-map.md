@@ -9,7 +9,7 @@ Aggregated view of every task file under `ai-spec/tasks/` (the three-stage `ai-s
 `ai-spec/tasks/in-progress/` → `ai-spec/tasks/done/` convention documented in
 [`docs/workflow.md`](../docs/workflow.md)). **This file was originally a point-in-time,
 manually-regenerated snapshot; it no longer is.** Per
-[`docs/workflow.md`'s task-coordination-file regeneration step](../docs/workflow.md#regenerating-the-task-coordination-files),
+[`docs/workflow.md`'s task-coordination-file regeneration step](../docs/workflow/task-files-links-and-ordering.md#regenerating-the-task-coordination-files),
 `docs-keeper` now updates the affected part of this file on the same pass as the mandatory
 link-integrity check, every time a task file is created, moves to `in-progress/`/`done/`, or has
 its own "Dependencies" section edited — so it should reflect the real backlog rather than
@@ -393,7 +393,7 @@ once.** It was, before this pass, the single biggest hub in the backlog (see
 [Pending tasks that must be sequenced](#pending-tasks-that-must-be-sequenced) below for the chain
 it used to gate); its task file moved `ai-spec/tasks/in-progress/` → `ai-spec/tasks/done/`, and its
 `tasks-status.json` entry was removed, per
-[`docs/workflow.md`'s task-coordination-file regeneration step](../docs/workflow.md#regenerating-the-task-coordination-files).
+[`docs/workflow.md`'s task-coordination-file regeneration step](../docs/workflow/task-files-links-and-ordering.md#regenerating-the-task-coordination-files).
 `0050`, `0052` and `0055` each also named `0045` as a hard blocker and each dropped it from their
 own `depends_on` array in the same pass, but stay `blocked` on their *other* still-pending
 dependencies (`0050` on `0049`/`0051`; `0052` on `0051`; `0055` on its six remaining Orders
@@ -429,7 +429,7 @@ own branch (merged via PR #9), 0045 checked out into `in-progress/` for Phase 3 
 end of the same session. `0046`, `0047`, `0048`, `0049`, `0051`, `0053` and `0054` each cited `0045`
 as a hard blocker (`0047` also cited `0044`), so each dropped it from its own `depends_on` array —
 all seven are now fully `ready`, per
-[workflow.md](../docs/workflow.md#regenerating-the-task-coordination-files)'s "recompute `status`
+[workflow.md](../docs/workflow/task-files-links-and-ordering.md#regenerating-the-task-coordination-files)'s "recompute `status`
 for every remaining task that named it as a dependency" rule, which recomputes a status, not
 merely strips a satisfied id. `0050`, `0052` and `0055` also cited `0045` and dropped it the same
 way, but stay `blocked` on other still-pending dependencies (see the note two paragraphs above).
@@ -557,7 +557,7 @@ in [`ai-spec/tasks-status.json`](tasks-status.json):
   Many Epic 3/4/5 stories were composed before their prerequisites shipped, and each carries a
   self-aware note along the lines of *"this document goes stale while it waits… every name in this
   file is a reading aid, not a locator"* (a rule this project's own
-  [`docs/errors-log.md`](../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+  [`docs/errors-log.md`](../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
   states explicitly). This map inherits that caveat: **before actually starting a pending story,
   re-verify its own "Dependencies" section against `HEAD` rather than trusting this snapshot**,
   especially for any story more than a few positions deep in a chain (0073 and 0079 in particular

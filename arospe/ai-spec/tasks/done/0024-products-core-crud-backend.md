@@ -29,7 +29,7 @@ actions themselves authorize against.
 It is **backend only** — no screen, no route, no Livewire component; the products list and editor are
 the paired story **0027**.
 
-Covers [PRD](../../../docs/PRD/PRD.md#22-products) §2.2's *"Create a product with core fields"* and the
+Covers [PRD](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#22-products) §2.2's *"Create a product with core fields"* and the
 *"another product"* example of *"Scenario Outline: A duplicate SKU is rejected"* — i.e. Products
 acceptance criteria 1, 4 (the product-SKU half), 6 and 7. Acceptance criterion 2 (the category
 in-use delete block) is [0024b](0024b-product-category-in-use-delete-guard.md)'s.
@@ -229,7 +229,7 @@ back in reverse timestamp order, the pivot drops before `products`, so the pair 
 symmetric.
 
 > **No `$table->index('product_category_id')` and no `$table->index('featured_media_id')`** — let
-> `constrained()` supply each FK's index. This is [migrations.md](../../../docs/database/migrations.md#an-fk-column-does-not-also-get-an-explicit-index-here)'s
+> `constrained()` supply each FK's index. This is [migrations.md](../../../docs/database/migrations/uuid-primary-keys.md#an-fk-column-does-not-also-get-an-explicit-index-here)'s
 > **existing, already-correct rule**, followed rather than established; see **D-10**, which is now a
 > one-paragraph "follow the rule" entry rather than the doc correction it used to be.
 
@@ -242,10 +242,10 @@ symmetric.
 | `app/Enums/ProductDisplayStatus.php` | Three cases (`Active`, `Draft`, `OutOfStock`). **Never persisted, never validated, no column, no cast** — the badge type only. See **D-7**. |
 
 TitleCase keys, lowercase backing values, per project `CLAUDE.md` and
-[naming.md](../../../docs/conventions/naming.md#classes).
+[naming.md](../../../docs/conventions/naming/classes.md#classes).
 
 > **All three enums get `label()` in this story, which is a deliberate departure from
-> [naming.md](../../../docs/conventions/naming.md#translation-keys)'s "add `label()` when a second
+> [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)'s "add `label()` when a second
 > consumer appears" rule** — and the reason is that the second consumer is already named and already
 > written down: 0027 renders `type` and the badge, and PRD assumption 15's low/zero-stock
 > notification reads `displayStatus()`. `SalesRegionKind` correctly declined `label()` because its
@@ -306,14 +306,14 @@ to four actions.
 
 | Path | What & why |
 | --- | --- |
-| `app/Policies/ProductPolicy.php` | **New.** Four abilities (`viewAny` / `create` / `update` / `delete`), each gating on the already-seeded `products.*` permission named once as a `public const` — the shape [`ProductCategoryPolicy`](../../../app/Policies/ProductCategoryPolicy.php), `SalesRegionPolicy` and `MediaPolicy` already use ([naming.md](../../../docs/conventions/naming.md#permission-names)). Auto-discovered by name; **no `AuthServiceProvider`**. Three of the four have real call sites in this story (**D-15**): `create`, `update` and `delete`. `viewAny` is defined with no caller until 0027's list screen — the same deliberate shape `MediaPolicy` shipped (story 0019: four abilities, two used at ship time), per [authorization.md](../../../docs/architecture/authorization.md)'s "define an ability when you can name what will ask it". This is **not** 0023's zero-call-sites gap, which had no caller for any ability. |
+| `app/Policies/ProductPolicy.php` | **New.** Four abilities (`viewAny` / `create` / `update` / `delete`), each gating on the already-seeded `products.*` permission named once as a `public const` — the shape [`ProductCategoryPolicy`](../../../app/Policies/ProductCategoryPolicy.php), `SalesRegionPolicy` and `MediaPolicy` already use ([naming.md](../../../docs/conventions/naming/routes-and-permissions.md#permission-names)). Auto-discovered by name; **no `AuthServiceProvider`**. Three of the four have real call sites in this story (**D-15**): `create`, `update` and `delete`. `viewAny` is defined with no caller until 0027's list screen — the same deliberate shape `MediaPolicy` shipped (story 0019: four abilities, two used at ship time), per [authorization.md](../../../docs/architecture/authorization.md)'s "define an ability when you can name what will ask it". This is **not** 0023's zero-call-sites gap, which had no caller for any ability. |
 
 ### Translations
 
 | Path | What & why |
 | --- | --- |
 | `lang/en/products.php` | **New — this story creates the file.** 0023 deliberately created none. Keys owned here: `products.types.*`, `products.statuses.*`, `products.display_statuses.out_of_stock`. |
-| `lang/es/products.php` | **New**, key-for-key identical, per [naming.md](../../../docs/conventions/naming.md#translation-keys). |
+| `lang/es/products.php` | **New**, key-for-key identical, per [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys). |
 
 > ⚠️ **File-ownership hand-off, now three-way.** `lang/en|es/products.php` is **created here** and
 > then **extended, never recreated**, by [0024a](0024a-product-description-html-sanitization.md) (no
@@ -526,7 +526,7 @@ would be asserting the factory.
 - [ ] A `Super Admin` holding zero permission rows passes all three via `Gate::before`.
 - [ ] The refusal is **logged** through `App\Actions\Auth\LogRefusedPrivilegedAttempt`, asserted with
       `Log::spy()` against the **context array** (`target_type: 'product'`), never a rendered string —
-      the shape [authorization.md](../../../docs/architecture/authorization.md#recording-a-refusal--what-every-gate-owes-the-audit-trail)
+      the shape [authorization.md](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail)
       requires and `tests/Feature/SalesRegions/RefusalLoggingTest.php` already demonstrates.
 - [ ] **`SyncProductGallery` is not independently reachable**: a test asserting that no class under
       `app/` other than `CreateProduct` / `UpdateProduct` references it. This is what makes its
@@ -643,7 +643,7 @@ interim and what must not happen before it closes.
 - [x] Tests written and green, plus the **full** existing suite in a single isolated run, per
       [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule.
 - [x] **All three quality gates run unscoped and each result recorded — including "not run"**, per
-      [errors-log.md](../../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26):
+      [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26):
       `php artisan test`, `vendor/bin/pint --format agent`, `vendor/bin/phpstan analyse`. Note
       `phpstan.neon` analyses `database/`, so the migration **and the factory** are in scope.
 
@@ -701,7 +701,7 @@ interim and what must not happen before it closes.
 - [x] **Hand-off recorded for story 0027**, now narrower than before the split because the actions
       self-authorize: 0027 must still (a) call `Gate::authorize()` as the first statement of every
       method that mutates *or discloses* — **defence in depth and the honest source of its per-row
-      `canEdit`/`canDelete` hints, not a redundancy** ([base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+      `canEdit`/`canDelete` hints, not a redundancy** ([base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
       task-0017 blockquote); (b) gate the route with **`can:products.view`, never
       `permission:products.view`**; (c) keep the id fed to `Rule::unique()->ignore()`
       server-authoritative (`#[Locked]`, re-read from the model) — per
@@ -733,10 +733,10 @@ reader of a sibling story will have absorbed the wrong version.
 
 | # | What this file said | What is true |
 | --- | --- | --- |
-| **C-1** | **D-15 / RQ-10**: *"`CreateUser`/`UpdateUser` (verified to contain no `Gate` call) … authorize at the caller"*, so this story's actions must not self-authorize. | **False, and it reverses the decision.** `App\Actions\Users\CreateUser::__invoke()` line 66 is `$this->logRefusedPrivilegedAttempt->authorize('create', User::class);`, and `UpdateUser` self-authorizes four abilities through `authorize()` and logs two further non-`Gate` refusals through `->log()`. The **documented** convention is the opposite of what RQ-10 preserved — [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers) quotes `CreateUser` as its ✅ example. `backend-qa`'s recorded dissent was right and was overruled on false evidence. **D-15** is rewritten; the actions self-authorize. |
-| **C-2** | **V-1 / R-1**: CI cannot open a database connection; `phpunit.xml` never pins `DB_CONNECTION`, `.env.example` selects sqlite, the workflow runs no MySQL service. | **True on 2026-08-18, fixed on 2026-08-26**, by the task this very finding spawned — [`ci-database-connection-gap.md`](../ci-database-connection-gap.md), which records `866/866` passing against real MySQL. Verified at the split: `phpunit.xml:29` sets `DB_CONNECTION=mysql`, `.env.example:28` sets `DB_CONNECTION=mysql`, and `.github/workflows/tests.yml:27-47` runs a `mysql:8.4` service with job-level `DB_CONNECTION`/`DB_DATABASE`. **The dependent claim that 0019's V7 and 0023's R-2 were "wrong about CI" is withdrawn.** This is [the 2026-08-29 errors-log entry](../../../docs/errors-log.md#one-docs-pass-reported-two-gaps-that-were-not-there-both-marked-verified--2026-08-29)'s exact shape — a real finding whose write-up outlived its own fix — and a candidate for that log. |
+| **C-1** | **D-15 / RQ-10**: *"`CreateUser`/`UpdateUser` (verified to contain no `Gate` call) … authorize at the caller"*, so this story's actions must not self-authorize. | **False, and it reverses the decision.** `App\Actions\Users\CreateUser::__invoke()` line 66 is `$this->logRefusedPrivilegedAttempt->authorize('create', User::class);`, and `UpdateUser` self-authorizes four abilities through `authorize()` and logs two further non-`Gate` refusals through `->log()`. The **documented** convention is the opposite of what RQ-10 preserved — [base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers) quotes `CreateUser` as its ✅ example. `backend-qa`'s recorded dissent was right and was overruled on false evidence. **D-15** is rewritten; the actions self-authorize. |
+| **C-2** | **V-1 / R-1**: CI cannot open a database connection; `phpunit.xml` never pins `DB_CONNECTION`, `.env.example` selects sqlite, the workflow runs no MySQL service. | **True on 2026-08-18, fixed on 2026-08-26**, by the task this very finding spawned — [`ci-database-connection-gap.md`](../ci-database-connection-gap.md), which records `866/866` passing against real MySQL. Verified at the split: `phpunit.xml:29` sets `DB_CONNECTION=mysql`, `.env.example:28` sets `DB_CONNECTION=mysql`, and `.github/workflows/tests.yml:27-47` runs a `mysql:8.4` service with job-level `DB_CONNECTION`/`DB_DATABASE`. **The dependent claim that 0019's V7 and 0023's R-2 were "wrong about CI" is withdrawn.** This is [the 2026-08-29 errors-log entry](../../../docs/errors-log/2026-08-28-to-2026-08-31.md#one-docs-pass-reported-two-gaps-that-were-not-there-both-marked-verified--2026-08-29)'s exact shape — a real finding whose write-up outlived its own fix — and a candidate for that log. |
 | **C-3** | **V-6**: *"`app/Models/` holds only `Role.php` and `User.php`; there is no `media` migration, no `Media` model, no `product_categories` migration, no `ProductCategory`."* | **False.** Both [0019](../done/0019-media-library-upload-and-conversions-backend.md) and [0023](../done/0023-product-categories-backend.md) are closed and merged; `app/Models/{Media,ProductCategory}.php`, `database/factories/MediaFactory.php` and both migrations exist. **This story is unblocked**, and R-2's sequencing warning is discharged. |
-| **C-4** | **R-8**: *"there is no `trans_choice` precedent anywhere in `lang/` today."* | **False.** `lang/en/roles.php`'s `index.delete_blocked` has used the `|`-delimited plural form since task 0010, with six `trans_choice()` call sites, and [naming.md](../../../docs/conventions/naming.md#translation-keys) has owned the convention since then. The consequence lands in [0024b](0024b-product-category-in-use-delete-guard.md), which now **matches** that precedent's simple `singular|plural` form rather than introducing explicit-range syntax. |
+| **C-4** | **R-8**: *"there is no `trans_choice` precedent anywhere in `lang/` today."* | **False.** `lang/en/roles.php`'s `index.delete_blocked` has used the `|`-delimited plural form since task 0010, with six `trans_choice()` call sites, and [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys) has owned the convention since then. The consequence lands in [0024b](0024b-product-category-in-use-delete-guard.md), which now **matches** that precedent's simple `singular|plural` form rather than introducing explicit-range syntax. |
 
 **A fifth finding, outside this file, that the split surfaced and nobody owns yet.**
 `app/Actions/ProductCategories/CreateProductCategory.php:36` carries the comment *"matching
@@ -840,7 +840,7 @@ silent. The contrast inside this very story is instructive: `product_categories`
 table, correctly, because it is admin-CRUD with zero behaviour attached.
 
 Rejected alternatives: a native MySQL `ENUM` (DDL for every new value, ordinal ordering, no SQLite
-equivalent — [migrations.md](../../../docs/database/migrations.md#adding-a-column-to-an-existing-table)'s
+equivalent — [migrations.md](../../../docs/database/migrations/basics-and-alterations.md#adding-a-column-to-an-existing-table)'s
 explicit rule); a `product_types` FK table (a join on every read to make a closed two-member set
 "configurable" in a way that would break tax resolution the moment anyone used it); a bare `string()`
 (`VARCHAR(255)` for an 8-character token); and a `boolean is_virtual` (unextensible, and it reads
@@ -1059,7 +1059,7 @@ redundant index: precisely the `users_uuid_unique` write-amplification debt
 > **Corrected at the split (Phase 2 finding N3).** This entry previously claimed
 > [migrations.md](../../../docs/database/migrations.md) *"instructs the opposite and must be corrected in
 > Phase 6"*. **It does not.** That page has carried
-> [An FK column does not also get an explicit index here](../../../docs/database/migrations.md#an-fk-column-does-not-also-get-an-explicit-index-here)
+> [An FK column does not also get an explicit index here](../../../docs/database/migrations/uuid-primary-keys.md#an-fk-column-does-not-also-get-an-explicit-index-here)
 > since task 0016, explicitly flagging `create_passkeys_table`'s `$table->index('user_id')` as *"not a
 > pattern to copy"*, and story 0019's `create_media_table` is recorded there as the rule's second clean
 > instance. So this story **follows** the documented rule; it establishes nothing and corrects nothing.
@@ -1214,7 +1214,7 @@ are repointed, and this stub is what catches any that were missed.
 
 **Ship the policy.** 0028's D6 gated directly on permission names with no policy; that reasoning does
 not transfer, for three reasons: (a) **0027 needs a per-row ability object** —
-[authorization.md](../../../docs/architecture/authorization.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)
+[authorization.md](../../../docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)
 requires the UI hint to come from *the same policy method* the mutating path authorizes against, and
 0027 renders per-row edit/delete actions while 0028's screen renders rows that all answer identically;
 (b) Epic 2 already has a `ProductCategoryPolicy` (0023 D-9), and two sibling entities in one module
@@ -1228,7 +1228,7 @@ premise is false — `CreateUser::__invoke()` opens with
 `$this->logRefusedPrivilegedAttempt->authorize('create', User::class);` and `UpdateUser` self-authorizes
 four abilities through `authorize()` and logs two further non-`Gate` refusals through `->log()` — and
 the real, **documented** convention is the opposite:
-[base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+[base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 states that *"if an operation must not happen without a permission, the check lives in the class that
 performs the operation"*, quotes `CreateUser` as its ✅ example, and records task 0017's `SalesRegions`
 actions as the case where applying it at Phase 1 cost nothing. **The precise rule, stated narrowly
@@ -1242,7 +1242,7 @@ precedents for exactly the shape `SyncProductGallery` takes below — it is the 
 this pattern, not a bespoke exception. `ProductCategories/` (0023) is the **sole, explicitly
 flagged exception to the first half** (an action performing a real domain operation with no
 authorization at all), recorded as a ⚠️ gap in
-[schema.md](../../../docs/database/schema-products.md#product_categories) — an exception to be discharged by 0025,
+[schema.md](../../../docs/database/schema-products/categories-and-products.md#product_categories) — an exception to be discharged by 0025,
 not a precedent to copy. **`backend-qa`'s recorded dissent at the original debate was correct**, and
 was overruled on false evidence; it is adopted here.
 
@@ -1251,7 +1251,7 @@ So: **`CreateProduct` authorizes `create` on `Product::class`, `UpdateProduct` a
 statement, before any transaction opens, through
 `App\Actions\Auth\LogRefusedPrivilegedAttempt::authorize(...)` with `targetType: 'product'` passed
 explicitly (`resolveTarget()` auto-resolves only `User` and `Role`), per
-[the refusal-logging recipe](../../../docs/architecture/authorization.md#recording-a-refusal--what-every-gate-owes-the-audit-trail).
+[the refusal-logging recipe](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail).
 `LogRefusedPrivilegedAttempt` is **constructor**-injected, per
 [code-style.md](../../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)'s
 documented exception: `__invoke()`'s parameter list is a public contract these actions' direct-call
@@ -1385,8 +1385,8 @@ That is precisely the property that makes the reorder control expressible withou
 
 > **Why shipping `description` unsanitized here is safe, stated explicitly rather than left implicit.**
 > This project's conventions warn hard against persisting an unsanitized value "temporarily"
-> ([base-standards.md](../../../docs/conventions/base-standards.md#a-wireignored-client-owned-region--the-apps-first-instance),
-> [api/routes.md](../../../docs/api/products.md#applivewirecomponentswysiwygeditor--the-gallerys-first-real-consumer-and-the-second-routeless-gated-component)),
+> ([base-standards.md](../../../docs/conventions/base-standards/livewire-and-flux-conventions.md#a-wireignored-client-owned-region--the-apps-first-instance),
+> [api/routes.md](../../../docs/api/products/routeless-components.md#applivewirecomponentswysiwygeditor--the-gallerys-first-real-consumer-and-the-second-routeless-gated-component)),
 > and that warning is about a **render** sink. Three conditions hold across this story's whole life,
 > and together they make the interim exposure **zero** rather than merely small:
 >
@@ -1486,7 +1486,7 @@ cite them by number.
   the surface; the boundary-pair tests must derive from the same constants.
 - **R-8 — ⚠️ CORRECTED (was: no `trans_choice` precedent in `lang/`).** There is one, since task 0010:
   `lang/en/roles.php`'s `index.delete_blocked`, with six `trans_choice()` call sites and a documented
-  convention in [naming.md](../../../docs/conventions/naming.md#translation-keys). Consumed by
+  convention in [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys). Consumed by
   [0024b](0024b-product-category-in-use-delete-guard.md), which matches the existing simple
   `singular|plural` form. See **C-4**. Retained as a stub because 0025 **R-4**, 0029 and 0036 **R-6**
   all cite it.
@@ -1588,8 +1588,8 @@ dropped alternatives, so a later reader sees what was decided and why.
 
 Phase 1 (Three Amigos) debate run on 2026-08-18 with `backend-expert` (files and approach),
 `database-expert` (schema, indexes, FK semantics) and `backend-qa` (test design), per
-[workflow.md](../../../docs/workflow.md#phase-1--three-amigos-debate). Derived from
-[PRD](../../../docs/PRD/PRD.md#22-products) §2.2's "Product catalog" Gherkin block and assumptions 8, 9,
+[workflow.md](../../../docs/workflow/phases.md#phase-1--three-amigos-debate). Derived from
+[PRD](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#22-products) §2.2's "Product catalog" Gherkin block and assumptions 8, 9,
 10, 11, 17 and 19, grounded in full readings of
 [0023](../done/0023-product-categories-backend.md) and
 [0019](../done/0019-media-library-upload-and-conversions-backend.md), with
@@ -1636,5 +1636,5 @@ All three amigos' contributions are reflected above, including the **four record
 (whether the actions self-authorize, now **resolved in the dissenter's favour**). The one finding this
 story originally claimed no prior story had right — the CI database configuration — was real, was
 escalated to its own task, and **was fixed on 2026-08-26**; this file simply never recorded that, which
-is [the 2026-08-29 errors-log entry](../../../docs/errors-log.md#one-docs-pass-reported-two-gaps-that-were-not-there-both-marked-verified--2026-08-29)'s
+is [the 2026-08-29 errors-log entry](../../../docs/errors-log/2026-08-28-to-2026-08-31.md#one-docs-pass-reported-two-gaps-that-were-not-there-both-marked-verified--2026-08-29)'s
 exact failure mode and is recorded as **C-2**.

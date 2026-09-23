@@ -158,7 +158,7 @@ Feature: Roles & permissions management UI
 > > carries exactly one carve-out, and no others.** Open item 1's resolution requires this story to add
 > > two `Gate::allows()` calls to `roles()`. That is deliberate and is the *only* permitted exception:
 > > a per-row **UI hint** that disables a control, blessed for copying by
-> > [`docs/architecture/authorization.md`](../../../docs/architecture/authorization.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)
+> > [`docs/architecture/authorization.md`](../../../docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)
 > > ("worth copying on the next module screen") and anticipated by name in `RolePolicy::delete()`'s own
 > > docblock. It is `Gate::allows()`, never `Gate::authorize()`; it decides nothing, it gates no write,
 > > and it must reuse the same policy abilities `openEditModal()` / `saveRole()` /
@@ -231,7 +231,7 @@ Feature: Roles & permissions management UI
   (found running 0010's own test suite, which needs this same view to render) — not a kebab-case
   mirror path, and not nested under `roles/`.** `App\Livewire\Roles\Index` is an `Index` class inside
   a subfolder, exactly the case
-  [`docs/conventions/naming.md`](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
+  [`docs/conventions/naming.md`](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
   documents as an exception to the normal mirror rule: Livewire's `Finder` strips a trailing `.index`
   segment, so the component resolves to the **flat** file here — the direct analogue of
   `App\Livewire\Users\Index` → `livewire/users.blade.php`, already shipped. Verified by execution
@@ -250,7 +250,7 @@ Feature: Roles & permissions management UI
   0010's refusals. This story owns the screen's markup and therefore its copy: every user-facing string
   the view renders (page/section headings, the create button, the empty state, modal titles and
   buttons, the per-module headings and the permission labels) is a key added to **both** files,
-  key-for-key identical, per [`docs/conventions/naming.md`](../../../docs/conventions/naming.md#translation-keys).
+  key-for-key identical, per [`docs/conventions/naming.md`](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys).
   0010's file bullet is explicit that this story **may add keys to these files but must not move its
   two**. **Resolved 2026-08-21 (open item 3, human-confirmed):** the module/permission labels are a
   `modules` array (10 keys: the nine `RolePermissionSeeder::MODULES` entries plus `roles`) and an
@@ -293,7 +293,7 @@ Presentational rules the view must honor:
   a **silent revoke**: a narrow `roles.manage` holder editing a role that legitimately holds
   `products.delete` would submit a payload omitting it, and `syncPermissions()` would strip it with no
   error anywhere. See
-  [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns.md#two-guards-on-one-payload-must-agree-on-what-an-omission-means),
+  [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns/payload-omission-and-registries.md#two-guards-on-one-payload-must-agree-on-what-an-omission-means),
   whose ⚠️ names the two places the bug would be introduced — `permissionOptions()` **or the paired
   Blade view**, i.e. this story's own deliverable. *(Corrected 2026-08-21, Phase 2 re-review: this
   bullet previously claimed that page "names this story by number"; verified it does not — the string
@@ -515,7 +515,7 @@ DOM only for the Super Admin.
   > every one the actor could not themselves grant — is rendered. Verified by count, not by presence:
   > a non-Super-Admin's render carries `catalogSize - 1` checkboxes and a Super Admin's carries
   > `catalogSize`. The durable rule, added by this story's Phase 4 audit, is
-  > [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns.md#a-control-omitted-from-the-dom-is-safe-only-for-the-one-value-whose-guard-preserves-an-omission)'s
+  > [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns/payload-omission-and-registries.md#a-control-omitted-from-the-dom-is-safe-only-for-the-one-value-whose-guard-preserves-an-omission)'s
   > "A control omitted from the DOM is safe only for the one value whose guard preserves an omission" —
   > read it before withholding a second control.
 - [x] Each of 0010's three `ValidationException` refusals (`name`, `selectedPermissionIds`,
@@ -527,7 +527,7 @@ DOM only for the Super Admin.
       2026-08-21 per Open item 1's resolution above.)*
 - [x] Component is class-based with a `#[Title(...)]` attribute — **already true; verify, do not
       build** — and the view lives at the flat `resources/views/livewire/roles.blade.php`, per the
-      [`Index`-in-a-subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
+      [`Index`-in-a-subfolder exception](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
       to the kebab-case mirror rule. *(Corrected 2026-08-21: this bullet previously said "a kebab-case
       mirrored view", contradicting the corrected view-path bullet in Files to create/modify.)*
 
@@ -715,7 +715,7 @@ The audit's own **test** finding is worth stating separately, because it is a ru
 view that filtered half the catalog. Both regression tests therefore assert a rendered **count** —
 catalog size minus exactly the withheld set, per actor tier — so any further omission fails one of
 them. Commit `a8c3f9a` wrote the durable rule up as
-[`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns.md#a-control-omitted-from-the-dom-is-safe-only-for-the-one-value-whose-guard-preserves-an-omission)'s
+[`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns/payload-omission-and-registries.md#a-control-omitted-from-the-dom-is-safe-only-for-the-one-value-whose-guard-preserves-an-omission)'s
 new section, and **corrected** the neighbouring "Two guards on one payload" section in place: it closed
 with "the second action never has to preserve anything, because nothing is ever invisibly absent",
 which was true only once this story's `->reject()` landed and false in the window between 0010's
@@ -742,7 +742,7 @@ closure and now.
   emit that attribute. Rescoped to `'<ui-checkbox '` after tracing the real rendered markup — **with
   the trailing space**, because `flux:checkbox.group` emits its own `<ui-checkbox-group>` wrapper whose
   tag shares the child's prefix and silently inflated both counts by exactly one. Recorded as a durable
-  lesson in [`docs/errors-log.md`](../../../docs/errors-log-archive.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21),
+  lesson in [`docs/errors-log.md`](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21),
   since the failure mode is specific to counting: an over-count by a *constant* reads as the true number.
 - **F-5 — an error assertion that read the bag instead of the render.** The invalid-name dataset test
   asserted only `assertHasErrors(['name'])`, which would keep passing if the render outlet itself
@@ -754,7 +754,7 @@ closure and now.
   (`docs/conventions/code-style.md`, "explicit types everywhere").
 
 Quality gates were run in their **unscoped** form, per `docs/conventions/base-standards.md`'s
-[completion rule](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done):
+[completion rule](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done):
 `vendor/bin/pint --format agent` (not `--dirty`) clean, Larastan level 7 clean, and the full isolated
 suite **609/609** — 138 Roles-scoped, with `tests/Feature/Roles/IndexTest.php` untouched.
 

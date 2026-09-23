@@ -3,13 +3,13 @@
 ## Description
 Introduce the blog category taxonomy as a first-class, standalone entity: a new `blog_categories`
 table (UUID v7 primary key per [ADR 0001](../../../docs/decisions/0001-uuid-primary-keys.md) and
-[PRD](../../../docs/PRD/PRD.md#assumptions--confirmed-decisions) assumption 19), its
+[PRD](../../../docs/PRD/sections/foundations.md#assumptions--confirmed-decisions) assumption 19), its
 `App\Models\BlogCategory` model, and the create / rename / delete domain logic with name
 validation. This is the foundational Epic 4 story the blog post and tag stories build on — it is
 **backend only** (no screen, no route) and deliberately **independent from the product category
 taxonomy**: no shared table, no shared model, no shared namespace, no polymorphic taxonomy.
 
-Covers [PRD](../../../docs/PRD/PRD.md#epic-4--blog) Epic 4's `Feature: Blog categories (extends the
+Covers [PRD](../../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog categories (extends the
 prototype)` scenarios *Create*, *Rename*, *Delete an unused blog category* and *independent from
 product categories*, plus the CRUD half of the Blog acceptance criterion "Blog categories have full
 CRUD and are distinct from product categories" and the UUID-PK acceptance criterion. It does **not**
@@ -115,7 +115,7 @@ Feature: Blog categories
 
 **Migration**
 - `database/migrations/<timestamp>_create_blog_categories_table.php` — new. Greenfield UUID table
-  per [migrations.md](../../../docs/database/migrations.md#uuid-primary-keys):
+  per [migrations.md](../../../docs/database/migrations/uuid-primary-keys.md#uuid-primary-keys):
 
   ```php
   public function up(): void
@@ -145,14 +145,14 @@ Feature: Blog categories
   `sort_order` / `description` / `code` (**D-6**), and no FK in either direction —
   `blog_posts.blog_category_id` belongs to 0061, on the `blog_posts` side. `down()` is the exact
   inverse; dropping the table drops the index with it, so no companion `dropUnique()` is needed
-  (contrast [`add_pending_email_to_users_table`](../../../docs/database/migrations.md#drop-a-unique-index-explicitly-before-its-column),
+  (contrast [`add_pending_email_to_users_table`](../../../docs/database/migrations/basics-and-alterations.md#drop-a-unique-index-explicitly-before-its-column),
   where the column outlives the table).
 
   **Index list is exactly two**: `primary` on `id`, and `blog_categories_normalized_name_unique`.
   There is no FK on this table, so InnoDB's mandatory-FK-index rule does not apply and no explicit
   `index()` is written. Confirm with `php artisan db:table blog_categories` **after** migrating,
   never by reading the migration — per
-  [migrations.md](../../../docs/database/migrations.md#an-fk-column-does-not-also-get-an-explicit-index-here)'s
+  [migrations.md](../../../docs/database/migrations/uuid-primary-keys.md#an-fk-column-does-not-also-get-an-explicit-index-here)'s
   rule that a migration cannot show you an index nobody wrote.
 
   **On the length, and why it differs from [0059](../0059-blog-tags-backend.md)'s `100`** (**OQ-1**):
@@ -185,7 +185,7 @@ Feature: Blog categories
   ```
 
   `@property string $id` (string, never `int`) per
-  [base-standards.md](../../../docs/conventions/base-standards.md#uuid-primary-keys). Explicitly **not**
+  [base-standards.md](../../../docs/conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys). Explicitly **not**
   declared: `$keyType` / `$incrementing` (the `HasUniqueStringIds` concern already overrides both as
   methods — restating them is the anti-pattern that page names), `SoftDeletes` (**D-3**), `#[Hidden]`
   (nothing sensitive on this row), and **no `casts()` method at all** — nothing here needs a cast
@@ -213,7 +213,7 @@ Feature: Blog categories
   Note **`booted()`, not `boot()`**. [`App\Models\Role`](../../../app/Models/Role.php) uses `boot()` for
   a reason that **does not apply here** — it subclasses a vendor model and must register ahead of the
   package's own hooks (see
-  [authorization.md](../../../docs/architecture/authorization.md#the-super-admin-roles-invariants)).
+  [authorization.md](../../../docs/architecture/authorization/super-admin.md#the-super-admin-roles-invariants)).
   `BlogCategory` extends `Model` directly with nothing to order against, so `booted()` is correct and
   `boot()` would be cargo-culting a workaround for a problem this class does not have. `app()` inside
   a model event is the one shape available here — a model boot hook takes no injectable parameters,
@@ -333,7 +333,7 @@ posts alike, not an entity folder — this diverges from Epic 2's `ProductCatego
   `php artisan make:policy BlogCategoryPolicy --model=BlogCategory --no-interaction`. Auto-discovered
   by name for `App\Models\BlogCategory`; **no** `AuthServiceProvider` is added (this repo has none
   and does not need one). **Four** abilities, each naming its permission once as a class constant per
-  [naming.md](../../../docs/conventions/naming.md#permission-names)'s "name a permission once on the
+  [naming.md](../../../docs/conventions/naming/routes-and-permissions.md#permission-names)'s "name a permission once on the
   class that owns the rule" rule, following `SalesRegionPolicy`'s shape rather than `UserPolicy`'s
   repeated literals:
 
@@ -534,7 +534,7 @@ Backend only — **no browser tests** in this story, since it ships no screen.
       (an Artisan command, a queued job, a future second component) inherits the rule.
 - [ ] A refusal is **logged** via `LogRefusedPrivilegedAttempt` with `target_type: 'blog_category'`,
       asserted against the context array rather than a rendered string, per
-      [authorization.md](../../../docs/architecture/authorization.md#recording-a-refusal--what-every-gate-owes-the-audit-trail).
+      [authorization.md](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail).
 
 **Unit — `tests/Unit/ArchitectureTest.php`** (extend the existing file) — **see OQ-2 before writing
 this one**; its shape is not settled.
@@ -543,7 +543,7 @@ this one**; its shape is not settled.
       `expect([...])` array — Pest's `expect(array $targets)` is **disjunctive**, so a combined rule
       passes as soon as any one target satisfies it, which is exactly how an architecture test in
       this repo already shipped vacuous once
-      ([errors-log-archive.md](../../../docs/errors-log-archive.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18)).
+      ([errors-log-archive.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18)).
       Honest caveat, and the reason **OQ-2** exists: `App\Models\ProductCategory` **does not exist in
       this tree**, so a literal `->not->toUse(ProductCategory::class)` is a fatal class-not-found
       error at collection time, not a red test.
@@ -598,7 +598,7 @@ posts that reference a category arrive in 0061.
       `--dirty`), and **Larastan level 7** (`vendor/bin/phpstan analyse`). The third is the one
       nothing else prompts you to run, and a verification record naming only two of the three is a
       record of two gates — see
-      [errors-log.md](../../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+      [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
 - [x] Code reviewed (code-reviewer).
 - [x] No security findings (appsec-auditor).
 - [x] Documentation updated (docs-keeper): `docs/database/schema.md` gains a `blog_categories`
@@ -719,7 +719,7 @@ the two taxonomies can be diffed decision by decision. **D-13** and **D-14** are
   is a `VARCHAR(255)` column that **already carries a `unique` index** in this schema, so a
   1020-byte utf8mb4 unique key is a shape this project has accepted before and is comfortably inside
   InnoDB's 3072-byte limit under the DYNAMIC row format.
-  [migrations.md](../../../docs/database/migrations.md#adding-a-column-to-an-existing-table)'s
+  [migrations.md](../../../docs/database/migrations/basics-and-alterations.md#adding-a-column-to-an-existing-table)'s
   bare-`string()` warning is recorded here as **considered and not applied**, for the same reason
   0023 gives: its worked example is a 10-character *enum token* (`users.status`) whose ceiling is
   knowable from the value set, not a free-text human label with no natural maximum. `sales_regions`
@@ -757,7 +757,7 @@ the two taxonomies can be diffed decision by decision. **D-13** and **D-14** are
   `roles.manage` / `roles.manage-administrators` sitting outside the module grid.
 - **D-9 — `BlogCategoryPolicy` is its own one-model policy with four abilities, not a shared
   `BlogPolicy` and not a two-ability subset.** Two sub-decisions, both argued:
-  **(a) One model, one policy.** [naming.md](../../../docs/conventions/naming.md#classes) records that
+  **(a) One model, one policy.** [naming.md](../../../docs/conventions/naming/classes.md#classes) records that
   `<Model>Policy` is not a style preference but a **binding**: Laravel 13 auto-discovers
   `App\Policies\BlogCategoryPolicy` for `App\Models\BlogCategory` by that exact name. A single
   `BlogPolicy` spanning categories, tags and posts is auto-discoverable for *none* of them and would
@@ -826,7 +826,7 @@ the two taxonomies can be diffed decision by decision. **D-13** and **D-14** are
   workaround that does not apply); **guard on `isDirty('name')`**, so an unrelated save does not
   rewrite the column; and **the blast radius is the whole suite**, since a model event binds every
   `BlogCategory` in every test — which is precisely the case
-  [errors-log.md](../../../docs/errors-log-archive.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)
+  [errors-log.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)
   records, making the unscoped `php artisan test` run mandatory rather than advisory.
 
   **Recorded alternative, rejected:** each action computes and `forceFill`s it explicitly, matching
@@ -838,16 +838,16 @@ the two taxonomies can be diffed decision by decision. **D-13** and **D-14** are
   story would actively regress this one, and it is recorded loudly because the sibling's text reads
   authoritative. 0023's Phase 1 debate ran **2026-08-17**; task **0008a** — which moved authorization
   *into* `CreateUser`/`UpdateUser` as their own first statement and established the
-  [action-owns-the-rule convention](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+  [action-owns-the-rule convention](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
   — landed **2026-08-19**, two days later. Verified at `HEAD`: `App\Actions\Users\CreateUser` opens
   with `Gate::authorize('create', User::class)`. 0023's note is therefore a true statement about a
   tree that no longer exists, which is precisely the failure mode
-  [errors-log.md](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+  [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
   records for deferred task files. Since 0058 is planned *now*, on a codebase where task 0017 already
   demonstrated the convention costs nothing when applied at Phase 1, all three actions authorize as
   their first statement — via `LogRefusedPrivilegedAttempt::authorize()` rather than a bare
   `Gate::authorize()`, so a refusal is recorded with `target_type: 'blog_category'` per the
-  [refusal-logging recipe](../../../docs/architecture/authorization.md#recording-a-refusal--what-every-gate-owes-the-audit-trail).
+  [refusal-logging recipe](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail).
   The component that arrives with the UI story authorizes **as well** — that is a layer, not a
   redundancy. **This decision has a test-design consequence that is easy to miss and is called out at
   the top of the test list: authorization runs before validation, so every negative-validation test
@@ -900,7 +900,7 @@ the two taxonomies can be diffed decision by decision. **D-13** and **D-14** are
   and `App\Actions\Auth\LogRefusedPrivilegedAttempt` (story 0015b).
 - **Story 0061 (blog-posts-core-crud-backend) depends on this one** and is the story that adds
   `blog_posts.blog_category_id` and retrofits the hard-block-with-count guard onto
-  `DeleteBlogCategory`. Per [workflow.md](../../../docs/workflow.md#task-ordering-rule)'s task ordering
+  `DeleteBlogCategory`. Per [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule)'s task ordering
   rule, this story's lower id is deliberate.
 - **The blog categories management screen** is a later UI story and is the one that gives the policy
   its first *component* call site (it already has action call sites — **D-13**).
@@ -956,7 +956,7 @@ the two taxonomies can be diffed decision by decision. **D-13** and **D-14** are
   validation `max:` low enough that the worst-case fold still fits. **The expansion factor is not
   verified here** — this worktree has no `vendor/` directory, so `Str::ascii()` could not be executed
   — and per this project's own
-  [hedge rule](../../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
+  [hedge rule](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
   an unverified mechanism must not be written up as fact. The one command that settles it, to be run
   at Phase 2/3: `php artisan tinker --execute 'dump(strlen(Str::ascii(str_repeat("ß", 255))));'`.
   **[0059](../0059-blog-tags-backend.md) has the identical exposure at its own `100`/`100`** and its R-4
@@ -984,7 +984,7 @@ the two taxonomies can be diffed decision by decision. **D-13** and **D-14** are
 - **R-9 — A vacuous architecture test.** A `->not->toUse()` assertion is a negative claim and is
   green both when the invariant holds and when the test is structurally unable to fail. Whatever
   shape **OQ-2** settles on, it must be proven able to go red before it is counted as coverage, per
-  [errors-log-archive.md](../../../docs/errors-log-archive.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18).
+  [errors-log-archive.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18).
 
 ### Open questions
 
@@ -1112,8 +1112,8 @@ stated rather than left for a reviewer to discover.
 ## Provenance
 Phase 1 (Three Amigos) debate run on 2026-08-27 with `backend-expert` (files and approach),
 `database-expert` (schema, index, collation and soft-delete decisions) and `backend-qa` (test
-design), per [workflow.md](../../../docs/workflow.md#phase-1--three-amigos-debate). Derived from
-[PRD](../../../docs/PRD/PRD.md#epic-4--blog) Epic 4's `Feature: Blog categories (extends the prototype)`
+design), per [workflow.md](../../../docs/workflow/phases.md#phase-1--three-amigos-debate). Derived from
+[PRD](../../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog categories (extends the prototype)`
 Gherkin block and its Blog acceptance criteria, plus assumptions 13, 14, 17 and 19. The
 `blog_posts`-does-not-exist-yet scoping and the 0061 hand-off of the in-use delete guard mirror the
 confirmed 0023 → 0024 decomposition, recorded here so the missing guard is never read as an

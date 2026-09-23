@@ -336,7 +336,7 @@ this file.
 commented out at the top of `app/Models/User.php`), so `EnsureEmailIsVerified` refuses nobody on any
 route in this app — `verified` is a structural no-op here, not a control this story can prove "still
 runs". This is exactly the case
-[`docs/errors-log.md`](../../../docs/errors-log-archive.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)
+[`docs/errors-log.md`](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)
 already names forward: *"any future story that copies an `auth` + `verified` group into a new area
 file … must not plan a `verified` test either."* Dropped rather than kept as dead coverage.
 
@@ -390,7 +390,7 @@ middleware alias to register.
       `deleteRole()` flushed the permission cache only *inside* their `DB::transaction()`, with no
       post-commit flush — fixed in the same pass (see the Phase 4 record below) per the pre-existing,
       documented rule in
-      [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns.md#flush-the-permission-cache-after-the-transaction-commits-never-inside-it),
+      [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns/bypass-cache-and-guards.md#flush-the-permission-cache-after-the-transaction-commits-never-inside-it),
       whose own "Testing caveat" states no test in this suite can reproduce that window — it must be
       prevented by construction, not caught by a test.
 
@@ -437,7 +437,7 @@ Resolve before Phase 3; none of them blocks Phase 2 INVEST review.
    `<module-slug>.<action>` grid (`MODULES` × `ACTIONS`) plus two non-CRUD `ROLE_PERMISSIONS`. So the
    names are no longer open to invention — the Users module's are `users.view`, `users.create`,
    `users.edit`, `users.delete`, and role management is `roles.manage` /
-   `roles.manage-administrators` (naming rule: [`docs/conventions/naming.md`](../../../docs/conventions/naming.md#permission-names)).
+   `roles.manage-administrators` (naming rule: [`docs/conventions/naming.md`](../../../docs/conventions/naming/routes-and-permissions.md#permission-names)).
    Phase 3 must take the literals from that seeder's constants and must not introduce a name outside
    it. ⚠️ **Correction, now that the gate is `can:` and not `permission:`**: an unseeded name does
    **not** throw `PermissionDoesNotExist` — Spatie's `Gate::before` hook routes through
@@ -548,7 +548,7 @@ small and well-specified.
   the cache, but only pre-commit. On the shared `CACHE_STORE=database` store this fails **open** on
   revocation: a concurrent request landing between that in-transaction flush and the `COMMIT` misses
   the cache, reads the pre-commit rows, and re-caches them for 24 hours — the exact anti-pattern
-  [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns.md#flush-the-permission-cache-after-the-transaction-commits-never-inside-it)
+  [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns/bypass-cache-and-guards.md#flush-the-permission-cache-after-the-transaction-commits-never-inside-it)
   already documents. `tests/Feature/Authorization/ModuleRouteAccessTest.php`'s own cache-staleness
   tests cannot catch it (they revoke/grant directly, bypassing the component's write path entirely).
   Fixed by adding `app(PermissionRegistrar::class)->forgetCachedPermissions()` immediately after each
@@ -638,7 +638,7 @@ routes almost nothing. The substantive work was the opposite kind: carrying a ru
 **only inside this task file** into `docs/`, which is what acceptance criterion 6 actually asks for.
 
 **F1 (Phase 5, Medium) — closed.** Added
-[`docs/architecture/authorization.md`](../../../docs/architecture/authorization.md#the-copyable-module-gate-pattern-and-the-three-alternatives-rejected)
+[`docs/architecture/authorization.md`](../../../docs/architecture/authorization/how-to-gate.md#the-copyable-module-gate-pattern-and-the-three-alternatives-rejected)
 → **The copyable module-gate pattern, and the three alternatives rejected**, as a new subsection of
 *How to gate something*, directly beneath the pre-existing `can:`-not-`permission:` one. That page —
 not `docs/api/routes.md` — owns it, per the placement rule in the `docs-maintainer` skill: the gate
@@ -662,7 +662,7 @@ surface.
 
 **Verified, not assumed — and one thing changed as a result.** `docs/security/authorization-patterns.md`
 and `docs/security/README.md` were written by this story's own Phase 4, so per this repo's own
-[audit-authored-page rule](../../../docs/errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)
+[audit-authored-page rule](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)
 they were re-checked rather than trusted: the confirmed-safe 403 section's two named reopening
 conditions were re-verified against the real tree (`resources/views/errors/` does not exist; `grep -rn
 "Response::deny\|->deny(" app/` returns nothing), as was `shouldRenderJsonWhen`'s quote in
@@ -704,8 +704,8 @@ module route consumes them. (4) Confirmed no change was warranted in `database/s
 story's new test file follows. (5) **A broken relative link already inside this file**, written
 during Phase 3: the Phase 3 record's citation of `tests/Feature/Authorization/ModuleRouteAccessTest.php`
 used `](../../tests/…)`, which resolves to `ai-spec/tests/` from this file's `in-progress/` depth —
-exactly the [stage-move link class](../../../docs/errors-log-archive.md#a-task-files-relative-links-broke-silently-when-it-moved-to-in-progressdone--2026-08-17)
-[workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move) makes a mandatory
+exactly the [stage-move link class](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-task-files-relative-links-broke-silently-when-it-moved-to-in-progressdone--2026-08-17)
+[workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move) makes a mandatory
 check, caught here one phase early rather than at Phase 7. Corrected to `../../../tests/`; note that
 `in-progress/` → `done/` is a same-depth move, so it stays correct through closure. (6) **Three
 genuinely broken in-file anchors**, surfaced by running the same check across all 45 files of `docs/`

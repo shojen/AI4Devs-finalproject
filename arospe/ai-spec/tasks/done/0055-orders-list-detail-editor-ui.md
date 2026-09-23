@@ -1,7 +1,7 @@
 # [0055] Orders list + detail/editor UI
 
 ## Description
-Build the Orders screens of PRD [§3.2 Orders](../../../docs/PRD/PRD.md#32-orders): a permission-gated
+Build the Orders screens of PRD [§3.2 Orders](../../../docs/PRD/sections/epic-3-customers-orders.md#32-orders): a permission-gated
 `orders.index` list route, an `orders.show` detail route, the two Livewire components behind them, their
 Blade/Flux views, and the `config/modules.php` sidebar entry without which the module is unreachable.
 The detail screen is the **single consumer surface** for every write stories
@@ -417,19 +417,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
 - **Route-model binding on `{order}`**, not a raw string id. `Order` is UUID-keyed via `HasUuids`, whose
   `resolveRouteBindingQuery()` validates the segment with `Str::isUuid()` first — so a malformed
   parameter is a **404 without a query**
-  ([base-standards.md](../../../docs/conventions/base-standards.md#uuid-primary-keys)). `Order` has **no**
+  ([base-standards.md](../../../docs/conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys)). `Order` has **no**
   `SoftDeletes` (0045), so there is no trashed-row binding case to test here, unlike 0047's.
 - **No permission catalog change.** `orders.view/create/edit/delete` are seeded by
   `RolePermissionSeeder::MODULES` and `orders.refund` is seeded by 0051's `ORDER_PERMISSIONS`. This
   story adds none and reseeds nothing.
 - ⚠️ **Do not plan a `verified`-middleware test.** `App\Models\User` does not implement `MustVerifyEmail`,
   so `verified` refuses nobody on any route in this app; a test asserting it carries no signal
-  ([errors-log.md](../../../docs/errors-log-archive.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)).
+  ([errors-log.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)).
 
 ### Component — `app/Livewire/Orders/Index.php` (**new**)
 
 Class-based, `#[Title]` on the class
-([base-standards.md](../../../docs/conventions/base-standards.md#livewire-component-convention-class-based-not-single-file)).
+([base-standards.md](../../../docs/conventions/base-standards/livewire-and-flux-conventions.md#livewire-component-convention-class-based-not-single-file)).
 
 | Member | Shape | Notes |
 | --- | --- | --- |
@@ -503,14 +503,14 @@ Action methods, each `Gate::authorize()`-ing first and each delegating to the ac
   payment-state comparison written a second time, no rank arithmetic. Every hint reads the **same**
   predicate its guard throws from — `Order::isManuallyCancellable()`, `OrderStatus::isBackwardFrom()`,
   `OrderPolicy::cancel()`/`::transitionStatus()`. This is the rule
-  [authorization.md](../../../docs/architecture/authorization.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)
+  [authorization.md](../../../docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)
   states and that 0049 **D-2**, 0050's predicate and 0048 **D-5** each built a predicate for
   specifically so this screen would not have to.
 - **Domain refusals are caught and rendered, never allowed to 500 the page** (**D-12**).
 
 ### View — `resources/views/livewire/orders.blade.php` (**new** — the list)
 
-**The *flat* path**, per the [`Index`-in-a-subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name):
+**The *flat* path**, per the [`Index`-in-a-subfolder exception](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name):
 `App\Livewire\Orders\Index` resolves to `livewire/orders.blade.php`, **not** `livewire/orders/index.blade.php`.
 **Resolve the path by running the component, not by reasoning about it** — stories 0010 and 0011 both
 wrote the wrong path into their own Phase 1 specs and found out at first render.
@@ -546,7 +546,7 @@ state (`orders.index.empty`); no create button (**D-13**).
 
 **The nested path, and this is *not* the `Index` exception.** `App\Livewire\Orders\Show` follows the
 normal component ↔ view mirror. Its sibling `Index` resolves flat; the two live at different depths, which
-[naming.md](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
+[naming.md](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
 records as expected rather than a mistake — and which 0047 already shipped once for `Customers`.
 
 Five sections:
@@ -583,14 +583,14 @@ Markup rules inherited rather than invented:
 2. **An explicit `<flux:tooltip>` wrapper on the disabled branch, never a conditionally-bound `:tooltip`
    prop** — under `livewire/blaze` a Flux prop that decides whether a wrapper renders counts as *present*
    whenever the attribute is written on the tag at all
-   ([errors-log-archive.md](../../../docs/errors-log-archive.md#a-conditionally-bound-fluxbutton-tooltip-prop-rendered-an-empty-tooltip-on-every-enabled-row--2026-08-16)).
+   ([errors-log-archive.md](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-conditionally-bound-fluxbutton-tooltip-prop-rendered-an-empty-tooltip-on-every-enabled-row--2026-08-16)).
 3. **`cursor-not-allowed!` on that wrapper, not on the button** — Flux's own
    `disabled:pointer-events-none` takes a disabled button out of hit-testing
-   ([errors-log-archive.md](../../../docs/errors-log-archive.md#disabledcursor-not-allowed-on-a-flux-button-was-never-the-cursor-the-user-saw--2026-08-16)).
+   ([errors-log-archive.md](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#disabledcursor-not-allowed-on-a-flux-button-was-never-the-cursor-the-user-saw--2026-08-16)).
    Do not "simplify" either back into the obvious form.
 4. **Every `wire:model`-bound property has a real non-`null` value in the type the DOM expects** — the
    status select binds a `string` backing value and never a nullable enum
-   ([errors-log-archive.md](../../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)),
+   ([errors-log-archive.md](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)),
    which is **D-8**.
 5. **`data-test` hooks on *both* branches of every gated control**, so a browser test selects the same
    way regardless of whether it is enabled.
@@ -619,7 +619,7 @@ represents are **[D-2](#d-2)**.
 ### Sidebar registry — `config/modules.php` (**modify**) + `lang/{en,es}/navigation.php` (**modify**)
 
 **One appended entry, no component edit** — the registry pattern
-([authorization.md](../../../docs/architecture/authorization.md#the-second-half-of-a-module-gate-the-sidebar-registry)):
+([authorization.md](../../../docs/architecture/authorization/how-to-gate.md#the-second-half-of-a-module-gate-the-sidebar-registry)):
 
 ```php
 // config/modules.php — items
@@ -646,11 +646,11 @@ represents are **[D-2](#d-2)**.
   assuming it.**
 - **No closures, no literal copy** — `label` is a translation key, because `config:cache` serialises with
   `var_export()` and an English string in `config/` is unreachable from `lang/es/`
-  ([base-standards.md](../../../docs/conventions/directory-structure.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache)).
+  ([base-standards.md](../../../docs/conventions/directory-structure/config-registry.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache)).
 - `lang/{en,es}/navigation.php` each gain **exactly one leaf**, `items.orders`, mirroring the registry
   key — which is simultaneously the config key, the translation leaf and the rendered
   `data-test="sidebar-link-orders"` hook
-  ([naming.md](../../../docs/conventions/naming.md#translation-keys)).
+  ([naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)).
 
 ### Translations — `lang/en/orders.php` + `lang/es/orders.php` (**modify**)
 
@@ -678,7 +678,7 @@ groups** and renames none: `statuses` / `payment_statuses` (0045), `transitions`
 
 - **A count-dependent message is one key with a `|`-delimited plural, resolved with `trans_choice()`** —
   never a PHP ternary and **never inline in the Blade file**, where `lang/es/` cannot reach it. The
-  giveaway is a `|` outside `lang/` ([naming.md](../../../docs/conventions/naming.md#translation-keys), and
+  giveaway is a `|` outside `lang/` ([naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys), and
   the finding that made 0011 restate it).
 - Both locale files ship in the same change, key-for-key identical.
 
@@ -724,7 +724,7 @@ required wherever authorization is asserted.
 - [ ] Negative test: a signed-in user holding no `orders.*` permission gets a **403**.
 - [ ] **Positive** test: a user holding exactly `orders.view` gets a **200**. Required, not optional — a
       misspelled ability denies everyone and denial is indistinguishable from a correct refusal
-      ([authorization.md](../../../docs/architecture/authorization.md#the-copyable-module-gate-pattern-and-the-three-alternatives-rejected)).
+      ([authorization.md](../../../docs/architecture/authorization/how-to-gate.md#the-copyable-module-gate-pattern-and-the-three-alternatives-rejected)).
 - [ ] Integration test: a Super Admin (holding zero permission rows) gets a **200** via `Gate::before`.
 - [ ] Integration test: the `orders.index` route's `can:` middleware set is **exactly** `['can:orders.view']`.
 - [ ] Component test: `Livewire::test(Index::class)` mounted by a user without `orders.view` throws
@@ -903,7 +903,7 @@ required wherever authorization is asserted.
 
 - [ ] Integration test: `data-test="sidebar-link-orders"` is **present** for a holder of `orders.view`
       and **absent** otherwise. Select by the hook, never by the word "Orders", which collides with other
-      copy ([authorization.md](../../../docs/architecture/authorization.md#the-second-half-of-a-module-gate-the-sidebar-registry)).
+      copy ([authorization.md](../../../docs/architecture/authorization/how-to-gate.md#the-second-half-of-a-module-gate-the-sidebar-registry)).
 - [ ] The suite's existing set-equality guard covers the new entry automatically; assert it still passes
       **unmodified** with two routes under `orders.*`, and record that it was verified rather than
       assumed.
@@ -927,7 +927,7 @@ controls than any screen in the app, and one large file would make a failure's b
   "Orders"/"Cancel"/"Total" all collide with other copy on the page.
 - **Drive the selects the way a person does**, not through a `selectOption()`-style API: the
   `null`-property/native-`<select>` desync recorded in
-  [errors-log-archive.md](../../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
+  [errors-log-archive.md](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
   is invisible to both `Livewire::test()->set()` and `selectOption()`, and this screen binds **three**
   selects (status, product, variant).
 - **Prove each new browser test can fail** before counting it as coverage — the regression-proof
@@ -1028,7 +1028,7 @@ enforce first.
 
 - [ ] Tests written and green — the full suite **unscoped** (`php artisan test`, no `--filter`), not
       only the Orders-scoped run
-      ([base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done)).
+      ([base-standards.md](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done)).
       **Non-optional rather than merely recommended here:** this story appends to `config/modules.php`,
       which `SidebarModuleGatingTest` iterates for **every** entry, and it edits a lang file four sibling
       stories also write.
@@ -1050,7 +1050,7 @@ enforce first.
     middleware column **understates** what protects the detail page: three distinct abilities govern its
     controls, all enforced in-method and therefore invisible there. **This is the third and fourth
     permission-gated route** — re-count rather than assume, per the
-    [bare-negative-claim](../../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
+    [bare-negative-claim](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
     failure mode arriving as arithmetic.
   - [`architecture/authorization.md`](../../../docs/architecture/authorization.md) — the
     `Gate::allows()`-is-a-UI-hint section gains its **first three-ability screen**, and its accepted-drift
@@ -1094,7 +1094,7 @@ backend stories — behind a component whose own schedule this decomposition doe
 - An explicit empty state when the catalog is empty, and a bounded result set with a visible notice when
   it is truncated (**R-4**).
 - Both selects bind `public string` properties defaulting to `''`, never `null`
-  ([errors-log-archive.md](../../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)).
+  ([errors-log-archive.md](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)).
 
 **This is logged as a stopgap, in three places** — here, in [Risks](#risks) as **R-4**, and in the
 [backlog](#technical-tasks-for-the-backlog) as item 1 — because an undocumented interim becomes
@@ -1247,7 +1247,7 @@ its currency affix and no casting whatsoever, plus a **sequential** retrofit of 
 
 ⚠️ **The retrofit is a sequential edit of a closed story's file, never a concurrent one** — the same
 constraint 0047's own **D-6** imposed when it edited 0044's view, and the same incident behind it
-([errors-log-archive.md](../../../docs/errors-log-archive.md#two-agents-dispatched-in-parallel-both-wrote-to-the-same-blade-view--2026-08-16)).
+([errors-log-archive.md](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#two-agents-dispatched-in-parallel-both-wrote-to-the-same-blade-view--2026-08-16)).
 0047's rendering test must be re-run after it.
 
 **`tax_rate` renders as its stored string plus `%`** — `21.000` → `21.000%`. Trimming trailing zeros is a
@@ -1259,7 +1259,7 @@ Three separate rules, each with its own reason:
 
 - **A `public string` bound to a real backing value, never a nullable enum.** A `wire:model`-bound
   property that is `null` desynchronises a native `<select>` and silently drops the user's own pick
-  ([errors-log-archive.md](../../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)),
+  ([errors-log-archive.md](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)),
   and a *typed enum* property is hydrated through `$type::from($value)` **before** validation runs, so a
   forged value raises an unhandled `\ValueError` rather than a validation error (task 0015's F8). The
   shipped shape is the one both findings converge on: non-nullable `string`, defaulting to the order's
@@ -1319,7 +1319,7 @@ refund-less actor nothing about why; one that disables on both violates the PRD 
 specified the mixed pair as its own test for exactly this reason.
 
 Note the withheld-control rule from
-[security/authorization-patterns.md](../../../docs/security/authorization-patterns.md#a-control-omitted-from-the-dom-is-safe-only-for-the-one-value-whose-guard-preserves-an-omission)
+[security/authorization-patterns.md](../../../docs/security/authorization-patterns/payload-omission-and-registries.md#a-control-omitted-from-the-dom-is-safe-only-for-the-one-value-whose-guard-preserves-an-omission)
 does **not** bite here: that rule governs a control omitted from a **full-replace payload**, where
 absence is indistinguishable from removal. This control submits nothing; omitting it removes an
 affordance and changes no submitted set.
@@ -1496,7 +1496,7 @@ block. The replacement criterion is recorded verbatim in D-1 so the swap is sche
 
 All of these are **sequential** edits of closed stories' files, which is ordinary maintenance; a
 **concurrent** one is the incident recorded in
-[errors-log-archive.md](../../../docs/errors-log-archive.md#two-agents-dispatched-in-parallel-both-wrote-to-the-same-blade-view--2026-08-16)
+[errors-log-archive.md](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#two-agents-dispatched-in-parallel-both-wrote-to-the-same-blade-view--2026-08-16)
 and governed by `contracts.md`'s Parallel Agent File-Ownership Rule. Since every listed sibling is a
 hard dependency of this story, the ordering constraint costs nothing — it only needs stating.
 
@@ -1575,7 +1575,7 @@ hard dependency of this story, the ordering constraint costs nothing — it only
   its constant, four exception class names, five lang key groups, `orders.refund`'s existence, and the
   `flag_reason` column. That is precisely the *"a deferred finding is a claim about a tree, and the task
   file freezes while the tree does not"* failure recorded in
-  [errors-log.md](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+  [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
   *Mitigation:* **Phase 2's INVEST review must be re-run immediately before Phase 3**, and must
   re-verify every quoted name against the **shipped code** rather than against a sibling task file —
   including whether 0050's **D-6** was overridden into a dedicated `orders.cancel` permission (its own
@@ -1712,7 +1712,7 @@ Derived from this story, none of them in scope:
 
 ## Provenance
 
-- **PRD source:** [§3.2 Orders](../../../docs/PRD/PRD.md#32-orders) — this story is the **UI half** of that
+- **PRD source:** [§3.2 Orders](../../../docs/PRD/sections/epic-3-customers-orders.md#32-orders) — this story is the **UI half** of that
   section in its entirety: the order list and detail/editor the Epic 3 preamble asks for ("the same list
   + detail/editor visual patterns established in Users and Products"), the line-item editing scenarios
   and their hard block, the status-transition and backward-confirmation scenarios, the manual
@@ -1751,7 +1751,7 @@ Derived from this story, none of them in scope:
   `ai-spec/tasks/in-progress/` at the start of Phase 3 and to `ai-spec/tasks/done/` at Phase 7 — the
   first move changes this file's directory depth, so every relative link above must be re-resolved on
   each move, in **both** directions, per
-  [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move). **This file carries
+  [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move). **This file carries
   more inbound-link targets than any other in the epic** (eight sibling task files plus 0022 and 0047),
   so Direction 2 of that check is unusually load-bearing here.
 - **Epic 3 decomposition:** story **15 of 15** — the last, and the only one that consumes rather than
