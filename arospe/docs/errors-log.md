@@ -6,9 +6,12 @@ A structured log of real mistakes made in this project and the concrete rule ado
 
 ## Browse by topic
 
-An agent working on a specific domain can jump straight to the 1-3 relevant entries below instead of reading the whole log top to bottom — see [contracts.md](contracts.md#token-efficient-reading-and-dispatch-rule)'s Token-Efficient Reading and Dispatch Rule. Covers all 46 entries across this file and the archive; an entry touching more than one domain is listed under each. `(archive)` marks an entry that lives in [errors-log-archive.md](errors-log-archive.md).
+An agent working on a specific domain can jump straight to the 1-3 relevant entries below instead of reading the whole log top to bottom — see [contracts.md](contracts.md#token-efficient-reading-and-dispatch-rule)'s Token-Efficient Reading and Dispatch Rule. Covers all 50 entries across this file and the archive; an entry touching more than one domain is listed under each. `(archive)` marks an entry that lives in [errors-log-archive.md](errors-log-archive.md).
 
 **Livewire/Blade/Flux rendering & compilation quirks**
+- [A Livewire computed called as a method is never memoised, and no test noticed](#a-livewire-computed-called-as-a-method-is-never-memoised-and-no-test-noticed--2026-09-23) — 2026-09-23
+- [A typed int property bound to a number input is unset by a cleared box](#a-typed-int-property-bound-to-a-number-input-is-unset-by-a-cleared-box--2026-09-23) — 2026-09-23
+- [addError on a real public property persists across requests](#adderror-on-a-real-public-property-persists-across-requests--2026-09-23) — 2026-09-23
 - [CSS Grid's default `align-items: stretch` lets one tall sibling cell distort a Flux `<ui-field>`'s own internal row heights in its unrelated neighbours](#css-grids-default-align-items-stretch-lets-one-tall-sibling-cell-distort-a-flux-ui-fields-own-internal-row-heights-in-its-unrelated-neighbours--2026-09-11) — 2026-09-11
 - [A `data-test` hook on `<flux:modal>` itself is always present, open or closed — a "the modal stayed open" assertion needs the hook on conditionally-rendered content inside it](#a-data-test-hook-on-fluxmodal-itself-is-always-present-open-or-closed--a-the-modal-stayed-open-assertion-needs-the-hook-on-conditionally-rendered-content-inside-it--2026-09-10) — 2026-09-10
 - [A SECOND `->call()` on an already-mounted `Livewire::test()` component does not re-throw `AuthorizationException` the way the first one does](#a-second--call-on-an-already-mounted-livewiretest-component-does-not-re-throw-authorizationexception-the-way-the-first-one-does--2026-09-10) — 2026-09-10
@@ -23,6 +26,7 @@ An agent working on a specific domain can jump straight to the 1-3 relevant entr
 - [A conditionally-bound `tooltip` prop rendered an empty tooltip on every enabled row](errors-log-archive.md#a-conditionally-bound-fluxbutton-tooltip-prop-rendered-an-empty-tooltip-on-every-enabled-row--2026-08-16) — 2026-08-16 (archive)
 
 **Testing/QA process & infrastructure**
+- [A browser test piped through tail hangs forever, and pkill can kill its own shell](#a-browser-test-piped-through-tail-hangs-forever-and-pkill-can-kill-its-own-shell--2026-09-23) — 2026-09-23
 - [A test that restates the implementation's formula cannot catch a units error](#a-test-that-restates-the-implementations-formula-cannot-catch-a-units-error--2026-09-20) — 2026-09-20
 - [A SECOND `->call()` on an already-mounted `Livewire::test()` component does not re-throw `AuthorizationException` the way the first one does](#a-second--call-on-an-already-mounted-livewiretest-component-does-not-re-throw-authorizationexception-the-way-the-first-one-does--2026-09-10) — 2026-09-10
 - [Two `php artisan test` invocations against the same worktree's testing database, run concurrently, produced ~47 spurious failures across completely unrelated tests](#two-php-artisan-test-invocations-against-the-same-worktrees-testing-database-run-concurrently-produced-47-spurious-failures-across-completely-unrelated-tests--2026-09-10) — 2026-09-10
@@ -85,6 +89,38 @@ Newest entry first, directly below this line. Every entry uses this exact struct
 - **Fix applied**: what changed, with a file path or commit/PR reference
 - **How to avoid it next time**: a concrete, actionable rule — link to a `conventions/` doc if one covers it
 ```
+
+## A Livewire computed called as a method is never memoised, and no test noticed — 2026-09-23
+
+- **Context**: story 0055, the order detail screen (`App\Livewire\Orders\Show`), whose `#[Computed]` properties (`order`, `lineItems`, the `can*` hints) feed a Blade view and each other.
+- **What happened**: the view and component read them as `$this->order()`. Code review found about 78 queries per render, and that the `unset()` calls meant to bust the cache after each write did nothing. No test failed: every assertion was about content, and content was correct.
+- **Root cause**: in Livewire 4 a `#[Computed]` is memoised only when read as a **property** (`$this->order`); calling it as a method re-runs the body every time and never touches the cache, so `unset($this->order)` had nothing to unset.
+- **Fix applied**: every computed is read as a property; `refreshOrderState()` in `app/Livewire/Orders/Show.php` now busts a real cache after each write, and query-count guards in `tests/Feature/Orders/` pin the render cost.
+- **How to avoid it next time**: read a `#[Computed]` as a property, never call it. Where a screen has several dependent computeds, add a query-count assertion, because a correct-but-slow render passes every content test. See [api/orders.md](api/orders.md#ordersshow--the-twelfth-permission-gated-route-and-the-first-screen-governed-by-three-abilities).
+
+## A typed int property bound to a number input is unset by a cleared box — 2026-09-23
+
+- **Context**: story 0055, the "add line item" quantity input on the order detail screen.
+- **What happened**: clearing the box and clicking Add produced an uninitialized-property 500, not a validation message.
+- **Root cause**: a cleared number input arrives as `''`; Livewire's int synthesizer turns it into `null` and then **unsets** the typed `int` property, so the next read fails.
+- **Fix applied**: `Show::$newQuantity` is a `string` (default `'1'`), cast with `(int)` at the call; the action's own `min:1` rule reports the error.
+- **How to avoid it next time**: bind a number input to a string property and cast at the call site; never to a typed `int` (or `float`) with no default the input can clear.
+
+## addError on a real public property persists across requests — 2026-09-23
+
+- **Context**: story 0055, refusal messages on the order detail screen (`addError('refund', ...)`, `addError('selectedStatus', ...)`).
+- **What happened**: a refusal shown once reappeared on later, unrelated actions.
+- **Root cause**: errors added against **real public properties** are dehydrated with the component, so they persist across requests until something clears them. This is the persistence mode described in [security/livewire-error-bag-persistence.md](security/livewire-error-bag-persistence.md).
+- **Fix applied**: every action on `Show` calls `$this->resetErrorBag()` as its first step after authorization.
+- **How to avoid it next time**: reset the error bag at the top of every action that can add one, not only the closer of the dialog that displayed it.
+
+## A browser test piped through tail hangs forever, and pkill can kill its own shell — 2026-09-23
+
+- **Context**: story 0055, running the six `tests/Browser/Orders/` files.
+- **What happened**: `php artisan test ... | tail` never returned, although the tests had finished; separately, a `pkill -f "<pattern>"` inside a command whose own text contained the pattern killed the invoking shell.
+- **Root cause**: the leaked `playwright run-server` child inherits the pipe's write end, so the reader never sees EOF. `pkill -f` matches full command lines, including the shell running it.
+- **Fix applied**: none in code; recorded in [testing/frontend/playwright-setup.md](testing/frontend/playwright-setup.md#orphaned-playwright-processes-re-accumulate-on-every-browser-test-run-in-this-environment).
+- **How to avoid it next time**: redirect browser-test output to a file and read it afterwards; run the cleanup as a separate command, never inside one that contains the pattern text.
 
 ## A test that restates the implementation's formula cannot catch a units error — 2026-09-20
 
@@ -300,6 +336,4 @@ Newest entry first, directly below this line. Every entry uses this exact struct
 >
 > This is the same lesson [the entry above](#a-test-suites-own-runs-as-non-root-claim-was-re-verified-using-the-wrong-sail-invocation--2026-08-28) states in a different shape: an unconfirmed mechanism, however plausible, is a hypothesis to test, not a fact to build a fix around — and here the fastest way to confirm or disprove it was to find a **small, deterministic** reproduction instead of continuing to reason about a rare flake under sustained load. See [testing/ci/commands.md#run-in-parallel](testing/ci/commands.md#run-in-parallel) for the shipped numbers and [testing/worktree-databases.md](testing/worktree-databases.md) for the adjacent per-worktree isolation this does *not* replace (the volume is per-container, not per-worktree — two worktrees sharing one Sail container still need their own database names, exactly as before).
 
-_Last updated: 2026-09-11 — Doc growth management pass, continued: the twelve oldest entries (2026-08-20 through 2026-08-26) were moved, byte-for-byte and unedited, into [errors-log-archive.md](errors-log-archive.md) — the same archival move a prior pass the same day had evaluated and declined, because it could not repair the dozens of cross-references into `ai-spec/tasks/` and `app/` code comments from outside its own write scope. Done here with full repository tool access: every qualified and bare anchor reference to the twelve moved entries — across `docs/`, `ai-spec/tasks/` (pending and `done/`), 3 PHP docblocks, and this file's and the archive's own "Browse by topic" indices — was located and repaired (194 external occurrences across 61 files, plus both files' own topic indices), verified with a GitHub-slug-accurate script against the real heading text of every target file rather than assumed. Shrunk this file from thirty-two entries to twenty; the archive grew from fourteen to twenty-six (46 total, unchanged). While auditing these links, six *unrelated*, genuinely pre-existing broken anchors were also found and fixed (a stale ordinal in `architecture/authorization.md`'s policy count that omitted `PaymentMethodPolicy` entirely, a renamed "Gate::before bypass" section, two computed-slug typos, a stale link label in a `done/` task file, and several fragile emoji/markdown-link-in-heading anchors in `0029-product-variants-backend.md` now pinned with explicit `<a id>` tags, matching this repo's own established convention for that exact shape) — none of them new, all pre-dating this pass, closed anyway per explicit instruction not to leave anything broken regardless of which session caused it.
-
-_Previously: 2026-09-11 — Ad-hoc bugfix pass on the shipping carriers/rates screen (`App\Livewire\Shipping\Index`, story 0037's screen). Grew the log from forty-five entries to forty-six with the CSS Grid `align-items: stretch` entry and two related shipping-rates bugfixes. This file's longer prior `_Previously:` chain is folded into this single line per [contracts.md](contracts.md#doc-growth-management-rule) — no content changed or lost; see git history for the full prior chain if needed._
+_Last updated: 2026-09-23 — Story 0055 (orders list + detail/editor UI). Added four entries: a `#[Computed]` called as a method is never memoised, a typed `int` bound to a cleared number input is unset, `addError()` on a real property persists across requests, and a piped browser test hangs on the leaked `run-server`. Topic index and entry count updated (50). Earlier history folded: the 2026-09-11 passes archived the twelve oldest entries (2026-08-20 through 2026-08-26) byte-for-byte into [errors-log-archive.md](errors-log-archive.md), repairing every inbound anchor, and added the CSS Grid `align-items: stretch` entry._

@@ -191,7 +191,7 @@ app/
                        `update` as its own first statement, corrected during this story's own
                        Phase 4 security audit after shipping ungated on a since-disproven premise
                        — see database/schema-other.md#payment_methods)
-  Concerns/            Shared traits (validation rule sets; ResolvesSalesRegionFromAddress — the country/Spain-postal-prefix → Sales Region mapping shared by the physical and virtual tax-region resolvers)
+  Concerns/            Shared traits (validation rule sets; ResolvesSalesRegionFromAddress — the country/Spain-postal-prefix → Sales Region mapping shared by the physical and virtual tax-region resolvers; ResolvesFlagReasonLabel — story 0055, the `flag_reason` → copy resolution shared by the orders list marker and the detail callout, so the two never word one flag differently)
   Console/Commands/    Artisan commands
   Enums/               Backed enums for domain value sets (UserStatus, RoleName, SalesRegionKind,
                        ProductType, ProductStatus — exactly two persisted cases — and
@@ -264,6 +264,12 @@ app/
                        already established; read-only, no public method mutates anything, gates
                        `customers.view` for the whole page and `orders.view` — OrderPolicy's own
                        first real caller — for the order-history section alone).
+                       Orders/ — Index.php (story 0055, read-only, flat view livewire/orders.blade.php,
+                       reflection-pinned public surface) and Show.php (the detail/editor, nested view
+                       livewire/orders/show.blade.php; the only screen consuming every 0048-0052 write
+                       action; `#[Locked]` orderId, method-injected actions, computeds read as
+                       properties) — the Index-flat / other-nested depth asymmetry's second shipped
+                       Index/Show pair, see naming.md.
                        Dev/ (story 0020, the media-gallery-harness
                        scaffolding) was RETIRED by story 0027 once Products/Editor supplied a real
                        host page — see below. Components/ (story 0021, extended by 0022) is not a module area
@@ -373,13 +379,15 @@ lang/                   Published translation files, one folder per locale (en/,
                         story 0025's copy for the product categories screen; shipping.php;
                         payment-methods.php since story 0038; customers.php since story 0044 —
                         the file 0041 deliberately deferred to this story, D-14; orders.php since
-                        story 0045 — two key groups only, statuses/payment_statuses, one leaf per
-                        enum case, plus a third errors group added at Phase 4 re-audit for
-                        CreateOrder's own column-ceiling guard message; no screen copy yet, since
-                        this story ships no route or component)
+                        story 0045 — statuses/payment_statuses, errors, transitions, refunds, cancellation,
+                        flag_reasons, then (story 0055) the screen copy: index, detail, line_items, lifecycle;
+                        en/es key parity pinned by tests/Feature/Orders/OrdersLangParityTest.php)
 resources/
   views/
-    components/        Blade components — all anonymous (no app/View/Components/ in this repo)
+    components/        Blade components — all anonymous (no app/View/Components/ in this repo). Story
+                        0055 added the first two shared ones that are not navigation chrome: money.blade.php
+                        (`<x-money :amount>`, `€ {amount}` with no cast) and confirm-dialog.blade.php
+                        (a stateless confirmation dialog whose parent owns the flag and both methods)
     layouts/            Auth/app layout shells
     livewire/           Views for Livewire components AND plain auth Blade views (see naming.md).
                         products/variant-builder.blade.php (story 0031) is the ordinary mirror-rule
@@ -391,7 +399,7 @@ resources/
 routes/                 web.php, plus one file per functional area that web.php requires
                         (settings.php, roles.php, users.php, sales-regions.php,
                         product-categories.php, product-attribute-types.php, products.php,
-                        shipping.php, payment-methods.php, customers.php since story 0044) — no
+                        shipping.php, payment-methods.php, customers.php since story 0044, orders.php since story 0055) — no
                         api.php yet. web.php no longer
                         holds the story 0020/0021 environment-gated dev route (story 0020's
                         browser-test harness) — story 0027 retired it once Products/Editor
@@ -449,7 +457,11 @@ tests/
                         ProductCategoriesIndexTest.php; the previous "three of eight" count here
                         missed ProductCategoriesIndexTest.php entirely, a gap present since story
                         0025 and corrected by story 0027's own pass); see
-                        ../testing/frontend/playwright-setup.md#folder-structure
+                        ../testing/frontend/playwright-setup.md#folder-structure. Story 0055 adds
+                        Browser/Orders/ (six files, one per concern) and Support/Orders/OrdersUi.php
+                        (shared permission profiles and rendered-HTML probes, a class of static methods
+                        rather than global Pest helpers, which would redeclare-fatal across the many
+                        Feature/Orders files)
   Browser/Fixtures/     Real, checked-in binary fixtures a browser test needs as bytes on disk
                         (sample-upload.jpg) — never generated at runtime
   Fixtures/geography/   Real, checked-in CSV fixtures for story 0032's seeder tests — a small
@@ -605,10 +617,4 @@ Three constraints that come with it, each learned from this story's audits:
 What the rules themselves say, and why a rule that must bind a Super Admin actor is a direct `throw` rather than a `Gate` check, belongs to [architecture/authorization.md](../architecture/authorization.md#the-guard-belongs-to-the-action-not-to-the-caller), not here.
 
 
-_Last updated: 2026-09-21 — Story 0054 (Order tax Sales-Region resolution — virtual products, backend). Extended `app/Actions/Orders/` with `ResolveVirtualOrderSalesRegion` (the virtual-product sibling of story 0053's `ResolveOrderTaxRegion`, resolving from the order's own frozen billing address after a geo/fraud check). `App\Concerns\ResolvesSalesRegionFromAddress` already existed (created by story 0053) — this story consumes it unchanged, adding no new trait.
-
-_Previously: 2026-09-17 — Story 0050 (Order manual cancellation backend). Extended `app/Actions/Orders/` with `CancelOrder` (the four-step action, self-authorizing `cancel` on `OrderPolicy` as its own first statement via a bare `Gate::authorize()`, taking exactly one parameter with no confirmation path, D-7). Added `OrderCancellationBlockedException → 409` to `app/Exceptions/`'s rendering-exception list, now six instances rather than five — a direct throw, not a `Gate` check, so it binds a Super Admin actor too. Noted `OrderPolicy`'s ability roster grew to six (`cancel`, the first requiring TWO permissions and the first whose result depends on the target row) beside its existing `Policies/` entry.
-
-_Previously: 2026-09-17 — Story 0051 (Order payment/refund state backend). Extended `app/Actions/Orders/` with `RecordRefund` (the eleven-step refund action, gating on a bare `Gate::authorize('orders.refund')` rather than an `OrderPolicy` ability). Added `Refund` to `app/Models/`'s inventory — the refund event log `order_items.refunded_quantity`/`orders.refunded_amount` derive from, with `amount`/`refunded_by` omitted from `#[Fillable]`.
-
-_Previously: 2026-09-17 — Story 0049 (Order status transition backend). Extended `app/Actions/Orders/` with `TransitionOrderStatus` (the five-step ordered action, self-authorizing `transitionStatus` on `OrderPolicy` as its own first statement via a bare `Gate::authorize()`). Added `OrderStatusRegressionRequiresConfirmationException → 409` to `app/Exceptions/`'s rendering-exception list, now five instances rather than four. Noted `OrderStatus::rank()`/`isBackwardFrom()` beside the `Enums/` entry, and corrected that same entry's stale "neither declares `label()`" claim in place — `OrderStatus` gained `label()` at story 0047, a fact this file had never caught up to. Earlier history (story 0048 and before) folded per [contracts.md](../contracts.md#doc-growth-management-rule) — see git history if needed._
+_Last updated: 2026-09-23 — Story 0055 (orders list + detail/editor UI). Added `app/Livewire/Orders/` (Index flat, Show nested), `routes/orders.php`, the `ResolvesFlagReasonLabel` concern, the first two shared non-chrome anonymous components (`money`, `confirm-dialog`), `tests/Browser/Orders/` and `tests/Support/Orders/`, and corrected the `lang/orders.php` entry (it now carries screen copy). Earlier history folded: 0054/0053 added the two tax-region resolver actions and their shared trait; 0052/0051/0050/0049/0048 grew `app/Actions/Orders/`, `app/Exceptions/` and `OrderPolicy`, and corrected the `OrderStatus::label()` note. Each is described in its own entry above._
