@@ -220,11 +220,20 @@ Canonical terms for what exists in the code **today**, derived from [`app/Models
 | **Dashboard** | The authenticated landing page after sign-in. | `dashboard` route |
 | **Security settings** | The page to manage password, 2FA, and passkeys. | `security.edit` route, `Security` component |
 
+### Blog vocabulary
+
+**Provisional — pending product owner confirmation.** Story 0058 (blog categories — backend) needed two terms for its Gherkin and adopted them **verbatim from the PRD's own Epic 4 scenarios** rather than coining any; its OQ-3 recommended ratifying them, but no product-owner decision is recorded yet. If the product owner disagrees, change them here and, since it is contested, record an ADR in `docs/decisions/`.
+
+| Term | Meaning |
+| --- | --- |
+| **post** | A single blog entry (the PRD's word — not "article"). |
+| **blog editor** | The actor who manages the blog, as the PRD's Epic 4 scenarios name them. |
+
 ### TODO — blog / ecommerce vocabulary (undefined)
 
 No blog or ecommerce domain exists in the code yet (`app/Models/` contains only `User`). Do **not** invent terms for it. When that domain is built, this section needs canonical terms decided by the product owner:
 
-> `TODO (product owner): define the canonical vocabulary for the future content/commerce domain. Concretely: (a) for a blog entry, is the term "post" or "article"? (b) for a purchase, what is the canonical term for the whole purchase ("order" vs. "sale") and for a single purchased item within it ("order line" vs. "line item" vs. "order item")? (c) is a buyer a "customer", "client", or "user"? Record the answers as a new row set here and, if the choice is contested, as an ADR in docs/decisions/.`
+> `TODO (product owner): define the canonical vocabulary for the future content/commerce domain. Concretely: (a) *[provisionally answered by story 0058 — see "Blog vocabulary" above; still needs confirming]* (b) for a purchase, what is the canonical term for the whole purchase ("order" vs. "sale") and for a single purchased item within it ("order line" vs. "line item" vs. "order item")? (c) is a buyer a "customer", "client", or "user"? Record the answers as a new row set here and, if the choice is contested, as an ADR in docs/decisions/.`
 
 ## Given/When/Then → Pest it() translation convention
 

@@ -8,7 +8,7 @@
 
 ## ER diagram
 
-Connection: `mysql` (`DB_CONNECTION=mysql` in `.env`, served by the `mysql:8.4` container in [`compose.yaml`](../../compose.yaml)). Only tables that carry a meaningful relationship are diagrammed; purely infrastructural tables (`cache`, `jobs`, `password_reset_tokens`) are listed in [Infrastructure tables](schema-users-auth.md#infrastructure-tables) instead, since they have no foreign keys.
+Connection: `mysql` (`DB_CONNECTION=mysql` in `.env`, served by the `mysql:8.4` container in [`compose.yaml`](../../compose.yaml)). **Every table in the database is diagrammed, including standalone tables with no relationships** — its entity block appears with no relationship line until a later story's FK gives it one. That covers the framework's infrastructure tables (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `password_reset_tokens`, `migrations`), which are documented in [Infrastructure tables](schema-users-auth.md#infrastructure-tables); check with `SHOW TABLES` against the diagram when adding a table.
 
 ```mermaid
 erDiagram
@@ -297,6 +297,61 @@ erDiagram
         text data
         timestamp read_at
     }
+    BLOG_CATEGORIES {
+        uuid id PK
+        string name
+        string normalized_name UK
+    }
+    PASSWORD_RESET_TOKENS {
+        string email PK
+        string token
+        timestamp created_at
+    }
+    CACHE {
+        string key PK
+        mediumtext value
+        bigint expiration
+    }
+    CACHE_LOCKS {
+        string key PK
+        string owner
+        bigint expiration
+    }
+    JOBS {
+        bigint id PK
+        string queue
+        longtext payload
+        smallint attempts
+        int reserved_at
+        int available_at
+        int created_at
+    }
+    JOB_BATCHES {
+        string id PK
+        string name
+        int total_jobs
+        int pending_jobs
+        int failed_jobs
+        longtext failed_job_ids
+        mediumtext options
+        int cancelled_at
+        int created_at
+        int finished_at
+    }
+    FAILED_JOBS {
+        bigint id PK
+        string uuid UK
+        string connection
+        string queue
+        longtext payload
+        longtext exception
+        timestamp failed_at
+    }
+    MIGRATIONS {
+        int id PK
+        string migration
+        int batch
+    }
 ```
 
 > The `model_has_roles` / `model_has_permissions` relationships to `USERS` are **polymorphic** (`model_type` + `model_uuid`, from `spatie/laravel-permission`) — `User` is the only morphable model in the codebase today. The morph key column is `model_uuid` (UUID-typed), renamed from the package default `model_id` (bigint) when `users.id` became a UUID — see [architecture/authorization.md](../architecture/authorization.md), which is also where the seeded roles, the permission catalog and how they are checked are documented.
@@ -310,14 +365,17 @@ Split by domain into separate files, per [contracts.md](../contracts.md#doc-grow
 - **[Shipping](schema-shipping.md)** — read if the task touches [`geography_entries`](schema-shipping.md#geography_entries) (the shipping geography catalog, physically independent of `sales_regions`), [`shipping_zones`](schema-shipping.md#shipping_zones), [`shipping_zone_geography_entry`](schema-shipping.md#shipping_zone_geography_entry), [`shipping_carriers`](schema-shipping.md#shipping_carriers), or [`shipping_rates`](schema-shipping.md#shipping_rates).
 - **[Payment Methods, Customers & Notifications](schema-other.md)** — read if the task touches [`payment_methods`](schema-other.md#payment_methods), [`customers`](schema-other.md#customers), or [`notifications`](schema-other.md#notifications).
 - **[Orders](schema-orders.md)** — read if the task touches [`orders`](schema-orders.md#orders), [`order_items`](schema-orders.md#order_items), or [`refunds`](schema-orders.md#refunds): the price-at-time-of-order and address-snapshot invariants, `order_number` generation, the three-way delete-behaviour rule these tables exercise together, [why `orders.subtotal`/`.tax_amount`/`.total` are derived and *re-derived* rather than write-once, and `order_items.unit_price` is immutable after insert](schema-orders.md#totals-are-derived-and-re-derived-not-write-once) (story 0048), and — since story 0051 — the refund event log `order_items.refunded_quantity`/`orders.refunded_amount` are derived from.
+- **[Blog](schema-blog.md)** — read if the task touches [`blog_categories`](schema-blog.md#blog_categories) (the blog taxonomy, physically independent of `product_categories`): the `normalized_name` unique key and why `name` carries none, the `Str::ascii()` expansion ceiling, the hard delete, and the in-use delete guard hand-off to story 0061.
 
 ## Notes
 
-- `app/Models/` holds eighteen classes (`ls app/Models/*.php`, recounted rather than incremented blind): `User` (Epic 1); sixteen Epic 2/3 domain models — `SalesRegion`, `Media`, `ProductCategory`, `Product`, `ProductAttributeType`, `ProductAttributeValue`, `ProductVariant`, `GeographyEntry` (the only `bigint`-PK model in this app), `ShippingZone`, `ShippingCarrier`, `ShippingRate`, `PaymentMethod`, `Customer`, `Order`, `OrderItem` (story 0045) and `Refund` (story 0051, [schema-orders.md](schema-orders.md)); and `Role`, a `spatie/laravel-permission` subclass over the package's own `roles` table — no column, no migration of its own (see [architecture/authorization.md](../architecture/authorization.md#the-super-admin-roles-invariants)). **Four pivot tables have no model class at all** — `product_media`, `product_sales_region`, `product_variant_values`, `shipping_zone_geography_entry` — reached only through the owning models' `BelongsToMany`, the same shape the vendored `role_has_permissions`/`model_has_roles` pivots use.
+- `app/Models/` holds nineteen classes (`ls app/Models/*.php`, recounted rather than incremented blind): `User` (Epic 1); seventeen Epic 2/3/4 domain models — `SalesRegion`, `Media`, `ProductCategory`, `BlogCategory` (story 0058, [schema-blog.md](schema-blog.md)), `Product`, `ProductAttributeType`, `ProductAttributeValue`, `ProductVariant`, `GeographyEntry` (the only `bigint`-PK model in this app), `ShippingZone`, `ShippingCarrier`, `ShippingRate`, `PaymentMethod`, `Customer`, `Order`, `OrderItem` (story 0045) and `Refund` (story 0051, [schema-orders.md](schema-orders.md)); and `Role`, a `spatie/laravel-permission` subclass over the package's own `roles` table — no column, no migration of its own (see [architecture/authorization.md](../architecture/authorization.md#the-super-admin-roles-invariants)). **Four pivot tables have no model class at all** — `product_media`, `product_sales_region`, `product_variant_values`, `shipping_zone_geography_entry` — reached only through the owning models' `BelongsToMany`, the same shape the vendored `role_has_permissions`/`model_has_roles` pivots use.
 - For migration authoring conventions (naming, `down()` requirements, real examples), see [database/migrations.md](migrations.md).
 - **UUID (v7) primary keys.** Each table's PK type (`uuid` vs `bigint`) is already visible directly in the ER diagram above, and each per-domain schema file states its own table's status against [ADR 0001](../decisions/0001-uuid-primary-keys.md) at the point that table is documented — so this section no longer restates a consolidated status list. The ADR is the single source of truth for the policy and its full history: which entities it covers, the one named `bigint` exception (`geography_entries`), and every amendment since. The model-side convention (`HasUuids`, `@property string $id`, no restated `$keyType`/`$incrementing`) is in [conventions/base-standards.md](../conventions/base-standards.md#uuid-primary-keys); the migration-side pattern is in [database/migrations.md](migrations.md#uuid-primary-keys).
 
-_Last updated: 2026-09-21 — Story 0054 (Order tax Sales-Region resolution — virtual products, backend). Added `ip_address`, `ip_derived_country` and `flag_reason` to the `ORDERS` entity block — see [Orders](schema-orders.md) for what each holds and why the geo/fraud check they enable is dormant today. No new table, no ER-diagram relationship change.
+_Last updated: 2026-09-23 — Story 0058 (Blog categories — backend). Added [Blog](schema-blog.md) as a new domain file to the **Domain tables** list (Epic 4's tags and posts will extend it) and recounted the **Notes** model-class inventory from eighteen to nineteen (`ls app/Models/*.php`), adding `BlogCategory`. Added `BLOG_CATEGORIES` to the ER diagram as a standalone entity block (no relationship line yet — story 0061's `blog_posts.blog_category_id` will add one) and **changed the diagram rule above**: every table is diagrammed, not only those with a relationship, per the project owner's instruction. A check of the real schema (`SHOW TABLES`) against the diagram then found seven more tables missing — the framework's `cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `password_reset_tokens` and `migrations` — and added them as standalone blocks. The tables the old rule left out (`customers`/`payment_methods` before 0045, `shipping_carriers` before 0036) were diagrammed only once an FK arrived; that was the previous rule, not a fact about them.
+
+_Previously: 2026-09-21 — Story 0054 (Order tax Sales-Region resolution — virtual products, backend). Added `ip_address`, `ip_derived_country` and `flag_reason` to the `ORDERS` entity block — see [Orders](schema-orders.md) for what each holds and why the geo/fraud check they enable is dormant today. No new table, no ER-diagram relationship change.
 
 _Previously: 2026-09-17 — Story 0051 (Order payment/refund state backend). Added `REFUNDS` to the ER diagram (`REFUNDS }o--|| ORDER_ITEMS`, `REFUNDS }o--|| USERS`) and its entity block, plus `orders.refunded_amount` to the `ORDERS` block. Widened the **Domain tables** [Orders](schema-orders.md) bullet to name [`refunds`](schema-orders.md#refunds). Recounted the **Notes** model-class inventory from seventeen to eighteen (`ls app/Models/*.php`), adding `Refund`.
 

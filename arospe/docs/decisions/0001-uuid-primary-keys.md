@@ -109,7 +109,17 @@ The reasoning for the override, recorded so it is not relitigated: optimising ea
 
 Nothing above this amendment needed correcting: the Decision, Amendment 1 and Amendment 5 already state the policy this table follows. This amendment exists only to make the override itself — not merely its outcome — a matter of record, the way [database/schema.md's own Notes section](../database/schema.md#notes) does for the outcome.
 
-_Last updated: 2026-09-10 — Story 0038 (Payment methods — bank transfer with a validated IBAN, backend): added **Amendment 6**, recording `payment_methods` as a UUIDv7 table under Amendment 1's already-stated policy, and — the fact worth a named entry — the first table on record where an explicit user decision overrode a Three Amigos debate's unanimous `bigint` recommendation. No rule changed; no prior amendment was corrected. Folded the prior `_Previously:` chain (Amendments 1-4, 2026-08-27 through 2026-09-04) into this single line, per [contracts.md](../contracts.md#doc-growth-management-rule)'s doc-growth-management rule — no content was changed or lost; see git history for the full prior chain if needed._
+## Amendment 7 (2026-09-23) — `blog_categories` is the fourth of the original seven to ship
+
+**Status: accepted. This amendment narrows a stale count in Amendment 4 above; it changes no rule.**
+
+[`blog_categories`](../database/schema-blog.md#blog_categories) (story 0058) is the fourth of this ADR's originally-named seven entities to ship — like `product_categories`, `products` and `product_variants` before it, it needed **no** amendment, because "Blog Categories" is one of the seven the Context section named on 2026-07-22 (*"Blog Categories, Blog Tags, Blog Posts — future, PRD Epic 4"*). The table is a plain greenfield `create_*` migration following the Decision exactly — `HasUuids`, a single `uuid('id')->primary()`, no `$keyType`/`$incrementing` restated — with nothing for this ADR to add.
+
+One bookkeeping correction that follows normally: Amendment 4's "three [of the original seven] are still future" note is now **two** — Blog Tags and Blog Posts (PRD Epic 4).
+
+_Last updated: 2026-09-23 — Story 0058 (Blog categories — backend): added **Amendment 7**, recording `blog_categories` as the fourth of this ADR's original seven entities to ship, needing no amendment, and narrowing Amendment 4's "three still future" note to two (Blog Tags, Blog Posts). No rule changed._
+
+_Previously: 2026-09-10 — Story 0038 (Payment methods — bank transfer with a validated IBAN, backend): added **Amendment 6**, recording `payment_methods` as a UUIDv7 table under Amendment 1's already-stated policy, and — the fact worth a named entry — the first table on record where an explicit user decision overrode a Three Amigos debate's unanimous `bigint` recommendation. No rule changed; no prior amendment was corrected. Folded the prior `_Previously:` chain (Amendments 1-4, 2026-08-27 through 2026-09-04) into this single line, per [contracts.md](../contracts.md#doc-growth-management-rule)'s doc-growth-management rule — no content was changed or lost; see git history for the full prior chain if needed._
 
 _Previously: 2026-09-06 — Story 0032 (Shipping geography catalog seed): added **Amendment 5**, recording `geography_entries` as the first real instance of the `bigint` exception Amendment 1 named in the abstract on 2026-08-27. No rule changed; no prior amendment was corrected._
 

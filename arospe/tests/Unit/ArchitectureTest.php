@@ -126,3 +126,24 @@ arch('App\Models\ProductVariant does not reference any blog taxonomy namespace')
 arch('App\Livewire\Shipping\Index does not use the rate-precedence resolver')
     ->expect('App\Livewire\Shipping\Index')
     ->not->toUse(ResolveApplicableShippingRate::class);
+
+// Story 0058 (D-11, OQ-2): the blog category taxonomy must stay structurally independent from the
+// product category taxonomy -- own table, own model, own action namespace, own policy, no shared
+// storage or identity, no polymorphic taxonomy. App\Models\ProductCategory exists in this tree, so
+// the literal rule resolves and can genuinely go red (verified by temporarily importing it).
+//
+// A single-namespace `expect()` target, per this file's one-rule-per-namespace convention: Pest's
+// expect(array $targets) evaluates DISJUNCTIVELY, so a combined array would pass as soon as one
+// target satisfied it.
+arch('App\Models\BlogCategory does not reference the product category taxonomy')
+    ->expect('App\Models\BlogCategory')
+    ->not->toUse('App\Models\ProductCategory');
+
+// The other direction of the same fence. The product-taxonomy rules above name the namespace
+// `App\Models\Blog`, but Pest matches a string target exactly, not by prefix, and the blog taxonomy
+// lives in the flat class App\Models\BlogCategory -- so those rules cannot see it (verified by
+// temporarily importing BlogCategory into ProductCategory: they stayed green). This one names the
+// real class.
+arch('App\Models\ProductCategory does not reference the blog category taxonomy')
+    ->expect('App\Models\ProductCategory')
+    ->not->toUse('App\Models\BlogCategory');
