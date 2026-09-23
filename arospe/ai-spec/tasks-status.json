@@ -3,27 +3,6 @@
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
     {
-      "id": "0058",
-      "slug": "0058-blog-categories-backend",
-      "title": "Blog categories — backend (table, model, create/rename/delete, name validation)",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "database/migrations/*_create_blog_categories_table.php",
-        "app/Models/BlogCategory.php",
-        "app/Policies/BlogCategoryPolicy.php",
-        "app/Concerns/BlogCategoryValidationRules.php",
-        "app/Actions/Blog/CreateBlogCategory.php",
-        "app/Actions/Blog/RenameBlogCategory.php",
-        "app/Actions/Blog/DeleteBlogCategory.php"
-      ],
-      "conflict_risk_with": [
-        "0059"
-      ]
-    },
-    {
       "id": "0059",
       "slug": "0059-blog-tags-backend",
       "title": "Blog tags — backend (table, model, create/rename/delete, find-or-create, name validation)",
@@ -41,9 +20,7 @@
         "app/Actions/Blog/DeleteBlogTag.php",
         "app/Actions/Blog/FindOrCreateBlogTag.php"
       ],
-      "conflict_risk_with": [
-        "0058"
-      ]
+      "conflict_risk_with": []
     },
     {
       "id": "0060",
@@ -73,7 +50,6 @@
       "slug": "0061-blog-posts-core-crud-backend",
       "title": "Blog posts — core CRUD backend (+ the blog-category in-use delete guard)",
       "depends_on": [
-        "0058",
         "0059"
       ],
       "status": "blocked",
@@ -100,7 +76,6 @@
       "slug": "0062-blog-categories-ui",
       "title": "Blog categories — management screen (list, create/edit modal, blocked delete)",
       "depends_on": [
-        "0058",
         "0061"
       ],
       "status": "blocked",
@@ -124,7 +99,6 @@
       "slug": "0063-blog-posts-list-editor-ui",
       "title": "Blog posts — list + editor UI",
       "depends_on": [
-        "0058",
         "0059",
         "0061"
       ],
@@ -326,7 +300,6 @@
       "slug": "0072-translatable-content-retrofit-blog-categories-backend",
       "title": "Translatable content retrofit — Blog Categories backend",
       "depends_on": [
-        "0058",
         "0068",
         "0070"
       ],
