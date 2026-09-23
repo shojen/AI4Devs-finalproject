@@ -7,9 +7,9 @@
       "slug": "0059-blog-tags-backend",
       "title": "Blog tags — backend (table, model, create/rename/delete, find-or-create, name validation)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree 0059-blog-tags-backend",
+      "claimed_at": "2026-09-24T00:00:00Z",
       "touches": [
         "database/migrations/*_create_blog_tags_table.php",
         "app/Models/BlogTag.php",
