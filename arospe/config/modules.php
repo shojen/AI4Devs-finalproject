@@ -251,5 +251,21 @@ return [
             'current_when' => 'customers.*',
             'permissions' => ['customers.view'],
         ],
+        // Story 0055 -- Orders is a top-level operational module like `users` and `customers` (a
+        // bare item: group null, cluster null; the `platform` group the task file first named was
+        // retired by story 0080). 'current_when' is 'orders.*' so ONE entry stays highlighted on
+        // both orders.index and orders.show. 'permissions' is EXACTLY the ability both routes'
+        // `can:` middleware enforces -- never a broader set (see this file's header note). The
+        // detail screen's other abilities (orders.edit, orders.refund) govern individual controls
+        // in the component, not access to the module.
+        'orders' => [
+            'group' => null,
+            'cluster' => null,
+            'label' => 'navigation.items.orders',
+            'icon' => 'shopping-bag',
+            'route' => 'orders.index',
+            'current_when' => 'orders.*',
+            'permissions' => ['orders.view'],
+        ],
     ],
 ];

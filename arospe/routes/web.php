@@ -18,3 +18,4 @@ require __DIR__.'/products.php';
 require __DIR__.'/shipping.php';
 require __DIR__.'/payment-methods.php';
 require __DIR__.'/customers.php';
+require __DIR__.'/orders.php';

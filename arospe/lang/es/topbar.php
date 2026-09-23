@@ -65,6 +65,11 @@ return [
         'subtitle' => 'Los clientes de la tienda y su historial de pedidos.',
     ],
 
+    'orders' => [
+        'title' => 'Pedidos',
+        'subtitle' => 'Consulta, edita y gestiona el libro de pedidos.',
+    ],
+
     'settings' => [
         'profile' => 'Perfil',
         'security' => 'Seguridad',

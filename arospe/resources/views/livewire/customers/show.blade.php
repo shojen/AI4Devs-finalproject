@@ -67,7 +67,7 @@
                                         </flux:badge>
                                     </flux:table.cell>
 
-                                    <flux:table.cell>€ {{ $order['total'] }}</flux:table.cell>
+                                    <flux:table.cell><x-money :amount="$order['total']" /></flux:table.cell>
 
                                     <flux:table.cell>{{ $order['createdAt'] }}</flux:table.cell>
                                 </flux:table.row>

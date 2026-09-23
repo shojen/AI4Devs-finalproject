@@ -36,6 +36,7 @@ return [
         'shipping_carriers' => 'Transportistas y tarifas',
         'payment_methods' => 'Métodos de pago',
         'customers' => 'Clientes',
+        'orders' => 'Pedidos',
     ],
 
 ];
