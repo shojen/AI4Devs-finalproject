@@ -100,7 +100,7 @@ Measured on this repo's own suite (950 tests across `Unit`/`Feature`/`Browser`),
 | `Browser` (29 tests, 4 files) | ~49s | ~35s (4 processes) — 8 processes gains almost nothing beyond this | ~1.4x |
 | Everything (950 tests) | ~5m 39s | ~2m 10s (8 processes) | ~2.6x |
 
-The browser suite parallelizes far worse than `Unit`/`Feature`: it drives a real Chromium instance per worker, so beyond roughly one process per test **file** (4 here — see [frontend/playwright-setup.md](../frontend/playwright-setup.md#test-tagging-naming-and-parallelization)) extra processes mostly add browser-launch overhead rather than throughput. `--processes=4` for a Browser-only run is the sensible default; `--processes` omitted (auto-detects the host's core count) is fine for the combined run, since `Unit`/`Feature` dominates the total.
+The browser suite parallelizes far worse than `Unit`/`Feature`: it drives a real Chromium instance per worker, so beyond roughly one process per test **file** (4 here — see [frontend/playwright-setup.md](../frontend/playwright-setup/selectors-tagging-and-ci.md#test-tagging-naming-and-parallelization)) extra processes mostly add browser-launch overhead rather than throughput. `--processes=4` for a Browser-only run is the sensible default; `--processes` omitted (auto-detects the host's core count) is fine for the combined run, since `Unit`/`Feature` dominates the total.
 
 ⚠️ **A `--parallel` run needs `storage/framework/views` (the compiled Blade cache) on a filesystem that tolerates concurrent writes from multiple processes.** On this project's Sail dev setup that directory sits inside the project's bind-mounted volume (`.:/var/www/html` in `compose.yaml`) by default, and concurrent `tempnam()`/`rename()` compiles into it through a WSL2 bind mount were **not reliable** — a batch of unrelated tests failed with `tempnam(): file created in the system's temporary directory`, deterministically, on some hosts. Fixed by giving `storage/framework/views` its own **named Docker volume** (`sail-views`, native to the container, not bind-mounted) in `compose.yaml`, plus a per-`ParallelTesting`-token subdirectory inside it (`app/Providers/AppServiceProvider.php::configureParallelTesting()`), mirroring how Laravel already isolates the test database and `Storage::fake()` per worker. See [errors-log.md](../../errors-log.md) for the full investigation — this is a **Sail/WSL2-specific** fix; CI's `ubuntu-latest` runner has no bind mount in the loop and was never exposed to it.
 
@@ -118,7 +118,7 @@ If you rebuild the Sail image after pulling this change, the named volume starts
 | Coverage report (HTML) | `php artisan test --coverage-html=coverage-report` |
 | Enforce a coverage floor (CI gate) | `php artisan test --coverage --min=80` |
 | Parallel run | `php artisan test --parallel` (~2.6x faster on the full suite; see caveats above) |
-| Static analysis (adjacent quality gate) | `composer types:check` (Larastan, see [conventions/base-standards.md](../../conventions/base-standards.md#quality-gates)) |
+| Static analysis (adjacent quality gate) | `composer types:check` (Larastan, see [conventions/base-standards.md](../../conventions/base-standards/workflow-and-quality-gates.md#quality-gates)) |
 | Formatting (adjacent quality gate) | `vendor/bin/pint --dirty --format agent` |
 
 ## Environment note: PHP memory limits (PHPStan and `php artisan test`)
@@ -135,7 +135,7 @@ This is an environment quirk, not a project requirement — CI runs the plain `c
 
 ### `php artisan test`, unscoped, on a host-native worktree
 
-Story 0021's Phase 5 code review (finding F5) hit the identical class of failure on the **other** long-running, memory-hungry command on this page: an **unscoped** `php artisan test` — the full, all-three-suites run the [quality gates](../../conventions/base-standards.md#quality-gates) require before a story is declared done — fatals with `Allowed memory size exhausted` at PHP CLI's default `memory_limit=128M`, on this same host-native (no Sail) worktree setup. Reproduced deterministically twice, byte-identical, including once with this story's own `tests/Feature/Components`/`tests/Browser/Components` excluded — so this is an environment ceiling, not a leak in any one story's tests, and a future reviewer following this page's own documented commands should not read it as a regression.
+Story 0021's Phase 5 code review (finding F5) hit the identical class of failure on the **other** long-running, memory-hungry command on this page: an **unscoped** `php artisan test` — the full, all-three-suites run the [quality gates](../../conventions/base-standards/workflow-and-quality-gates.md#quality-gates) require before a story is declared done — fatals with `Allowed memory size exhausted` at PHP CLI's default `memory_limit=128M`, on this same host-native (no Sail) worktree setup. Reproduced deterministically twice, byte-identical, including once with this story's own `tests/Feature/Components`/`tests/Browser/Components` excluded — so this is an environment ceiling, not a leak in any one story's tests, and a future reviewer following this page's own documented commands should not read it as a regression.
 
 Raise the limit the same way as PHPStan above, **with one difference that is not optional**: invoke `vendor/bin/pest` directly, never `php artisan test`.
 

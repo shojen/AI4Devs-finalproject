@@ -17,7 +17,7 @@ value was decided by whoever hydrated the instance, at whatever time they did so
 > reading. The ✅ block in each section is the shipped fix, not a recommendation — `SetDefaultSalesRegion`,
 > `SetSalesRegionActive` and `UpdateSalesRegion` all now write through an instance re-fetched inside their
 > own transaction/call, never through the caller-supplied one, per
-> [errors-log.md](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
+> [errors-log.md](../errors-log/archive-2026-08-17-to-2026-08-21.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
 > rule against a page that outlives its own fix. **F-2 was not reachable through the shipped dashboard** —
 > `App\Livewire\SalesRegions\Index` re-fetches every row with `findOrFail()` immediately before each call, so
 > the component itself never hands an action a dirtied instance. **F-1 was reachable through the dashboard**
@@ -26,7 +26,7 @@ value was decided by whoever hydrated the instance, at whatever time they did so
 > already-committed write landing in that window reproduces the exact stale read F-1 describes — the "two
 > administrators clicking within the same second" row in the exploit table below is that path, not a
 > hypothetical non-dashboard one. Both findings still had to be closed at the action layer regardless: under
-> the [action-owns-the-rule convention](../conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+> the [action-owns-the-rule convention](../conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 > these actions exist to be called from somewhere other than that component, dashboard-reachable or not.
 > Eight regression tests (four per
 > finding, two per action, split `SetDefaultSalesRegionTest.php` / `SetSalesRegionActiveTest.php` /
@@ -75,7 +75,7 @@ each worth internalising because each defeats a different plausible "fix":
 1. **It locks the wrong rows.** The lock covers `where('is_default', true)` — the rows being *cleared*. The
    row being *promoted* is not in that set; `whereKeyNot()` explicitly removes it even when it is.
 2. **On MySQL it happens to lock every row anyway — and that still does not help.** `sales_regions.is_default`
-   carries no index ([0016 omitted it deliberately](../database/schema-products.md#indexes--one-present-by-choice-one-by-requirement-four-omitted)),
+   carries no index ([0016 omitted it deliberately](../database/schema-products/sales-regions-and-media.md#indexes--one-present-by-choice-one-by-requirement-four-omitted)),
    so under REPEATABLE READ this locking scan examines and locks the whole table. The replacement row *is*
    locked. It makes no difference, because the guard has already read its stale copy.
 3. **A lock protects a row from changing; it cannot retroactively refresh a value already in a PHP variable.**
@@ -251,7 +251,7 @@ signal, not merely proof they exist.
 ## Re-audit round 2: what the fix itself got subtly wrong
 
 The rule this repo already has for a security fix — [re-audit it as new code, not merely as a diff against the
-finding](../errors-log-archive.md#two-of-the-three-security-audit-rounds-found-the-flaw-in-the-previous-rounds-fix--2026-08-19) —
+finding](../errors-log/archive-2026-08-17-to-2026-08-21.md#two-of-the-three-security-audit-rounds-found-the-flaw-in-the-previous-rounds-fix--2026-08-19) —
 applied to the fix above, the same day. Verdict: **PASS**, four Low findings, none reopening F-1 or F-2. All
 five are closed or recorded below; **R-1's documentation half is the one worth reading closely**, because it
 is a false guarantee that had been written into this very page.
@@ -310,7 +310,7 @@ it — so this was unreachable in practice, and it inverts [this page's own open
 the fix stopped the action *trusting* a stale instance and left it *emitting* one.
 
 ✅ **The fix.** `SetSalesRegionActive` now calls `$target->refresh()` immediately before returning it, so a
-future non-dashboard caller — the kind [the action-owns-the-rule convention](../conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+future non-dashboard caller — the kind [the action-owns-the-rule convention](../conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 exists to support — gets an accurate row. A regression test asserts the return value directly
 (`tests/Feature/SalesRegions/SetSalesRegionActiveTest.php`, "the returned instance reflects is_default being
 cleared…"), confirmed to redden without the `refresh()` call before being trusted.
@@ -334,7 +334,7 @@ read by whoever adds the next branch, not rediscovered.
 
 Pre-existing, outside the original fix's diff, but touching the same two actions. `save()` called
 `$updateSalesRegion($target, ...)` — committing rate/description/code immediately — and only *then*
-authorized `$replacementDefault`, violating [this repo's "authorize before the first write" rule](../conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+authorized `$replacementDefault`, violating [this repo's "authorize before the first write" rule](../conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 for that second row specifically. Inert today for the same reason as R-3.
 
 ✅ **The fix — narrower than first proposed.** The re-audit's own suggestion (wrap both action calls in one

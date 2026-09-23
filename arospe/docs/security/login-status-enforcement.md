@@ -38,7 +38,7 @@ if (! $user instanceof User || $user->status !== UserStatus::Inactive) {
 }
 ```
 
-[architecture/authentication.md](../architecture/authentication.md#account-status-and-activation)
+[architecture/authentication.md](../architecture/authentication/features-registration-and-status.md#account-status-and-activation)
 describes this condition as what "stops a verification from silently undoing an administrator's
 suspension" — true for `Suspended`, and *only* for `Suspended`. `Inactive` is equally a state an
 administrator can set from the Users editor (`statusRules()` is `Rule::enum(UserStatus::class)`,

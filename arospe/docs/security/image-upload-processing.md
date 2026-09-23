@@ -365,7 +365,7 @@ unless the surrounding code changes.
   `Gate::authorize('create', Media::class)` runs first, `Gate::forUser(null)->allows('create', Media::class)`
   is `false`, and `AppServiceProvider`'s `Gate::before` returns `null` (declines) for any non-`User`.
   **Verify this rather than assume it whenever you write a `?? 'unauthenticated'` key** — the
-  companion hazard to [a limiter keyed on the target](authorization-patterns.md#a-rate-limit-keyed-on-the-target-alone-becomes-an-attack-on-the-target-the-moment-a-second-caller-exists).
+  companion hazard to [a limiter keyed on the target](authorization-patterns/payload-omission-and-registries.md#a-rate-limit-keyed-on-the-target-alone-becomes-an-attack-on-the-target-the-moment-a-second-caller-exists).
 - **CI installs the extension above the credential step.** `.github/workflows/tests.yml` adds
   `extensions: imagick` to the already-SHA-pinned `shivammathur/setup-php` step, which runs before
   the step writing Flux credentials to disk — the ordering rule
@@ -378,5 +378,5 @@ and conversions — backend), from the verification of findings F-1 (decompressi
 temporary-upload endpoint). Every measurement in this page was taken against the shipped code in this
 worktree, not reproduced from the original audit's notes; the reproduction fixtures were removed
 afterwards. Written as ❌/✅ pairs describing the **shipped** state from the outset, per
-[errors-log.md](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
+[errors-log.md](../errors-log/archive-2026-08-17-to-2026-08-21.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
 rule for an audit-authored page._

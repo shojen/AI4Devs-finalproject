@@ -15,7 +15,7 @@ whose index entry names the feature/domain of the task at hand (not every linked
 `docs/contracts.md` (agent behavior) and `docs/PRD/PRD.md`'s relevant epic, plus whichever of
 `architecture/`, `database/`, `api/`, `conventions/` sections the index points at for this task's
 domain. When extending an existing PRD epic, also read that epic's decision digest at
-`./ai-spec/tasks/_digests/epic-<n>.md` if one exists (see `docs/workflow.md#decision-digest-per-epic`)
+`./ai-spec/tasks/_digests/epic-<n>.md` if one exists (see `docs/workflow/agents-and-epic-digests.md#decision-digest-per-epic`)
 before opening a prior sibling story file in full — the digest is the fast path to the facts a
 later story must not re-derive. See `docs/contracts.md`'s Token-Efficient Reading and Dispatch
 Rule for the full reasoning; when convening a Three Amigos debate, build the shared brief that

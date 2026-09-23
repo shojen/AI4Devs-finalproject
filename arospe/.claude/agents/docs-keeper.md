@@ -18,7 +18,7 @@ epic's decision digest at `./ai-spec/tasks/_digests/epic-<n>.md` (create the `_d
 and the file the first time a second story in an epic needs one). This is the concrete fix for
 the largest token cost in this workflow: a later story in the same epic re-reading every
 already-closed sibling story in full to inherit an established shape. See
-`docs/workflow.md#decision-digest-per-epic` and `docs/contracts.md`'s Token-Efficient Reading and
+`docs/workflow/agents-and-epic-digests.md#decision-digest-per-epic` and `docs/contracts.md`'s Token-Efficient Reading and
 Dispatch Rule for why this exists.
 
 - **Append only** — never rewrite the digest wholesale; each story's pass adds its own bullets.

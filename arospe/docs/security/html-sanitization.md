@@ -11,7 +11,7 @@ contain markup reaches a database column that a later screen will render **unesc
 [`App\Livewire\Components\WysiwygEditor`](../../app/Livewire/Components/WysiwygEditor.php) —
 story 0021 — seeds its editable region with `{!! $value !!}`, an unescaped Blade echo, because the
 region is `wire:ignore`d and the seeded value must render as real, formatted HTML rather than as
-escaped text. [conventions/base-standards.md](../conventions/base-standards.md#a-wireignored-client-owned-region--the-apps-first-instance)
+escaped text. [conventions/base-standards.md](../conventions/base-standards/livewire-and-flux-conventions.md#a-wireignored-client-owned-region--the-apps-first-instance)
 already names the consequence directly: *"an unescaped `{!! !!}` echo inside such a region is safe
 only because of what the seeded value already is — sanitized elsewhere, on write — never because the
 region is client-owned"* — stated there as **a hard, load-bearing dependency** on whichever persisted
@@ -178,7 +178,7 @@ This story's closure lifts [0024](../../ai-spec/tasks/done/0024-products-core-cr
 own scope fence forbidding any code from rendering, echoing or returning `products.description`.
 0027 (products list/editor UI), 0061 (blog posts, reusing this exact config for the `body` column),
 0076 (products i18n retrofit), 0077 and 0079 (language-tab editors) each depend on this closure; see
-[api/routes.md](../api/products.md#applivewirecomponentswysiwygeditor--the-gallerys-first-real-consumer-and-the-second-routeless-gated-component)
+[api/routes.md](../api/products/routeless-components.md#applivewirecomponentswysiwygeditor--the-gallerys-first-real-consumer-and-the-second-routeless-gated-component)
 for the correction to that page's own prior, speculative attribution of this class to stories other
 than the one that actually created it.
 
@@ -186,5 +186,5 @@ _Last updated: 2026-09-02 — Story 0024a (Product description — HTML sanitiza
 version of this page, written after Phase 4's audit and re-audit closed both findings it documents
 (F-1, the `block`-vs-`drop` distinction; F-2, the idempotence-to-convergence correction), so both are
 recorded here as ❌/✅ pairs describing the shipped, closed state from the outset rather than the
-vulnerable state the audit found — per [errors-log.md](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
+vulnerable state the audit found — per [errors-log.md](../errors-log/archive-2026-08-17-to-2026-08-21.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
 rule for an audit-authored page._

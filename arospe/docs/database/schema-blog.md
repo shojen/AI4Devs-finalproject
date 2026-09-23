@@ -8,7 +8,7 @@ Part of [Database Schema](schema.md) — see [schema.md](schema.md#er-diagram) f
 
 ### `blog_categories`
 
-Source: `database/migrations/2026_09_23_185219_create_blog_categories_table.php` (story 0058) — the blog category taxonomy ([PRD](../PRD/PRD.md#epic-4--blog) Epic 4). A standalone catalog with no relationships to anything at all — no FK in, no FK out — and **physically independent of [`product_categories`](schema-products.md#product_categories)**: no shared table, model, namespace or polymorphic taxonomy. It is in the [ER diagram](schema.md#er-diagram) as a standalone `BLOG_CATEGORIES` entity block (the diagram covers every application table, relationships or not); story 0061's future `blog_posts.blog_category_id` will add its first relationship line — the same arc `product_categories` and `shipping_carriers` completed.
+Source: `database/migrations/2026_09_23_185219_create_blog_categories_table.php` (story 0058) — the blog category taxonomy ([PRD](../PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4). A standalone catalog with no relationships to anything at all — no FK in, no FK out — and **physically independent of [`product_categories`](schema-products/categories-and-products.md#product_categories)**: no shared table, model, namespace or polymorphic taxonomy. It is in the [ER diagram](schema.md#er-diagram) as a standalone `BLOG_CATEGORIES` entity block (the diagram covers every application table, relationships or not); story 0061's future `blog_posts.blog_category_id` will add its first relationship line — the same arc `product_categories` and `shipping_carriers` completed.
 
 Model: [`App\Models\BlogCategory`](../../app/Models/BlogCategory.php). Columns in real physical order:
 

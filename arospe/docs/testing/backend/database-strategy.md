@@ -11,7 +11,7 @@ pest()->extend(TestCase::class)
     ->in('Feature', 'Browser');
 ```
 
-`tests/Unit/` gets no database trait at all — by design (see [unit-tests.md](unit-tests.md)). There is no use of Laravel's transaction-only `DatabaseTransactions` trait anywhere in this codebase today; `RefreshDatabase` is the one strategy in use, and it is deliberately the **same** strategy for both database-backed suites — Pest's browser plugin serves the page under test through the same in-process Laravel kernel, so the test's open transaction is visible to it exactly as it is for a `Feature` test (see [frontend/playwright-setup.md](../frontend/playwright-setup.md#folder-structure)).
+`tests/Unit/` gets no database trait at all — by design (see [unit-tests.md](unit-tests.md)). There is no use of Laravel's transaction-only `DatabaseTransactions` trait anywhere in this codebase today; `RefreshDatabase` is the one strategy in use, and it is deliberately the **same** strategy for both database-backed suites — Pest's browser plugin serves the page under test through the same in-process Laravel kernel, so the test's open transaction is visible to it exactly as it is for a `Feature` test (see [frontend/playwright-setup.md](../frontend/playwright-setup/status-structure-and-syntax.md#folder-structure)).
 
 ## What `RefreshDatabase` gives you here
 

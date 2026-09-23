@@ -175,23 +175,22 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 </laravel-boost-guidelines>
 
 ## Language
-All repository artifacts — code, code comments, documentation (`docs/`, README, ADRs, PRD, user stories), tests, and commit messages — must be written in English, regardless of the language used in conversation with the assistant. This is independent from `lang/en`/`lang/es` (the application's own UI locales, documented in @docs/conventions/naming.md#translation-keys).
+All repository artifacts — code, code comments, documentation (`docs/`, README, ADRs, PRD, user stories), tests, and commit messages — must be written in English, regardless of the language used in conversation with the assistant. This is independent from `lang/en`/`lang/es` (the application's own UI locales, documented in `docs/conventions/naming/translation-keys-and-booleans.md#translation-keys`).
 
 ## Project documentation
-Full index: @docs/README.md
+The docs are large, so they are split into **hubs plus parts** and you read only what your task needs. Start from the compact index @docs/README.md, open the one document (or split part) whose *Read when* matches your task — at an exact heading when possible — and never open a whole doc "just in case". A hub file lists its parts with a *Read when* column: open the matching part only. Every path below except the `@` ones is a plain path on purpose — an `@` import loads the whole file into every session.
 
 ## Mandatory reading
-Read regardless of the task: @docs/contracts.md, @docs/workflow.md, @docs/architecture/*, @docs/conventions/base-standards.md
+Small hubs holding the binding core of the rules; open a part only when its *Read the full text when* line applies to your task:
+@docs/contracts.md
+@docs/workflow.md
+@docs/conventions/base-standards.md
+Also read `docs/architecture/overview.md` before any non-trivial change; every other architecture doc is conditional.
 
 ## Conditional reading
-If you gate access, or touch auth, roles/permissions, seeders or secrets, read @docs/security/
-If you need the schema, read @docs/database/schema.md
-If you need migration conventions, read @docs/database/migrations.md
-If you need route/Livewire contracts, read @docs/api/routes.md
-If you need code-style examples, read @docs/conventions/code-style.md
-If you need the app's directory layout, or where a new class/action/config file belongs, read @docs/conventions/directory-structure.md
-If you need naming conventions, read @docs/conventions/naming.md
-If you need validation-trait naming conventions, read @docs/conventions/naming-validation-traits.md
-If you write or review tests, read @docs/testing/README.md
-If you need past architectural context, read @docs/decisions/
-Before repeating a past mistake, read @docs/errors-log.md
+Plain paths, read on demand (never `@`-import); the index above routes to everything else. Hubs (marked ⧉) list their parts — open one part only.
+- Auth, roles/permissions, seeders, secrets, uploads, sanitization → `docs/security/README.md`; authentication → `docs/architecture/authentication.md` ⧉; authorization → `docs/architecture/authorization.md` ⧉
+- Schema → `docs/database/schema.md`; migrations → `docs/database/migrations.md` ⧉; routes/Livewire contracts → `docs/api/routes.md`
+- Code style → `docs/conventions/code-style.md`; where a new class/action/config file goes → `docs/conventions/directory-structure.md` ⧉; naming → `docs/conventions/naming.md` ⧉ and `naming-validation-traits.md`
+- Tests → `docs/testing/README.md`; product requirements → `docs/PRD/PRD.md` ⧉ (only the epic's part)
+- Past decisions → `docs/decisions/README.md`; before repeating a mistake → `docs/errors-log.md` ⧉ (topic index names the entry file)
