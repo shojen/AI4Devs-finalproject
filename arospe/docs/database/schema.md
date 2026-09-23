@@ -8,7 +8,7 @@
 
 ## ER diagram
 
-Connection: `mysql` (`DB_CONNECTION=mysql` in `.env`, served by the `mysql:8.4` container in [`compose.yaml`](../../compose.yaml)). Every application table is diagrammed, **including a standalone table with no relationships** (its entity block appears with no relationship line until a later story's FK gives it one); only purely infrastructural tables (`cache`, `jobs`, `password_reset_tokens`) are listed in [Infrastructure tables](schema-users-auth.md#infrastructure-tables) instead, since they have no foreign keys.
+Connection: `mysql` (`DB_CONNECTION=mysql` in `.env`, served by the `mysql:8.4` container in [`compose.yaml`](../../compose.yaml)). **Every table in the database is diagrammed, including standalone tables with no relationships** — its entity block appears with no relationship line until a later story's FK gives it one. That covers the framework's infrastructure tables (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `password_reset_tokens`, `migrations`), which are documented in [Infrastructure tables](schema-users-auth.md#infrastructure-tables); check with `SHOW TABLES` against the diagram when adding a table.
 
 ```mermaid
 erDiagram
@@ -302,6 +302,56 @@ erDiagram
         string name
         string normalized_name UK
     }
+    PASSWORD_RESET_TOKENS {
+        string email PK
+        string token
+        timestamp created_at
+    }
+    CACHE {
+        string key PK
+        mediumtext value
+        bigint expiration
+    }
+    CACHE_LOCKS {
+        string key PK
+        string owner
+        bigint expiration
+    }
+    JOBS {
+        bigint id PK
+        string queue
+        longtext payload
+        smallint attempts
+        int reserved_at
+        int available_at
+        int created_at
+    }
+    JOB_BATCHES {
+        string id PK
+        string name
+        int total_jobs
+        int pending_jobs
+        int failed_jobs
+        longtext failed_job_ids
+        mediumtext options
+        int cancelled_at
+        int created_at
+        int finished_at
+    }
+    FAILED_JOBS {
+        bigint id PK
+        string uuid UK
+        string connection
+        string queue
+        longtext payload
+        longtext exception
+        timestamp failed_at
+    }
+    MIGRATIONS {
+        int id PK
+        string migration
+        int batch
+    }
 ```
 
 > The `model_has_roles` / `model_has_permissions` relationships to `USERS` are **polymorphic** (`model_type` + `model_uuid`, from `spatie/laravel-permission`) — `User` is the only morphable model in the codebase today. The morph key column is `model_uuid` (UUID-typed), renamed from the package default `model_id` (bigint) when `users.id` became a UUID — see [architecture/authorization.md](../architecture/authorization.md), which is also where the seeded roles, the permission catalog and how they are checked are documented.
@@ -323,7 +373,7 @@ Split by domain into separate files, per [contracts.md](../contracts.md#doc-grow
 - For migration authoring conventions (naming, `down()` requirements, real examples), see [database/migrations.md](migrations.md).
 - **UUID (v7) primary keys.** Each table's PK type (`uuid` vs `bigint`) is already visible directly in the ER diagram above, and each per-domain schema file states its own table's status against [ADR 0001](../decisions/0001-uuid-primary-keys.md) at the point that table is documented — so this section no longer restates a consolidated status list. The ADR is the single source of truth for the policy and its full history: which entities it covers, the one named `bigint` exception (`geography_entries`), and every amendment since. The model-side convention (`HasUuids`, `@property string $id`, no restated `$keyType`/`$incrementing`) is in [conventions/base-standards.md](../conventions/base-standards.md#uuid-primary-keys); the migration-side pattern is in [database/migrations.md](migrations.md#uuid-primary-keys).
 
-_Last updated: 2026-09-23 — Story 0058 (Blog categories — backend). Added [Blog](schema-blog.md) as a new domain file to the **Domain tables** list (Epic 4's tags and posts will extend it) and recounted the **Notes** model-class inventory from eighteen to nineteen (`ls app/Models/*.php`), adding `BlogCategory`. Added `BLOG_CATEGORIES` to the ER diagram as a standalone entity block (no relationship line yet — story 0061's `blog_posts.blog_category_id` will add one) and **changed the diagram rule above**: every application table is diagrammed, not only those with a relationship, per the project owner's instruction. The tables the old rule left out (`customers`/`payment_methods` before 0045, `shipping_carriers` before 0036) were diagrammed only once an FK arrived; that was the previous rule, not a fact about them.
+_Last updated: 2026-09-23 — Story 0058 (Blog categories — backend). Added [Blog](schema-blog.md) as a new domain file to the **Domain tables** list (Epic 4's tags and posts will extend it) and recounted the **Notes** model-class inventory from eighteen to nineteen (`ls app/Models/*.php`), adding `BlogCategory`. Added `BLOG_CATEGORIES` to the ER diagram as a standalone entity block (no relationship line yet — story 0061's `blog_posts.blog_category_id` will add one) and **changed the diagram rule above**: every table is diagrammed, not only those with a relationship, per the project owner's instruction. A check of the real schema (`SHOW TABLES`) against the diagram then found seven more tables missing — the framework's `cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `password_reset_tokens` and `migrations` — and added them as standalone blocks. The tables the old rule left out (`customers`/`payment_methods` before 0045, `shipping_carriers` before 0036) were diagrammed only once an FK arrived; that was the previous rule, not a fact about them.
 
 _Previously: 2026-09-21 — Story 0054 (Order tax Sales-Region resolution — virtual products, backend). Added `ip_address`, `ip_derived_country` and `flag_reason` to the `ORDERS` entity block — see [Orders](schema-orders.md) for what each holds and why the geo/fraud check they enable is dormant today. No new table, no ER-diagram relationship change.
 

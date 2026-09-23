@@ -125,7 +125,7 @@ The names, the grants and the `Gate::before` bypass that lets `Super Admin` pass
 
 ## Infrastructure tables
 
-No foreign keys, not part of the ER diagram:
+Framework tables, not part of the domain model. Each has a standalone entity block in the [ER diagram](schema.md#er-diagram) (`sessions` also carries its FK to `users`):
 
 | Table | Source | Purpose |
 | --- | --- | --- |
@@ -133,4 +133,8 @@ No foreign keys, not part of the ER diagram:
 | `sessions` | `0001_01_01_000000_create_users_table.php` | `SESSION_DRIVER=database` session storage |
 | `cache` | `0001_01_01_000001_create_cache_table.php` | `CACHE_STORE=database` cache storage |
 | `jobs` | `0001_01_01_000002_create_jobs_table.php` | `QUEUE_CONNECTION=database` job storage |
+| `cache_locks` | `0001_01_01_000001_create_cache_table.php` | `CACHE_STORE=database` atomic-lock storage, keyed by lock name |
+| `job_batches` | `0001_01_01_000002_create_jobs_table.php` | Queue batch bookkeeping (`Bus::batch()`) |
+| `failed_jobs` | `0001_01_01_000002_create_jobs_table.php` | Queue jobs that exhausted their retries, with the exception text |
+| `migrations` | created by `php artisan migrate` | Laravel's own record of which migrations have run |
 
