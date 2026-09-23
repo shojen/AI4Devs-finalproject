@@ -1,0 +1,34 @@
+# Database Schema — Blog
+
+Part of [Database Schema](schema.md) — see [schema.md](schema.md#er-diagram) for the full ER diagram and [schema.md#notes](schema.md#notes) for the UUID/ADR-0001 status notes. This file covers the Blog domain (PRD Epic 4): today only `blog_categories` (story 0058); blog tags and posts will be added here by their own stories.
+
+## Table of Contents
+
+- [`blog_categories`](#blog_categories)
+
+### `blog_categories`
+
+Source: `database/migrations/2026_09_23_185219_create_blog_categories_table.php` (story 0058) — the blog category taxonomy ([PRD](../PRD/PRD.md#epic-4--blog) Epic 4). A standalone catalog with no relationships to anything at all — no FK in, no FK out — and **physically independent of [`product_categories`](schema-products.md#product_categories)**: no shared table, model, namespace or polymorphic taxonomy. Per this schema's [ER-diagram rule](schema.md#er-diagram) it earns no entity block until story 0061's future `blog_posts.blog_category_id` gives it a real relationship — the same arc `product_categories` and `shipping_carriers` completed.
+
+Model: [`App\Models\BlogCategory`](../../app/Models/BlogCategory.php). Columns in real physical order:
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `CHAR(36)` PK | UUIDv7 (`HasUuids`), per [ADR 0001](../decisions/0001-uuid-primary-keys.md) — a plain greenfield UUID table, nothing for the ADR to add |
+| `name` | `VARCHAR(255)` | the administrator-editable display name, stored as typed after a Unicode-aware trim (`BlogCategoryValidationRules::trimName()` — PHP's `trim()` leaves non-breaking and zero-width spaces, which the normaliser would then fold to a plain space and use to dodge the duplicate check). A name that folds to nothing or to edge whitespace (invisible characters, or a symbol-only name such as `™`) is refused. `BlogCategory::NAME_MAX_LENGTH` is the PHP-side constant this length must move with; a migration cannot reference it directly, so the two are cross-referenced by comment |
+| `normalized_name` | `VARCHAR(255)`, **unique** | the folded key the `UNIQUE` index guards and every lookup compares against — see below. Omitted from `#[Fillable]`; derived, never supplied |
+| `created_at` / `updated_at` | `TIMESTAMP` nullable | standard Eloquent timestamps |
+
+**Uniqueness lives on `normalized_name`, never on `name`, and there is deliberately no `unique('name')`.** Both the index and every application-side comparison use the output of the one shared [`App\Actions\NormalizeForSearch`](../../app/Actions/NormalizeForSearch.php) (`trim` → lower → ASCII-fold → collapse whitespace), so there is no second definition of "the same category name" to drift from the first, and the connection's collation drops out of the correctness argument entirely. It also closes a real race a PHP-only pre-flight cannot: two concurrent requests submitting "Guías" and "guías" both pass their pre-flight, and an index on the raw `name` would not stop the second insert because the strings are byte-distinct — both fold to `guias`, so the index on `normalized_name` does. `CreateBlogCategory` and `RenameBlogCategory` catch `QueryException` code `23000` and rethrow it as a `ValidationException` on `name`, so the race surfaces as a validation error rather than a 500. A consequence worth knowing: the fold covers accents as well as case, so "Guías" and "Guias" cannot coexist. **`product_categories` still uses the older `unique('name')` plus PHP-comparison shape** — recorded here, not changed by story 0058.
+
+**`normalized_name` is derived by a model event, not by each action.** `BlogCategory::booted()` registers a `saving` hook that rewrites the column whenever a save touches `name` **or** `normalized_name` itself (the second half stops `$category->normalized_name = 'x'; $category->save()` persisting a key that no longer matches the name); an unrelated save leaves it alone. `booted()`, not `boot()` — [`App\Models\Role`](../../app/Models/Role.php)'s `boot()` is a vendor-hook-ordering workaround that does not apply to a model extending `Model` directly. Any change to the normaliser is a re-derive event for every stored `normalized_name`, and an amendment to story 0022's D13, never a local edit.
+
+**The fold can be longer than its input, so `normalized_name`'s 255 is a ceiling, not headroom.** `Str::ascii()` transliterates rather than mapping one to one: measured by folding every Unicode codepoint through `NormalizeForSearch`, the worst case is 5 characters for a single character (`၌` → `hnaik`), with `ß` → `ss` and `€` → `EUR` the everyday cases. A name of exactly 255 `ß` folds to 510. Giving the column headroom is not viable — utf8mb4 caps an index key at 768 characters, below 255 × 5 — so `App\Concerns\BlogCategoryValidationRules::foldedNameFits()` refuses any name whose *folded* form exceeds 255 with a clean validation error on `name`, instead of a silently truncated uniqueness key or a raw `22001`. `tests/Feature/Blog/CreateBlogCategoryTest.php` pins the boundary exactly (127 × `ß` + `a` folds to 255 and is accepted; 128 × `ß` folds to 256 and is refused). **Story 0059 (`blog_tags`) has the identical exposure at its own length.**
+
+**No `SoftDeletes` — a hard delete.** A lookup-table row has none of the reasons [`users`](schema-users-auth.md#soft-deletes) soft-deletes, and a trashed "Guías" would squat its name forever since `Rule::unique()` does not apply the soft-delete scope. `tests/Feature/Models/BlogCategoryTest.php` pins the trait's absence and `DeleteBlogCategoryTest` pins that the freed name is immediately reusable.
+
+**Indexes — exactly two, both present by requirement.** `primary` on `id` and `blog_categories_normalized_name_unique`. No FK, so InnoDB's mandatory-FK-index rule does not apply; no index on `created_at`/`updated_at`, the same cardinality reasoning the other near-empty admin catalogs give. `tests/Feature/Models/BlogCategoryTest.php` asserts the exact column and index list via `Schema::getIndexes()`.
+
+**The in-use delete guard is decided but deliberately not implemented here — a named, one-file hand-off to story 0061, not a gap.** `blog_posts` does not exist yet, so nothing can be "in use". `App\Actions\Blog\DeleteBlogCategory` exists now as its own file specifically so 0061 extends that one file with the hard-block-with-count guard — the same hand-off shape `product_categories` (0023 → 0024b) established. The PRD's blog wording is stricter than its product wording (deletion is *always* blocked, no confirm-and-proceed path), so 0061 must re-read the PRD rather than assume parity with the product-category guard.
+
+**A later story owns translatable names.** PRD assumption 14 lists category and tag names as translatable content; whichever shape Epic 5 chooses needs its own migration, and would move `normalized_name` and its derivation hook onto the translations table with per-locale uniqueness. Accepted cost, not an oversight.

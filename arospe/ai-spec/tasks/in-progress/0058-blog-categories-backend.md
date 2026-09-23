@@ -1020,6 +1020,80 @@ than guessed. None blocks Phase 2 review; **OQ-1 and OQ-2 must be settled before
   **Recommendation: defer**, and treat it as an Epic 5 / storefront question rather than a
   gap in this story.
 
+## Implementation notes (Phase 3, 2026-09-23)
+
+Recorded at implementation time so the two open questions the Phase 1 draft said must be settled
+*by execution* are settled, and so every place the shipped code differs from the text above is
+stated rather than left for a reviewer to discover.
+
+- **OQ-1 — settled by execution.** `Str::ascii()` expansion was measured, not reasoned about:
+  `ß`→`ss` (2), `€`→`EUR` (3), and a scan of **every Unicode codepoint** through
+  `App\Actions\NormalizeForSearch` gives a worst case of **5 characters for one** (`၌`→`hnaik`).
+  255 × `ß` folds to 510. The "give `normalized_name` headroom" option (recommended above) is
+  **not viable**: utf8mb4 caps an index key at 768 characters, below 255 × 5 = 1275. So both
+  columns stay at 255 and `BlogCategoryValidationRules::foldedNameFits()` refuses any name whose
+  *folded* form exceeds 255, as a clean validation error on `name` (boundary pinned exactly:
+  127 × `ß` + `a` → 255 accepted, 128 × `ß` → 256 refused). The length is one constant,
+  `BlogCategory::NAME_MAX_LENGTH`. **Story 0059 carries the identical exposure** and this finding
+  should be carried back to it; the same 768-character key limit constrains any fix it picks.
+- **OQ-2 — settled: the premise was stale.** The text above says `App\Models\ProductCategory`
+  "does not exist in this tree". Story 0023 has since shipped, so the literal
+  `arch('...')->expect('App\Models\BlogCategory')->not->toUse('App\Models\ProductCategory')`
+  resolves, and was proven able to go red by temporarily importing the class (R-9).
+  **A second finding came out of that check:** the existing product-taxonomy `arch()` fences
+  (`->not->toUse('App\Models\Blog')`, stories 0023/0024/0025/0027/0029) cannot see
+  `App\Models\BlogCategory` — Pest matches a string target exactly, not by prefix, and the blog
+  taxonomy is a flat class rather than an `App\Models\Blog\` namespace. Importing `BlogCategory`
+  into `ProductCategory` left them green. This story therefore adds the inverse rule for the model
+  (`ProductCategory` → not `BlogCategory`), also proven red-able. The Livewire and `Product*`
+  fences remain blind to it; widening them is left to whoever owns those stories.
+- **Uniqueness rule is a closure, not `Rule::unique()`.** The value compared must be the
+  candidate's *normalised* form, which a `Rule::unique()` fed the raw submitted value cannot do.
+  The closure queries `normalized_name` (the indexed column, via `where(...)->exists()`), so it is
+  one indexed lookup rather than `ProductCategoryValidationRules`' fold-every-row-in-PHP scan.
+  The story explicitly left this expression to Phase 3.
+- **The `saving` hook also re-derives when `normalized_name` itself is dirty**, not only when
+  `name` is (D-12 said `isDirty('name')` alone). Without it, `$c->normalized_name = 'x'; $c->save()`
+  with `name` untouched persists a key that no longer matches — the exact silent decoupling D-12
+  exists to prevent. An unrelated save still leaves the column alone (pinned).
+- **Not written: the "unknown or malformed-UUID category" delete test.** `DeleteBlogCategory`
+  takes an already-resolved model, so an unknown id can never reach it; that case belongs to route
+  binding in the UI story, and asserting it here would test `HasUuids`/framework behaviour
+  (what-not-to-test.md).
+- **No ER-diagram entry**, contrary to the Definition of Done's wording: `schema.md`'s own rule is
+  that a table with no relationship earns no entity block until an FK gives it one (story 0061).
+  The section lives in the new `docs/database/schema-blog.md`, following the per-domain split.
+  ADR 0001's "still future" list was three entries (Blog Categories/Tags/Posts), not six; it is now
+  two.
+- **R-3's stated mechanism is wrong; the trim matters for other reasons.** The text above says
+  Laravel's `required` treats `'   '` as present. Verified false in the installed framework
+  (`validateRequired` refuses a string whose `trim()` is empty), so a whitespace-only name is
+  refused with or without a pre-trim. The trim still matters — for the stored value, and so `max`
+  and the fold see what is stored — and is now pinned by a test that only passes if the trim runs
+  first (255 characters padded to 261 must be accepted).
+- **Phase 4 (security audit) findings, fixed.** *F-1:* PHP's `trim()` leaves NBSP and zero-width
+  spaces, which `NormalizeForSearch` then folds to a plain space, so `"\u{00A0}Guías"` folded to
+  `" guias"` and slipped past uniqueness as a visually identical duplicate. Fixed locally, without
+  touching the shared normaliser: a Unicode-aware `trimName()` in the trait, plus a rule refusing a
+  name whose fold is empty or has edge whitespace (which also turns the empty-fold collision below
+  into a refusal). *F-2:* `RenameBlogCategory` and `DeleteBlogCategory` now re-read the row after
+  authorizing and write through the fresh copy, like `SalesRegions\UpdateSalesRegion`; a stale
+  instance no longer yields a silent no-op reported as success, nor persists whatever else the
+  caller left dirty, and a row already gone is a `ModelNotFoundException`. **Story 0061 must keep
+  that re-read when it adds the in-use guard.** Recorded, not fixed: *F-3* the `23000` catch also
+  covers a primary-key collision (unreachable now that the id comes from a fresh row); *F-4* invalid
+  UTF-8 in `name` would surface as a 1366 error, unreachable from Livewire (JSON cannot carry it) and
+  relevant only to a future import or CLI caller.
+- **Phase 5 (code review) findings, fixed:** duplicated length message on a >255 name (`bail` is now
+  the first rule); doc gaps in `naming-validation-traits.md` and `directory-structure.md`; the
+  glossary now reads as provisional rather than ratified.
+- **Known limitation of the shared normaliser, not addressed here (0022's D13).** `Str::ascii()`
+  drops what it cannot map, so a name made only of unmappable characters (CJK, emoji-only, `™`)
+  folds to the empty string. Such a name is now **refused** (previously the first would persist and
+  every later one collide on `normalized_name = ''`). Irrelevant for a Spanish/English blog, but a
+  real limit if store languages ever add non-Latin scripts (Epic 5), which would need the
+  normaliser itself amended.
+
 ## Provenance
 Phase 1 (Three Amigos) debate run on 2026-08-27 with `backend-expert` (files and approach),
 `database-expert` (schema, index, collation and soft-delete decisions) and `backend-qa` (test
