@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Customer;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
@@ -46,6 +47,7 @@ function topbarScreens(): array
         'shipping zones' => ['shipping.zones.index', 'shipping.zones.index.heading'],
         'payment methods' => ['payment-methods.index', 'payment-methods.index.heading'],
         'customers' => ['customers.index', 'topbar.customers.title'],
+        'orders' => ['orders.index', 'topbar.orders.title'],
         'profile settings' => ['profile.edit', 'topbar.settings.profile'],
         'security settings' => ['security.edit', 'topbar.settings.security'],
         'appearance settings' => ['appearance.edit', 'topbar.settings.appearance'],
@@ -110,6 +112,17 @@ test('the customer detail screen titles the topbar with the customer name and ha
         ->and($html)->not->toContain('<b>Pérez</b>');
 });
 
+test('the order detail screen titles the topbar with the order number and has no subtitle', function () {
+    $order = Order::factory()->create(['order_number' => 'ORD-2026-000777']);
+
+    $html = renderScreen('orders.show', ['order' => $order]);
+
+    expect(topbarText($html, 'topbar-title'))->toBe('ORD-2026-000777')
+        ->and(substr_count($html, 'data-test="topbar-subtitle"'))->toBe(0)
+        ->and(substr_count($html, 'data-test="notification-bell"'))->toBe(1)
+        ->and(substr_count($html, '<h1'))->toBe(1);
+});
+
 test('the product editor titles the topbar for editing an existing product', function () {
     $product = Product::factory()->create();
 
@@ -130,7 +143,7 @@ test('every authenticated app screen is covered by the dataset or an explicit ex
     $excludedPrefixes = ['verification.', 'password.', 'passkey.', 'two-factor.', 'login', 'register', 'email-change.'];
     $covered = array_merge(
         collect(topbarScreens())->pluck(0)->all(),
-        ['customers.show', 'products.edit'],
+        ['customers.show', 'orders.show', 'products.edit'],
     );
 
     $uncovered = collect(Route::getRoutes()->getRoutes())
