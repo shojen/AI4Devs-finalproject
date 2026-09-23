@@ -30,9 +30,9 @@
       "slug": "0058-blog-categories-backend",
       "title": "Blog categories — backend (table, model, create/rename/delete, name validation)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree 0058-blog-categories-backend-arp",
+      "claimed_at": "2026-09-23T00:00:00Z",
       "touches": [
         "database/migrations/*_create_blog_categories_table.php",
         "app/Models/BlogCategory.php",
