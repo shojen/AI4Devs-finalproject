@@ -155,7 +155,7 @@ Feature: Blog categories
   [migrations.md](../../../docs/database/migrations.md#an-fk-column-does-not-also-get-an-explicit-index-here)'s
   rule that a migration cannot show you an index nobody wrote.
 
-  **On the length, and why it differs from [0059](../0059-blog-tags-backend.md)'s `100`** (**OQ-1**):
+  **On the length, and why it differs from [0059](../in-progress/0059-blog-tags-backend.md)'s `100`** (**OQ-1**):
   `name` is 255 here, matching 0023's product-category decision and this repo's free-text precedent
   (`users.name`, and `users.email`, which already carries a `unique` index at 255 in this very
   schema — so the 1020-byte utf8mb4 key is a shape this project has accepted before). A blog
@@ -195,7 +195,7 @@ Feature: Blog categories
 
   `normalized_name` is **omitted from `#[Fillable]`** — the mass-assignment guard this repo already
   uses for `users.status` / `users.pending_email` / every seeder-owned `sales_regions` column — and
-  is derived by a model event (**D-12**), mirroring [0059](../0059-blog-tags-backend.md)'s shape
+  is derived by a model event (**D-12**), mirroring [0059](../in-progress/0059-blog-tags-backend.md)'s shape
   exactly so the two Epic 4 taxonomies cannot drift:
 
   ```php
@@ -669,7 +669,7 @@ the two taxonomies can be diffed decision by decision. **D-13** and **D-14** are
   agreed with the product owner across the Epic 2 Phase 1 debates), which requires that every story
   searching or uniquing a name-like column call the single shared `App\Actions\NormalizeForSearch`
   **both at write time** (into a stored `normalized_name`) **and at read time**. Stories 0022, 0026,
-  0032, 0033 and 0034 already consume it, and [0059](../0059-blog-tags-backend.md) (blog tags,
+  0032, 0033 and 0034 already consume it, and [0059](../in-progress/0059-blog-tags-backend.md) (blog tags,
   debated in parallel with this story) arrived at the identical shape independently. Four reasons, in
   descending order of weight:
 
@@ -959,7 +959,7 @@ the two taxonomies can be diffed decision by decision. **D-13** and **D-14** are
   [hedge rule](../../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
   an unverified mechanism must not be written up as fact. The one command that settles it, to be run
   at Phase 2/3: `php artisan tinker --execute 'dump(strlen(Str::ascii(str_repeat("ß", 255))));'`.
-  **[0059](../0059-blog-tags-backend.md) has the identical exposure at its own `100`/`100`** and its R-4
+  **[0059](../in-progress/0059-blog-tags-backend.md) has the identical exposure at its own `100`/`100`** and its R-4
   states only that the two columns "must match each other", which does not close this direction —
   worth carrying back to that story rather than fixing only here (**OQ-1**).
 - **R-5 — Faker uniqueness is not database uniqueness.** `fake()->unique()` guards within a Faker
@@ -991,7 +991,7 @@ the two taxonomies can be diffed decision by decision. **D-13** and **D-14** are
 Per [contracts.md](../../../docs/contracts.md)'s Uncertainty Handling Rule these are recorded rather
 than guessed. None blocks Phase 2 review; **OQ-1 and OQ-2 must be settled before Phase 3.**
 
-- **OQ-1 — The length trio, settled jointly with [0059](../0059-blog-tags-backend.md), including the
+- **OQ-1 — The length trio, settled jointly with [0059](../in-progress/0059-blog-tags-backend.md), including the
   `Str::ascii()` expansion hazard.** Two coupled sub-questions, both cheap to answer and both
   genuinely open:
   - **(a) How long is `name`?** This story says **255** (matching 0023's product-category decision
@@ -1155,13 +1155,13 @@ exactly the class of gap the facilitator step exists to close.
 entity folders. Phase 2 may reasonably prefer alignment with Epic 2 instead; the argument for the
 area reading (one `blog.*` permission tier gates all three blog entities, so the folder mirrors the
 gate) is stated in full so that review is a real choice rather than a rubber stamp. Note
-[0059](../0059-blog-tags-backend.md) independently specifies the same `app/Actions/Blog/` folder and
+[0059](../in-progress/0059-blog-tags-backend.md) independently specifies the same `app/Actions/Blog/` folder and
 explicitly describes it as shared with this story and 0061, so the two Epic 4 stories agree.
 
 ### Revised 2026-08-27 — uniqueness redesigned onto a stored `normalized_name` column
 
 **This file's original Phase 1 draft copied 0023's `unique('name')` + PHP-only-comparison design.
-That was wrong, and the revision is not a matter of taste.** Story [0059](../0059-blog-tags-backend.md)
+That was wrong, and the revision is not a matter of taste.** Story [0059](../in-progress/0059-blog-tags-backend.md)
 (blog tags), debated in parallel by a sibling agent, independently converged on a stored
 `normalized_name` column carrying the `UNIQUE` index, derived through a `saving` model event calling
 the shared normaliser. Checking that claim against the backlog rather than accepting it confirmed the

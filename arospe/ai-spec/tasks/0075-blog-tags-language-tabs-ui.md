@@ -887,7 +887,7 @@ renders. The mismatch is a property of the *edit* form's array binding, not of t
   [workflow.md](../../docs/workflow.md#task-ordering-rule)'s rule is satisfied, but the *reason* is a
   shared component rather than an interface contract. Phase 2 should confirm the sequencing explicitly
   — **0071 must reach Phase 3 first**, or this story has no strip to consume.
-- **[0059](0059-blog-tags-backend.md)** — transitively, via 0060 and 0074.
+- **[0059](in-progress/0059-blog-tags-backend.md)** — transitively, via 0060 and 0074.
 - Already-shipped: the seeded `blog.*` permissions (**verified**), `Gate::before`, policy
   auto-discovery, `LogRefusedPrivilegedAttempt` (0015b), the sidebar registry (0013), the wired-up
   browser suite (0006b).

@@ -6,7 +6,7 @@ Introduce `blog_posts` as Epic 4's central entity: a new `blog_posts` table (UUI
 [PRD](../../docs/PRD/PRD.md#assumptions--confirmed-decisions) assumption 19) plus the
 `blog_post_tag` pivot, the `App\Models\BlogPost` model, a `BlogPostStatus` backed enum, shared
 validation, and the create / update / **soft**-delete domain actions — including tag assignment with
-**create-on-the-fly** through story [0059](0059-blog-tags-backend.md)'s `FindOrCreateBlogTag`. It is
+**create-on-the-fly** through story [0059](in-progress/0059-blog-tags-backend.md)'s `FindOrCreateBlogTag`. It is
 **backend only** — no screen, no route, no Livewire component; the blog list and post editor are
 story **0063**.
 
@@ -456,7 +456,7 @@ stories are consistent with each other, not divergent. *Rejected:* `PublishBlogP
 
 ### Consumed, not created by this story
 
-- `App\Actions\Blog\FindOrCreateBlogTag` — story [0059](0059-blog-tags-backend.md)'s reusable
+- `App\Actions\Blog\FindOrCreateBlogTag` — story [0059](in-progress/0059-blog-tags-backend.md)'s reusable
   resolver. **This story is its only current caller for the attach-during-post-save path** (0060's
   tag-management screen does not use it). Its per-branch authorization (**D-13**) and its
   re-query-on-lost-race semantics (0059's **D-10**) are consumed unchanged, never re-implemented.

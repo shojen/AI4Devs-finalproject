@@ -915,7 +915,7 @@ Derived from this debate; **none are in scope for 0072**.
    — its line 243 asserts a fourth auto-created FK index on a column its own migration makes leftmost in a
    composite `UNIQUE` (**D-10**, **R-4**). Verify with `db:table` on both tables and correct whichever is
    wrong.
-3. **Close 0058's OQ-1 jointly with [0059](0059-blog-tags-backend.md)** before either Epic 5 taxonomy
+3. **Close 0058's OQ-1 jointly with [0059](in-progress/0059-blog-tags-backend.md)** before either Epic 5 taxonomy
    retrofit implements — the length trio is now a length *quintet* once the translation tables exist
    (**R-3**).
 4. **Story 0074 (Blog Tags) inherits this story's D-1 verbatim, not 0070's.** `blog_tags` carries the same

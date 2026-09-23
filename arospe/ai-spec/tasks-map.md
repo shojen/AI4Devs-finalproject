@@ -54,6 +54,10 @@ dropped from the graph below, its `tasks-status.json` entry was deleted, and its
 (`0061`, `0062`, `0063`, `0072`) are re-derived against `done/`: each drops `"0058"` from
 `depends_on` and stays `blocked` on its other still-pending dependencies.
 
+Update (2026-09-24): `0059-blog-tags-backend.md` is checked out into `ai-spec/tasks/in-progress/`
+(Phase 3 step 0) and claimed in `tasks-status.json`; it keeps its node and edges below, and every
+inbound link to it now carries the `in-progress/` segment.
+
 Reconciled into this same pass: three more stories closed on `finalproject-ARP` while `0056` was
 in progress — `0049-order-status-transition-backend.md` (PR #15), `0051-order-payment-refund-
 state-backend.md` (PR #17), and `0050-order-manual-cancellation-backend.md` (PR #18, which itself
