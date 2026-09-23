@@ -491,7 +491,7 @@ Five constraints 0061 binds this story to, quoted rather than paraphrased:
 From **[0059](0059-blog-tags-backend.md)**: `FindOrCreateBlogTag::__invoke(string $name): BlogTag` —
 name-keyed, case- and accent-insensitive via `normalized_name`, and asking a **different ability per
 branch** (`blog.view` to reuse, `blog.create` to mint — its **D-11**). Reached only through the post
-actions. From **[0058](0058-blog-categories-backend.md)**: `App\Models\BlogCategory`, `#[Fillable(['name'])]`.
+actions. From **[0058](in-progress/0058-blog-categories-backend.md)**: `App\Models\BlogCategory`, `#[Fillable(['name'])]`.
 
 From **[0021](done/0021-wysiwyg-rich-text-editor-component.md)** **D3**/**D4**:
 

@@ -15,7 +15,7 @@ story **0063**.
 recoverable, unlike the two blog taxonomies, which hard-delete.
 
 It also carries a **second, smaller deliverable**: now that `blog_posts.blog_category_id` exists,
-story [0058](0058-blog-categories-backend.md)'s `DeleteBlogCategory` gains the **hard block with a
+story [0058](in-progress/0058-blog-categories-backend.md)'s `DeleteBlogCategory` gains the **hard block with a
 count** the PRD requires ("This category is used by 5 posts — reassign them before deleting"), with
 no confirm-and-proceed path.
 
@@ -47,7 +47,7 @@ implicit** (see [Provenance](#provenance)).
 Every scenario opens with a named business-role actor and carries exactly one `When`, per
 [gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3. The actor
 term **"blog editor"** and the entity term **"post"** are taken verbatim from the PRD's own Epic 4
-scenarios, per [0058](0058-blog-categories-backend.md)'s **OQ-3** recommendation.
+scenarios, per [0058](in-progress/0058-blog-categories-backend.md)'s **OQ-3** recommendation.
 
 ```gherkin
 Feature: Blog posts — core fields

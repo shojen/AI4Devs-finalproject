@@ -41,6 +41,10 @@ regeneration pass — its node and edge (`P0056 --> P0057`) are dropped from the
 re-derived against `done/` and moves from `blocked` to `ready` (see its updated bullet under
 [Pending tasks that are independent](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)).
 
+Update (2026-09-23): `0058-blog-categories-backend.md` is checked out into `ai-spec/tasks/in-progress/`
+(Phase 3 step 0) and claimed in `tasks-status.json`; it keeps its node and edges below, and every
+inbound link to it now carries the `in-progress/` segment.
+
 Reconciled into this same pass: three more stories closed on `finalproject-ARP` while `0056` was
 in progress — `0049-order-status-transition-backend.md` (PR #15), `0051-order-payment-refund-
 state-backend.md` (PR #17), and `0050-order-manual-cancellation-backend.md` (PR #18, which itself

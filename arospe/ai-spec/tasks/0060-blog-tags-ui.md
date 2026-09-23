@@ -64,7 +64,7 @@ Frontend only — no migration, no model, no action, no policy, no factory, no s
 domain rule this screen enforces is consumed from 0059 as already-shipped code.
 
 It is also, incidentally, **the first Blog-area story to touch `routes/`, `config/modules.php` or
-`lang/` at all** — story [0058](0058-blog-categories-backend.md) fenced all three off explicitly, and
+`lang/` at all** — story [0058](in-progress/0058-blog-categories-backend.md) fenced all three off explicitly, and
 nothing blog-related exists anywhere in `app/`, `config/`, `routes/` or `lang/` today (verified; the
 sole exception is the `blog` *permission label* leaf in `lang/{en,es}/roles.php`). So this story
 creates the `content` sidebar group and its `blog` cluster that stories **0062** (blog categories UI)

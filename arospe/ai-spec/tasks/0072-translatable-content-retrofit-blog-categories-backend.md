@@ -20,7 +20,7 @@ the one place the recipe does not fit as written — see the box below.
 >
 > 0070 retrofits `product_categories`, whose story [0023](done/0023-product-categories-backend.md)
 > enforces name uniqueness with a plain `unique('name')` index plus a PHP-only comparison. **Blog
-> categories do not work that way.** Story [0058](0058-blog-categories-backend.md) specifies
+> categories do not work that way.** Story [0058](in-progress/0058-blog-categories-backend.md) specifies
 > `blog_categories` with a stored, derived **`normalized_name`** column carrying the sole `UNIQUE`
 > index, written by a `static::saving()` hook calling the shared `App\Actions\NormalizeForSearch` —
 > the project-wide convention [0032's **D-N1**](done/0032-shipping-geography-catalog-seed.md) confirmed on
@@ -786,7 +786,7 @@ is one no post uses, and its translations are exactly the data that has just bec
 
 ### Dependencies
 
-- **[Story 0058](0058-blog-categories-backend.md)** — hard, and **not yet implemented**. This story
+- **[Story 0058](in-progress/0058-blog-categories-backend.md)** — hard, and **not yet implemented**. This story
   retrofits its table, its model, its validation trait and two of its three actions. See **R-2**, **R-3**.
 - **[Story 0070](0070-translatable-content-mechanism-product-categories-backend.md)** — hard, and **not
   yet implemented**. Supplies `HasTranslations`, `SetTranslation`, `StoreLanguage::defaultStoreLanguage()`
