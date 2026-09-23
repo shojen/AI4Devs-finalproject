@@ -1,42 +1,98 @@
 # [0055] Orders list + detail/editor UI
 
 ## Description
-Build the Orders screens of PRD [§3.2 Orders](../../docs/PRD/PRD.md#32-orders): a permission-gated
+Build the Orders screens of PRD [§3.2 Orders](../../../docs/PRD/PRD.md#32-orders): a permission-gated
 `orders.index` list route, an `orders.show` detail route, the two Livewire components behind them, their
 Blade/Flux views, and the `config/modules.php` sidebar entry without which the module is unreachable.
 The detail screen is the **single consumer surface** for every write stories
-[0048](done/0048-order-line-item-editing-backend.md)–[0052](done/0052-order-auto-cancel-full-refund-backend.md)
+[0048](../done/0048-order-line-item-editing-backend.md)–[0052](../done/0052-order-auto-cancel-full-refund-backend.md)
 built — line-item editing, status transitions, manual cancellation, refunds — and the only place
-[0053](done/0053-order-tax-region-resolution-physical-backend.md)/[0054](done/0054-order-tax-region-resolution-virtual-backend.md)'s
+[0053](../done/0053-order-tax-region-resolution-physical-backend.md)/[0054](../done/0054-order-tax-region-resolution-virtual-backend.md)'s
 resolved tax basis and `flagged_for_review` flag become visible to a human. It adds **no backend rule**:
 every control mirrors a predicate its own guard already reads.
 
-> ## ⛔ BLOCKED — inherited cross-epic dependency (read this before Phase 3)
+> ## ✅ UNBLOCKED — every backend dependency is `done` (re-verified 2026-09-23, Phase 2)
 >
-> **This story is fully specified now, but its Phase 3 implementation cannot start until every Orders
-> backend story is `done`:** [0045](done/0045-orders-core-crud-backend.md),
-> [0048](done/0048-order-line-item-editing-backend.md), [0049](done/0049-order-status-transition-backend.md),
-> [0050](done/0050-order-manual-cancellation-backend.md),
-> [0051](done/0051-order-payment-refund-state-backend.md),
-> [0052](done/0052-order-auto-cancel-full-refund-backend.md),
-> [0053](done/0053-order-tax-region-resolution-physical-backend.md) and
-> [0054](done/0054-order-tax-region-resolution-virtual-backend.md) — **and 0045 is itself ⛔ blocked** on five
-> PRD Epic 2 stories ([0024](done/0024-products-core-crud-backend.md),
-> [0029](done/0029-product-variants-backend.md), [0035](done/0035-shipping-carriers-backend.md),
-> [0036](done/0036-shipping-rate-rules-backend.md), [0038](done/0038-payment-methods-bank-transfer-backend.md)).
+> [0045](../done/0045-orders-core-crud-backend.md), [0047](../done/0047-customer-order-history-view-ui.md),
+> [0048](../done/0048-order-line-item-editing-backend.md), [0049](../done/0049-order-status-transition-backend.md),
+> [0050](../done/0050-order-manual-cancellation-backend.md), [0051](../done/0051-order-payment-refund-state-backend.md),
+> [0052](../done/0052-order-auto-cancel-full-refund-backend.md),
+> [0053](../done/0053-order-tax-region-resolution-physical-backend.md) and
+> [0054](../done/0054-order-tax-region-resolution-virtual-backend.md) are all shipped on `finalproject-ARP`, as
+> are Epic 2's 0024/0029/0035/0036/0038. The "BLOCKED" banner that stood here is removed; R-8's
+> re-verification was run against the **shipped code** and its result is the amendment list below.
+
+> ## 🔧 Phase 2 amendments (R-8 re-verification against the shipped code, 2026-09-23)
 >
-> **The chain is three links long, so state it once and check all three:** 0055 → {0045, 0048–0054} →
-> 0045 → {0024, 0029, 0035, 0036, 0038}. There is nothing here that can be stubbed to proceed: a screen
-> whose every control calls an action that does not exist is not a partial delivery, it is a mock.
+> **These amendments SUPERSEDE any conflicting text elsewhere in this file.** They were found by re-reading
+> the tree rather than the sibling task files, exactly as R-8 required.
 >
-> **What is *not* blocked:** this document. See [R-8](#risks) for why specifying it now is deliberate,
-> and for the re-verification Phase 3 owes it — this file quotes **eight** sibling task files, every one
-> of which is itself still `new`.
+> 1. **Cancel needs TWO permissions.** `OrderPolicy::cancel()` = `orders.edit` **AND** `orders.refund` AND
+>    `Order::isManuallyCancellable()` (0050 **D-6**, a human decision — no `orders.cancel` permission exists).
+>    Every "actor holding `orders.edit` cancels…" scenario/fixture below therefore needs **both** permissions;
+>    an edit-only actor sees Cancel **disabled**, and so does a refund-only one. In the per-control dataset,
+>    Cancel is enabled only in the `both` row. A refund-only actor still refunds; an edit-only one still edits.
+> 2. **D-4 is resolved as shape (b), taken as a preparatory backend change in this branch** (human decision):
+>    `Order::isLineItemEditable()` on the model, read by `AddOrderItem`/`RemoveOrderItem`/`UpdateOrderItemQuantity`
+>    in place of their three private `in_array(Shipped, Delivered)` copies. Lands as its own `feat(orders)`
+>    commit + tests *before* any UI code, so the fences ("no `app/Models`/`app/Actions/Orders` change") are lifted
+>    for exactly this predicate and the two guards in point 3 — nothing else in those folders.
+> 3. **A refunded line item cannot be deleted** (`refunds.order_item_id` is `restrictOnDelete()`, 0051 OQ-1),
+>    yet `RemoveOrderItem` never checked, so Remove on a refunded line of a `Procesando` + `Parcialmente
+>    reembolsado` order would 500. The same prep commit adds (i) a `ValidationException` refusal in
+>    `RemoveOrderItem` when `refunded_quantity > 0` and (ii) a floor in `UpdateOrderItemQuantity`
+>    (`quantity >= refunded_quantity`). The UI disables Remove on such a line by reading `refunded_quantity > 0`
+>    (a data fact, not a re-derived rule) and renders the action's refusal if a stale page still submits it.
+> 4. **Sidebar:** the `platform` group was retired by story 0080. The Orders entry is a bare top-level item
+>    (`group => null`, `cluster => null`) exactly like `customers` (0044). The snippet below is corrected.
+> 5. **Topbar (story 0057a):** both screens declare `<x-slot:heading>` / `<x-slot:subheading>` from
+>    `lang/{en,es}/topbar.php` (`topbar.orders.title` / `.subtitle` for the list; the detail's heading is the
+>    order number, no subheading — mirror `customers/show.blade.php`). `tests/Feature/Layout/TopbarTest.php`'s
+>    route-walking guard must be extended: `orders.index` into `topbarScreens()`, `orders.show` into `$covered`.
+>    Each screen renders exactly one `<h1>`.
+> 6. **Lang:** `orders.refunds.*` (0051) already exists — the new UI copy goes under `refunds.*`/`detail.*`,
+>    **never a new singular `refund` group**. The lang list is completed with the `transitions.confirm_backward_*`,
+>    cancel-dialog and status-Apply keys the snippets already use. An en/es key-parity test for `orders.php`
+>    is added (none exists).
+> 7. **Livewire computed memoisation:** every `#[Computed]` is memoised per request, and the actions never
+>    refresh the caller's `$order`. After **every** successful write `Show` must `unset()` `order`, `lineItems`
+>    and every dependent computed (`canEditLineItems`, `canCancel`, `isRefundable`, `statusOptions`, …), and a
+>    "totals/status not stale after add/remove/quantity/cancel/refund" test pins it.
+> 8. **Soft-deleted customers:** orders may reference a soft-deleted customer (0045 CreateOrder D-12) and
+>    `Order::customer()` has no `withTrashed()`. Both `Index::orders()` and `Show::order()` eager-load the
+>    customer with `withTrashed()`; a trashed customer renders as plain text (no link) and never fatals.
+> 9. **Customer link is gated by `customers.view`** (`Gate::allows('viewAny', Customer::class)`), else plain
+>    text — otherwise an `orders.view`-only actor is handed a link to a 403.
+> 10. **Flagged orders may carry a resolved basis** (`ResolveOrderTaxRegion` flags the default-region fallback
+>     *and* writes `sales_region_id`/`tax_rate`/`tax_amount`; only 0054 guarantees flag ⇒ no rate). D-15/D-16
+>     therefore render: the flag callout **always** when flagged, plus the stored region/rate marked
+>     **provisional** when they exist, and "not yet resolved" only when they don't. The "atomicity" test
+>     asserts *no unmarked confident rate beside a flag*, not *no rate at all*.
+> 11. **`PaymentStatus` has no `label()`** and `app/Enums/**` stays fenced — resolve with
+>     `__('orders.payment_statuses.'.$value)`. `OrderStatus::label()` exists (0047).
+> 12. **`isBackwardFrom()`/`rank()` throw `UnhandledMatchError` on `Cancelled`** and `$selectedStatus`/
+>     `$pendingStatus` are client-writable: `requestStatusChange()` validates the target against
+>     `statusOptions()` **before** any `OrderStatus::from()` / `isBackwardFrom()` call. Tests: forged
+>     `'cancelled'`, forged garbage string, forged current status.
+> 13. **Product picker:** the actions check neither `ProductStatus` nor "variant required". Interim picker
+>     lists only sellable products (decision pinned in D-1's implementation: active products, ordered by name,
+>     bounded), requires a variant in the UI when the product has variants, and eager-loads `values.type` to
+>     avoid an N+1 on variant labels.
+> 14. **`confirm-dialog` contract (D-2, kept):** `:show` alone is not enough — Esc/backdrop/X would close the
+>     modal client-side and leave the parent flag true. The component takes the parent's dismiss method and binds
+>     it to `@close`; the `data-test` hook lives on content **inside** `@if ($show)`, never on `<flux:modal>`.
+>     A test asserts that Esc/close resets the status select to the order's real status.
+> 15. **Docs targets corrected:** `orders.index`/`orders.show` are the **11th and 12th** permission-gated
+>     routes (not "third and fourth"); the directory listing lives in `docs/conventions/directory-structure.md`;
+>     add a new `docs/api/orders.md` (as `customers.md`), the README index entries and the `naming.md`
+>     Index-flat/Show-nested row.
+> 16. **Test hygiene:** `tests/Feature/Orders/` already holds many files with global Pest helpers — every new
+>     helper is prefixed `ordersUi…` to avoid a redeclare fatal.
 
 > ## ⚠️ This story has a **soft** dependency on a PENDING Epic 2 story, and ships an interim around it
 >
 > `AddOrderItem` needs a product/variant picker, and **nothing in this repo builds one yet.** The
-> natural fit is Epic 2's [0022](done/0022-searchable-multi-select-component.md) (shared searchable,
+> natural fit is Epic 2's [0022](../done/0022-searchable-multi-select-component.md) (shared searchable,
 > server-side-filtered multi-select), which is `new` and **has no committed timeline within this Epic 3
 > decomposition**. This story therefore ships a **documented, intentional stopgap** — a plain
 > `<flux:select>` over a bounded product query — rather than blocking on it. See **[D-1](#d-1)**, which
@@ -58,11 +114,11 @@ Four deliverables land here and none is separable from the others:
 1. **The list route + component + view** — the module's entry point.
 2. **The detail route + component + view** — **not a modal.** An order's detail is line items plus two
    status dimensions plus refunds plus a tax panel: unbounded and list-shaped, exactly the reasoning
-   [0047](done/0047-customer-order-history-view-ui.md)'s **D-2** applied to an order *history*, applying with
+   [0047](../done/0047-customer-order-history-view-ui.md)'s **D-2** applied to an order *history*, applying with
    more force to an order *editor*.
 3. **The `config/modules.php` entry + `lang/{en,es}/navigation.php` leaf** — a gated module route
    without its registry entry is a screen nothing links to
-   ([routes.md](../../docs/api/routes.md#app-owned-routes)), which is the same half-delivery 0044 and
+   ([routes.md](../../../docs/api/routes.md#app-owned-routes)), which is the same half-delivery 0044 and
    0047 both refused.
 4. **The screen copy in `lang/{en,es}/orders.php`** — 0045 created that file with two status groups and
    0049/0050/0054 appended three more; **every one of those stories deferred screen copy to this one by
@@ -320,7 +376,7 @@ Feature: Orders list and detail/editor screens
 
 A new per-area route file, `require`d from `web.php` exactly the way `users.php`, `roles.php` and
 `customers.php` are
-([base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)):
+([base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure)):
 
 ```php
 <?php
@@ -361,19 +417,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
 - **Route-model binding on `{order}`**, not a raw string id. `Order` is UUID-keyed via `HasUuids`, whose
   `resolveRouteBindingQuery()` validates the segment with `Str::isUuid()` first — so a malformed
   parameter is a **404 without a query**
-  ([base-standards.md](../../docs/conventions/base-standards.md#uuid-primary-keys)). `Order` has **no**
+  ([base-standards.md](../../../docs/conventions/base-standards.md#uuid-primary-keys)). `Order` has **no**
   `SoftDeletes` (0045), so there is no trashed-row binding case to test here, unlike 0047's.
 - **No permission catalog change.** `orders.view/create/edit/delete` are seeded by
   `RolePermissionSeeder::MODULES` and `orders.refund` is seeded by 0051's `ORDER_PERMISSIONS`. This
   story adds none and reseeds nothing.
 - ⚠️ **Do not plan a `verified`-middleware test.** `App\Models\User` does not implement `MustVerifyEmail`,
   so `verified` refuses nobody on any route in this app; a test asserting it carries no signal
-  ([errors-log.md](../../docs/errors-log-archive.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)).
+  ([errors-log.md](../../../docs/errors-log-archive.md#a-planned-test-asserted-a-refusal-by-verified-a-middleware-that-refuses-nobody-in-this-app--2026-08-20)).
 
 ### Component — `app/Livewire/Orders/Index.php` (**new**)
 
 Class-based, `#[Title]` on the class
-([base-standards.md](../../docs/conventions/base-standards.md#livewire-component-convention-class-based-not-single-file)).
+([base-standards.md](../../../docs/conventions/base-standards.md#livewire-component-convention-class-based-not-single-file)).
 
 | Member | Shape | Notes |
 | --- | --- | --- |
@@ -391,7 +447,7 @@ Class-based, `#[Title]` on the class
   comes from `items`, `paymentMethod`, `salesRegion` or `shippingRate`; eager-loading five relations per
   row for zero rendered output is the per-row cost 0047's **D-8** already refused.
 - **Row shape** (`array<int, array{…}>`, PHPDoc'd per
-  [code-style.md](../../docs/conventions/code-style.md#phpdoc-array-shapes-over-inline-comments)):
+  [code-style.md](../../../docs/conventions/code-style.md#phpdoc-array-shapes-over-inline-comments)):
   `{id, orderNumber, customerId, customerName, status, statusLabel, paymentStatus, paymentStatusLabel,
   total, createdAt, isFlagged, flagReasonLabel}`.
 - **`total` is the stored decimal string, never cast** (**D-7**).
@@ -437,24 +493,24 @@ Action methods, each `Gate::authorize()`-ing first and each delegating to the ac
 | `openRefundModal()` / `recordRefund(RecordRefund $recordRefund)` | `RecordRefund` | 0051 |
 
 - **Actions are method-injected**, per
-  [code-style.md](../../docs/conventions/code-style.md#inject-single-purpose-actions-per-method) — these
+  [code-style.md](../../../docs/conventions/code-style.md#inject-single-purpose-actions-per-method) — these
   are Livewire action methods with no external contract, which is the rule's unmodified case.
 - **Every mutating *and every disclosing* method authorizes as its first statement**, including
   `openRefundModal()` and `confirmCancel()`, which only open a dialog. That is the shipped rule
-  ([livewire-authorization.md](../../docs/security/livewire-authorization.md)), and the reason task 0015
+  ([livewire-authorization.md](../../../docs/security/livewire-authorization.md)), and the reason task 0015
   had to retrofit it onto the Users screen.
 - **The component re-authorizes; it does not re-derive.** No `in_array($order->status, [...])`, no
   payment-state comparison written a second time, no rank arithmetic. Every hint reads the **same**
   predicate its guard throws from — `Order::isManuallyCancellable()`, `OrderStatus::isBackwardFrom()`,
   `OrderPolicy::cancel()`/`::transitionStatus()`. This is the rule
-  [authorization.md](../../docs/architecture/authorization.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)
+  [authorization.md](../../../docs/architecture/authorization.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)
   states and that 0049 **D-2**, 0050's predicate and 0048 **D-5** each built a predicate for
   specifically so this screen would not have to.
 - **Domain refusals are caught and rendered, never allowed to 500 the page** (**D-12**).
 
 ### View — `resources/views/livewire/orders.blade.php` (**new** — the list)
 
-**The *flat* path**, per the [`Index`-in-a-subfolder exception](../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name):
+**The *flat* path**, per the [`Index`-in-a-subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name):
 `App\Livewire\Orders\Index` resolves to `livewire/orders.blade.php`, **not** `livewire/orders/index.blade.php`.
 **Resolve the path by running the component, not by reasoning about it** — stories 0010 and 0011 both
 wrote the wrong path into their own Phase 1 specs and found out at first render.
@@ -490,7 +546,7 @@ state (`orders.index.empty`); no create button (**D-13**).
 
 **The nested path, and this is *not* the `Index` exception.** `App\Livewire\Orders\Show` follows the
 normal component ↔ view mirror. Its sibling `Index` resolves flat; the two live at different depths, which
-[naming.md](../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
+[naming.md](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
 records as expected rather than a mistake — and which 0047 already shipped once for `Customers`.
 
 Five sections:
@@ -523,18 +579,18 @@ Markup rules inherited rather than invented:
 
 1. **`@js(...)` around every `wire:click` argument.** This screen passes line-item ids into `wire:click`
    on three controls, so the rule is live here rather than theoretical
-   ([blade-livewire-output-encoding.md](../../docs/security/blade-livewire-output-encoding.md)).
+   ([blade-livewire-output-encoding.md](../../../docs/security/blade-livewire-output-encoding.md)).
 2. **An explicit `<flux:tooltip>` wrapper on the disabled branch, never a conditionally-bound `:tooltip`
    prop** — under `livewire/blaze` a Flux prop that decides whether a wrapper renders counts as *present*
    whenever the attribute is written on the tag at all
-   ([errors-log-archive.md](../../docs/errors-log-archive.md#a-conditionally-bound-fluxbutton-tooltip-prop-rendered-an-empty-tooltip-on-every-enabled-row--2026-08-16)).
+   ([errors-log-archive.md](../../../docs/errors-log-archive.md#a-conditionally-bound-fluxbutton-tooltip-prop-rendered-an-empty-tooltip-on-every-enabled-row--2026-08-16)).
 3. **`cursor-not-allowed!` on that wrapper, not on the button** — Flux's own
    `disabled:pointer-events-none` takes a disabled button out of hit-testing
-   ([errors-log-archive.md](../../docs/errors-log-archive.md#disabledcursor-not-allowed-on-a-flux-button-was-never-the-cursor-the-user-saw--2026-08-16)).
+   ([errors-log-archive.md](../../../docs/errors-log-archive.md#disabledcursor-not-allowed-on-a-flux-button-was-never-the-cursor-the-user-saw--2026-08-16)).
    Do not "simplify" either back into the obvious form.
 4. **Every `wire:model`-bound property has a real non-`null` value in the type the DOM expects** — the
    status select binds a `string` backing value and never a nullable enum
-   ([errors-log-archive.md](../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)),
+   ([errors-log-archive.md](../../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)),
    which is **D-8**.
 5. **`data-test` hooks on *both* branches of every gated control**, so a browser test selects the same
    way regardless of whether it is enabled.
@@ -542,7 +598,7 @@ Markup rules inherited rather than invented:
 ### Component — `resources/views/components/confirm-dialog.blade.php` (**new**, anonymous) — **D-2**
 
 A small **anonymous** Blade component (this repo has no `app/View/Components/` and every component in it
-is anonymous — [base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)),
+is anonymous — [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure)),
 wrapping a `flux:modal` with a heading, a body, a dismiss control and a confirm control:
 
 ```blade
@@ -563,12 +619,13 @@ represents are **[D-2](#d-2)**.
 ### Sidebar registry — `config/modules.php` (**modify**) + `lang/{en,es}/navigation.php` (**modify**)
 
 **One appended entry, no component edit** — the registry pattern
-([authorization.md](../../docs/architecture/authorization.md#the-second-half-of-a-module-gate-the-sidebar-registry)):
+([authorization.md](../../../docs/architecture/authorization.md#the-second-half-of-a-module-gate-the-sidebar-registry)):
 
 ```php
 // config/modules.php — items
 'orders' => [
-    'group' => 'platform',
+    'group' => null,      // bare top-level item like `customers` (0044) — `platform` was retired by 0080
+    'cluster' => null,
     'label' => 'navigation.items.orders',
     'icon' => 'shopping-bag',
     'route' => 'orders.index',
@@ -577,7 +634,7 @@ represents are **[D-2](#d-2)**.
 ],
 ```
 
-- **`group: 'platform'`** — Orders is a top-level operational module like Users and Customers, not store
+- **`group: null, cluster: null`** (corrected in Phase 2, amendment 4) — Orders is a top-level operational module like Users and Customers, not store
   configuration.
 - **`current_when: 'orders.*'`** covers **both** routes, so the sidebar entry stays highlighted on the
   detail page with no second entry — the same property 0044's entry gave 0047 for free.
@@ -589,11 +646,11 @@ represents are **[D-2](#d-2)**.
   assuming it.**
 - **No closures, no literal copy** — `label` is a translation key, because `config:cache` serialises with
   `var_export()` and an English string in `config/` is unreachable from `lang/es/`
-  ([base-standards.md](../../docs/conventions/directory-structure.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache)).
+  ([base-standards.md](../../../docs/conventions/directory-structure.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache)).
 - `lang/{en,es}/navigation.php` each gain **exactly one leaf**, `items.orders`, mirroring the registry
   key — which is simultaneously the config key, the translation leaf and the rendered
   `data-test="sidebar-link-orders"` hook
-  ([naming.md](../../docs/conventions/naming.md#translation-keys)).
+  ([naming.md](../../../docs/conventions/naming.md#translation-keys)).
 
 ### Translations — `lang/en/orders.php` + `lang/es/orders.php` (**modify**)
 
@@ -621,7 +678,7 @@ groups** and renames none: `statuses` / `payment_statuses` (0045), `transitions`
 
 - **A count-dependent message is one key with a `|`-delimited plural, resolved with `trans_choice()`** —
   never a PHP ternary and **never inline in the Blade file**, where `lang/es/` cannot reach it. The
-  giveaway is a `|` outside `lang/` ([naming.md](../../docs/conventions/naming.md#translation-keys), and
+  giveaway is a `|` outside `lang/` ([naming.md](../../../docs/conventions/naming.md#translation-keys), and
   the finding that made 0011 restate it).
 - Both locale files ship in the same change, key-for-key identical.
 
@@ -645,7 +702,7 @@ groups** and renames none: `statuses` / `payment_statuses` (0045), `transitions`
 
 ## Tests to perform
 
-Three suites. Per [testing/README.md](../../docs/testing/README.md), a `Livewire::test()` authorization
+Three suites. Per [testing/README.md](../../../docs/testing/README.md), a `Livewire::test()` authorization
 test and an HTTP one are **not substitutes for each other** — route middleware and the in-component gate
 fail in different places, and `/livewire/update` does not re-run every route middleware. Both are
 required wherever authorization is asserted.
@@ -667,7 +724,7 @@ required wherever authorization is asserted.
 - [ ] Negative test: a signed-in user holding no `orders.*` permission gets a **403**.
 - [ ] **Positive** test: a user holding exactly `orders.view` gets a **200**. Required, not optional — a
       misspelled ability denies everyone and denial is indistinguishable from a correct refusal
-      ([authorization.md](../../docs/architecture/authorization.md#the-copyable-module-gate-pattern-and-the-three-alternatives-rejected)).
+      ([authorization.md](../../../docs/architecture/authorization.md#the-copyable-module-gate-pattern-and-the-three-alternatives-rejected)).
 - [ ] Integration test: a Super Admin (holding zero permission rows) gets a **200** via `Gate::before`.
 - [ ] Integration test: the `orders.index` route's `can:` middleware set is **exactly** `['can:orders.view']`.
 - [ ] Component test: `Livewire::test(Index::class)` mounted by a user without `orders.view` throws
@@ -846,7 +903,7 @@ required wherever authorization is asserted.
 
 - [ ] Integration test: `data-test="sidebar-link-orders"` is **present** for a holder of `orders.view`
       and **absent** otherwise. Select by the hook, never by the word "Orders", which collides with other
-      copy ([authorization.md](../../docs/architecture/authorization.md#the-second-half-of-a-module-gate-the-sidebar-registry)).
+      copy ([authorization.md](../../../docs/architecture/authorization.md#the-second-half-of-a-module-gate-the-sidebar-registry)).
 - [ ] The suite's existing set-equality guard covers the new entry automatically; assert it still passes
       **unmodified** with two routes under `orders.*`, and record that it was verified rather than
       assumed.
@@ -870,11 +927,11 @@ controls than any screen in the app, and one large file would make a failure's b
   "Orders"/"Cancel"/"Total" all collide with other copy on the page.
 - **Drive the selects the way a person does**, not through a `selectOption()`-style API: the
   `null`-property/native-`<select>` desync recorded in
-  [errors-log-archive.md](../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
+  [errors-log-archive.md](../../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
   is invisible to both `Livewire::test()->set()` and `selectOption()`, and this screen binds **three**
   selects (status, product, variant).
 - **Prove each new browser test can fail** before counting it as coverage — the regression-proof
-  discipline [testing/frontend/README.md](../../docs/testing/frontend/README.md) already requires.
+  discipline [testing/frontend/README.md](../../../docs/testing/frontend/README.md) already requires.
 
 ### Deliberately **not** tested
 
@@ -971,7 +1028,7 @@ enforce first.
 
 - [ ] Tests written and green — the full suite **unscoped** (`php artisan test`, no `--filter`), not
       only the Orders-scoped run
-      ([base-standards.md](../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done)).
+      ([base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done)).
       **Non-optional rather than merely recommended here:** this story appends to `config/modules.php`,
       which `SidebarModuleGatingTest` iterates for **every** entry, and it edits a lang file four sibling
       stories also write.
@@ -988,21 +1045,21 @@ enforce first.
       own refusal and never a substitute for it; and that the interim product picker discloses no
       product the actor could not otherwise reach (**R-4**).
 - [ ] Documentation updated (`docs-keeper`):
-  - [`api/routes.md`](../../docs/api/routes.md) — `orders.index` and `orders.show` added to the
+  - [`api/routes.md`](../../../docs/api/routes.md) — `orders.index` and `orders.show` added to the
     app-owned routes table, with a subsection following `users.index`'s shape recording that the
     middleware column **understates** what protects the detail page: three distinct abilities govern its
     controls, all enforced in-method and therefore invisible there. **This is the third and fourth
     permission-gated route** — re-count rather than assume, per the
-    [bare-negative-claim](../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
+    [bare-negative-claim](../../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
     failure mode arriving as arithmetic.
-  - [`architecture/authorization.md`](../../docs/architecture/authorization.md) — the
+  - [`architecture/authorization.md`](../../../docs/architecture/authorization.md) — the
     `Gate::allows()`-is-a-UI-hint section gains its **first three-ability screen**, and its accepted-drift
     list gains the Super Admin/`Enviado` cancel case 0050 predicted. The **state-based refusal** rendered
     as a disabled control (rather than as a 403) is the reusable half a later epic inherits.
-  - [`conventions/base-standards.md`](../../docs/conventions/base-standards.md) — the directory listing
+  - [`conventions/base-standards.md`](../../../docs/conventions/base-standards.md) — the directory listing
     gains `app/Livewire/Orders/`, `routes/orders.php`, and `resources/views/components/confirm-dialog.blade.php`
     as the repo's first **shared** anonymous UI component that is not navigation chrome.
-  - [`conventions/naming.md`](../../docs/conventions/naming.md) — the `Index`-flat / `Show`-nested depth
+  - [`conventions/naming.md`](../../../docs/conventions/naming.md) — the `Index`-flat / `Show`-nested depth
     asymmetry gains its **third** shipped case, in a second folder.
   - **Grep the tree for bare negative claims this story falsifies**, not only the change→doc mapping:
     `grep -rn "two permission-gated routes\|no Orders screen\|not yet built\|does not render yet" docs/`.
@@ -1018,7 +1075,7 @@ human may override** — the reasoning is recorded so an override is a decision 
 *(Resolves `frontend-expert`'s open question 2 — the one real gap the debate found.)*
 
 `AddOrderItem` (0048) needs a product and an optional variant. **Nothing in this repo builds a picker for
-either**, and the natural fit — Epic 2's [0022](done/0022-searchable-multi-select-component.md), the shared
+either**, and the natural fit — Epic 2's [0022](../done/0022-searchable-multi-select-component.md), the shared
 searchable, server-side-filtered multi-select — is `new`, is itself a dependency of three Epic 2 screens,
 and **has no committed timeline within this Epic 3 decomposition**.
 
@@ -1037,7 +1094,7 @@ backend stories — behind a component whose own schedule this decomposition doe
 - An explicit empty state when the catalog is empty, and a bounded result set with a visible notice when
   it is truncated (**R-4**).
 - Both selects bind `public string` properties defaulting to `''`, never `null`
-  ([errors-log-archive.md](../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)).
+  ([errors-log-archive.md](../../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)).
 
 **This is logged as a stopgap, in three places** — here, in [Risks](#risks) as **R-4**, and in the
 [backlog](#technical-tasks-for-the-backlog) as item 1 — because an undocumented interim becomes
@@ -1109,7 +1166,7 @@ judgment with the count already satisfied.
 Three constraints that bind either way:
 
 - **It is anonymous.** This repo has no `app/View/Components/` at all
-  ([base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)), and a class-based
+  ([base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure)), and a class-based
   component here would be the first — a bigger decision than this story should make.
 - **It holds no state and makes no decision.** `:show` is the parent's `bool`; `confirm-action` and
   `dismiss-action` are method names the parent owns. A dialog that decided *whether* to appear would be
@@ -1128,6 +1185,8 @@ so a failure names its own subject: a red `OrderRefundVisibilityTest` says what 
 reads the assertion. The Feature suite is split the same way and for the same reason.
 
 ### D-4 — `canEditLineItems()` is the block's **fourth** call site, and this story asks rather than decides <a id="d-4"></a>
+
+> **RESOLVED in Phase 2 (amendments 2–3): shape (b).** `Order::isLineItemEditable()` is added in a preparatory `feat(orders)` commit and the three actions read it; `canEditLineItems()` reads the same predicate. The "asks rather than decides" wording below is historical.
 
 0048's **D-5** put its hard-block guard in each of its three actions and stated the threshold explicitly:
 *"If the three `if`s ever become four, extract a shared guard class"* in the shape
@@ -1188,7 +1247,7 @@ its currency affix and no casting whatsoever, plus a **sequential** retrofit of 
 
 ⚠️ **The retrofit is a sequential edit of a closed story's file, never a concurrent one** — the same
 constraint 0047's own **D-6** imposed when it edited 0044's view, and the same incident behind it
-([errors-log-archive.md](../../docs/errors-log-archive.md#two-agents-dispatched-in-parallel-both-wrote-to-the-same-blade-view--2026-08-16)).
+([errors-log-archive.md](../../../docs/errors-log-archive.md#two-agents-dispatched-in-parallel-both-wrote-to-the-same-blade-view--2026-08-16)).
 0047's rendering test must be re-run after it.
 
 **`tax_rate` renders as its stored string plus `%`** — `21.000` → `21.000%`. Trimming trailing zeros is a
@@ -1200,7 +1259,7 @@ Three separate rules, each with its own reason:
 
 - **A `public string` bound to a real backing value, never a nullable enum.** A `wire:model`-bound
   property that is `null` desynchronises a native `<select>` and silently drops the user's own pick
-  ([errors-log-archive.md](../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)),
+  ([errors-log-archive.md](../../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)),
   and a *typed enum* property is hydrated through `$type::from($value)` **before** validation runs, so a
   forged value raises an unhandled `\ValueError` rather than a validation error (task 0015's F8). The
   shipped shape is the one both findings converge on: non-nullable `string`, defaulting to the order's
@@ -1216,6 +1275,8 @@ Three separate rules, each with its own reason:
   administrator can see the order *has* a status dimension and that it is closed.
 
 ### D-9 — The Cancel control's hint is `Gate::allows('cancel', $order)`, which **is** `isManuallyCancellable()`
+
+> **AMENDED in Phase 2 (amendment 1):** `Gate::allows('cancel', $order)` is `orders.edit` **and `orders.refund`** and `isManuallyCancellable()`. The paragraph below says "`orders.edit` and…" — read it as the three-way conjunction.
 
 `frontend-expert` proposed reading `Order::isManuallyCancellable()` directly. **Adopted with one
 refinement, and the refinement matters:** the component asks `Gate::allows('cancel', $order)`, which
@@ -1258,7 +1319,7 @@ refund-less actor nothing about why; one that disables on both violates the PRD 
 specified the mixed pair as its own test for exactly this reason.
 
 Note the withheld-control rule from
-[security/authorization-patterns.md](../../docs/security/authorization-patterns.md#a-control-omitted-from-the-dom-is-safe-only-for-the-one-value-whose-guard-preserves-an-omission)
+[security/authorization-patterns.md](../../../docs/security/authorization-patterns.md#a-control-omitted-from-the-dom-is-safe-only-for-the-one-value-whose-guard-preserves-an-omission)
 does **not** bite here: that rule governs a control omitted from a **full-replace payload**, where
 absence is indistinguishable from removal. This control submits nothing; omitting it removes an
 affordance and changes no submitted set.
@@ -1314,7 +1375,7 @@ Orders screen has no create button" reads as an oversight to anyone who has not 
 ### D-14 — Order rows link **out** to `customers.show`; this story does not add the reverse link
 
 The list's customer cell and the detail's customer block both link to `route('customers.show', …)`,
-which [0047](done/0047-customer-order-history-view-ui.md) ships. That makes 0047 a hard dependency for the
+which [0047](../done/0047-customer-order-history-view-ui.md) ships. That makes 0047 a hard dependency for the
 link specifically — see [Dependencies](#dependencies) for the fallback if it has not landed.
 
 The **reverse** link — an order row on 0047's history table linking to `orders.show` — is **0047's own
@@ -1371,7 +1432,7 @@ The rendered states are three, branched on `sales_region_id` and `tax_rate` and 
 - Must **not** render a confirmation control of any kind against the line-item hard block (0048's PRD
   wording, and its own test **T-B**).
 - Must **not** implement an order-creation form (**D-13**), pagination, search or list filters.
-- Must **not** implement a "clear this flag" / manual-review workflow — 0054's [backlog item 4](done/0054-order-tax-region-resolution-virtual-backend.md)
+- Must **not** implement a "clear this flag" / manual-review workflow — 0054's [backlog item 4](../done/0054-order-tax-region-resolution-virtual-backend.md)
   explicitly leaves the review action unspecified.
 - Must **not** render a per-refund event history (who/when) in this cut — the per-line
   `refunded_quantity` and the order's `refunded_amount` are what ships (**OQ-2**).
@@ -1387,19 +1448,21 @@ The rendered states are three, branched on `sales_region_id` and `tax_rate` and 
 
 | Depends on | State | Verified how |
 | --- | --- | --- |
-| `orders` / `order_items` tables, `Order` / `OrderItem`, `OrderStatus`, `PaymentStatus`, `orders.statuses.*` + `payment_statuses.*` lang keys, the **D-6** list and **D-14** detail retrieval contracts | story [0045](done/0045-orders-core-crud-backend.md) — **hard, and itself ⛔ blocked** | every column rendered, both badge label sets, both `#[Computed]` queries |
-| `AddOrderItem` / `RemoveOrderItem` / `UpdateOrderItemQuantity`, `OrderNotEditableException`, the `Enviado`/`Entregado` hard block | story [0048](done/0048-order-line-item-editing-backend.md) — **hard** | three controls and `canEditLineItems()` |
-| `TransitionOrderStatus`, `OrderPolicy` (+ `transitionStatus()`), `OrderStatus::rank()` / `isBackwardFrom()`, `OrderStatusRegressionRequiresConfirmationException`, `orders.transitions.*` | story [0049](done/0049-order-status-transition-backend.md) — **hard** | the status select, the backward dialog, **D-11** |
-| `CancelOrder`, `OrderPolicy::cancel()`, `Order::isManuallyCancellable()`, `OrderCancellationBlockedException`, `orders.cancellation.*` | story [0050](done/0050-order-manual-cancellation-backend.md) — **hard** | the Cancel control and **D-9** |
-| `RecordRefund`, `orders.refund` permission, `refunds` table, `orders.refunded_amount`, `order_items.refunded_quantity` | story [0051](done/0051-order-payment-refund-state-backend.md) — **hard** | the refund control, the refunded totals, **D-10** |
-| the 100%-refund auto-cancel | story [0052](done/0052-order-auto-cancel-full-refund-backend.md) — **hard, transitively via 0051** | this screen is where the auto-cancel first becomes visible; its test asserts the re-rendered status |
-| `orders.sales_region_id` / `tax_rate` / `flagged_for_review` resolution (physical), plus `tax_amount`/`total` computation for physical orders (**D-13**, added when the tax_amount gap was closed) | story [0053](done/0053-order-tax-region-resolution-physical-backend.md) — **hard** | the tax panel, the flag marker, **D-15**, **D-16** |
-| A correct `tax_amount` after a line-item edit on a resolved order (`tax_rate` is a percentage; one shared `CalculateTaxAmount`) | story [0053a](done/0053a-order-totals-tax-rate-percentage-backend.md) — **hard**, done | the tax panel after any line edit |
-| `orders.flag_reason` column + `orders.flag_reasons.*` lang group, virtual resolution, `tax_amount`/`total` computation for virtual orders (the identical shape 0053 mirrors) | story [0054](done/0054-order-tax-region-resolution-virtual-backend.md) — **hard** | the flag callout's copy; **the `flag_reason` column does not exist without it** |
-| `customers.show` route + `App\Models\Customer` | story [0047](done/0047-customer-order-history-view-ui.md) — **hard, for the customer link only** — see below | **D-14** |
+| `orders` / `order_items` tables, `Order` / `OrderItem`, `OrderStatus`, `PaymentStatus`, `orders.statuses.*` + `payment_statuses.*` lang keys, the **D-6** list and **D-14** detail retrieval contracts | story [0045](../done/0045-orders-core-crud-backend.md) — **hard, and itself ⛔ blocked** | every column rendered, both badge label sets, both `#[Computed]` queries |
+| `AddOrderItem` / `RemoveOrderItem` / `UpdateOrderItemQuantity`, `OrderNotEditableException`, the `Enviado`/`Entregado` hard block | story [0048](../done/0048-order-line-item-editing-backend.md) — **hard** | three controls and `canEditLineItems()` |
+| `TransitionOrderStatus`, `OrderPolicy` (+ `transitionStatus()`), `OrderStatus::rank()` / `isBackwardFrom()`, `OrderStatusRegressionRequiresConfirmationException`, `orders.transitions.*` | story [0049](../done/0049-order-status-transition-backend.md) — **hard** | the status select, the backward dialog, **D-11** |
+| `CancelOrder`, `OrderPolicy::cancel()`, `Order::isManuallyCancellable()`, `OrderCancellationBlockedException`, `orders.cancellation.*` | story [0050](../done/0050-order-manual-cancellation-backend.md) — **hard** | the Cancel control and **D-9** |
+| `RecordRefund`, `orders.refund` permission, `refunds` table, `orders.refunded_amount`, `order_items.refunded_quantity` | story [0051](../done/0051-order-payment-refund-state-backend.md) — **hard** | the refund control, the refunded totals, **D-10** |
+| the 100%-refund auto-cancel | story [0052](../done/0052-order-auto-cancel-full-refund-backend.md) — **hard, transitively via 0051** | this screen is where the auto-cancel first becomes visible; its test asserts the re-rendered status |
+| `orders.sales_region_id` / `tax_rate` / `flagged_for_review` resolution (physical), plus `tax_amount`/`total` computation for physical orders (**D-13**, added when the tax_amount gap was closed) | story [0053](../done/0053-order-tax-region-resolution-physical-backend.md) — **hard** | the tax panel, the flag marker, **D-15**, **D-16** |
+| A correct `tax_amount` after a line-item edit on a resolved order (`tax_rate` is a percentage; one shared `CalculateTaxAmount`) | story [0053a](../done/0053a-order-totals-tax-rate-percentage-backend.md) — **hard**, done | the tax panel after any line edit |
+| `orders.flag_reason` column + `orders.flag_reasons.*` lang group, virtual resolution, `tax_amount`/`total` computation for virtual orders (the identical shape 0053 mirrors) | story [0054](../done/0054-order-tax-region-resolution-virtual-backend.md) — **hard** | the flag callout's copy; **the `flag_reason` column does not exist without it** |
+| `customers.show` route + `App\Models\Customer` | story [0047](../done/0047-customer-order-history-view-ui.md) — **hard, for the customer link only** — see below | **D-14** |
 | the `can:`-gated Livewire route pattern, the sidebar registry, `Gate::before`, UUID route-model binding, the two Flux/Blaze markup rules, `data-test` conventions | **shipped** (tasks 0004/0010/0012/0013/0040, 0006) | `routes/users.php`, `config/modules.php`, `users.blade.php`, `roles.blade.php` |
 
 #### ⛔ Blocked — the full inherited chain
+
+> **STALE — resolved.** Every dependency below is `done`; kept as history. See the ✅ banner at the top.
 
 **Phase 3 cannot begin until 0045, 0048, 0049, 0050, 0051, 0052, 0053 and 0054 are all `done`**, and
 0045 is itself blocked on Epic 2's 0024, 0029, 0035, 0036 and 0038. **Confirm each is `done` — not
@@ -1418,7 +1481,7 @@ follow-up; that is a deliberate degradation rather than a ghost affordance, and 
 
 #### ⚠️ Soft dependency — story 0022, worked around rather than waited on
 
-[0022](done/0022-searchable-multi-select-component.md) (the shared searchable multi-select) is `new` and has
+[0022](../done/0022-searchable-multi-select-component.md) (the shared searchable multi-select) is `new` and has
 **no committed timeline in this decomposition**. This story ships the interim in **D-1** and does not
 block. The replacement criterion is recorded verbatim in D-1 so the swap is scheduled work.
 
@@ -1433,7 +1496,7 @@ block. The replacement criterion is recorded verbatim in D-1 so the swap is sche
 
 All of these are **sequential** edits of closed stories' files, which is ordinary maintenance; a
 **concurrent** one is the incident recorded in
-[errors-log-archive.md](../../docs/errors-log-archive.md#two-agents-dispatched-in-parallel-both-wrote-to-the-same-blade-view--2026-08-16)
+[errors-log-archive.md](../../../docs/errors-log-archive.md#two-agents-dispatched-in-parallel-both-wrote-to-the-same-blade-view--2026-08-16)
 and governed by `contracts.md`'s Parallel Agent File-Ownership Rule. Since every listed sibling is a
 hard dependency of this story, the ordering constraint costs nothing — it only needs stating.
 
@@ -1491,7 +1554,7 @@ hard dependency of this story, the ordering constraint costs nothing — it only
   resolved rate on any line-item edit. So a freshly created physical order showed `tax_rate 21.000%`
   beside `tax_amount 0.00` — until someone edited a line item, at which point the amount appeared.
 
-  **Closed by** [0053](done/0053-order-tax-region-resolution-physical-backend.md)'s decision **D-13**, which
+  **Closed by** [0053](../done/0053-order-tax-region-resolution-physical-backend.md)'s decision **D-13**, which
   extends `ResolveOrderTaxRegion` to derive `tax_amount` and re-derive `total` in the same write, using
   0054's computation verbatim. A resolved physical order and a resolved virtual order now carry the same
   five columns, so this panel has nothing inconsistent left to render. **This story is unchanged by the
@@ -1512,7 +1575,7 @@ hard dependency of this story, the ordering constraint costs nothing — it only
   its constant, four exception class names, five lang key groups, `orders.refund`'s existence, and the
   `flag_reason` column. That is precisely the *"a deferred finding is a claim about a tree, and the task
   file freezes while the tree does not"* failure recorded in
-  [errors-log.md](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+  [errors-log.md](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
   *Mitigation:* **Phase 2's INVEST review must be re-run immediately before Phase 3**, and must
   re-verify every quoted name against the **shipped code** rather than against a sibling task file —
   including whether 0050's **D-6** was overridden into a dedicated `orders.cancel` permission (its own
@@ -1549,12 +1612,12 @@ hard dependency of this story, the ordering constraint costs nothing — it only
 resolvable by this story.** This question bundled two things, and they have come apart.
 
 **✅ Closed — who computes `tax_amount` for a physical order.**
-[0053](done/0053-order-tax-region-resolution-physical-backend.md)'s decision **D-13** answers it: its own
+[0053](../done/0053-order-tax-region-resolution-physical-backend.md)'s decision **D-13** answers it: its own
 `ResolveOrderTaxRegion` derives `tax_amount` and re-derives `total` in the same write, using 0054's
 computation verbatim, so the two resolvers agree column-for-column. That closes **R-6**'s visible
 inconsistency **without any change to this story** — this screen still renders what the columns hold
 and invents nothing (**D-7**). The `RecalculateOrderTotals` extraction below survives as 0053's
-[backlog item 1](done/0053-order-tax-region-resolution-physical-backend.md), re-pointed from *"decide who
+[backlog item 1](../done/0053-order-tax-region-resolution-physical-backend.md), re-pointed from *"decide who
 computes this"* to *"consolidate the three call sites that now do"*.
 
 **◻ Still open — when resolution is triggered at all.** 0054's **OQ-2** deferred the *trigger* question
@@ -1606,7 +1669,7 @@ enabled for every other caller of `TransitionOrderStatus`. If the business wants
 **OQ-4 — Does the list need pagination, search or filters? Non-blocking; backlog.** Consistent with
 0044 **D-8**, 0047 **D-11** and both shipped list screens: none in this cut. **The order book is the
 one list in this app that genuinely grows without bound**, though, so its trigger will arrive first —
-and 0045's [backlog item 2](done/0045-orders-core-crud-backend.md) already ties its index decisions to
+and 0045's [backlog item 2](../done/0045-orders-core-crud-backend.md) already ties its index decisions to
 "what story 0055's list actually filters on". Revisit on a real volume signal, deciding the index and
 the filter together.
 
@@ -1614,7 +1677,7 @@ the filter together.
 
 Derived from this story, none of them in scope:
 
-1. **Replace the interim product picker with story [0022](done/0022-searchable-multi-select-component.md)'s
+1. **Replace the interim product picker with story [0022](../done/0022-searchable-multi-select-component.md)'s
    shared searchable multi-select** (**D-1**), applying the recorded acceptance-criterion replacement
    verbatim and removing `productOptions()`, `variantOptions()` and the product select's
    `wire:model.live` binding in the same change.
@@ -1630,10 +1693,26 @@ Derived from this story, none of them in scope:
 7. **A manual-review workflow** — how an administrator clears `flagged_for_review`, and whether clearing
    it re-triggers resolution. 0054's backlog item 4 already names it; this screen is what makes it
    visibly missing.
+8. **Fix the lock-order inversion between `RecordRefund` and the three line-item actions.** `RecordRefund`
+   locks the `order_items` rows before the `orders` row; `AddOrderItem`/`RemoveOrderItem`/
+   `UpdateOrderItemQuantity` lock the order first. A refund and a line-item edit on the same order can
+   therefore deadlock and surface as a 500. Pre-existing, but this story is the first place one screen makes
+   both reachable. Recommended: a small backend story that makes every action lock the order first.
+9. **Interim product picker discloses more than `products.view`.** It hands every active product's id, name
+   and SKU to any `orders.edit` holder even without `products.view` (R-4's premise is only partly true).
+   Accepted for now; replaced by backlog item 1 (story 0022's picker).
+10. **The three `assertEditable()` bodies remain triplicated** (log the refusal, then throw). The status set
+    is single now (`Order::isLineItemEditable()`), but the fourth-call-site extraction D-4 anticipated was
+    taken for the predicate only, not the guard.
+11. **Product question: `canEditLineItems` is true on a `Cancelled` order.** `Order::isLineItemEditable()`
+    mirrors the shipped guard and the PRD blocks only `Shipped`/`Delivered`; decide whether a cancelled order
+    should be editable, then change the predicate in one place.
+12. **The order list is unbounded** (`get()`, OQ-4). Pagination, search and filters belong with backlog
+    item 6.
 
 ## Provenance
 
-- **PRD source:** [§3.2 Orders](../../docs/PRD/PRD.md#32-orders) — this story is the **UI half** of that
+- **PRD source:** [§3.2 Orders](../../../docs/PRD/PRD.md#32-orders) — this story is the **UI half** of that
   section in its entirety: the order list and detail/editor the Epic 3 preamble asks for ("the same list
   + detail/editor visual patterns established in Users and Products"), the line-item editing scenarios
   and their hard block, the status-transition and backward-confirmation scenarios, the manual
@@ -1642,7 +1721,7 @@ Derived from this story, none of them in scope:
   Sales-Region resolution and its manual-review flag. Every backend rule those scenarios describe is
   owned by stories 0045 and 0048–0054; this story's Gherkin deliberately restates none of them and
   asserts only their **UI manifestation** — visible, hidden, disabled, or rendered as an error.
-- **Process:** [workflow.md](../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from
+- **Process:** [workflow.md](../../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from
   `frontend-expert` (the two-route/two-component split and its justification, the route file and its
   ordering constraint, both public surfaces, the list columns, the detail's five sections, the
   per-control hint derivation across three abilities, and two open questions) and `frontend-qa` (the
@@ -1665,18 +1744,34 @@ Derived from this story, none of them in scope:
   to this story**. The trigger half of **OQ-1** remains open and remains a backend question.
 - **Gherkin conventions:** every scenario opens with a named business-role actor ("an order
   administrator", "a signed-in administrator", "a signed-out visitor") and carries exactly one `When`,
-  per [gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 —
+  per [gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 —
   mandatory across all Gherkin in this project, per the incident recorded in
-  [errors-log.md](../../docs/errors-log.md).
+  [errors-log.md](../../../docs/errors-log.md).
 - **Stage:** `new`, and **blocked** — see the banner under [Description](#description). It moves to
   `ai-spec/tasks/in-progress/` at the start of Phase 3 and to `ai-spec/tasks/done/` at Phase 7 — the
   first move changes this file's directory depth, so every relative link above must be re-resolved on
   each move, in **both** directions, per
-  [workflow.md](../../docs/workflow.md#link-integrity-check-on-every-stage-move). **This file carries
+  [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move). **This file carries
   more inbound-link targets than any other in the epic** (eight sibling task files plus 0022 and 0047),
   so Direction 2 of that check is unusually load-bearing here.
 - **Epic 3 decomposition:** story **15 of 15** — the last, and the only one that consumes rather than
   produces. Hard dependencies on 0045, 0047, 0048, 0049, 0050, 0051, 0052 (transitively via 0051), 0053
   and 0054; ⛔ blocked transitively through 0045 on Epic 2 stories 0024, 0029, 0035, 0036 and 0038; and
-  a documented **soft** dependency on Epic 2's pending [0022](done/0022-searchable-multi-select-component.md),
+  a documented **soft** dependency on Epic 2's pending [0022](../done/0022-searchable-multi-select-component.md),
   worked around per **D-1** rather than waited on.
+
+## Closure record (2026-09-23)
+
+- **Shipped as amended** (see the "Phase 2 amendments" block at the top, which supersedes conflicting text).
+  Human decision at Phase 2: D-4 taken as shape (b) inside this branch as a small backend prep —
+  `Order::isLineItemEditable()`, refunded-line guards in `RemoveOrderItem`/`UpdateOrderItemQuantity`, and,
+  by the same reasoning, `Order::isRefundable()` read by `RecordRefund`. D-2 kept (shared anonymous
+  `confirm-dialog`, two call sites, `@close` bound to the dismiss method).
+- **Review rounds:** Phase 2 INVEST FAIL as written → amended; Phase 4 security audit PASS (five Low/Info
+  findings, folded in or backlogged); Phase 5 code review FAIL on three blocking items (blank-quantity 500,
+  un-memoised `$this->order()` calls, persisted error bags) → fixed and pinned by tests, then all criteria met.
+- **Verification:** full unscoped suite green (3427 tests, 3 skipped, 0 failed, browser suite included), Pint
+  clean, Larastan level 7 clean; the six browser files under `tests/Browser/Orders/` and the key feature
+  assertions were each proven able to fail with a targeted mutation.
+- **Backlog raised by this story:** items 8–12 above (refund lock order, picker disclosure, triplicated
+  `assertEditable()` bodies, editing a Cancelled order, unbounded list).

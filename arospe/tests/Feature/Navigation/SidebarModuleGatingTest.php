@@ -155,6 +155,44 @@ test('a role without customers.view never sees the Customers entry — asserted 
 });
 
 // =====================================================================
+// Story 0055 -- the orders entry: `group: null, cluster: null`, the same bare top-level shape
+// `customers` uses. `current_when: 'orders.*'` covers BOTH orders.index and orders.show. The
+// mechanical set-equality guards below iterate config('modules.items') and resolve each entry's
+// OWN `route` key -- they never enumerate routes -- so the second route under `orders.*` is
+// outside their scope (verified against the shipped test, not assumed).
+// =====================================================================
+
+test('a role holding exactly orders.view sees the Orders entry', function () {
+    $this->actingAs(sidebarNavUserWith(['orders.view']));
+
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('data-test="sidebar-link-orders"', false);
+});
+
+test('a role without orders.view never sees the Orders entry -- asserted on the data-test hook', function () {
+    $this->actingAs(sidebarNavUserWith(['blog.view']));
+
+    $response = $this->get(route('dashboard'));
+
+    $response->assertOk();
+    $response->assertSee('data-test="sidebar-link-dashboard"', false);
+    $response->assertDontSee('data-test="sidebar-link-orders"', false);
+});
+
+test('the orders registry entry is bare top-level and covers both orders routes', function () {
+    $entry = config('modules.items.orders');
+
+    expect($entry)->not->toBeNull()
+        ->and($entry['group'])->toBeNull()
+        ->and($entry['cluster'])->toBeNull()
+        ->and($entry['route'])->toBe('orders.index')
+        ->and($entry['current_when'])->toBe('orders.*')
+        ->and($entry['permissions'])->toBe(['orders.view'])
+        ->and($entry['label'])->toBe('navigation.items.orders');
+});
+
+// =====================================================================
 // Story 0018 — the sales_regions entry, RE-TARGETED by story 0080 (see the
 // story 0080 sections further below for the full rationale). `groups.taxes`
 // is retired by 0080 D-4 and `sales_regions` moves into the `store_settings`

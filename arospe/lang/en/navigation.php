@@ -35,6 +35,7 @@ return [
         'shipping_carriers' => 'Carriers & rates',
         'payment_methods' => 'Payment methods',
         'customers' => 'Customers',
+        'orders' => 'Orders',
     ],
 
 ];

@@ -68,3 +68,13 @@ and are not backfilled here — see their own task files in `ai-spec/tasks/done/
 - `lang/{en,es}/orders.php` gained a `transitions` key group (`requires_confirmation`, `same_status`,
   `cancellation_unsupported`) — three keys, no screen copy. Story 0055 extends this same group with
   button/dialog text and must not rename these three keys.
+
+## Story 0055 — Orders list + detail/editor UI
+
+- Routes `orders.index` / `orders.show` gate on `can:orders.view` only; `orders.edit`, `orders.edit` + `orders.refund` (cancel) and `orders.refund` are enforced in-method in `App\Livewire\Orders\Show` — story 0055.
+- `Order::isLineItemEditable()` (the one copy of the Shipped/Delivered block, true on Cancelled) and `Order::isRefundable()` are the shared predicates the actions and the screen both read; the three `assertEditable()` bodies still log and throw — story 0055.
+- `RemoveOrderItem` refuses a line with refunded units and `UpdateOrderItemQuantity` refuses `quantity < refunded_quantity` (both `ValidationException`) — story 0055.
+- `<x-money>` (no cast) and `<x-confirm-dialog>` (parent owns the flag and both methods; `@close` runs the dismiss method) are the first shared anonymous non-chrome components; `App\Concerns\ResolvesFlagReasonLabel` is shared by list and detail — story 0055.
+- A `#[Computed]` is memoised only when read as a property; a typed `int` bound to a number input is unset by a cleared box (bind a string); reset the error bag at the top of every action — story 0055 (see docs/errors-log.md).
+- Refund control: row state = absent from DOM, permission = disabled; Super Admin sees Cancel enabled on a Shipped order (documented drift, 409 rendered) — story 0055.
+- Open: RecordRefund/line-item lock-order inversion, interim picker disclosure, unbounded list — backlog items 8-12 in the story file.

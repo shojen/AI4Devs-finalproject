@@ -69,6 +69,11 @@ return [
         'subtitle' => "Your store's customers and their order history.",
     ],
 
+    'orders' => [
+        'title' => 'Orders',
+        'subtitle' => 'Track, edit and fulfil the order book.',
+    ],
+
     'settings' => [
         'profile' => 'Profile',
         'security' => 'Security',

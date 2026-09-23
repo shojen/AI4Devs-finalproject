@@ -61,3 +61,45 @@ test('isManuallyCancellable never throws for any OrderStatus case, Cancelled inc
     'Delivered' => [OrderStatus::Delivered],
     'Cancelled' => [OrderStatus::Cancelled],
 ]);
+
+// Story 0055, Phase 3 (TDD "red" step): Order::isLineItemEditable() does not exist yet. It is the
+// single predicate AddOrderItem / RemoveOrderItem / UpdateOrderItemQuantity read in place of their
+// three private in_array(Shipped, Delivered) copies (D-4, shape (b)), and that the Show screen's
+// canEditLineItems() reads too -- so the rule has one implementation. It reproduces the CURRENT
+// guard exactly (PRD §3.2 blocks Shipped/Delivered only): Cancelled is deliberately not blocked.
+
+test('isLineItemEditable is true for Pending, Processing and Cancelled', function (OrderStatus $status) {
+    expect(makeOrder($status, PaymentStatus::Paid)->isLineItemEditable())->toBeTrue();
+})->with([
+    'Pending' => [OrderStatus::Pending],
+    'Processing' => [OrderStatus::Processing],
+    'Cancelled' => [OrderStatus::Cancelled],
+]);
+
+test('isLineItemEditable is false for Shipped and Delivered regardless of payment state', function (OrderStatus $status, PaymentStatus $paymentStatus) {
+    expect(makeOrder($status, $paymentStatus)->isLineItemEditable())->toBeFalse();
+})->with([
+    'Shipped' => [OrderStatus::Shipped],
+    'Delivered' => [OrderStatus::Delivered],
+])->with([
+    'PendingPayment' => [PaymentStatus::PendingPayment],
+    'Paid' => [PaymentStatus::Paid],
+    'PartiallyRefunded' => [PaymentStatus::PartiallyRefunded],
+    'Refunded' => [PaymentStatus::Refunded],
+]);
+
+// Story 0055 (D-10): the refund control's STATE half. Order::isRefundable() is the single payment-
+// state predicate RecordRefund's guard reads and the detail screen's refund control reads, so the
+// screen never writes the {Paid, PartiallyRefunded} set a second time.
+
+test('isRefundable is true only for Paid and PartiallyRefunded, whatever the fulfilment status', function (OrderStatus $status, PaymentStatus $paymentStatus, bool $expected) {
+    expect(makeOrder($status, $paymentStatus)->isRefundable())->toBe($expected);
+})->with([
+    'Pending / PendingPayment' => [OrderStatus::Pending, PaymentStatus::PendingPayment, false],
+    'Pending / Paid' => [OrderStatus::Pending, PaymentStatus::Paid, true],
+    'Processing / PartiallyRefunded' => [OrderStatus::Processing, PaymentStatus::PartiallyRefunded, true],
+    'Shipped / Paid' => [OrderStatus::Shipped, PaymentStatus::Paid, true],
+    'Cancelled / Paid' => [OrderStatus::Cancelled, PaymentStatus::Paid, true],
+    'Processing / Refunded' => [OrderStatus::Processing, PaymentStatus::Refunded, false],
+    'Cancelled / Refunded' => [OrderStatus::Cancelled, PaymentStatus::Refunded, false],
+]);

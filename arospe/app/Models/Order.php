@@ -168,6 +168,37 @@ class Order extends Model
     }
 
     /**
+     * May this order's line items be added, removed or re-quantified right now?
+     *
+     * Non-throwing predicate (story 0055, D-4 shape (b)): PRD §3.2 hard-blocks line-item
+     * edits on Shipped/Delivered orders with no confirmation path around it. Every write
+     * action in App\Actions\Orders that guards that block reads this ONE method and throws
+     * OrderNotEditableException itself, and the order-detail screen's edit controls read it
+     * too -- so a UI hint cannot drift from the rule that refuses. Deliberately says nothing
+     * about the ACTOR (a policy concern) and reproduces the shipped guard exactly: Cancelled
+     * is not blocked, since the PRD names only these two statuses.
+     */
+    public function isLineItemEditable(): bool
+    {
+        return ! in_array($this->status, [OrderStatus::Shipped, OrderStatus::Delivered], true);
+    }
+
+    /**
+     * Is this order in a payment state that can take a refund?
+     *
+     * Non-throwing predicate (story 0055, D-10): PRD §3.2 accepts a refund from Paid and
+     * PartiallyRefunded only, and refuses PendingPayment and Refunded. App\Actions\Orders\RecordRefund's
+     * state guard and the order-detail screen's refund control both read this ONE method, so the UI
+     * (which omits the control entirely in the two refused states) cannot drift from the rule that
+     * refuses. Says nothing about the ACTOR -- `orders.refund` is a separate dimension -- and
+     * nothing about the fulfilment status, which a refund never consults.
+     */
+    public function isRefundable(): bool
+    {
+        return in_array($this->payment_status, [PaymentStatus::Paid, PaymentStatus::PartiallyRefunded], true);
+    }
+
+    /**
      * May this order be cancelled by an administrator right now?
      *
      * Non-throwing predicate over BOTH status dimensions (story 0050, PRD
