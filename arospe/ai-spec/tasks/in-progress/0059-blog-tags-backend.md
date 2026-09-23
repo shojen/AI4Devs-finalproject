@@ -1164,3 +1164,42 @@ story whole-suite blast radius, which
 [errors-log.md](../../../docs/errors-log-archive.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)
 records as the exact shape that slips past a `--filter`ed test run. The Definition of Done names all
 three quality gates unscoped for that reason.
+
+## Phase 2 amendments (2026-09-24)
+
+Recorded when the story was checked out into `in-progress/`, after re-reading the tree at
+`finalproject-ARP` (`61194a2`). Story 0058 shipped in the meantime and hardened three things this
+file still describes in its first-draft form; the open questions are answered with the
+recommendations already stated above.
+
+- **OQ-1 — `name` is 100.** `BlogTag::NAME_MAX_LENGTH = 100`, in lockstep with `string('name', 100)` and
+  the validation `max:` (R-4).
+- **OQ-2 — closed.** `App\Actions\NormalizeForSearch` exists (story 0022). It is consumed unchanged; no
+  fold is created or forked here.
+- **OQ-3 — conditional ability adopted, with one precision.** The reuse branch is allowed to an actor who
+  holds `blog.view` **or** `blog.create`, not `blog.view` alone: the test list requires an actor holding
+  `blog.create` to succeed on both branches, and refusing a *reuse* to someone entitled to *mint* the
+  same tag would be incoherent. The lookup is gated first (before any read or write, D-12); the insert
+  branch then asks `create`. An actor holding neither is refused on both branches with `viewAny`.
+- **OQ-4 — dedup policy kept.**
+- **R-4 — measured by execution, not assumed.** Running `NormalizeForSearch` over every Unicode code
+  point gives a **maximum of 5 characters for a single code point** (U+104C, one code point). A 100
+  character `name` can therefore fold to 500, so no `normalized_name` width up to 255 is a guarantee.
+  **Shipped: the second option of R-4** — `normalized_name` stays `255` (a hard ceiling, not headroom) and
+  validation refuses any name whose *folded* form does not fit, so an in-policy input can never reach a
+  `22001`. The same guard refuses a name that folds to nothing or to something with edge whitespace.
+- **`nameFormatRules()` takes the normaliser.** Because the folded-length guard is part of the format
+  contract, the signature is `nameFormatRules(NormalizeForSearch $normalizeForSearch)`. It still carries
+  **no** uniqueness rule, which the unit test proves behaviourally (a colliding row passes it and fails
+  `nameRules()`).
+- **The trim is Unicode-aware** (`trimName()`, as in 0058): PHP's `trim()` leaves a non-breaking or
+  zero-width space in place, which would let a visually identical duplicate through. It runs before
+  validation in every action (R-2).
+- **D-4's hook also re-derives when `normalized_name` itself is dirty** (as in 0058), so a directly
+  assigned or forged value is overwritten on save; an unrelated save still leaves the column alone.
+- **`RenameBlogTag` and `DeleteBlogTag` re-read the row** after authorizing and act on the fresh copy —
+  the passed instance is untrusted (`docs/security/model-instance-trust.md`). An already-gone row is a
+  `ModelNotFoundException`.
+- **Known duplication, deliberately not refactored here:** `trimName()` and the folded-length guard now
+  exist in both `BlogCategoryValidationRules` and `BlogTagValidationRules`. Extracting a shared concern
+  would edit a shipped, sibling-owned file outside this story's scope fences; recorded as a follow-up.
