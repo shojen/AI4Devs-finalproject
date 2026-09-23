@@ -231,8 +231,16 @@ test('removing a line item that has refunded units is refused as a validation er
     $refundedItem = OrderItem::factory()->for($order)->create(['quantity' => 2, 'refunded_quantity' => 1]);
     OrderItem::factory()->for($order)->create();
 
-    expect(fn () => app(RemoveOrderItem::class)($order, $refundedItem->id))
-        ->toThrow(fn (ValidationException $e) => isset($e->errors()['order_item_id']));
+    $errors = null;
+
+    try {
+        app(RemoveOrderItem::class)($order, $refundedItem->id);
+    } catch (ValidationException $e) {
+        $errors = $e->errors();
+    }
+
+    // Pest's toThrow(callable) discards the callable's return, so the error KEY is asserted here.
+    expect($errors)->not->toBeNull()->toHaveKey('order_item_id');
 
     expect(OrderItem::query()->whereKey($refundedItem->id)->exists())->toBeTrue();
 });

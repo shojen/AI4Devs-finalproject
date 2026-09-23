@@ -12,6 +12,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Support\Orders\OrdersUi;
@@ -168,4 +169,42 @@ test('the detail screen renders exactly one h1 and no inline duplicate of the to
     $html = $this->get(route('orders.show', $order))->assertOk()->getContent();
 
     expect(substr_count($html, '<h1'))->toBe(1);
+});
+
+// Livewire memoises a #[Computed] only when it is read as a PROPERTY ($this->order); calling the method
+// ($this->order()) re-runs it every time -- about 78 queries per render before this was pinned, and it
+// made refreshOrderState()'s unset() block dead code. The guard counts reads of the `orders` table.
+test('rendering the detail screen reads the order once, not once per call site', function () {
+    $order = Order::factory()->withItems(3)->paid()->create();
+    test()->actingAs(OrdersUi::actor(['orders.view', 'orders.edit', 'orders.refund']));
+
+    $orderReads = 0;
+    DB::listen(function ($query) use (&$orderReads): void {
+        if (preg_match('/from [`"]orders[`"] where/i', $query->sql)) {
+            $orderReads++;
+        }
+    });
+
+    Livewire::test(Show::class, ['order' => $order]);
+
+    expect($orderReads)->toBeLessThanOrEqual(2);
+});
+
+test('a write re-reads the order once for the refresh, not once per computed', function () {
+    $order = Order::factory()->withItems(2)->create();
+    $item = $order->items()->first();
+    test()->actingAs(OrdersUi::actor(['orders.view', 'orders.edit']));
+
+    $component = Livewire::test(Show::class, ['order' => $order]);
+
+    $orderReads = 0;
+    DB::listen(function ($query) use (&$orderReads): void {
+        if (preg_match('/from [`"]orders[`"] where/i', $query->sql)) {
+            $orderReads++;
+        }
+    });
+
+    $component->call('removeLineItem', $item->id);
+
+    expect($orderReads)->toBeLessThanOrEqual(8);
 });

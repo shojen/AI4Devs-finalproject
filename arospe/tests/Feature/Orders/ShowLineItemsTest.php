@@ -73,8 +73,13 @@ test('on a Shipped order the line-item section contains NO confirmation control 
     $html = Livewire::test(Show::class, ['order' => $order])->html();
     $section = OrdersUi::section($html, 'line-items-section');
 
+    // A CLOSED dialog emits none of its own markup, so a grep for `confirm-dialog` alone is close to
+    // vacuous. The real guarantee is that the section carries NO wire:click at all (every control in it
+    // is on its disabled branch) and no `confirm`-named hook of any kind.
     expect($section)->not->toBe('')
+        ->not->toContain('wire:click')
         ->not->toContain('confirm-dialog')
+        ->not->toMatch('/data-test="[^"]*confirm[^"]*"/')
         ->not->toContain('addLineItem')
         ->not->toContain('removeLineItem')
         ->not->toContain('updateLineItemQuantity');
@@ -99,7 +104,7 @@ test('a forged addLineItem against a Shipped order renders the 409 message as an
 
     Livewire::test(Show::class, ['order' => $order])
         ->set('newProductId', $product->id)
-        ->set('newQuantity', 1)
+        ->set('newQuantity', '1')
         ->call('addLineItem')
         ->assertHasErrors(['lineItems'])
         ->assertSee(__('orders.errors.order_not_editable'));
@@ -185,7 +190,7 @@ test('adding a line item for an existing product lists it and updates the totals
 
     $html = Livewire::test(Show::class, ['order' => $order])
         ->set('newProductId', $product->id)
-        ->set('newQuantity', 2)
+        ->set('newQuantity', '2')
         ->call('addLineItem')
         ->assertHasNoErrors()
         ->html();
@@ -207,7 +212,7 @@ test('a successful add resets the add form so the next add starts clean', functi
         ->call('addLineItem')
         ->assertSet('newProductId', '')
         ->assertSet('newProductVariantId', '')
-        ->assertSet('newQuantity', 1);
+        ->assertSet('newQuantity', '1');
 });
 
 // --- Refunded lines (amendment 3) ---
@@ -325,4 +330,45 @@ test('the picker binds string properties defaulting to empty, never null (native
         ->assertSet('newProductId', '')
         ->assertSet('newProductVariantId', '')
         ->assertSet('selectedStatus', $order->status->value);
+});
+
+test('a cleared quantity box renders a validation error instead of a 500 (typed-int unset trap)', function () {
+    ordersUiLineEditor();
+
+    $order = Order::factory()->withItems(1)->create();
+    $product = Product::factory()->active()->create();
+
+    Livewire::test(Show::class, ['order' => $order])
+        ->set('newProductId', $product->id)
+        ->set('newQuantity', '')
+        ->call('addLineItem')
+        ->assertHasErrors(['quantity']);
+
+    expect($order->items()->count())->toBe(1);
+});
+
+test('a failed add does not leave its error behind after a later successful add (persisted error bag)', function () {
+    ordersUiLineEditor();
+
+    $order = Order::factory()->withItems(1)->create();
+    $product = Product::factory()->active()->create();
+
+    Livewire::test(Show::class, ['order' => $order])
+        ->call('addLineItem')
+        ->assertHasErrors(['newProductId'])
+        ->set('newProductId', $product->id)
+        ->call('addLineItem')
+        ->assertHasNoErrors();
+});
+
+test('a field error is rendered exactly once, not once by the field and once by the error region', function () {
+    ordersUiLineEditor();
+
+    $order = Order::factory()->withItems(1)->create();
+
+    $html = Livewire::test(Show::class, ['order' => $order])
+        ->call('addLineItem')
+        ->html();
+
+    expect(substr_count($html, e(__('orders.line_items.product_unavailable'))))->toBe(1);
 });

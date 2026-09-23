@@ -248,8 +248,16 @@ test('lowering a quantity below the refunded quantity is refused as a validation
     $order = Order::factory()->paid()->create(['status' => OrderStatus::Processing]);
     $item = OrderItem::factory()->for($order)->create(['quantity' => 5, 'refunded_quantity' => 3]);
 
-    expect(fn () => app(UpdateOrderItemQuantity::class)($order, $item->id, 2))
-        ->toThrow(fn (ValidationException $e) => isset($e->errors()['quantity']));
+    $errors = null;
+
+    try {
+        app(UpdateOrderItemQuantity::class)($order, $item->id, 2);
+    } catch (ValidationException $e) {
+        $errors = $e->errors();
+    }
+
+    // Pest's toThrow(callable) discards the callable's return, so the error KEY is asserted here.
+    expect($errors)->not->toBeNull()->toHaveKey('quantity');
 
     expect($item->fresh()->quantity)->toBe(5);
 });

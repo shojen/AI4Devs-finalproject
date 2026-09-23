@@ -150,19 +150,58 @@ test('dismissing leaves the persisted status untouched AND resets the select to 
     expect($order->fresh()->status)->toBe(OrderStatus::Shipped);
 });
 
-test('the dialog closing client-side (Esc / backdrop / X) resets the select the same way as the dismiss control', function () {
+test('the dialog closing client-side (Esc / backdrop / X) is wired to the dismiss method, not merely to its own Cancel button', function () {
     ordersUiStatusEditor();
 
     $order = ordersUiStatusOrder(OrderStatus::Shipped);
 
-    // The confirm-dialog binds its dismiss METHOD to @close, so a client-side close reaches the
-    // server as dismissBackwardConfirm() rather than leaving the flag true (amendment 14).
+    // The confirm-dialog binds its dismiss METHOD to the modal's own @close (amendment 14), which Flux
+    // compiles to wire:close on the <dialog>. The Cancel button carries dismissBackwardConfirm too, so
+    // the assertion is scoped to the <dialog> OPENING tag -- otherwise it would pass with @close removed.
     $html = Livewire::test(Show::class, ['order' => $order])
         ->set('selectedStatus', 'pending')
         ->call('requestStatusChange')
         ->html();
 
-    expect($html)->toContain('dismissBackwardConfirm');
+    expect(preg_match('/<dialog\b[^>]*data-modal="backward-transition-modal"[^>]*>/s', $html, $modal))->toBe(1)
+        ->and($modal[0])->toContain('wire:close="dismissBackwardConfirm"');
+});
+
+test('a failed status request leaves no stale error behind after a later valid one', function () {
+    ordersUiStatusEditor();
+
+    $order = ordersUiStatusOrder(OrderStatus::Pending);
+
+    Livewire::test(Show::class, ['order' => $order])
+        ->set('selectedStatus', 'pending')
+        ->call('requestStatusChange')
+        ->assertHasErrors(['selectedStatus'])
+        ->set('selectedStatus', 'processing')
+        ->call('requestStatusChange')
+        ->assertHasNoErrors();
+
+    expect($order->fresh()->status)->toBe(OrderStatus::Processing);
+});
+
+test('a backward confirmation is refused when the order moved while the dialog was open', function () {
+    ordersUiStatusEditor();
+
+    $order = ordersUiStatusOrder(OrderStatus::Shipped);
+
+    $component = Livewire::test(Show::class, ['order' => $order])
+        ->set('selectedStatus', 'pending')
+        ->call('requestStatusChange')
+        ->assertSet('showBackwardConfirm', true);
+
+    // Another administrator moves the order while this one is looking at the dialog.
+    $order->forceFill(['status' => OrderStatus::Delivered])->save();
+
+    $component->call('applyStatusChange')
+        ->assertHasErrors(['selectedStatus'])
+        ->assertSet('showBackwardConfirm', false)
+        ->assertSee(__('orders.transitions.stale_confirmation'));
+
+    expect($order->fresh()->status)->toBe(OrderStatus::Delivered);
 });
 
 // --- Defence in depth: forged inputs (D-11, D-12, amendment 12) ---

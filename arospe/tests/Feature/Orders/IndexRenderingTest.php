@@ -11,6 +11,7 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -209,10 +210,26 @@ test('the list view resolves to the flat livewire/orders path, never orders/inde
         ->and(file_exists(resource_path('views/livewire/orders/index.blade.php')))->toBeFalse();
 });
 
-test('neither locale carries a create button: the list is read-only (D-13)', function () {
+test('the list carries no create control: it is read-only (D-13)', function () {
     $this->actingAs(ordersUiRenderingActor());
 
     $html = $this->get(route('orders.index'))->assertOk()->getContent();
 
     expect($html)->not->toContain('data-test="create-order"');
+});
+
+test('rendering the list loads the order book once, not once per computed read', function () {
+    $this->actingAs(ordersUiRenderingActor());
+    Order::factory()->count(3)->create();
+
+    $listReads = 0;
+    DB::listen(function ($query) use (&$listReads): void {
+        if (preg_match('/from [`"]orders[`"] order by/i', $query->sql)) {
+            $listReads++;
+        }
+    });
+
+    Livewire::test(Index::class);
+
+    expect($listReads)->toBe(1);
 });
