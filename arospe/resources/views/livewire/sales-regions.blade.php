@@ -3,7 +3,7 @@
  * View for App\Livewire\SalesRegions\Index (story 0018). Flat path, not
  * sales-regions/index.blade.php -- the same Index-in-a-subfolder exception
  * App\Livewire\Users\Index and App\Livewire\Roles\Index already rely on; see
- * docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name.
+ * docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name.
  *
  * This story owns markup and UI state only. Every query, mutation,
  * validation rule and authorization decision belongs to sibling story

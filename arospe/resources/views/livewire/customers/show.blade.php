@@ -5,7 +5,7 @@
  * the ordinary mirror rule, one level deeper than its sibling
  * resources/views/livewire/customers.blade.php (which flattens because
  * Customers\Index IS named Index). See
- * docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name.
+ * docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name.
  *
  * No form, no modal, no wire:click anywhere on this page -- the screen writes
  * nothing (the story's central claim). The order-history section is wrapped

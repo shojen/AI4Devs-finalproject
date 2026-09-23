@@ -48,7 +48,7 @@ class Show extends Component
      *
      * Route-model binding already 404s a malformed or soft-deleted `{customer}` segment before
      * this method ever runs (HasUuids::resolveRouteBindingQuery() for the former, the
-     * SoftDeletingScope for the latter) -- see docs/conventions/base-standards.md#uuid-primary-keys.
+     * SoftDeletingScope for the latter) -- see docs/conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys.
      */
     public function mount(Customer $customer): void
     {

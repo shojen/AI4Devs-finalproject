@@ -3,7 +3,7 @@
  * View for App\Livewire\Orders\Index (story 0055). Flat path, not orders/index.blade.php --
  * Livewire's Finder strips a trailing ".index" segment for an Index component in a subfolder, the
  * same exception Users\Index / Customers\Index already rely on; see
- * docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name.
+ * docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name.
  * Its sibling Orders\Show resolves NESTED (orders/show.blade.php): the two live at different
  * depths, which is expected rather than a mistake.
  *

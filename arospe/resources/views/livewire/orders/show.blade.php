@@ -4,7 +4,7 @@
  * exception, since the class is not named Index: the ordinary component <-> view mirror, one level
  * deeper than its sibling resources/views/livewire/orders.blade.php (which flattens because
  * Orders\Index IS named Index). See
- * docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name.
+ * docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name.
  *
  * Five sections: header, customer (read-only plain text -- the addresses are a frozen historical
  * snapshot, so no input and no form), line items, status & lifecycle, totals & tax. Each has a

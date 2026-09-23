@@ -20,7 +20,7 @@ return new class extends Migration
             // never hold a real recipient. This migration is greenfield, so
             // the correction costs one line -- no rename, no backfill, no
             // multi-migration dance, unlike the historical users conversion.
-            // See docs/database/migrations.md#uuid-primary-keys.
+            // See docs/database/migrations/uuid-primary-keys.md#uuid-primary-keys.
             $table->uuidMorphs('notifiable');
             $table->text('data');
             $table->timestamp('read_at')->nullable();

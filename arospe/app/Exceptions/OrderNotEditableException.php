@@ -15,7 +15,7 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
  * Delivered -- deliberately never a Gate ability and never an
  * App\Policies\OrderPolicy method, because Gate::before's Super Admin
  * bypass would make a Gate-mediated check inert against exactly the actor
- * most likely to try (docs/security/authorization-patterns.md#a-rule-that-must-bind-a-super-admin-actor-must-be-a-direct-throw-not-a-gate-check).
+ * most likely to try (docs/security/authorization-patterns/ability-coverage-and-guards.md#a-rule-that-must-bind-a-super-admin-actor-must-be-a-direct-throw-not-a-gate-check).
  *
  * Renders as a 409 Conflict, RoleInUseException's own precedent -- not 403:
  * the request is well-formed and the actor IS authorized, the order simply

@@ -5,7 +5,7 @@ namespace App\Enums;
 /**
  * An order's fulfilment status (story 0045, PRD §3.2). TitleCase keys,
  * lowercase snake_case backing values, matching the UserStatus/
- * SalesRegionKind precedent (docs/conventions/naming.md#classes).
+ * SalesRegionKind precedent (docs/conventions/naming/classes.md#classes).
  *
  * Corrected 2026-09-15 (story 0047) -- this docblock used to read "Deliberately
  * no label() and no transition logic ... a one-caller label() is indirection
