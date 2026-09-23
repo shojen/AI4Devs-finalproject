@@ -7,9 +7,9 @@
       "slug": "0055-orders-list-detail-editor-ui",
       "title": "Orders list + detail/editor UI",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree 0055-orders-list-detail-editor-ui",
+      "claimed_at": "2026-09-23T00:00:00Z",
       "touches": [
         "app/Livewire/Orders/Index.php",
         "app/Livewire/Orders/Show.php",
