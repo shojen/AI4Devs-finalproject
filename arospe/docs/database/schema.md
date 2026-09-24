@@ -48,6 +48,9 @@ erDiagram
     PRODUCT_VARIANTS ||--o{ ORDER_ITEMS : "product_variant_id (nullable)"
     REFUNDS }o--|| ORDER_ITEMS : order_item_id
     REFUNDS }o--|| USERS : refunded_by
+    BLOG_CATEGORIES ||--o{ BLOG_POSTS : blog_category_id
+    BLOG_TAGS ||--o{ BLOG_POST_TAG : blog_tag_id
+    BLOG_POSTS ||--o{ BLOG_POST_TAG : blog_post_id
 
     USERS {
         uuid id PK
@@ -307,6 +310,20 @@ erDiagram
         string name
         string normalized_name UK
     }
+    BLOG_POSTS {
+        uuid id PK
+        uuid blog_category_id FK
+        string title
+        string slug UK
+        mediumtext body
+        string status
+        timestamp published_at
+        timestamp deleted_at
+    }
+    BLOG_POST_TAG {
+        uuid blog_tag_id FK
+        uuid blog_post_id FK
+    }
     PASSWORD_RESET_TOKENS {
         string email PK
         string token
@@ -370,14 +387,14 @@ Split by domain into separate files, per [contracts.md](../contracts/token-and-d
 - **[Shipping](schema-shipping.md)** — read if the task touches [`geography_entries`](schema-shipping/geography-entries.md#geography_entries) (the shipping geography catalog, physically independent of `sales_regions`), [`shipping_zones`](schema-shipping/zones.md#shipping_zones), [`shipping_zone_geography_entry`](schema-shipping/zones.md#shipping_zone_geography_entry), [`shipping_carriers`](schema-shipping/carriers-and-rates.md#shipping_carriers), or [`shipping_rates`](schema-shipping/carriers-and-rates.md#shipping_rates).
 - **[Payment Methods, Customers & Notifications](schema-other.md)** — read if the task touches [`payment_methods`](schema-other/payment-methods.md#payment_methods), [`customers`](schema-other/customers.md#customers), or [`notifications`](schema-other/notifications.md#notifications).
 - **[Orders](schema-orders.md)** — read if the task touches [`orders`](schema-orders/orders.md#orders), [`order_items`](schema-orders/items-and-refunds.md#order_items), or [`refunds`](schema-orders/items-and-refunds.md#refunds): the price-at-time-of-order and address-snapshot invariants, `order_number` generation, the three-way delete-behaviour rule these tables exercise together, [why `orders.subtotal`/`.tax_amount`/`.total` are derived and *re-derived* rather than write-once, and `order_items.unit_price` is immutable after insert](schema-orders/snapshots-totals-and-rules.md#totals-are-derived-and-re-derived-not-write-once) (story 0048), and — since story 0051 — the refund event log `order_items.refunded_quantity`/`orders.refunded_amount` are derived from.
-- **[Blog](schema-blog.md)** — read if the task touches [`blog_categories`](schema-blog.md#blog_categories) (the blog taxonomy, physically independent of `product_categories`): the `normalized_name` unique key and why `name` carries none, the `Str::ascii()` expansion ceiling, the hard delete, and the in-use delete guard hand-off to story 0061; or [`blog_tags`](schema-blog.md#blog_tags) (a second standalone taxonomy sharing nothing with either category table): the same stored-key shape at `name` 100 with the folded length bounded in validation, the two name-rule methods (`FindOrCreateBlogTag` validates format only), the unconditional delete, and the `cascadeOnDelete()` contract story 0061's pivot must honour.
+- **[Blog](schema-blog.md)** — read if the task touches [`blog_categories`](schema-blog.md#blog_categories) (the blog taxonomy, physically independent of `product_categories`): the `normalized_name` unique key and why `name` carries none, the `Str::ascii()` expansion ceiling, the hard delete, and the shipped in-use delete guard (`withTrashed()` count, `blogCategoryId` error key); [`blog_tags`](schema-blog.md#blog_tags) (a second standalone taxonomy): the same stored-key shape at `name` 100 with the folded length bounded in validation, the two name-rule methods, the unconditional delete and the pivot cascade it relies on; [`blog_posts`](schema-blog.md#blog_posts) (the third soft-deleting model, slug derived and reserved, nullable `body`, `published_at` governed by `status`, the `(deleted_at, status, published_at)` index); or [`blog_post_tag`](schema-blog.md#blog_post_tag) (the composite-PK pivot, both FKs cascading, `SyncBlogPostTags` as its only writer).
 
 ## Notes
 
-- `app/Models/` holds twenty classes (`ls app/Models/*.php`, recounted rather than incremented blind): `User` (Epic 1); eighteen Epic 2/3/4 domain models — `SalesRegion`, `Media`, `ProductCategory`, `BlogCategory` (story 0058, [schema-blog.md](schema-blog.md)), `BlogTag` (story 0059, same file), `Product`, `ProductAttributeType`, `ProductAttributeValue`, `ProductVariant`, `GeographyEntry` (the only `bigint`-PK model in this app), `ShippingZone`, `ShippingCarrier`, `ShippingRate`, `PaymentMethod`, `Customer`, `Order`, `OrderItem` (story 0045) and `Refund` (story 0051, [schema-orders.md](schema-orders.md)); and `Role`, a `spatie/laravel-permission` subclass over the package's own `roles` table — no column, no migration of its own (see [architecture/authorization.md](../architecture/authorization/super-admin.md#the-super-admin-roles-invariants)). **Four pivot tables have no model class at all** — `product_media`, `product_sales_region`, `product_variant_values`, `shipping_zone_geography_entry` — reached only through the owning models' `BelongsToMany`, the same shape the vendored `role_has_permissions`/`model_has_roles` pivots use.
+- `app/Models/` holds twenty-one classes (`ls app/Models/*.php`, recounted rather than incremented blind): `User` (Epic 1); nineteen Epic 2/3/4 domain models — `SalesRegion`, `Media`, `ProductCategory`, `BlogCategory` (story 0058, [schema-blog.md](schema-blog.md)), `BlogTag` (story 0059, same file), `BlogPost` (story 0061, same file), `Product`, `ProductAttributeType`, `ProductAttributeValue`, `ProductVariant`, `GeographyEntry` (the only `bigint`-PK model in this app), `ShippingZone`, `ShippingCarrier`, `ShippingRate`, `PaymentMethod`, `Customer`, `Order`, `OrderItem` (story 0045) and `Refund` (story 0051, [schema-orders.md](schema-orders.md)); and `Role`, a `spatie/laravel-permission` subclass over the package's own `roles` table — no column, no migration of its own (see [architecture/authorization.md](../architecture/authorization/super-admin.md#the-super-admin-roles-invariants)). **Five pivot tables have no model class at all** — `product_media`, `product_sales_region`, `product_variant_values`, `shipping_zone_geography_entry`, `blog_post_tag` — reached only through the owning models' `BelongsToMany`, the same shape the vendored `role_has_permissions`/`model_has_roles` pivots use.
 - For migration authoring conventions (naming, `down()` requirements, real examples), see [database/migrations.md](migrations.md).
 - **UUID (v7) primary keys.** Each table's PK type (`uuid` vs `bigint`) is already visible directly in the ER diagram above, and each per-domain schema file states its own table's status against [ADR 0001](../decisions/0001-uuid-primary-keys.md) at the point that table is documented — so this section no longer restates a consolidated status list. The ADR is the single source of truth for the policy and its full history: which entities it covers, the one named `bigint` exception (`geography_entries`), and every amendment since. The model-side convention (`HasUuids`, `@property string $id`, no restated `$keyType`/`$incrementing`) is in [conventions/base-standards.md](../conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys); the migration-side pattern is in [database/migrations.md](migrations/uuid-primary-keys.md#uuid-primary-keys).
 
-_Last updated: 2026-09-24 — Story 0059 (Blog tags — backend). Added `BLOG_TAGS` to the ER diagram as a standalone entity block (story 0061's `blog_post_tag` pivot will add its first relationship line), widened the **Domain tables** [Blog](schema-blog.md) bullet to name [`blog_tags`](schema-blog.md#blog_tags), and recounted the **Notes** model-class inventory to twenty (`ls app/Models/*.php`). Every application table is diagrammed, relationships or not — since story 0058._
+_Last updated: 2026-09-24 — Story 0061 (Blog posts — core CRUD backend). Added `BLOG_POSTS` and `BLOG_POST_TAG` to the ER diagram with their three relationship lines, widened the **Domain tables** [Blog](schema-blog.md) bullet to name both, and recounted the **Notes** model-class inventory to twenty-one (`ls app/Models/*.php`). Every application table is diagrammed, relationships or not — since story 0058._
 
 _Earlier revision notes: [database--schema.md](../history/database--schema.md)._
