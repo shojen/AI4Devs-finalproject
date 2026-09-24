@@ -1,0 +1,69 @@
+name: PROD
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: prod-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verificar-ci:
+    name: Verificar pipelines
+    if: github.ref == 'refs/heads/finalproject-ARP'
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.check.outputs.sha }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+          REQUIRED_WORKFLOWS: "Tests,Lint"
+        run: |
+          gh run list --repo "$GITHUB_REPOSITORY" --commit "$SHA" --limit 100 \
+            --json workflowName,status,conclusion,createdAt > runs.json
+
+          IFS=',' read -ra WFS <<< "$REQUIRED_WORKFLOWS"
+          for wf in "${WFS[@]}"; do
+            last=$(jq -c --arg wf "$wf" '[.[] | select(.workflowName==$wf)] | max_by(.createdAt)' runs.json)
+            if [ "$last" = "null" ]; then
+              echo "::error::'$wf' no se ejecutó para $SHA"; exit 1
+            fi
+            status=$(jq -r .status <<< "$last"); concl=$(jq -r .conclusion <<< "$last")
+            if [ "$status" != "completed" ]; then
+              echo "::error::'$wf' todavía está en ejecución"; exit 1
+            fi
+            if [ "$concl" != "success" ]; then
+              echo "::error::'$wf' terminó en '$concl'"; exit 1
+            fi
+            echo "✔ $wf OK"
+          done
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: Desplegar a producción
+    needs: verificar-ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Configurar SSH
+        env:
+          SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.PROD_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Ejecutar deploy.sh en el VPS
+        env:
+          HOST: ${{ secrets.PROD_HOST }}
+          SHA: ${{ needs.verificar-ci.outputs.sha }}
+        run: |
+          ssh -o ServerAliveInterval=30 root@"$HOST" "deploy $SHA"
