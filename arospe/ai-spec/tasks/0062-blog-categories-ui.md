@@ -233,7 +233,7 @@ Feature: Blog category management screen
 | `resources/views/livewire/blog-categories.blade.php` | **New — the *flat* path.** `App\Livewire\BlogCategories\Index` drops `.index` and kebab-cases the folder on the way down, exactly as `SalesRegions\Index` → `sales-regions.blade.php`. **Do not create `livewire/blog-categories/index.blade.php`** — and check for one *afterwards*: task 0017's `artisan make:` scaffold deposited exactly that unused stub, which broke nothing and simply sat there. | [naming.md](../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name) |
 | `routes/blog-categories.php` | **New.** One route, its own `auth`+`verified` group — the one-file-per-area convention. Snippet below. | |
 | `routes/web.php` | **Modify — one `require` line.** `require __DIR__.'/blog-categories.php';` | matches every prior area file's one-line diff |
-| `config/modules.php` | **Modify — ONE appended `items.blog_categories` entry, joining the `groups.blog` group [0060](0060-blog-tags-ui.md) creates.** **Must not declare a second `groups.blog`** — see **D-4** and **R-3**. | [authorization.md](../../docs/architecture/authorization/how-to-gate.md#the-second-half-of-a-module-gate-the-sidebar-registry) |
+| `config/modules.php` | **Modify — ONE appended `items.blog_categories` entry, joining the `groups.blog` group [0060](in-progress/0060-blog-tags-ui.md) creates.** **Must not declare a second `groups.blog`** — see **D-4** and **R-3**. | [authorization.md](../../docs/architecture/authorization/how-to-gate.md#the-second-half-of-a-module-gate-the-sidebar-registry) |
 | `lang/en/navigation.php`, `lang/es/navigation.php` | **Modify — one `items.blog_categories` leaf each.** No `groups.blog` leaf: 0060 adds it. Key-for-key identical. | registry-mirroring rule |
 | `lang/en/blog.php`, `lang/es/blog.php` | **Modify** (0061 **creates** both). Append a `categories.index` subgroup for this screen's own copy. **Never touch the `categories.delete_blocked` key**, which is 0061's — see **D-6**. | [naming.md](../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys) |
 | `tests/Feature/Blog/BlogCategoriesIndexTest.php` | **New.** Component + route authorization + the delete-blocked contract. Folder is `Blog/`, not `BlogCategories/`, per 0060's **V-3**. | |
@@ -1295,7 +1295,7 @@ links to, or shares anything with the product taxonomy.
 - **[0061](0061-blog-posts-core-crud-backend.md) — hard, blocking (F-1).** The delete guard, the
   `posts()` relation, the `blogCategoryId` error key and `lang/{en,es}/blog.php`. **Not yet
   implemented (F-2).**
-- **[0060](0060-blog-tags-ui.md) — soft, strongly preferred first.** It creates `config/modules.php`'s
+- **[0060](in-progress/0060-blog-tags-ui.md) — soft, strongly preferred first.** It creates `config/modules.php`'s
   `groups.blog`. Not a functional blocker (this story can create the group itself if it lands first),
   but see **R-3** for why the coordination cost is real and one-directional.
 - **`App\Actions\NormalizeForSearch` (story 0022) — transitively.** This story never touches it, but
@@ -1487,7 +1487,7 @@ component surface, the delete-modal markup and the `withTrashed()` count analysi
 [PRD](../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog categories (extends the prototype)`
 block and the CRUD half of Blog acceptance criterion 2, grounded in full readings of
 [0058](done/0058-blog-categories-backend.md) and [0061](0061-blog-posts-core-crud-backend.md), with
-[0025](done/0025-product-categories-ui.md) as the structural template and [0060](0060-blog-tags-ui.md) as
+[0025](done/0025-product-categories-ui.md) as the structural template and [0060](in-progress/0060-blog-tags-ui.md) as
 the Blog-area convention source.
 
 Both amigos' contributions are reflected above. **Three divergences are recorded rather than silently

@@ -41,12 +41,7 @@ Phase-3 blocker (`0048`–`0054`) is now `done/` — so it moves from `blocked` 
 terminal node finally unblocked. `0057`'s own node is likewise dropped from the graph; it had no pending dependent of its own to
 re-derive against `done/`.
 
-As of this snapshot, `ai-spec/tasks/in-progress/` is empty again (story 0055 was checked out there for Phase 3 and closed to `done/` in this same pass). Before that it was empty too: `0056-notification-viewing-
-backend.md` completed Phase 7 and moved straight from `in-progress/` to `done/` in this same
-regeneration pass — its node and edge (`P0056 --> P0057`) are dropped from the graph below, its
-`tasks-status.json` entry was deleted outright, and its own former dependent (`0057`) is
-re-derived against `done/` and moves from `blocked` to `ready` (see its updated bullet under
-[Pending tasks that are independent](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)).
+As of this snapshot, `ai-spec/tasks/in-progress/` holds one file: `0060-blog-tags-ui.md`, checked out for Phase 3 by worktree `0060-blog-tags-ui` (it keeps its node and its `tasks-status.json` entry, both `claimed`).
 
 Update (2026-09-23): `0058-blog-categories-backend.md` completed Phase 7 and moved from
 `in-progress/` to `done/` — the first Epic 4 story to close. Its node and every edge touching it are
@@ -361,13 +356,14 @@ flowchart LR
     P0068 --> P0079
 
     class P0062,P0063,P0064,P0065,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0060,P0061,P0068 ready;
+    class P0061,P0068 ready;
+    class P0060 claimed;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(no node is `claimed` in this snapshot); yellow (`pending`) = still blocked on at least one open
+(`0060` is the one `claimed` node in this snapshot); yellow (`pending`) = still blocked on at least one open
 pending dependency.
 
 ## Analysis
