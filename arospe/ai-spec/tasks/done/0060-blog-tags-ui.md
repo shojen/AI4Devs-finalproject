@@ -7,7 +7,7 @@
 > silently rewritten** — each carries a ⚠️ **Correction, 2026-08-30** block stating what this file used
 > to say and why it is now wrong, so a reader can tell a decision from a stale sentence.
 >
-> - **[0074](0074-translatable-content-retrofit-blog-tags-backend.md) — Blog Tags translatable-content
+> - **[0074](../0074-translatable-content-retrofit-blog-tags-backend.md) — Blog Tags translatable-content
 >   retrofit (backend, Phase 1).** It **deletes `blog_tags.name` and `blog_tags.normalized_name`
 >   entirely**, moving both into a `blog_tag_translations` child table — one row per
 >   `(tag, store language)` — with name uniqueness re-scoped from global to **per store language** and
@@ -16,7 +16,7 @@
 >   false, in three places: the [interface contract](#interface-contract-consumed-from-0059), the row
 >   shape in the [component public surface](#component-public-surface), and `loadTags()`'s
 >   `orderBy('name')` (**D-9**).
-> - **[0075](0075-blog-tags-language-tabs-ui.md) — Blog Tags screen, language tabs (fullstack, Phase 1).**
+> - **[0075](../0075-blog-tags-language-tabs-ui.md) — Blog Tags screen, language tabs (fullstack, Phase 1).**
 >   It **modifies this story's own component, view, lang files and tests** to add one name input **per
 >   active store language** behind a shared tab strip, and adds one backend class,
 >   `App\Actions\Blog\SetBlogTagTranslation`. It is the story that owns the language-tabs UI; **this
@@ -40,7 +40,7 @@
 
 **Deliberately not redesigned in this file.** The tab strip, the per-language `$names` array, the
 per-language write path and the untranslated-state rendering are **0075's**, decided there and
-reconciled against sibling story [0071](0071-product-categories-language-tabs-ui.md). This file is
+reconciled against sibling story [0071](../0071-product-categories-language-tabs-ui.md). This file is
 amended only far enough to stop asserting things that are false; it is not being rewritten into a
 language-tabs spec.
 
@@ -56,7 +56,7 @@ Build the blog tag management screen: a permission-gated list of tags, a create/
 single `name` field, and a **plain** delete-confirmation modal — no usage count, no blocked state, no
 reassign-first requirement. This is the **first and only call site** of `App\Policies\BlogTagPolicy`
 and of the three `app/Actions/Blog/` tag actions that story
-[0059](done/0059-blog-tags-backend.md) ships with zero consumers, and it discharges 0059's explicit
+[0059](../done/0059-blog-tags-backend.md) ships with zero consumers, and it discharges 0059's explicit
 hand-off obligation to give that policy a component call site with a server-authoritative
 `->ignore()` id.
 
@@ -64,13 +64,13 @@ Frontend only — no migration, no model, no action, no policy, no factory, no s
 domain rule this screen enforces is consumed from 0059 as already-shipped code.
 
 It is also, incidentally, **the first Blog-area story to touch `routes/`, `config/modules.php` or
-`lang/` at all** — story [0058](done/0058-blog-categories-backend.md) fenced all three off explicitly, and
+`lang/` at all** — story [0058](../done/0058-blog-categories-backend.md) fenced all three off explicitly, and
 nothing blog-related exists anywhere in `app/`, `config/`, `routes/` or `lang/` today (verified; the
 sole exception is the `blog` *permission label* leaf in `lang/{en,es}/roles.php`). So this story
 creates the `content` sidebar group and its `blog` cluster that stories **0062** (blog categories UI)
 and **0063** (blog posts list/editor UI) will later append items to. See **D-4**.
 
-> ⚠️ **Correction, 2026-09-08 — sourced from [story 0080](done/0080-sidebar-navigation-grouping-and-nesting.md)'s
+> ⚠️ **Correction, 2026-09-08 — sourced from [story 0080](../done/0080-sidebar-navigation-grouping-and-nesting.md)'s
 > Phase 5 code review (finding F-2), which resolved a contradiction this file's own R-2/DoD had left
 > for whoever picked this story up next.** 0080 (sidebar navigation grouping and nesting) shipped a
 > `clusters` layer in `config/modules.php`, and its own R-2 states explicitly that this story should
@@ -80,7 +80,7 @@ and **0063** (blog posts list/editor UI) will later append items to. See **D-4**
 > table, the `data-test` hooks table, the Definition of Done) is corrected in place to target
 > `groups.content` + a nested `blog` cluster.
 
-Covers [PRD](../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog tags (extends the
+Covers [PRD](../../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog tags (extends the
 prototype)` scenarios *Create a tag on the management screen*, *Rename a tag on the management
 screen* and *Delete a tag on the management screen* — the **rendered** half of the "full CRUD
 management screen" clause in Blog acceptance criterion 3. It does **not** cover the post editor's tag
@@ -100,7 +100,7 @@ frontend | fullstack (related_task_id: **0059** — the paired blog-tags backend
 ## Three Amigos participants
 
 `product-owner` (lead) + `frontend-expert` (files and approach) + `frontend-qa` (test design), per
-[workflow.md](../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule)'s Frontend classification. No
+[workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule)'s Frontend classification. No
 `backend-expert` or `database-expert` was convened — this story adds no backend or schema artifact.
 
 Both contributions are reflected below, including **three recorded divergences** (**V-1** the browser
@@ -110,7 +110,7 @@ the existing docs had right** (**F-1**, **F-2**, **F-3**).
 
 ## PRD coverage
 
-[PRD](../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog tags (extends the prototype)` block
+[PRD](../../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog tags (extends the prototype)` block
 — this story owns the **rendered** half of its first three scenarios and **none** of the other four:
 
 | PRD scenario | Owned here as | |
@@ -131,7 +131,7 @@ CRUD management screen **and** can be created on the fly from the post editor" �
 
 Every scenario opens with a named business-role actor — **"a blog editor"**, the actor PRD Epic 4 and
 story 0059 both already use — and carries exactly one `When`, per
-[gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3.
+[gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3.
 
 ```gherkin
 Feature: Blog tag management screen
@@ -205,11 +205,11 @@ Feature: Blog tag management screen
 ```
 
 > **Two scenarios that deliberately do not exist here, both of which a reader coming from
-> [0025](done/0025-product-categories-ui.md) will expect.** There is no *"deletion is blocked with a
+> [0025](../done/0025-product-categories-ui.md) will expect.** There is no *"deletion is blocked with a
 > count"* scenario and no *"the screen offers no confirm-and-proceed control"* scenario — the second
 > is meaningless without the first, and the first describes a guard this domain does not have
 > (**D-2**). Writing either would be a ghost scenario under
-> [rule 6](../../docs/testing/frontend/gherkin-guidelines.md#6-no-ghost-scenarios): PRD's tag Gherkin
+> [rule 6](../../../docs/testing/frontend/gherkin-guidelines.md#6-no-ghost-scenarios): PRD's tag Gherkin
 > says deletion *"is removed from every post that used it"*, and 0059's own Gherkin spells out the
 > consequence — *"the deletion is never blocked, whatever the tag is attached to"*.
 >
@@ -226,7 +226,7 @@ Feature: Blog tag management screen
 > render on the default tab. The delete and authorization scenarios are unaffected in every respect.
 > **The per-language scenarios — one tab per active store language, an untranslated field showing the
 > default's name only as guidance, the same name accepted in two different languages, a refusal
-> bringing a hidden tab forward — belong to [0075](0075-blog-tags-language-tabs-ui.md)** and are
+> bringing a hidden tab forward — belong to [0075](../0075-blog-tags-language-tabs-ui.md)** and are
 > written there. Adding them here would duplicate a scripted contract across two files, which is the
 > drift this project's conventions spend most of their effort preventing.
 >
@@ -241,12 +241,12 @@ Feature: Blog tag management screen
 
 | Path | Change | Why |
 | --- | --- | --- |
-| `app/Livewire/BlogTags/Index.php` | **New.** | Class-based component per [base-standards.md](../../docs/conventions/base-standards/livewire-and-flux-conventions.md#livewire-component-convention-class-based-not-single-file). Namespace chosen in **D-3**. |
-| `resources/views/livewire/blog-tags.blade.php` | **New — the *flat* path.** | Per the [`Index`-in-a-subfolder exception](../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name), `App\Livewire\BlogTags\Index` drops `.index` and kebab-cases the folder on the way down, exactly as `SalesRegions\Index` → `sales-regions.blade.php`. **Do not create `livewire/blog-tags/index.blade.php`** — and check for one afterwards; task 0017's `artisan make:` scaffold deposited exactly that unused stub, which broke nothing and simply sat there. |
+| `app/Livewire/BlogTags/Index.php` | **New.** | Class-based component per [base-standards.md](../../../docs/conventions/base-standards/livewire-and-flux-conventions.md#livewire-component-convention-class-based-not-single-file). Namespace chosen in **D-3**. |
+| `resources/views/livewire/blog-tags.blade.php` | **New — the *flat* path.** | Per the [`Index`-in-a-subfolder exception](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name), `App\Livewire\BlogTags\Index` drops `.index` and kebab-cases the folder on the way down, exactly as `SalesRegions\Index` → `sales-regions.blade.php`. **Do not create `livewire/blog-tags/index.blade.php`** — and check for one afterwards; task 0017's `artisan make:` scaffold deposited exactly that unused stub, which broke nothing and simply sat there. |
 | `routes/blog-tags.php` | **New.** | One route, its own `auth`+`verified` group — the one-file-per-area convention. Snippet below. |
 | `routes/web.php` | **Modify — one `require` line.** | `require __DIR__.'/blog-tags.php';`, matching the one-line diff every prior area file produced. |
 | `config/modules.php` | **Modify — a `groups.content` group, a nested `clusters.blog` cluster, and an `items.blog_tags` entry (`cluster: 'blog'`).** *(Corrected 2026-09-08 per story 0080's Phase 5 review — see D-4; originally a flat `groups.blog` group + `items.blog_tags` entry.)* | The sidebar half of the module gate (**D-4**). Three appended array literals; the reading component is **not** touched. |
-| `lang/en/navigation.php`, `lang/es/navigation.php` | **Modify — one `groups.content` + one `clusters.blog` + one `items.blog_tags` leaf each.** *(Corrected 2026-09-08 — originally `groups.blog` + `items.blog_tags`.)* | The registry-mirroring rule ([naming.md](../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)). Key-for-key identical. |
+| `lang/en/navigation.php`, `lang/es/navigation.php` | **Modify — one `groups.content` + one `clusters.blog` + one `items.blog_tags` leaf each.** *(Corrected 2026-09-08 — originally `groups.blog` + `items.blog_tags`.)* | The registry-mirroring rule ([naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)). Key-for-key identical. |
 | `lang/en/blog-tags.php`, `lang/es/blog-tags.php` | **New.** | This screen's own copy (**D-8**). Key-for-key identical. |
 | `tests/Feature/Blog/BlogTagsIndexTest.php` | **New.** | Component + route authorization. Folder decided in **V-3**. |
 | `tests/Feature/Blog/BlogTagsIndexRenderingTest.php` | **New.** | View-level rendering, including the **negative** structural assertions in **R-2**. |
@@ -313,7 +313,7 @@ App\Concerns\BlogTagValidationRules::nameRules(NormalizeForSearch $n, ?string $i
 App\Concerns\BlogTagValidationRules::nameFormatRules(): array       // format ONLY — this screen must never reach it (0059 D-9)
 ```
 
-> ⚠️ **Correction, 2026-08-30 — two lines of that block are falsified by [0074](0074-translatable-content-retrofit-blog-tags-backend.md), and this is the correction 0075's own R-6 asks for by name** (its backlog item 1: *"correct 0060's stale interface contract in place"*). Both are corrected here rather than left for whoever implements this story to write against a shape that will not exist.
+> ⚠️ **Correction, 2026-08-30 — two lines of that block are falsified by [0074](../0074-translatable-content-retrofit-blog-tags-backend.md), and this is the correction 0075's own R-6 asks for by name** (its backlog item 1: *"correct 0060's stale interface contract in place"*). Both are corrected here rather than left for whoever implements this story to write against a shape that will not exist.
 >
 > **(a) The `BlogTag` line.** It says `#[Fillable(['name'])]` and *"`normalized_name` derived by a `saving()` hook (0059 D-4)"*. **Every clause of that is false after 0074:** the model becomes **identity-only** with `#[Fillable([])]` (0074 **D-2**), there is no `name` column and no `normalized_name` column on `blog_tags` at all, and the `saving()` hook **relocates** to `App\Models\BlogTagTranslation` (0074 **D-4** — which is also what lets `SetTranslation` stay unmodified). Read instead:
 >
@@ -329,7 +329,7 @@ App\Concerns\BlogTagValidationRules::nameFormatRules(): array       // format ON
 >
 > **What this does *not* change.** `CreateBlogTag`, `RenameBlogTag` and `DeleteBlogTag` keep their signatures byte-for-byte (0074 **D-7**, **D-15**); `CreateBlogTag` gains an internal `DB::transaction()` and `RenameBlogTag` does not (0074 **D-5**), neither of which is visible to this caller. `BlogPolicy`'s four abilities and their constants are untouched. The *meaning* of both write actions narrows to **"the default store language's name"** — which is the whole reason 0075 has to add a third action for the other languages.
 >
-> **F-1 still binds, and now doubly.** This contract was already a claim about one unimplemented task file; it is now a claim about **two** (0059 and 0074). Re-verify every line against `HEAD` before Phase 3 and record each disposition, per [the deferred-findings rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23). 0074's own **R-2** (whether `SetTranslation` can write `store_language_id` at all, given `#[Fillable]`) is unresolved and is 0070's to settle.
+> **F-1 still binds, and now doubly.** This contract was already a claim about one unimplemented task file; it is now a claim about **two** (0059 and 0074). Re-verify every line against `HEAD` before Phase 3 and record each disposition, per [the deferred-findings rule](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23). 0074's own **R-2** (whether `SetTranslation` can write `store_language_id` at all, given `#[Fillable]`) is unresolved and is 0070's to settle.
 
 **Three obligations this story inherits verbatim from 0059's Definition of Done**, all
 non-negotiable:
@@ -339,7 +339,7 @@ non-negotiable:
 2. **The id fed to `Rule::unique()->ignore()` must stay server-authoritative** — `#[Locked]`, and the
    rename must be performed against a model re-read from the database, never against a
    client-supplied string. See
-   [security/livewire-authorization.md](../../docs/security/livewire-authorization.md) and **D-6**.
+   [security/livewire-authorization.md](../../../docs/security/livewire-authorization.md) and **D-6**.
 3. **The component authorizes too.** 0059's **D-12** is explicit that the component's own checks are
    *defence in depth, not duplication to remove* — they fail fast before the action opens anything
    and they make the per-row `canEdit`/`canDelete` hints honest.
@@ -397,7 +397,7 @@ class Index extends Component
 }
 ```
 
-> ⚠️ **Correction, 2026-08-30 — three items in the surface above are affected by [0074](0074-translatable-content-retrofit-blog-tags-backend.md) / [0075](0075-blog-tags-language-tabs-ui.md). The class is otherwise unchanged**, and in particular `$editingTagId` / `$deletingTagId` / `$deletingTagName` stay `#[Locked]`, every method still authorizes through `LogRefusedPrivilegedAttempt`, and `mount()` stays the one deliberate unlogged exclusion.
+> ⚠️ **Correction, 2026-08-30 — three items in the surface above are affected by [0074](../0074-translatable-content-retrofit-blog-tags-backend.md) / [0075](../0075-blog-tags-language-tabs-ui.md). The class is otherwise unchanged**, and in particular `$editingTagId` / `$deletingTagId` / `$deletingTagName` stay `#[Locked]`, every method still authorizes through `LogRefusedPrivilegedAttempt`, and `mount()` stays the one deliberate unlogged exclusion.
 >
 > **(a) The `$tags` row shape.** It is declared `array{id: string, name: string, canEdit: bool, canDelete: bool}`, and `name` reads as a column. **It is no longer one.** After 0074 there is no `blog_tags.name`, so the row's `name` is **derived** — `translated('name')` resolved for the **store default** store language (0075 **D-8**: the store default, *never* the admin UI locale, which PRD is explicit must not be conflated with it). It can legitimately be **absent**: 0074's **R-9** records that immediately after a store-default change this may be true of *most of the catalog*, and 0075 **D-8** renders that as the em-dash-style placeholder `users.blade.php` / `roles.blade.php` / `sales-regions.blade.php` already use — never a blank and never an error. **The four keys are otherwise unchanged, and the D-5 "no post/usage-count key" assertion is unaffected.** ⚠️ **Undecided, and flagged rather than guessed:** whether the PHP type becomes `name: ?string` (the component surfaces `null` and the view branches) or stays `name: string` (the component maps a missing translation to `''` and the view branches on empty). 0075 states the *behaviour* — placeholder, no error — but not the array shape, and this file cannot settle a property of a component 0075 rewrites. **Phase 2 decides**; whichever is chosen, 0060's own "no `wire:model`-bound property is ever `null`" rule does not reach it, because `$tags` is `#[Locked]` and bound to nothing.
 >
@@ -410,7 +410,7 @@ class Index extends Component
 `canEdit`/`canDelete` from
 `Gate::allows('update'|'delete', $tag)` — the *same* policy methods `save()` / `deleteTag()`
 authorize against, so the disabled state cannot drift from what a click would actually do
-([authorization.md](../../docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)).
+([authorization.md](../../../docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)).
 There is **no `withCount()`** of any kind: `BlogTag` ships no `posts()` relation and `blog_post_tag`
 does not exist (**D-5**).
 
@@ -433,13 +433,13 @@ public function save(CreateBlogTag $createBlogTag, RenameBlogTag $renameBlogTag,
 }
 ```
 
-> ⚠️ **Correction, 2026-08-30 — the *create* branch above survives verbatim; the *rename* branch becomes one write per language, and [0075](0075-blog-tags-language-tabs-ui.md) owns that rewrite.**
+> ⚠️ **Correction, 2026-08-30 — the *create* branch above survives verbatim; the *rename* branch becomes one write per language, and [0075](../0075-blog-tags-language-tabs-ui.md) owns that rewrite.**
 >
 > **What stays true, and is the reason this is a correction rather than a redesign.** `CreateBlogTag` and `RenameBlogTag` are called exactly as written, with exactly these signatures, for the **default store language** — 0074 **D-7** keeps both deliberately, and 0075 **D-12** explicitly *rejects* routing the default language through the new action, so `RenameBlogTag` stays the named writer of the default-language name. **D-1** below is unchanged: there is still no `$this->validate()` and no manual `trim()` here.
 >
 > **What 0075 adds.** The edit path loops the active store languages and calls a **third** action, `App\Actions\Blog\SetBlogTagTranslation::__invoke(BlogTag $t, StoreLanguage $l, string $name)`, for every **non-default** language whose value changed. That action is *self-sufficient* — it authorizes `update` on the **`BlogTag`** (never on the translation row) through `LogRefusedPrivilegedAttempt`, **above** its `SetTranslation` call, and then runs its own `Validator` — which is what keeps **D-1**'s "the component does not validate" rule intact rather than contradicting it. The whole loop is wrapped in a `DB::transaction()` so one refused language discards the entire save (0075 **D-9**). Authorization fires **once per language written**, never once for the active tab.
 >
-> ⚠️ **The consequence this file must not let a reader miss, because it lands squarely on D-1 and is worse here than anywhere else** (0075 **D-12**). `CreateBlogTag` and `RenameBlogTag` throw `ValidationException` keyed **`name`** — 0059's shape, frozen by 0074 **D-7** — while 0075's edit fields bind to **`names.{storeLanguageId}`**. An unadapted refusal therefore lands on a key no field renders: **the modal stays open with no message anywhere**, the silent-refusal failure mode task 0018 shipped as a blocking finding. On sibling screen [0071](0071-product-categories-language-tabs-ui.md) the same adapter guards *"realistically the `23000` race backstop"*, because that component validates first. **Here it sits on the primary path**: precisely because **D-1** forbids this component from validating, the action's throw is the *only* validation route for the default language, so **every** ordinary blank, over-length, duplicate, case-only and accent-only refusal on the default tab arrives keyed `name`. 0075's `save()` therefore catches and re-keys `name` → `names.{$defaultLanguageId}`. **The create path keeps the bare `name` key and must not grow an adapter** — the mismatch is a property of the edit form's array binding, not of the actions.
+> ⚠️ **The consequence this file must not let a reader miss, because it lands squarely on D-1 and is worse here than anywhere else** (0075 **D-12**). `CreateBlogTag` and `RenameBlogTag` throw `ValidationException` keyed **`name`** — 0059's shape, frozen by 0074 **D-7** — while 0075's edit fields bind to **`names.{storeLanguageId}`**. An unadapted refusal therefore lands on a key no field renders: **the modal stays open with no message anywhere**, the silent-refusal failure mode task 0018 shipped as a blocking finding. On sibling screen [0071](../0071-product-categories-language-tabs-ui.md) the same adapter guards *"realistically the `23000` race backstop"*, because that component validates first. **Here it sits on the primary path**: precisely because **D-1** forbids this component from validating, the action's throw is the *only* validation route for the default language, so **every** ordinary blank, over-length, duplicate, case-only and accent-only refusal on the default tab arrives keyed `name`. 0075's `save()` therefore catches and re-keys `name` → `names.{$defaultLanguageId}`. **The create path keeps the bare `name` key and must not grow an adapter** — the mismatch is a property of the edit form's array binding, not of the actions.
 >
 > **`save()`'s injected-actions assertion is extended, not replaced.** `SetBlogTagTranslation` joins the allow-list; **`FindOrCreateBlogTag` stays forbidden**, and every scope fence in this file about it is unchanged and still binding.
 
@@ -452,7 +452,7 @@ on Livewire's `PersistentMiddleware` allow-list, so a refusal there is unreachab
 other site routes through `LogRefusedPrivilegedAttempt::authorize()` with `target_type: 'blog_tag'`
 passed **explicitly** — `resolveTarget()` auto-resolves only `User` and `Role`, so a new domain must
 pass it. See
-[the third-admin-screen recipe](../../docs/architecture/authorization/step-up-and-refusal-logging.md#copyable-what-a-third-admin-screen-inherits).
+[the third-admin-screen recipe](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#copyable-what-a-third-admin-screen-inherits).
 
 ### The `->ignore()` id contract
 
@@ -464,7 +464,7 @@ re-fetches with `findOrFail()` and hands the **model instance** to `RenameBlogTa
 
 **Without `#[Locked]`, a forged `->set('editingTagId', $otherId)` between opening the modal and
 saving turns a uniqueness check into a rename-any-tag primitive** — identical to
-[0025's **R-3**](done/0025-product-categories-ui.md), and exactly the vulnerability class 0059's hand-off
+[0025's **R-3**](../done/0025-product-categories-ui.md), and exactly the vulnerability class 0059's hand-off
 note names. The two lines are a pair; the dedicated retarget test in the plan below is what pins
 them.
 
@@ -481,7 +481,7 @@ grouping, no nested rows:
 - **Create/edit modal** — one `flux:input` bound to `name`, its inner content wrapped in
   `@if ($showModal)` so only one "Cancel" control is ever in the DOM (the pattern
   `users.blade.php` / `roles.blade.php` / `sales-regions.blade.php` all use).
-  ⚠️ **Correction, 2026-08-30 — true of the *create* modal only.** [0075](0075-blog-tags-language-tabs-ui.md)
+  ⚠️ **Correction, 2026-08-30 — true of the *create* modal only.** [0075](../0075-blog-tags-language-tabs-ui.md)
   **D-4** keeps the create form exactly as described (one field, no tabs); the **edit** modal becomes
   0071's shared `<x-language-tab-strip>` plus **one `flux:input` per active store language**, every one
   of them present in the DOM regardless of which tab is active. The `@if ($showModal)` wrapper and the
@@ -505,17 +505,17 @@ so a test selects the same control either way:
 
 The hook names carry the **full** domain (`blog-tag`, not `tag`) — see **V-2**.
 
-> ⚠️ **Correction, 2026-08-30 — one row of that table changes, and [0075](0075-blog-tags-language-tabs-ui.md) adds two hook families this file cannot name.** Every other hook above (`create-blog-tag-button`, `edit-blog-tag-{id}`, `delete-blog-tag-{id}`, `confirm-delete-blog-tag`, and both sidebar hooks) is **unchanged**, and **V-2**'s full-domain rule is unchanged with them.
+> ⚠️ **Correction, 2026-08-30 — one row of that table changes, and [0075](../0075-blog-tags-language-tabs-ui.md) adds two hook families this file cannot name.** Every other hook above (`create-blog-tag-button`, `edit-blog-tag-{id}`, `delete-blog-tag-{id}`, `confirm-delete-blog-tag`, and both sidebar hooks) is **unchanged**, and **V-2**'s full-domain rule is unchanged with them.
 >
 > - **`blog-tag-name-input` becomes `blog-tag-name-input-{storeLanguageId}`** on the edit form — one per active language, keyed on the **store-language id**, never on the ISO code or the language name (0075 **D-10**, and its **D-11** inheritance from 0071: *no assertion in that story may match on a language name or a two-letter code*). Every browser test that fills this hook is rewritten there.
-> - **A tab hook this file's own V-2 rule deliberately does *not* govern.** The tab strip is a **shared** anonymous Blade component extracted by sibling story [0071](0071-product-categories-language-tabs-ui.md) and consumed by four screens, so it emits its own **generic** `data-test="language-tab-{storeLanguageId}"` — not a `blog-tag-`-prefixed one. 0075 **D-10** records this as a deliberate split rather than an inconsistency: *the shared strip's hooks are generic, this screen's own panel hooks are domain-prefixed*. Both of 0075's amigos independently proposed the prefixed form on V-2's reasoning before the reconciliation overturned it, so a reviewer arriving from V-2 will expect the wrong answer — which is why it is written down here.
+> - **A tab hook this file's own V-2 rule deliberately does *not* govern.** The tab strip is a **shared** anonymous Blade component extracted by sibling story [0071](../0071-product-categories-language-tabs-ui.md) and consumed by four screens, so it emits its own **generic** `data-test="language-tab-{storeLanguageId}"` — not a `blog-tag-`-prefixed one. 0075 **D-10** records this as a deliberate split rather than an inconsistency: *the shared strip's hooks are generic, this screen's own panel hooks are domain-prefixed*. Both of 0075's amigos independently proposed the prefixed form on V-2's reasoning before the reconciliation overturned it, so a reviewer arriving from V-2 will expect the wrong answer — which is why it is written down here.
 >
 > ⚠️ **Genuinely ambiguous, and not resolved here: what hook the *create* modal's single field carries.** 0075 states both *"`blog-tag-name-input` **becomes** `blog-tag-name-input-{storeLanguageId}`"* (its disposition table) **and** *"the create form is unchanged: one field, `CreateBlogTag`, no tabs"* (its acceptance criteria). Those cannot both be literally true of the create field. The two readings — it keeps the bare hook because it is unchanged, or it takes the default language's suffix for uniformity — have different consequences for 0060's own browser tests, which fill it. **Phase 2 should settle it in 0075**, not here; recorded so it is met as a decision rather than discovered in a failing selector.
 
 Both `wire:click` arguments — `openEditModal(@js($tag['id']))` and
 `confirmDelete(@js($tag['id']))` — are **single-argument** `@js()` calls, the shape
 `roles.blade.php` already ships and the shape
-[errors-log.md's dated correction](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
+[errors-log.md's dated correction](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
 confirms compiles correctly inside a `flux:` component tag. **This screen has no multi-argument
 `wire:click` anywhere** — no `setActive(id, bool, replacement)`-shaped signature exists — so the trap
 that killed every row toggle on the Sales Regions screen does not recur here structurally. Record
@@ -528,7 +528,7 @@ introduce one.
 
 1. **`@js()` is mandatory** on both `wire:click` arguments. A value interpolated into a `wire:*`
    attribute lands in a JavaScript evaluator, where Blade's HTML escaping is undone by the parser
-   ([blade-livewire-output-encoding.md](../../docs/security/blade-livewire-output-encoding.md)). The
+   ([blade-livewire-output-encoding.md](../../../docs/security/blade-livewire-output-encoding.md)). The
    id being a UUIDv7 does **not** exempt it — the rule is unconditional.
 2. **A disabled row action is a separate `@if`/`@else` branch wrapped in a hand-written
    `<flux:tooltip>`** — never `:tooltip="$cond ? … : null"`, which under `livewire/blaze` renders an
@@ -554,13 +554,13 @@ introduce one.
 
 ## Tests to perform
 
-Levels chosen per [coverage-policy.md](../../docs/testing/frontend/coverage-policy.md). **The
+Levels chosen per [coverage-policy.md](../../../docs/testing/frontend/coverage-policy.md). **The
 deliberate calibration is that this plan does not re-run 0059's suite one layer up**: 0059 already
 proves normalisation, trimming, boundary and race behaviour exhaustively at the action layer, so this
 story asserts only that the **component routes into the same shared rule**, with named canaries
 rather than the full matrix.
 
-> ⚠️ **Correction, 2026-08-30 — the calibration above is unchanged and is inherited by [0075](0075-blog-tags-language-tabs-ui.md) verbatim, but several cases below stop being valid once 0074/0075 land.** 0075's own §3 carries the authoritative disposition table and **that table is the source of truth**, not this note; it is summarised here only so a reader of *this* file does not write a test against a column that no longer exists. 0075's `frontend-qa` records the rewrite as **real scope rather than a byproduct** — the same warning 0074's **R-7** issues about 0059's suite, arriving one layer up.
+> ⚠️ **Correction, 2026-08-30 — the calibration above is unchanged and is inherited by [0075](../0075-blog-tags-language-tabs-ui.md) verbatim, but several cases below stop being valid once 0074/0075 land.** 0075's own §3 carries the authoritative disposition table and **that table is the source of truth**, not this note; it is summarised here only so a reader of *this* file does not write a test against a column that no longer exists. 0075's `frontend-qa` records the rewrite as **real scope rather than a byproduct** — the same warning 0074's **R-7** issues about 0059's suite, arriving one layer up.
 >
 > | Case in this plan | Disposition |
 > | --- | --- |
@@ -582,69 +582,69 @@ rather than the full matrix.
 **Feature — `tests/Feature/Blog/BlogTagsIndexTest.php`**
 
 *Listing*
-- [ ] The list is ordered by name. Create out of order, assert alphabetical. *Why it can fail:*
+- [x] The list is ordered by name. Create out of order, assert alphabetical. *Why it can fail:*
       nothing in the schema enforces order (0059 **D-6** ships no `sort_order`); only the query does,
       silently.
-- [ ] Each row exposes exactly `{id, name, canEdit, canDelete}` — **and asserts the absence of any
+- [x] Each row exposes exactly `{id, name, canEdit, canDelete}` — **and asserts the absence of any
       post/usage-count key.** *Why it can fail:* a developer mechanically adapting
       `ProductCategories\Index`'s specified `->withCount('products')` would reach for
       `->withCount('posts')` against a relation `BlogTag` does not have — or, worse, hardcode a `0`
       that reads as real data (**D-5**).
 
 *Create*
-- [ ] A valid name persists exactly one row and the modal closes.
-- [ ] Blank and whitespace-only names produce `assertHasErrors(['name'])` and add zero rows. *Why:*
+- [x] A valid name persists exactly one row and the modal closes.
+- [x] Blank and whitespace-only names produce `assertHasErrors(['name'])` and add zero rows. *Why:*
       proves `save()` reaches the action's own trim-then-validate rather than persisting the raw
       `wire:model` value (0059 **R-2**, one layer up).
-- [ ] A duplicate name (exact case) produces `assertHasErrors(['name'])`.
-- [ ] **One canary each** for a case-only and an accent-only duplicate — not the full matrix. *Why
+- [x] A duplicate name (exact case) produces `assertHasErrors(['name'])`.
+- [x] **One canary each** for a case-only and an accent-only duplicate — not the full matrix. *Why
       this is not redundant with 0059:* a component built independently could bypass the action and
       validate with a bare `Rule::unique('blog_tags', 'name')`, missing **D-3**'s normalised
       comparison entirely; this is the only test at this layer that would catch that. **See R-3 for
       why these two canaries cannot prove the normaliser ran.**
-- [ ] **One** length-boundary canary (max accepted, max+1 refused), reading the maximum from the
+- [x] **One** length-boundary canary (max accepted, max+1 refused), reading the maximum from the
       shared trait/constant rather than a hardcoded literal — 0059's **OQ-1** (100 vs 255) may still
       be open when this is written (**OQ-2**).
-- [ ] **`save()`'s injected actions are `CreateBlogTag` / `RenameBlogTag`, never
+- [x] **`save()`'s injected actions are `CreateBlogTag` / `RenameBlogTag`, never
       `FindOrCreateBlogTag`.** *Why it can fail:* swapping in the find-or-create action would make
       every duplicate-name submission silently **succeed** instead of erroring, quietly deleting half
       this story's Gherkin — and every `assertHasErrors()` test above would go red in a way that
       invites "fixing" the assertion rather than the call (**R-7**).
 
 *Rename*
-- [ ] Renaming to a free name updates the row.
-- [ ] Saving under the tag's **own unchanged name** is accepted — 0059 **R-1**'s canary, exercised
+- [x] Renaming to a free name updates the row.
+- [x] Saving under the tag's **own unchanged name** is accepted — 0059 **R-1**'s canary, exercised
       here for the first time against a component call site.
-- [ ] **The `->ignore()` id is server-authoritative.** `->call('openEditModal', $a->id)
+- [x] **The `->ignore()` id is server-authoritative.** `->call('openEditModal', $a->id)
       ->set('editingTagId', $b->id)` must **throw**, not silently retarget the rename onto `$b`.
       *Why it earns its own test:* 0059's Definition of Done names this as **this story's** hand-off
       obligation by number, and nothing else in the plan proves it. **The single most important test
       in this file.**
-- [ ] Renaming onto another tag's exact-case name is refused and the target keeps its name.
+- [x] Renaming onto another tag's exact-case name is refused and the target keeps its name.
 
 *Delete — the structural divergence from every prior taxonomy screen*
-- [ ] Deleting a tag removes the row unconditionally and it disappears from the reloaded list.
-- [ ] `deleteTag()` closes the modal in one round trip — there is no branch in which it stays open
+- [x] Deleting a tag removes the row unconditionally and it disappears from the reloaded list.
+- [x] `deleteTag()` closes the modal in one round trip — there is no branch in which it stays open
       with an inline error, because `DeleteBlogTag` throws nothing to catch. *Why it can fail:* an
       implementer structurally copying `deleteProductCategory()` (built to leave the modal open on a
       caught `ValidationException`) would paste defensive branching around an exception that cannot
       occur here — harmless as code, and the seed of **R-2**.
-- [ ] **No `force` / confirm-and-proceed path exists** — assert positively that the delete is
+- [x] **No `force` / confirm-and-proceed path exists** — assert positively that the delete is
       unconditional, since the *absence* of a guard is this story's actual contract (**D-2**) and a
       later reader would otherwise read it as an oversight. This mirrors 0059's own "no in-use guard
       exists" test one layer up.
 
 *Authorization*
-- [ ] `viewAny` / `create` / `update` / `delete` each get **both an allow and a deny** at **two
+- [x] `viewAny` / `create` / `update` / `delete` each get **both an allow and a deny** at **two
       layers**: the route (`$this->get(route('blog-tags.index'))->assertOk()` / `assertForbidden()`)
       **and** the component (`Livewire::test()` mounting directly, and `save()` / `deleteTag()`
       throwing `AuthorizationException` for a denied actor). Genuinely not substitutes, per
-      [testing/README.md](../../docs/testing/README.md) — the route test never exercises the
+      [testing/README.md](../../../docs/testing/README.md) — the route test never exercises the
       component's own `Gate::authorize()`, and `/livewire/update` never runs most route middleware.
-- [ ] A Super Admin holding zero permission rows passes all four via `Gate::before`.
-- [ ] **One** global-state test that an actor holding only `blog.view` sees every row action
+- [x] A Super Admin holding zero permission rows passes all four via `Gate::before`.
+- [x] **One** global-state test that an actor holding only `blog.view` sees every row action
       disabled — deliberately **not** a Users-shaped per-row matrix (**D-7**, and **OQ-1**).
-- [ ] **Every `Gate` refusal this component raises writes exactly one
+- [x] **Every `Gate` refusal this component raises writes exactly one
       `Log::warning('Privileged action refused', …)` carrying `target_type: 'blog_tag'`**,
       set-equated against an existing screen's context keys in one `Log::spy()` session — the
       equivalence test the refusal-logging recipe mandates as step 4. *Why it can fail:* this is
@@ -654,16 +654,16 @@ rather than the full matrix.
       follows. `mount()` is the one deliberate exclusion.
 
 *Malformed / unknown ids*
-- [ ] `openEditModal()` and `confirmDelete()` with an unknown or malformed UUID fail cleanly
+- [x] `openEditModal()` and `confirmDelete()` with an unknown or malformed UUID fail cleanly
       (`ModelNotFoundException`), not as a silent no-op. `HasUuids`' `resolveRouteBindingQuery()`
       rejects a non-UUID before querying.
 
 **Feature — `tests/Feature/Blog/BlogTagsIndexRenderingTest.php`**
-- [ ] The list renders each tag's name.
-- [ ] The empty state renders when the catalog holds no tags.
-- [ ] The create/edit modal contains exactly **one** input and **no `<select>`** — a cheap guard
+- [x] The list renders each tag's name.
+- [x] The empty state renders when the catalog holds no tags.
+- [x] The create/edit modal contains exactly **one** input and **no `<select>`** — a cheap guard
       against a stray element copy-pasted in from a heavier screen.
-- [ ] **The delete-confirmation modal renders no usage count, no "used by N posts" message, no
+- [x] **The delete-confirmation modal renders no usage count, no "used by N posts" message, no
       "cannot be deleted" string and no blocked state, and its destructive button is never
       `disabled`.** ***The signature test of this story.*** *Why it can fail:* an implementer
       following 0025 as the named structural template could paste that screen's blocked-delete
@@ -671,11 +671,11 @@ rather than the full matrix.
       markup would be **dead but present**, and an ordinary "delete succeeds" test would still pass
       with it sitting in the DOM. Only this negative assertion catches it. Assert against the
       *rendered* modal, not the component's error bag.
-- [ ] Validation messages appear next to the name field and the modal stays open.
-- [ ] Row action `data-test` hooks are present on **both** the enabled and the disabled branch.
+- [x] Validation messages appear next to the name field and the modal stays open.
+- [x] Row action `data-test` hooks are present on **both** the enabled and the disabled branch.
       *Why:* a browser test must select the same control either way; a hook present only when enabled
       makes the disabled-state test unwritable.
-- [ ] A disabled row action's disabled state is asserted by matching `disabled="disabled"`, **never**
+- [x] A disabled row action's disabled state is asserted by matching `disabled="disabled"`, **never**
       a bare `disabled` substring — Flux's compiled class list carries the literal `disabled:opacity-75`
       on the *enabled* branch too, so the naive helper reports every control as disabled and the test
       can never fail.
@@ -685,38 +685,38 @@ rather than the full matrix.
 flat `sidebar-group-blog` hook and a "Blog group"; `blog` is a `clusters.blog` entry nested inside a
 new `groups.content`, so the assertions below target the `content` group and the `blog` cluster
 hooks 0080 introduced.)*
-- [ ] A role holding exactly `blog.view` sees `sidebar-group-content`, `sidebar-cluster-blog` and
+- [x] A role holding exactly `blog.view` sees `sidebar-group-content`, `sidebar-cluster-blog` and
       `sidebar-link-blog_tags` — all three.
-- [ ] A role holding the related-but-different `blog.edit` sees **none of the three** — the entry gates
+- [x] A role holding the related-but-different `blog.edit` sees **none of the three** — the entry gates
       on the exact ability its route does, not on any `blog.*`.
-- [ ] The Content group vanishes entirely, heading included, for a role without the ability — the same
+- [x] The Content group vanishes entirely, heading included, for a role without the ability — the same
       two-level vanish rule 0080's own Store group exercises (a group with zero visible clusters and
       zero direct items renders nothing).
-- [ ] **Do not hand-write a registry↔route cross-check.** Task 0018 verified that both generic drift
+- [x] **Do not hand-write a registry↔route cross-check.** Task 0018 verified that both generic drift
       guards already in this file pick a new entry up **for free**; 0018's own plan assumed the
       opposite and would have shipped a redundant copy.
 
 **Browser — `tests/Browser/BlogTags/IndexTest.php`** (path per **V-1**)
-- [ ] Opening the create form shows a blank field (no stale prefill leaking from a previous edit).
-- [ ] Creating a tag through a real `fill()` + `click('Save')` round trip: the new name appears in the
+- [x] Opening the create form shows a blank field (no stale prefill leaking from a previous edit).
+- [x] Creating a tag through a real `fill()` + `click('Save')` round trip: the new name appears in the
       list, no JS errors. **This is the one test that proves `wire:model` actually delivers the typed
       value** — `Livewire::test()->set()` writes the property directly and never touches the DOM.
-- [ ] Editing prefills the name; re-saving it unchanged preserves it.
-- [ ] Cancelling the create form adds nothing.
-- [ ] **Deleting a tag through the confirmation modal removes it in one click, with no intermediate
+- [x] Editing prefills the name; re-saving it unchanged preserves it.
+- [x] Cancelling the create form adds nothing.
+- [x] **Deleting a tag through the confirmation modal removes it in one click, with no intermediate
       count or blocked step ever appearing, and no JS errors.** ***The highest-value browser test in
       this story*** — and the exact inverse of
-      [0025's highest-value test](done/0025-product-categories-ui.md#tests-to-perform), which proves a
+      [0025's highest-value test](../done/0025-product-categories-ui.md#tests-to-perform), which proves a
       real block *does* render. Only a real DOM click proves the confirm control was never wired to a
       guard that does not exist server-side, and only a browser test goes through the compiled
       `wire:click` at all.
-- [ ] Creating a duplicate name through the real form shows the inline error — proves the `@error`
+- [x] Creating a duplicate name through the real form shows the inline error — proves the `@error`
       binding works in a browser, not merely in the component's error bag.
-- [ ] One continuous smoke pass (open create → cancel → open edit → cancel → open delete → cancel)
+- [x] One continuous smoke pass (open create → cancel → open edit → cancel → open delete → cancel)
       asserting `assertNoJavaScriptErrors()` after every step.
 
 > **Browser-testing rules that bind this file**, from
-> [playwright-setup.md](../../docs/testing/frontend/playwright-setup/waiting-rules.md#waiting-one-call-is-banned-in-this-repo-and-one-is-bounded):
+> [playwright-setup.md](../../../docs/testing/frontend/playwright-setup/waiting-rules.md#waiting-one-call-is-banned-in-this-repo-and-one-is-bounded):
 > `->waitForEvent('networkidle')` is **banned outright** — it never settles in this environment, and
 > one debugging session's repeated hangs leaked ~60 `playwright run-server` processes and OOM-killed
 > the MySQL container. A short bounded `->wait(n)` is the one accepted mitigation and needs a comment
@@ -724,16 +724,16 @@ hooks 0080 introduced.)*
 > `[wire:snapshot]` ground truth rather than waiting longer.
 
 **Unit — `tests/Unit/ArchitectureTest.php` (extend — optional, see OQ-5)**
-- [ ] `App\Livewire\BlogTags\*` references no product-taxonomy namespace, written as **one
+- [x] `App\Livewire\BlogTags\*` references no product-taxonomy namespace, written as **one
       `expect()` per namespace, never `expect([...])`** — that form is disjunctive and this repo has
       already shipped one vacuous `arch()` rule that way.
 
 **Explicitly not tested here**, per
-[what-not-to-test.md](../../docs/testing/qa/what-not-to-test.md):
+[what-not-to-test.md](../../../docs/testing/qa/what-not-to-test.md):
 - **0059's exhaustive normalisation / trim / boundary / race matrix**, including its two *blocking*
   whitespace tests. Owned at the action layer. Only the canaries above belong here; reimplementing
   the matrix is padding, which
-  [coverage-review-checklist.md](../../docs/testing/qa/coverage-review-checklist.md) treats as a
+  [coverage-review-checklist.md](../../../docs/testing/qa/coverage-review-checklist.md) treats as a
   finding.
 - **`FindOrCreateBlogTag`, entirely.** This screen never calls it. Any test referencing it is scope
   creep into 0063.
@@ -807,10 +807,10 @@ product taxonomy.
 > Epic 5 pass might erode — are the **unconditional delete** bullet (**D-2**) and the **`->ignore()` id
 > is `#[Locked]` and read back out of the database** bullet (**D-6**). Both stand exactly as written.
 
-- [ ] `/blog/tags` is registered as `blog-tags.index`, gated **`can:blog.view`** (never
+- [x] `/blog/tags` is registered as `blog-tags.index`, gated **`can:blog.view`** (never
       `permission:`), in its own `routes/blog-tags.php` inside that file's own `auth`+`verified`
       group, `require`d from `web.php` by a one-line diff.
-- [ ] `config/modules.php` gains a `groups.content` group, a nested `clusters.blog` cluster (`group:
+- [x] `config/modules.php` gains a `groups.content` group, a nested `clusters.blog` cluster (`group:
       'content'`), and an `items.blog_tags` entry (`group: null, cluster: 'blog'`) whose `permissions`
       is **exactly** `['blog.view']` — the same single ability the route's `can:` enforces — with
       matching leaves in `lang/{en,es}/navigation.php`. The registry key is `blog_tags`, **snake_case**,
@@ -819,46 +819,46 @@ product taxonomy.
       **not** edited. *(Corrected 2026-09-08 per story 0080's Phase 5 review, D-4 — this criterion
       originally named a flat `groups.blog` group with no cluster; see the Description-section
       correction block above for why.)*
-- [ ] The list renders every tag ordered by name, with an empty state when the catalog is empty, and
+- [x] The list renders every tag ordered by name, with an empty state when the catalog is empty, and
       icon-only row actions carrying `aria-label` plus `data-test="edit-blog-tag-{id}"` /
       `data-test="delete-blog-tag-{id}"` hooks **present on both the enabled and the disabled
       branch**.
-- [ ] A tag can be created and renamed through a modal whose only field is `name`; blank,
+- [x] A tag can be created and renamed through a modal whose only field is `name`; blank,
       whitespace-only, over-length, duplicate, case-only-duplicate and accent-only-duplicate names are
       each refused with a message on the `name` field and add no row.
-- [ ] Saving a tag under its own unchanged name is accepted.
-- [ ] **A tag can be deleted unconditionally from a confirmation modal naming the target, and no
+- [x] Saving a tag under its own unchanged name is accepted.
+- [x] **A tag can be deleted unconditionally from a confirmation modal naming the target, and no
       usage count, blocked state, reassign-first instruction or confirm-and-proceed control exists
       anywhere on the screen.**
-- [ ] The component does **not** compose `BlogTagValidationRules` and does **not** call
+- [x] The component does **not** compose `BlogTagValidationRules` and does **not** call
       `$this->validate()`; it calls the action and lets `ValidationException` propagate into the
       error bag (**D-1**). It never references `FindOrCreateBlogTag`.
-- [ ] `Gate::authorize()` (through `LogRefusedPrivilegedAttempt`) is the first statement of every
+- [x] `Gate::authorize()` (through `LogRefusedPrivilegedAttempt`) is the first statement of every
       public method that mutates **or discloses**, `mount()` excepted and unlogged; every refusal logs
       `target_type: 'blog_tag'`.
-- [ ] The id fed to `Rule::unique()->ignore()` is `#[Locked]` and read back out of the database, and a
+- [x] The id fed to `Rule::unique()->ignore()` is `#[Locked]` and read back out of the database, and a
       client-side retarget attempt throws.
-- [ ] Per-row `canEdit` / `canDelete` come from the same `BlogTagPolicy` methods the mutating methods
+- [x] Per-row `canEdit` / `canDelete` come from the same `BlogTagPolicy` methods the mutating methods
       authorize against.
-- [ ] `closeModal()` calls `resetValidation()`.
-- [ ] Every user-facing string is a translation key in `lang/{en,es}/blog-tags.php` or a bare `__()`
+- [x] `closeModal()` calls `resetValidation()`.
+- [x] Every user-facing string is a translation key in `lang/{en,es}/blog-tags.php` or a bare `__()`
       call per **D-8**; the two locale files stay key-for-key identical.
-- [ ] No model, migration, action, policy, factory, seeder, enum, validation trait or
+- [x] No model, migration, action, policy, factory, seeder, enum, validation trait or
       permission-catalog change is made.
-- [ ] Nothing on the screen references blog posts, blog categories or any product taxonomy.
+- [x] Nothing on the screen references blog posts, blog categories or any product taxonomy.
 
 ## Definition of Done
 
-- [ ] Tests written and green, plus the **full** existing suite in a single isolated run, per
-      [contracts.md](../../docs/contracts/testing-and-parallel-agents.md#full-test-suite-gate-rule)'s Full Test Suite Gate Rule.
-- [ ] **All three quality gates run unscoped and each result recorded, including "not run"** —
+- [x] Tests written and green, plus the **full** existing suite in a single isolated run, per
+      [contracts.md](../../../docs/contracts/testing-and-parallel-agents.md#full-test-suite-gate-rule)'s Full Test Suite Gate Rule.
+- [x] **All three quality gates run unscoped and each result recorded, including "not run"** —
       `php artisan test`, `vendor/bin/pint --format agent`, and `vendor/bin/phpstan analyse`
       (Larastan level 7). The third is the one nothing else prompts you to run; see
-      [errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
-- [ ] **Story 0059 is closed, with its two *blocking* whitespace tests intact** — a hard prerequisite,
+      [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+- [x] **Story 0059 is closed, with its two *blocking* whitespace tests intact** — a hard prerequisite,
       not a courtesy. See **R-3**: this story's own case/accent canaries cannot prove
       `NormalizeForSearch` is in the call path, and that proof lives entirely in 0059's suite.
-      ⚠️ **Amended, 2026-08-30 — [0074](0074-translatable-content-retrofit-blog-tags-backend.md) joins
+      ⚠️ **Amended, 2026-08-30 — [0074](../0074-translatable-content-retrofit-blog-tags-backend.md) joins
       0059 as a hard prerequisite, and the whitespace-test obligation travels with it.** 0074 **R-8**
       records that its own retrofit preserves the false-green exactly: `utf8mb4_unicode_ci` is case-
       *and* accent-insensitive, so an implementation that skips `NormalizeForSearch` entirely still
@@ -867,27 +867,27 @@ product taxonomy.
       simplification drop them as redundant on either side of the retrofit.** Sequencing: 0074 before
       0060 (0075 **Q-2** — this story is unbuildable as specified in the other order), and 0075 after
       both.
-- [ ] Code reviewed (code-reviewer). Point the review specifically at **D-1** (validation lives in the
+- [x] Code reviewed (code-reviewer). Point the review specifically at **D-1** (validation lives in the
       action, confirmed against 0059's *shipped* code rather than its task file) and at **V-1**'s
       browser-test path, which is a convention decision the review is the right place to ratify.
-- [ ] No security findings (appsec-auditor). Point the audit specifically at: the `#[Locked]` +
+- [x] No security findings (appsec-auditor). Point the audit specifically at: the `#[Locked]` +
       server-read id pair behind `Rule::unique()->ignore()`; that every mutating **and disclosing**
       method gates before it acts; and that the registry entry's `permissions` set-equals the route's
       `can:` ability.
-- [ ] Documentation updated (docs-keeper):
-      [api/routes.md](../../docs/api/routes.md) gains a `blog-tags.index` subsection (what the view
+- [x] Documentation updated (docs-keeper):
+      [api/routes.md](../../../docs/api/routes.md) gains a `blog-tags.index` subsection (what the view
       renders, its `data-test` hooks, the registry entry) and its "all three gated routes" sentence
       becomes **four**;
-      [architecture/authorization.md](../../docs/architecture/authorization.md) records `BlogTagPolicy`'s
+      [architecture/authorization.md](../../../docs/architecture/authorization.md) records `BlogTagPolicy`'s
       first call site and the sidebar registry's **second** multi-word key;
-      [conventions/naming.md](../../docs/conventions/naming.md)'s registry-mirroring rule gains
+      [conventions/naming.md](../../../docs/conventions/naming.md)'s registry-mirroring rule gains
       `blog_tags` beside `sales_regions`;
-      and [testing/frontend/playwright-setup.md](../../docs/testing/frontend/playwright-setup.md)'s
+      and [testing/frontend/playwright-setup.md](../../../docs/testing/frontend/playwright-setup.md)'s
       folder-structure block is corrected — see **F-3**, which this story must fix rather than inherit.
-- [ ] **0059's hand-off item is discharged and marked as such in that file**: "0060 gives
+- [x] **0059's hand-off item is discharged and marked as such in that file**: "0060 gives
       `BlogTagPolicy` its first component call site and keeps the `->ignore()` id
       server-authoritative" is closed by this story.
-- [ ] Acceptance criteria met.
+- [x] Acceptance criteria met.
 
 ## Documented functional decisions
 
@@ -898,7 +898,7 @@ product taxonomy.
   idiom rather than the Livewire `$this->validate()` idiom `Roles\Index::saveRole()` uses. The
   component therefore calls the action and lets `ValidationException` propagate into Livewire's error
   bag automatically — the same "do not catch it; the throw aborts the method, which is what keeps the
-  modal open by construction" discipline [0025's **D-2**](done/0025-product-categories-ui.md) states.
+  modal open by construction" discipline [0025's **D-2**](../done/0025-product-categories-ui.md) states.
   *Rejected:* mirror `saveRole()` — compose the trait in the component, validate there, then call the
   action with a pre-validated string. Rejected on two grounds: it duplicates a rule 0059 deliberately
   put **inside** the action so that a non-dashboard caller inherits it (0059 **D-12**), and
@@ -909,7 +909,7 @@ product taxonomy.
   the component after all, this whole `save()` design is rewritten. Raised as **OQ-3**.
 
   > ✅ **Amended, 2026-08-30 — D-1 is *unchanged and load-bearing*, not superseded, and this note exists
-  > because a reader of [0075](0075-blog-tags-language-tabs-ui.md) could easily conclude the opposite.**
+  > because a reader of [0075](../0075-blog-tags-language-tabs-ui.md) could easily conclude the opposite.**
   > That story adds a **third** action, `App\Actions\Blog\SetBlogTagTranslation`, and a human
   > architectural decision (2026-08-30) confirmed the project-wide rule behind it: *a per-language write
   > is authorized and validated on both the front and the back — defence in depth, not either/or*.
@@ -922,7 +922,7 @@ product taxonomy.
   > whole rule: **component-only is never acceptable** (task 0008a's finding); **action-only is
   > acceptable precisely where a component cannot validate without duplicating** a rule the action
   > already owns — which is exactly what
-  > [base-standards.md](../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+  > [base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
   > *"move the rule, never copy it"* requires.
   >
   > **The component still authorizes**, exactly as this file already specifies, and 0059's **D-12**
@@ -951,7 +951,7 @@ product taxonomy.
   dead markup that results is invisible to every ordinary test — which is why **R-2** exists and why
   the negative rendering assertion is this story's signature test.
   *Rejected:* a confirmation modal that shows a post count "for information" once 0061 lands. Rejected
-  as **D-5**, and separately because [0025's **D-3**](done/0025-product-categories-ui.md) records how easily
+  as **D-5**, and separately because [0025's **D-3**](../done/0025-product-categories-ui.md) records how easily
   a count column next to a delete control reads as a gate even when it is not one.
 
 - **D-3 — Component namespace `App\Livewire\BlogTags\Index`, view `livewire/blog-tags.blade.php`,
@@ -969,7 +969,7 @@ product taxonomy.
 - **D-4 — This story creates the `content` sidebar group and, nested inside it, the `blog` cluster,
   and it is the first Blog-area story to touch `routes/`, `config/modules.php` or `lang/` at all.**
   0058 fenced all three off explicitly, and nothing blog-related exists in any of them today
-  (verified). ⚠️ **Corrected 2026-09-08, per [story 0080](done/0080-sidebar-navigation-grouping-and-nesting.md)'s
+  (verified). ⚠️ **Corrected 2026-09-08, per [story 0080](../done/0080-sidebar-navigation-grouping-and-nesting.md)'s
   Phase 5 review (finding F-2) — this bullet originally read "This story creates the `blog` sidebar
   group" (a flat top-level group), quoted below in full since the earlier reasoning it built on is
   still correct and worth keeping:** *"The precedent is unambiguous and now twice-established: the
@@ -991,7 +991,7 @@ product taxonomy.
   *Rejected:* ship `blog-tags.index` with no registry entry, reachable only by URL, leaving the group
   and cluster to 0063. That is the **linkless half-state** `roles.index` sat in between 0010 and 0013
   and `sales-regions.index` between 0017 and 0018 — recorded both times in
-  [api/routes.md](../../docs/api/routes.md) as a real, if temporary, gap. There is no reason to repeat
+  [api/routes.md](../../../docs/api/routes.md) as a real, if temporary, gap. There is no reason to repeat
   it a third time when the pattern that avoids it is this well-trodden. *Also rejected:* the original,
   now-superseded flat `groups.blog` plan — see the correction above.
   **Cross-story consequence, stated so 0062 and 0063 inherit it rather than re-deriving it:** both
@@ -1009,7 +1009,7 @@ product taxonomy.
 
 - **D-6 — `$tags` is `#[Locked]`, as is every id-carrying property.** This follows the *newer*
   precedent — `App\Livewire\SalesRegions\Index::$regions` is `#[Locked]` (verified) — rather than
-  [0025's **D-4**](done/0025-product-categories-ui.md), which deliberately leaves `$productCategories`
+  [0025's **D-4**](../done/0025-product-categories-ui.md), which deliberately leaves `$productCategories`
   unlocked on the reasoning that nothing reads it for a decision. Both are safe here, because every
   mutating method re-reads its target with `findOrFail()` and re-authorizes; locking is simply the
   stricter of two safe options and the one the most recent screen chose. Record the reason in the
@@ -1017,7 +1017,7 @@ product taxonomy.
 
 - **D-7 — Per-row `Gate::allows()` is kept, but the per-row *test* matrix is not.** `BlogTagPolicy` is
   expected to gate on the actor's permission alone with no target-dependent branch — the
-  `SalesRegionPolicy` shape, which [api/routes.md](../../docs/api/routes.md) records as *"the first
+  `SalesRegionPolicy` shape, which [api/routes.md](../../../docs/api/routes.md) records as *"the first
   screen whose per-row `Gate::allows()` hint has no accepted drift"*. So every row answers identically
   for a given actor, and one global-state test replaces the Users-shaped matrix, which here would be
   padding rather than coverage. Per-row computation **stays** — negligible cost, consistent with the
@@ -1032,9 +1032,9 @@ product taxonomy.
   `sales-regions.php`). `blog.*` being a single permission module does not imply a single lang file;
   `sales-regions.*` and `roles.*` are single modules with dedicated files too.
   *Rejected:* one shared `lang/{en,es}/blog.php` for tags, categories and posts. It recreates precisely
-  the file-ownership hazard [0025's sequential-implementation note](done/0025-product-categories-ui.md)
+  the file-ownership hazard [0025's sequential-implementation note](../done/0025-product-categories-ui.md)
   exists to warn about — two stories writing the same lang file, which the
-  [Parallel Agent File-Ownership Rule](../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule)
+  [Parallel Agent File-Ownership Rule](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule)
   makes a real scheduling constraint — for no benefit. Separate files mean 0060, 0062 and 0063 never
   block one another.
   Note `lang/{en,es}/navigation.php` **is** shared and **is** touched by all three — that is
@@ -1042,8 +1042,8 @@ product taxonomy.
 
 - **D-9 — Ordered `name ASC, id ASC`; no pagination, no search, no sort picker.**
   ⚠️ **Correction, 2026-08-30 — the *SQL* half of this decision is no longer executable.**
-  [0074](0074-translatable-content-retrofit-blog-tags-backend.md) deletes `blog_tags.name`, so there is
-  no column to `orderBy`. [0075](0075-blog-tags-language-tabs-ui.md) **D-8** carries the correction and
+  [0074](../0074-translatable-content-retrofit-blog-tags-backend.md) deletes `blog_tags.name`, so there is
+  no column to `orderBy`. [0075](../0075-blog-tags-language-tabs-ui.md) **D-8** carries the correction and
   it is `frontend-expert`'s: **sort after fetch, keeping the `id` tiebreak** — the same shape sibling
   story 0071 reached independently for Product Categories (its **D-12**), which is the strongest signal
   either file offers. The *intent* is unchanged: alphabetical by the name an editor actually sees,
@@ -1088,8 +1088,8 @@ product taxonomy.
   ⚠️ **Correction, 2026-08-30 — still binding *on this story*, and no longer a statement about the
   screen.** The fence is unchanged as a scope rule: 0060 creates no translations table and no language
   tabs. But the screen does not stay monolingual —
-  [0074](0074-translatable-content-retrofit-blog-tags-backend.md) creates `blog_tag_translations` and
-  [0075](0075-blog-tags-language-tabs-ui.md) adds the tabs by **modifying this story's own component,
+  [0074](../0074-translatable-content-retrofit-blog-tags-backend.md) creates `blog_tag_translations` and
+  [0075](../0075-blog-tags-language-tabs-ui.md) adds the tabs by **modifying this story's own component,
   view, lang files and tests**. Read this bullet as *"not here, not by this story"*, never as *"this
   screen is single-language"* — the second reading is what would make someone rewrite 0075's work back
   out during a later pass.
@@ -1102,8 +1102,8 @@ product taxonomy.
   file.** Verified by `frontend-expert` against the tree: `app/Actions/Blog/`, `app/Models/BlogTag.php`
   and `app/Policies/BlogTagPolicy.php` do not exist, and `0059-blog-tags-backend.md` is still in
   `ai-spec/tasks/` (Phase 1), not `in-progress/` or `done/`. This mirrors [0025's own
-  **F-2**](done/0025-product-categories-ui.md#findings) exactly. Recorded as a dependency, **not** a blocker
-  to Phase 1 — but per [the deferred-findings rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
+  **F-2**](../done/0025-product-categories-ui.md#findings) exactly. Recorded as a dependency, **not** a blocker
+  to Phase 1 — but per [the deferred-findings rule](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
   every statement in the **Interface contract** and **D-1** must be **re-verified against `HEAD`
   before this story enters Phase 3**, with each disposition recorded.
 - **F-2 — `frontend-qa` cited `tests/Feature/ProductCategories/IndexTest.php` and
@@ -1115,13 +1115,13 @@ product taxonomy.
   `tests/Feature/SalesRegions/{IndexTest,IndexRenderingTest,RefusalLoggingTest}.php` and
   `tests/Browser/{RolesIndexTest,SalesRegionsIndexTest,UsersIndexTest}.php`. This is the same class of
   mistake **F-1** describes, caught inside Phase 1 rather than after.
-- **F-3 — [playwright-setup.md](../../docs/testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure)
+- **F-3 — [playwright-setup.md](../../../docs/testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure)
   under-counts the browser suite, and this story must correct it rather than inherit it.** That page
   says the suite holds **three** files and names `UsersIndexTest.php` and `SalesRegionsIndexTest.php`
   as the two flat ones. `ls tests/Browser/` returns **four**: `Auth/LoginSmokeTest.php`,
   `UsersIndexTest.php`, `SalesRegionsIndexTest.php` **and `RolesIndexTest.php`** — a *third* flat file
   the doc never mentions. So the flat/mirrored ratio the page reasons from is 3:1, not 2:1. This is the
-  [bare-negative-claim](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
+  [bare-negative-claim](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
   failure mode arriving as arithmetic, and it is load-bearing here because that page's own count is
   part of the argument **V-1** adjudicates. Correcting it is named in the Definition of Done.
 
@@ -1166,16 +1166,16 @@ product taxonomy.
 
 ### Dependencies
 
-- **[0059](done/0059-blog-tags-backend.md) — hard, blocking, and the only one.** The model, all three
+- **[0059](../done/0059-blog-tags-backend.md) — hard, blocking, and the only one.** The model, all three
   actions, the validation trait and the policy. **Not yet implemented (F-1).** Ordering is already
-  correct per [workflow.md](../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule) (0059 < 0060).
+  correct per [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule) (0059 < 0060).
 - **`App\Actions\NormalizeForSearch` (story 0022) — transitively.** This story never touches it, but
   0059 cannot ship without it, and 0059's **OQ-2** records that it does not exist in the tree and that
   no 0022 task file is present in this worktree. A genuine sequencing question, owned by 0059.
 - Depends on already-shipped work: the seeded `blog.*` permissions (0002, **verified**), the
   `Gate::before` Super Admin bypass, policy auto-discovery (0004), the Users screen's list+modal
   pattern (0006), the wired-up browser suite (0006b), the sidebar registry
-  ([0013](done/0013-sidebar-module-gating-ui.md)), `LogRefusedPrivilegedAttempt` (0015b), and the
+  ([0013](../done/0013-sidebar-module-gating-ui.md)), `LogRefusedPrivilegedAttempt` (0015b), and the
   Sales Regions screen (0018) as the most recent list-screen precedent.
 - **No dependency on 0058, 0061, 0062 or 0063**, in either direction, for this story's own scope —
   though **D-4** creates the sidebar group 0062 and 0063 will append to, and **R-6**'s cascade
@@ -1204,7 +1204,7 @@ product taxonomy.
   prerequisite for trusting this story's suite**, and a Phase 3 "simplification" that drops them as
   redundant with the case tests silently invalidates coverage here too.
 - **R-4 — Icon-only selector traps**, verbatim from
-  [playwright-setup.md](../../docs/testing/frontend/playwright-setup/selectors-tagging-and-ci.md#selector-strategy). A
+  [playwright-setup.md](../../../docs/testing/frontend/playwright-setup/selectors-tagging-and-ci.md#selector-strategy). A
   disabled-state helper must match `disabled="disabled"`, never a bare `disabled` substring — Flux's
   compiled class list carries the literal `disabled:opacity-75` on the *enabled* branch too, so the
   naive helper reports every control as disabled and the test can never fail. The page-global
@@ -1214,7 +1214,7 @@ product taxonomy.
   through its row-scoped hook.
 - **R-5 — The `@js()` / component-tag-attribute compilation trap.** This screen's row actions each
   carry exactly **one** `@js()` argument, the shape `roles.blade.php` ships and the
-  [dated correction](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
+  [dated correction](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
   confirms is safe inside a `flux:` tag — so the failure that made every Sales Regions row toggle a
   silent no-op does not recur structurally. The underlying rule still binds: any `wire:click` argument
   carrying a UUID goes through `@js(...)`, verified by reading the **compiled** HTML rather than by the
@@ -1243,13 +1243,13 @@ product taxonomy.
   (**D-7**), re-running 0059's normalisation suite one layer up, and defensively importing traps that
   structurally cannot apply here (the `<select>` trap, `$toggle`, the checkbox-count trap). Padding is a
   finding under
-  [coverage-review-checklist.md](../../docs/testing/qa/coverage-review-checklist.md), not a courtesy.
+  [coverage-review-checklist.md](../../../docs/testing/qa/coverage-review-checklist.md), not a courtesy.
 
 ### Open questions
 
 Six, none blocking Phase 1 — but **OQ-3 can invalidate a design decision** and should be answered the
 moment 0059's code exists. Each carries a recommendation, per
-[contracts.md](../../docs/contracts.md)'s Uncertainty Handling Rule.
+[contracts.md](../../../docs/contracts.md)'s Uncertainty Handling Rule.
 
 - **OQ-1 — Is `BlogTagPolicy` target-independent (the `SalesRegionPolicy` shape) or does
   `update`/`delete` branch per row (the `UserPolicy` shape)?** Unverifiable today (**F-1**).
@@ -1290,12 +1290,12 @@ moment 0059's code exists. Each carries a recommendation, per
 
   > ⚠️ **Whenever (a) is taken, the count must be explicit about trashed posts — and the direction of
   > the default is *contested*, so settle it by execution before writing the query.** Story
-  > [0061](0061-blog-posts-core-crud-backend.md) is done, `BlogPost` uses `SoftDeletes` (its **D-7**),
+  > [0061](../0061-blog-posts-core-crud-backend.md) is done, `BlogPost` uses `SoftDeletes` (its **D-7**),
   > and it adds `BlogTag::posts()` as a plain `BelongsToMany` with no default scope of its own. Its
   > **D-7c** hands this story a ⚠️ stating that a `withCount('posts')` here *"now includes trashed
   > posts unless scoped"*. **That claim is not reconcilable with this repo's own shipped precedent and
   > was not verified by execution here** (`vendor/` is absent from this worktree):
-  > [`App\Livewire\Roles\Index`](../../app/Livewire/Roles/Index.php) is the structurally identical case
+  > [`App\Livewire\Roles\Index`](../../../app/Livewire/Roles/Index.php) is the structurally identical case
   > — a non-soft-deleting parent counting a soft-deleting related model across a many-to-many — and it
   > has to write `->withCount(['users' => fn ($query) => $query->withTrashed()])` with a docblock
   > reading *"a soft-deleted holder still counts"*, i.e. an explicit **opt-in** to include trashed,
@@ -1306,7 +1306,7 @@ moment 0059's code exists. Each carries a recommendation, per
   > `withCount('posts')` here** — state the intent explicitly (`->withTrashed()` to include,
   > `->whereNull('deleted_at')`/the default to exclude), and pin it with a test that creates a tag with
   > one live and one trashed post and asserts the literal number. Per
-  > [the hedge rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24),
+  > [the hedge rule](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24),
   > resolve which default actually applies by **running it** (one `tinker` call against `Role` +
   > a trashed holder settles it for both), and record the result in whichever story adds the count —
   > correcting 0061's **D-7c** if it turns out to be inverted. For an editor-facing count, excluding
@@ -1321,7 +1321,7 @@ moment 0059's code exists. Each carries a recommendation, per
 
 - **OQ-6 — Header summary line, and a search filter?** Two small UI questions with the same answer
   today.
-  **(a) Neither (recommended)** — matching [0025's **D-7**](done/0025-product-categories-ui.md): nothing in
+  **(a) Neither (recommended)** — matching [0025's **D-7**](../done/0025-product-categories-ui.md): nothing in
   the PRD or this brief asks for a count header, and unlike Users (which has an *active* dimension) a
   tag catalog has no second dimension to summarise. A filter is speculative until 0063's
   create-on-the-fly reveals how fast the catalog really grows (**D-9**).
@@ -1351,14 +1351,14 @@ Recorded so a later reader does not reopen them:
 Phase 1 (Three Amigos) debate run on 2026-08-27 with `frontend-expert` (files, route/registry shape,
 component surface and the **D-1** validation-placement analysis) and `frontend-qa` (Gherkin, the
 layered test plan, level calibration and the false-green analysis behind **R-2** and **R-3**), per
-[workflow.md](../../docs/workflow/phases.md#phase-1--three-amigos-debate). Classified **Frontend** under the
-[task classification rule](../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule), so no `backend-expert` or
+[workflow.md](../../../docs/workflow/phases.md#phase-1--three-amigos-debate). Classified **Frontend** under the
+[task classification rule](../../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule), so no `backend-expert` or
 `database-expert` was convened — this story adds no backend or schema artifact. Derived from
-[PRD](../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog tags (extends the prototype)` block
+[PRD](../../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog tags (extends the prototype)` block
 (first three scenarios) and the management-screen half of Blog acceptance criterion 3, grounded in full
-readings of [0059](done/0059-blog-tags-backend.md) and [0025](done/0025-product-categories-ui.md), with
-[0018](done/0018-sales-region-tax-configuration-ui.md)'s shipped screen and
-[0013](done/0013-sidebar-module-gating-ui.md)'s registry as the most recent precedents.
+readings of [0059](../done/0059-blog-tags-backend.md) and [0025](../done/0025-product-categories-ui.md), with
+[0018](../done/0018-sales-region-tax-configuration-ui.md)'s shipped screen and
+[0013](../done/0013-sidebar-module-gating-ui.md)'s registry as the most recent precedents.
 
 Both amigos' contributions are reflected above. **Three divergences are recorded rather than
 silently resolved** (**V-1** the browser-test path, **V-2** the `data-test` hook naming, **V-3** the
@@ -1372,11 +1372,11 @@ in this repo. Neither amigo cited that; it came from reading the real directory 
 expert's, and is the most important: 0059 does not exist in code, so this story's entire interface
 contract — **D-1** above all — is a claim about a task file rather than about a tree, and must be
 re-verified against `HEAD` before Phase 3 under
-[the deferred-findings rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+[the deferred-findings rule](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
 **F-2** and **F-3** are the facilitator's, and both are instances of the same failure mode caught early:
 QA cited two `ProductCategories` test files as shape precedents when neither exists (story 0025 is
 unimplemented), and
-[playwright-setup.md](../../docs/testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure) states the
+[playwright-setup.md](../../../docs/testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure) states the
 browser suite holds three files while it holds four — the unnamed fourth, `RolesIndexTest.php`, being a
 *third* flat file that changes the very ratio that page's own convention argument reasons from. F-3 is
 load-bearing rather than cosmetic, because **V-1** adjudicates using that page's argument; correcting
@@ -1395,3 +1395,44 @@ sense. **OQ-3** can force a redesign of `save()` and should be closed the moment
 explicitly asks for it to be made at Phase 2 rather than defaulted a third time. And **V-3**'s
 folder-vs-namespace mismatch is a first for this repo and should be confirmed rather than pass
 unremarked.
+
+## Phase 2 record — 2026-09-24
+
+Validated by the orchestrating session against `HEAD` (`finalproject-ARP` @ `d58f225`, which contains story 0059). The dispositions below discharge **F-1**'s "re-verify before Phase 3" obligation.
+
+| Item | Disposition |
+| --- | --- |
+| **F-1** — 0059 contract | Verified against shipped code: `CreateBlogTag`, `RenameBlogTag`, `DeleteBlogTag`, `BlogTagPolicy` and `BlogTagValidationRules` all exist with the signatures this file uses. One drift, harmless here: `nameFormatRules()` takes a `NormalizeForSearch` argument (this file's contract shows none); the component never reaches it. |
+| **OQ-3 / D-1** | **(a) confirmed.** Both write actions authorize, trim, validate (`nameRules()`) and map `23000` to a `name`-keyed `ValidationException`. The component composes no trait and calls no `$this->validate()`. |
+| **OQ-1 / D-7** | **(a) confirmed.** `BlogTagPolicy` is four flat `hasPermissionTo()` checks with no `$target` branch, so one global-state authorization test suffices. |
+| **OQ-2** | **(a).** `BlogTag::NAME_MAX_LENGTH` (100) exists; the boundary canary derives from it. |
+| **V-1** | **Ratified: `tests/Browser/BlogTags/IndexTest.php` (mirrored).** The suite has since grown `Orders/`, `Products/`, `Customers/`, `Shipping/` mirrored folders; flat is now clearly the debt. |
+| **V-3** | Ratified: `tests/Feature/Blog/`, co-located with 0059's action tests. |
+| **F-3** | Already corrected by story 0022 (`RolesIndexTest.php` is counted); this story only adds its new file to that page's folder-structure list. |
+| **`config/modules.php`** | Confirmed: the file's own comment leaves `groups.content` and its `blog` cluster to this story (0080's D-5). |
+| **Sequencing vs 0074** | The Epic 5 amendment says 0074 must precede this story. The claim registry (`tasks-status.json`) says otherwise: 0060 is `ready` with no dependencies, and 0075 lists **0060** and 0074 as dependencies, so 0060 → 0074 → 0075 is the registered order. This story is built against the **shipped** `blog_tags.name` column; the retrofit of this component to translations is 0074/0075's scope, as their files state. |
+
+Verdict: **INVEST passes; advance to Phase 3.**
+
+## Verification record (2026-09-24)
+
+Run from worktree `0060-blog-tags-ui` against `finalproject-ARP` @ `d58f225`, in a per-worktree database (`testing_0060`).
+
+| Gate | Result |
+| --- | --- |
+| Full suite, unscoped (`vendor/bin/pest`, isolated database) | **passed** — 3688 tests, 3685 passed, 3 skipped, 0 failed |
+| `vendor/bin/pint --format agent` (unscoped) | passed |
+| `vendor/bin/phpstan analyse` (Larastan level 7) | passed, 0 errors |
+| Story tests | `BlogTagsIndexTest` + `BlogTagsIndexRenderingTest` (72 tests), `tests/Browser/BlogTags/IndexTest.php` (8 browser tests), 4 new sidebar gating tests, the topbar dataset entry, 2 architecture fences |
+| Phase 4 — security audit | no findings at or above the reporting threshold. Audited: the `#[Locked]` id plus `findOrFail()` re-read behind `RenameBlogTag`; authorization on every mutating **and** disclosing method; the registry entry's `permissions` set-equal to the route's `can:blog.view`; `@js()` encoding and escaping of tag names. |
+| Phase 5 — code review | no findings. Acceptance criteria and every point of the review brief (D-1, D-2, `#[Locked]`, refusal logging, registry-vs-route ability) confirmed. |
+
+### Deviations from the task file, and decisions it left open
+
+- **The topbar was not foreseen.** This file predates story 0057a. `tests/Feature/Layout/TopbarTest.php` fails for any authenticated screen missing from its `topbarScreens()` dataset, so the view declares the `heading`/`subheading` slots, `blog-tags.index` joined the dataset, and `lang/{en,es}/topbar.php` gained `blog_tags.subtitle`.
+- **The create button is gated in the view.** The Gherkin asks for "create, edit and delete controls shown as unavailable" to a view-only actor, but the specified component surface has no create hint. The header button uses `@can('create', BlogTag::class)` with the same disabled-plus-tooltip branch as the row actions; no public property was added.
+- **Story 0080's "no content group yet" guard was flipped.** `SidebarModuleGatingTest` asserted that `groups.content` and `clusters.blog` did not exist; that is exactly what this story creates, so the guard became a render-order test (Store, Content, Blog cluster, Tags link, Settings).
+- **The create field keeps the bare hook `blog-tag-name-input`.** Story 0075's file states two incompatible things about it; this story ships the unchanged one-field create form, so the bare hook stands. 0075 renames the edit form's hooks.
+- **OQ-4 / OQ-6 stand as recommended:** no post count column and no header summary line. OQ-5 (a) was taken: two single-namespace `arch()` fences.
+- **Sequencing vs 0074.** Built against the shipped `blog_tags.name` column (see the Phase 2 record). Stories 0074 and 0075 retrofit this component to translations; until 0074 reaches Phase 3, this component's `orderBy('name')`, `$tag->name` and `$target->name` depend on that column.
+- **Browser suite.** One first run of the whole browser file hung until the local timeout, and each of the eight tests passed alone (about 10 s each) and together (28 s); the hang did not reproduce, and no `playwright` process of this session was left behind.

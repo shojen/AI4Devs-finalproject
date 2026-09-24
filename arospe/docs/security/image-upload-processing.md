@@ -62,7 +62,7 @@ private function applyImagickResourceLimits(): void
     Imagick::setResourceLimit(Imagick::RESOURCETYPE_MEMORY, $byteCeiling);
     Imagick::setResourceLimit(Imagick::RESOURCETYPE_MAP, $byteCeiling);
     Imagick::setResourceLimit(Imagick::RESOURCETYPE_DISK, 0);
-    Imagick::setResourceLimit(Imagick::RESOURCETYPE_TIME, self::TIME_LIMIT_SECONDS);
+    Imagick::setResourceLimit(Imagick::RESOURCETYPE_TIME, self::TIME_LIMIT_UNBOUNDED);   // 2^31-1 s -- see "process-global" below
 }
 ```
 
@@ -155,9 +155,21 @@ Octane/Swoole/RoadRunner in `composer.json`, and PHP-FPM workers and queue worke
 request/job at a time. There is no interleaving to race.
 
 What it *is* is **sequential contamination**: once a request in a long-lived worker runs a conversion,
-every later request served by that same worker inherits `WIDTH=4000`, `MEMORY=1 GB`, `DISK=0`,
-`TIME=60`. Today that is harmless because `App\Actions\Media\GenerateImageConversions` is the only
+every later request served by that same worker inherits `WIDTH=4000`, `MEMORY=1 GB` and `DISK=0`.
+Today that is harmless because `App\Actions\Media\GenerateImageConversions` is the only
 class in `app/` that touches Imagick or Intervention (verified by grep).
+
+> ⚠️ **`RESOURCETYPE_TIME` must never be a short, finite value — it is not a per-conversion budget.**
+> On the ImageMagick 6.9 build Sail and GitHub Actions run, it is captured for the *lifetime of the
+> process*: once a worker has been alive longer than the limit, every later decode raises
+> `time limit exceeded @ fatal/cache.c/GetImagePixelCache`, which Intervention rewraps as a decoder
+> failure and the UI shows as "This image could not be processed". An earlier `TIME=60` did exactly that
+> to any test or request handled by a worker older than a minute. The action therefore sets it to
+> `2_147_483_647` seconds (about 68 years) on every call, so a stale short value from a caller or
+> `policy.xml` cannot survive it. Do **not** "fix" that to `PHP_INT_MAX` or `-1` (ImageMagick's own
+> infinity): both make Imagick raise `TimeLimitExceeded` on the first decode. Work stays bounded by the
+> width/height/area/memory/map limits and, for web requests, PHP's `max_execution_time`. Never write a
+> test that *sets* a short `TIME` limit either — it poisons every later decode in that worker.
 
 > ⚠️ **The day a second Imagick consumer is added — a PDF thumbnailer, an avatar cropper, a
 > different-format pipeline — it will silently inherit these limits, and `DISK => 0` in particular

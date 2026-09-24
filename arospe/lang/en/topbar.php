@@ -74,6 +74,10 @@ return [
         'subtitle' => 'Track, edit and fulfil the order book.',
     ],
 
+    'blog_tags' => [
+        'subtitle' => 'Organise blog posts with tags.',
+    ],
+
     'settings' => [
         'profile' => 'Profile',
         'security' => 'Security',

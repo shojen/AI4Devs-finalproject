@@ -14,11 +14,13 @@ return [
     */
 
     'groups' => [
+        'content' => 'Content',
         'settings' => 'Settings',
         'store' => 'Store',
     ],
 
     'clusters' => [
+        'blog' => 'Blog',
         'products' => 'Products',
         'store_settings' => 'Store settings',
     ],
@@ -36,6 +38,7 @@ return [
         'payment_methods' => 'Payment methods',
         'customers' => 'Customers',
         'orders' => 'Orders',
+        'blog_tags' => 'Tags',
     ],
 
 ];
