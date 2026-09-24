@@ -4,7 +4,7 @@
 A scheduled Artisan command sweeps for blog posts whose status is `BlogPostStatus::Scheduled` and
 whose `published_at` has arrived, and transitions each one to `Published`. That transition is the
 moment the *"a scheduled post goes live"* half of the
-[PRD](../../docs/PRD/PRD.md#cross-cutting-global-search--notifications)'s confirmed notification list
+[PRD](../../docs/PRD/sections/foundations.md#cross-cutting-global-search--notifications)'s confirmed notification list
 becomes observable, so this story also defines the single trigger story **0065** consumes.
 
 It is **backend only, and narrower than it looks**: no screen, no route, no migration, no column, no
@@ -19,7 +19,7 @@ disproportionately convention-setting for its size: three of its decisions (wher
 lives, how a system-triggered write authorizes, how a scheduled command is tested) are the project's
 first, and every later scheduled job inherits them.
 
-Covers the automatic half of [PRD](../../docs/PRD/PRD.md#epic-4--blog) Epic 4's Blog post status
+Covers the automatic half of [PRD](../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's Blog post status
 (`Programado`) and the *"or a scheduled post goes live"* clause of the cross-cutting notification
 list. **The full-auto-publish behaviour is a human product decision, confirmed before this batch was
 decomposed** — see [D-0](#d-0--full-auto-publish-is-a-confirmed-product-decision-not-an-inference).
@@ -352,7 +352,7 @@ the behaviour above through a second door.
 **Feature — `tests/Feature/Console/ScheduleRegistrationTest.php`** (new) — the schedule entry itself
 
 > **This test is recommended, and its falsifiability was checked rather than assumed** — the standard
-> this repo's [vacuous-`arch()`-rule entry](../../docs/errors-log-archive.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18)
+> this repo's [vacuous-`arch()`-rule entry](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18)
 > demands of any assertion that passes by default. ✅ **Verified against `laravel/framework v13.19.0`:**
 > `Schedule::events()` returns `Event[]` (`Support/Facades/Schedule.php:16`), `Event::$command` is
 > **public** (`Console/Scheduling/Event.php:34`), `Event::getExpression()` is **public**
@@ -458,7 +458,7 @@ and the notification that announces it is story 0065.
       that was not run*: `php artisan test` (not `--filter`), `vendor/bin/pint --format agent` (not
       `--dirty`), and **Larastan level 7** (`vendor/bin/phpstan analyse`). The third is the one nothing
       else prompts you to run, and a record naming two of three is a record of two gates — see
-      [errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+      [errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
       **Note `phpstan.neon` analyses `routes/`**, so this story's new route file is in scope.
 - [ ] **The index is verified to exist with `php artisan db:table blog_posts` after 0061 has
       migrated** — not by re-reading 0061's task file (**R-1**). If it is absent, **R-1**'s explicit
@@ -482,7 +482,7 @@ and the notification that announces it is story 0065.
   - [`architecture/authorization.md`](../../docs/architecture/authorization.md) — **the reusable fact,
     and the reason this story matters beyond the blog:** a system-triggered write may be ungated, what
     makes that safe, and the docblock requirement that distinguishes "exempt" from "forgotten". This
-    is the page that owns [Recording a refusal](../../docs/architecture/authorization.md#recording-a-refusal--what-every-gate-owes-the-audit-trail);
+    is the page that owns [Recording a refusal](../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail);
     an *absence* of a gate deserves the same treatment. **Coordinate with story 0052**, which
     specifies the identical documentation obligation (**D-5**) — whichever lands first writes the
     section and the other extends it, exactly as **OQ-4** of 0061 handles the sanitizer.
@@ -605,7 +605,7 @@ rule" into "follow one".**
 
 The problem is real: there is no `Auth::user()` in a console process. 0061's **D-13** says every action
 in `app/Actions/Blog/` self-authorizes, and
-[base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+[base-standards.md](../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 says the rule lives in the class performing the operation. Both were written for actor-driven writes.
 
 **The options, and why each was rejected or adopted:**
@@ -622,16 +622,16 @@ says the rule lives in the class performing the operation. Both were written for
 - **(b) A system/impersonated actor — rejected.** This repo's only privileged non-human identity is
   the seeded `Super Admin`, whose existence is *conditional* on `SUPER_ADMIN_EMAIL` being configured
   and its bootstrap branch succeeding
-  ([authorization.md](../../docs/architecture/authorization.md#super-admin-bootstrap)). Coupling a
+  ([authorization.md](../../docs/architecture/authorization/overview-catalog-seeding.md#super-admin-bootstrap)). Coupling a
   cron job's correctness to an optional env var is fragile. Worse, it would attribute an automated
   transition to a **named human who took no action**, corrupting the audit trail this repo built
-  [specifically to be trustworthy](../../docs/architecture/authorization.md#recording-a-refusal--what-every-gate-owes-the-audit-trail).
+  [specifically to be trustworthy](../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail).
 - **(c) A narrow dedicated action performing no `Gate` check — adopted.**
 
 **What the sweep actually decides is not "may this actor publish" but "is this post now due".** That
 is a fact about the data relative to the clock, and this repo already has a documented category for
 exactly that distinction:
-[A domain invariant is not an authorization rule and does not live here](../../docs/architecture/authorization.md#a-domain-invariant-is-not-an-authorization-rule-and-does-not-live-here),
+[A domain invariant is not an authorization rule and does not live here](../../docs/architecture/authorization/domain-invariants.md#a-domain-invariant-is-not-an-authorization-rule-and-does-not-live-here),
 written for `SalesRegions` but stated generically.
 
 > ✅ **This is not a new idiom for this project.** [Story 0052](done/0052-order-auto-cancel-full-refund-backend.md)'s
@@ -801,7 +801,7 @@ Three consequences, each verified rather than assumed:
   > was removed. And the *second half* of this bullet, which is the reason it is here at all, is
   > untouched: no model events fire, so **D-12**'s dispatch must stay explicit.
 - **No `DB::transaction()` wrapper.** A single statement is already atomic, and
-  [errors-log.md's transaction-wrapper entry](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
+  [errors-log.md's transaction-wrapper entry](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
   is a standing warning that a wrapper is a change to every side effect inside it. The one thing that
   *must* be ordered is the event dispatch, which follows the successful write (**D-12**).
 
@@ -892,7 +892,7 @@ which is sufficient:
    bug.
 3. **This repo's own precedent points the same way.** `App\Listeners\ActivateVerifiedUser` listens to
    Laravel's explicitly-dispatched `Verified` event, not a generic model hook — and
-   [errors-log.md's `getPrevious()` entry](../../docs/errors-log-archive.md#a-listener-read-the-pre-save-value-with-getoriginal-which-save-had-already-overwritten--2026-08-17)
+   [errors-log.md's `getPrevious()` entry](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-listener-read-the-pre-save-value-with-getoriginal-which-save-had-already-overwritten--2026-08-17)
    is a standing warning about how fragile implicit dirty-state reconstruction is.
 
 **The seam with 0065, stated as a contract rather than an intention.** This story owns *"a post went
@@ -1034,7 +1034,7 @@ Read or executed against this worktree and the sibling checkout's `vendor/` duri
 - **0063 — not a dependency.** It already ships the editor controls that let a human create the state
   this story consumes, but nothing here reads its code.
 - **0065 depends on this one** for the automatic trigger (**D-12**).
-- Per [workflow.md](../../docs/workflow.md#task-ordering-rule) the numbering is already correct
+- Per [workflow.md](../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule) the numbering is already correct
   (0061 < 0064 < 0065); what must be enforced is the **sequencing**.
 
 ### Risks
@@ -1046,7 +1046,7 @@ Read or executed against this worktree and the sibling checkout's `vendor/` duri
   discovered:** verify with `php artisan db:table blog_posts` *after 0061 has migrated* — **not** by
   re-reading 0061's task file, which is a statement of intent. If the index is absent, add
   `add_scheduled_sweep_index_to_blog_posts_table` per
-  [migrations.md](../../docs/database/migrations.md#file-naming)'s `<verb>_<what>_to_<table>_table`
+  [migrations.md](../../docs/database/migrations/basics-and-alterations.md#file-naming)'s `<verb>_<what>_to_<table>_table`
   convention, as a **reviewed exception to this story's scope fence**, never as a silent addition.
 - **R-2 — Someone adds `withTrashed()` and a deleted post goes live.** The highest-severity failure in
   the story, and the cheapest to prevent (**D-9**). Mitigated by a dedicated test and a named
@@ -1060,7 +1060,7 @@ Read or executed against this worktree and the sibling checkout's `vendor/` duri
   (**V-7**). If the two disagree, every scheduled post publishes offset by that difference. **Almost
   certainly fine** — the `mysql:8.4` container and the app container both very likely resolve to UTC —
   but "almost certainly" is precisely the hedge
-  [this project's own rule](../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
+  [this project's own rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
   says not to paper over. **Verify once at Phase 3** with `SELECT @@global.time_zone,
   @@session.time_zone;` against the running container. **This is pre-existing** — it applies equally to
   `created_at`/`updated_at` on every table — so it is not a blocker unique to this story, but this is
@@ -1171,9 +1171,9 @@ Recorded so they are not re-opened. Each was a real question at the start of the
 
 Phase 1 (Three Amigos) debate run on 2026-08-27 with `backend-expert` (files and approach),
 `database-expert` (query shape, index validation, concurrency) and `backend-qa` (test design), per
-[workflow.md](../../docs/workflow.md#phase-1--three-amigos-debate). Derived from
-[PRD](../../docs/PRD/PRD.md#epic-4--blog) Epic 4's blog-post status requirement and the
-[cross-cutting notification list](../../docs/PRD/PRD.md#cross-cutting-global-search--notifications)'s
+[workflow.md](../../docs/workflow/phases.md#phase-1--three-amigos-debate). Derived from
+[PRD](../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's blog-post status requirement and the
+[cross-cutting notification list](../../docs/PRD/sections/foundations.md#cross-cutting-global-search--notifications)'s
 *"a blog post is published or a scheduled post goes live"*, plus the human product decision recorded
 as **D-0**, and story [0061](0061-blog-posts-core-crud-backend.md)'s explicit hand-off, which is this
 story's entire backend contract.
@@ -1251,7 +1251,7 @@ rather than at implementation time:
 5. **D-14** — the system-actor Gherkin convention, which is a **project-level** convention decision
    being made inside a single story file. By this repo's own rule that
    [a story file naming a test path is making a convention decision, and the path belongs in the
-   Phase 2 review](../../docs/testing/frontend/playwright-setup.md#folder-structure), a story file
+   Phase 2 review](../../docs/testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure), a story file
    naming a *Gherkin* convention deserves the same scrutiny.
 6. **The test file paths themselves** — `tests/Feature/Console/Commands/` and `tests/Feature/Console/`
    are new folders, and per the same rule that is a convention decision, not an implementation detail.

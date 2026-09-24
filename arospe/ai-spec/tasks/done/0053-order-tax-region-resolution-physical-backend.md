@@ -3,7 +3,7 @@
 ## Description
 Resolve an order's tax **Sales Region** from the order's own frozen **shipping address**, for orders
 whose line items are **all physical products**, per PRD
-[§3.2 Orders](../../../docs/PRD/PRD.md#32-orders): *"Physical product → the Sales Region is resolved from
+[§3.2 Orders](../../../docs/PRD/sections/epic-3-customers-orders.md#32-orders): *"Physical product → the Sales Region is resolved from
 the order's shipping address"*, and *"the region entry's rate is used, falling back to the default entry
 when no matching entry applies"*. It ships one action — `App\Actions\Orders\ResolveOrderTaxRegion` —
 which writes `orders.sales_region_id`, **snapshots** `orders.tax_rate`, and — since the **D-13**
@@ -236,7 +236,7 @@ Feature: Resolving an order's tax Sales Region from its shipping address (physic
 Invokable, imperative verb-phrase name with no `Action`/`Service` suffix, resolved from the container
 and never `new`-ed
 ([code-style.md](../../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract),
-[naming.md](../../../docs/conventions/naming.md#classes)). It lands in `app/Actions/Orders/`, the folder
+[naming.md](../../../docs/conventions/naming/classes.md#classes)). It lands in `app/Actions/Orders/`, the folder
 0045 creates.
 
 ```php
@@ -312,7 +312,7 @@ Four properties to carry into implementation:
   `Order::with('items.product')` up front, the same hazard-flagging posture 0026 takes.
 - **No `Log::warning`.** A fallback here is an ordinary business outcome recorded in a column a human
   will see, not a refused privileged attempt; [the refusal-logging
-  pattern](../../../docs/architecture/authorization.md#recording-a-refusal--what-every-gate-owes-the-audit-trail)
+  pattern](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail)
   is for authorization refusals and does not extend to this.
 
 ### `app/Concerns/ResolvesSalesRegionFromAddress.php` — **create if absent** (shared with 0054)
@@ -445,7 +445,7 @@ produces a *plausible* region and a *plausible* rate, and nothing looks wrong un
       recorded separately (**D-6**).
 - [ ] Integration test: a region whose `rate` is `'0.000'` resolves as a **real rate** — `tax_rate` is
       `'0.000'`, the flag stays `false`, and there is **no** fallback to the default. `null` and `0.000`
-      cannot share a meaning ([schema.md](../../../docs/database/schema-products.md#sales_regions)).
+      cannot share a meaning ([schema.md](../../../docs/database/schema-products/sales-regions-and-media.md#sales_regions)).
 
 ### The order's own address decides
 
@@ -626,7 +626,7 @@ is the basis `tax_amount` is derived from — re-summing the line items into it 
 - [ ] Tests written and green, plus the full existing suite (per
       [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule) — run **unscoped**
       (`php artisan test`, not `--filter`), per
-      [base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
+      [base-standards.md](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
 - [ ] `vendor/bin/pint --format agent` clean (unscoped, **not** `--dirty`) and Larastan level 7 passing.
 - [ ] Code reviewed (code-reviewer).
 - [ ] No security findings (appsec-auditor) — specifically: that the action writes only the five
@@ -650,7 +650,7 @@ is the basis `tax_amount` is derived from — re-summing the line items into it 
     to mistake for duplication and "fix".
   - **Grep for bare negative claims this story falsifies** rather than trusting the change→doc mapping —
     the failure mode recorded in
-    [errors-log-archive.md](../../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13).
+    [errors-log-archive.md](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13).
     0045's docs pass will have written "`sales_region_id` is `null` at creation and resolving it is
     0053's"; that sentence is still true, but anything phrased as "no order ever carries a sales region"
     is not. **Add to that grep, since D-13:** anything phrased as "0053 does not compute a tax amount",
@@ -744,7 +744,7 @@ rediscovery.
   the ~249 ISO rows, and `slug` carries the table's only non-FK UNIQUE index. `code` is explicitly **not**
   a resolution key — the seeder's own docblock states *"Nothing resolves by `code`, so these are starting
   values, not contracts"*, and `code` is administrator-editable
-  ([schema.md](../../../docs/database/schema-products.md#sales_regions)), so resolving by it would let an
+  ([schema.md](../../../docs/database/schema-products/sales-regions-and-media.md#sales_regions)), so resolving by it would let an
   administrator's cosmetic edit silently re-route an order's tax.
 
   The lower-casing is applied at the **query**, not assumed of the stored value: 0041 validates
@@ -785,7 +785,7 @@ rediscovery.
   administrator ever edits them (they are Spanish fiscal geography, not configuration), and it would need
   its own migration, model, seeder and CRUD story. **A config file**: `config/` here is for a declarative
   registry a later story extends by appending data
-  ([base-standards.md](../../../docs/conventions/directory-structure.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache)),
+  ([base-standards.md](../../../docs/conventions/directory-structure/config-registry.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache)),
   and this is neither extended nor appended-to — it is a closed set fixed by Spanish law. **Reusing
   `sales_regions.code`**: refused for the reason in **D-4**.
 
@@ -879,7 +879,7 @@ rediscovery.
   would fail closed against it — turning a hardening reflex into an outage.
 
   This is a deliberate departure from
-  [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+  [base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
   "an authorization rule belongs to the action" convention, and the departure is narrow and stated: that
   convention governs an **operation a permission gates**. No permission in the seeded catalog gates "tax
   was resolved", because it is not an operation an administrator performs. **Recorded here so
@@ -931,7 +931,7 @@ rediscovery.
 
   | Term / case | Rule |
   | --- | --- |
-  | `tax_amount` | `subtotal × (tax_rate ÷ 100)` — `tax_rate` is a **percentage** (`21.000` means 21%), matching `sales_regions.rate`'s own semantics ([schema.md](../../../docs/database/schema-products.md#sales_regions)) and 0054's `subtotal 100.00 @ 21% → 21.00` scenario. ⚠️ **0048's D-8 and 0054's own test plan both write the shorthand `subtotal × tax_rate`, which is dimensionally wrong read literally** — Phase 3 must implement the `÷ 100` form and, if 0048 or 0054 shipped the literal one, that is a bug in the shipped code, not a licence to copy it |
+  | `tax_amount` | `subtotal × (tax_rate ÷ 100)` — `tax_rate` is a **percentage** (`21.000` means 21%), matching `sales_regions.rate`'s own semantics ([schema.md](../../../docs/database/schema-products/sales-regions-and-media.md#sales_regions)) and 0054's `subtotal 100.00 @ 21% → 21.00` scenario. ⚠️ **0048's D-8 and 0054's own test plan both write the shorthand `subtotal × tax_rate`, which is dimensionally wrong read literally** — Phase 3 must implement the `÷ 100` form and, if 0048 or 0054 shipped the literal one, that is a bug in the shipped code, not a licence to copy it |
   | `tax_rate` is `null` | `tax_amount = '0.00'`. The region is known and the rate is not (**D-6** case 5); no tax is invented. Distinguished from a real `'0.000'` by `tax_rate` and `flagged_for_review`, **never** by the amount, since both amounts are `'0.00'` |
   | `total` | `subtotal + tax_amount + shipping_amount` — 0045 **D-8**'s identity written out in full, so `shipping_amount` becoming non-zero (0037/0054) needs no edit here |
   | Basis | Always recomputed **from `subtotal`**, never accumulated onto the column's current value. `total += tax_amount` passes every single-run test and doubles on the second call |
@@ -1059,7 +1059,7 @@ gap or an overlap:
   at 20, `tax_rate` at `decimal(6,3)`, `products.type` as a `ProductType` enum) read from task files that
   are themselves still `new`. That is precisely the "a deferred finding is a claim about a tree, and the
   task file freezes while the tree does not" failure recorded in
-  [errors-log.md](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+  [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
   *Mitigation:* **Phase 2's INVEST review must be re-run immediately before Phase 3**, and must
   re-verify every quoted shape against the shipped migrations. **This file's numbers are a reading aid,
   not a locator.**
@@ -1179,11 +1179,11 @@ Derived from this story, none of them in scope:
 
 ## Provenance
 
-- **PRD source:** [§3.2 Orders](../../../docs/PRD/PRD.md#32-orders) — specifically the *"Physical product →
+- **PRD source:** [§3.2 Orders](../../../docs/PRD/sections/epic-3-customers-orders.md#32-orders) — specifically the *"Physical product →
   the Sales Region is resolved from the order's shipping address"* rule, the scenario *"A physical
   product's order resolves tax from the shipping address"*, the scenario *"The resolved region's rate is
   used, with default fallback"*, and the acceptance criterion *"the order's tax Sales Region is resolved
-  by product type"*. Also [§2.1 Sales Regions & Taxes](../../../docs/PRD/PRD.md#21-sales-regions--taxes) for
+  by product type"*. Also [§2.1 Sales Regions & Taxes](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#21-sales-regions--taxes) for
   the default-fallback rule this story inherits.
 - **Process:** [workflow.md](../../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from
   `backend-expert`, `backend-qa` and `database-expert`, composed by `product-owner` as facilitator. **The
@@ -1218,7 +1218,7 @@ Derived from this story, none of them in scope:
   `ai-spec/tasks/in-progress/` at the start of Phase 3, and to `ai-spec/tasks/done/` at Phase 7 — the
   first of those changes this file's directory depth, so every relative link above must be re-resolved on
   each move (both directions), per
-  [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move).
+  [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move).
 - **Epic 3 decomposition:** the physical half of Sales-Region tax resolution. Siblings referenced by
   number (0045 orders foundation, 0046 notification, 0048–0052 status/refunds, **0054 the virtual half**,
   0055 UI) because several of their files do not exist yet.

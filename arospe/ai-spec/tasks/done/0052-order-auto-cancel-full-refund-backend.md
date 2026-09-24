@@ -3,7 +3,7 @@
 ## Description
 When every line item of an order becomes fully refunded, the order automatically transitions to
 `Cancelado` as a **system-triggered side effect**, per PRD
-[§3.2 Orders](../../../docs/PRD/PRD.md#32-orders). This transition is deliberately **exempt from the
+[§3.2 Orders](../../../docs/PRD/sections/epic-3-customers-orders.md#32-orders). This transition is deliberately **exempt from the
 manual-cancellation guard** story [0050](../done/0050-order-manual-cancellation-backend.md) enforces: a
 shipped or delivered order cannot be cancelled by an administrator clicking a button, but it *is*
 auto-cancelled when its last outstanding unit comes back. This story owns the `OrderFullyRefunded`
@@ -37,7 +37,7 @@ backend | includes database-expert: **no**
 story adds **no table, no column, no migration and no index**. It writes `orders.status` — a column
 0045 created — and reads `orders.payment_status`, `order_items.quantity` and
 `order_items.refunded_quantity`, all of which already exist by the time Phase 3 begins. The
-[task classification rule](../../../docs/workflow.md#task-classification-rule) adds `database-expert`
+[task classification rule](../../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule) adds `database-expert`
 when a task "touches the data model, migrations, or queries"; the only query here is a `SELECT … FOR
 UPDATE` on a single row by primary key, which is not a schema question. Phase 3 must **verify** this
 rather than inherit it: if the implementation finds itself reaching for a migration, the story's
@@ -195,14 +195,14 @@ class OrderFullyRefunded
   category as `app/Enums/`, `app/Exceptions/`, `app/Listeners/`, `app/Notifications/` and
   `app/Policies/` — *"creating one of them needs no approval; inventing a folder Laravel doesn't ship
   does."* Scaffold it with the artisan command rather than by hand
-  ([base-standards.md](../../../docs/conventions/base-standards.md#artisan-first-workflow)).
+  ([base-standards.md](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#artisan-first-workflow)).
 - **No `ShouldQueue`, no `SerializesModels`, no `InteractsWithSockets`, no `broadcastOn()`** —
   **D-3**. `make:event`'s stub ships `Dispatchable, InteractsWithSockets, SerializesModels`; strip
   the two this class does not use rather than leaving stub noise, and delete the generated
   `broadcastOn()` method.
 - Named as a **statement about what happened**, past participle, matching this repo's listener and
   notification naming (`ActivateVerifiedUser`, `PendingEmailVerification` —
-  [naming.md](../../../docs/conventions/naming.md#classes)).
+  [naming.md](../../../docs/conventions/naming/classes.md#classes)).
 
 ### Listener — `app/Listeners/CancelFullyRefundedOrder.php` (new)
 
@@ -227,7 +227,7 @@ public function handle(OrderFullyRefunded $event): void
   existed). Keeping the logic in an action is what makes the operation independently callable and
   directly testable without dispatching an event, and it is what lets a future non-refund caller
   (a support tool, an Artisan command) reach it — the same reasoning
-  [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+  [base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
   applies to authorization rules.
 
 ### Action — `app/Actions/Orders/AutoCancelFullyRefundedOrder.php` (new, in 0045's subfolder)
@@ -268,7 +268,7 @@ Performing, **in this order**:
 > **No `Gate::authorize()` call anywhere in this action, and that is an accepted, documented
 > exception rather than an oversight** (**D-1**). It is recorded in the class's own docblock as well
 > as here, following the precedent
-> [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+> [base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 > set for `Index::deleteUser()`'s step-up guard placement: *"Record a placement like this in the
 > method's own docblock so the next reader can tell 'this is where it belongs' from 'this is where it
 > is until something better exists'."* Here the equivalent distinction is **"exempt"** versus
@@ -317,10 +317,10 @@ are not deleted — they are inverted or narrowed**, so the coverage survives th
 otherwise open, both were written specifically to fail if someone implemented this feature early, and
 a `--filter`ed run over this story's own new test file would report green while both are red — the
 scoped-gate failure recorded in
-[errors-log.md](../../../docs/errors-log-archive.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20).
+[errors-log.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20).
 The Definition of Done therefore requires the **unscoped** run, and Phase 3 must **re-grep** for both
 assertions rather than trusting this table's description of them — 0051's file is itself a claim about
-a tree that does not exist yet ([errors-log.md](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
+a tree that does not exist yet ([errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
 
 ### Explicitly **not** touched by this story
 
@@ -353,7 +353,7 @@ Three consequences follow, and each is worth being explicit about:
    one-argument bypass of the exact rule the guard exists to enforce, and it would sit in a
    **public** `__invoke()` signature every present and future caller can reach. That is the same
    failure mode as *"derive a security-relevant flag internally; never take it as a parameter"*
-   ([base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)),
+   ([base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)),
    and it converts 0050's guard from an invariant into a convention.
 2. **The two paths are allowed to diverge, because they are different operations.** "An
    administrator decided to cancel this" and "this order's money has entirely gone back" share an
@@ -523,10 +523,10 @@ a repeated trigger against an already-cancelled order is a silent no-op.
 - [ ] Tests written and green, plus the full existing suite (per
       [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule) — run **unscoped**
       (`php artisan test`, not `--filter`), per
-      [base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
+      [base-standards.md](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
       **Non-optional here rather than merely recommended:** this story falsifies two assertions in a
       test file it does not otherwise open, and it registers an **event listener**, which
-      [base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done)
+      [base-standards.md](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done)
       names as having whole-suite blast radius by construction — *"a story that registers a model
       event, an observer, a global scope, or middleware has a blast radius of the whole suite,
       however narrowly its own feature is scoped."*
@@ -551,7 +551,7 @@ a repeated trigger against an already-cancelled order is a silent no-op.
     the existing patterns, with the two properties that must hold (no actor is read, and no caller
     outside a gated path exists) and the docblock requirement that makes "exempt" distinguishable
     from "forgotten". This is the page that owns
-    [Recording a refusal](../../../docs/architecture/authorization.md#recording-a-refusal--what-every-gate-owes-the-audit-trail);
+    [Recording a refusal](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail);
     an *absence* of a gate deserves the same treatment.
   - [`architecture/overview.md`](../../../docs/architecture/overview.md) — its "Where things live" layer
     table gains `app/Events/**`. **Whether the request-lifecycle diagram changes is a judgement
@@ -570,7 +570,7 @@ a repeated trigger against an already-cancelled order is a silent no-op.
     anything asserting this app dispatches no domain events, has no `app/Events/`, or that every
     mutation is `Gate`-authorized. That last one is the dangerous shape, because it is the kind of
     reassuring sentence a security page writes in passing. This is the
-    [bare-negative-claim](../../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
+    [bare-negative-claim](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
     failure mode.
 - [ ] Acceptance criteria met.
 
@@ -592,7 +592,7 @@ rediscovery.
     adding a second caller inherits the obligation to gate that caller** — this is precisely the
     *"adding an unbounded side effect to shared code is a capability grant to its least-privileged
     caller"* rule from
-    [errors-log.md](../../../docs/errors-log-archive.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24),
+    [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24),
     read forwards instead of backwards.
   - **The exemption is written down in the class's own docblock**, not only here, so a reader who
     never opens this file can still tell "exempt" from "forgotten". This mirrors 0015a's precedent
@@ -615,7 +615,7 @@ rediscovery.
   parameter — see [the purely-additive subsection](#this-story-is-purely-additive-with-respect-to-0049-and-0050)
   for why that is the wrong shape. `forceFill()` is the sanctioned writer for a non-`#[Fillable]`
   column in this codebase
-  ([base-standards.md](../../../docs/conventions/base-standards.md#model-conventions)), and
+  ([base-standards.md](../../../docs/conventions/base-standards/stack-and-model-conventions.md#model-conventions)), and
   `orders.status` was omitted from `#[Fillable]` by 0045 for exactly this reason: it must have named
   writers rather than form writers.
 - **D-3 — Neither the event nor the listener is queued, and the dispatch is synchronous.**
@@ -634,14 +634,14 @@ rediscovery.
   event would be the state as `RecordRefund` last saw it, and the listener's whole job is to act on
   the state **as it is now, under a lock**. Passing the object would make the stale copy reachable —
   and a listener that reads `$event->order->status` looks correct, passes every single-threaded test,
-  and is wrong under concurrency. This is the [errors-log](../../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
+  and is wrong under concurrency. This is the [errors-log](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
   rule — *a guard must derive the state it guards, never accept it* — applied to a listener's input.
   Passing the id makes the re-fetch structurally unavoidable rather than a discipline. It also keeps
   the event trivially serialisable if a later story ever does queue it (**D-3** notwithstanding),
   with no `SerializesModels` re-fetch semantics to reason about.
 - **D-5 — The dispatch happens after the transaction commits, never inside it.** This is the
   decision `backend-expert` argued from this repo's own
-  [errors-log entry](../../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
+  [errors-log entry](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
   on transaction-relocated side effects, and 0051's own action spec states the same constraint
   forward-looking: *"when story 0052 adds an auto-cancel side effect … it must fire after the commit,
   or a rolled-back refund cancels an order that was never refunded."* A synchronous listener firing
@@ -784,7 +784,7 @@ documents agree without either having been written to match the other.
   inspect the dispatcher's registered listeners; (b) **D-7**'s idempotency guard makes a double fire
   harmless in effect, which is why this is a risk rather than a blocker; (c) the `updated_at`
   assertion in the idempotency test is what would catch a double *write* if the guard were ever
-  removed. This is the [errors-log](../../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
+  removed. This is the [errors-log](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
   rule applied preemptively: a hedge is a flag that nobody ran the code.
 - **R-3 — A later story "unifying" the manual and automatic cancel paths would silently reopen the
   guard.** The obvious refactor — one `CancelOrder` with a `$systemTriggered` flag — looks like
@@ -807,7 +807,7 @@ documents agree without either having been written to match the other.
   signature and return shape, `OrderStatus`'s cases and backing values, `CancelOrder`'s actual guard
   (which this story does not depend on but does test against), the `AppServiceProvider` registration
   form, and 0051's two falsified test names. **Every name in this file is a reading aid, not a
-  locator** ([errors-log.md](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
+  locator** ([errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
 
 ### Resolved questions
 
@@ -833,7 +833,7 @@ cancelled manually, and support will eventually ask. Three shapes exist (a nulla
 entry in a future order-event log), and choosing between them properly needs 0055's screen to say
 what it wants to display. **Not decided here because every option is a column**, and this story's
 "no schema change" property is worth more than a speculative one — the same reasoning
-[PRD assumption 17](../../../docs/PRD/PRD.md#assumptions--confirmed-decisions) applies to change
+[PRD assumption 17](../../../docs/PRD/sections/foundations.md#assumptions--confirmed-decisions) applies to change
 history generally. Recorded as backlog item 2.
 
 **OQ-2 — Should `AutoCancelFullyRefundedOrder` use the refusal-logging helper, or log the
@@ -872,11 +872,11 @@ Derived from this story, none of them in scope:
 
 ## Provenance
 
-- **PRD source:** [§3.2 Orders](../../../docs/PRD/PRD.md#32-orders) — the auto-cancel scenario and its
+- **PRD source:** [§3.2 Orders](../../../docs/PRD/sections/epic-3-customers-orders.md#32-orders) — the auto-cancel scenario and its
   explicit contrast with the manual cancel action.
 - **Process:** [workflow.md](../../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions
   from `backend-expert` and `backend-qa`, composed by `product-owner` as facilitator. **No
-  `database-expert`**, per the [task classification rule](../../../docs/workflow.md#task-classification-rule):
+  `database-expert`**, per the [task classification rule](../../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule):
   this story adds no table, column, migration or index. **No disagreement was recorded** because
   there was none — the two contributions independently specify the same mechanism, and
   `backend-qa`'s contrast test is the executable form of `backend-expert`'s central claim.
@@ -892,7 +892,7 @@ Derived from this story, none of them in scope:
   `ai-spec/tasks/in-progress/` at the start of Phase 3, and to `ai-spec/tasks/done/` at Phase 7 —
   both moves change this file's directory depth, so every relative link above must be re-resolved on
   each move (both directions), per
-  [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move).
+  [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move).
 - **Epic 3 decomposition:** the last of the Orders status/refund cluster. Siblings referenced by
   number (0045 core CRUD, 0046 notification, 0049 status transitions, 0050 manual cancellation, 0051
   refund state, 0055 UI) because some of their files may not exist yet — **0050's did not exist when

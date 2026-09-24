@@ -2,7 +2,7 @@
 
 ## Description
 Build the Livewire **view layer** for the Payment Methods store-settings screen of
-[PRD §2.5](../../../docs/PRD/PRD.md#25-payment-methods-store-settings): a card list of the available
+[PRD §2.5](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#25-payment-methods-store-settings): a card list of the available
 payment methods — this phase, **bank transfer is the only one** — showing whether an IBAN is
 configured, plus an edit modal for that single configurable field with the IBAN validation error
 surfaced inline. This story is markup/interaction/navigation only; the table, model, seeder,
@@ -26,13 +26,13 @@ frontend (related_task_id: **0038**) | includes database-expert: **no**
 | 2 | Edit inline or in a modal? | **Modal** — not a free choice: 0038's component contract already names `openEditModal()` / `closeModal()`, so a `flux:modal` bound with `wire:model="showModal"` is what those methods mean. Inner content gated behind `@if ($showModal)`, mirroring [`users.blade.php`](../../../resources/views/livewire/users.blade.php). |
 | 3 | Is the configured IBAN masked? | **No masking, full display.** This is the store's own *receiving* account — §2.5 defines it as "the account customers must transfer payment to", i.e. a value the store will publish to customers, not a secret like a card number. A reveal interaction would be ceremony protecting nothing. Revisitable; see [Open questions](#open-questions) OQ-3. |
 | 4 | Is the IBAN displayed grouped? | **Grouped into 4-character blocks at render time only** (`implode(' ', str_split($iban, 4))`), because that is how every bank prints one. **The grouping must never touch `$iban` itself and must never appear in the edit modal's `<flux:input wire:model="iban">`** — the input binds to the raw property, which 0038's normalisation already tolerates spaced or unspaced input. Formatting happens on the way *out*, never on the way in. |
-| 5 | An actor with `payment-methods.view` but not `.edit` | The Configure/Edit action renders **disabled with a tooltip**, not hidden — the per-row `Gate::allows()` **UI hint** convention already documented in [authorization.md](../../../docs/architecture/authorization.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer) and shipped on the Users rows. The two permissions are distinct catalog entries, so this is a real role, not a hypothetical. The hint is layered *on top of* 0038's `Gate::authorize()` in `save()`, never instead of it. |
+| 5 | An actor with `payment-methods.view` but not `.edit` | The Configure/Edit action renders **disabled with a tooltip**, not hidden — the per-row `Gate::allows()` **UI hint** convention already documented in [authorization.md](../../../docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer) and shipped on the Users rows. The two permissions are distinct catalog entries, so this is a real role, not a hypothetical. The hint is layered *on top of* 0038's `Gate::authorize()` in `save()`, never instead of it. |
 | 6 | Confirmation step before changing an already-configured IBAN? | **No — a deliberate "no", not an oversight.** Neither §2.5 nor 0038's Gherkin implies one, and inventing an unspecified confirm step is new behaviour nobody asked for. Recorded so it is a decision; see OQ-3. |
 | 7 | UI string language | **English source strings wrapped in `__()`**, matching the whole app today. Generic chrome (`Payment methods`, `Save`, `Cancel`, `IBAN`) stays as bare `__('...')` literals exactly as `users.blade.php` does; only domain-specific copy goes into `lang/*/payment_methods.php`. The Spanish switcher arrives with Epic 5. |
 | 8 | Sidebar entry | This story adds navigation — a screen with no way to reach it is not delivered. **Which file it goes in depends on whether [0013](0013-sidebar-module-gating-ui.md) has landed by Phase 3**; both branches are specified in [Files to create/modify](#files-to-createmodify). |
 
 Resolved directly from the docs, no decision needed: **view path** follows the
-[`Index`-in-a-subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
+[`Index`-in-a-subfolder exception](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
 — `App\Livewire\PaymentMethods\Index` ↔ the **flat** `resources/views/livewire/payment-methods.blade.php`,
 never a nested `payment-methods/index.blade.php`; **no pagination** (one row); **no create/delete
 affordance of any kind** in the markup, because 0038 deliberately ships no create/delete code path
@@ -184,7 +184,7 @@ Feature: Payment methods settings screen (bank transfer)
 > `resources/views/livewire/payment-methods.blade.php` and both write the two
 > `lang/*/payment_methods.php` files. Their Phase 3 work must therefore **never be dispatched in
 > the same batch**, per the
-> [Parallel Agent File-Ownership Rule](../../../docs/contracts.md#parallel-agent-file-ownership-rule):
+> [Parallel Agent File-Ownership Rule](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule):
 > 0038 must be fully closed before 0039 starts.
 
 ### Interface contract required from 0038
@@ -391,7 +391,7 @@ dark mode and produces no JavaScript console errors.
   at the `new` stage.** Verified against the working tree: there is no `payment_methods` migration,
   no `App\Models\PaymentMethod`, no `PaymentMethodPolicy`, and `routes/web.php` registers no
   `payment-methods.index`. Per the
-  [task ordering rule](../../../docs/workflow.md#task-ordering-rule), 0038 must complete its Phase 7
+  [task ordering rule](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule), 0038 must complete its Phase 7
   before this story enters Phase 3 — and, per the sequential-implementation note above, their
   implementation phases must never overlap.
 - **Depends on 0006b (`done`)** for the `tests/Browser/` suite, which is wired up and running on
@@ -460,7 +460,7 @@ cheap moment. Non-blocking.
 
 ## Definition of Done
 - [ ] Tests written and green, plus the **full** existing suite (per the
-      [Full Test Suite Gate Rule](../../../docs/contracts.md#full-test-suite-gate-rule)).
+      [Full Test Suite Gate Rule](../../../docs/contracts/testing-and-parallel-agents.md#full-test-suite-gate-rule)).
 - [ ] Code reviewed (code-reviewer).
 - [ ] No security findings (appsec-auditor) — specifically: that the IBAN and the method id are
       never interpolated into a `wire:*` directive without `@js()`; that the disabled Configure

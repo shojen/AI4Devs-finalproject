@@ -23,10 +23,10 @@ the searchable multi-select shell of story [0022](../done/0022-searchable-multi-
 > **fail the entire save** rather than silently persisting a subset. This resolves this story's own
 > **D7** data-loss finding. See **D11**.
 
-Covers [PRD](../../../docs/PRD/PRD.md#22-products) §2.2's *"Selecting Spain surfaces its fiscal
+Covers [PRD](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#22-products) §2.2's *"Selecting Spain surfaces its fiscal
 sub-entries in the region picker"* (the **data half** — the options a picker renders; the picker
 itself is 0027), *"Assign a product to several sales regions"* and *"A product's tax uses its
-assigned region's rate"*, plus [§2.1](../../../docs/PRD/PRD.md#21-sales-regions--taxes)'s *"The default
+assigned region's rate"*, plus [§2.1](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#21-sales-regions--taxes)'s *"The default
 rate applies when no region matches"* — i.e. Sales Regions acceptance criterion 5 and Products
 acceptance criterion 5.
 
@@ -254,7 +254,7 @@ is reachable from the agent shell:
 > wrong and 0024's D-10 already owns correcting it." That correction has already shipped: the page's
 > Structure section has named `create_passkeys_table`'s `$table->index('user_id')` as a divergence
 > "not a pattern to copy" since task 0016, and its own [An FK column does not also get an explicit
-> index here](../../../docs/database/migrations.md#an-fk-column-does-not-also-get-an-explicit-index-here)
+> index here](../../../docs/database/migrations/uuid-primary-keys.md#an-fk-column-does-not-also-get-an-explicit-index-here)
 > section states the rule outright, listing story 0024's two tables as confirming instances. This
 > story's own migration is this rule's fifth confirming instance, not a second table the stale
 > instruction would have damaged.
@@ -589,11 +589,11 @@ across composed traits (`nameRules`), and neither of these does.
 ### `lang/en/products.php`, `lang/es/products.php` — **modify** (0024 creates them)
 
 A `sales_regions.*` group for the two refusal messages (not in the catalog / not assignable), added
-**key-for-key to both files** per [naming.md](../../../docs/conventions/naming.md#translation-keys).
+**key-for-key to both files** per [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys).
 
 > ⚠️ **Three stories now touch these two files** — 0024 creates them, 0028 extends them, and this
 > story extends them. 0024's R-13 already records the hazard; this is a third writer, and
-> [contracts.md](../../../docs/contracts.md#parallel-agent-file-ownership-rule)'s Parallel Agent
+> [contracts.md](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule)'s Parallel Agent
 > File-Ownership Rule governs if any two ever run concurrently.
 
 ### Explicitly **not** touched
@@ -1092,7 +1092,7 @@ asymmetry looks like an inconsistency to a reviewer who has not read this paragr
 > (`CreateUser::__invoke()` line 66 authorizes `create`; `UpdateUser` carries seven such calls) — and
 > 0024 reversed itself at its three-way split (its **C-1**). Its four product actions now
 > self-authorize, and the **documented** convention
-> ([base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers))
+> ([base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers))
 > is that the check lives in the class performing the operation. **What is unaffected**: the second
 > half below — the *resolver* needing no authorization because it reads values already visible and may
 > run from a queued job — is an independent argument that stands on its own. **What must be
@@ -1338,7 +1338,7 @@ Executed during this debate, against this repository.
   default, and it is active" invariant. Without it the default lookup has no guarantee behind it.
 - **[0022](../done/0022-searchable-multi-select-component.md) — hard, blocking, and easy to miss.**
   `SearchSalesRegions` implements 0022's `MultiSelectOptionsResolver` interface, which 0022 creates.
-  Numbering already satisfies [workflow.md](../../../docs/workflow.md#task-ordering-rule); what must be
+  Numbering already satisfies [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule); what must be
   enforced is the **sequencing** — all four reach Phase 7 before 0026 starts Phase 3.
 - **Story 0027 depends on this one** (the paired UI), consuming both the assignment action and the
   options resolver.
@@ -1497,7 +1497,7 @@ Non-blocking for the schema; **confirm before Phase 3.**
 ## Provenance
 
 Phase 1 (Three Amigos) debate run on 2026-08-18 per
-[workflow.md](../../../docs/workflow.md#phase-1--three-amigos-debate), grounded in full readings of
+[workflow.md](../../../docs/workflow/phases.md#phase-1--three-amigos-debate), grounded in full readings of
 [0016](../done/0016-sales-region-catalog-schema-and-seeder.md),
 [0017](../done/0017-sales-region-tax-configuration-backend.md),
 [0024](../done/0024-products-core-crud-backend.md), [PRD](../../../docs/PRD/PRD.md) §2.1 / §2.2 / §3.2, and this

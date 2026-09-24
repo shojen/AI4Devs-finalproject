@@ -1,7 +1,7 @@
 # [0020] Shared media gallery modal (frontend)
 
 ## Description
-Frontend half of the Shared Media Gallery ([PRD §2.3](../../../docs/PRD/PRD.md#23-shared-media-gallery)):
+Frontend half of the Shared Media Gallery ([PRD §2.3](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#23-shared-media-gallery)):
 the reusable modal that Products and Blog both open to pick or upload images. It replaces the
 placeholder view story **0019** ships for `App\Livewire\Media\Gallery` with the real screen — a tile
 grid, a debounced title/description search with an explicit empty state, an upload dropzone
@@ -37,7 +37,7 @@ not convened.
 ## Phase 2 — INVEST validation (passed)
 
 **Verdict: ✅ PASS** — `code-reviewer`, 2026-08-28. Moved to `ai-spec/tasks/in-progress/` as
-[Phase 3 step 0](../../../docs/workflow.md#phase-3--tdd-mandatory-in-this-order); implementation
+[Phase 3 step 0](../../../docs/workflow/phases.md#phase-3--tdd-mandatory-in-this-order); implementation
 starts here. **Read this section before writing the first test.**
 
 PASS on all six INVEST letters. **"Small" is the weakest** — this story is larger than any prior
@@ -63,7 +63,7 @@ record rather than a drift to absorb silently.
 | 3 | An `updatedPendingUploads()` handler | The handler is **`upload()`** | Rename/redesign consciously; don't assume the lifecycle-hook name |
 | 4 | D10's per-tile inline-edit state is free to use `$title` / `$description` | The component **already owns `public string $title` / `public string $description`** as the *pending-upload* form fields | **D10 must use different property names** — a straight reuse silently collides two unrelated forms |
 | 5 | (unmentioned) | `upload()` already carries an **undocumented `RateLimiter` throttle**: 10/hour, key `media-upload:{userId}`, refusing via `ValidationException` | Bounds **D9's multi-file-batch tests (cap corrected to 3, see D9)** and **any browser test uploading repeatedly as the same actor**. Plan fixtures around it |
-| 6 | D10/D12 gate `updateMediaDetails()` with a bare `Gate::authorize()` | Shipped `Gallery.php` gates via `App\Actions\Auth\LogRefusedPrivilegedAttempt->authorize(...)` in **both** `mount()` and `upload()` | **D12's new `updateMediaDetails()` must use the same logging wrapper**, matching the shipped screen and this project's refusal-logging convention ([authorization.md](../../../docs/architecture/authorization.md#recording-a-refusal--what-every-gate-owes-the-audit-trail)) — **not** the bare `Gate::authorize()` D10/D12 currently specify |
+| 6 | D10/D12 gate `updateMediaDetails()` with a bare `Gate::authorize()` | Shipped `Gallery.php` gates via `App\Actions\Auth\LogRefusedPrivilegedAttempt->authorize(...)` in **both** `mount()` and `upload()` | **D12's new `updateMediaDetails()` must use the same logging wrapper**, matching the shipped screen and this project's refusal-logging convention ([authorization.md](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail)) — **not** the bare `Gate::authorize()` D10/D12 currently specify |
 | 7 | `MediaPolicy::update()` and `MediaValidationRules::mediaDetailsRules()` are as described | **Exactly as assumed** | ✅ No reconciliation needed |
 
 ### Phase 6 to-do — a pre-existing docs inconsistency, unrelated to this story
@@ -350,7 +350,7 @@ placeholder to be deleted and reintroduced. PRD AC 1 says outright there is **on
 component.
 
 `resources/views/livewire/media/gallery.blade.php` — the *normal* mirror path, since the class is
-not named `Index` and the [`Index`-in-a-subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
+not named `Index` and the [`Index`-in-a-subfolder exception](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
 therefore does not apply — has its placeholder replaced wholesale.
 
 > **Phase 3 must read 0019's real code before writing a line.** Everything below names properties
@@ -665,7 +665,7 @@ The action writes `title` and `description` **only**. The three path columns sta
 `#[Fillable]` per 0019's D8 mass-assignment guard, and nothing in this story has any business
 touching them.
 
-Naming follows [naming.md](../../../docs/conventions/naming.md#classes): imperative verb phrase, no
+Naming follows [naming.md](../../../docs/conventions/naming/classes.md#classes): imperative verb phrase, no
 `Action` suffix, matching `StoreUploadedImage` / `GenerateImageConversions`.
 
 ### D11 — The title is auto-derived from the filename at upload, then editable
@@ -705,7 +705,7 @@ The resolution adds a layer rather than removing one:
 and Gallery keeps **every** `Gate::authorize()` call 0019 specifies — `viewAny` in `mount()`,
 `create` first in the upload method, `update` first in `updateMediaDetails()` — as defense in depth
 covering direct `Livewire::test()` mounting and the mounted-then-revoked-mid-session case. Per
-[livewire-authorization.md](../../../docs/security/livewire-authorization.md#gate-at-the-top-of-every-method-that-mutates-or-discloses),
+[livewire-authorization.md](../../../docs/security/livewire-authorization/entry-point-and-method-gates.md#gate-at-the-top-of-every-method-that-mutates-or-discloses),
 hiding a control is never the control.
 
 Within the modal, a user holding `media.view` but not `media.create`/`media.edit` gets the affected
@@ -1053,7 +1053,7 @@ Ordered. Step 0 is a hard gate.
 9. `frontend-qa` writes the browser tests against the harness, including the `DataTransfer` shim or
    its documented fallback (risk 3).
 9. Quality gates in order per
-   [base-standards](../../../docs/conventions/base-standards.md#quality-gates): filtered tests →
+   [base-standards](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#quality-gates): filtered tests →
    `vendor/bin/pint --dirty --format agent` → Larastan level 7 → full suite.
 
 ---
@@ -1064,7 +1064,7 @@ Ordered. Step 0 is a hard gate.
 
 - **[0019 — media library upload, conversions and search](../done/0019-media-library-upload-and-conversions-backend.md)
   — Phase 1 complete, implementation NOT started (V1).** This story is blocked on 0019's Phase 7,
-  per workflow.md's [task ordering rule](../../../docs/workflow.md#task-ordering-rule). The brief that
+  per workflow.md's [task ordering rule](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule). The brief that
   commissioned this debate described 0019 as "already done"; that is true of the *story document*,
   not of the code.
 - 0019 records a soft dependency on

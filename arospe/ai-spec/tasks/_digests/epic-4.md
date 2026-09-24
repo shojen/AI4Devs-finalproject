@@ -1,6 +1,6 @@
 # Epic 4 decision digest (Blog)
 
-Append-only. See [workflow.md#decision-digest-per-epic](../../../docs/workflow.md#decision-digest-per-epic)
+Append-only. See [workflow.md#decision-digest-per-epic](../../../docs/workflow/agents-and-epic-digests.md#decision-digest-per-epic)
 for what belongs here and what doesn't — facts and decisions a later story in this epic must not
 re-derive, never the full prose of a finalized story. Created by story 0059, the second Epic 4 story
 to close; story 0058's entry below was written at that point from its shipped code and is the only

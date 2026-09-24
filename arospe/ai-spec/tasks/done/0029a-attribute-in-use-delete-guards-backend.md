@@ -37,7 +37,7 @@ always-`0` placeholder with a real query on 0028's already-shipped component; th
 it is 0030's/0031's.
 
 Covers the "Attribute values in use by variants cannot be removed" half of
-[PRD](../../../docs/PRD/PRD.md#22-products) §2.2, and discharges 0028's own **Q3**/**D7** hand-off.
+[PRD](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#22-products) §2.2, and discharges 0028's own **Q3**/**D7** hand-off.
 
 ## Type
 
@@ -139,7 +139,7 @@ This is the **exact precedent** `App\Actions\ProductCategories\DeleteProductCate
 and documents in its own docblock — *"This MUST run before the in-use count below, never after: a
 reversed order would leak the product count to an actor who does not even hold `products.delete`
 (R-6)"* — established at 0024b/0025 and recorded in
-[database/schema.md](../../../docs/database/schema-products.md#product_categories) and
+[database/schema.md](../../../docs/database/schema-products/categories-and-products.md#product_categories) and
 [architecture/authorization.md](../../../docs/architecture/authorization.md). Follow it exactly rather
 than re-deriving it.
 
@@ -263,7 +263,7 @@ not stable.
 
 `App\Livewire\Products\AttributeTypes\Index` already declares
 `#[Locked] public int $deletingTypeUsageCount = 0;`, documented in
-[api/routes.md](../../../docs/api/products.md#product-attribute-typesindex--the-fifth-permission-gated-route)
+[api/routes.md](../../../docs/api/products/product-attribute-types.md#product-attribute-typesindex--the-fifth-permission-gated-route)
 as *"always `0` until story 0029 adds an in-use guard — the same D7 hand-off `product_categories`'s
 own in-use block once was, deliberately not a stub returning a lying `0` from a model method"*.
 
@@ -471,7 +471,7 @@ is the message in front of it.
       **corrected in place** — it is this story, not 0029, and it is no longer always `0`.
 - [ ] 🟠 **Digest entry appended** to
       [`ai-spec/tasks/_digests/epic-2.md`](../_digests/epic-2.md) at Phase 6/7, per
-      [workflow.md](../../../docs/workflow.md#decision-digest-per-epic). ⚠️ **That file currently has no
+      [workflow.md](../../../docs/workflow/agents-and-epic-digests.md#decision-digest-per-epic). ⚠️ **That file currently has no
       entry for story 0028 either** — a gap predating this story, flagged here because 0028 is 0029's
       and this story's direct, load-bearing dependency and a later Epic 2 story will re-read 0028 in
       full without one.
@@ -540,5 +540,5 @@ affirmatively by **D-A5**.
 > puts it **three** levels down and silently breaks all of them — `../../docs/...` must become
 > `../../../docs/...`, and the sibling-task links (`0029-...md`) must become `../0029-...md`. This is
 > a mandatory step, not a nicety: see
-> [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move) and the
+> [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move) and the
 > [errors-log entry](../../../docs/errors-log.md) recording the six `done/` files this already broke.

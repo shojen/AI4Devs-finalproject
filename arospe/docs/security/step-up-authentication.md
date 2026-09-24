@@ -16,7 +16,7 @@ only.
 > 0049's order status regression confirmation (`App\Exceptions\OrderStatusRegressionRequiresConfirmationException`,
 > 409) asks *"did you mean to move this order backward?"*, not *"are you still the account holder?"* —
 > no password is re-requested, nothing expires, and the refusal is a 409, never this layer's 423. See
-> [architecture/authorization.md's comparison table](../architecture/authorization.md#order-status-regression-confirmation--the-apps-second-are-you-sure-mechanism-and-why-it-is-not-step-up)
+> [architecture/authorization.md's comparison table](../architecture/authorization/domain-invariants.md#order-status-regression-confirmation--the-apps-second-are-you-sure-mechanism-and-why-it-is-not-step-up)
 > before reaching for `EnsureRecentPasswordConfirmation` or a 423 against a refusal that turns out not
 > to be about identity at all.
 
@@ -162,7 +162,7 @@ Two separate properties, each load-bearing.
 **Direct throw, not a `Gate` check.** `Gate::before` grants a Super Admin every ability before any
 policy method runs, so a `Gate`-mediated step-up rule would be inert for exactly the most privileged
 actor in the app. This is the same reasoning
-[authorization-patterns.md](authorization-patterns.md#a-rule-that-must-bind-a-super-admin-actor-must-be-a-direct-throw-not-a-gate-check)
+[authorization-patterns.md](authorization-patterns/ability-coverage-and-guards.md#a-rule-that-must-bind-a-super-admin-actor-must-be-a-direct-throw-not-a-gate-check)
 already records for the Super Admin tier guards, applied to a non-ability rule. Pinned by
 `UpdateUserStepUpAuthorizationTest.php`'s "the step-up guard binds a Super Admin actor" case.
 
@@ -338,12 +338,12 @@ not have to reconstruct what "closed" means from the diff alone.
   open. Recorded as a residual rather than closed in this story, since a `settings/profile` step-up
   check is a different screen's story with its own tests.
 
-_Last updated: 2026-09-17 — Story 0049 (Order status transition backend). Added a pointer, directly under this page's own intro, to [architecture/authorization.md's comparison table](../architecture/authorization.md#order-status-regression-confirmation--the-apps-second-are-you-sure-mechanism-and-why-it-is-not-step-up) between this layer and the app's second, unrelated "are you sure" mechanism (`OrderStatusRegressionRequiresConfirmationException`, 409) — so a reader who knows only this page does not reach for a 423 or `EnsureRecentPasswordConfirmation` against a refusal that is not about identity. No mechanical rule on this page itself changed.
+_Last updated: 2026-09-17 — Story 0049 (Order status transition backend). Added a pointer, directly under this page's own intro, to [architecture/authorization.md's comparison table](../architecture/authorization/domain-invariants.md#order-status-regression-confirmation--the-apps-second-are-you-sure-mechanism-and-why-it-is-not-step-up) between this layer and the app's second, unrelated "are you sure" mechanism (`OrderStatusRegressionRequiresConfirmationException`, 409) — so a reader who knows only this page does not reach for a 423 or `EnsureRecentPasswordConfirmation` against a refusal that is not about identity. No mechanical rule on this page itself changed.
 
 _Previously: 2026-08-24 — Task 0015a, Phase 5 code review finding F-3: this page was authored during
 the first Phase 4 audit (Phase 3's shipped code) and never revisited after the widened, human-approved
 fixes (F1/F2/F3/F4, decisions D6/D7/D8) and the Phase 4 re-audit that verified them — the exact failure
-[errors-log.md](../errors-log-archive.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)
+[errors-log.md](../errors-log/archive-2026-08-17-to-2026-08-21.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)
 already names, recurring one story later. Corrected the stale `! $isNoOpRoleChange || $statusChanged`
 code quote (now `|| $emailChanged`), rewrote "Hang the guard off the narrowest condition" around the
 two-round history rather than a single ❌/✅ pair that labelled the shipped, decision-D7-approved

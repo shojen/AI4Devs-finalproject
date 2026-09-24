@@ -4,9 +4,9 @@
 
 When a blog post becomes **Published**, generate a **database notification** for every administrator
 who holds `blog.view`. This closes the **fourth and last** of the four confirmed notification events
-in PRD [§ Cross-cutting: global search & notifications](../../docs/PRD/PRD.md#cross-cutting-global-search--notifications)
+in PRD [§ Cross-cutting: global search & notifications](../../docs/PRD/sections/foundations.md#cross-cutting-global-search--notifications)
 — *"**Blog post published**, or a **scheduled post going live**"* — and completes PRD
-[Epic 4](../../docs/PRD/PRD.md#epic-4--blog).
+[Epic 4](../../docs/PRD/sections/epic-4-blog.md#epic-4--blog).
 
 This story owns the `BlogPostPublished` notification, the recipient-resolution rule, **one listener**
 and **one dispatch site inside a file it does not own**. It adds **no migration** (the `notifications`
@@ -352,7 +352,7 @@ class BlogPostPublished extends Notification
 
 - **`BlogPostPublished`, not `NewBlogPostPublished` or `BlogPostPublishedNotification`.** A statement
   of fact about what happened, matching `PendingEmailVerification` / `UserInvitation` /
-  `CustomerCreated` / `OrderCreated`, per [naming.md](../../docs/conventions/naming.md#classes). No
+  `CustomerCreated` / `OrderCreated`, per [naming.md](../../docs/conventions/naming/classes.md#classes). No
   `Notification` suffix.
 - **`['database']` only — no `mail`.** See **D-2**.
 - **Not `ShouldQueue`.** See **D-3**, which is coupled to **D-9**.
@@ -482,7 +482,7 @@ if ($blogPost->status === BlogPostStatus::Published) {
 **The two conditions are deliberately different, and that asymmetry is why the second trigger was
 missable in the first place** (**OQ-1**): an update has a prior state to compare against, a creation
 does not. `getRawOriginal('status')` read **before** the transaction is correct and is *not* the
-[2026-08-17 errors-log trap](../../docs/errors-log-archive.md#a-listener-read-the-pre-save-value-with-getoriginal-which-save-had-already-overwritten--2026-08-17) —
+[2026-08-17 errors-log trap](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-listener-read-the-pre-save-value-with-getoriginal-which-save-had-already-overwritten--2026-08-17) —
 that trap is `getOriginal()` read **after** `save()`, which `finishSave()`'s `syncOriginal()` has
 already overwritten. See **D-7** for the full four-way comparison, and **R-1** for the one residual
 this shape does not close.
@@ -496,7 +496,7 @@ Three constraints on both calls, all load-bearing and all asserted by this story
    create path the condition is the submitted status alone** — there is no transition to detect.
 2. **After the persistence transaction commits — never inside it.** A rollback must not leave a
    notification announcing a publication that did not happen, per 0043's constraint 1 and
-   [the `DB::transaction()` entry in errors-log.md](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
+   [the `DB::transaction()` entry in errors-log.md](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
    No special ordering against `SyncBlogPostTags` is needed beyond this, since the tag sync is inside
    the same commit boundary the dispatch already waits for.
 3. **After authorization and validation, on the success path only.** A refused or invalid save reaches
@@ -705,7 +705,7 @@ covers both manual actions** — the update matrix below, then the three create 
       fail.
 - [ ] **Prove the registration assertion can fail**: comment out the `Event::listen(...)` line, confirm
       this test goes red, revert, and record that it was done — the same regression-proof discipline
-      this repo's [vacuous-`arch()`-rule entry](../../docs/errors-log-archive.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18)
+      this repo's [vacuous-`arch()`-rule entry](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18)
       demands of any assertion that passes by default.
 
 **`tests/Feature/Blog/RestoreBlogPostNotificationTest.php`** (`RefreshDatabase`, driven through
@@ -809,7 +809,7 @@ link (**R-8**).
       0061* (**D-8**).
 - [ ] **The update condition is a transition *into* `Published`**, computed from the row's pre-save
       status read **before** any mutation. **`getOriginal('status')` is never read after `save()`** —
-      the [2026-08-17 errors-log trap](../../docs/errors-log-archive.md#a-listener-read-the-pre-save-value-with-getoriginal-which-save-had-already-overwritten--2026-08-17)
+      the [2026-08-17 errors-log trap](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-listener-read-the-pre-save-value-with-getoriginal-which-save-had-already-overwritten--2026-08-17)
       (**D-7**). **The create condition is the submitted status alone**, with no dirty-state read —
       `performInsert()` populates neither `$changes` nor `$previous` (**V-5**).
 - [ ] A `Published`→`Published` re-save announces nothing, and each row of **both** matrices above has
@@ -840,18 +840,18 @@ link (**R-8**).
       that was not run*: `php artisan test` (not `--filter`), `vendor/bin/pint --format agent` (not
       `--dirty`), and **Larastan level 7** (`vendor/bin/phpstan analyse`). A record naming two of three
       is a record of two gates — see
-      [errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+      [errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
 - [ ] **The restore test and the listener-registration test were each *proven able to fail*** by the
       temporary-breakage step described in their entries, and both verifications are recorded.
 - [ ] **Every claim this file makes about 0061's and 0064's shipped code is re-verified against `HEAD`
       before implementation** — `UpdateBlogPost::__invoke()`'s parameter list, its transaction
       structure, `CreateBlogPost`'s signature, and `ScheduledBlogPostPublished`'s property name are all
       taken from Phase-1 *text*, not from code that exists (**V-1**). Per
-      [the deferred-findings rule](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
+      [the deferred-findings rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
       a name in this file is a reading aid, never a locator.
 - [ ] **`grep -rn "UpdateBlogPost" app/` at Phase 3**, not an assumption that one screen calls it — the
       shared-code lesson from
-      [errors-log.md](../../docs/errors-log-archive.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24).
+      [errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24).
       Adding a side effect to a shared action is a capability grant to its **least**-privileged caller.
 - [ ] Code reviewed (code-reviewer). **Point the review at D-7 and R-1 specifically**: that the pre-save
       status is captured before mutation off a re-read instance, that `getOriginal()` is not read after
@@ -1111,7 +1111,7 @@ that does not exist.
    event to the notifier. `Send…Notification` says that.
 3. **It matches the shipped precedent.** Both existing listeners are imperative verb phrases
    (`ActivateVerifiedUser`, `RejectNonActiveUserLogin`) — verified at `HEAD` (**V-4**). Note this is
-   also where [naming.md](../../docs/conventions/naming.md#classes)'s own text is imprecise: it says
+   also where [naming.md](../../docs/conventions/naming/classes.md#classes)'s own text is imprecise: it says
    listeners are named *"as a statement about what happened rather than a command"* and then offers
    `ActivateVerifiedUser`, which is a command. **The shipped code is the convention**; the sentence is
    worth correcting at Phase 6.
@@ -1150,7 +1150,7 @@ verified against `laravel/framework v13.19.0`** (**V-5**):
 
 | Read | Correct? | Why |
 | --- | --- | --- |
-| `getOriginal('status')` **after** `save()` | ❌ **never** | `finishSave()` calls `syncOriginal()` unconditionally after every successful save, so "original" already holds the value just written. This is [the 2026-08-17 errors-log entry](../../docs/errors-log-archive.md#a-listener-read-the-pre-save-value-with-getoriginal-which-save-had-already-overwritten--2026-08-17) verbatim, and `ActivateVerifiedUser`'s own docblock warns against it by name |
+| `getOriginal('status')` **after** `save()` | ❌ **never** | `finishSave()` calls `syncOriginal()` unconditionally after every successful save, so "original" already holds the value just written. This is [the 2026-08-17 errors-log entry](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-listener-read-the-pre-save-value-with-getoriginal-which-save-had-already-overwritten--2026-08-17) verbatim, and `ActivateVerifiedUser`'s own docblock warns against it by name |
 | `getPrevious()['status']` | ✅ correct | `syncChanges()` sets `$previous = array_intersect_key(getRawOriginal(), $changes)` inside `performUpdate()`, *before* `finishSave()` — this is the idiom `ActivateVerifiedUser` uses, and it is correct **for a listener**, which has no other way to see the pre-save value |
 | `wasChanged('status')` | ✅ correct | reads the same `$changes` array |
 | **`getRawOriginal('status')` read before the transaction** | ✅ **shipped by 0061** | `UpdateBlogPost` performs both the read and the write, so it does not have the listener's constraint at all — and reading *before* any mutation sidesteps `syncOriginal()`/`syncChanges()` ordering entirely |
@@ -1187,7 +1187,7 @@ which is what the two rollback tests pin.
 > plainly because it is unusual for this backlog.** These are the only cross-story constraints in this
 > file that another story's shipped code already satisfies rather than promises to: 0061's **D-19**
 > names the same after-the-commit rule, the same success-path-only rule, and cites the same
-> [`DB::transaction()` errors-log entry](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
+> [`DB::transaction()` errors-log entry](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
 > **This story therefore verifies them rather than implementing them** — which is why the rollback
 > cases stay in this story's test plan even though the code they guard is 0061's. A constraint nobody
 > tests is a constraint that survives exactly until the next refactor of the file it lives in.
@@ -1412,7 +1412,7 @@ none.
 | `blog.view` in the seeded catalog | **shipped** | **V-2** — no seeder change |
 | `App\Models\User` `Notifiable` + `SoftDeletes` | **shipped** (Epic 1) | **V-3** — no model change |
 
-Per the [task ordering rule](../../docs/workflow.md#task-ordering-rule) the numbering is already correct
+Per the [task ordering rule](../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule) the numbering is already correct
 (0043 < 0061 < 0064 < 0065); what must be enforced is the **sequencing**.
 
 ### Risks
@@ -1461,7 +1461,7 @@ Per the [task ordering rule](../../docs/workflow.md#task-ordering-rule) the numb
   checklist line, not a design change.
 - **R-5 — One shared-provider edit; the cross-story edits are gone.** `AppServiceProvider` is shared by
   the whole app, so if another story is in flight when this reaches Phase 3 the edits must not be made
-  by concurrent agents, per the [Parallel Agent File-Ownership Rule](../../docs/contracts.md#parallel-agent-file-ownership-rule).
+  by concurrent agents, per the [Parallel Agent File-Ownership Rule](../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule).
   **The two `app/Actions/Blog/` edits this risk originally named are no longer this story's** — 0061
   ships both (**D-8**, **V-9**), which removes the story's largest coupling and is the main practical
   benefit of having raised OQ-1 before implementation rather than after.
@@ -1568,7 +1568,7 @@ Two things worth keeping from how this resolved, since neither is obvious from t
   both were written by careful authors; what disagreed with them was `CreateBlogPost::__invoke()`'s
   own parameter list. **An enumeration in a hand-off is a claim to check against the code it
   describes** — the same rule this repo's
-  [deferred-findings entry](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+  [deferred-findings entry](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
   states for stale findings, arriving here as an under-count rather than as staleness.
 
 *(Option (b), leaving it out, was rejected because it leaves an unobservable hole — the most natural
@@ -1594,7 +1594,7 @@ not diverge.
 **OQ-4 — Should the administrator who published the post be notified of their own action? Inherited
 from 0043's OQ-2.** **Same default: no self-exclusion _(recommended)_** — it keeps the recipient rule a
 single query with no actor parameter, avoiding the caller-supplied-state shape
-[errors-log.md](../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
+[errors-log.md](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
 warns about. **The argument is stronger here than in either sibling**: the automatic trigger has **no
 acting administrator at all** (0064's **D-5** — a cron tick reads no actor), so a self-exclusion branch
 would be dead code on half of this story's paths by construction.
@@ -1634,10 +1634,10 @@ Recorded so they are not re-opened. Each was a real question at the start.
 
 ## Provenance
 
-- **PRD source:** [§ Cross-cutting: global search & notifications](../../docs/PRD/PRD.md#cross-cutting-global-search--notifications)'s
+- **PRD source:** [§ Cross-cutting: global search & notifications](../../docs/PRD/sections/foundations.md#cross-cutting-global-search--notifications)'s
   fourth confirmed event — *"**Blog post published**, or a **scheduled post going live**"* — and
-  [Epic 4](../../docs/PRD/PRD.md#epic-4--blog).
-- **Process:** [workflow.md](../../docs/workflow.md#phase-1--three-amigos-debate) Phase 1, run on
+  [Epic 4](../../docs/PRD/sections/epic-4-blog.md#epic-4--blog).
+- **Process:** [workflow.md](../../docs/workflow/phases.md#phase-1--three-amigos-debate) Phase 1, run on
   2026-08-27 with `backend-expert` and `backend-qa` convened as subagents, composed by `product-owner`
   as facilitator. **No `database-expert`** — see the Type section.
 - **Sibling stories this one copies the shape of:**
@@ -1677,7 +1677,7 @@ reading real code or real task files rather than relayed:
    naming because it will recur: the hand-offs were *enumerations*, and an enumeration goes stale — or
    is born short — without anything failing. Only the callee's signature disagreed with them.
 2. **The naming conflict resolved against `backend-expert`, with the dissent recorded** (**D-6**), plus
-   the discovery that [naming.md](../../docs/conventions/naming.md#classes)'s own listener sentence
+   the discovery that [naming.md](../../docs/conventions/naming/classes.md#classes)'s own listener sentence
    contradicts its own example — the shipped code is imperative, the sentence says it is not. Flagged
    for Phase 6.
 3. **The dirty-state mechanics were verified by execution against the framework source, not reasoned**
@@ -1700,7 +1700,7 @@ coordination pass:
 2. **OQ-2** — confirming **D-12**, because reversing it later costs a migration.
 3. **OQ-5 / D-6** — the listener's name, cheap now and expensive after.
 4. **The four test-file paths.** Per this repo's own rule that
-   [a story file naming a test path is making a convention decision](../../docs/testing/frontend/playwright-setup.md#folder-structure),
+   [a story file naming a test path is making a convention decision](../../docs/testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure),
    the four-way split — and `backend-qa`'s own three-way alternative (folding the restore case into the
    manual file) — belongs in the Phase 2 review, not in Phase 3.
 5. **R-7** — a mandatory re-verification of every 0061/0064 signature quoted here against shipped code,
@@ -1722,4 +1722,4 @@ coordination pass:
 `ai-spec/tasks/in-progress/` at the start of Phase 3 and to `ai-spec/tasks/done/` at Phase 7; both
 moves change this file's directory depth, so every relative link above must be re-resolved in **both
 directions** on each move, per
-[workflow.md](../../docs/workflow.md#link-integrity-check-on-every-stage-move).
+[workflow.md](../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move).

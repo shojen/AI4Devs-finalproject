@@ -115,7 +115,7 @@ Two properties this shape has that a validator-only fix does not, true of either
   rule lives in the validator, and the validator is one caller's choice; resolving the relationship —
   whether via a scoped relation query or an in-memory comparison against a bulk-fetched collection —
   lives in the action that performs the write — the placement
-  [directory-structure.md](../conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+  [directory-structure.md](../conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
   already requires for authorization rules, applied to a domain rule for the same reason.
 - **It cannot drift from the write.** The row the relationship check ran against *is* the row whose
   columns get snapshotted, because it is read from the same collection (or the same scoped query) that

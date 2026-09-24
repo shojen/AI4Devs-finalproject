@@ -3,7 +3,7 @@
 ## Description
 Persist each administrator's chosen **admin interface language** (Spanish or English only) on their
 own account, and resolve it into `App::setLocale()` on every web request — including Livewire's
-`/livewire/update` round-trips. This is the backend half of [PRD](../../docs/PRD/PRD.md#epic-5--internationalization)
+`/livewire/update` round-trips. This is the backend half of [PRD](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization)
 Epic 5's **Layer 1 — Admin UI language switcher**; the switcher UI itself is sibling story **0067**,
 which consumes the contract defined here. Strictly Layer 1: this has **no relationship** to Layer 2's
 future `store_languages` catalog (story 0068), which the PRD explicitly warns must not be conflated
@@ -105,7 +105,7 @@ Feature: Admin UI locale preference (Layer 1)
 ```
 
 > **Deliberately absent:** there is **no** scenario asserting *"the menus, labels, and buttons are
-> shown in English/Spanish"*, even though [PRD](../../docs/PRD/PRD.md#epic-5--internationalization)
+> shown in English/Spanish"*, even though [PRD](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization)
 > Layer 1's own Gherkin says exactly that. Most admin chrome is still hardcoded English in Blade —
 > only five app-owned domain files exist under `lang/{en,es}/`. This story can honestly assert
 > **locale resolution**, not rendered translation coverage. See **D-10** and the Definition of Done.
@@ -133,7 +133,7 @@ Feature: Admin UI locale preference (Layer 1)
   ```
 
   **Nullable, no default, and deliberately no backfill** (**D-3**) — this is the *opposite* of
-  [`add_status_to_users_table`](../../docs/database/migrations.md#when-the-new-columns-default-is-wrong-for-existing-rows-backfill-in-the-same-up),
+  [`add_status_to_users_table`](../../docs/database/migrations/basics-and-alterations.md#when-the-new-columns-default-is-wrong-for-existing-rows-backfill-in-the-same-up),
   whose conditional backfill existed because a blanket default would have mis-stated existing rows.
   Here `NULL` is exactly right for every existing row: it means *"this account never chose"*, and a
   default of `'en'` would falsely assert a choice nobody made. **No index** (**D-4**). Length `5`,
@@ -150,9 +150,9 @@ Feature: Admin UI locale preference (Layer 1)
   }
   ```
 
-  TitleCase keys, lowercase backing values, per [naming.md](../../docs/conventions/naming.md#classes).
+  TitleCase keys, lowercase backing values, per [naming.md](../../docs/conventions/naming/classes.md#classes).
   **No `label()` method** — this story has no rendering site, and this repo's rule is to add `label()`
-  when a *second* consumer appears, not the first ([naming.md](../../docs/conventions/naming.md#translation-keys),
+  when a *second* consumer appears, not the first ([naming.md](../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys),
   the `SalesRegionKind` precedent). Story 0067 adds it if its switcher needs it. **No `default()`
   method either** — see **D-6**; the default is resolved through `LocaleSetting`'s accessors and must
   not be forked into a second source of truth on the enum.
@@ -354,7 +354,7 @@ coverage, named for a cross-cutting concern the way `tests/Feature/Authorization
 - [ ] Pin `config(['app.locale' => 'en'])` explicitly in the tests that assert the default rather
       than relying on the ambient value — `phpunit.xml` sets no `APP_LOCALE`, and this repo has
       already been bitten by a test that depended on an ambient config value
-      ([errors-log-archive.md](../../docs/errors-log-archive.md#a-test-asserted-against-a-fixture-address-that-the-local-env-also-pointed-super_admin_email-at--2026-08-12)).
+      ([errors-log-archive.md](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-test-asserted-against-a-fixture-address-that-the-local-env-also-pointed-super_admin_email-at--2026-08-12)).
 
 **Feature — `tests/Feature/Localization/UiLocaleLivewireRoundTripTest.php`** (new; split out because
 its technique differs materially and it is the single highest-risk test in the story)
@@ -414,7 +414,7 @@ its technique differs materially and it is the single highest-risk test in the s
 **Non-regression — this story has whole-suite blast radius by construction**
 - [ ] Registering global `web`-group middleware touches **every** HTTP test in the repo, so the
       unscoped `php artisan test` run is the only thing that proves it
-      ([base-standards.md](../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done)).
+      ([base-standards.md](../../docs/conventions/base-standards/workflow-and-quality-gates.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done)).
       Watch `tests/Feature/Auth/**` in particular — it holds the repo's highest concentration of
       **guest** requests, which is exactly what a null-unsafe middleware breaks — plus
       `tests/Feature/Settings/**`, `tests/Feature/Authorization/ModuleRouteAccessTest.php` (asserts
@@ -473,7 +473,7 @@ emails start arriving in the recipient's language as soon as this ships.
 - [ ] All **three** quality gates run **unscoped** and each result recorded explicitly, including any
       not run: `php artisan test` (not `--filter`), `vendor/bin/pint --format agent` (not `--dirty`),
       and **Larastan level 7** (`vendor/bin/phpstan analyse`) — the one nothing else prompts you to
-      run ([errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)).
+      run ([errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)).
 - [ ] Code reviewed (code-reviewer).
 - [ ] No security findings (appsec-auditor).
 - [ ] Documentation updated (docs-keeper): `docs/database/schema.md`'s `users` table gains the
@@ -555,7 +555,7 @@ would otherwise pass for the wrong reason:
   `default_notification_locale`, so a bare `locale` on `users` would now sit beside two differently-
   scoped locale columns one table away.
 - **D-2 — `VARCHAR(5)`, not a bare `string()` and not a native MySQL `enum`.** Follows
-  [`add_status_to_users_table`](../../docs/database/migrations.md#adding-a-column-to-an-existing-table)
+  [`add_status_to_users_table`](../../docs/database/migrations/basics-and-alterations.md#adding-a-column-to-an-existing-table)
   exactly: a bare `string()` is `VARCHAR(255)` for a two-character token, and a native `enum` needs
   DDL for every new value. `5` holds `en`/`es` with headroom for a future `en_US`-shaped value
   without over-provisioning.
@@ -581,7 +581,7 @@ would otherwise pass for the wrong reason:
   *user-settable preference* whose offered set a later story may legitimately change is a different
   risk class. The `from()`-not-`tryFrom()` fact was checked by execution against the installed
   framework rather than reasoned about, per this repo's rule that
-  [a hedge means nobody ran the code](../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24).
+  [a hedge means nobody ran the code](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24).
   **A reviewer must not add the cast "for consistency with `status`."**
 - **D-6 — No `UiLocale::default()`; the default is a *persisted, administrator-configurable* setting,
   read through one accessor.** The original form of this decision forbade a hardcoded enum-level
@@ -606,7 +606,7 @@ would otherwise pass for the wrong reason:
 - **D-7 — Omitted from `#[Fillable]`, because a *rule about who may write it* binds this column.**
   The framing matters more than the outcome here, and both experts flagged that the obvious framing
   reaches the right answer for the wrong reason.
-  [base-standards.md](../../docs/conventions/base-standards.md#model-conventions)'s stated test —
+  [base-standards.md](../../docs/conventions/base-standards/stack-and-model-conventions.md#model-conventions)'s stated test —
   *"could a form legitimately supply this value at all"* — **argues for inclusion** if applied
   literally: a user's own language pick is exactly the kind of value a form legitimately supplies,
   unlike `status` or a server-derived `media.path`. So that test is not what decides this column.
@@ -655,13 +655,13 @@ would otherwise pass for the wrong reason:
   `backend-qa` recommended taking no `User` parameter at all, so that there is structurally nothing
   to target. The competing consideration is that a zero-target action is uncallable from a console
   command or queued job, which conflicts with
-  [0008a's rule](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+  [0008a's rule](../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
   that an action be independently callable. Both are honoured: the signature is
   `__invoke(UiLocale $locale, ?User $user = null)`, and the *rule* — "an
   HTTP caller may write only their own row" — is derived from `Auth::user()` inside the action, never
   passed in. A caller with no authenticated actor (Artisan, queued job) may target any user; a caller
   with one may only target themselves. This keeps the action independently callable per
-  [0008a's convention](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+  [0008a's convention](../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
   while closing the cross-user write `backend-qa` correctly flagged. No policy and no permission is
   introduced: setting one's own UI language is self-service, and every account does it identically.
 - **D-12 — The action lives in `app/Actions/Users/`, not a new `app/Actions/Locale/`.**
@@ -672,7 +672,7 @@ would otherwise pass for the wrong reason:
   A `Locale/` folder would invent an area for a single class. The middleware, by contrast, correctly
   lands in the stock `app/Http/Middleware/` location.
 - **D-13 — Test paths, stated as the convention decision they are.** This repo records that
-  [a story file naming a test path is making a convention decision](../../docs/testing/frontend/playwright-setup.md#folder-structure),
+  [a story file naming a test path is making a convention decision](../../docs/testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure),
   so: the enum test mirrors the model layer (`tests/Unit/Enums/`), the action test mirrors its own
   namespace (`tests/Feature/Users/`), and the middleware tests go in a new
   **`tests/Feature/Localization/`** — a cross-cutting-concern folder in the shape of the existing
@@ -709,7 +709,7 @@ would otherwise pass for the wrong reason:
 ### Scope fences: what this story must NOT do
 
 Stated in terms of **classes**, not screens, per the
-[errors-log rule](../../docs/errors-log-archive.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24)
+[errors-log rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24)
 that a screen-shaped exclusion cannot bind shared code:
 
 - `App\Actions\Users\UpdateUser` and `App\Actions\Users\CreateUser` — must not read or write
@@ -749,7 +749,7 @@ that a screen-shaped exclusion cannot bind shared code:
   (story 0068), the invitation case has a deterministic answer it did not have before. No longer open.
 
 - **R-2a — NEW, and the one ordering irregularity in this story: 0066 depends on 0068, despite the
-  lower number.** [workflow.md](../../docs/workflow.md#task-ordering-rule)'s Task ordering rule says a
+  lower number.** [workflow.md](../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule)'s Task ordering rule says a
   dependency is numbered **below** its dependents, and that is inverted here: this story's middleware
   fallback and `preferredLocale()` both call `App\Models\LocaleSetting`, which story **0068** creates.
   The inversion is real, it is **deliberate**, and the files are **not** being renumbered — the need

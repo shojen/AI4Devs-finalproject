@@ -1,7 +1,7 @@
 # `database/data/`
 
 Bundled, version-controlled fixture data — not a `database/seeders/` class, but a
-data source one or more seeders read. Per [PRD §2.4](../../docs/PRD/PRD.md#24-shipping),
+data source one or more seeders read. Per [PRD §2.4](../../docs/PRD/sections/epic-2-products-taxes-shipping.md#24-shipping),
 this app ships country fixtures as JSON files under this directory rather than pulling
 them from a Composer package (`league/iso3166`, `symfony/intl`), so the exact list is
 reviewable in a diff and needs no dependency approval.
@@ -34,7 +34,7 @@ default flag, fiscal, or shipping data:
 
 **Ownership.** Story 0016 owns this file; story 0032 (shipping geography catalog)
 consumes it **read-only** as a shared identity source, per
-[`contracts.md`](../../docs/contracts.md#parallel-agent-file-ownership-rule).
+[`contracts.md`](../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule).
 
 **Refreshing the list.** This is a committed snapshot, not a live lookup — a country
 that changes its name or is removed from the standard is not autodetected. To refresh:

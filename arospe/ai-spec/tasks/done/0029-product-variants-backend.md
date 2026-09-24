@@ -74,7 +74,7 @@ paired story **0031**. Defining the attribute types and values themselves is alr
 **0028**. The bulk combination generator is **0029b**; the two attribute in-use delete guards are
 **0029a**.
 
-Covers [PRD](../../../docs/PRD/PRD.md#22-products) §2.2's *"Create a variant as an attribute
+Covers [PRD](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#22-products) §2.2's *"Create a variant as an attribute
 combination"*, *"A variant without its own image inherits the parent's featured image"*, *"A variant
 with its own image uses that image"*, *"A duplicate attribute combination is rejected"*, and the
 **"a variant"** example of *"Scenario Outline: A duplicate SKU is rejected"* — i.e. Products
@@ -404,7 +404,7 @@ public function __invoke(array $productAttributeValueIds): string
 > tests, per [code-style.md](../../../docs/conventions/code-style.md#inject-single-purpose-actions-per-method)'s
 > rule that *"a zero-argument constructor is not a contract"*; and **it is named as an imperative
 > verb phrase** (`HashVariantCombination`, not `VariantCombination`), per
-> [naming.md](../../../docs/conventions/naming.md#classes). Its unit test mirrors the app path:
+> [naming.md](../../../docs/conventions/naming/classes.md#classes). Its unit test mirrors the app path:
 > `tests/Unit/Actions/Products/HashVariantCombinationTest.php`.
 
 > 🔴 **The single highest-risk line in this story, and it is invisible on inspection (V-10).** The
@@ -787,7 +787,7 @@ $this->writeRow(fn () => ProductAttributeValue::where('id', $id)->update([
 
 That is `Builder::update()`, **not** `Model::save()`. It instantiates no model, so it fires **no**
 `updating`/`updated`/`saved` Eloquent event — the identical trap
-[base-standards.md](../../../docs/conventions/base-standards.md#deleting-a-user-goes-through-the-model-not-the-query-builder)
+[base-standards.md](../../../docs/conventions/base-standards/stack-and-model-conventions.md#deleting-a-user-goes-through-the-model-not-the-query-builder)
 records for `User::delete()`, one class over. **A model observer, a `static::updated()` hook, or
 anything else event-driven is therefore not available to carry D-4.6's value-rename cascade**, and a
 Phase 3 implementer reaching for one would ship a cascade that silently never runs while every
@@ -953,7 +953,7 @@ Schema::create('skus', function (Blueprint $table): void {
 **Three sub-decisions inside that file.** A **surrogate UUID `id` rather than `sku` as the primary
 key**: `string('sku')->primary()` works, but forces `$primaryKey`/`$keyType`/`$incrementing` onto the
 model — precisely the three properties
-[base-standards.md](../../../docs/conventions/base-standards.md#uuid-primary-keys) says not to write —
+[base-standards.md](../../../docs/conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys) says not to write —
 and it makes `Rule::unique(Sku::class, 'sku')->ignore($id)` natural. **No `timestamps()`** (nothing
 reads them). **No `CHECK`** that exactly one owner is set — see agreed point 6; enforce structurally
 by exposing only `Sku::registerFor(Product|ProductVariant $owner, string $sku)`.
@@ -1399,12 +1399,12 @@ risk; this is that risk, made explicit and made sequential rather than concurren
 level (`$table->uuid('id')->primary()`, `foreignUuid(...)->constrained()`) and the Eloquent level.
 
 Unlike 0019 (`media`) and 0028 (the attribute tables), **this story needs no policy-extension
-argument.** PRD [assumption 19](../../../docs/PRD/PRD.md#assumptions--confirmed-decisions) names
+argument.** PRD [assumption 19](../../../docs/PRD/sections/foundations.md#assumptions--confirmed-decisions) names
 *"Product Variants"* explicitly as one of the seven originally-enumerated UUID entities, and
 [ADR 0001](../../../docs/decisions/0001-uuid-primary-keys.md) records it as still-future and greenfield.
 Cite that directly; do **not** cite the general Epic-2 policy, which exists for entities the original
 seven did not cover. `@property string $id`; **no** `$keyType` / `$incrementing` properties
-([base-standards.md](../../../docs/conventions/base-standards.md#uuid-primary-keys)).
+([base-standards.md](../../../docs/conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys)).
 
 This story is therefore one of the ones that lets `docs-keeper` shorten ADR 0001's "still future"
 list rather than extend its scope.
@@ -1451,7 +1451,7 @@ $this->logRefusedPrivilegedAttempt->authorize(
 Six points, each of which a reviewer would otherwise ask:
 
 1. **Why this and not the deferral.** The convention is documented and unambiguous —
-   [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers):
+   [base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers):
    *"if an operation must not happen without a permission, the check lives in the class that performs
    the operation."* Every counter-precedent this document used to cite has since gone the other way:
    0024 reversed its own D-15/RQ-10 at its split (its **C-1**), 0025 discharged 0023's hand-off so all
@@ -2570,7 +2570,7 @@ Nothing is user-visible yet: the builder that consumes all of this is story **00
       in-use guards in [0031](0031-product-variants-editor-ui.md) points at **0029b** / **0029a**
       rather than at this file, and both new siblings' own relative links resolve from
       `ai-spec/tasks/` — verified by resolving each path against the filesystem, per
-      [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move), not by
+      [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move), not by
       pattern-matching.
 - [ ] **Constraint recorded for Epic 3**: a variant delete is a hard delete, and any story needing a
       variant to survive deletion must **snapshot**, not soft-delete (0024 **D-12**'s settled
@@ -2634,7 +2634,7 @@ Several decisions would be wrong without them.
   the `$deletingTypeUsageCount` placeholder its D7 designed.
 - **0019 (media library)** — the own-image FK points into `media`.
 - **0023 (product categories)** — transitively, via `products.product_category_id`.
-- Per [workflow.md](../../../docs/workflow.md#task-ordering-rule) the numbering is correct, and the
+- Per [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule) the numbering is correct, and the
   sequencing requirement is **already met**: 0019, 0023, 0024 and 0028 are all in
   `ai-spec/tasks/done/`. What that changes in practice is that every retrofit above is a change to
   **shipped** code rather than an amendment to a sibling spec — the reason this file's own Modifies
@@ -3059,8 +3059,8 @@ first**, and it is this story's.
 ## Provenance
 
 Phase 1 (Three Amigos) debate run on 2026-08-18 per
-[workflow.md](../../../docs/workflow.md#phase-1--three-amigos-debate), derived from
-[PRD](../../../docs/PRD/PRD.md#22-products) §2.2's "Product variants" Gherkin block and the "a variant"
+[workflow.md](../../../docs/workflow/phases.md#phase-1--three-amigos-debate), derived from
+[PRD](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#22-products) §2.2's "Product variants" Gherkin block and the "a variant"
 example of its duplicate-SKU Scenario Outline, plus assumptions 9, 10 and 19, and grounded in **full
 readings** of [0024](../done/0024-products-core-crud-backend.md),
 [0028](../done/0028-product-attribute-types-and-values-backend.md) and
@@ -3185,7 +3185,7 @@ batch cap's computation. Two non-blocking reservations were also closed: **V-15*
 0028 are specs, not code" framing is retired (both are in `done/`), and the missing story-0028 entry
 in [`_digests/epic-2.md`](../_digests/epic-2.md) is **flagged rather than written** — that file is
 `docs-keeper`'s, appended at each story's Phase 6/7 per
-[workflow.md](../../../docs/workflow.md#decision-digest-per-epic), not `product-owner`'s to author.
+[workflow.md](../../../docs/workflow/agents-and-epic-digests.md#decision-digest-per-epic), not `product-owner`'s to author.
 
 ### Amendment — 2026-08-19: four contract gap-fills, and the cartesian generator
 
@@ -3260,5 +3260,5 @@ action.
 > puts it **three** levels down and silently breaks all of them — `../../docs/...` must become
 > `../../../docs/...`, and the sibling-task links (`0024-...md`) must become `../0024-...md`. This is
 > a mandatory step, not a nicety: see
-> [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move) and the
+> [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move) and the
 > [errors-log entry](../../../docs/errors-log.md) recording the six `done/` files this already broke.

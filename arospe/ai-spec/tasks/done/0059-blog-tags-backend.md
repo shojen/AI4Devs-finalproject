@@ -11,7 +11,7 @@ post editor knowing anything about tag storage.
 This is **backend only** (no screen, no route) and deliberately independent from the product category
 taxonomy and from blog categories: no shared table, no shared model, no polymorphic taxonomy.
 
-Covers [PRD](../../../docs/PRD/PRD.md#epic-4--blog) Epic 4's `Feature: Blog tags (extends the prototype)`
+Covers [PRD](../../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog tags (extends the prototype)`
 scenarios *Create a tag*, *Rename a tag*, *Delete a tag*, *Reuse an existing tag from the post
 editor* and *Create a new tag on the fly from the post editor*, plus the CRUD half of Blog acceptance
 criterion 3 and acceptance criterion 6. It does **not** cover attaching tags to a post, the tag
@@ -115,7 +115,7 @@ Feature: Blog tags
 
 **Migration**
 - `database/migrations/<timestamp>_create_blog_tags_table.php` — new. Greenfield UUID table per
-  [migrations.md](../../../docs/database/migrations.md#uuid-primary-keys):
+  [migrations.md](../../../docs/database/migrations/uuid-primary-keys.md#uuid-primary-keys):
 
   ```php
   public function up(): void
@@ -151,13 +151,13 @@ Feature: Blog tags
   (**D-6**), no `deleted_at` (**D-5**), and no foreign key of any kind — the `blog_post_tag` pivot is
   story 0061's, on 0061's side. `down()` is the exact inverse; dropping the table drops the index with
   it, so no companion `dropUnique()` is needed (contrast
-  [`add_pending_email_to_users_table`](../../../docs/database/migrations.md#drop-a-unique-index-explicitly-before-its-column),
+  [`add_pending_email_to_users_table`](../../../docs/database/migrations/basics-and-alterations.md#drop-a-unique-index-explicitly-before-its-column),
   where the column outlives the table).
 
 **Model**
 - `app/Models/BlogTag.php` — new. `use HasFactory, HasUuids;`, `#[Fillable(['name'])]`,
   `@property string $id` / `$name` / `$normalized_name` per
-  [base-standards.md](../../../docs/conventions/base-standards.md#uuid-primary-keys). No
+  [base-standards.md](../../../docs/conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys). No
   `$keyType`/`$incrementing` (the trait overrides both as methods), no `SoftDeletes` (**D-5**), no
   `#[Hidden]` (nothing sensitive), no `casts()` beyond Eloquent's default timestamp handling.
 
@@ -179,7 +179,7 @@ Feature: Blog tags
   Note `booted()`, not `boot()`. [`App\Models\Role`](../../../app/Models/Role.php) uses `boot()` for a
   reason that **does not apply here** — it subclasses a vendor model and has to register ahead of the
   package's own hooks (see
-  [authorization.md](../../../docs/architecture/authorization.md#the-super-admin-roles-invariants)).
+  [authorization.md](../../../docs/architecture/authorization/super-admin.md#the-super-admin-roles-invariants)).
   `BlogTag` extends `Model` directly with nothing to order against, so `booted()` is correct and
   `boot()` would be cargo-culting a workaround for a problem this class does not have.
 
@@ -443,7 +443,7 @@ rather than a pair:
 - [x] Every one of the four `Gate` refusal sites writes exactly one `Log::warning('Privileged action
       refused', …)` line carrying `target_type: 'blog_tag'`, set-equated against an existing screen's
       context keys in one `Log::spy()` session — the equivalence test
-      [the refusal-logging recipe](../../../docs/architecture/authorization.md#copyable-what-a-third-admin-screen-inherits)
+      [the refusal-logging recipe](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#copyable-what-a-third-admin-screen-inherits)
       mandates as step 4 (**D-12**).
 
 **Explicitly not tested here**
@@ -458,7 +458,7 @@ rather than a pair:
   0023's **D-11**. That story could assert `ProductCategory` references no blog-taxonomy namespace
   because a second namespace was nameable; here there is no sibling table to assert *against* that
   0058/0061 will not create anyway, so an `arch()` rule would be the vacuous-assertion failure mode
-  [the errors log](../../../docs/errors-log-archive.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18)
+  [the errors log](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18)
   already records. Independence is honoured structurally (own table, own model, own action namespace,
   own policy) and stated in prose. Recorded as a deliberate departure, not an inconsistency.
 
@@ -505,7 +505,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
 - [x] **All three quality gates run unscoped and each result recorded, including "not run"** —
       `php artisan test`, `vendor/bin/pint --format agent`, and `vendor/bin/phpstan analyse` (Larastan
       level 7). The third is the one nothing else prompts you to run; see
-      [errors-log.md](../../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+      [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
       **This story registers a model event, so its blast radius is the whole suite by construction** —
       the unscoped run is not optional here.
 - [x] Code reviewed (code-reviewer).
@@ -614,7 +614,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
     invariant is expressed as "recompute when the source changes" rather than "recompute always".
   - **The blast radius is the whole suite.** A model event binds every `BlogTag` in every test, which
     is precisely the case
-    [errors-log.md](../../../docs/errors-log-archive.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)
+    [errors-log.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)
     records — so the unscoped `php artisan test` run is mandatory, not advisory.
 
   **Recorded alternative, rejected:** each action computes and `forceFill`s it explicitly, matching
@@ -643,7 +643,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
 - **D-6 — No `slug`, no `description`, no `sort_order`, no `usage_count`.** None appears in Epic 4's
   tag scenarios or acceptance criteria. A `slug` becomes necessary only if a public tag-archive route
   (`/blog/tag/{slug}`) appears — explicitly out of scope per PRD's
-  [Out of scope](../../../docs/PRD/PRD.md#out-of-scope) ("public storefront filtering/browsing of blog
+  [Out of scope](../../../docs/PRD/sections/roadmap-scope-open-questions.md#out-of-scope) ("public storefront filtering/browsing of blog
   posts by category or tag"), and a cheap additive migration if Epic 4's public surface ever changes
   that. Ordering is `ORDER BY name` at query time. A denormalised usage count is deliberately not
   stored: it would need maintaining from the pivot, which does not exist yet, and `withCount('posts')`
@@ -708,7 +708,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
   Both sides cascade (a pivot row is worthless without either parent); the composite primary key
   matches `role_has_permissions`, this repo's existing pivot precedent, and no surrogate `id` is
   needed. **Neither column gets an explicit `$table->index()`** per
-  [migrations.md](../../../docs/database/migrations.md#an-fk-column-does-not-also-get-an-explicit-index-here)
+  [migrations.md](../../../docs/database/migrations/uuid-primary-keys.md#an-fk-column-does-not-also-get-an-explicit-index-here)
   — `blog_tag_id` is covered as the PK's leftmost column and `blog_post_id` gets InnoDB's mandatory FK
   index automatically; 0061 confirms with `php artisan db:table blog_post_tag`, never by reading the
   migration. Neither table name needs an explicit argument to `constrained()` (unlike
@@ -758,7 +758,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
 
   No `DB::transaction()` wrapper: the race is closed by the unique index plus the catch, and a
   transaction would neither prevent the collision nor change the resolution. Per
-  [errors-log.md](../../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21),
+  [errors-log.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21),
   a transaction wrapper is a change to every side effect the wrapped code performs and is not added
   speculatively.
 
@@ -805,7 +805,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
   [`app/Actions/SalesRegions/`](../../../app/Actions/SalesRegions/) — **not** 0023's D-9, which
   deliberately shipped its actions unauthorized with a hand-off note. That was an explicit, accepted
   gap at the time; the convention it deviates from
-  ([base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers))
+  ([base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers))
   has since been reinforced twice, and task 0017 demonstrated it "cost nothing when applied at Phase
   1". The case here is *stronger* than 0023's: `FindOrCreateBlogTag` has **two independent callers by
   design** (0060's screen, 0061's post save), which is precisely the "operation reachable from more
@@ -816,7 +816,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
   fast before a transaction opens and makes the per-row `canEdit`/`canDelete` hints honest.
 
   Refusal logging follows the
-  [third-admin-screen recipe](../../../docs/architecture/authorization.md#copyable-what-a-third-admin-screen-inherits)
+  [third-admin-screen recipe](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#copyable-what-a-third-admin-screen-inherits)
   verbatim: every `Gate` refusal routes through `LogRefusedPrivilegedAttempt::authorize()` with
   `target_type: 'blog_tag'` passed **explicitly** (the recipe records that `resolveTarget()`
   auto-resolves only `User` and `Role`, so a new domain must pass it), and step 4's cross-screen
@@ -824,7 +824,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
   actions carries a rate limiter, and none is shared with an unprivileged caller. **Worth stating
   because it will be true in 0061 and false thereafter:** if a later story lets an *unauthenticated*
   or self-service path reach `FindOrCreateBlogTag`, step 3 becomes mandatory, for exactly the reason
-  [errors-log.md](../../../docs/errors-log-archive.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24)
+  [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24)
   records — an unbounded side effect on a shared class is a capability grant to its *least*-privileged
   caller.
 
@@ -849,7 +849,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
   couples a correctness rule to a column setting nothing in `app/` protects. **D-3** stands on its own
   four arguments, none of which is the engine split.
 
-  This is [the deferred-findings rule](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+  This is [the deferred-findings rule](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
   applied at Phase 1 rather than at Phase 2: a premise inherited from a sibling task file is a claim
   about a tree, and it was re-verified before being carried.
 
@@ -918,7 +918,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
 - **Story 0060 (`blog-tags-ui`)** is the management screen that gives `BlogTagPolicy` its first
   component call site, and **story 0061 (`blog-posts-core-crud-backend`)** is the second consumer of
   `FindOrCreateBlogTag` and the owner of the pivot contract in **D-8**. Per
-  [workflow.md](../../../docs/workflow.md#task-ordering-rule)'s ordering rule, this story's lower id is
+  [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule)'s ordering rule, this story's lower id is
   deliberate: both depend on it, and it depends on neither.
 - Depends only on what is already shipped otherwise: `spatie/laravel-permission` wired to `User` with
   the seeded catalog (0002), the `Gate::before` Super Admin bypass, policy auto-discovery (0004), and
@@ -971,7 +971,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
      available, and confirm the result fits. **The exact expansion factor is deliberately NOT stated
      as fact anywhere in this file** — `vendor/` is absent from this worktree, so it could not be
      verified here, and this project's
-     [standing rule](../../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
+     [standing rule](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
      is that an unverified mechanism written up confidently is worse than an open question written up
      plainly. Treat "`ß` → `ss`, therefore roughly 2×" as the *hypothesis to test*, not the answer.
   3. **If that measurement shows any in-policy input can still overflow, do not just grow the
@@ -1114,8 +1114,8 @@ Phase 1 (Three Amigos) debate run on 2026-08-27 with `backend-expert` (files, ac
 find-or-create semantics and the conditional-ability proposal), `database-expert` (schema, the
 `normalized_name` recommendation, the pivot contract and the soft-delete analysis) and `backend-qa`
 (test design, the false-green analysis behind **R-8**, and the recorded dissent in **OQ-2**), per
-[workflow.md](../../../docs/workflow.md#phase-1--three-amigos-debate). Derived from
-[PRD](../../../docs/PRD/PRD.md#epic-4--blog) Epic 4's `Feature: Blog tags` block and assumptions 13, 17
+[workflow.md](../../../docs/workflow/phases.md#phase-1--three-amigos-debate). Derived from
+[PRD](../../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog tags` block and assumptions 13, 17
 and 19.
 
 **All three amigos' contributions are reflected above.** Two things are worth recording about how the
@@ -1149,7 +1149,7 @@ would have copied it. It was re-checked against `HEAD` — `phpunit.xml`, `.env.
 [`ci-database-connection-gap.md`](../ci-database-connection-gap.md). Recorded as **D-13** rather than
 silently dropped, because a later reader comparing the two task files will otherwise assume 0059
 simply forgot the risk. This is
-[the deferred-findings rule](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+[the deferred-findings rule](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
 applied one phase earlier than it was written for.
 
 Two decisions in this file are **new patterns rather than applications of an existing one**, and both
@@ -1161,7 +1161,7 @@ ability in `FindOrCreateBlogTag` (**D-11** / **OQ-3**).
 **Not yet run:** Phase 2 (`code-reviewer` INVEST validation). Beyond the four open questions, one item
 deserves an explicit look there rather than at implementation time: **D-4**'s model event gives this
 story whole-suite blast radius, which
-[errors-log.md](../../../docs/errors-log-archive.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)
+[errors-log.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)
 records as the exact shape that slips past a `--filter`ed test run. The Definition of Done names all
 three quality gates unscoped for that reason.
 

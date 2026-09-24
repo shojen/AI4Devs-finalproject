@@ -4,7 +4,7 @@
  * customers/index.blade.php -- Livewire's Finder strips a trailing ".index"
  * segment for an Index component in a subfolder, the same exception
  * App\Livewire\Users\Index / App\Livewire\Roles\Index already rely on; see
- * docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name.
+ * docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name.
  *
  * Structure mirrors resources/views/livewire/users.blade.php /
  * roles.blade.php: header with live count + create action, a four-column

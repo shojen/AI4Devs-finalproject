@@ -274,7 +274,7 @@ with `php artisan make:migration add_soft_deletes_to_users_table --no-interactio
   3. **`forceFill()` rather than direct property assignment** — an earlier draft assigned
      `$this->pending_email = null` directly. `users.pending_email` and `users.status` are deliberately
      omitted from `User`'s `#[Fillable]`, and
-     [`docs/conventions/base-standards.md`](../../../docs/conventions/base-standards.md#model-conventions)
+     [`docs/conventions/base-standards.md`](../../../docs/conventions/base-standards/stack-and-model-conventions.md#model-conventions)
      states the convention as "written only via an explicit `forceFill()` in an action". Using
      `forceFill()` here keeps the one convention intact rather than opening a second accepted way to
      write those columns. Note the convention's wording says *"in an action"* and this is a **model
@@ -379,7 +379,7 @@ with `php artisan make:migration add_soft_deletes_to_users_table --no-interactio
   `'manage administrator-level roles/users'`. That string is **not** in story 0002's seeded catalog
   and `hasPermissionTo()` would throw `PermissionDoesNotExist` against it. The canonical names are
   **`roles.manage-administrators`** and **`users.delete`**, per
-  [`docs/conventions/naming.md`](../../../docs/conventions/naming.md#permission-names). The Gherkin below
+  [`docs/conventions/naming.md`](../../../docs/conventions/naming/routes-and-permissions.md#permission-names). The Gherkin below
   keeps the human phrase because it is business prose, not a code literal.
 
   No self-targeting exception: the same rule applies when `$actor` and `$target` are the same user.

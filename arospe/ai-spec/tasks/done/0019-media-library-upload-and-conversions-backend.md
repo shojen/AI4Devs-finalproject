@@ -1,8 +1,8 @@
 # [0019] Media library: upload, `.webp`/`.avif` conversions and search (backend)
 
 ## Description
-Backend half of the Shared Media Gallery ([PRD §2.3](../../../docs/PRD/PRD.md#23-shared-media-gallery),
-[assumption 11](../../../docs/PRD/PRD.md#assumptions--confirmed-decisions)): a `media` table, upload
+Backend half of the Shared Media Gallery ([PRD §2.3](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#23-shared-media-gallery),
+[assumption 11](../../../docs/PRD/sections/foundations.md#assumptions--confirmed-decisions)): a `media` table, upload
 handling with validation, local storage on the `public` disk (`storage/app/public`), automatic
 generation of a `.webp` and an `.avif` variant alongside the kept original, and a
 title/description search query the gallery modal (story **0020**, frontend) will call. It also
@@ -315,7 +315,7 @@ The user confirmed the media gallery gets its **own** permission namespace rathe
 `products.*`. This story exercises only `media.view` (browse/search) and `media.create` (upload).
 `media.edit` (inline title/description editing — story 0020) and `media.delete` are seeded but
 unused here; that is the normal state for this catalog, which is seeded ahead of its consumers by
-design ([authorization.md](../../../docs/architecture/authorization.md#permission-catalog)).
+design ([authorization.md](../../../docs/architecture/authorization/overview-catalog-seeding.md#permission-catalog)).
 
 **There is no delete capability this phase — confirmed.** No story implements media deletion, and
 none should be added to Epic 2 without a further decision, because the referential question (what
@@ -372,7 +372,7 @@ re-run. Seeding is already a documented required deployment step
 > this worktree's `HEAD` (`9cdd144`) with `grep -n "\b37\b\|\b38\b" tests/Feature/Seeders/*.php`
 > before Phase 3 starts — per this project's own rule that a line number in a stored task is a
 > reading aid to re-verify, never a locator to trust (see
-> [errors-log.md](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
+> [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
 > Total sites: **12** in `RolePermissionSeederTest.php` (not 10), **3** in `DatabaseSeederTest.php`
 > (not 2) — **15**, not 12.
 
@@ -421,11 +421,11 @@ grep -rn "\b37\b\|\b38\b" tests/Feature/Seeders/RolePermissionSeederTest.php tes
 ### Create
 
 - `database/migrations/<ts>_create_media_table.php` — the `media` table (see schema below).
-  Naming per [migrations.md](../../../docs/database/migrations.md#file-naming); `down()` is
+  Naming per [migrations.md](../../../docs/database/migrations/basics-and-alterations.md#file-naming); `down()` is
   `Schema::dropIfExists('media')`.
 - `app/Models/Media.php` — `#[Table('media')]` (**V8**), `#[Fillable(['title','description'])]`,
   `use HasFactory, HasUuids;`, `@property string $id`, no `$keyType`/`$incrementing`
-  ([base-standards](../../../docs/conventions/base-standards.md#uuid-primary-keys)). The three path
+  ([base-standards](../../../docs/conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys)). The three path
   columns are **omitted from `#[Fillable]`** — they are server-derived and must never be
   mass-assignable, the same guard `users.status`/`pending_email` use. Carries the `#[Scope]`
   search scope and `url()`-style accessors for the three variants.
@@ -487,7 +487,7 @@ grep -rn "\b37\b\|\b38\b" tests/Feature/Seeders/RolePermissionSeederTest.php tes
   `docs/testing/backend/feature-integration-tests.md:70` ("a seeded 38-permission catalog"). Each
   needs only the number changed (38→42, and the one 37→41), not a rewrite — but a doc that states a
   stale count in prose is exactly this project's own recorded
-  [bare-negative/stale-arithmetic-claim](../../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
+  [bare-negative/stale-arithmetic-claim](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
   failure mode, so `docs-keeper` must re-grep for `\b38\b` and `\b37\b` across `docs/` at Phase 6
   rather than trust this list to be exhaustive by then.
 
@@ -675,7 +675,7 @@ sequence (tests first, per [workflow.md](../../../docs/workflow.md) Phase 3).
    dependency of the next).
 7. `MediaValidationRules` trait, then `GenerateImageConversions`, then `StoreUploadedImage`.
 8. `App\Livewire\Media\Gallery` + placeholder view; `lang/en/media.php` and `lang/es/media.php`.
-9. Quality gates in order per [base-standards](../../../docs/conventions/base-standards.md#quality-gates):
+9. Quality gates in order per [base-standards](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#quality-gates):
    filtered tests → `vendor/bin/pint --dirty --format agent` → Larastan level 7 → full suite.
 
 ---
@@ -687,7 +687,7 @@ sequence (tests first, per [workflow.md](../../../docs/workflow.md) Phase 3).
   (**done**) — this story amends the file that story created and owns.
 - Story **0020** (media gallery modal UI, frontend) **depends on this one** and must be numbered
   and sequenced after it, per workflow.md's
-  [task ordering rule](../../../docs/workflow.md#task-ordering-rule).
+  [task ordering rule](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule).
 **Risks**
 
 1. **Cross-epic seeder amendment (highest).** **Fifteen** assertions across two already-green test
@@ -969,7 +969,7 @@ Four findings, all addressed in this same pass rather than deferred: **N1 (Mediu
 one section a later story would actually read for the constant's rationale had the wrong number;
 corrected in place with a blockquote recording why. **N2 (Medium, fixed by this section)** — no
 phase-verdict/gate-record sections existed in this task file, the exact gap this project's own
-[errors-log.md](../../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
+[errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
 entry warns about. **N3 (Low, fixed)** — the QA plan's named-but-undelivered seeder upgrade-path
 test ("re-seeding an environment already carrying the 38-permission catalog yields 42 and creates
 no duplicates") now exists as
@@ -992,14 +992,14 @@ fixed in this same pass rather than left for a future story:
    screen's permission matrix (story 0011) composes a label per module from this array at render
    time; without a `media` entry, the raw key `media` would have rendered in both locales the
    moment an administrator viewed the matrix — exactly the failure
-   [naming.md](../../../docs/conventions/naming.md#translation-keys) has predicted since task 0011
+   [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys) has predicted since task 0011
    for a module label added without its lang leaf. Added `'media' => 'Media'` /
    `'media' => 'Medios'` to both files; `tests/Feature/Roles/IndexUiTest.php` (unmodified) still
    passes, confirming no other assumption depended on the count.
 2. **Neither `App\Livewire\Media\Gallery` nor `App\Actions\Media\StoreUploadedImage` logged a
    refused attempt**, unlike every other admin screen and action this app ships (story 0015b's
    `LogRefusedPrivilegedAttempt` recipe, documented in
-   [architecture/authorization.md](../../../docs/architecture/authorization.md#recording-a-refusal--what-every-gate-owes-the-audit-trail)).
+   [architecture/authorization.md](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail)).
    `Gallery::mount()` is a genuinely different case from `Users\Index::mount()` /
    `Roles\Index::mount()` / `SalesRegions\Index::mount()`, all three of which are deliberately
    *unlogged* because their routes' own `can:` gate already refuses before `mount()` ever runs —

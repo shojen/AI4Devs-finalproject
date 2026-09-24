@@ -60,7 +60,7 @@ backend | fullstack (related_task_id: **0031** — variant builder UI) | include
 >   grounds**, none of which is performance: it bypasses `HasUuids`, so no row gets a key; it bypasses
 >   the per-row cross-table SKU existence check (0029 **D-4.5**), which is a `lockForUpdate()` read on
 >   a *different* table and cannot be batched away; and it writes a model this repo requires to be
->   written through instances ([base-standards.md](../../../docs/conventions/base-standards.md#deleting-a-user-goes-through-the-model-not-the-query-builder)'s
+>   written through instances ([base-standards.md](../../../docs/conventions/base-standards/stack-and-model-conventions.md#deleting-a-user-goes-through-the-model-not-the-query-builder)'s
 >   `User::delete()` rule, one model over). The real cost control is the **batch cap** (**D-G5**),
 >   which bounds the work instead of speeding it up.
 > - **The residual that *is* real is a lock-hold window, not a storage problem** — the batch holds its
@@ -167,7 +167,7 @@ Five points:
    per-request — and it is what keeps `CreateProductVariant` independently safe if a future caller
    forgets. **Do not remove it, and do not build a "skip the gate" parameter to avoid it** — that
    parameter is a one-argument bypass, exactly the shape
-   [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+   [base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
    forbids ("derive a security-relevant flag internally; never take it as a parameter").
 4. **`LogRefusedPrivilegedAttempt` is constructor-injected**, with `targetType: 'product'` passed
    explicitly (`resolveTarget()` auto-resolves only `User` and `Role`) — the same shape all three of
@@ -754,7 +754,7 @@ Nothing is user-visible yet: the generator UI that consumes all of this is story
       every backend test stays green (0031 **D-8**). Recorded here in this file's own text, and
       restated in the [epic-2 digest](../_digests/epic-2.md)'s Story 0029b section below.
 - [x] 🟠 **Digest entry appended** to [`ai-spec/tasks/_digests/epic-2.md`](../_digests/epic-2.md) at
-      Phase 6/7, per [workflow.md](../../../docs/workflow.md#decision-digest-per-epic).
+      Phase 6/7, per [workflow.md](../../../docs/workflow/agents-and-epic-digests.md#decision-digest-per-epic).
 - [x] Acceptance criteria met.
 
 ## Dependencies and risks
@@ -884,5 +884,5 @@ the tests carried over from 0029.
 > puts it **three** levels down and silently breaks all of them — `../../docs/...` must become
 > `../../../docs/...`, and the sibling-task links (`0029-...md`) must become `../0029-...md`. This is
 > a mandatory step, not a nicety: see
-> [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move) and the
+> [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move) and the
 > [errors-log entry](../../../docs/errors-log.md) recording the six `done/` files this already broke.

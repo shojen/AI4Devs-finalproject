@@ -89,13 +89,13 @@ frontend | fullstack (related_task_id: **0023** — the paired product-categorie
 ## Three Amigos participants
 
 `product-owner` (lead) + `frontend-expert` (files and approach) + `frontend-qa` (test design), per
-[workflow.md](../../../docs/workflow.md#task-classification-rule)'s Frontend classification. Both
+[workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule)'s Frontend classification. Both
 contributions are reflected below, including **one divergence** (D-7, the header summary line) and
 **one finding neither the brief nor the story metadata had right** (F-1, the 0024 dependency).
 
 ## PRD coverage
 
-[PRD](../../../docs/PRD/PRD.md#22-products) §2.2's "Product categories (extends the prototype)" Gherkin
+[PRD](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#22-products) §2.2's "Product categories (extends the prototype)" Gherkin
 block — this story owns the **rendered** half of every scenario in it:
 
 | PRD scenario | Owned here as |
@@ -215,8 +215,8 @@ Feature: Product category management screen
 
 | Path | Change |
 | --- | --- |
-| `app/Livewire/ProductCategories/Index.php` | **New.** Class-based component per [base-standards.md](../../../docs/conventions/base-standards.md#livewire-component-convention-class-based-not-single-file). Composes 0023's `ProductCategoryValidationRules` trait. |
-| `resources/views/livewire/product-categories.blade.php` | **New.** The **flat** path — per the [`Index`-in-a-subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name), `App\Livewire\ProductCategories\Index` drops `.index` and resolves here, **not** to `livewire/product-categories/index.blade.php`. |
+| `app/Livewire/ProductCategories/Index.php` | **New.** Class-based component per [base-standards.md](../../../docs/conventions/base-standards/livewire-and-flux-conventions.md#livewire-component-convention-class-based-not-single-file). Composes 0023's `ProductCategoryValidationRules` trait. |
+| `resources/views/livewire/product-categories.blade.php` | **New.** The **flat** path — per the [`Index`-in-a-subfolder exception](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name), `App\Livewire\ProductCategories\Index` drops `.index` and resolves here, **not** to `livewire/product-categories/index.blade.php`. |
 | `routes/web.php` | **Modify.** One `Route::livewire(...)` inside the existing `auth`+`verified` group — see the snippet below. |
 | `resources/views/layouts/app/sidebar.blade.php` | **Modify** — one `flux:sidebar.item`. **Branch on whether [0013](../done/0013-sidebar-module-gating-ui.md) has landed** — see **D-8**, and **OQ-1** for the placement question. |
 | `lang/en/products.php` + `lang/es/products.php` | **Modify** (0024 creates both). Append an `index` subgroup under the existing `categories` group — see **D-6**. Key-for-key identical. |
@@ -253,7 +253,7 @@ Route::livewire('product-categories', ProductCategoriesIndex::class)
 > [0024b](../done/0024b-product-category-in-use-delete-guard.md) all write `lang/en|es/products.php`, and 0024b
 > also edits `app/Actions/ProductCategories/DeleteProductCategory.php` that this screen calls. Their
 > Phase 3 work must **never be dispatched in the same batch**, per the
-> [Parallel Agent File-Ownership Rule](../../../docs/contracts.md#parallel-agent-file-ownership-rule):
+> [Parallel Agent File-Ownership Rule](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule):
 > 0023, then 0024, then 0024b must each be fully closed before 0025 starts.
 > ([0024a](../done/0024a-product-description-html-sanitization.md) is *not* in this chain — it touches no file
 > this story reads — so it may ship anywhere after 0024.)
@@ -319,7 +319,7 @@ lang/en|es/products.php                                        // created by 002
    shape `App\Actions\Products\CreateProduct`/`UpdateProduct`/`DeleteProduct` already use — with
    `Gate::authorize()` (or the equivalent `->authorize()` call) **also** present in this component's own
    `save()`/`deleteProductCategory()` methods as a fail-fast UI layer, defence in depth rather than
-   duplication (see [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+   duplication (see [base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
    task 0017 precedent). This story is where `ProductCategoryPolicy` stops being a zero-call-site
    policy **at both layers**, and its own Authorization test block needs an action-layer case per
    action (a direct `app(DeleteProductCategory::class)($category)` etc. as a denied actor must throw
@@ -332,7 +332,7 @@ lang/en|es/products.php                                        // created by 002
    domain-invariant one they assert, unless this seed/grant is added.
 2. **The id fed to `Rule::unique()->ignore()` must be server-authoritative** — `#[Locked]`, and
    assigned from a value read back out of the database, never from the method argument. See
-   [security/livewire-authorization.md](../../../docs/security/livewire-authorization.md#locked-is-what-makes-ruleunique-ignore-safe-here).
+   [security/livewire-authorization.md](../../../docs/security/livewire-authorization/locked-properties.md#locked-is-what-makes-ruleunique-ignore-safe-here).
 
 ⚠️ **A third obligation, new at 0024b's Phase 4 audit (finding F-5, low, recorded rather than fixed
 there — it has no caller to reach it until this story exists).** `DeleteProductCategory::__invoke()`
@@ -458,7 +458,7 @@ class Index extends Component
 `ProductCategory::query()->withCount('products')->orderBy('name')->orderBy('id')`, mapping
 `canEdit`/`canDelete` from `Gate::allows('update'|'delete', $category)` — the *same* policy methods
 `save()`/`deleteProductCategory()` authorize against, so the disabled state cannot drift from what a
-click would actually do ([authorization.md](../../../docs/architecture/authorization.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)).
+click would actually do ([authorization.md](../../../docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)).
 
 ### Four runtime traps the markup must not fall into
 
@@ -708,7 +708,7 @@ component. Nothing on the screen references, links to, or shares anything with a
 ## Definition of Done
 
 - [ ] Tests written and green, plus the **full** existing suite in a single isolated run, per
-      [contracts.md](../../../docs/contracts.md#full-test-suite-gate-rule)'s Full Test Suite Gate Rule.
+      [contracts.md](../../../docs/contracts/testing-and-parallel-agents.md#full-test-suite-gate-rule)'s Full Test Suite Gate Rule.
 - [ ] `vendor/bin/pint --dirty --format agent` clean and Larastan level 7 passing.
 - [ ] Code reviewed (code-reviewer).
 - [ ] No security findings (appsec-auditor). Point the audit specifically at: the `#[Locked]` +
@@ -780,7 +780,7 @@ component. Nothing on the screen references, links to, or shares anything with a
   bare un-namespaced `__()` for one-off labels (`__('Cancel')`, `__('Save')`) and reserves domain keys for
   strings reused across render sites or genuinely cross-cutting. **Do not reach across into
   `users.index.action_not_allowed`** — a duplicated English string in its own domain file is correct per
-  [naming.md](../../../docs/conventions/naming.md#translation-keys)'s one-file-per-domain rule.
+  [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)'s one-file-per-domain rule.
 - **D-7 — No header summary line.** *(Recorded divergence.)* `frontend-expert` proposed a
   `categories.index.summary` key mirroring the Users screen's ":total users · :active active" header;
   `frontend-qa` recommended omitting it as UI no requirement asks for. **The decision went to QA**:
@@ -873,7 +873,7 @@ component. Nothing on the screen references, links to, or shares anything with a
   `categories.delete_blocked` message — i.e. **half this story's stated scope**. Split out of 0024 on
   2026-09-01 and dependent on it. **Not yet implemented.**
 - Sequencing, enforced strictly: **0023 → 0024 → 0024b → 0025**, each fully closed before the next
-  starts, per [workflow.md](../../../docs/workflow.md#task-ordering-rule) and the Parallel Agent
+  starts, per [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule) and the Parallel Agent
   File-Ownership note above.
 - Depends on already-shipped work: the seeded `products.*` permissions (0002), the `Gate::before` Super
   Admin bypass, policy auto-discovery (0004), the Users screen's list+modal pattern (0006), and the
@@ -896,7 +896,7 @@ component. Nothing on the screen references, links to, or shares anything with a
 - **R-6 — (added 2026-09-01) `app/Actions/ProductCategories/`'s three actions still do not authorize,
   and one of them says so falsely.** 0023 shipped all three with authorization deliberately handed off
   to **this story**, which is recorded in
-  [schema.md](../../../docs/database/schema-products.md#product_categories) and
+  [schema.md](../../../docs/database/schema-products/categories-and-products.md#product_categories) and
   [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure) — so this screen
   must call `Gate::authorize()` before each action, and **above** 0024b's in-use guard, never below it
   (0024b **D-B2**: an inverted order turns a permission refusal into a business message that discloses
@@ -914,7 +914,7 @@ component. Nothing on the screen references, links to, or shares anything with a
 - **R-4 — ⚠️ CORRECTED 2026-09-01 (was: `trans_choice` has no precedent anywhere in `lang/`, citing
   0024 **R-8**).** There **is** one, and has been since task 0010: `lang/en/roles.php`'s
   `index.delete_blocked`, with six `trans_choice()` call sites and a documented convention in
-  [naming.md](../../../docs/conventions/naming.md#translation-keys).
+  [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys).
   [0024b](../done/0024b-product-category-in-use-delete-guard.md) — which now owns
   `products.categories.delete_blocked`, the key this screen renders — matches that precedent's simple
   `singular|plural` form rather than the explicit-range syntax 0024's draft proposed. **What survives
@@ -981,10 +981,10 @@ answered before Phase 3.
 
 Phase 1 (Three Amigos) debate run on 2026-08-18 with `frontend-expert` (files and approach) and
 `frontend-qa` (test design), per
-[workflow.md](../../../docs/workflow.md#phase-1--three-amigos-debate). Classified **Frontend** under the
-[task classification rule](../../../docs/workflow.md#task-classification-rule), so no `backend-expert` or
+[workflow.md](../../../docs/workflow/phases.md#phase-1--three-amigos-debate). Classified **Frontend** under the
+[task classification rule](../../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule), so no `backend-expert` or
 `database-expert` was convened — this story adds no backend or schema artifact. Derived from
-[PRD](../../../docs/PRD/PRD.md#22-products) §2.2's "Product categories (extends the prototype)" Gherkin
+[PRD](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#22-products) §2.2's "Product categories (extends the prototype)" Gherkin
 block and Products acceptance criterion 2, grounded in full readings of
 [0023](../done/0023-product-categories-backend.md) and [0024](../done/0024-products-core-crud-backend.md), with
 [0006](../done/0006-users-list-editor-ui.md) / `App\Livewire\Users\Index` as the list+modal pattern and

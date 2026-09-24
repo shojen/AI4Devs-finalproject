@@ -144,10 +144,10 @@ added — are kept and extended):
 
 Every existing registry constraint still binds and is **not** relaxed by this story: no closures anywhere
 (the file must survive `php artisan config:cache` —
-[base-standards.md](../../../docs/conventions/directory-structure.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache)),
+[base-standards.md](../../../docs/conventions/directory-structure/config-registry.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache)),
 every `heading`/`label` a translation **key** rather than copy, every registry key `snake_case` on both
 sides while `route`/`current_when`/`permissions` values stay kebab-case
-([naming.md](../../../docs/conventions/naming.md#translation-keys)), and an entry's `permissions` **exactly**
+([naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)), and an entry's `permissions` **exactly**
 the ability its route's `can:` middleware enforces.
 
 **Roles is untouched.** The `settings` group and its `roles` item keep their current keys, heading, icon,
@@ -456,7 +456,7 @@ already in both `config/modules.php` and the authorization doc, instead of defau
 - [ ] No security findings (`appsec-auditor`).
 - [ ] Documentation updated (`docs-keeper`).
 - [ ] All three quality gates run **unscoped** and recorded, per
-      [base-standards.md](../../../docs/conventions/base-standards.md#quality-gates): `php artisan test`,
+      [base-standards.md](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#quality-gates): `php artisan test`,
       `vendor/bin/pint --format agent`, `vendor/bin/phpstan analyse`.
 - [ ] Acceptance criteria met.
 

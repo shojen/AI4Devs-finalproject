@@ -80,7 +80,7 @@ Feature: Shipping carriers
 ### Database
 - `database/migrations/<timestamp>_create_shipping_carriers_table.php` — **new**. First real use of
   the greenfield UUID pattern documented in
-  [`docs/database/migrations.md`](../../../docs/database/migrations.md#uuid-primary-keys):
+  [`docs/database/migrations.md`](../../../docs/database/migrations/uuid-primary-keys.md#uuid-primary-keys):
 
   ```php
   Schema::create('shipping_carriers', function (Blueprint $table): void {
@@ -98,7 +98,7 @@ Feature: Shipping carriers
   a column, not a table).
 
   Why each column, and why this is wider than "name + `is_active`": the PRD states carriers "match
-  the prototype **almost as-is**" ([§2.4](../../../docs/PRD/PRD.md#24-shipping)), and the prototype's
+  the prototype **almost as-is**" ([§2.4](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#24-shipping)), and the prototype's
   own carrier record — verified in `docs/arospe-handoff/project/js/envios.js`, not inferred from
   the screenshot — is `{ name, tag, desc, enabled, hue }`:
 
@@ -122,7 +122,7 @@ Feature: Shipping carriers
 - `app/Models/ShippingCarrier.php` — **new**. `use HasFactory, HasUuids;`,
   `#[Fillable(['code', 'name', 'description'])]` with **`is_active` deliberately omitted**, which is
   this codebase's mass-assignment guard (see
-  [`docs/conventions/base-standards.md`](../../../docs/conventions/base-standards.md#model-conventions)) —
+  [`docs/conventions/base-standards.md`](../../../docs/conventions/base-standards/stack-and-model-conventions.md#model-conventions)) —
   the toggle action below is the column's single writer. `casts()` returns
   `['is_active' => 'boolean']`. `@property` PHPDoc block with `@property string $id`, no
   `$keyType`/`$incrementing` properties.
@@ -155,7 +155,7 @@ Feature: Shipping carriers
 
 ### Application
 - `app/Actions/Shipping/ToggleShippingCarrier.php` — **new**. Single-purpose invokable action per
-  [`docs/conventions/naming.md`](../../../docs/conventions/naming.md#classes) (imperative verb phrase,
+  [`docs/conventions/naming.md`](../../../docs/conventions/naming/classes.md#classes) (imperative verb phrase,
   no `Action` suffix): `__invoke(ShippingCarrier $carrier): ShippingCarrier`, flipping `is_active`
   via `forceFill()->save()`. Being an action rather than an inline component method makes it the one
   call site any future screen reuses, and keeps the domain rule testable without a UI.
@@ -170,7 +170,7 @@ Feature: Shipping carriers
 
 - `resources/views/livewire/shipping.blade.php` — **new placeholder**. Note the *flat* path: Livewire
   resolves `App\Livewire\Shipping\Index` to `livewire/shipping`, per the
-  [`Index`-in-a-subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name).
+  [`Index`-in-a-subfolder exception](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name).
   Real markup belongs to the paired frontend story.
 
 - `routes/web.php` — **modify**. Inside the existing `auth` + `verified` group:
@@ -264,10 +264,10 @@ code path in the story reaches the network.
 
 ## Acceptance criteria
 - [x] Carriers can be enabled and disabled, and each carrier exposes an active/inactive state
-      (PRD [§2.4](../../../docs/PRD/PRD.md#24-shipping) AC 1).
+      (PRD [§2.4](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#24-shipping) AC 1).
 - [x] **No external carrier API is called, stubbed, or configured** — proven by a test, not by
       inspection (PRD §2.4 AC 5; reinforced by the PRD's
-      [Out of scope](../../../docs/PRD/PRD.md#out-of-scope) entry "Real carrier API integration").
+      [Out of scope](../../../docs/PRD/sections/roadmap-scope-open-questions.md#out-of-scope) entry "Real carrier API integration").
 - [x] The four prototype carriers are seeded with distinct `code` and `name` values.
 - [x] `is_active` is not mass-assignable; `ToggleShippingCarrier` is its only writer.
 - [x] Re-seeding is idempotent and never overwrites an administrator's toggle decision.
@@ -404,8 +404,8 @@ already-active carrier to `true` again is a genuine no-op.
 
 ## Provenance
 Phase 1 Three Amigos debate, 2026-08-17: `product-owner` + `backend-expert` + `backend-qa` +
-`database-expert`, per [`docs/workflow.md`](../../../docs/workflow.md#phase-1--three-amigos-debate)'s
+`database-expert`, per [`docs/workflow.md`](../../../docs/workflow/phases.md#phase-1--three-amigos-debate)'s
 classification rule (backend, touches the data model). Story scope derives from PRD
-[§2.4 Shipping](../../../docs/PRD/PRD.md#24-shipping) — the Gherkin scenarios "Enable a carrier" and
+[§2.4 Shipping](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#24-shipping) — the Gherkin scenarios "Enable a carrier" and
 "Disable a carrier", acceptance criteria 1 and 5 — which that section confirms is the **unchanged**,
 prototype-faithful part of Shipping; only the zone catalog diverges.

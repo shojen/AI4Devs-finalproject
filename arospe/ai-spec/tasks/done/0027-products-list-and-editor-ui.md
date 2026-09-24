@@ -15,13 +15,13 @@
 > | 6 — Documentation sync (`docs-keeper`) | Complete |
 > | 7 — Closure | This record |
 >
-> Per [workflow.md Phase 7](../../../docs/workflow.md#phase-7--closure), `product-owner` has moved
+> Per [workflow.md Phase 7](../../../docs/workflow/phases.md#phase-7--closure), `product-owner` has moved
 > this file with `git mv` from **`ai-spec/tasks/in-progress/`** to **`ai-spec/tasks/done/`**. This
 > note is the explicit record workflow.md's governance note requires (*no agent advances a task
 > without leaving a record of the reason*).
 >
 > **Link-integrity check performed as part of the same move**, per
-> [workflow.md's two-direction rule](../../../docs/workflow.md#link-integrity-check-on-every-stage-move).
+> [workflow.md's two-direction rule](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move).
 > `in-progress/` → `done/` is a **same-depth** move (both directories sit three levels below the repo
 > root), so **Direction 1 did not apply** — this file's own outbound relative links needed no
 > re-resolution, which was verified rather than assumed: all 60 relative targets in this file were
@@ -50,20 +50,20 @@
 > ## ✅ Phase 2 PASS → entering Phase 3 (TDD) — 2026-09-03
 >
 > **Status: `in-progress`.** `code-reviewer` re-ran [Phase 2 INVEST validation and the
-> documentation-consistency check](../../../docs/workflow.md#phase-2--invest-validation-and-documentation-check)
+> documentation-consistency check](../../../docs/workflow/phases.md#phase-2--invest-validation-and-documentation-check)
 > against the rewritten story and returned **PASS**, after the single correction round recorded in the
 > **🔁 Phase 2 FAIL correction pass — 2026-09-03** block directly below
 > (findings **C1**, **C1 (secondary)**, **C3**, **C6**, **D1**, **D2**, plus the non-blocking items).
 > No further correction round was required.
 >
-> Per [workflow.md Phase 3 step 0](../../../docs/workflow.md#phase-3--tdd-mandatory-in-this-order),
+> Per [workflow.md Phase 3 step 0](../../../docs/workflow/phases.md#phase-3--tdd-mandatory-in-this-order),
 > `product-owner` has moved this file with `git mv` from `ai-spec/tasks/` to
 > **`ai-spec/tasks/in-progress/`** — the point at which implementation starts. This note is the
 > explicit record workflow.md's governance note requires (*no agent advances a task without leaving a
 > record of the reason*).
 >
 > **Link-integrity check performed as part of the same move**, per
-> [workflow.md's two-direction rule](../../../docs/workflow.md#link-integrity-check-on-every-stage-move).
+> [workflow.md's two-direction rule](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move).
 > This is the file's **first** move, so the depth changed (two directory levels below the repo root →
 > three) and **Direction 1 applied**: every `../../docs/…`, `../../app/…`, `../../routes/…` and
 > `../../tests/…` link in this file is now `../../../…`, every bare sibling-task link (a target of the
@@ -82,8 +82,8 @@
 > ## 🔁 Phase 2 FAIL correction pass — 2026-09-03
 >
 > **Status: still in the `new` stage.** `code-reviewer` ran [Phase 2 INVEST
-> validation](../../../docs/workflow.md#phase-2--invest-validation-and-documentation-check) and returned **FAIL**. This is the
-> rewrite pass [workflow.md's own return loop](../../../docs/workflow.md#phase-2--invest-validation-and-documentation-check)
+> validation](../../../docs/workflow/phases.md#phase-2--invest-validation-and-documentation-check) and returned **FAIL**. This is the
+> rewrite pass [workflow.md's own return loop](../../../docs/workflow/phases.md#phase-2--invest-validation-and-documentation-check)
 > requires (*"❌ Fails → returns to `product-owner` with the specific reason for the failure, for
 > rewriting"*), recorded here per its governance note that no agent advances a task without leaving an
 > explicit record of the reason. The story's Gherkin, its D-1…D-18 reasoning and its overall shape were
@@ -108,7 +108,7 @@
 > folder); **V-9**'s *"nothing in this dependency chain exists in code yet"* is corrected (0019–0026 are
 > all closed); and the Definition of Done's quality-gate item now names all three gates in their
 > **unscoped** completion form rather than `pint --dirty` alone, per the two
-> [errors-log](../../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
+> [errors-log](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
 > entries about exactly that.
 >
 > **One thing raised but deliberately *not* decided in this pass**, so it is visible to Phase 2 rather
@@ -218,7 +218,7 @@ itself.
 > `symfony/html-sanitizer`, `config/html-sanitizer.php` and `SanitizeProductDescription`, and it is a
 > **hard** blocker for this story specifically because this screen renders `description` unescaped and
 > binds 0021's `WysiwygEditor` to it — which
-> [api/routes.md](../../../docs/api/products.md#applivewirecomponentswysiwygeditor--the-gallerys-first-real-consumer-and-the-second-routeless-gated-component)
+> [api/routes.md](../../../docs/api/products/routeless-components.md#applivewirecomponentswysiwygeditor--the-gallerys-first-real-consumer-and-the-second-routeless-gated-component)
 > forbids until *"that column's own write path runs a server-side sanitizer first"*. The third split
 > story, [0024b](../done/0024b-product-category-in-use-delete-guard.md) (the category in-use delete guard), is
 > **not** in this chain — it blocks 0025, not this story.
@@ -226,8 +226,8 @@ itself.
 ## Three Amigos participants
 
 `product-owner` (lead) + `frontend-expert` (files and approach) + `frontend-qa` (test design), per
-[workflow.md](../../../docs/workflow.md#phase-1--three-amigos-debate)'s
-[task classification rule](../../../docs/workflow.md#task-classification-rule).
+[workflow.md](../../../docs/workflow/phases.md#phase-1--three-amigos-debate)'s
+[task classification rule](../../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule).
 
 Both specialists contributed in full, grounded in real reads of every dependency file. The
 coordinator then **re-read every dependency on disk after 0022 and 0026 were amended on 2026-08-18**
@@ -246,8 +246,8 @@ See [Provenance](#provenance) for exactly which role covered what.
 
 ## PRD coverage
 
-Derived from [PRD §2.2 Products](../../../docs/PRD/PRD.md#22-products) and the
-[Design reference](../../../docs/PRD/PRD.md#design-reference--the-dashboard-shell) section. This story
+Derived from [PRD §2.2 Products](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#22-products) and the
+[Design reference](../../../docs/PRD/sections/foundations.md#design-reference--the-dashboard-shell) section. This story
 is the **screen half** of scenarios whose data half other stories already own:
 
 | PRD scenario / criterion | Owned here |
@@ -507,10 +507,10 @@ Feature: Deleting a product
 
 | Path | Change |
 | --- | --- |
-| `app/Livewire/Products/Index.php` | **New.** The list. Class-based per [base-standards.md](../../../docs/conventions/base-standards.md#livewire-component-convention-class-based-not-single-file). |
-| `resources/views/livewire/products.blade.php` | **New.** The **flat** path — `App\Livewire\Products\Index` drops `.index` per the [`Index`-in-a-subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name). |
+| `app/Livewire/Products/Index.php` | **New.** The list. Class-based per [base-standards.md](../../../docs/conventions/base-standards/livewire-and-flux-conventions.md#livewire-component-convention-class-based-not-single-file). |
+| `resources/views/livewire/products.blade.php` | **New.** The **flat** path — `App\Livewire\Products\Index` drops `.index` per the [`Index`-in-a-subfolder exception](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name). |
 | `app/Livewire/Products/Editor.php` | **New.** The create/edit screen (**D-1**: a routed page, not a modal). |
-| `resources/views/livewire/products/editor.blade.php` | **New.** The ordinary kebab-case mirror — note it sits one level *deeper* than the list's view; [naming.md](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name) already records that this asymmetry is expected. |
+| `resources/views/livewire/products/editor.blade.php` | **New.** The ordinary kebab-case mirror — note it sits one level *deeper* than the list's view; [naming.md](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name) already records that this asymmetry is expected. |
 | `routes/products.php` | **New.** The area file, holding all three `Route::livewire(...)` registrations inside its own `['auth', 'verified']` group (**D-2**). One file per functional area is the convention ([base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure)); mirror [`routes/product-categories.php`](../../../routes/product-categories.php) exactly, including the aliased `use ... as ProductsIndex` / `as ProductEditor` imports. |
 | `routes/web.php` | **Modify.** Exactly two edits: one `require __DIR__.'/products.php';` line appended after the five existing `require`s, **and** deletion of 0020/0021's harness block (**D-14**). No route is declared inline here. |
 | `config/modules.php` | **Modify** — append one `items.products` entry (**D-15**), `permissions` exactly `['products.view']`. Data only; the reading component is not touched. |
@@ -548,7 +548,7 @@ Feature: Deleting a product
 > **Sequential-implementation requirement.** This story writes `lang/en|es/products.php`, which 0024
 > creates and 0025/0026/0028 also extend, and it deletes files 0020 and 0021 own. Its Phase 3 work
 > must **never** be dispatched in the same batch as any of those stories, per the
-> [Parallel Agent File-Ownership Rule](../../../docs/contracts.md#parallel-agent-file-ownership-rule).
+> [Parallel Agent File-Ownership Rule](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule).
 
 > ⚠️ **Correction, 2026-08-30 — the sequential-implementation list is now longer, and five of the files above are also opened by [0077](../0077-product-editor-language-tabs-ui.md).** Add **0076** and **0077** to the list of stories this one must never be batched with. 0077 modifies `app/Livewire/Products/Editor.php`, `resources/views/livewire/products/editor.blade.php`, `lang/{en,es}/products.php`, `tests/Feature/Products/EditorTest.php`, `tests/Feature/Products/EditorRenderingTest.php`, `tests/Feature/Products/AuthorizationTest.php` and `tests/Browser/Products/EditorJourneyTest.php` — every one of them created here.
 >
@@ -986,7 +986,7 @@ layer up** — see [Deliberately not tested here](#deliberately-not-tested-here)
 > The three cases become **five**, and the shape of the first one inverts:
 >
 > - [ ] The list query selects **explicit columns and never names `name`** — which after 0076 is not a `products` column at all. The `DB::listen()` capture stands; what it asserts on changes.
-> - [ ] **The ordering is by translated name for the chosen language, with the store default as the fallback**, asserted as an exact sequence over a fixture where the two orders genuinely differ — a product translated in the requested language, one translated only in the default, and two whose relative order flips between the two answers. **A fixture where both orders agree asserts nothing**, which is the same vacuous-coverage trap the [errors-log's `arch()` entry](../../../docs/errors-log-archive.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18) records.
+> - [ ] **The ordering is by translated name for the chosen language, with the store default as the fallback**, asserted as an exact sequence over a fixture where the two orders genuinely differ — a product translated in the requested language, one translated only in the default, and two whose relative order flips between the two answers. **A fixture where both orders agree asserts nothing**, which is the same vacuous-coverage trap the [errors-log's `arch()` entry](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18) records.
 > - [ ] ⚠️ **The eager load does not drag `description` onto the list** — the 0024 **R-9** obligation, now one table over. This is the assertion that makes [0076's **R-7**](../0076-translatable-content-retrofit-products-backend.md) visible rather than silent: if `withTranslationsFor()` still loads whole translation rows, this **fails**, and the fix is 0070's rather than a local patch. **Write it even if it is expected to fail** — a recorded, escalated red is the outcome; quietly dropping the assertion is not.
 > - [ ] The **N+1 guard**, unchanged in intent but now covering a third relation: 10 products with 10 distinct categories, 10 distinct featured images **and translations in two languages** must cost the same as 1. Distinct relations stay load-bearing.
 > - [ ] Pagination, unchanged.
@@ -1154,7 +1154,7 @@ Discharges 0026 **D-8**'s hand-off explicitly, and covers this story's own compo
 > and its three write actions now authorize themselves. **What that changes here is the framing, not
 > the tests**: every case below is still required, now as *defence in depth plus the honest source of
 > the per-row hints* rather than as the only enforcement. See
-> [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+> [base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
 > task-0017 blockquote — *"a component that authorizes as well is a layer, not a redundancy"*.
 
 - [ ] One allow/deny pair per component method that mutates or discloses, driven through
@@ -1162,7 +1162,7 @@ Discharges 0026 **D-8**'s hand-off explicitly, and covers this story's own compo
 - [ ] A Super Admin passes every one of them via the `Gate::before` bypass.
 - [ ] The per-row `canEdit`/`canDelete` hints come from the **same** policy methods `save()` /
       `deleteProduct()` authorize against, so the disabled state cannot drift
-      ([authorization.md](../../../docs/architecture/authorization.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)).
+      ([authorization.md](../../../docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)).
 
 ### `tests/Browser/Products/EditorJourneyTest.php`
 
@@ -1330,14 +1330,14 @@ moved onto a real screen.
       and re-points existing browser tests**, so the full-suite run is the only evidence that the
       harness migration lost nothing.
 - [ ] **All three quality gates run *unscoped*, and each one's result named in the closing record —
-      including "not run"**, per [base-standards.md](../../../docs/conventions/base-standards.md#quality-gates)'s
+      including "not run"**, per [base-standards.md](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#quality-gates)'s
       completion form. ⚠️ **Corrected 2026-09-03:** this item used to read *"`vendor/bin/pint --dirty
       --format agent` clean and Larastan level 7 passing"*, which names the **iteration** form of gate 2
       and folds gate 3 into gate 2's sentence. `--dirty` inspects only files with *uncommitted* changes,
       so it becomes a no-op the moment the work is committed, and a gate absent from a record is a gate
       that did not run — the two failures [errors-log.md](../../../docs/errors-log.md) records on
-      [2026-08-20](../../../docs/errors-log-archive.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)
-      and [2026-08-26](../../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+      [2026-08-20](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#both-of-this-projects-per-change-quality-gates-are-scoped-by-default-and-both-silently-passed--2026-08-20)
+      and [2026-08-26](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
       Three clauses, never two:
       ```bash
       php artisan test                    # unscoped — not --filter (--parallel is an equally valid record)
@@ -1386,7 +1386,7 @@ moved onto a real screen.
 > - [ ] **[OQ-10](#open-questions) answered before Phase 3 starts** — which store language the list renders and orders by. This restores a blocking-question gate of exactly the shape the discharged OQ-5/OQ-6 bullet above used to carry, for the same reason: [D-4](#d-4--the-list-query-explicit-columns-two-eager-loads-and-real-pagination)'s query and its ordering test's fixture are both unwritable without it.
 > - [ ] **The `docs-keeper` line widens.** Beyond the three product routes and the retired harness route, this story now also lands the app's **first consumer of a translated read on a list screen** — `docs/database/schema.md` and `docs/architecture/authorization.md` are 0076's to update, but the *screen*-side facts (which language a list resolves, and that the permission catalog stays at **42** across the whole Epic 5 product chain) belong in the pass this story runs.
 >
-> ⚠️ **And one caveat on the Full Test Suite Gate evidence:** if 0076 lands before this story's D-4 correction is implemented, `tests/Feature/Products/IndexQueryTest.php` is **already red** when this story starts. That red is 0076's hand-off, not a regression introduced here — record it as such rather than letting a green-suite requirement push someone into patching the wrong file, per the [deferred-findings rule](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+> ⚠️ **And one caveat on the Full Test Suite Gate evidence:** if 0076 lands before this story's D-4 correction is implemented, `tests/Feature/Products/IndexQueryTest.php` is **already red** when this story starts. That red is 0076's hand-off, not a regression introduced here — record it as such rather than letting a green-suite requirement push someone into patching the wrong file, per the [deferred-findings rule](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
 
 ## Documented functional decisions
 
@@ -1562,7 +1562,7 @@ property gets its own browser test driven by real clicks (see the test plan).
 
 > ⚠️ **Noticed during the 2026-09-03 Phase 2 correction pass and flagged rather than decided —
 > `$status`'s enum *typing* has a shipped precedent against it that this table does not answer.**
-> [errors-log.md's 2026-08-24 update](../../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
+> [errors-log.md's 2026-08-24 update](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
 > records that `App\Livewire\Users\Index::$status` was retyped from a **typed enum** to
 > `public string $status = UserStatus::Inactive->value;` for a reason that applies verbatim here:
 > Livewire's `EnumSynth` hydrates a client-supplied backing value through `$type::from($value)`
@@ -1635,7 +1635,7 @@ presentation threshold, and one constant does not justify a config key).
 
 > ⚠️ **Correction, 2026-08-30 — the arithmetic is wrong after [0077](../0077-product-editor-language-tabs-ui.md); the *reasoning* is not.** The page mounts **2 + N** `Gallery` instances, not three, where N is the number of active store languages: the two direct embeds below, plus **one per `WysiwygEditor`**, and 0077 **D-1** mounts one editor per language simultaneously. At three store languages that is **five**.
 >
-> **The safety argument survives intact and needs no rework**, which is the point worth recording: 0021 **D5** derives its event name **per instance**, so it holds at any N — only the count in the table below is stale, which is the [stale-arithmetic failure mode](../../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13) at its most mechanical. The two literals here (`featured-image-selected`, `product-images-added`) stay distinct from each other and from every derived name.
+> **The safety argument survives intact and needs no rework**, which is the point worth recording: 0021 **D5** derives its event name **per instance**, so it holds at any N — only the count in the table below is stale, which is the [stale-arithmetic failure mode](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13) at its most mechanical. The two literals here (`featured-image-selected`, `product-images-added`) stay distinct from each other and from every derived name.
 >
 > **What genuinely changes is page weight, not correctness** (0077's **R-5**): each instance mounts and calls `Gate::authorize('viewAny', Media::class)`, so a three-language store pays five. 0077 owns the bounded-query-count test for it. **Do not "fix" this by rendering only the active language's panel** — `@if` instead of `x-show` tears down a `wire:ignore`d region and silently discards typed text, which is the whole subject of 0077 **D-1**.
 
@@ -2163,7 +2163,7 @@ Three files, all data, none of them a component:
 
 Four rules come with the entry, all of them the registry's own and all test-pinned rather than
 conventional (see
-[architecture/authorization.md](../../../docs/architecture/authorization.md#the-second-half-of-a-module-gate-the-sidebar-registry)):
+[architecture/authorization.md](../../../docs/architecture/authorization/how-to-gate.md#the-second-half-of-a-module-gate-the-sidebar-registry)):
 
 - **`permissions` must be *exactly* the ability the route's `can:` enforces** — `['products.view']`,
   never a broader set such as adding `products.edit`. `tests/Feature/Navigation/SidebarModuleGatingTest.php`
@@ -2176,7 +2176,7 @@ conventional (see
   is a single lowercase word, so no snake_case question arises here the way it did for `sales_regions`.
 - **Both lang files change in the same commit.** A missing leaf renders the raw key with a fully green
   suite — `__()` returning its own key is not an error condition
-  ([naming.md](../../../docs/conventions/naming.md#translation-keys)).
+  ([naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)).
 
 **Placement: `groups.platform`**, beside `product_categories`, which is where story 0025 put the
 sibling catalog screen. This supersedes the old decision's deferral to "whatever
@@ -2615,9 +2615,9 @@ calls that can be answered any time before the markup is written.
 
 Phase 1 (Three Amigos) debate for Epic 2, run on 2026-08-18 with `frontend-expert` (files and
 approach) and `frontend-qa` (test design), per
-[workflow.md](../../../docs/workflow.md#phase-1--three-amigos-debate). Derived from
-[PRD §2.2](../../../docs/PRD/PRD.md#22-products) and the
-[Design reference](../../../docs/PRD/PRD.md#design-reference--the-dashboard-shell) section, and grounded
+[workflow.md](../../../docs/workflow/phases.md#phase-1--three-amigos-debate). Derived from
+[PRD §2.2](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#22-products) and the
+[Design reference](../../../docs/PRD/sections/foundations.md#design-reference--the-dashboard-shell) section, and grounded
 in full readings of [0019](../done/0019-media-library-upload-and-conversions-backend.md),
 [0020](../done/0020-shared-media-gallery-modal-ui.md), [0021](../done/0021-wysiwyg-rich-text-editor-component.md),
 [0022](../done/0022-searchable-multi-select-component.md), [0023](../done/0023-product-categories-backend.md),

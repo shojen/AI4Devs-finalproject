@@ -38,7 +38,7 @@
 
 Add per-store-language name editing to the Blog Tags management screen that story
 [0060](0060-blog-tags-ui.md) specifies, so an administrator can provide a tag's `name` in every
-**active** store language through language tabs — [PRD Epic 5, Layer 2](../../docs/PRD/PRD.md#epic-5--internationalization):
+**active** store language through language tabs — [PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization):
 *"Each active store language then appears as a **tab** … (and in the taxonomy management screens),
 switching the translatable fields in place"*, and *"**Category and tag names** … each becomes a
 per-store-language field with the same tab-based editor UX."*
@@ -71,7 +71,7 @@ index — `blog_tag_translations` is 0074's)
 
 > ✅ **Confirmed, not proposed.** The brief fixed this as **frontend** and it was debated as such
 > (`frontend-expert` + `frontend-qa`, per
-> [workflow.md](../../docs/workflow.md#task-classification-rule)'s Frontend rule). The human's
+> [workflow.md](../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule)'s Frontend rule). The human's
 > 2026-08-30 decision on **Q-1** settles it the other way: **D-3** adds
 > `App\Actions\Blog\SetBlogTagTranslation`, so this is not frontend-only work by this project's own
 > definitions. The shape is not unprecedented — 0060 is typed `frontend | fullstack
@@ -94,7 +94,7 @@ index — `blog_tag_translations` is 0074's)
 ## Three Amigos participants
 
 `product-owner` (facilitator) + `frontend-expert` + `frontend-qa`, per
-[workflow.md](../../docs/workflow.md#task-classification-rule)'s Frontend classification. **Both were
+[workflow.md](../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule)'s Frontend classification. **Both were
 dispatched as real subagents and both returned.** No `backend-expert` or `database-expert` was
 convened — which, given **D-3**, is itself a finding and is recorded as **Q-1** rather than papered
 over: the one backend artifact this story needs was designed by a frontend expert and has had no
@@ -378,7 +378,7 @@ under test has leaked back into the caller.
 - [ ] Blank / whitespace-only refused on **every** language path, not only the default.
 - [ ] **The error key is `names.{storeLanguageId}` and is *derived* from the passed language, not
       accepted as a parameter** (**D-3**, 0071 **D-13**). *Why it can fail:* a caller-supplied key is
-      the shape [errors-log.md](../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
+      the shape [errors-log.md](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
       records as making a guard only as strong as its call sites, and it would let the component
       silently point a refusal at the wrong tab.
 - [ ] Every refusal writes exactly one `Log::warning('Privileged action refused', …)` with
@@ -391,7 +391,7 @@ under test has leaked back into the caller.
       the Spanish string. ***The single most important test in this story*** — see **D-2** and **R-2**.
 - [ ] `$names` holds a key for **every** active store language, including untranslated ones, and every
       value is a string. *Why:* an omitted key desyncs Livewire's array dehydration; a `null` is the
-      generalised form of the hazard [errors-log-archive.md](../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16) records.
+      generalised form of the hazard [errors-log-archive.md](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16) records.
 - [ ] `$names` holds **no** key for an inactive store language.
 - [ ] **Saving with an untranslated tab left empty creates no translation row for it.** Assert the
       tag's translation **count** is unchanged. *Why it can fail:* any implementation that submits
@@ -462,7 +462,7 @@ goes through a compiled `wire:model` or `wire:click`.
       `assertNoJavaScriptErrors()` after every step.
 
 > **Browser rules that bind this file**, from
-> [playwright-setup.md](../../docs/testing/frontend/playwright-setup.md#waiting-one-call-is-banned-in-this-repo-and-one-is-bounded):
+> [playwright-setup.md](../../docs/testing/frontend/playwright-setup/waiting-rules.md#waiting-one-call-is-banned-in-this-repo-and-one-is-bounded):
 > `->waitForEvent('networkidle')` is **banned outright**; a short bounded `->wait(n)` with a stated
 > reason is the one accepted mitigation. Read the DOM's own `[wire:snapshot]` ground truth rather than
 > waiting longer.
@@ -567,14 +567,14 @@ no tab, and cannot be written to even by a forged payload.
 ## Definition of Done
 
 - [ ] Tests written and green, plus the **full** suite in a single isolated run, per
-      [contracts.md](../../docs/contracts.md#full-test-suite-gate-rule)'s Full Test Suite Gate Rule.
+      [contracts.md](../../docs/contracts/testing-and-parallel-agents.md#full-test-suite-gate-rule)'s Full Test Suite Gate Rule.
 - [ ] **All three quality gates run unscoped and each result recorded, including "not run"** —
       `php artisan test`, `vendor/bin/pint --format agent`, `vendor/bin/phpstan analyse` (Larastan
       level 7). The third is the one nothing else prompts you to run; see
-      [errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+      [errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
 - [ ] **Stories 0060, 0068, 0070 and 0074 are closed first**, and **every** interface claim in this
       file re-verified against `HEAD` with its disposition recorded — **R-4**, and the
-      [deferred-findings rule](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+      [deferred-findings rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
 - [ ] **Q-1 answered before Phase 3**, since it decides whether `SetBlogTagTranslation` is built here
       or consumed.
 - [ ] Code reviewed (code-reviewer). Point the review at **D-2** (the population rule), **D-9**
@@ -667,7 +667,7 @@ adds it"*.
 case that looks like an exception and is not"*: 0059 already made the tag actions responsible for their
 own validation, so adding a component-side copy would duplicate a rule the action owns and invite the
 two to drift — exactly what
-[base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+[base-standards.md](../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
 *"move the rule, never copy it"* forbids. The principle is *"the operation is protected without relying
 on its caller"*, not *"the check appears in exactly two files"*. ⚠️ **The asymmetry is the whole rule
 and is easy to invert:** component-only is **never** acceptable (0008a's finding — every non-dashboard
@@ -765,7 +765,7 @@ render with `x-show` (kept in the DOM) rather than `@if` (removed from it). That
 
 One obligation survives from the original decision unchanged: every active language must have an
 explicit `''` key in `$names` — never omitted, never `null` — the generalised form of the
-[`<select>` desync hazard](../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16).
+[`<select>` desync hazard](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16).
 0060's *"no `<select>` here, so that trap does not apply"* stops being true and must not be carried
 forward.
 
@@ -805,7 +805,7 @@ Spanish edit — which is why it is **Q-3** as well as a decision. Mitigated by 
 returned to the failing tab with their typed values still on screen, so the correction is one edit away
 rather than a re-entry. *Rejected: per-language independent commits*, which leave the editor guessing
 which of five tabs actually saved. ⚠️ Per
-[errors-log.md](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21),
+[errors-log.md](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21),
 a transaction wrapper is a change to **every** side effect the wrapped code performs — here that
 includes `LogRefusedPrivilegedAttempt`'s writes. Confirm at Phase 3 that a rolled-back save still
 leaves its refusal log line committed; an audit trail that disappears with the rollback would be a
@@ -884,7 +884,7 @@ renders. The mismatch is a property of the *edit* form's array binding, not of t
   is a *frontend-to-frontend* dependency between two same-epic UI stories, which this project has no
   precedent for** — every prior pairing is backend-before-frontend. It also inverts the numeric
   ordering convention only in appearance: 0071 < 0075, so
-  [workflow.md](../../docs/workflow.md#task-ordering-rule)'s rule is satisfied, but the *reason* is a
+  [workflow.md](../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule)'s rule is satisfied, but the *reason* is a
   shared component rather than an interface contract. Phase 2 should confirm the sequencing explicitly
   — **0071 must reach Phase 3 first**, or this story has no strip to consume.
 - **[0059](done/0059-blog-tags-backend.md)** — transitively, via 0060 and 0074.
@@ -942,7 +942,7 @@ renders. The mismatch is a property of the *edit* form's array binding, not of t
   0059, 0060, 0068, 0070 and 0074 are all Phase 1 documents; `app/Models/BlogTag.php`,
   `app/Models/StoreLanguage.php` and `App\Concerns\HasTranslations` do not exist, and `vendor/` is
   absent so nothing could be verified by execution. Both amigos flagged this independently. Per the
-  [deferred-findings rule](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
+  [deferred-findings rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
   **re-verify each against `HEAD` before Phase 3 and record every disposition, including "already
   closed"**. The claims most likely to have moved: `nameRules()`'s exact signature (0074 **D-6** says
   Phase 3 settles the Laravel expression), whether `SetTranslation` can write `store_language_id` at all
@@ -992,7 +992,7 @@ it authorizes and validates regardless of any caller. The component still author
 - **Adopted: (a)** — `App\Actions\Blog\SetBlogTagTranslation`, and the story is reclassified
   **fullstack**. This is what **D-3** had proposed independently, on three grounds the resolution
   confirms: 0070's **D-12** literally anticipated it (*"called by whichever UI story adds it"*);
-  [base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+  [base-standards.md](../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
   requires the rule to live in the class performing the operation, since otherwise no queued job or
   Artisan caller inherits it (0008a's finding); and it is the only option compatible with 0060's D-1.
 - **Rejected: (b)**, the component calling `SetTranslation` directly — 0071's original shape, overruled
@@ -1142,7 +1142,7 @@ so **D-1** follows an established Epic 5 precedent instead of inventing one.
 **Two things this debate could not verify and deliberately did not assert**: whether `<flux:tabs>` ships
 in Flux Free (**D-1**, **R-4**), and whether `wire:model` against a dynamic UUID array key round-trips
 correctly under Livewire 4 in a hidden Alpine block (**R-5**). Both are recorded as Phase 3 execution
-obligations, per this project's [standing rule](../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
+obligations, per this project's [standing rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
 that an unverified mechanism written up confidently is worse than an open question written up plainly.
 
 **Human architectural decision, 2026-08-30 — recorded after the debate and after the 0071
@@ -1182,7 +1182,7 @@ overturn also exposed a genuine incoherence in this file's own first draft, reco
 than quietly fixed: it had specified a `#[Locked] $activeLanguageId` *and* Alpine switching, leaving
 two owners of "which panel is visible", so its own error-focusing mitigation could not have worked.
 
-⚠️ **This is the [Parallel Agent File-Ownership Rule](../../docs/contracts.md#parallel-agent-file-ownership-rule)
+⚠️ **This is the [Parallel Agent File-Ownership Rule](../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule)
 arriving in a form that rule does not currently cover.** No file was written twice — 0071 and 0075
 touched disjoint paths, so the rule as written was satisfied. What collided was **design authority**:
 two debates independently deciding one shared pattern, each believing itself the first, one minute

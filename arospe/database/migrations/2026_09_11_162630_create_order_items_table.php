@@ -25,7 +25,7 @@ return new class extends Migration
      *
      * No hand-written $table->index() anywhere -- constrained() already
      * leaves every FK column indexed
-     * (docs/database/migrations.md#an-fk-column-does-not-also-get-an-explicit-index-here).
+     * (docs/database/migrations/uuid-primary-keys.md#an-fk-column-does-not-also-get-an-explicit-index-here).
      */
     public function up(): void
     {

@@ -1,7 +1,7 @@
 # [0016] Create the `sales_regions` catalog table and seed it with the ISO countries and Spain's fiscal territories
 
 ## Description
-Create the `sales_regions` table — the single source of truth behind [PRD Epic 2 §2.1](../../../docs/PRD/PRD.md#21-sales-regions--taxes), where **a tax rule *is* a Sales Region entry** — and the seeder that populates it with the ISO 3166-1 country list plus Spain's five fiscal territories (Península, Baleares, Canarias, Ceuta, Melilla) related to a parent "España" row. The catalog is **fixed and seeded**: administrators configure existing entries, they never invent countries. This story ships the schema, the model, the enum, the bundled ISO fixture and the seeder only — no UI, no invariant enforcement, no tax resolution.
+Create the `sales_regions` table — the single source of truth behind [PRD Epic 2 §2.1](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#21-sales-regions--taxes), where **a tax rule *is* a Sales Region entry** — and the seeder that populates it with the ISO 3166-1 country list plus Spain's five fiscal territories (Península, Baleares, Canarias, Ceuta, Melilla) related to a parent "España" row. The catalog is **fixed and seeded**: administrators configure existing entries, they never invent countries. This story ships the schema, the model, the enum, the bundled ISO fixture and the seeder only — no UI, no invariant enforcement, no tax resolution.
 
 > **Scope change — 2026-08-18.** The supranational **groupings** (Unión Europea, Internacional) that earlier revisions of this story seeded have been **removed from the catalog entirely** by user decision. Only direct, individual countries and Spain's fiscal sub-territories exist. See **D11** in [Documented functional decisions](#documented-functional-decisions).
 
@@ -25,7 +25,7 @@ backend | includes database-expert: **yes** (new table + migration + seeder)
 - Editing rate/description/code on an entry, the **single-default invariant enforcement**, and rate validation (negative/non-numeric) → **story 0017**. This story only leaves the catalog in a coherent starting state (exactly one default); it enforces nothing.
 - The Sales Regions list/editor UI, the group-header rendering of the "España" row, and the "no way to add a country" affordance → **story 0018**.
 - Tax-rate **resolution** for a product/order, and what `rate IS NULL` means at resolution time → **story 0026**.
-- The shipping geography catalog and its zone CRUD → **story 0032**. It is a separate catalog with **no shared table** ([PRD assumption 4](../../../docs/PRD/PRD.md#assumptions--confirmed-decisions)); it will *read* this story's ISO fixture file read-only.
+- The shipping geography catalog and its zone CRUD → **story 0032**. It is a separate catalog with **no shared table** ([PRD assumption 4](../../../docs/PRD/sections/foundations.md#assumptions--confirmed-decisions)); it will *read* this story's ISO fixture file read-only.
 - The `sales-regions.{view,create,edit,delete}` permissions **already exist** from [story 0002](../done/0002-seed-roles-permissions-catalog.md)'s catalog. Do **not** re-seed them and do **not** invent new permission strings.
 
 ## Gherkin
@@ -167,7 +167,7 @@ Feature: The seeded Sales Region catalog
 
 ### `database/migrations/<ts>_create_sales_regions_table.php` — **create**
 
-Scaffold with `php artisan make:migration create_sales_regions_table --no-interaction`. This is the repo's **first real greenfield UUID `create_*` migration** — [`docs/database/migrations.md`](../../../docs/database/migrations.md#uuid-primary-keys) currently presents that pattern only as a *target* snippet.
+Scaffold with `php artisan make:migration create_sales_regions_table --no-interaction`. This is the repo's **first real greenfield UUID `create_*` migration** — [`docs/database/migrations.md`](../../../docs/database/migrations/uuid-primary-keys.md#uuid-primary-keys) currently presents that pattern only as a *target* snippet.
 
 ```php
 Schema::create('sales_regions', function (Blueprint $table): void {
@@ -227,7 +227,7 @@ case FiscalTerritory = 'fiscal_territory';   // a sub-entity of a Country; paren
 
 Invariant, seeder-enforced and documented on the enum: `kind === FiscalTerritory` ⟺ `parent_id IS NOT NULL`.
 
-**No `label()` method in this story.** `UserStatus::label()` exists because something renders it; nothing renders `kind` yet, and adding it would force `lang/en/sales-regions.php` **and** `lang/es/sales-regions.php` (which [`naming.md`](../../../docs/conventions/naming.md#translation-keys) requires to stay key-for-key identical) into scope for keys with no consumer. Story 0018 adds both together.
+**No `label()` method in this story.** `UserStatus::label()` exists because something renders it; nothing renders `kind` yet, and adding it would force `lang/en/sales-regions.php` **and** `lang/es/sales-regions.php` (which [`naming.md`](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys) requires to stay key-for-key identical) into scope for keys with no consumer. Story 0018 adds both together.
 
 ### `app/Models/SalesRegion.php` — **create**
 
@@ -275,7 +275,7 @@ class SalesRegion extends Model
 }
 ```
 
-Per [`base-standards.md`](../../../docs/conventions/base-standards.md#uuid-primary-keys): `HasUuids` in the trait list, `@property string $id`, and **no `$keyType` / `$incrementing` properties** — `HasUniqueStringIds` already overrides those as methods. No `#[Hidden]` (nothing here is secret). No `SoftDeletes`.
+Per [`base-standards.md`](../../../docs/conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys): `HasUuids` in the trait list, `@property string $id`, and **no `$keyType` / `$incrementing` properties** — `HasUniqueStringIds` already overrides those as methods. No `#[Hidden]` (nothing here is secret). No `SoftDeletes`.
 
 **`#[Fillable(['code', 'description', 'rate'])]` — the omissions are the guard**, following this repo's documented convention that omission *is* the mass-assignment guard (`users.status`, `users.pending_email`), with `forceFill()` from one named place:
 
@@ -291,7 +291,7 @@ Per [`base-standards.md`](../../../docs/conventions/base-standards.md#uuid-prima
 
 ### `database/data/iso-3166-countries.json` — **create**
 
-The bundled ISO 3166-1 fixture, mandated by [PRD §2.4](../../../docs/PRD/PRD.md#24-shipping) (*"ships as a CSV/JSON fixture bundled in this repository (under `database/data/`)"*), which also states both catalogs *"may ultimately read their country rows from the same bundled ISO-country source file"*. **This story creates that directory and file; story 0032 consumes it read-only.**
+The bundled ISO 3166-1 fixture, mandated by [PRD §2.4](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#24-shipping) (*"ships as a CSV/JSON fixture bundled in this repository (under `database/data/`)"*), which also states both catalogs *"may ultimately read their country rows from the same bundled ISO-country source file"*. **This story creates that directory and file; story 0032 consumes it read-only.**
 
 - **Catalog-neutral — identity only.** `{"alpha2": "ES", "name_es": "España", "name_en": "Spain"}`. **No `rate`, no `is_default`, no fiscal fields, no shipping fields** — that is what keeps the two catalogs genuinely independent.
 - **Carries `name_en` as well as `name_es`** (D6) — this story writes only `name_es` into `name`; regenerating a 249-row fixture later costs more than a second key now.
@@ -317,7 +317,7 @@ class SalesRegionSeeder extends Seeder
 
 **Flow:**
 
-1. **Load the fixture defensively** — `throw_if(! is_file($path), …)` then `json_decode(..., flags: JSON_THROW_ON_ERROR)`, mirroring the `throw_if` convention [`migrations.md`](../../../docs/database/migrations.md#package-vendored-migrations) singles out in the vendored permission migration. A missing or corrupt fixture must **fail loudly**, never seed a partial catalog.
+1. **Load the fixture defensively** — `throw_if(! is_file($path), …)` then `json_decode(..., flags: JSON_THROW_ON_ERROR)`, mirroring the `throw_if` convention [`migrations.md`](../../../docs/database/migrations/delete-behaviour-and-vendored.md#package-vendored-migrations) singles out in the vendored permission migration. A missing or corrupt fixture must **fail loudly**, never seed a partial catalog.
 2. **One preload query** — `SalesRegion::query()->get()->keyBy('slug')` — so the loop issues no per-row `SELECT`.
 3. **Insert/refresh through Eloquent inside one `DB::transaction()`**, writing with `forceFill()` because every seeder-owned column is deliberately absent from `#[Fillable]` (the same idiom `RolePermissionSeeder` uses for `email_verified_at`).
 4. **Parent before children** — the `es` row is created before its five territories, or the FK rejects them. Territories resolve their parent **by `slug` lookup**, not from a variable held across a possible skip branch (on a partial re-seed `es` may already exist).
@@ -451,7 +451,7 @@ After this story, `php artisan db:seed --class=ProductionSeeder` on a fresh inst
 
 **D5 — ~~Unión Europea and Internacional are top-level siblings, not parents of the 27 member states.~~ SUPERSEDED / REMOVED 2026-08-18 by D11** — the grouping rows no longer exist at all, so the question of how to place them is void. *Original text kept for history:* Tempting and wrong: PRD §2.1's *"Marking a new default clears the previous one"* scenario makes **Unión Europea itself the default entry**, i.e. rateable in its own right — whereas the España parent must *not* be independently rateable (D10). Modelling EU as a parent puts those two rows in one structural bucket while they need opposite behaviour. It would also overload `parent_id` with two incompatible meanings (*subdivision-of* vs. *member-of*), and France would need two parents.
 
-**D6 — Seeded names are Spanish; the fixture also carries `name_en`** (confirmed). The PRD writes every region name in Spanish (`España`, `Canarias`, and `Francia` in §2.4), the prototype is Spanish-labelled, and the store's install-default content language is Spanish. [PRD assumption 14](../../../docs/PRD/PRD.md#assumptions--confirmed-decisions)'s translatable-content list is explicit and does **not** include region names. The PRD contradicts itself once — §2.2's picker scenario says *"select **Spain**"* in English — which is a PRD wording slip, not a signal. Carrying `name_en` in the fixture is cheap insurance; if a locale-aware display is ever wanted, the cheapest answer needs **no schema change** (a `lang/{en,es}/sales-regions.php` lookup keyed by the immutable `slug` — a second, independent reason `slug` must never be user-editable).
+**D6 — Seeded names are Spanish; the fixture also carries `name_en`** (confirmed). The PRD writes every region name in Spanish (`España`, `Canarias`, and `Francia` in §2.4), the prototype is Spanish-labelled, and the store's install-default content language is Spanish. [PRD assumption 14](../../../docs/PRD/sections/foundations.md#assumptions--confirmed-decisions)'s translatable-content list is explicit and does **not** include region names. The PRD contradicts itself once — §2.2's picker scenario says *"select **Spain**"* in English — which is a PRD wording slip, not a signal. Carrying `name_en` in the fixture is cheap insurance; if a locale-aware display is ever wanted, the cheapest answer needs **no schema change** (a `lang/{en,es}/sales-regions.php` lookup keyed by the immutable `slug` — a second, independent reason `slug` must never be user-editable).
 
 **D7 — 6 rows seed active; the remaining ISO countries seed inactive** (confirmed; count revised from 8 by D11 on 2026-08-18). Active: **España** (the parent node, so 0018 can render it as a header) and its **five** fiscal territories. Seeding ~249 countries active would render a list of 249 "active" rows with no rates — unusable noise, and a resolution hazard for 0026, since an active row with a `NULL` rate is exactly the ambiguous state. Inactive-by-default also matches the column default, so the seeder states the exception rather than the rule.
 
@@ -478,7 +478,7 @@ After this story, `php artisan db:seed --class=ProductionSeeder` on a fresh inst
 3. **Duplicate `parent_id` index** — `foreignUuid()->constrained()` may already create one; an explicit `index()` would add a second, repeating the `users_uuid_unique` debt. Verify empirically with `php artisan db:table sales_regions`, never by reading the migration.
 4. **Self-referencing FK inside `Schema::create`** — MySQL 8.4 supports it, but Laravel emits the FK as a separate `ALTER TABLE`. Verify the migration runs green against the real test database; fallback is a second `Schema::table()` call in the same `up()`.
 5. **Fixture provenance and drift** — the ISO list is a committed snapshot. Because the seeder always refreshes `name`, a regenerated fixture propagates on the next deploy with no versioning column needed (deliberate — do not add a `revision` column). A country *removal* is deliberately **not** handled: the row stays, possibly holding a configured rate. Right call, but stated rather than accidental.
-6. **`database/data/` file ownership** — this story **owns** `database/data/iso-3166-countries.json`; story 0032 consumes it **read-only**. If the two ever run concurrently, that is precisely the scenario [`contracts.md`](../../../docs/contracts.md#parallel-agent-file-ownership-rule)'s Parallel Agent File-Ownership Rule governs.
+6. **`database/data/` file ownership** — this story **owns** `database/data/iso-3166-countries.json`; story 0032 consumes it **read-only**. If the two ever run concurrently, that is precisely the scenario [`contracts.md`](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule)'s Parallel Agent File-Ownership Rule governs.
 7. **Test-suite performance** — only two existing tests use a bare `$this->seed()`, so the blast radius is verified-small. New stories must arrange regions with the **factory**, never by seeding ~254 rows in a `beforeEach`.
 8. **A forward-looking trap for 0017:** `DatabaseSeeder` uses `WithoutModelEvents`. If 0017 enforces the single-default invariant via a **model observer**, this seeder's own default-flag write will silently bypass it under `db:seed` — structurally the same trap that bit `RolePermissionSeeder`'s Spatie cache flush in 0002.
 
@@ -494,7 +494,7 @@ After this story, `php artisan db:seed --class=ProductionSeeder` on a fresh inst
 
 - **Amend [ADR 0001](../../../docs/decisions/0001-uuid-primary-keys.md)** to generalize its seven-entity list into the confirmed project-wide policy (UUID v7 for new Epic 2 business entities; `bigint` for 0032's high-volume geography lookup), citing `sales_regions` as a covered entity. *(D9 — a later task.)*
 - **Add the follow-up note to story 0002's runbook documentation** now that `ProductionSeeder` supersedes the single targeted `--class=RolePermissionSeeder` invocation. *(`docs-keeper`, Phase 6.)*
-- **Docs to update at Phase 6:** [`database/schema.md`](../../../docs/database/schema.md) (a new Domain-tables section, the `SALES_REGIONS` node and its self-relationship in the ER diagram, and the deliberate-index-omission notes); [`database/migrations.md`](../../../docs/database/migrations.md#uuid-primary-keys) (its greenfield UUID snippet is labelled a *target* pattern — there is now a real migration to cite); [`conventions/base-standards.md`](../../../docs/conventions/base-standards.md) (the directory listing gains `database/data/`, and the UUID subsection's Epic 2/4 entity list is now incomplete).
+- **Docs to update at Phase 6:** [`database/schema.md`](../../../docs/database/schema.md) (a new Domain-tables section, the `SALES_REGIONS` node and its self-relationship in the ER diagram, and the deliberate-index-omission notes); [`database/migrations.md`](../../../docs/database/migrations/uuid-primary-keys.md#uuid-primary-keys) (its greenfield UUID snippet is labelled a *target* pattern — there is now a real migration to cite); [`conventions/base-standards.md`](../../../docs/conventions/base-standards.md) (the directory listing gains `database/data/`, and the UUID subsection's Epic 2/4 entity list is now incomplete).
 - **Story 0017 hand-off:** the working MySQL at-most-one-default constraint (a `STORED` generated column + UNIQUE, since unique indexes ignore `NULL`s) is available and deliberately unused here; and the `WithoutModelEvents` observer trap in risk 8.
 
 ## Definition of Done

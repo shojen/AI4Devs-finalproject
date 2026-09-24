@@ -12,7 +12,7 @@ deferred to it: the **in-use delete guard** on shipping zones ([0033](0033-shipp
 backend | related_task_id: **0037** (paired UI — the Shipping screen's rate table and rate modal,
 not yet debated) | includes database-expert: **yes**
 
-**PRD coverage.** [§2.4 Shipping](../../../docs/PRD/PRD.md#24-shipping). This story owns, from the
+**PRD coverage.** [§2.4 Shipping](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#24-shipping). This story owns, from the
 `Feature: Shipping carriers and rates` block, the scenario *Create a rate rule for a carrier* and
 the `Scenario Outline: An invalid shipping rate is rejected` (both examples), and it satisfies
 **AC 2** (rate rules created/edited/deleted per carrier with zone, weight range, price and delivery
@@ -320,7 +320,7 @@ screen an administrator sees. Two further reasons:
 Overlap is therefore resolved, never prevented, by **D-1** step 5's deterministic tiebreak: at
 exactly 2 kg the cheaper of the two touching brackets applies. A future story may add a
 **non-blocking UI notice** ("this bracket overlaps Estándar 0–2 kg"), which is a UI hint in the sense
-[authorization.md](../../../docs/architecture/authorization.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)
+[authorization.md](../../../docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)
 uses the term — named here so nobody builds it as a validation failure.
 
 ### D-3 — Weight brackets are **inclusive at both ends**, and `min == max` is legal.
@@ -377,7 +377,7 @@ Adopted properties, each load-bearing:
   > transaction* would be caught here and misreported to the administrator as a shipping-rate count.
   > The already-shipped `app/Actions/Shipping/DeleteShippingZone.php` docblock says *"a
   > QueryException **1451** catch"*, and
-  > [schema.md](../../../docs/database/schema-shipping.md#shipping_zone_geography_entry) already documents *"a
+  > [schema.md](../../../docs/database/schema-shipping/zones.md#shipping_zone_geography_entry) already documents *"a
   > matching `23000`→`1451` catch"* for this exact guard — **this task file was the only artifact
   > still saying `23000`**. Narrow on `errorInfo[1] === 1451`, never on `getCode()`.
   >
@@ -479,7 +479,7 @@ Identical to [0033](0033-shipping-zones-backend.md) **D-8**, and for the same fi
 dispositive here: **the route and the view path are already taken.** 0035 ships
 `Route::livewire('shipping', ShippingIndex::class)->name('shipping.index')` and
 `resources/views/livewire/shipping.blade.php` — *the* path Livewire's
-[`Index`-in-a-subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
+[`Index`-in-a-subfolder exception](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
 forces for `App\Livewire\Shipping\Index`. A rate component here either collides on that file or
 invents a second shipping route nobody asked for.
 
@@ -502,7 +502,7 @@ consumer, and it owns the whole screen including the carrier cards 0035 stubbed.
 > made the identical claim ("the actions deliberately self-authorize nothing (matching
 > `CreateUser`/`UpdateUser`)") and it was found false at that story's Phase 4 security audit
 > (finding F-1): `CreateUser`/`UpdateUser` both self-authorize as their own first statement, per
-> [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+> [base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
 > "an authorization rule belongs to the action, not to one of its callers" convention. 0033's four
 > `app/Actions/Shipping/*` actions were corrected to self-authorize against `ShippingZonePolicy` as
 > their own first statement, the same shape `App\Actions\ProductCategories\*` (story 0025) already
@@ -546,7 +546,7 @@ Three properties, each load-bearing rather than stylistic:
 Same reasoning as 0033 **D-9** for shipping the policy at all: this story ships no component, so
 without a policy this story would have no `Gate::authorize()`-reachable ability for the shipping rate
 catalog —
-[livewire-authorization.md](../../../docs/security/livewire-authorization.md#authorization-that-lives-only-in-the-component-is-bypassed-by-every-other-call-site-of-the-action)
+[livewire-authorization.md](../../../docs/security/livewire-authorization/action-level-authorization.md#authorization-that-lives-only-in-the-component-is-bypassed-by-every-other-call-site-of-the-action)
 says the policy is the right home regardless of which consumer arrives first.
 
 **What this changes about the story's own risk profile.** This paragraph previously read: *"**The
@@ -571,7 +571,7 @@ rate edit and buy a sub-millisecond scan that is already sub-millisecond. This i
 `shipping_carriers.is_active`.
 
 **Do not hand-write `$table->index('shipping_zone_id')` or `$table->index('shipping_carrier_id')`.**
-This is [migrations.md](../../../docs/database/migrations.md#an-fk-column-does-not-also-get-an-explicit-index-here)'s
+This is [migrations.md](../../../docs/database/migrations/uuid-primary-keys.md#an-fk-column-does-not-also-get-an-explicit-index-here)'s
 own "an FK column does not also get an explicit index here" rule, which has **ten** confirming
 instances in this schema, 0033's `shipping_zone_geography_entry` being the tenth. `constrained()`
 alone always leaves the column indexed. **Verify the resulting index list with
@@ -737,7 +737,7 @@ absence of the trait.
 
   > **Shared-file hazard.** This file is created by 0035 and modified here, and
   > `app/Actions/Shipping/DeleteShippingZone.php` is created by 0033 and modified here. Per
-  > [contracts.md](../../../docs/contracts.md#parallel-agent-file-ownership-rule)'s Parallel Agent
+  > [contracts.md](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule)'s Parallel Agent
   > File-Ownership Rule, **0036 must not be implemented concurrently with 0033 or 0035.**
   > Sequential only, and both must land first.
 
@@ -840,7 +840,7 @@ absence of the trait.
 - `app/Actions/Shipping/DeleteShippingRate.php` — **new**.
   `__invoke(ShippingRate $shippingRate): bool`. A plain instance `->delete()` — through the **model**,
   never the query builder
-  ([base-standards.md](../../../docs/conventions/base-standards.md#deleting-a-user-goes-through-the-model-not-the-query-builder)).
+  ([base-standards.md](../../../docs/conventions/base-standards/stack-and-model-conventions.md#deleting-a-user-goes-through-the-model-not-the-query-builder)).
 
   **Self-authorizes as its own first statement**, above the delete:
   `$this->logRefusedPrivilegedAttempt->authorize('delete', $shippingRate, targetType: 'shipping_rate', targetId: $shippingRate->id);`
@@ -1379,7 +1379,7 @@ the screen on top of this.
 
 ## Definition of Done
 - [ ] Tests written and green, plus the full existing suite
-      ([contracts.md](../../../docs/contracts.md#full-test-suite-gate-rule)'s Full Test Suite Gate Rule).
+      ([contracts.md](../../../docs/contracts/testing-and-parallel-agents.md#full-test-suite-gate-rule)'s Full Test Suite Gate Rule).
 - [ ] Code reviewed (code-reviewer).
 - [ ] No security findings (appsec-auditor).
 - [ ] Documentation updated (docs-keeper) — [`docs/database/schema.md`](../../../docs/database/schema.md)
@@ -1440,7 +1440,7 @@ the screen on top of this.
 - **0002 — seeded permission catalog.** `shipping.*` already exists; nothing to add.
 - **Sequential-only.** 0033, 0035 and 0036 all write `lang/en|es/shipping.php`, and 0036 additionally
   edits two files 0033/0035 create. Per
-  [contracts.md](../../../docs/contracts.md#parallel-agent-file-ownership-rule)'s Parallel Agent
+  [contracts.md](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule)'s Parallel Agent
   File-Ownership Rule these three must never be implemented concurrently.
 - **Blocks 0037** (the Shipping screen UI) and **Epic 3 Orders** (the resolver's consumer).
 
@@ -1469,7 +1469,7 @@ the screen on top of this.
   **Every factual claim in that text is false against the current tree.** It was inherited verbatim
   from 0033 **R-9**, where it was accurate at the time, and carried here without re-verification —
   the *"Verified, not suspected"* framing is what made it survive Phase 1 unchallenged, which is
-  itself an instance of [errors-log.md](../../../docs/errors-log.md#one-docs-pass-reported-two-gaps-that-were-not-there-both-marked-verified--2026-08-29)'s
+  itself an instance of [errors-log.md](../../../docs/errors-log/2026-08-28-to-2026-08-31.md#one-docs-pass-reported-two-gaps-that-were-not-there-both-marked-verified--2026-08-29)'s
   recorded failure mode: a confident method claim attached to a stale conclusion forecloses the
   check. Re-verified by reading the three files directly for this correction:
 
@@ -1499,7 +1499,7 @@ the screen on top of this.
 - **R-6 — ⚠️ CORRECTED 2026-09-01 (was: `trans_choice` has no precedent anywhere in `lang/`, citing
   0024 **R-8**, which was itself wrong).** There has been one since task 0010 —
   `lang/en/roles.php`'s `index.delete_blocked`, six `trans_choice()` call sites, and a documented
-  convention in [naming.md](../../../docs/conventions/naming.md#translation-keys) — and
+  convention in [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys) — and
   [0024b](0024b-product-category-in-use-delete-guard.md)'s `products.categories.delete_blocked` is the
   second. **Copy the shipped simple `singular|plural` form** rather than inventing an explicit-range
   one. **What survives of this risk**: Spanish pluralisation is not English's, both locale files land
@@ -1525,7 +1525,7 @@ the screen on top of this.
   0035's. A merge from parallel branches can produce the wrong filename order, and a developer who
   already ran `migrate` sees nothing — the failure lands on the next clean run. 0033 **R-6**'s guard
   applies: a full fresh migration against a **throwaway** database, which per
-  [contracts.md](../../../docs/contracts.md#destructive-database-command-rule)'s Destructive Database
+  [contracts.md](../../../docs/contracts/safety-rules.md#destructive-database-command-rule)'s Destructive Database
   Command Rule is a deliberate, separately-authorized step.
 
 ### Resolved during Phase 1
@@ -1559,7 +1559,7 @@ cheapest things to reverse if the product owner disagrees after seeing them run:
 
 ## Provenance
 Phase 1 Three Amigos debate, 2026-08-18: `product-owner` + `backend-expert` + `backend-qa` +
-`database-expert`, per [`docs/workflow.md`](../../../docs/workflow.md#phase-1--three-amigos-debate)'s
+`database-expert`, per [`docs/workflow.md`](../../../docs/workflow/phases.md#phase-1--three-amigos-debate)'s
 classification rule (backend, touches the data model).
 
 Three notes on how this debate actually ran, recorded for honesty:
@@ -1580,7 +1580,7 @@ Three notes on how this debate actually ran, recorded for honesty:
   > retired and corrected. Recorded here rather than quietly dropped from the provenance list,
   > because the failure mode — a stale claim carried forward under a confidence marker that stops
   > anyone re-checking it — is one
-  > [errors-log.md](../../../docs/errors-log.md#one-docs-pass-reported-two-gaps-that-were-not-there-both-marked-verified--2026-08-29)
+  > [errors-log.md](../../../docs/errors-log/2026-08-28-to-2026-08-31.md#one-docs-pass-reported-two-gaps-that-were-not-there-both-marked-verified--2026-08-29)
   > already documents, and this is a second instance of it. The rest of `backend-qa`'s contributions
   > above were re-checked in the same pass and stand.
 

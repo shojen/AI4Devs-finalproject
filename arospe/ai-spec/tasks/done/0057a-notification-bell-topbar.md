@@ -6,7 +6,7 @@ Story [0057](../done/0057-notification-bell-ui.md) shipped the notifications bel
 sidebar** (and in the mobile header) because no persistent desktop topbar existed (its **D-1**). The project
 owner has rejected that placement: the PRD's prototype
 ([`docs/PRD/images/01-inicio.png`](../../../docs/PRD/images/01-inicio.png), PRD
-[§ Cross-cutting: global search & notifications](../../../docs/PRD/PRD.md#cross-cutting-global-search--notifications):
+[§ Cross-cutting: global search & notifications](../../../docs/PRD/sections/foundations.md#cross-cutting-global-search--notifications):
 *"Both controls are present on every authenticated screen, matching the prototype topbar"*) shows the bell
 **top right**, in a topbar that also carries the **page title and subtitle** on the left. This story builds
 that topbar on every authenticated screen, moves the bell into it, and removes the bell from the sidebar.
@@ -214,7 +214,7 @@ alone and noted, **OQ-3**); auth layouts (unauthenticated).
 - [ ] Title + subtitle on dashboard, users, one settings screen (different layout wrapper) and the product editor.
 - [ ] **`wire:navigate` from dashboard to users updates the title** (stale-title tripwire; the one browser case for it).
 - [ ] Dropdown not obscured: open the bell (also at 390px), `document.elementFromPoint()` at the first row's centre lands inside `[data-test^="notification-item-"]`, the list's bottom edge stays inside the viewport, and a row can be clicked.
-- [ ] Every "exactly one" assertion is proven able to fail before it is trusted: temporarily re-add a second bell and a bell inside the sidebar and confirm both go red ([errors-log](../../../docs/errors-log-archive.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21)).
+- [ ] Every "exactly one" assertion is proven able to fail before it is trusted: temporarily re-add a second bell and a bell inside the sidebar and confirm both go red ([errors-log](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21)).
 
 **Existing `tests/Browser/Notifications/BellTest.php`** (12 tests): the `visibleCountJs`/`visibleRowHooksJs`/`openVisibleBell` workarounds exist only because the bell was mounted twice — **simplify them to plain hook selectors** (leaving them would hide a regression that re-mounts the bell twice). "Renders on dashboard and users" and "visible at mobile width" are superseded by this story's tests; every other case is location-agnostic and stays. `tests/Feature/Notifications/BellTest.php` is unchanged (`Livewire::test`, never renders the layout).
 

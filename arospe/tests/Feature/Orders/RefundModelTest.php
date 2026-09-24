@@ -69,7 +69,7 @@ test('a refund round-trips through the factory with every column persisting and 
 });
 
 // The sharpest structural test in the story: the omission-as-guard convention
-// (docs/conventions/base-standards.md#model-conventions) is only real if something fails when it
+// (docs/conventions/base-standards/stack-and-model-conventions.md#model-conventions) is only real if something fails when it
 // is undone. Mirrors OrderModelTest.php's own fill()-based shape for the identical situation --
 // `amount` and `refunded_by` are NOT NULL with no database default, so a literal ::create() call
 // would fail on the INSERT itself (a QueryException) rather than demonstrate anything about mass

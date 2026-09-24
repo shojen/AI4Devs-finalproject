@@ -13,11 +13,11 @@ return new class extends Migration
      *
      * Story 0045 -- a plain UUIDv7 greenfield table, copying
      * create_sales_regions_table's own pattern (see
-     * docs/database/migrations.md#uuid-primary-keys): `uuid('id')->primary()`,
+     * docs/database/migrations/uuid-primary-keys.md#uuid-primary-keys): `uuid('id')->primary()`,
      * every string column length-capped, every money-like column `decimal`,
      * `foreignUuid()` + `constrained()` for every FK, and NO hand-written
      * `$table->index()` anywhere -- `constrained()` already leaves every FK
-     * column indexed (docs/database/migrations.md#an-fk-column-does-not-also-get-an-explicit-index-here).
+     * column indexed (docs/database/migrations/uuid-primary-keys.md#an-fk-column-does-not-also-get-an-explicit-index-here).
      *
      * Every FK is written against a table that already exists at the time
      * this migration runs (DR-1 in the story's own task file):

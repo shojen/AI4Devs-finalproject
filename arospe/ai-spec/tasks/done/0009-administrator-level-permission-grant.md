@@ -303,11 +303,11 @@ Feature: Administrator-level role management and its Super-Admin-only grant
   > an unseeded name throws `PermissionDoesNotExist` at runtime — so this was a correctness bug, not
   > a naming preference. 0002's task file flagged it explicitly as an outstanding correction. The
   > canonical names are **`roles.manage-administrators`** and **`roles.manage`**, per
-  > [`docs/conventions/naming.md`](../../../docs/conventions/naming.md#permission-names). The Gherkin
+  > [`docs/conventions/naming.md`](../../../docs/conventions/naming/routes-and-permissions.md#permission-names). The Gherkin
   > above keeps the human phrases, which are business prose rather than code literals.
 
   > `hasRole()` is called **with its guard** (`'web'`) per
-  > [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns.md#always-pass-the-guard-to-hasrole--hasanyrole)
+  > [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns/bypass-cache-and-guards.md#always-pass-the-guard-to-hasrole--hasanyrole)
   > — an unguarded call resolves against the default guard, which is not guaranteed to be the one the
   > role was seeded under.
 
@@ -321,7 +321,7 @@ Feature: Administrator-level role management and its Super-Admin-only grant
   > `$role->name` — the *in-memory* attribute — whereas the model-level guards deliberately read the
   > **persisted** identity, because by the time a rename is in flight the in-memory name is the
   > attacker-supplied new one.
-  > [`docs/architecture/authorization.md`](../../../docs/architecture/authorization.md#rolepolicy--the-second-policy)
+  > [`docs/architecture/authorization.md`](../../../docs/architecture/authorization/policies-users-roles.md#rolepolicy--the-second-policy)
   > records it as "the documented residual the roles-screen author must resolve", addressing stories
   > 0010/0011. **Story [0010](0010-role-permission-management-backend.md) has taken ownership**, because
   > it is the first story to add real `authorize()` call sites against `RolePolicy` and therefore the
@@ -346,7 +346,7 @@ Feature: Administrator-level role management and its Super-Admin-only grant
   >   obligation on this point.
   >
   > The general rule behind all of it is in
-  > [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns.md#a-guard-that-reads-a-rows-protected-identity-must-distinguish-not-hydrated-from-hydrated-but-null).
+  > [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns/ability-coverage-and-guards.md#a-guard-that-reads-a-rows-protected-identity-must-distinguish-not-hydrated-from-hydrated-but-null).
 
   **No `Gate::policy()` registration, and no `app/Providers/AppServiceProvider.php` change.** An earlier
   draft of this story asked for an explicit `Gate::policy(Role::class, RolePolicy::class)` line, on the
@@ -355,7 +355,7 @@ Feature: Administrator-level role management and its Super-Admin-only grant
   auto-discovers `App\Policies\RolePolicy` for it by naming convention alone — which is this repo's
   documented, registration-free convention
   ([base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure),
-  [naming.md](../../../docs/conventions/naming.md#classes)). 0008's own Phase 2 review examined and
+  [naming.md](../../../docs/conventions/naming/classes.md#classes)). 0008's own Phase 2 review examined and
   explicitly rejected the registration, and the policy is working today without it. Do not reinstate the
   line. (Also unchanged from the earlier draft: **do not** add the Super-Admin `Gate::before` bypass here
   — story 0002 owns it.)

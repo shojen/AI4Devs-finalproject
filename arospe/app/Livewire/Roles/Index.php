@@ -255,7 +255,7 @@ class Index extends Component
         // flush and this COMMIT would miss the cache, read the pre-commit
         // rows, and re-cache them on the shared `database` store for 24
         // hours. This second, post-commit flush is what closes that window.
-        // See docs/security/authorization-patterns.md#flush-the-permission-cache-after-the-transaction-commits-never-inside-it.
+        // See docs/security/authorization-patterns/bypass-cache-and-guards.md#flush-the-permission-cache-after-the-transaction-commits-never-inside-it.
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         // Audit trail (Phase 4 finding F8) -- this app has no dedicated
@@ -394,7 +394,7 @@ class Index extends Component
      * loadUsers()`'s per-row `canEdit`/`canDelete` UI hint exactly. This is
      * a UI hint the paired view disables a control with, never a substitute
      * for the `Gate::authorize()` calls that actually gate the click; see
-     * docs/architecture/authorization.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer.
+     * docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer.
      *
      * @return EloquentCollection<int, Role>
      */

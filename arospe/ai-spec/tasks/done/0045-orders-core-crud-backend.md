@@ -2,7 +2,7 @@
 
 ## Description
 Introduce the `orders` and `order_items` tables and the creation write path behind PRD
-[§3.2 Orders](../../../docs/PRD/PRD.md#32-orders): an order references a **Customer**, one or more
+[§3.2 Orders](../../../docs/PRD/sections/epic-3-customers-orders.md#32-orders): an order references a **Customer**, one or more
 **product/variant line items** (each carrying a quantity and **the price at the time of order**), a
 **payment method**, and — later — the **Sales Region** used for tax and the **shipping rate/carrier**
 selected for delivery. This story owns the two greenfield UUID migrations, the `Order` / `OrderItem`
@@ -246,7 +246,7 @@ Feature: Order records (backend)
 
 `database/migrations/<ts>_create_orders_table.php` — **new**. Shape confirmed by `database-expert`
 against this repo's greenfield-UUID precedent,
-[`create_sales_regions_table`](../../../docs/database/migrations.md#uuid-primary-keys), and against
+[`create_sales_regions_table`](../../../docs/database/migrations/uuid-primary-keys.md#uuid-primary-keys), and against
 [`create_customers_table`](0041-customers-crud-backend.md) for the address-column lengths.
 
 ```php
@@ -336,9 +336,9 @@ Non-negotiable properties of both files:
   buys, and it is the reason the story is blocked rather than partially shipped.
 - **No explicit `$table->index()` anywhere.** `constrained()` already leaves every FK column indexed;
   writing one by hand emits a second DDL statement and produces the redundant index recorded in
-  [errors-log-archive.md](../../../docs/errors-log-archive.md#a-redundant-users_uuid_unique-index-survived-the-uuid-primary-key-conversion--2026-08-12).
+  [errors-log-archive.md](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-redundant-users_uuid_unique-index-survived-the-uuid-primary-key-conversion--2026-08-12).
   Verify with `php artisan db:table orders` / `db:table order_items` after migrating, never by reading
-  the migration ([migrations.md](../../../docs/database/migrations.md#an-fk-column-does-not-also-get-an-explicit-index-here)).
+  the migration ([migrations.md](../../../docs/database/migrations/uuid-primary-keys.md#an-fk-column-does-not-also-get-an-explicit-index-here)).
 - **`order_number` UNIQUE** is the only non-FK index on either table (**D-1**).
 - **No index on `status` or `payment_status`** — the cardinality argument applied to `users.status` and
   to `sales_regions`: two low-cardinality tokens over a backoffice-sized table, where the index costs a
@@ -346,7 +346,7 @@ Non-negotiable properties of both files:
 - **No `deleted_at` on either table.** Orders are never deleted in this phase; `Cancelado` is the
   terminal state PRD §3.2 defines, and it is a `status` value, not a soft delete.
 - Every string column is **length-capped**; every money-like column is `decimal`, never `float`
-  ([migrations.md](../../../docs/database/migrations.md#uuid-primary-keys)).
+  ([migrations.md](../../../docs/database/migrations/uuid-primary-keys.md#uuid-primary-keys)).
 
 ### Enums — `app/Enums/` (new)
 
@@ -376,7 +376,7 @@ enum PaymentStatus: string
 - **Neither enum declares `label()` — deliberately, and this is a Phase 2 correction rather than an
   omission.** An earlier draft of this file gave both a `label()` resolving `orders.statuses.*` /
   `orders.payment_statuses.*`, which would ship two methods with **zero** consumers until story 0055
-  builds the first screen that renders a status. [naming.md](../../../docs/conventions/naming.md#translation-keys)
+  builds the first screen that renders a status. [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)
   states the rule directly — *"add `label()` when a second consumer appears, not when the first one
   does"* — and this story has not even the first: `App\Enums\SalesRegionKind` (story 0016 deferred it,
   task 0018 rendered `kind` and still declined it) and `App\Enums\GeographyLevel` (story 0032, no
@@ -386,7 +386,7 @@ enum PaymentStatus: string
   **here** — see that section for why the two decisions are independent.
 
 - **TitleCase keys, lowercase snake_case backing values** — the `UserStatus` / `SalesRegionKind`
-  precedent ([naming.md](../../../docs/conventions/naming.md#classes)). PRD §3.2 states the vocabulary in
+  precedent ([naming.md](../../../docs/conventions/naming/classes.md#classes)). PRD §3.2 states the vocabulary in
   Spanish (`Pendiente → Procesando → Enviado → Entregado`, `Pendiente de pago`, …); the **backing
   values stay English tokens** and the Spanish is a translation, exactly as `users.statuses.*` handles
   it. `App\Enums\RoleName` is the only enum here whose backing values are not lowercase tokens, and
@@ -403,7 +403,7 @@ enum PaymentStatus: string
 ### Model — `app/Models/Order.php` (new)
 
 Scaffolded with `php artisan make:model Order -m -f --no-interaction`. Follows
-[base-standards.md](../../../docs/conventions/base-standards.md#model-conventions):
+[base-standards.md](../../../docs/conventions/base-standards/stack-and-model-conventions.md#model-conventions):
 
 - `use HasFactory, HasUuids;`, `@property string $id`, and **no** `$keyType` / `$incrementing`.
 - `casts()` carries `'status' => OrderStatus::class`, `'payment_status' => PaymentStatus::class`.
@@ -440,7 +440,7 @@ Scaffolded with `php artisan make:model Order -m -f --no-interaction`. Follows
   parent, per **D-15** — a factory that priced a variant line item from the parent product would make
   D-15's regression test pass against the very implementation it exists to catch. Note the derived-column
   hazard this shares with `GeographyEntryFactory`
-  ([errors-log.md](../../../docs/errors-log.md#a-geographyentryfactory-override-to-name-silently-left-normalized_name-stale-making-a-search-test-fail-against-real-search-code--2026-09-07)):
+  ([errors-log.md](../../../docs/errors-log/2026-09-01-to-2026-09-07.md#a-geographyentryfactory-override-to-name-silently-left-normalized_name-stale-making-a-search-test-fail-against-real-search-code--2026-09-07)):
   a caller overriding `unit_price` via `create([...])` does **not** get `line_total` recomputed, so any
   test overriding one must pass the other explicitly.
 - Neither factory may produce a state this story's own validation would reject — a factory that can
@@ -499,7 +499,7 @@ class OrderPolicy
   for the policy rather than against it.
 - **One `public const <VERB>_PERMISSION` per ability**, so the permission string is named once on the
   class that owns the rule rather than retyped at each `Gate::authorize()` call site
-  ([naming.md](../../../docs/conventions/naming.md#permission-names)). `App\Policies\UserPolicy`'s four
+  ([naming.md](../../../docs/conventions/naming/routes-and-permissions.md#permission-names)). `App\Policies\UserPolicy`'s four
   re-typed literals are a recorded, deferred violation — not the pattern to copy.
 - **No `view`/`restore`/`forceDelete` methods** — nothing in this app calls those for this model, and
   `ShippingRatePolicy`'s own docblock states the same rule. `orders` has no `deleted_at` at all.
@@ -535,7 +535,7 @@ Invokable, imperative-verb-phrase class with no `Action` suffix, resolved from t
    - **No `targetId`** — this is a class-level `create` check with no row yet, matching
      `CreateShippingZone`'s / `CreateShippingRate`'s / `CreateProductCategory`'s own create-time calls.
    - The rule lives in the class that performs the operation, not in a caller that does not exist yet
-     ([directory-structure.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
+     ([directory-structure.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)).
      This story ships no route and no component, so **this action is the only reachable enforcement
      point.**
 
@@ -562,14 +562,14 @@ Invokable, imperative-verb-phrase class with no `Action` suffix, resolved from t
 > **Phase 3 must re-read both transaction rules before writing step 4.**
 >
 > **(a) A `DB::transaction()` relocates every side effect the wrapped code already performed** — the
-> mistake recorded in [errors-log.md](../../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
+> mistake recorded in [errors-log.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21).
 > Here the constraint is forward-looking and specific: **story 0046's "new order received"
 > notification must be dispatched *after* the commit, never inside it**, or a rolled-back order mails
 > a customer about an order that does not exist.
 >
 > **(b) Every row this closure writes must be BUILT INSIDE the closure, via `forceCreate()`** — never a
 > model instantiated outside it and mutated within, which is the silent-lost-update shape recorded in
-> [errors-log.md](../../../docs/errors-log.md#dbtransactionfn-attempts-n-retried-a-closure-that-mutated-a-model-created-outside-it-producing-a-silent-lost-update-reported-as-success--2026-09-04).
+> [errors-log.md](../../../docs/errors-log/2026-09-01-to-2026-09-07.md#dbtransactionfn-attempts-n-retried-a-closure-that-mutated-a-model-created-outside-it-producing-a-silent-lost-update-reported-as-success--2026-09-04).
 > `CreateOrder` is naturally in the **safe** shape — the `orders` row and every `order_items` row are
 > inserts, so they can only be created inside the closure, matching `CreateProduct`/
 > `CreateProductVariant` rather than `UpdateProduct`. Two obligations follow. **First, keep it that
@@ -584,7 +584,7 @@ Invokable, imperative-verb-phrase class with no `Action` suffix, resolved from t
 ### Translations — `lang/en/orders.php` + `lang/es/orders.php` (new)
 
 Two key groups only — `statuses` and `payment_statuses` — key-for-key identical across both locales
-([naming.md](../../../docs/conventions/naming.md#translation-keys)), one leaf per case of each enum, keyed
+([naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)), one leaf per case of each enum, keyed
 by the enum's own backing value (`orders.statuses.pending`, `orders.payment_statuses.pending_payment`,
 …). **No screen copy, no validation-message overrides, no button labels** — those belong to story 0055,
 which extends this file rather than creating it.
@@ -594,7 +594,7 @@ The earlier draft justified the lang files *by* the `label()` methods, which mad
 decision; they are not. The files ship now because **this story is what fixes the two enums' backing
 values**, and a translation file is only ever correct relative to the value set it covers — writing
 both locales in the same change that fixes the values is what
-[naming.md](../../../docs/conventions/naming.md#translation-keys) requires ("adding a key means adding it
+[naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys) requires ("adding a key means adding it
 to **both** `lang/en/` and `lang/es/` in the same change"), and it means story 0055 *extends* an
 existing, already-complete pair rather than back-filling ten leaves for a value set it did not choose.
 What ships without a consumer here is a **data file**, not a method — the thing naming.md's
@@ -716,7 +716,7 @@ working feature.
 - [ ] Integration test: a newly created order's `shipping_rate_id` is `null`.
 - [ ] Integration test: a newly created order's `tax_rate` is `null` — **not** `0.000`. The two must
       not share a meaning, exactly as `sales_regions.rate` documents
-      ([schema.md](../../../docs/database/schema-products.md#sales_regions)).
+      ([schema.md](../../../docs/database/schema-products/sales-regions-and-media.md#sales_regions)).
 - [ ] Integration test: a newly created order's `flagged_for_review` is `false`.
 - [ ] Integration test: `tax_amount` and `shipping_amount` are `0.00` and `total` equals `subtotal`
       (**D-8**), asserted as decimal strings.
@@ -863,7 +863,7 @@ table to build against.
 - [ ] Tests written and green, plus the full existing suite (per
       [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule) — run **unscoped**
       (`php artisan test`, not `--filter`), per
-      [base-standards.md](../../../docs/conventions/base-standards.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
+      [base-standards.md](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#steps-1-and-2-are-the-iteration-forms-run-both-unscoped-before-declaring-the-work-done).
 - [ ] `vendor/bin/pint --format agent` clean (unscoped, **not** `--dirty`) and Larastan level 7 passing.
 - [ ] Code reviewed (code-reviewer).
 - [ ] No security findings (appsec-auditor) — specifically: that no price, name, SKU or total can be
@@ -880,7 +880,7 @@ table to build against.
     `payment_methods`, `customers` and `notifications`) or, if Epic 3's Orders tables warrant their own
     page, a new `database/schema-orders.md` linked from `schema.md`'s **Domain tables** list.
     docs-keeper decides which; the split rule is
-    [contracts.md](../../../docs/contracts.md#doc-growth-management-rule)'s.
+    [contracts.md](../../../docs/contracts/token-and-doc-rules.md#doc-growth-management-rule)'s.
   - [`conventions/directory-structure.md`](../../../docs/conventions/directory-structure.md)'s directory
     listing gains `app/Actions/Orders/`, `Order` / `OrderItem` in `app/Models/`, `OrderStatus` /
     `PaymentStatus` in `app/Enums/`, and `OrderPolicy` in `app/Policies/`. **Not
@@ -906,7 +906,7 @@ table to build against.
     `nullOnDelete()` since story 0019.
   - **Grep for bare negative claims this story falsifies**, rather than trusting the change→doc
     mapping — the failure mode recorded in
-    [errors-log-archive.md](../../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13).
+    [errors-log-archive.md](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13).
 - [ ] Acceptance criteria met.
 
 ## Resolved disagreement
@@ -936,7 +936,7 @@ in progress; of everything this story references, only `sales_regions` (task 001
    `constrained()` supply the FK's index" is stated as **the** rule for FK indexing, and option (b)
    would require writing explicit `$table->index()` calls on four columns — reintroducing, by design,
    precisely the hand-written index the
-   [redundant `users_uuid_unique`](../../../docs/errors-log-archive.md#a-redundant-users_uuid_unique-index-survived-the-uuid-primary-key-conversion--2026-08-12)
+   [redundant `users_uuid_unique`](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-redundant-users_uuid_unique-index-survived-the-uuid-primary-key-conversion--2026-08-12)
    entry exists to prevent. Then, when the retrofit `ALTER` lands, `constrained()` would find a
    suitable index already present or create a second — and nobody would notice either way, because an
    index nobody wrote is not visible in a diff.
@@ -945,7 +945,7 @@ in progress; of everything this story references, only `sales_regions` (task 001
    share option (b)'s exact failure signature: the cleanup is invisible.** The redundant
    `users_uuid_unique` index survived a five-migration conversion because "the migration diff will not
    show you an index that nobody removed". The
-   [`DB::transaction()` wrapper](../../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
+   [`DB::transaction()` wrapper](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
    relocated a permission-cache flush that appeared nowhere in the diff. Option (b) creates four
    obligations of the same shape, spread across five *other* stories, each of which must remember to
    add an `ALTER` migration for a table it does not own. That is not a forward dependency; it is four
@@ -1078,7 +1078,7 @@ rediscovery.
   stories 0053/0054/0037 populate the other two terms — a later story fills a value in, it does not
   rewrite the formula. `tax_rate` stays **`NULL`**, never `0.000`: `sales_regions.rate` already
   establishes that "not configured" and "a legitimate 0%" cannot share a representation
-  ([schema.md](../../../docs/database/schema-products.md#sales_regions)), and an order whose tax has not been
+  ([schema.md](../../../docs/database/schema-products/sales-regions-and-media.md#sales_regions)), and an order whose tax has not been
   resolved must be distinguishable from one resolved to a zero-rated region.
 - **D-9 — `sales_region_id` and `shipping_rate_id` are nullable and `NULL` at creation.** This story
   creates the reference points; resolving them is stories 0053/0054 (tax) and 0037/0054 (shipping).
@@ -1263,7 +1263,7 @@ epic can be implemented until `orders` and `order_items` exist:
   `shipping_rates.price` at `decimal(10,2)` — read from those stories' own task files, which are
   themselves still `new`. *Mitigation:* **Phase 3 must re-verify every one of those five shapes against
   the shipped migrations before writing this story's, exactly as the deferred-findings rule requires**
-  ([errors-log.md](../../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
+  ([errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)).
   This file's numbers are a reading aid, not a locator.
 - **R-5 — This document goes stale while it waits.** It is blocked on five stories, each of which may
   itself change during its own Phase 4/5. That is precisely the "a deferred finding is a claim about a
@@ -1298,7 +1298,7 @@ epic can be implemented until `orders` and `order_items` exist:
 | Is `sales_region_id` resolved here? | backend-qa | **D-9** — no; `NULL`, and asserted `NULL` |
 | Is there an `OrderPolicy`? | backend-expert | **D-13** — **yes, created here** with four flat abilities (reversed at Phase 2 re-review; the original "not here" rested on a mis-read of 0041's own reversed precedent) |
 | Which price does a VARIANT line item snapshot? | Phase 2 re-review | **D-15** — the variant's own `product_variants.price`, never the parent product's |
-| Do the two status enums get `label()` now? | Phase 2 re-review | No — deferred to 0055, its first real consumer ([naming.md](../../../docs/conventions/naming.md#translation-keys)); the lang files still ship here |
+| Do the two status enums get `label()` now? | Phase 2 re-review | No — deferred to 0055, its first real consumer ([naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)); the lang files still ship here |
 | Does a soft-deleted customer block order creation? | backend-qa | **D-12** — no, by decision |
 | Enum backing values: Spanish or English? | backend-expert | English lowercase tokens; Spanish via `lang/es/orders.php` |
 
@@ -1322,7 +1322,7 @@ Derived from this story, none of them in scope:
 1. **Add `label()` to `OrderStatus` / `PaymentStatus`** in story 0055, their first real rendering
    consumer, against the `lang/{en,es}/orders.php` leaves this story already ships — and check at that
    point whether a second consumer exists at all, since
-   [naming.md](../../../docs/conventions/naming.md#translation-keys) treats a one-caller `label()` as
+   [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys) treats a one-caller `label()` as
    indirection that hides which lang group owns the copy. *(This replaces the original item 1, "create
    `OrderPolicy` in whichever of stories 0048–0052 arrives first" — **D-13** was reversed and the
    policy ships here.)*
@@ -1336,9 +1336,9 @@ Derived from this story, none of them in scope:
 
 ## Provenance
 
-- **PRD source:** [§3.2 Orders](../../../docs/PRD/PRD.md#32-orders), plus
-  [§3.1 Customers](../../../docs/PRD/PRD.md#31-customers) (the customer an order references and the
-  soft-delete rationale) and [assumption 19](../../../docs/PRD/PRD.md#assumptions--confirmed-decisions)
+- **PRD source:** [§3.2 Orders](../../../docs/PRD/sections/epic-3-customers-orders.md#32-orders), plus
+  [§3.1 Customers](../../../docs/PRD/sections/epic-3-customers-orders.md#31-customers) (the customer an order references and the
+  soft-delete rationale) and [assumption 19](../../../docs/PRD/sections/foundations.md#assumptions--confirmed-decisions)
   (UUID PKs).
 - **Process:** [workflow.md](../../../docs/workflow.md) Phase 1 — Three Amigos debate. Contributions from
   `backend-expert`, `backend-qa` and `database-expert`, composed by `product-owner` as facilitator.
@@ -1354,7 +1354,7 @@ Derived from this story, none of them in scope:
   `ai-spec/tasks/in-progress/` at the start of Phase 3, and to `ai-spec/tasks/done/` at Phase 7 — both
   moves change this file's directory depth, so every relative link above must be re-resolved on each
   move (both directions), per
-  [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move).
+  [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move).
 - **Epic 3 decomposition:** the Orders foundation story. Siblings referenced by number (0046
   notification, 0047 order history, 0048–0052 status/refunds, 0053–0054 tax resolution, 0055 UI)
   because their files may not exist yet.

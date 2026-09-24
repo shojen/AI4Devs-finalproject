@@ -5,7 +5,7 @@ Build the screen behind `GET /settings/store-languages`, replacing the placehold
 [0068](0068-store-languages-catalog-backend.md) ships. **One Livewire component, two visually distinct
 sections** (confirmed by the human — not two components):
 
-1. **Content languages** — the [PRD Epic 5, Layer 2](../../docs/PRD/PRD.md#epic-5--internationalization)
+1. **Content languages** — the [PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization)
    store-language catalog: add a language by **picking from the bundled ~184-entry ISO 639-1 list**
    (never free-typed), mark one as the store's default content language, and remove one.
 2. **Dashboard defaults** — two admin-configurable system settings constrained to the **two-value**
@@ -311,7 +311,7 @@ reason, and every refusal the backend raises lands against the language it conce
 ## Definition of Done
 - [ ] Tests written and green (full suite **unscoped**, not `--filter`)
 - [ ] `vendor/bin/pint --format agent` run **unscoped**, not `--dirty`
-- [ ] **Larastan level 7 run and recorded** — named explicitly because [errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26) records three consecutive stories whose verification notes listed two of three gates and were read as records of all three
+- [ ] **Larastan level 7 run and recorded** — named explicitly because [errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26) records three consecutive stories whose verification notes listed two of three gates and were read as records of all three
 - [ ] Code reviewed (code-reviewer)
 - [ ] No security findings (appsec-auditor)
 - [ ] Documentation updated (docs-keeper) — at minimum `docs/api/routes.md` (the fourth gated route's screen, and the second half of its module gate), `docs/architecture/authorization.md` (the sidebar registry's **fifth** entry and **second** group addition), and `docs/conventions/naming.md` if the registry key raises anything new
@@ -378,7 +378,7 @@ concerns on one screen. *Rejected:* renaming to a settings-shaped class now — 
 across a file this story does not need to touch, for a naming nicety.
 
 **D-2 — The view is the flat `resources/views/livewire/store-languages.blade.php`.** The
-[`Index`-in-a-subfolder exception](../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
+[`Index`-in-a-subfolder exception](../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
 keys on the **class name** being `Index`, not on living in a subfolder — `App\Livewire\Media\Gallery`
 resolving to the *nested* `livewire/media/gallery.blade.php` is the counter-example `naming.md` records
 for exactly this over-application. `StoreLanguages\Index` **is** named `Index`, so the folder name is
@@ -550,7 +550,7 @@ enforces.
 **D-16 — No `wire:model`-bound property is ever `null`, and `#[Locked]` covers exactly two.** `$code`,
 `$languageId`, `$replacementLanguageId`, `$defaultUiLocale` and `$defaultNotificationLocale` are plain
 `string`s with `''` as the "nothing chosen" sentinel matching a placeholder `<option value="">` — the
-[errors-log rule](../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
+[errors-log rule](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
 applied to every control up front rather than case by case. The two locale properties are assigned real
 values in `mount()` before first render. `#[Locked]` goes on `$languages` (a client-writable array of
 rendered rows is a disclosure risk — the `$regions`/`$users` precedent) and `$languageId` (server-only
@@ -678,7 +678,7 @@ Derived from this debate; **none are in scope for 0069**.
 
 1. **Mark 0068's D26/R-16 superseded** once **Q-2** is confirmed, so no later story inherits the "the
    notification locale has no consumer" claim that 0066's D-14 has already falsified. This is the
-   [stale-claim failure mode](../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
+   [stale-claim failure mode](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
    caught before it propagates a third time.
 2. **Swap the picker's hand-rolled Alpine filter for the searchable multi-select component** if story
    0022 ever ships — this modal is its natural first consumer (**D-6**).

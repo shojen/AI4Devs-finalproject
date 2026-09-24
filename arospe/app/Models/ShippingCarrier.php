@@ -18,7 +18,7 @@ use Illuminate\Support\Carbon;
  *
  * `is_active` is deliberately OMITTED from #[Fillable] -- the same
  * mass-assignment-guard convention `users.status`/`sales_regions.is_active`
- * already use (see docs/conventions/base-standards.md#model-conventions).
+ * already use (see docs/conventions/base-standards/stack-and-model-conventions.md#model-conventions).
  * ToggleShippingCarrier is this column's single writer, via forceFill().
  *
  * `code` is ALSO omitted, for the identical reason `App\Models\SalesRegion`

@@ -1,6 +1,6 @@
 # Epic 3 decision digest (Orders, Payments & Fulfilment)
 
-Append-only. See [workflow.md#decision-digest-per-epic](../../../docs/workflow.md#decision-digest-per-epic)
+Append-only. See [workflow.md#decision-digest-per-epic](../../../docs/workflow/agents-and-epic-digests.md#decision-digest-per-epic)
 for what belongs here and what doesn't — facts and decisions a later story in this epic must not
 re-derive, never the full prose of a finalized story. This is the digest's first entry (created by
 story 0049, the first Epic 3 story to need one); stories 0045–0048 shipped before this file existed

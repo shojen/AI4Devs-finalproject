@@ -15,7 +15,7 @@ database-expert: **no**
 No migration, no model, no action, no policy and no new permission. Every domain artifact this
 screen drives already exists; this story is markup, component wiring and authorization call sites.
 
-**PRD coverage.** [§2.4 Shipping](../../../docs/PRD/PRD.md#24-shipping). From the
+**PRD coverage.** [§2.4 Shipping](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#24-shipping). From the
 `Feature: Shipping carriers and rates` block this story owns the **rendered** form of *Enable a
 carrier*, *Disable a carrier*, *Create a rate rule for a carrier*, and the
 `Scenario Outline: An invalid shipping rate is rejected` (both examples). It satisfies the UI half
@@ -52,7 +52,7 @@ call in the story. Genuinely unresolved items are in **Open questions**, not her
 [0036](../done/0036-shipping-rate-rules-backend.md) **D-10** is dispositive rather than advisory: 0035
 already claims `Route::livewire('shipping', ShippingIndex::class)->name('shipping.index')` **and**
 `resources/views/livewire/shipping.blade.php` — *the* path Livewire's
-[`Index`-in-a-subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
+[`Index`-in-a-subfolder exception](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
 forces for `App\Livewire\Shipping\Index`. A separate rate component either collides on that file or
 invents a second shipping route nobody asked for. 0036 names the consumer explicitly: *"Story 0037
 is the named consumer, and it owns the whole screen including the carrier cards 0035 stubbed."*
@@ -617,11 +617,11 @@ Feature: Permissions on the shipping screen
   button, column labels, the open-ended weight string (**D-8**), the price/currency format, both
   empty states, the delete-confirmation copy, the row-action `aria-label`s, the "action not allowed"
   tooltip and the link to the zone catalog. Key-for-key identical, English source, per
-  [naming.md](../../../docs/conventions/naming.md#translation-keys).
+  [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys).
 
   > **Five-way shared-file hazard.** `lang/en|es/shipping.php` is **created by 0035** and modified by
   > **0033**, **0036**, **0034** and **here**. Per
-  > [contracts.md](../../../docs/contracts.md#parallel-agent-file-ownership-rule)'s Parallel Agent
+  > [contracts.md](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule)'s Parallel Agent
   > File-Ownership Rule these must never be implemented by concurrently-dispatched agents.
   > Sequential only. `resources/views/layouts/app/sidebar.blade.php` carries a second, smaller
   > hazard: **0034** adds a line to it and story **0013** will restructure it entirely.
@@ -837,7 +837,7 @@ rendered unavailable rather than failing on click. The rate resolver is nowhere 
 ## Definition of Done
 
 - [x] Tests written and green, plus the **full** suite
-      ([contracts.md](../../../docs/contracts.md#full-test-suite-gate-rule)'s Full Test Suite Gate Rule).
+      ([contracts.md](../../../docs/contracts/testing-and-parallel-agents.md#full-test-suite-gate-rule)'s Full Test Suite Gate Rule).
 - [x] Code reviewed (code-reviewer).
 - [x] No security findings (appsec-auditor). Expected focus: that `$ratesByCarrier` and every
       unlocked form property are client-writable by construction, so their only defence is the
@@ -870,7 +870,7 @@ rendered unavailable rather than failing on click. The rate resolver is nowhere 
 - **0034 — zones UI.** Soft: only the `shipping.zones.index` route name, for the link in **D-10**.
 - **0002 — seeded permission catalog.** `shipping.*` already exists; nothing to add.
 - **Sequential only.** Five stories write `lang/en|es/shipping.php` and two write the sidebar; per
-  [contracts.md](../../../docs/contracts.md#parallel-agent-file-ownership-rule) none may be implemented
+  [contracts.md](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule) none may be implemented
   concurrently.
 
 ### Risks
@@ -936,7 +936,7 @@ relitigated:
 ## Provenance
 
 Phase 1 Three Amigos debate, 2026-08-18: `product-owner` + `frontend-expert` + `frontend-qa`, per
-[`docs/workflow.md`](../../../docs/workflow.md#phase-1--three-amigos-debate)'s classification rule
+[`docs/workflow.md`](../../../docs/workflow/phases.md#phase-1--three-amigos-debate)'s classification rule
 (frontend; no schema change, so no `database-expert`). Both amigos were convened live and both
 materially changed this document.
 
@@ -965,5 +965,5 @@ Three notes on how this debate ran, recorded for honesty:
   precedent rather than escalated.** [0018](../done/0018-sales-region-tax-configuration-ui.md) **D1** and
   [0017](../done/0017-sales-region-tax-configuration-backend.md) **D12** had already settled it for the tax
   field. It is recorded here as **D-5** rather than as an open question, which is what the
-  [Uncertainty Handling Rule](../../../docs/contracts.md#uncertainty-handling-rule) asks for: ask only
+  [Uncertainty Handling Rule](../../../docs/contracts/safety-rules.md#uncertainty-handling-rule) asks for: ask only
   where the answer genuinely is not already in the repo.

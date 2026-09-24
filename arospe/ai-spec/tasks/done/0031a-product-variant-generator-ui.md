@@ -70,7 +70,7 @@ rather than renumbered).
 
 🔴 **This capability is deliberately *not* PRD-derived**, and saying so is more honest than retro-fitting
 a scenario to it: the **cartesian generator** is a **PO decision taken on 2026-08-19**, above the PRD
-rather than out of it. **FE-V12** ([PRD §2.2](../../../docs/PRD/PRD.md#22-products)'s only creation scenario
+rather than out of it. **FE-V12** ([PRD §2.2](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#22-products)'s only creation scenario
 is singular — *"When they **generate the variant** 'Size 40 / Color Black'"*) remains true, so the
 generator is scope the PO added, and the twelve Gherkin scenarios under *"Generating every combination at
 once"* below are **new acceptance criteria this story authors**, not a rendering of existing PRD text.
@@ -442,7 +442,7 @@ cap, its transaction shape and its summary contract are 0029b's) ·
 `tests/Feature/Products/VariantBuilder{Test,SkuPreviewTest,RenderingTest,QueryTest,AuthorizationTest}.php`
 (**0031's own**, untouched by this story) · `docs/**` (Phase 6).
 
-> ⚠️ **[Parallel Agent File-Ownership Rule](../../../docs/contracts.md#parallel-agent-file-ownership-rule).**
+> ⚠️ **[Parallel Agent File-Ownership Rule](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule).**
 > This story modifies four files 0031 creates (`VariantBuilder.php`, its view, its browser test file, and
 > the shared `lang/*/products.php`). Its Phase 3 must **never** be dispatched in the same batch as 0031
 > — **including 0031's own verification steps** — which the sequencing (0031 must reach Phase 7 first)
@@ -708,5 +708,5 @@ lives in exactly one of them.
 > it **three** levels down and silently breaks all of them — `../../docs/...` must become
 > `../../../docs/...`, and the sibling-task link (`0031-...md`) must become `../0031-...md` (or
 > `done/0031-...md`, once 0031 itself has moved there). This is a mandatory step, not a nicety: see
-> [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move) and the
+> [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move) and the
 > [errors-log entry](../../../docs/errors-log.md) recording the files this already broke.

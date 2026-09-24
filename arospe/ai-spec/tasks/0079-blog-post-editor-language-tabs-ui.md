@@ -3,7 +3,7 @@
 ## Description
 Retrofit story [0063](0063-blog-posts-list-editor-ui.md)'s Blog post list and routed editor page so a
 post's **title** and **body** are authored per active store language through language tabs, satisfying
-[PRD Epic 5, Layer 2](../../docs/PRD/PRD.md#epic-5--internationalization)'s *"each active store language
+[PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization)'s *"each active store language
 surfaces as a tab in the Product and **Blog editors**"* and its `Switching an editor's language tab
 switches only translatable fields` scenario. Consumes story
 [0078](0078-translatable-content-retrofit-blog-posts-backend.md)'s retrofit — which **deletes the
@@ -46,7 +46,7 @@ refined.** Almost nothing here is new mechanism; what *is* new is named in
 > (**D-4** there) from this story's scope — and it creates a problem no sibling has: **a refusal about
 > a slug has no slug field to land on** (**D-2**, **Q-2**).
 >
-> Per this project's rule that [a second-hand claim is a flag that nobody checked](../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24),
+> Per this project's rule that [a second-hand claim is a flag that nobody checked](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24),
 > this is recorded as a correction with its evidence rather than silently worked around. **Both amigos
 > were asked to challenge it independently and both confirmed it against the files.**
 
@@ -62,7 +62,7 @@ refined.** Almost nothing here is new mechanism; what *is* new is named in
 > `vendor/` directory**, so nothing below was settled by executing Laravel, Livewire, Alpine or Flux
 > code. Stories 0020, 0021, 0058, 0059, 0060, 0061, 0062, 0063, 0068, 0070, 0071, 0074 and 0078 are
 > **all Phase 1 files**. **Phase 3 must re-verify every signature named here against `HEAD` before
-> writing a line** — the [deferred-findings failure mode](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
+> writing a line** — the [deferred-findings failure mode](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
 > at this epic's widest exposure yet: **thirteen unshipped stories** (**R-12**).
 
 ## Type
@@ -86,7 +86,7 @@ frontend | includes database-expert: **no** | consumes **0078** (the retrofit), 
 ## Three Amigos participants
 
 `product-owner` (facilitator) + `frontend-expert` + `frontend-qa`, per
-[workflow.md](../../docs/workflow.md#task-classification-rule)'s Frontend classification. **Both amigos
+[workflow.md](../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule)'s Frontend classification. **Both amigos
 were dispatched as real subagent calls and both returned full contributions.** Their material is
 reflected below, including **four points where the facilitator corrected or overruled a contribution**
 (**V-1**–**V-4**) and **six points where the two converged independently**, which is the strongest
@@ -592,7 +592,7 @@ cause**. That is the same shape 0078 **D-6** records for the trashed-post reserv
       control that matters most on this screen.** 0061 **D-10** forbids title uniqueness (a series, a
       "Part 2"), unlike `name` on all three sibling entities — so an author mechanically following
       0071/0077's master pattern adds a uniqueness rule *for consistency* and nothing catches it. This
-      is the [`@js()`-cleanup-for-consistency failure mode](../../docs/errors-log-archive.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
+      is the [`@js()`-cleanup-for-consistency failure mode](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
       arriving in a validation rule. Both `frontend-qa` and the facilitator flagged it independently.
 - [ ] **The action accepts a blank body for any language, unconditionally, regardless of the post's
       `status`** — asserted against a **`Published`** post. *Risk if missing:* this is 0078's backlog
@@ -620,7 +620,7 @@ cause**. That is the same shape 0078 **D-6** records for the trashed-post reserv
 - [ ] The action is **resolved from the container, never `new`-ed**, in every test.
 - [ ] ⚠️ **Architecture guard:** `App\Actions\Translations\SetTranslation` appears in **no** import
       under `app/Livewire/` — **one `arch()` rule per namespace, never `expect([...])`**, and proven
-      able to fail, per [the vacuous-`arch()` entry](../../docs/errors-log-archive.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18).
+      able to fail, per [the vacuous-`arch()` entry](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18).
 
 ### Feature — `tests/Feature/Blog/BlogPostEditorLanguageTabsTest.php`
 
@@ -711,7 +711,7 @@ cause**. That is the same shape 0078 **D-6** records for the trashed-post reserv
       now mount *transitively*, one inside each editor (**D-4**).
 - [ ] The non-translatable controls — category, status, publication date, tag field — render **exactly
       once**. Three rules make this assertion real rather than vacuous: match on the `data-test` hook
-      **including the closing quote** (the [`<ui-checkbox` prefix trap](../../docs/errors-log-archive.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21));
+      **including the closing quote** (the [`<ui-checkbox` prefix trap](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21));
       use a **three-language** dataset, because at N=1 the assertion cannot fail and at N=2 an off-by-one
       is indistinguishable from a wrapper; and assert the translatable hooks against the **derived**
       language count, never a literal.
@@ -746,7 +746,7 @@ place only where the real-DOM/JS round trip **is** the risk. Every test closes w
       the input is never unmounted, so this is a **regression guard on the markup** (an `x-show`
       expression matching the wrong tab id renders plausibly and is invisible to `Livewire::test()`).
 - [ ] **B-5 — a typed draft survives a switch past the 400 ms debounce.** Uses a short bounded
-      `->wait(1)` — the [documented carve-out](../../docs/testing/frontend/playwright-setup.md#waiting-one-call-is-banned-in-this-repo-and-one-is-bounded)
+      `->wait(1)` — the [documented carve-out](../../docs/testing/frontend/playwright-setup/waiting-rules.md#waiting-one-call-is-banned-in-this-repo-and-one-is-bounded)
       in its strongest form, because the reason is a **contract**: 0021 **D9** debounces `$wire.set` at
       400 ms. The comment must say exactly that.
 - [ ] **B-6 — a non-active tab's refusal is visible without further clicking.**
@@ -867,7 +867,7 @@ nowhere else in the application.
       tests, which are the only level that can observe three of this story's failure modes
 - [ ] `vendor/bin/pint --format agent` run **unscoped**, not `--dirty`
 - [ ] **Larastan level 7 run and recorded** — named explicitly because
-      [errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
+      [errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
       records three consecutive stories whose verification notes listed two of three gates and were read
       as records of all three. **A record naming two gates is a record of two gates.**
 - [ ] **Compiled output of the tab strip and the N panels verified by rendering**, not by the absence of
@@ -949,7 +949,7 @@ $originalTranslatedLanguageIds` and the unlocked `public string $activeLanguageI
   destroying content. 0071 **D-3** and 0077 **D-2** reach the identical conclusion for the identical
   reason.
 - **`$activeLanguageId` stays unlocked and never binds a `<select>`** — it drives an `x-show`
-  comparison, so the [null-bound-`<select>` trap](../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
+  comparison, so the [null-bound-`<select>` trap](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
   is structurally inapplicable, recorded so nobody "defensively" applies it. The trap **does** still
   bind `$blogCategoryId` and `$status`, unchanged from 0063 **D-6**.
 
@@ -984,7 +984,7 @@ exist for this.**
 > while ceasing to mean what it meant, because the mounts are now transitive. Three obligations follow:
 > the per-language `wire:key` must cascade correctly into each nested gallery (0021 **D5**'s uniqueness
 > machinery, at N instead of 1); a **bounded query-count test proven able to move** is needed, per the
-> [count-assertion rule](../../docs/errors-log-archive.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21);
+> [count-assertion rule](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21);
 > and page weight at N=3+ is a real Phase 3 verification item, not a theoretical one.
 > `frontend-expert`'s finding, and the sharpest thing in this story that is not about correctness.
 
@@ -1055,7 +1055,7 @@ class follows 0071 **D-13**'s master shape and 0077 **D-19**'s named-parameters 
 are the family's, applied unchanged:
 
 1. **Authorization is its own first statement**, outside any transaction, per
-   [the action-owns-the-rule convention](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers).
+   [the action-owns-the-rule convention](../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers).
    It authorizes `update` on the **`BlogPost`** — which resolves to `blog.edit` through
    `BlogPostPolicy::EDIT_PERMISSION` — never on the translation row, and there is deliberately no
    `TranslationPolicy` (0078 **D-14**). Not `blog.create`: translating an existing post is editing it,
@@ -1071,7 +1071,7 @@ are the family's, applied unchanged:
    on the sanitised value. Putting it here rather than only in the component is what closes 0078's
    **R-8** structurally rather than by remembering.
 4. **Error keys are derived internally** as `"titles.{$language->id}"` / `"bodies.{$language->id}"`,
-   never accepted as parameters — the [guard-took-the-state-it-guarded](../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
+   never accepted as parameters — the [guard-took-the-state-it-guarded](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
    shape.
 5. **It reuses `BlogPostValidationRules` and writes no local rule** — subject to **Q-1**.
 6. **Named parameters, never `array $fields`** (0077 **D-19**): an array is a pass-through surface the
@@ -1202,7 +1202,7 @@ plausible drift. Every sibling in this family has a unique `name`; this one does
 pattern — where per-language `name` uniqueness is *the* headline rule — will add title uniqueness for
 consistency, and nothing will catch it. `frontend-qa` names it as the negative control it would "bet
 real money" a first draft gets wrong, and the facilitator flagged it independently. It is the
-[cleanup-for-consistency failure mode](../../docs/errors-log-archive.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
+[cleanup-for-consistency failure mode](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
 arriving in a validation rule instead of a Blade attribute. **The uniqueness that *does* exist is on the
 derived `slug`, per `(store_language_id, slug)` — and it has no field (D-2).**
 
@@ -1227,7 +1227,7 @@ commit → (0061's post-commit notification dispatch, untouched).
   there deliberately. **An outer transaction moves that "after the commit" point**, so a notification
   0061 designed to fire only on a durable transition could fire inside an outer scope that later rolls
   back. This is precisely the
-  [transaction-wrapper rule](../../docs/errors-log-archive.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21) —
+  [transaction-wrapper rule](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21) —
   *wrapping existing code in a transaction is a change to every side effect that code already
   performed, and the diff will not show you the one that moved.* `frontend-expert`'s finding; **the
   sharpest new risk this story adds**, and it must be resolved by execution at Phase 3, not reasoned
@@ -1394,7 +1394,7 @@ a post's French title is neither identity-sensitive nor hard to reverse.
   `flux:table`, because `flux:tab` is a prefix of it. **The conclusion is correct** (there is genuinely
   no tabbed markup; `grep -rnE 'flux:tab[^l]|flux:tabs|role="tab"'` returns nothing), but the cited
   command could not have produced the cited result. This is the repo's own
-  [prefix-trap failure mode](../../docs/errors-log-archive.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21)
+  [prefix-trap failure mode](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21)
   appearing inside a *verification claim in a story file* rather than in a test — the same trap as
   `<ui-checkbox` matching `<ui-checkbox-group` and `assertSee('0%')` matching `10%`. Nothing here
   depends on it; recorded because this project's stale-claim rule is that a false premise reaches a

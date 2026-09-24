@@ -66,7 +66,7 @@ test('a line item round-trips through the factory with every column persisting a
 
 // This is the sharpest structural test in the story -- the omission-as-guard convention
 // (omission from #[Fillable] IS this codebase's mass-assignment guard, per
-// docs/conventions/base-standards.md#model-conventions) is only real if something fails when it
+// docs/conventions/base-standards/stack-and-model-conventions.md#model-conventions) is only real if something fails when it
 // is undone. Asserted against getFillable() directly, matching
 // tests/Feature/Models/ProductVariantTest.php's own "the fillable set excludes ..." precedent --
 // NOT a real ::create() call, since several of the omitted Order/OrderItem columns

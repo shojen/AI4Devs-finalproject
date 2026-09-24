@@ -127,51 +127,50 @@ This is a Laravel application. Abide by these specific packages and versions:
 - Laravel can be deployed with [Laravel Cloud](https://cloud.laravel.com/).
 - `php artisan db:seed --class=RolePermissionSeeder` is a **required** deploy step: that seeder is the
   only source of the app's roles and permission catalog. See
-  [`docs/architecture/authorization.md`](docs/architecture/authorization.md#seeding).
+  [`docs/architecture/authorization.md`](docs/architecture/authorization/overview-catalog-seeding.md#seeding).
 
 ## Project documentation
 
 The `docs/` directory is the source of truth for this repository's architecture, conventions, and
 process. Read it before writing code; keep it accurate when behavior changes.
 
-Full index: [`docs/README.md`](docs/README.md).
+The docs are large, so they are split into **hubs plus parts**: read only what your task needs. Start
+from the compact index [`docs/README.md`](docs/README.md), open the one document (or split part) whose
+*Read when* matches your task — at an exact heading when possible — and never open a whole doc "just in
+case". A hub file lists its parts with a *Read when* column: open the matching part only.
 
-**Read regardless of the task:**
+**Read regardless of the task** (small hubs holding the binding core of the rules; open a part only when
+its *Read the full text when* line applies to your task):
 
 - [`docs/contracts.md`](docs/contracts.md) — behavioral contracts governing what an AI agent may and
   may not do here (notably: ask instead of assuming, and never approve, close, or merge a pull
   request — that action is reserved for the project owner alone).
 - [`docs/workflow.md`](docs/workflow.md) — the multi-agent Three Amigos + TDD + security + review +
   docs process, phase by phase.
-- [`docs/architecture/`](docs/architecture/) — overview, authentication, authorization.
 - [`docs/conventions/base-standards.md`](docs/conventions/base-standards.md) — stack versions, model
-  and Livewire component conventions, quality gates. See
-  [`docs/conventions/directory-structure.md`](docs/conventions/directory-structure.md) (split out from
-  it) for the directory layout.
+  and Livewire component conventions, quality gates.
+- [`docs/architecture/overview.md`](docs/architecture/overview.md) — before any non-trivial change;
+  every other architecture doc is conditional.
 
 **Read when relevant to the task:**
 
 | When | Read |
 | --- | --- |
-| gating access, or touching auth, roles/permissions, seeders, secrets | [`docs/security/`](docs/security/README.md) |
-| you need the database schema | [`docs/database/schema.md`](docs/database/schema.md) |
-| you need migration conventions | [`docs/database/migrations.md`](docs/database/migrations.md) |
-| you need route/Livewire contracts | [`docs/api/routes.md`](docs/api/routes.md) |
+| gating access, or touching auth, roles/permissions, seeders, secrets, uploads, sanitization | [`docs/security/`](docs/security/README.md) (index — open the page whose row matches) |
+| touching authentication (Fortify, 2FA, passkeys, account status, email change) | [`docs/architecture/authentication.md`](docs/architecture/authentication.md) (hub → one part) |
+| touching authorization (roles, permissions, policies, gating a module, step-up) | [`docs/architecture/authorization.md`](docs/architecture/authorization.md) (hub → one part) |
+| touching shipping-rate resolution | [`docs/architecture/shipping.md`](docs/architecture/shipping.md) |
+| you need the database schema | [`docs/database/schema.md`](docs/database/schema.md) (ER diagram + which file owns a table) → that domain's file |
+| writing a migration | [`docs/database/migrations.md`](docs/database/migrations.md) (hub → one part) |
+| you need route/Livewire contracts | [`docs/api/routes.md`](docs/api/routes.md) (index) → the per-area file |
 | you need code-style examples | [`docs/conventions/code-style.md`](docs/conventions/code-style.md) |
-| you need the app's directory layout / where a new class or action belongs | [`docs/conventions/directory-structure.md`](docs/conventions/directory-structure.md) |
-| you need naming conventions | [`docs/conventions/naming.md`](docs/conventions/naming.md) |
-| you need validation-trait naming conventions | [`docs/conventions/naming-validation-traits.md`](docs/conventions/naming-validation-traits.md) |
+| you need the app's directory layout / where a new class or action belongs | [`docs/conventions/directory-structure.md`](docs/conventions/directory-structure.md) (hub → one part) |
+| you need naming conventions | [`docs/conventions/naming.md`](docs/conventions/naming.md) (hub → one part); validation traits: [`docs/conventions/naming-validation-traits.md`](docs/conventions/naming-validation-traits.md) |
 | you write or review tests | [`docs/testing/README.md`](docs/testing/README.md) |
+| you need product requirements for a story | [`docs/PRD/PRD.md`](docs/PRD/PRD.md) (hub → only that epic's part) |
 | you need past architectural context | [`docs/decisions/`](docs/decisions/README.md) |
-| before repeating a past mistake | [`docs/errors-log.md`](docs/errors-log.md) |
+| before repeating a past mistake | [`docs/errors-log.md`](docs/errors-log.md) (hub — its topic index names the exact entry file) |
 
-_Last updated: 2026-09-11 — Doc growth management pass (docs/contracts.md#doc-growth-management-rule),
-not a story. `docs/conventions/base-standards.md` and `docs/conventions/naming.md` were split — the
-directory-layout section moved to the new `docs/conventions/directory-structure.md`, and the
-validation-trait naming section moved to the new `docs/conventions/naming-validation-traits.md`. Added
-both to the "Read when relevant to the task" table and pointed the `base-standards.md` mandatory-reading
-bullet at the new directory-structure file._
-
-_Previously: 2026-08-10 — Created as the tool-agnostic mirror of `CLAUDE.md`, matching its pointer
-section after task 0002 (roles & permissions foundation) added `docs/security/` and made
-`db:seed --class=RolePermissionSeeder` a required deploy step._
+_Last updated: 2026-09-24 — Docs optimization pass: long docs were split into hubs plus parts, `docs/README.md`
+became a compact *Read when* index, and the pointer section was rewritten to match `CLAUDE.md` (which no longer
+`@`-imports conditional docs, so they stop loading into every session)._

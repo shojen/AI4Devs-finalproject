@@ -190,7 +190,7 @@ Two things about this signature are load-bearing and must not be "simplified":
   `bootstrap/cache/config.php` built before the block existed, or a test doing
   `config(['auth.super_admin.role' => null])`) returns `null`. This repo already documents the rule with
   this exact config key as its worked example —
-  [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns.md#read-the-super-admin-role-name-with-a-literal-default),
+  [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns/bypass-cache-and-guards.md#read-the-super-admin-role-name-with-a-literal-default),
   which states the correct form outright and says "Do not 'simplify' this to one of the two" — and the
   already-shipped `Gate::before` bypass at `app/Providers/AppServiceProvider.php:83` carries both
   fallbacks for exactly this reason. Dropping the `??` here would recreate the divergence this story
@@ -278,7 +278,7 @@ demand has no such ordering hazard.
   `App\Policies\RolePolicy` binds to `App\Models\Role` by Laravel 13's auto-discovery, which is this
   repo's documented, registration-free convention
   ([base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure),
-  [naming.md](../../../docs/conventions/naming.md#classes)). An earlier draft of this story kept an
+  [naming.md](../../../docs/conventions/naming/classes.md#classes)). An earlier draft of this story kept an
   explicit `Gate::policy(Role::class, RolePolicy::class)` line, justified by the claim that code paths
   still holding a `Spatie\Permission\Models\Role` instance would otherwise not resolve the policy. **The
   conclusion — drop the registration — is right, but that justification is not, so don't reinstate the
@@ -403,7 +403,7 @@ working untouched. Ordinary custom roles remain fully manageable.
 - [x] Permission-revocation attempts are caught even though they bypass Eloquent model events, via overrides of `givePermissionTo()` / `syncPermissions()` / `revokePermissionTo()` on `App\Models\Role`.
 - [x] Both layers are present and independently effective: `RolePolicy` for code paths that call `authorize()`, and the model-level guards for code paths that do not.
 - [x] A single shared local scope (`Role::query()->selectable()`) exists and excludes exactly the Super Admin role; no global scope is introduced.
-- [x] The Super Admin role is identified **via the single `App\Models\Role::superAdminName(): string` method** — one `public static` implementation reading `config('auth.super_admin.role', RoleName::SuperAdmin->value) ?? RoleName::SuperAdmin->value`, with `App\Enums\RoleName::SuperAdmin->value` the single place the literal string is written — called by every guard, by the `selectable()` scope, by `RolePolicy` and by the seeder alike, none of which re-derives the config read itself. **Both fallbacks are present**: `config()`'s default for a missing key and `??` for a key that is present but `null` (per [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns.md#read-the-super-admin-role-name-with-a-literal-default)) — so the method can never return `null` and leave the guards, scope, policy and seeder protecting nothing while the `Gate::before` bypass still grants the role. This is the same source of truth the existing `Gate::before` permission bypass in `AppServiceProvider::configureAuthorization()` already reads, so the role that bypasses permission checks and the role that is protected/hidden are provably the same role and cannot diverge when the config value is overridden. Matching is exact (a role merely containing "Super Admin" in its name is unaffected).
+- [x] The Super Admin role is identified **via the single `App\Models\Role::superAdminName(): string` method** — one `public static` implementation reading `config('auth.super_admin.role', RoleName::SuperAdmin->value) ?? RoleName::SuperAdmin->value`, with `App\Enums\RoleName::SuperAdmin->value` the single place the literal string is written — called by every guard, by the `selectable()` scope, by `RolePolicy` and by the seeder alike, none of which re-derives the config read itself. **Both fallbacks are present**: `config()`'s default for a missing key and `??` for a key that is present but `null` (per [`docs/security/authorization-patterns.md`](../../../docs/security/authorization-patterns/bypass-cache-and-guards.md#read-the-super-admin-role-name-with-a-literal-default)) — so the method can never return `null` and leave the guards, scope, policy and seeder protecting nothing while the `Gate::before` bypass still grants the role. This is the same source of truth the existing `Gate::before` permission bypass in `AppServiceProvider::configureAuthorization()` already reads, so the role that bypasses permission checks and the role that is protected/hidden are provably the same role and cannot diverge when the config value is overridden. Matching is exact (a role merely containing "Super Admin" in its name is unaffected).
 - [x] Seeding, `assignRole()` by name, permission-cache hydration, and a Super Admin's own `hasRole()`/`hasPermissionTo()` are all provably unaffected by the invisibility mechanism.
 - [x] With no Super Admin role row present, nothing crashes and nothing is wrongly blocked (the guard fails open, not closed).
 - [x] `config/permission.php` resolves `models.role` to `App\Models\Role`.
@@ -455,7 +455,7 @@ working untouched. Ordinary custom roles remain fully manageable.
         `$role->users()->detach()` strips **every** Super Admin holder in one call, which is an
         irrecoverable lockout — `Gate::before` is the only route to unrestricted access, and with no
         holder left there is no actor who can grant it back through the application. (Recorded in
-        [`docs/architecture/authorization.md`](../../../docs/architecture/authorization.md#the-super-admin-roles-invariants)'s
+        [`docs/architecture/authorization.md`](../../../docs/architecture/authorization/super-admin.md#the-super-admin-roles-invariants)'s
         bypass table alongside the `permissions()` case.)
       - `Spatie\Permission\Models\Permission` also uses `HasRoles`, so
         `Permission::first()->removeRole('Super Admin')` mutates the identical `role_has_permissions`

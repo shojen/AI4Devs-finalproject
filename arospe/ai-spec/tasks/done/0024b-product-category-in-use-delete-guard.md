@@ -55,7 +55,7 @@ The story is deliberately small — one modified action, one relation method, tw
 file — and it is the only part of the original 0024 that **edits another story's shipped code**, which
 is precisely why `code-reviewer` recommended cutting it out.
 
-Covers [PRD](../../../docs/PRD/PRD.md#22-products) §2.2's *"Deleting a product category still in use is
+Covers [PRD](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#22-products) §2.2's *"Deleting a product category still in use is
 hard-blocked with a count"* — Products acceptance criterion 2.
 
 ## Type
@@ -116,7 +116,7 @@ Feature: Deleting a product category that is in use
 | `app/Actions/ProductCategories/DeleteProductCategory.php` | **Modify** ([0023](0023-product-categories-backend.md) creates it; its **D-10** states the file exists as its own file *precisely* so a later story extends it). `__invoke()` gains the count-and-block guard — full shape in **D-14**. |
 | `app/Models/ProductCategory.php` | **Modify** (0023 creates it). Gains exactly one method: `/** @return HasMany<Product, $this> */ public function products(): HasMany`. It is what the guard counts through. |
 | `lang/en/products.php` | **Modify** ([0024](0024-products-core-crud-backend.md) creates it). Adds one key: `products.categories.delete_blocked`. |
-| `lang/es/products.php` | **Modify**, key-for-key identical, with **Spanish** pluralisation written rather than transliterated, per [naming.md](../../../docs/conventions/naming.md#translation-keys). |
+| `lang/es/products.php` | **Modify**, key-for-key identical, with **Spanish** pluralisation written rather than transliterated, per [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys). |
 | `tests/Feature/ProductCategories/DeleteProductCategoryTest.php` | **Extend** 0023's existing file — do not create a second one. Its four existing cases must stay green **unmodified**; see Tests. |
 | `tests/Feature/Models/ProductTest.php` | **Extend** 0024's existing file — one new case for the `$category->products` inverse-exclusion assertion; see Tests. |
 
@@ -249,7 +249,7 @@ Nothing is user-visible yet: the screen that renders the refusal is story 0025, 
       `tests/Browser/Media/GalleryTest.php`'s "open, search, cancel, and reopen..." test failed three
       times, each a `Timeout 5000ms exceeded` at the identical `->assertVisible()`/`->fill()` pair — this
       repo's own pre-documented second honestly-recorded flaky browser test
-      ([playwright-setup.md](../../../docs/testing/frontend/playwright-setup.md#waiting-one-call-is-banned-in-this-repo-and-one-is-bounded)),
+      ([playwright-setup.md](../../../docs/testing/frontend/playwright-setup/waiting-rules.md#waiting-one-call-is-banned-in-this-repo-and-one-is-bounded)),
       whose own docblock already named the fix this story applied: `retry(3, ...)` (Laravel's own
       helper, no new dependency) wrapping the entire real-browser flow, closing the exact lever three
       prior wait/assertion-permutation rounds had exhausted without touching any of them. Verified in 6
@@ -266,7 +266,7 @@ Nothing is user-visible yet: the screen that renders the refusal is story 0025, 
       All three quality gates re-run unscoped immediately after and clean: `pint --test --format agent`
       (passed), `phpstan analyse` level 7 (0 errors).
 - [x] **All three quality gates run unscoped and each result recorded — including "not run"**, per
-      [errors-log.md](../../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+      [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
       **Corrected at Phase 5 review, finding N-7** (this bullet previously named `php artisan test`,
       the exact command [ci/commands.md](../../../docs/testing/ci/commands.md) documents as fatalling at
       128M on this host-native worktree, and contradicted itself on the pass count):
@@ -337,7 +337,7 @@ Nothing is user-visible yet: the screen that renders the refusal is story 0025, 
       action, and its siblings `CreateProductCategory`/`RenameProductCategory`, permanently ungated for
       any non-HTTP caller — the exact shape [errors-log.md's task 0008a entry](../../../docs/errors-log.md)
       records). The component **may** authorize too, as a fail-fast layer (defence in depth, not
-      duplication — see [base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+      duplication — see [base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
       task 0017 precedent), but the action owns the rule. Once that gate exists, `DeleteProductCategory`
       *does* have actor context (`Auth::user()`, resolved internally by `LogRefusedPrivilegedAttempt`)
       — **OQ-B1**'s "no actor context" reasoning applies only to the separate domain-invariant refusal
@@ -451,7 +451,7 @@ of the requirement (deleting "Calzado" would silently delete 12 products). `null
 for a behaviour the PRD forbids. `restrict` makes the block a **database invariant**, which is what
 turns the application guard into genuine defence-in-depth rather than the only protection — it still
 refuses a bulk cleanup, a seeder, or `ProductCategory::where(...)->delete()` through the **query
-builder**, which per [base-standards.md](../../../docs/conventions/base-standards.md#deleting-a-user-goes-through-the-model-not-the-query-builder)
+builder**, which per [base-standards.md](../../../docs/conventions/base-standards/stack-and-model-conventions.md#deleting-a-user-goes-through-the-model-not-the-query-builder)
 skips model-level behaviour entirely. This is sound **only because `product_categories` has no soft
 deletes** (0023 D-3): a soft-deleted parent never triggers an FK, so the guard would silently degrade
 to application-only (**R-11**). The FK itself is [0024](0024-products-core-crud-backend.md)'s migration;
@@ -466,7 +466,7 @@ prevent. `App\Exceptions\ImmutableRoleException` is this repo's one domain excep
 is wrong here: its `render()` returns a **403**, converging on an authorization denial, and **this
 refusal is not one** — the actor holds `products.delete` and the answer is still no. Precedent that
 settles it: `CreateUser` converts a `23000` into a `ValidationException` for exactly this reason, and
-[authorization.md](../../../docs/architecture/authorization.md#a-domain-invariant-is-not-an-authorization-rule-and-does-not-live-here)
+[authorization.md](../../../docs/architecture/authorization/domain-invariants.md#a-domain-invariant-is-not-an-authorization-rule-and-does-not-live-here)
 already owns the general rule that a domain invariant is not an authorization rule.
 
 *Acknowledged counter-argument, recorded so Phase 5 does not re-litigate it:* `ValidationException`
@@ -491,7 +491,7 @@ The message is a **`trans_choice`** key, because the singular differs. 0024's dr
 explicit-range form `{1} …|[2,*] …` **and claimed there was no `trans_choice` precedent anywhere in
 `lang/`**. That claim is false: `lang/en/roles.php`'s `index.delete_blocked` has used the simple
 `singular|plural` form since task 0010, there are six `trans_choice()` call sites in the codebase, and
-[naming.md](../../../docs/conventions/naming.md#translation-keys) has owned the convention since then.
+[naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys) has owned the convention since then.
 
 **Corrected a second time at Phase 2 review (finding B-2): this key matches `roles.php`'s simple form,
 not `media.php`'s explicit-range form — and both already coexist in this codebase.** `lang/en/roles.php`
@@ -543,7 +543,7 @@ already opening `DeleteProductCategory`. **It deliberately does not**, for two r
 1. **Closing one of three leaves the folder half-converted, which is worse than uniformly deferred.**
    `app/Actions/ProductCategories/` holds `CreateProductCategory`, `RenameProductCategory` and
    `DeleteProductCategory`. 0023 shipped all three unauthorized as an explicit, documented hand-off to
-   **0025** — recorded as a ⚠️ in [schema.md](../../../docs/database/schema-products.md#product_categories) and in
+   **0025** — recorded as a ⚠️ in [schema.md](../../../docs/database/schema-products/categories-and-products.md#product_categories) and in
    [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure). Gating only the
    one this story happens to touch produces an inconsistency a reader cannot explain from the code,
    and it silently changes 0025's job from "add three gates" to "add two, and find out why".
@@ -567,7 +567,7 @@ recorded as absorbing 0023's hand-off rather than as a detail of this one.
 ### D-B2 — When 0025 adds the gate, it goes **inside `DeleteProductCategory` itself**, above the in-use guard
 
 An ordering constraint, stated now because it is invisible from inside 0025 and expensive to get wrong.
-[authorization.md](../../../docs/architecture/authorization.md#a-domain-invariant-is-not-an-authorization-rule-and-does-not-live-here)
+[authorization.md](../../../docs/architecture/authorization/domain-invariants.md#a-domain-invariant-is-not-an-authorization-rule-and-does-not-live-here)
 already establishes the rule for the Sales Regions screen: **a domain invariant runs strictly *after*
 authorization.** Inverting the two here would mean an actor who lacks `products.delete` entirely gets
 told *"this category is used by 12 products"* — a permission refusal dressed as a business message,
@@ -581,7 +581,7 @@ which both discloses the count to someone with no right to it and hides the real
 > permanently ungated for any future non-HTTP caller (a queued job, an Artisan command, a second
 > component). That is the identical shape [errors-log.md's task 0008a entry](../../../docs/errors-log.md)
 > already records as a real gap, not a hypothetical one. The correction below is not a new decision —
-> it is what **D-B1** and this project's own [action-owns-the-rule convention](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+> it is what **D-B1** and this project's own [action-owns-the-rule convention](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 > already implied; only the ordering text was ambiguous.
 
 So the shipped shape in 0025 is `DeleteProductCategory` **self-authorizing as its own first statement**,
@@ -608,7 +608,7 @@ public function __invoke(ProductCategory $productCategory): bool
 `LogRefusedPrivilegedAttempt` becomes the action's constructor-injected collaborator at that point (0024b
 itself adds no such dependency — this is 0025's diff, not this story's). The component **may** also
 authorize before calling the action, as a fail-fast UI layer (defence in depth, not duplication — see
-[base-standards.md](../../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+[base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
 task 0017 precedent for exactly this shape), but the action is what a non-HTTP caller inherits, and it is
 what makes the rule real rather than a UI convenience. The two refusals stay distinguishable by type:
 **403** for the authorization one, a `ValidationException` on `productCategoryId` for the invariant.

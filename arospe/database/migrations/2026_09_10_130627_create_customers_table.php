@@ -11,7 +11,7 @@ return new class extends Migration
      *
      * Story 0041 — a plain UUIDv7 greenfield table, copying
      * create_sales_regions_table's own pattern (see
-     * docs/database/migrations.md#uuid-primary-keys): `uuid('id')->primary()`,
+     * docs/database/migrations/uuid-primary-keys.md#uuid-primary-keys): `uuid('id')->primary()`,
      * every string column length-capped, exactly one index beyond the
      * primary key (`email` UNIQUE — D-10), and NO explicit index on any FK
      * column, because this table has no FK of any kind (D-8: no

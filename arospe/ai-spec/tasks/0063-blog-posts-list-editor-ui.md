@@ -116,7 +116,7 @@ It also discharges an obligation 0061 wrote into its own Definition of Done by n
 trashed posts.** Without one, 0061's **D-7d** category-delete block has no exit — a blog category can
 be permanently undeletable because of a post that no screen displays.
 
-Covers [PRD](../../docs/PRD/PRD.md#epic-4--blog) Epic 4's `Feature: Blog posts` scenarios, the two
+Covers [PRD](../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog posts` scenarios, the two
 **post-editor** scenarios inside `Feature: Blog tags` (*Reuse an existing tag from the post editor*,
 *Create a new tag on the fly from the post editor* — the management-screen scenarios beside them are
 story [0060](0060-blog-tags-ui.md)'s, not this one's), the `Scenario Outline: Filter the blog list by
@@ -447,7 +447,7 @@ Feature: The blog posts screen is permission-gated
 > 0020, 0021, 0022, 0058, 0059 or 0061 exists in this tree — `app/Models/` holds only `Role.php`,
 > `SalesRegion.php`, `User.php`, and `app/Livewire/` holds only `Actions/`, `Roles/`, `SalesRegions/`,
 > `Settings/`, `Users/`. Per this project's
-> [deferred-findings rule](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
+> [deferred-findings rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
 > **every citation below must be re-verified against `HEAD` before Phase 3**, and each disposition
 > recorded — including "already closed". Five to seven stories land between this debate and that
 > point.
@@ -540,10 +540,10 @@ this story **appends an item to it**, and does not create it.
 
 | Path | Change | Why |
 | --- | --- | --- |
-| `app/Livewire/BlogPosts/Index.php` | **New.** | The list. Class-based per [base-standards.md](../../docs/conventions/base-standards.md#livewire-component-convention-class-based-not-single-file). Namespace in **D-2**. |
-| `resources/views/livewire/blog-posts.blade.php` | **New — the *flat* path.** | The [`Index`-in-a-subfolder exception](../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name): `.index` is dropped and the folder kebab-cases. **Do not create `livewire/blog-posts/index.blade.php`, and check afterwards that an `artisan make:` scaffold did not deposit one** — task 0017's did, and it broke nothing and simply sat there. |
+| `app/Livewire/BlogPosts/Index.php` | **New.** | The list. Class-based per [base-standards.md](../../docs/conventions/base-standards/livewire-and-flux-conventions.md#livewire-component-convention-class-based-not-single-file). Namespace in **D-2**. |
+| `resources/views/livewire/blog-posts.blade.php` | **New — the *flat* path.** | The [`Index`-in-a-subfolder exception](../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name): `.index` is dropped and the folder kebab-cases. **Do not create `livewire/blog-posts/index.blade.php`, and check afterwards that an `artisan make:` scaffold did not deposit one** — task 0017's did, and it broke nothing and simply sat there. |
 | `app/Livewire/BlogPosts/Editor.php` | **New.** | The routed create/edit page (**D-1**). |
-| `resources/views/livewire/blog-posts/editor.blade.php` | **New — the ordinary mirror.** | `Editor` is not named `Index`, so the exception does not apply. It sits one level *deeper* than the list's view; [naming.md](../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name) already records that asymmetry as expected. |
+| `resources/views/livewire/blog-posts/editor.blade.php` | **New — the ordinary mirror.** | `Editor` is not named `Index`, so the exception does not apply. It sits one level *deeper* than the list's view; [naming.md](../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name) already records that asymmetry as expected. |
 | `routes/blog-posts.php` | **New.** | Three routes, one `auth`+`verified` group — the one-file-per-area convention. Snippet in **D-3**. |
 | `routes/web.php` | **Modify — one `require` line.** | `require __DIR__.'/blog-posts.php';` |
 | `app/Enums/BlogPostStatus.php` | **Modify — add `label()`.** | 0061 explicitly defers it to "the first consumer", and this story has three (**D-18**). **This is the only file outside `app/Livewire/**`, `routes/`, `config/` and `lang/` that this story writes.** |
@@ -584,7 +584,7 @@ this story **appends an item to it**, and does not create it.
 > narrowing.** Neither table changes: every file this story creates it still creates, and every file
 > it declines to touch it still declines to touch. What is added is the **sequencing constraint**,
 > which under this repo's
-> [Parallel Agent File-Ownership Rule](../../docs/contracts.md#parallel-agent-file-ownership-rule) is a
+> [Parallel Agent File-Ownership Rule](../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule) is a
 > real scheduling fact rather than a footnote — this story's **R-9** already names 0062 as a
 > parallel-write hazard, and 0079 is a second, larger one.
 >
@@ -793,7 +793,7 @@ deliberately does not re-derive 0061's rules:
       browser test reaches this: a component test can assert the rendered HTML contains the field but
       cannot prove the client-side reveal fires.
 - [ ] **A `<select>` pick of the *first* option**, for both status and category. *Risk if missing:*
-      the [null-`<select>` desync](../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16),
+      the [null-`<select>` desync](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16),
       which neither `Livewire::test()->set()` nor a scripted `->select()` can reproduce. The two fail
       **differently** here and both are worth driving: `status` has a real fallback (`Draft`), so it
       fails *quietly correct-looking*; `blog_category_id` has **none** (NOT NULL, no "none" option), so
@@ -898,7 +898,7 @@ Nothing about the data model changes: this story adds no table, column, migratio
 - [ ] All **three** quality gates run **unscoped** and each result recorded explicitly, including any
       not run: `php artisan test` (not `--filter`), `vendor/bin/pint --format agent` (not `--dirty`),
       and **Larastan level 7**. A record naming two of three is a record of two gates — see
-      [errors-log.md](../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+      [errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
 - [ ] **Every citation in [Interface contract consumed](#interface-contract-consumed) re-verified
       against `HEAD` before Phase 3, with each disposition recorded** — including "already closed".
       **V-1**: none of the six dependency stories exists in code today.
@@ -918,7 +918,7 @@ Nothing about the data model changes: this story adds no table, column, migratio
       blog half** — the canonical term is **post** (**D-22**) — and that section's own justification
       corrected: it still reads *"`app/Models/` contains only `User`"*, false since task 0016, which is
       this project's recurring
-      [bare-negative-claim](../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
+      [bare-negative-claim](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
       failure mode.
 - [ ] **`docs/testing/frontend/playwright-setup.md`'s file count corrected** — it says the browser
       suite holds three files; `ls tests/Browser/` returns **four** (**V-4**). 0060's Phase 1 already
@@ -950,7 +950,7 @@ Nothing about the data model changes: this story adds no table, column, migratio
 >       against `HEAD`; 0072, 0074, 0078 and 0079 have since amended what those citations describe, so
 >       the check is against the **post-retrofit** shape and each disposition — including "already
 >       closed" — is recorded. This is the
->       [deferred-findings rule](../../docs/errors-log-archive.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+>       [deferred-findings rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
 >       at this file's widest exposure: **ten** unshipped stories now stand between this debate and
 >       Phase 3.
 >
@@ -1226,7 +1226,7 @@ because the answer interacts with that race.
 
 ### D-6 — Every `wire:model`-bound property's type and empty value
 
-The [null-`<select>` desync](../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
+The [null-`<select>` desync](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
 is the single most relevant prior incident to this screen, and this screen carries **more bound
 controls than any shipped one**. The rule — *a `wire:model`-bound property must never be `null`; give
 it a real empty value in the type the DOM expects* — applies to all of them, with the right empty
@@ -1388,7 +1388,7 @@ is name-based and case/accent-insensitive.
 - **The chip list is never filtered, paginated or truncated.** This is not cosmetic: 0061's **D-17** ⚠️
   says the full-replace `sync()` is safe *only* while the field shows every tag the post holds — the
   moment one is hidden, an omission stops being the editor's decision and becomes a silent revoke,
-  which is [the exact trap this repo has already hit twice](../../docs/errors-log-archive.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20).
+  which is [the exact trap this repo has already hit twice](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20).
   **This constraint must be repeated in the component's own docblock**, where the next author reads.
 - **Suggestions exclude names already on the post**, compared case-insensitively, matching 0022's D11
   rule and 0059's own folding semantics.
@@ -1691,7 +1691,7 @@ worth a line in their own files". This is that line, and it is **OQ-8**, because
 **Two already-written sibling stories contradict each other here**, and neither amigo could resolve it
 alone. 0060's **D-8** explicitly *rejects* a shared `blog.php` for UI copy — "one screen, one domain
 file… it recreates precisely the file-ownership hazard the
-[Parallel Agent File-Ownership Rule](../../docs/contracts.md#parallel-agent-file-ownership-rule) makes a
+[Parallel Agent File-Ownership Rule](../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule) makes a
 real scheduling constraint — for no benefit". 0061's hand-off says the opposite for this story by
 name: "it extends `lang/{en,es}/blog.php` rather than creating it".
 
@@ -1718,7 +1718,7 @@ unavoidable (it mirrors the registry) and is a two-leaf append, not a structural
 ### D-18 — `BlogPostStatus::label()` ships here, and this is the first story to earn it
 
 0061 deliberately shipped **no** `label()`, citing
-[naming.md](../../docs/conventions/naming.md#translation-keys)'s rule that *a `label()` on an enum is not
+[naming.md](../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)'s rule that *a `label()` on an enum is not
 automatic — add it when a **second** consumer appears, not when the first one does* — and noting "0063
 is the first consumer and may add it then."
 
@@ -1771,7 +1771,7 @@ branch.
 ### D-21 — Test paths: `tests/Feature/Blog/`, and **mirrored** browser paths *(resolved conflict — C-3)*
 
 Named explicitly because
-[playwright-setup.md](../../docs/testing/frontend/playwright-setup.md#folder-structure) states the
+[playwright-setup.md](../../docs/testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure) states the
 generalisable rule: **"a story file that names a test path is making a convention decision, so the
 path belongs in the Phase 2 review"** — noting that twice now it has not been, and twice the
 convention has lost by default.
@@ -1813,7 +1813,7 @@ Recorded in the Definition of Done as a docs-keeper hand-off, together with a co
 needs anyway: its stated justification is *"No blog or ecommerce domain exists in the code yet
 (`app/Models/` contains only `User`)"*, which has been false since task 0016 shipped `SalesRegion` —
 this project's recurring
-[bare-negative-claim](../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
+[bare-negative-claim](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
 failure mode, arriving in a file nobody opens while adding a model.
 
 ## Scope fences: what this story must NOT do
@@ -1897,7 +1897,7 @@ action an editor can take to resolve it.
 
 Executed read-only against this worktree during the debate. **`vendor/` is absent (V-6)**, so nothing
 requiring PHP execution was verified and every such claim is flagged at its site, per this project's
-[hedge rule](../../docs/errors-log-archive.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24).
+[hedge rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24).
 
 - **V-1 — Not one dependency exists in code.** `app/Models/` holds `Role.php`, `SalesRegion.php`,
   `User.php`. `app/Livewire/` holds `Actions/`, `Roles/`, `SalesRegions/`, `Settings/`, `Users/`.
@@ -1933,7 +1933,7 @@ requiring PHP execution was verified and every such claim is flagged at its site
   group itself, following 0060's **D-4** shape verbatim.
 - **0022 — explicitly *not* a dependency** (**D-10**), unlike 0027's editor.
 - **0062 — not a dependency**, but a **parallel-write hazard** (**R-9**).
-- Per [workflow.md](../../docs/workflow.md#task-ordering-rule) the numbering is already correct; what must
+- Per [workflow.md](../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule) the numbering is already correct; what must
   be enforced is the **sequencing** — 0058, 0059, 0061, 0020, 0021 and 0060 all reach Phase 7 before
   this story starts Phase 3.
 
@@ -2001,7 +2001,7 @@ requiring PHP execution was verified and every such claim is flagged at its site
   revision removed entirely by shipping the action itself.
 - **R-9 — Three stories claim `config/modules.php`, `lang/{en,es}/navigation.php` and the `blog` group:
   0060 (done), 0062 (being written in parallel *right now*) and this one.** Under the
-  [Parallel Agent File-Ownership Rule](../../docs/contracts.md#parallel-agent-file-ownership-rule) this is
+  [Parallel Agent File-Ownership Rule](../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule) this is
   a real scheduling constraint, not a footnote: 0062 and 0063 must not implement concurrently, and they
   must agree on **item order** (**V-2**) and on the group's `expandable` flag (**OQ-8**). **D-17**
   removes the lang-file half of this hazard by giving each screen its own file.
@@ -2164,13 +2164,13 @@ guessed. **None blocks Phase 2 review.**
 
 Phase 1 (Three Amigos) debate run on 2026-08-27 with `frontend-expert` (files and approach) and
 `frontend-qa` (Gherkin and test design), per
-[workflow.md](../../docs/workflow.md#phase-1--three-amigos-debate). Both were dispatched concurrently
+[workflow.md](../../docs/workflow/phases.md#phase-1--three-amigos-debate). Both were dispatched concurrently
 under an explicit **read-only** instruction — neither wrote any file — which is the
-[Parallel Agent File-Ownership Rule](../../docs/contracts.md#parallel-agent-file-ownership-rule) applied
+[Parallel Agent File-Ownership Rule](../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule) applied
 at debate time rather than at implementation time. `database-expert` was not convened: this story adds
 no schema, no query plan and no index.
 
-Derived from [PRD](../../docs/PRD/PRD.md#epic-4--blog) Epic 4's `Feature: Blog posts`, the two
+Derived from [PRD](../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog posts`, the two
 post-editor scenarios inside `Feature: Blog tags`, the taxonomy-filter `Scenario Outline`, and Blog
 acceptance criteria 1, 3 and 4 — plus the four hand-off items
 [0061](0061-blog-posts-core-crud-backend.md)'s Definition of Done addresses to this story by name.
@@ -2197,7 +2197,7 @@ later instruction contradicting a settled decision.
 **C-3 — The browser test path.** `frontend-expert` left it open ("worth re-litigating"); `frontend-qa`
 applied 0060's V-1 ruling and recommended mirrored. **Resolved in favour of mirrored** (**D-21**), and
 deliberately **not** re-litigated: 0060 already settled it against the identical evidence, and
-[playwright-setup.md](../../docs/testing/frontend/playwright-setup.md#folder-structure) records that the
+[playwright-setup.md](../../docs/testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure) records that the
 convention has already lost by default twice.
 
 **C-4 — The restore ability.** `frontend-expert` recommended `blog.delete`; `frontend-qa` recommended

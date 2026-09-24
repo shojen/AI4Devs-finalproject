@@ -36,7 +36,7 @@ return new class extends Migration
      *
      * No hand-written $table->index() anywhere -- constrained() already
      * leaves both FK columns indexed
-     * (docs/database/migrations.md#an-fk-column-does-not-also-get-an-explicit-index-here).
+     * (docs/database/migrations/uuid-primary-keys.md#an-fk-column-does-not-also-get-an-explicit-index-here).
      * No index on `created_at` either, matching 0045's identical
      * cardinality argument for `orders.status`.
      */

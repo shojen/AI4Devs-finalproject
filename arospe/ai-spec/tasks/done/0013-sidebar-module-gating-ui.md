@@ -55,7 +55,7 @@ open questions below):**
    below.
 3. **Sidebar labels move into translation files** — `lang/en/navigation.php` +
    `lang/es/navigation.php`, snake_case leaves grouped `groups`/`items`, per
-   [`docs/conventions/naming.md`](../../../docs/conventions/naming.md#translation-keys) — rather than
+   [`docs/conventions/naming.md`](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys) — rather than
    staying as bare `__('Dashboard')`-style English string keys. This is the larger-scope option: it
    adds two new lang files this story must create and keep key-for-key identical, matching the
    convention every other domain in this repo already follows (`lang/en/{roles,users}.php`).
@@ -214,7 +214,7 @@ Feature: Sidebar module visibility
   `users.index` on exactly `can:users.view`; `roles` is `['roles.manage']` because `routes/roles.php`
   gates `roles.index` on exactly `can:roles.manage`. A broader list (e.g. adding `users.create`)
   would show the Users entry to a role that the route itself then 403s — see
-  [`docs/architecture/authorization.md`](../../../docs/architecture/authorization.md#the-copyable-module-gate-pattern-and-the-three-alternatives-rejected)'s
+  [`docs/architecture/authorization.md`](../../../docs/architecture/authorization/how-to-gate.md#the-copyable-module-gate-pattern-and-the-three-alternatives-rejected)'s
   ⚠️ on this exact misconfiguration, which this story is the first to actually build the surface for.
   The two gates stay **independent** either way — that half of the original design is unchanged and
   still load-bearing; reject any Phase 3 simplification that collapses the two gates into one.
@@ -253,7 +253,7 @@ Feature: Sidebar module visibility
   - `hasAnyPermission()` / `hasPermissionTo()` / `hasRole()` are trait methods that query the
     model's own relations and **never touch the Gate at all**. Since the Super Admin holds *zero*
     permission rows and bypasses permission checks entirely (`Role::superAdminName()`-keyed
-    `Gate::before`, [architecture/authorization.md](../../../docs/architecture/authorization.md#the-super-admin-bypass)),
+    `Gate::before`, [architecture/authorization.md](../../../docs/architecture/authorization/super-admin.md#the-super-admin-bypass)),
     a sidebar built on `hasAnyPermission()` would show the Super Admin **nothing** — the exact
     inverse of the requirement. This is a correctness fork, not a style preference. (With today's
     single-ability entries `can()` would work identically to `canAny()`; `canAny()` is chosen because
@@ -285,7 +285,7 @@ Feature: Sidebar module visibility
   `<ui-disclosure>` wrapper). Presence/absence assertions (`assertSee`, `assertDontSee`,
   `Selector::getByTestId()`-style single-match helpers) are unaffected; a **count**-based assertion
   would silently be off by a constant and read as correct — the exact failure mode
-  [`docs/errors-log.md`](../../../docs/errors-log-archive.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21)
+  [`docs/errors-log.md`](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21)
   already records. Do not write a count-based test against this component without first confirming
   the real occurrence count from rendered HTML.
 
@@ -298,7 +298,7 @@ Feature: Sidebar module visibility
 - `lang/en/navigation.php` and `lang/es/navigation.php` — **new** (**Confirmed product decision 3**
   above). Two top-level arrays, `groups` and `items`, snake_case leaves matching the registry's own
   keys, key-for-key identical between the two files per
-  [`docs/conventions/naming.md`](../../../docs/conventions/naming.md#translation-keys):
+  [`docs/conventions/naming.md`](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys):
 
   ```php
   // lang/en/navigation.php
@@ -569,7 +569,7 @@ same phase rather than deferred. Both were about the registry being a new config
 nothing mechanically constrained: an entry could be added with `permissions: []` and silently become
 world-visible (F1), or with a permission that is not the one its route's `can:` middleware actually
 enforces — the exact `.view`-shaped misconfiguration
-[`docs/architecture/authorization.md`](../../../docs/architecture/authorization.md#the-copyable-module-gate-pattern-and-the-three-alternatives-rejected)
+[`docs/architecture/authorization.md`](../../../docs/architecture/authorization/how-to-gate.md#the-copyable-module-gate-pattern-and-the-three-alternatives-rejected)
 already warns about, which this story is the first to build a surface for (F2). Each was closed with a
 **regression-guard test** rather than a comment, taking the suite from 13 tests to 15: an explicit
 allow-list every ungated entry must appear on, and a mechanical comparison of each gated entry's
@@ -596,7 +596,7 @@ _Phase 7 closure, 2026-08-22 — all 34 checkboxes ticked after cross-checking e
 code and a real test (not ticked as a block), three Definition-of-Done bullets annotated with their
 closing state rather than left as bare claims, and the file moved `in-progress/` → `done/`. That is a
 **same-depth** move, so Direction 1 of
-[workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move)'s link-integrity
+[workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move)'s link-integrity
 check is a no-op — verified rather than assumed: all seven distinct outbound relative paths were
 resolved against the filesystem and all four `#fragment` targets against a real heading in their
 target file. Direction 2 was not a no-op: **eleven inbound links across five not-yet-started task

@@ -28,7 +28,7 @@ each other's files. For the human-readable dependency graph and the reasoning be
    pull`. Do not start implementation before this lands.
 4. **Keep the JSON in sync with the real `ai-spec/tasks/` workflow.** This is now done for you as
    part of `docs-keeper`'s mandatory link-integrity check on every stage move — see
-   [`docs/workflow.md`'s task-coordination-file regeneration step](../docs/workflow.md#regenerating-the-task-coordination-files)
+   [`docs/workflow.md`'s task-coordination-file regeneration step](../docs/workflow/task-files-links-and-ordering.md#regenerating-the-task-coordination-files)
    for exactly what changes and when. In short: when the task moves into
    `ai-spec/tasks/in-progress/` per [`docs/workflow.md`](../docs/workflow.md)'s three-stage
    convention, its `status` here stays `"claimed"` (no change needed); when it reaches Phase 7 and
@@ -62,7 +62,7 @@ each other's files. For the human-readable dependency graph and the reasoning be
 
 `depends_on`/`status`/`conflict_risk_with` are regenerated from `ai-spec/tasks-map.md`'s
 dependency graph by `docs-keeper` whenever that graph changes — see
-[`docs/workflow.md#regenerating-the-task-coordination-files`](../docs/workflow.md#regenerating-the-task-coordination-files).
+[`docs/workflow/task-files-links-and-ordering.md#regenerating-the-task-coordination-files`](../docs/workflow/task-files-links-and-ordering.md#regenerating-the-task-coordination-files).
 The two files must stay in sync; if you ever have to reconcile them by hand, `tasks-map.md`'s
 graph is the one derived from the task files' own "Dependencies" sections, so treat it as the
 source when the two disagree.
