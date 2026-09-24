@@ -125,11 +125,16 @@ app/
                        their own operation; that is a deliberate, recorded hand-off to the not-yet-
                        built UI story (0025), not an oversight — see ProductCategoryPolicy below
   Actions/Blog/        Domain actions for the Blog area (CreateBlogCategory, RenameBlogCategory,
-                       DeleteBlogCategory — story 0058; each self-authorizes as its first
+                       DeleteBlogCategory — story 0058; CreateBlogTag, RenameBlogTag,
+                       DeleteBlogTag, FindOrCreateBlogTag — story 0059; each self-authorizes as its first
                        statement through LogRefusedPrivilegedAttempt, unlike ProductCategories/
-                       above). An AREA folder, not an entity folder: one `blog.*` permission tier
+                       above). FindOrCreateBlogTag is the area's one resolve-or-create action: it validates
+                       format only (an existing name is a hit, not a refusal), asks `viewAny` on its reuse
+                       branch and `create` on its insert branch, and resolves a lost insert race by
+                       re-fetching the winner rather than refusing. DeleteBlogTag is complete as shipped —
+                       unlike DeleteBlogCategory, no later story extends it. An AREA folder, not an entity folder: one `blog.*` permission tier
                        gates categories, tags and posts alike, so the folder mirrors the gate and
-                       tags/posts actions join it rather than opening sibling folders. Story 0061
+                       posts actions join it rather than opening sibling folders. Story 0061
                        extends DeleteBlogCategory in place with the in-use hard block
   Actions/Products/    Domain actions for the Products area (CreateProduct, UpdateProduct,
                        DeleteProduct — each self-authorizes, unlike ProductCategories/ above;
@@ -198,7 +203,7 @@ app/
                        `update` as its own first statement, corrected during this story's own
                        Phase 4 security audit after shipping ungated on a since-disproven premise
                        — see database/schema-other.md#payment_methods)
-  Concerns/            Shared traits (validation rule sets, incl. BlogCategoryValidationRules — story 0058; ResolvesSalesRegionFromAddress — the country/Spain-postal-prefix → Sales Region mapping shared by the physical and virtual tax-region resolvers; ResolvesFlagReasonLabel — story 0055, the `flag_reason` → copy resolution shared by the orders list marker and the detail callout, so the two never word one flag differently)
+  Concerns/            Shared traits (validation rule sets, incl. BlogCategoryValidationRules — story 0058; BlogTagValidationRules — story 0059 (two name-rule methods, `nameFormatRules()` and `nameRules()`, because create and find-or-create disagree about what an existing name means); ResolvesSalesRegionFromAddress — the country/Spain-postal-prefix → Sales Region mapping shared by the physical and virtual tax-region resolvers; ResolvesFlagReasonLabel — story 0055, the `flag_reason` → copy resolution shared by the orders list marker and the detail callout, so the two never word one flag differently)
   Console/Commands/    Artisan commands
   Enums/               Backed enums for domain value sets (UserStatus, RoleName, SalesRegionKind,
                        ProductType, ProductStatus — exactly two persisted cases — and
@@ -323,6 +328,9 @@ app/
                        sharing no table, model or namespace with ProductCategory; `name` is the
                        only fillable column, `normalized_name` (the UNIQUE folded key) is derived
                        by a `saving` hook in booted() and never mass-assignable;
+                       BlogTag — story 0059, a second standalone taxonomy with the same stored-key
+                       shape (`name` 100, `normalized_name` 255, the folded length bounded in
+                       validation); deliberately no `posts()` relation until story 0061 adds the pivot;
                        Role, which
                        subclasses
                        the package's role model). product_media, product_sales_region and
@@ -338,7 +346,10 @@ app/
   Policies/            Eloquent model policies (UserPolicy, RolePolicy, SalesRegionPolicy,
                        MediaPolicy, ProductCategoryPolicy, BlogCategoryPolicy — story 0058, four abilities on
                        the seeded `blog.*` permissions (D-8) with real call sites on all three
-                       Blog actions from day one, ProductPolicy,
+                       Blog actions from day one, BlogTagPolicy — story 0059, the same four
+                       `blog.*` abilities on a second model (one `blog.*` tier gates every Blog
+                       taxonomy; a shared BlogPolicy would not be auto-discovered for any of
+                       them), ProductPolicy,
                        ProductAttributeTypePolicy, ShippingZonePolicy — story 0033, a pre-existing
                        gap in this listing closed here rather than left stale, ShippingRatePolicy
                        — story 0036, matching ShippingZonePolicy's shape exactly: four abilities,
@@ -443,7 +454,7 @@ tests/
                         HashVariantCombinationTest.php/DeriveVariantSkuTest.php, unit-testing the two
                         pure-function collaborators directly rather than only through the actions
                         that inject them), Concerns/ (story 0023's
-                        BlogCategoryValidationRulesTest.php (story 0058), ProductCategoryValidationRulesTest.php, the first trait-level unit test in
+                        BlogCategoryValidationRulesTest.php (story 0058), BlogTagValidationRulesTest.php (story 0059), ProductCategoryValidationRulesTest.php, the first trait-level unit test in
                         this folder, joined by story 0024's ProductValidationRulesTest.php and
                         story 0038's PaymentMethodValidationRulesTest.php, which drives the real
                         Iban rule through ibanRules() rather than re-deriving mod-97 as abstract

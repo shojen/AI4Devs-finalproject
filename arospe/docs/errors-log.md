@@ -6,7 +6,7 @@ A structured log of real mistakes made in this project and the concrete rule ado
 
 ## Browse by topic
 
-An agent working on a specific domain can jump straight to the 1-3 relevant entries below instead of reading the whole log top to bottom — see [contracts.md](contracts.md#token-efficient-reading-and-dispatch-rule)'s Token-Efficient Reading and Dispatch Rule. Covers all 50 entries across this file and the archive; an entry touching more than one domain is listed under each. `(archive)` marks an entry that lives in [errors-log-archive.md](errors-log-archive.md).
+An agent working on a specific domain can jump straight to the 1-3 relevant entries below instead of reading the whole log top to bottom — see [contracts.md](contracts.md#token-efficient-reading-and-dispatch-rule)'s Token-Efficient Reading and Dispatch Rule. Covers all 51 entries across this file and the archive; an entry touching more than one domain is listed under each. `(archive)` marks an entry that lives in [errors-log-archive.md](errors-log-archive.md).
 
 **Livewire/Blade/Flux rendering & compilation quirks**
 - [A Livewire computed called as a method is never memoised, and no test noticed](#a-livewire-computed-called-as-a-method-is-never-memoised-and-no-test-noticed--2026-09-23) — 2026-09-23
@@ -26,6 +26,7 @@ An agent working on a specific domain can jump straight to the 1-3 relevant entr
 - [A conditionally-bound `tooltip` prop rendered an empty tooltip on every enabled row](errors-log-archive.md#a-conditionally-bound-fluxbutton-tooltip-prop-rendered-an-empty-tooltip-on-every-enabled-row--2026-08-16) — 2026-08-16 (archive)
 
 **Testing/QA process & infrastructure**
+- [A `Log::spy()` `withArgs()` closure that captures into a list records duplicates](#a-logspy-withargs-closure-that-captures-into-a-list-records-duplicates--2026-09-24) — 2026-09-24
 - [A browser test piped through tail hangs forever, and pkill can kill its own shell](#a-browser-test-piped-through-tail-hangs-forever-and-pkill-can-kill-its-own-shell--2026-09-23) — 2026-09-23
 - [A test that restates the implementation's formula cannot catch a units error](#a-test-that-restates-the-implementations-formula-cannot-catch-a-units-error--2026-09-20) — 2026-09-20
 - [A SECOND `->call()` on an already-mounted `Livewire::test()` component does not re-throw `AuthorizationException` the way the first one does](#a-second--call-on-an-already-mounted-livewiretest-component-does-not-re-throw-authorizationexception-the-way-the-first-one-does--2026-09-10) — 2026-09-10
@@ -89,6 +90,14 @@ Newest entry first, directly below this line. Every entry uses this exact struct
 - **Fix applied**: what changed, with a file path or commit/PR reference
 - **How to avoid it next time**: a concrete, actionable rule — link to a `conventions/` doc if one covers it
 ```
+
+## A `Log::spy()` `withArgs()` closure that captures into a list records duplicates — 2026-09-24
+
+- **Context**: story 0059, the refusal-logging equivalence test in `tests/Feature/Blog/FindOrCreateBlogTagAuthorizationTest.php` — five blog-tag refusal sites plus one existing admin screen's refusal in one `Log::spy()` session, with each site's context keys set-equated against the reference's.
+- **What happened**: the first draft collected every `Log::warning` context by appending to `$captured` from inside `Log::shouldHaveReceived('warning')->withArgs(function (...) use (&$captured) { $captured[] = $context; return ...; })`, then asserted one line per actor. It failed with `actual size 2 matches expected size 1` for one actor. Nothing was logged twice: the code under test wrote exactly one line per refusal.
+- **Root cause**: Mockery evaluates a `withArgs()` closure more than once while verifying a spy expectation (once to match, again while counting), so a closure with a side effect runs more than once per recorded call. Appending inside it records the same call repeatedly, and only for some calls, which is what made it look like a real double-log.
+- **Fix applied**: the closure is now a pure predicate. Each site is one `withArgs(fn => message, actor, ability, target_type, target_id and sorted context keys all match)->once()`, and `->once()` is what counts "exactly one line per refusal". The one value that has to cross out of a closure, the reference screen's key list, is assigned idempotently rather than appended.
+- **How to avoid it next time**: never accumulate state in a Mockery `withArgs()` closure; keep it a pure boolean and let `->once()`/`->times(n)` do the counting. If a test needs the full list of logged contexts, capture it from a real listener (`Event::listen(MessageLogged::class, ...)`) instead of from the spy's argument matcher. A count that comes out wrong by "one extra" on a single call is the tell that the matcher ran twice, not that the code did.
 
 ## A Livewire computed called as a method is never memoised, and no test noticed — 2026-09-23
 
@@ -336,4 +345,6 @@ Newest entry first, directly below this line. Every entry uses this exact struct
 >
 > This is the same lesson [the entry above](#a-test-suites-own-runs-as-non-root-claim-was-re-verified-using-the-wrong-sail-invocation--2026-08-28) states in a different shape: an unconfirmed mechanism, however plausible, is a hypothesis to test, not a fact to build a fix around — and here the fastest way to confirm or disprove it was to find a **small, deterministic** reproduction instead of continuing to reason about a rare flake under sustained load. See [testing/ci/commands.md#run-in-parallel](testing/ci/commands.md#run-in-parallel) for the shipped numbers and [testing/worktree-databases.md](testing/worktree-databases.md) for the adjacent per-worktree isolation this does *not* replace (the volume is per-container, not per-worktree — two worktrees sharing one Sail container still need their own database names, exactly as before).
 
-_Last updated: 2026-09-23 — Story 0055 (orders list + detail/editor UI). Added four entries: a `#[Computed]` called as a method is never memoised, a typed `int` bound to a cleared number input is unset, `addError()` on a real property persists across requests, and a piped browser test hangs on the leaked `run-server`. Topic index and entry count updated (50). Earlier history folded: the 2026-09-11 passes archived the twelve oldest entries (2026-08-20 through 2026-08-26) byte-for-byte into [errors-log-archive.md](errors-log-archive.md), repairing every inbound anchor, and added the CSS Grid `align-items: stretch` entry._
+_Last updated: 2026-09-24 — Story 0059 (Blog tags — backend). Added one entry: a `Log::spy()` `withArgs()` closure that appends to a list records duplicates, because Mockery evaluates the matcher more than once. Topic index and entry count updated (51)._
+
+_Previously: 2026-09-23 — Story 0055 (orders list + detail/editor UI). Added four entries: a `#[Computed]` called as a method is never memoised, a typed `int` bound to a cleared number input is unset, `addError()` on a real property persists across requests, and a piped browser test hangs on the leaked `run-server`. Topic index and entry count updated (50). Earlier history folded: the 2026-09-11 passes archived the twelve oldest entries (2026-08-20 through 2026-08-26) byte-for-byte into [errors-log-archive.md](errors-log-archive.md), repairing every inbound anchor, and added the CSS Grid `align-items: stretch` entry._

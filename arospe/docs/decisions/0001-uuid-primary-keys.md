@@ -117,7 +117,19 @@ Nothing above this amendment needed correcting: the Decision, Amendment 1 and Am
 
 One bookkeeping correction that follows normally: Amendment 4's "three [of the original seven] are still future" note is now **two** — Blog Tags and Blog Posts (PRD Epic 4).
 
-_Last updated: 2026-09-23 — Story 0058 (Blog categories — backend): added **Amendment 7**, recording `blog_categories` as the fourth of this ADR's original seven entities to ship, needing no amendment, and narrowing Amendment 4's "three still future" note to two (Blog Tags, Blog Posts). No rule changed._
+## Amendment 8 (2026-09-24) — `blog_tags` is the fifth of the original seven to ship
+
+**Status: accepted. This amendment narrows a stale count in Amendment 7 above; it changes no rule.**
+
+[`blog_tags`](../database/schema-blog.md#blog_tags) (story 0059) is the fifth of this ADR's originally-named seven entities to ship, and the first one *named in the Context section* that needed no bookkeeping beyond a count: "Blog Tags" is literally in the list the Context wrote on 2026-07-22 (*"Blog Categories, Blog Tags, Blog Posts — future, PRD Epic 4"*), so — like `product_categories`, `products`, `product_variants` and `blog_categories` before it — it needed no amendment to the policy. The table is a plain greenfield `create_*` migration following the Decision exactly: `HasUuids`, a single `uuid('id')->primary()`, no `$keyType`/`$incrementing` restated.
+
+One bookkeeping correction that follows normally: Amendment 7's "two [of the original seven] are still future" note is now **one** — Blog Posts (PRD Epic 4). The Context section's own bullet (*"Blog Categories, Blog Tags, Blog Posts — future"*) is left as written, being the record of what was true on 2026-07-22; this list and the amendments above are what say what has shipped since.
+
+One thing that is *not* part of this ADR but is worth pointing at from it: this table's pivot to `blog_posts` (story 0061's `blog_post_tag`) will reference `blog_tags.id` with `foreignUuid('blog_tag_id')->constrained()->cascadeOnDelete()`, and the cascade is what makes deleting a tag remove it from every post — see [`blog_tags`](../database/schema-blog.md#blog_tags).
+
+_Last updated: 2026-09-24 — Story 0059 (Blog tags — backend): added **Amendment 8**, recording `blog_tags` as the fifth of this ADR's original seven entities to ship, needing no amendment, and narrowing Amendment 7's "two still future" note to one (Blog Posts). No rule changed._
+
+_Previously: 2026-09-23 — Story 0058 (Blog categories — backend): added **Amendment 7**, recording `blog_categories` as the fourth of this ADR's original seven entities to ship, needing no amendment, and narrowing Amendment 4's "three still future" note to two (Blog Tags, Blog Posts). No rule changed._
 
 _Previously: 2026-09-10 — Story 0038 (Payment methods — bank transfer with a validated IBAN, backend): added **Amendment 6**, recording `payment_methods` as a UUIDv7 table under Amendment 1's already-stated policy, and — the fact worth a named entry — the first table on record where an explicit user decision overrode a Three Amigos debate's unanimous `bigint` recommendation. No rule changed; no prior amendment was corrected. Folded the prior `_Previously:` chain (Amendments 1-4, 2026-08-27 through 2026-09-04) into this single line, per [contracts.md](../contracts.md#doc-growth-management-rule)'s doc-growth-management rule — no content was changed or lost; see git history for the full prior chain if needed._
 
