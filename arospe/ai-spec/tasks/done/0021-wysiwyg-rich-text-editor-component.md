@@ -1153,7 +1153,7 @@ Low, 1 Info.
   identical sanitize-on-write architecture — `CreateProduct`/`UpdateProduct` sanitize the description
   through 0024a's `SanitizeProductDescription` before persistence, its own R-12 states *"there is no
   `{!! !!}` anywhere in either view"*, and it even records 0076 D-8's second sanitization layer (a
-  `saving` hook) as defence in depth. [0061](../0061-blog-posts-core-crud-backend.md) and
+  `saving` hook) as defence in depth. [0061](0061-blog-posts-core-crud-backend.md) and
   [0079](../0079-blog-post-editor-language-tabs-ui.md) go further still — 0061's D-14 is an entire
   section on reusing 0024a's sanitizer for the blog `body` column (with OQ-4 tracking the sequencing
   race against 0024), and 0079's D-8 constructor-injects the real

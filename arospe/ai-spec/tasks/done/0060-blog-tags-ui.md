@@ -1290,7 +1290,7 @@ moment 0059's code exists. Each carries a recommendation, per
 
   > ⚠️ **Whenever (a) is taken, the count must be explicit about trashed posts — and the direction of
   > the default is *contested*, so settle it by execution before writing the query.** Story
-  > [0061](../0061-blog-posts-core-crud-backend.md) is done, `BlogPost` uses `SoftDeletes` (its **D-7**),
+  > [0061](0061-blog-posts-core-crud-backend.md) is done, `BlogPost` uses `SoftDeletes` (its **D-7**),
   > and it adds `BlogTag::posts()` as a plain `BelongsToMany` with no default scope of its own. Its
   > **D-7c** hands this story a ⚠️ stating that a `withCount('posts')` here *"now includes trashed
   > posts unless scoped"*. **That claim is not reconcilable with this repo's own shipped precedent and
