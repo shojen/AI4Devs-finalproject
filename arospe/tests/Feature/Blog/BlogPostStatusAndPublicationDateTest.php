@@ -286,3 +286,42 @@ test('the persisted publication date is what the scheduler will read, in the dat
 
     expect(DB::table('blog_posts')->where('id', $post->id)->value('published_at'))->toBe('2026-07-01 09:30:00');
 });
+
+// published_at is a MySQL TIMESTAMP (1970-01-01 .. 2038-01-19 03:14:07 UTC). A date outside it passed the
+// `date` rule and then failed the INSERT with a raw 1292 error, so the bounds are validation, asserted
+// from both sides.
+test('a Scheduled date past the TIMESTAMP ceiling is a validation error, not a database error', function () {
+    expect(fn () => createDatedPost($this->category, ['status' => 'scheduled', 'publishedAt' => '2050-01-01 00:00:00']))
+        ->toThrow(ValidationException::class);
+
+    expect(BlogPost::count())->toBe(0);
+
+    $post = createDatedPost($this->category, ['status' => 'scheduled', 'publishedAt' => '2037-12-31 23:59:59']);
+
+    expect($post->fresh()->published_at->toDateTimeString())->toBe('2037-12-31 23:59:59');
+});
+
+test('a Published date outside the TIMESTAMP range is a validation error on both edges', function (string $date) {
+    expect(fn () => createDatedPost($this->category, ['status' => 'published', 'publishedAt' => $date]))
+        ->toThrow(ValidationException::class);
+
+    expect(BlogPost::count())->toBe(0);
+})->with([
+    'past the ceiling' => '2040-06-01 00:00:00',
+    'before the epoch' => '1960-06-01 00:00:00',
+]);
+
+test('a Published date just inside the TIMESTAMP range is accepted', function () {
+    $post = createDatedPost($this->category, ['status' => 'published', 'publishedAt' => '1970-01-02 00:00:00']);
+
+    expect($post->fresh()->published_at->toDateTimeString())->toBe('1970-01-02 00:00:00');
+});
+
+test('the same ceiling applies when updating', function () {
+    $post = createDatedPost($this->category, ['status' => 'scheduled', 'publishedAt' => '2026-07-01 00:00:00']);
+
+    expect(fn () => updateDatedPost($post, ['publishedAt' => '2050-01-01 00:00:00']))
+        ->toThrow(ValidationException::class);
+
+    expect($post->fresh()->published_at->toDateTimeString())->toBe('2026-07-01 00:00:00');
+});

@@ -231,3 +231,23 @@ test('an actor holding blog.create but not blog.view can still attach existing t
 
     $this->assertDatabaseHas('blog_post_tag', ['blog_post_id' => $post->id, 'blog_tag_id' => $existing->id]);
 });
+
+// Each unknown name mints a tag inside the save's single transaction, so the list is capped.
+test('a save carrying more than the maximum number of tags is refused and writes nothing', function () {
+    $this->actingAs(tagAssignmentActor(['blog.create', 'blog.view']));
+    $names = array_map(fn (int $i): string => 'tag-'.$i, range(1, BlogPost::MAX_TAGS + 1));
+
+    expect(fn () => createTaggedPost($this->category, $names))->toThrow(ValidationException::class);
+
+    expect(BlogPost::count())->toBe(0)
+        ->and(BlogTag::count())->toBe(0);
+});
+
+test('a save carrying exactly the maximum number of tags is accepted', function () {
+    $this->actingAs(tagAssignmentActor(['blog.create', 'blog.view']));
+    $names = array_map(fn (int $i): string => 'tag-'.$i, range(1, BlogPost::MAX_TAGS));
+
+    $post = createTaggedPost($this->category, $names);
+
+    expect($post->tags()->count())->toBe(BlogPost::MAX_TAGS);
+});

@@ -90,26 +90,27 @@ it('publishedAtRules() returns a different rule set per status', function () {
     $harness = blogPostValidationRulesHarness();
 
     expect($harness->publishedAt(BlogPostStatus::Draft))->toBe(['prohibited'])
-        ->and($harness->publishedAt(BlogPostStatus::Scheduled))->toBe(['required', 'date', 'after:now'])
-        ->and($harness->publishedAt(BlogPostStatus::Published))->toBe(['nullable', 'date']);
+        ->and($harness->publishedAt(BlogPostStatus::Scheduled))->toBe(['required', 'date', 'after:now', 'before:2038-01-19'])
+        ->and($harness->publishedAt(BlogPostStatus::Published))->toBe(['nullable', 'date', 'after:1970-01-01', 'before:2038-01-19']);
 });
 
 it('publishedAtRules() drops after:now for a Scheduled post keeping its stored date, and only then', function () {
     $harness = blogPostValidationRulesHarness();
 
-    expect($harness->publishedAt(BlogPostStatus::Scheduled, enforceFuture: false))->toBe(['required', 'date'])
-        ->and($harness->publishedAt(BlogPostStatus::Published, enforceFuture: false))->toBe(['nullable', 'date'])
+    expect($harness->publishedAt(BlogPostStatus::Scheduled, enforceFuture: false))->toBe(['required', 'date', 'before:2038-01-19'])
+        ->and($harness->publishedAt(BlogPostStatus::Published, enforceFuture: false))->toBe(['nullable', 'date', 'after:1970-01-01', 'before:2038-01-19'])
         ->and($harness->publishedAt(BlogPostStatus::Draft, enforceFuture: false))->toBe(['prohibited']);
 });
 
 it('tagNamesRules() requires an array whose every entry is a non-blank string', function () {
     $rules = blogPostValidationRulesHarness()->tagNames();
 
-    expect($rules[0])->toBe('array');
+    expect($rules[0])->toBe('array')
+        ->and($rules[1])->toBe('max:'.BlogPost::MAX_TAGS);
 
     $refuses = function (mixed $value) use ($rules): bool {
         $failed = false;
-        $rules[1]('tag_names', $value, function () use (&$failed): void {
+        $rules[2]('tag_names', $value, function () use (&$failed): void {
             $failed = true;
         });
 
