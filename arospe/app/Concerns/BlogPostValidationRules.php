@@ -149,14 +149,32 @@ trait BlogPostValidationRules
         return match ($status) {
             BlogPostStatus::Draft => ['prohibited'],
             BlogPostStatus::Scheduled => $enforceFuture
-                ? ['required', 'date', 'after:now']
-                : ['required', 'date'],
-            BlogPostStatus::Published => ['nullable', 'date'],
+                ? ['required', 'date', 'after:now', $this->publishedAtCeiling()]
+                : ['required', 'date', $this->publishedAtCeiling()],
+            BlogPostStatus::Published => ['nullable', 'date', $this->publishedAtFloor(), $this->publishedAtCeiling()],
         };
     }
 
     /**
-     * The whole submitted tag set: a list of non-blank strings. Each name is resolved (and its
+     * `published_at` is a MySQL TIMESTAMP: a date past 2038-01-19 would be accepted by `date` and then
+     * fail the INSERT with a raw 1292 error. Refused here as a form error instead.
+     */
+    private function publishedAtCeiling(): string
+    {
+        return 'before:'.BlogPost::PUBLISHED_AT_BEFORE;
+    }
+
+    /**
+     * The TIMESTAMP floor, for the same reason as the ceiling: only a Published post may carry a past
+     * date, so only it can reach 1970.
+     */
+    private function publishedAtFloor(): string
+    {
+        return 'after:'.BlogPost::PUBLISHED_AT_AFTER;
+    }
+
+    /**
+     * The whole submitted tag set: a list of at most BlogPost::MAX_TAGS non-blank strings. Each name is resolved (and its
      * format validated) by FindOrCreateBlogTag, so this only refuses what would otherwise be
      * silently reinterpreted.
      *
@@ -166,6 +184,7 @@ trait BlogPostValidationRules
     {
         return [
             'array',
+            'max:'.BlogPost::MAX_TAGS,
             function (string $attribute, mixed $value, Closure $fail): void {
                 foreach ((array) $value as $name) {
                     if (! is_string($name) || trim($name) === '') {

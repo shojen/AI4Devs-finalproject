@@ -51,6 +51,22 @@ class BlogPost extends Model
     public const TITLE_MAX_LENGTH = 255;
 
     /**
+     * The exclusive bounds of `published_at`. The column is a MySQL TIMESTAMP, which holds 1970-01-01
+     * to 2038-01-19 03:14:07 UTC, and strict mode turns a date outside it into a raw 1292 error on
+     * INSERT. The rule stops at the whole day before the ceiling and after the day of the floor, so a
+     * timezone offset cannot walk a submitted date across either edge.
+     */
+    public const PUBLISHED_AT_AFTER = '1970-01-01';
+
+    public const PUBLISHED_AT_BEFORE = '2038-01-19';
+
+    /**
+     * The most tags one save may carry. Each unknown name mints a tag row inside the save's single
+     * transaction, so an unbounded list is an unbounded write.
+     */
+    public const MAX_TAGS = 50;
+
+    /**
      * `slug` is derived from the mutable `title`, so it is locked at the model layer rather than
      * left to every writer to remember (D-3): omitted from #[Fillable], and rewritten here whenever
      * a save changes `title`. `Str::slug()`, explicitly not App\Actions\NormalizeForSearch (D-10).
