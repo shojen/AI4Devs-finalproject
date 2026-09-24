@@ -69,7 +69,14 @@ test('a conversion run pins Imagick resource limits derived from MAX_DIMENSION',
         ->and(Imagick::getResourceLimit(Imagick::RESOURCETYPE_MEMORY))->toBeLessThanOrEqual($expectedByteCeiling)
         ->and(Imagick::getResourceLimit(Imagick::RESOURCETYPE_MAP))->toBeLessThanOrEqual($expectedByteCeiling)
         ->and(Imagick::getResourceLimit(Imagick::RESOURCETYPE_DISK))->toEqual(0)
-        ->and(Imagick::getResourceLimit(Imagick::RESOURCETYPE_TIME))->toEqual(60);
+        // TIME is deliberately effectively unlimited, not a finite backstop: on the ImageMagick 6.9
+        // build CI and Sail run, a finite value is measured against the worker's LIFETIME, so
+        // every decode after that many seconds of uptime fails. Asserted as "longer than a year"
+        // rather than an exact value, since only "not a short ceiling" is the contract. There is no
+        // test that SETS a short TIME limit to prove it is overridden: ImageMagick captures the
+        // limit for the rest of the process, so that test would fail every later decode in the same
+        // worker -- the very failure this assertion guards against.
+        ->and(Imagick::getResourceLimit(Imagick::RESOURCETYPE_TIME))->toBeGreaterThan(86_400 * 365);
 });
 
 test('an image at exactly MAX_DIMENSION x MAX_DIMENSION is accepted, not refused by the AREA boundary (0019a B1)', function () {
