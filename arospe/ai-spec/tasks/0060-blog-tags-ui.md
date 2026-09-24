@@ -56,7 +56,7 @@ Build the blog tag management screen: a permission-gated list of tags, a create/
 single `name` field, and a **plain** delete-confirmation modal — no usage count, no blocked state, no
 reassign-first requirement. This is the **first and only call site** of `App\Policies\BlogTagPolicy`
 and of the three `app/Actions/Blog/` tag actions that story
-[0059](0059-blog-tags-backend.md) ships with zero consumers, and it discharges 0059's explicit
+[0059](done/0059-blog-tags-backend.md) ships with zero consumers, and it discharges 0059's explicit
 hand-off obligation to give that policy a component call site with a server-authoritative
 `->ignore()` id.
 
@@ -1166,7 +1166,7 @@ product taxonomy.
 
 ### Dependencies
 
-- **[0059](0059-blog-tags-backend.md) — hard, blocking, and the only one.** The model, all three
+- **[0059](done/0059-blog-tags-backend.md) — hard, blocking, and the only one.** The model, all three
   actions, the validation trait and the policy. **Not yet implemented (F-1).** Ordering is already
   correct per [workflow.md](../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule) (0059 < 0060).
 - **`App\Actions\NormalizeForSearch` (story 0022) — transitively.** This story never touches it, but
@@ -1356,7 +1356,7 @@ layered test plan, level calibration and the false-green analysis behind **R-2**
 `database-expert` was convened — this story adds no backend or schema artifact. Derived from
 [PRD](../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog tags (extends the prototype)` block
 (first three scenarios) and the management-screen half of Blog acceptance criterion 3, grounded in full
-readings of [0059](0059-blog-tags-backend.md) and [0025](done/0025-product-categories-ui.md), with
+readings of [0059](done/0059-blog-tags-backend.md) and [0025](done/0025-product-categories-ui.md), with
 [0018](done/0018-sales-region-tax-configuration-ui.md)'s shipped screen and
 [0013](done/0013-sidebar-module-gating-ui.md)'s registry as the most recent precedents.
 

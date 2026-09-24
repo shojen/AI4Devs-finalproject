@@ -77,6 +77,9 @@ app/
                        sharing no table, model or namespace with ProductCategory; `name` is the
                        only fillable column, `normalized_name` (the UNIQUE folded key) is derived
                        by a `saving` hook in booted() and never mass-assignable;
+                       BlogTag — story 0059, a second standalone taxonomy with the same stored-key
+                       shape (`name` 100, `normalized_name` 255, the folded length bounded in
+                       validation); deliberately no `posts()` relation until story 0061 adds the pivot;
                        Role, which
                        subclasses
                        the package's role model). product_media, product_sales_region and
@@ -92,7 +95,10 @@ app/
   Policies/            Eloquent model policies (UserPolicy, RolePolicy, SalesRegionPolicy,
                        MediaPolicy, ProductCategoryPolicy, BlogCategoryPolicy — story 0058, four abilities on
                        the seeded `blog.*` permissions (D-8) with real call sites on all three
-                       Blog actions from day one, ProductPolicy,
+                       Blog actions from day one, BlogTagPolicy — story 0059, the same four
+                       `blog.*` abilities on a second model (one `blog.*` tier gates every Blog
+                       taxonomy; a shared BlogPolicy would not be auto-discovered for any of
+                       them), ProductPolicy,
                        ProductAttributeTypePolicy, ShippingZonePolicy — story 0033, a pre-existing
                        gap in this listing closed here rather than left stale, ShippingRatePolicy
                        — story 0036, matching ShippingZonePolicy's shape exactly: four abilities,

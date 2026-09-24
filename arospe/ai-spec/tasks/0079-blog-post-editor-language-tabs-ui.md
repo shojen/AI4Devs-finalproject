@@ -1308,7 +1308,7 @@ a post's French title is neither identity-sensitive nor hard to reverse.
 - **[0024a](done/0024a-product-description-html-sanitization.md)** — soft, for `SanitizeProductDescription`
   only, consumed exactly as 0061 **D-14** consumes it. *(Repointed 2026-09-01: that class was story
   0024's until 0024 was split; 0024a owns it, and depends on 0024 in turn.)*
-- **[0061](0061-blog-posts-core-crud-backend.md)** / **[0059](0059-blog-tags-backend.md)** /
+- **[0061](0061-blog-posts-core-crud-backend.md)** / **[0059](done/0059-blog-tags-backend.md)** /
   **[0058](done/0058-blog-categories-backend.md)** — hard, transitively via 0063.
 - Sequencing, strictly: **0058 → 0059 → 0061 → 0063 → 0068 → 0070 → 0074 → 0078 → 0079**, each fully
   closed before the next starts.

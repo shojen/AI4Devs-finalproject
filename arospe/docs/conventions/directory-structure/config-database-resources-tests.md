@@ -74,7 +74,7 @@ tests/
                         HashVariantCombinationTest.php/DeriveVariantSkuTest.php, unit-testing the two
                         pure-function collaborators directly rather than only through the actions
                         that inject them), Concerns/ (story 0023's
-                        BlogCategoryValidationRulesTest.php (story 0058), ProductCategoryValidationRulesTest.php, the first trait-level unit test in
+                        BlogCategoryValidationRulesTest.php (story 0058), BlogTagValidationRulesTest.php (story 0059), ProductCategoryValidationRulesTest.php, the first trait-level unit test in
                         this folder, joined by story 0024's ProductValidationRulesTest.php and
                         story 0038's PaymentMethodValidationRulesTest.php, which drives the real
                         Iban rule through ibanRules() rather than re-deriving mod-97 as abstract

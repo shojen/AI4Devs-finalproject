@@ -116,11 +116,16 @@ app/
                        their own operation; that is a deliberate, recorded hand-off to the not-yet-
                        built UI story (0025), not an oversight — see ProductCategoryPolicy below
   Actions/Blog/        Domain actions for the Blog area (CreateBlogCategory, RenameBlogCategory,
-                       DeleteBlogCategory — story 0058; each self-authorizes as its first
+                       DeleteBlogCategory — story 0058; CreateBlogTag, RenameBlogTag,
+                       DeleteBlogTag, FindOrCreateBlogTag — story 0059; each self-authorizes as its first
                        statement through LogRefusedPrivilegedAttempt, unlike ProductCategories/
-                       above). An AREA folder, not an entity folder: one `blog.*` permission tier
+                       above). FindOrCreateBlogTag is the area's one resolve-or-create action: it validates
+                       format only (an existing name is a hit, not a refusal), asks `viewAny` on its reuse
+                       branch and `create` on its insert branch, and resolves a lost insert race by
+                       re-fetching the winner rather than refusing. DeleteBlogTag is complete as shipped —
+                       unlike DeleteBlogCategory, no later story extends it. An AREA folder, not an entity folder: one `blog.*` permission tier
                        gates categories, tags and posts alike, so the folder mirrors the gate and
-                       tags/posts actions join it rather than opening sibling folders. Story 0061
+                       posts actions join it rather than opening sibling folders. Story 0061
                        extends DeleteBlogCategory in place with the in-use hard block
   Actions/Products/    Domain actions for the Products area (CreateProduct, UpdateProduct,
                        DeleteProduct — each self-authorizes, unlike ProductCategories/ above;

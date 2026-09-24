@@ -6,7 +6,7 @@
 
 ```
 app/
-  Concerns/            Shared traits (validation rule sets, incl. BlogCategoryValidationRules — story 0058; ResolvesSalesRegionFromAddress — the country/Spain-postal-prefix → Sales Region mapping shared by the physical and virtual tax-region resolvers; ResolvesFlagReasonLabel — story 0055, the `flag_reason` → copy resolution shared by the orders list marker and the detail callout, so the two never word one flag differently)
+  Concerns/            Shared traits (validation rule sets, incl. BlogCategoryValidationRules — story 0058; BlogTagValidationRules — story 0059 (two name-rule methods, `nameFormatRules()` and `nameRules()`, because create and find-or-create disagree about what an existing name means); ResolvesSalesRegionFromAddress — the country/Spain-postal-prefix → Sales Region mapping shared by the physical and virtual tax-region resolvers; ResolvesFlagReasonLabel — story 0055, the `flag_reason` → copy resolution shared by the orders list marker and the detail callout, so the two never word one flag differently)
   Console/Commands/    Artisan commands
   Enums/               Backed enums for domain value sets (UserStatus, RoleName, SalesRegionKind,
                        ProductType, ProductStatus — exactly two persisted cases — and

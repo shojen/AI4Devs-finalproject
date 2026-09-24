@@ -1,7 +1,7 @@
 # [0074] Translatable content retrofit — Blog Tags backend
 
 ## Description
-Applies story [0070](0070-translatable-content-mechanism-product-categories-backend.md)'s translatable-content mechanism to Blog Tags ([PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization), whose translatable-content list names *"Category and tag names"* explicitly). Story [0059](0059-blog-tags-backend.md)'s single-language `blog_tags.name` / `normalized_name` pair moves to a `blog_tag_translations` child table, one row per `(tag, store language)`, with name uniqueness re-scoped from global to **per store language**.
+Applies story [0070](0070-translatable-content-mechanism-product-categories-backend.md)'s translatable-content mechanism to Blog Tags ([PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization), whose translatable-content list names *"Category and tag names"* explicitly). Story [0059](done/0059-blog-tags-backend.md)'s single-language `blog_tags.name` / `normalized_name` pair moves to a `blog_tag_translations` child table, one row per `(tag, store language)`, with name uniqueness re-scoped from global to **per store language**.
 
 **This story is a consumer of a recipe, not an author of one.** `App\Concerns\HasTranslations`, `App\Actions\Translations\SetTranslation` and `StoreLanguage::defaultStoreLanguage()` are 0070's, reused unmodified. Nothing here re-derives the fallback chain, the write primitive, the default-language memo, the authorization shape or the drift guard.
 
@@ -391,7 +391,7 @@ Phase 3 settles the exact Laravel expression, matching 0059's own posture; what 
 
 ### Dependencies
 
-- **[Story 0059](0059-blog-tags-backend.md)** — hard dependency, **not implemented**. This story retrofits its table, its model, its validation trait and three of its four actions. See **R-1**, **R-4** and **R-7**.
+- **[Story 0059](done/0059-blog-tags-backend.md)** — hard dependency, **not implemented**. This story retrofits its table, its model, its validation trait and three of its four actions. See **R-1**, **R-4** and **R-7**.
 - **[Story 0070](0070-translatable-content-mechanism-product-categories-backend.md)** — hard dependency, **not implemented**. Supplies `HasTranslations`, `SetTranslation`, `StoreLanguage::defaultStoreLanguage()`, the drift guard and the whole recipe. This story consumes all of it unmodified.
 - **[Story 0068](0068-store-languages-catalog-backend.md)** — hard dependency, **not implemented**. Supplies `store_languages`, the `is_default` row the fallback resolves through, and the `translation_relations` registry this story appends to. Its backlog item 3 fixes the FK contract used above (`restrictOnDelete()`, **not nullable**, explicit table name, no explicit `index()`); this story follows it.
 - **Story 0022** — supplies `App\Actions\NormalizeForSearch`, consumed unchanged. Its ownership question is 0059's **OQ-2** and is **not re-litigated here**.
