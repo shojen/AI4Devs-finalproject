@@ -80,6 +80,19 @@ arch('App\Livewire\ProductCategories does not reference any blog taxonomy namesp
     ->expect('App\Livewire\ProductCategories')
     ->not->toUse('App\Models\Blog');
 
+// Story 0060 (OQ-5): App\Livewire\BlogTags\* must remain structurally independent from the product
+// taxonomy -- the mirror of the fences above, pointed the other way. Blog tags are a standalone
+// taxonomy (0059) and this screen must never borrow the product categories model or actions,
+// whose delete semantics are the exact opposite (0060 D-2). One `expect()` per namespace, never
+// `expect([...])`, which evaluates disjunctively (docs/errors-log.md's vacuous-arch()-rule entry).
+arch('App\Livewire\BlogTags does not reference the product category model')
+    ->expect('App\Livewire\BlogTags')
+    ->not->toUse('App\Models\ProductCategory');
+
+arch('App\Livewire\BlogTags does not reference the product category actions')
+    ->expect('App\Livewire\BlogTags')
+    ->not->toUse('App\Actions\ProductCategories');
+
 // Story 0027 (Tests to perform, "tests/Unit/ArchitectureTest.php -- Modify -- extend the existing
 // scope fence to cover App\Livewire\Products\*, matching 0025 D-9"): App\Livewire\Products\* must
 // remain structurally independent from any future blog taxonomy, matching App\Models\ProductCategory's,
