@@ -76,7 +76,30 @@ class GenerateImageConversions
         // decodeBinary(), never decodePath()/decode($path) -- the source is
         // read through the Storage facade so this works identically against
         // Storage::fake('public') in tests and the real local disk.
-        $image = Image::decodeBinary($disk->get($originalPath));
+        $bytes = $disk->get($originalPath);
+
+        // TEMP-DEBUG: capture the state at the exact moment the decode is about to run.
+        try {
+            (new Imagick)->readImageBlob((string) $bytes);
+            $direct = 'direct read OK';
+        } catch (Throwable $t) {
+            $direct = get_class($t).': '.$t->getMessage();
+        }
+
+        if ((string) $bytes === '' || $direct !== 'direct read OK') {
+            $abs = $disk->path($originalPath);
+
+            throw new RuntimeException('TEMP-DEBUG decode probe: '.$direct
+                .' | bytes='.strlen((string) $bytes).' head='.bin2hex(substr((string) $bytes, 0, 8))
+                .' | path='.$abs.' is_file='.var_export(is_file($abs), true).' filesize='.(is_file($abs) ? filesize($abs) : 'n/a')
+                .' getimagesize='.json_encode(@getimagesize($abs))
+                .' | dir='.json_encode(is_dir(dirname($abs)) ? array_slice(scandir(dirname($abs)), 0, 12) : 'no dir')
+                .' | disk_root='.$disk->path('').' facade='.get_class(Storage::getFacadeRoot())
+                .' | imagick='.Imagick::getVersion()['versionString'].' uptime_s='.trim((string) shell_exec('ps -o etimes= -p '.getmypid()))
+                .' token='.getenv('TEST_TOKEN'));
+        }
+
+        $image = Image::decodeBinary($bytes);
 
         $basename = preg_replace('/\.[^.\/]+$/', '', $originalPath);
         $webpPath = $basename.'.webp';
