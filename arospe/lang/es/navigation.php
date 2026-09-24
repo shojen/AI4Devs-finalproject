@@ -15,11 +15,13 @@ return [
     */
 
     'groups' => [
+        'content' => 'Contenido',
         'settings' => 'Ajustes',
         'store' => 'Tienda',
     ],
 
     'clusters' => [
+        'blog' => 'Blog',
         'products' => 'Productos',
         'store_settings' => 'Configuración de tienda',
     ],
@@ -37,6 +39,7 @@ return [
         'payment_methods' => 'Métodos de pago',
         'customers' => 'Clientes',
         'orders' => 'Pedidos',
+        'blog_tags' => 'Etiquetas',
     ],
 
 ];

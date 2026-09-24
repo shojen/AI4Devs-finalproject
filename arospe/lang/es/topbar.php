@@ -70,6 +70,10 @@ return [
         'subtitle' => 'Consulta, edita y gestiona el libro de pedidos.',
     ],
 
+    'blog_tags' => [
+        'subtitle' => 'Organiza las entradas del blog con etiquetas.',
+    ],
+
     'settings' => [
         'profile' => 'Perfil',
         'security' => 'Seguridad',

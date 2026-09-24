@@ -79,6 +79,18 @@ return [
             'expanded_when' => null,
             'class' => null,
         ],
+        // Story 0060 -- the first Blog screen (tags) creates the `content` group, per story 0080's
+        // D-4/D-5: Content is reserved for Blog and its sub-resources. Stories 0062 (categories) and
+        // 0063 (posts) append `items.*` entries with `cluster: 'blog'` and declare neither a new
+        // group nor a new cluster. Declared after `store` and before `settings` -- array order is
+        // render order.
+        'content' => [
+            'heading' => 'navigation.groups.content',
+            'icon' => 'newspaper',
+            'expandable' => false,
+            'expanded_when' => null,
+            'class' => null,
+        ],
         'settings' => [
             'heading' => 'navigation.groups.settings',
             'icon' => 'cog-6-tooth',
@@ -86,11 +98,6 @@ return [
             'expanded_when' => 'roles.*',   // route-name pattern passed to request()->routeIs()
             'class' => null,
         ],
-        // `groups.content` is deliberately NOT declared here -- it is story
-        // 0060 (or whichever Blog story ships first)'s to add, alongside its
-        // own `blog` cluster (D-5). An empty group with nothing referencing
-        // it yet is exactly the premature scaffolding this registry's own
-        // "append when the screen ships" convention avoids.
     ],
     'clusters' => [
         // Story 0080 -- Products, Product Categories and Product Attribute
@@ -107,6 +114,13 @@ return [
             'group' => 'store',
             'label' => 'navigation.clusters.store_settings',
             'icon' => 'adjustments-horizontal',
+        ],
+        // Story 0060 -- Blog tags today; categories (0062) and posts (0063) join here. Purely
+        // presentational, like every cluster: no route and no permissions of its own.
+        'blog' => [
+            'group' => 'content',
+            'label' => 'navigation.clusters.blog',
+            'icon' => 'document-text',
         ],
     ],
     'items' => [
@@ -266,6 +280,19 @@ return [
             'route' => 'orders.index',
             'current_when' => 'orders.*',
             'permissions' => ['orders.view'],
+        ],
+        // Story 0060 -- Blog tags, nested in the `blog` cluster of the `content` group (D-4).
+        // 'permissions' is EXACTLY the ability routes/blog-tags.php's own `can:` middleware
+        // enforces -- never a broader set, and never a related blog.* ability (see this file's
+        // header note).
+        'blog_tags' => [
+            'group' => null,
+            'cluster' => 'blog',
+            'label' => 'navigation.items.blog_tags',
+            'icon' => 'hashtag',
+            'route' => 'blog-tags.index',
+            'current_when' => 'blog-tags.*',
+            'permissions' => ['blog.view'],
         ],
     ],
 ];
