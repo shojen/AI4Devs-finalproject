@@ -767,7 +767,7 @@ component imports `SetTranslation`, or the `x-show` panel-rendering mode (**D-2*
 0075, already written against this component, **inherit with no change on their end**.
 
 **The case that looks like an exception and is not.** 0060's Blog Tags screen consumes actions that
-[0059](in-progress/0059-blog-tags-backend.md) already made responsible for their own validation, so its
+[0059](done/0059-blog-tags-backend.md) already made responsible for their own validation, so its
 component does **not** validate — there is no layer 1 to add, and adding one would duplicate a rule
 the action owns and invite the two to drift, which is exactly what [base-standards.md](../../docs/conventions/directory-structure.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
 *"move the rule, never copy it"* forbids. **Defence in depth still holds there, because layer 2 is

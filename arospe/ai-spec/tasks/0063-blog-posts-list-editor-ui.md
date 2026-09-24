@@ -488,7 +488,7 @@ Five constraints 0061 binds this story to, quoted rather than paraphrased:
   the Livewire action method, and its target is resolved `withTrashed()` because a default query
   cannot see the row. **Force-delete is deliberately not available**; restore is the only exit.
 
-From **[0059](in-progress/0059-blog-tags-backend.md)**: `FindOrCreateBlogTag::__invoke(string $name): BlogTag` —
+From **[0059](done/0059-blog-tags-backend.md)**: `FindOrCreateBlogTag::__invoke(string $name): BlogTag` —
 name-keyed, case- and accent-insensitive via `normalized_name`, and asking a **different ability per
 branch** (`blog.view` to reuse, `blog.create` to mint — its **D-11**). Reached only through the post
 actions. From **[0058](done/0058-blog-categories-backend.md)**: `App\Models\BlogCategory`, `#[Fillable(['name'])]`.

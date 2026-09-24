@@ -257,7 +257,7 @@ Feature: Blog tags
 - `RenameBlogTag.php` — `__invoke(BlogTag $blogTag, string $name): BlogTag`. Same trim + `23000`
   handling, with `nameRules()` ignoring the target's own id.
 - `DeleteBlogTag.php` — `__invoke(BlogTag $blogTag): bool`. An unconditional instance
-  `$blogTag->delete()`. **Unlike [0023's `DeleteProductCategory`](../done/0023-product-categories-backend.md),
+  `$blogTag->delete()`. **Unlike [0023's `DeleteProductCategory`](0023-product-categories-backend.md),
   this action is complete as shipped and no later story extends it** (**D-8**) — its docblock carries
   the cross-story promise that makes that true, quoted in **D-8**.
 - `FindOrCreateBlogTag.php` — `__invoke(string $name): BlogTag`. The reusable resolver 0060 and 0061
@@ -306,109 +306,109 @@ Feature: Blog tags
 Backend only — **no browser tests**, since this story ships no screen.
 
 **Unit — `tests/Unit/Concerns/BlogTagValidationRulesTest.php`**
-- [ ] `nameFormatRules()` returns the format rules and **carries no uniqueness rule** — the assertion
+- [x] `nameFormatRules()` returns the format rules and **carries no uniqueness rule** — the assertion
       that keeps `FindOrCreateBlogTag` from silently acquiring a refusal it must not have.
-- [ ] `nameRules($normalizeForSearch, null)` and `nameRules($normalizeForSearch, $id)` return the
+- [x] `nameRules($normalizeForSearch, null)` and `nameRules($normalizeForSearch, $id)` return the
       expected rule arrays, and the second carries the `->ignore()` branch.
-- [ ] The **exhaustive folding table is not re-asserted here.** `App\Actions\NormalizeForSearch`'s own
+- [x] The **exhaustive folding table is not re-asserted here.** `App\Actions\NormalizeForSearch`'s own
       behaviour (`ß`, `ç`, CJK, double spaces, idempotence) is owned and unit-tested by story 0022 in
       `tests/Unit/Actions/NormalizeForSearchTest.php` (**D-2**); duplicating it would create a second
       specification of the fold that can drift from the first. What this story tests is that tag name
       comparison *goes through* it — pinned end to end by the whitespace tests below.
 
 **Feature — `tests/Feature/Models/BlogTagTest.php`** (mirrors `tests/Feature/Models/UserTest.php`)
-- [ ] A factory-created tag's `id` is a UUID **v7** string (`Str::isUuid($id, 7)`), not an integer —
+- [x] A factory-created tag's `id` is a UUID **v7** string (`Str::isUuid($id, 7)`), not an integer —
       proves `HasUuids` is actually wired.
-- [ ] Two tags created in immediate succession sort lexicographically in creation order
+- [x] Two tags created in immediate succession sort lexicographically in creation order
       (`strcmp($first->id, $second->id) < 0`) — the same time-ordering assertion `UserTest` makes.
-- [ ] Creating and re-fetching a tag persists `name` and populates both timestamps.
-- [ ] `name` is mass-assignable and **`normalized_name` is not** — a forged
+- [x] Creating and re-fetching a tag persists `name` and populates both timestamps.
+- [x] `name` is mass-assignable and **`normalized_name` is not** — a forged
       `BlogTag::create(['name' => 'running', 'normalized_name' => 'hijacked'])` stores the *derived*
       value, not the submitted one. This is the mass-assignment guard for the column the uniqueness
       rule depends on, so it is a correctness test rather than a style one.
-- [ ] **The `saving` hook derives `normalized_name` on insert and re-derives it on a rename** — two
+- [x] **The `saving` hook derives `normalized_name` on insert and re-derives it on a rename** — two
       assertions, not one. A hook that fires only on insert leaves a renamed tag's `normalized_name`
       pointing at its *old* name, which silently breaks both uniqueness and every future lookup while
       the row looks correct in the UI (**R-3**).
-- [ ] Saving a tag **without touching `name`** does not rewrite `normalized_name` — pins the
+- [x] Saving a tag **without touching `name`** does not rewrite `normalized_name` — pins the
       `isDirty('name')` guard, and is what stops the hook from becoming a per-save normaliser run.
-- [ ] The model does **not** use `SoftDeletes` — a regression guard on **D-5**, which is load-bearing
+- [x] The model does **not** use `SoftDeletes` — a regression guard on **D-5**, which is load-bearing
       here rather than merely tidy: adding the trait would stop the pivot cascade firing at all.
 
 **Feature — `tests/Feature/Blog/CreateBlogTagTest.php`**
-- [ ] Creating with a valid name persists exactly one row with that name, populates both timestamps,
+- [x] Creating with a valid name persists exactly one row with that name, populates both timestamps,
       and stores the correctly derived `normalized_name`.
-- [ ] Creating with a blank name throws `ValidationException` on `name` and writes no row. Assert
+- [x] Creating with a blank name throws `ValidationException` on `name` and writes no row. Assert
       against the **action's own** validation (`expect(fn () => $action(''))->toThrow(...)` and
       inspect `->errors()['name']`) — there is no Livewire component in this story to assert through.
-- [ ] Creating with a **whitespace-only** name (`'   '`) is refused. Laravel's `required` treats a
+- [x] Creating with a **whitespace-only** name (`'   '`) is refused. Laravel's `required` treats a
       string of spaces as *present*, so with a bare `['required', 'string', 'max:100']` rule set a
       whitespace-only name validates and persists. The test proves the trim happens **before**
       validation, not after (**R-2**).
-- [ ] A name with leading/trailing whitespace is stored trimmed — assert the exact persisted `name`,
+- [x] A name with leading/trailing whitespace is stored trimmed — assert the exact persisted `name`,
       not merely "no error".
-- [ ] Length boundary **pair**: a name of exactly the maximum length is accepted, one character over
+- [x] Length boundary **pair**: a name of exactly the maximum length is accepted, one character over
       is refused (**R-4**).
-- [ ] Creating a duplicate name is refused at the **validation** layer (`ValidationException`, not a
+- [x] Creating a duplicate name is refused at the **validation** layer (`ValidationException`, not a
       `QueryException`).
-- [ ] A duplicate that bypasses validation surfaces as a `ValidationException` on `name`, not a 500 —
+- [x] A duplicate that bypasses validation surfaces as a `ValidationException` on `name`, not a 500 —
       the test that proves the `23000` catch. It must drive the collision through the **real unique
       index** (pre-insert the colliding row with `DB::table('blog_tags')->insert(...)`, bypassing the
       action entirely) rather than asserting about the catch block. The test asserts the *outcome*, so
       it holds whichever way the action implements it.
-- [ ] Case-only-different duplicate: creating "Running" alongside "running" is refused **by
+- [x] Case-only-different duplicate: creating "Running" alongside "running" is refused **by
       validation**.
-- [ ] Accent-only-different duplicate: creating "Nino" alongside "Niño" is refused **by validation**.
+- [x] Accent-only-different duplicate: creating "Nino" alongside "Niño" is refused **by validation**.
 
 **Feature — `tests/Feature/Blog/RenameBlogTagTest.php`**
-- [ ] Renaming to a free name updates the row, **and updates `normalized_name` with it**.
-- [ ] Renaming onto another tag's name is refused and the target keeps its original name.
-- [ ] Renaming a tag to **its own current name** is accepted — the `->ignore()` trap, and the single
+- [x] Renaming to a free name updates the row, **and updates `normalized_name` with it**.
+- [x] Renaming onto another tag's name is refused and the target keeps its original name.
+- [x] Renaming a tag to **its own current name** is accepted — the `->ignore()` trap, and the single
       most likely bug in this story (**R-1**). Write this as **three** tests, not one, so a rule that
       rejects everything cannot pass the first trivially: (a) the no-op rename succeeds; (b) the row
       is genuinely unchanged afterwards; (c) a genuinely free name is still accepted, as the control.
-- [ ] Renaming a tag to a **case variant of its own current name** ("running" → "Running") is
+- [x] Renaming a tag to a **case variant of its own current name** ("running" → "Running") is
       accepted and updates the stored `name` — the `->ignore()` branch has to survive the normalised
       comparison, which is the one case where this story's uniqueness column and 0023's differ in a
       way a copied test would miss.
-- [ ] The full validation depth (blank / whitespace-only / length boundary pair) is re-asserted on the
+- [x] The full validation depth (blank / whitespace-only / length boundary pair) is re-asserted on the
       **rename** path independently, not assumed symmetric with create (**R-7**).
 
 **Feature — `tests/Feature/Blog/DeleteBlogTagTest.php`**
-- [ ] Deleting a tag removes the row outright (`assertDatabaseMissing`, not `assertSoftDeleted`).
-- [ ] The freed name can immediately be reused by a new tag, and by `FindOrCreateBlogTag` — proves
+- [x] Deleting a tag removes the row outright (`assertDatabaseMissing`, not `assertSoftDeleted`).
+- [x] The freed name can immediately be reused by a new tag, and by `FindOrCreateBlogTag` — proves
       nothing lingers to hold the unique index, which is exactly what a soft delete would have broken.
-- [ ] Deleting an unknown or malformed-UUID tag fails cleanly (`ModelNotFoundException` / 404), not as
+- [x] Deleting an unknown or malformed-UUID tag fails cleanly (`ModelNotFoundException` / 404), not as
       a silent no-op — `HasUuids`' `resolveRouteBindingQuery()` rejects a non-UUID parameter before
       querying.
-- [ ] **No in-use guard exists** — assert positively that the delete is unconditional, since the
+- [x] **No in-use guard exists** — assert positively that the delete is unconditional, since the
       absence of a guard is this story's actual contract (**D-8**) and a later reader would otherwise
       read it as an oversight. See the honest limits of this in **R-6**.
 
 **Feature — `tests/Feature/Blog/FindOrCreateBlogTagTest.php`** — the story's highest-value file; no
 0023 precedent exists because 0023 has no find-or-create.
-- [ ] Exact-match reuse: calling twice with byte-identical input returns the **same row id** both
+- [x] Exact-match reuse: calling twice with byte-identical input returns the **same row id** both
       times and leaves exactly one row.
-- [ ] Case-only reuse: "Running" resolves to the existing "running", no second row.
-- [ ] Accent-only reuse: "Nino" resolves to the existing "Niño", no second row.
-- [ ] **Whitespace-padded reuse** (`'  running  '` → existing `'running'`) — **blocking, not
+- [x] Case-only reuse: "Running" resolves to the existing "running", no second row.
+- [x] Accent-only reuse: "Nino" resolves to the existing "Niño", no second row.
+- [x] **Whitespace-padded reuse** (`'  running  '` → existing `'running'`) — **blocking, not
       filler.** See **R-8**: this and the next case are the *only* assertions that distinguish "the
       app normalises" from "MySQL's collation happened to fold it for us".
-- [ ] **Internal-whitespace-collapse reuse** (`'trail  running'`, double space → existing
+- [x] **Internal-whitespace-collapse reuse** (`'trail  running'`, double space → existing
       `'trail running'`) — **blocking**, same reason, and the strongest of the two because no
       collation folds internal whitespace under any setting.
-- [ ] Brand-new create: an unmatched name creates exactly one row and returns it. The negative control
+- [x] Brand-new create: an unmatched name creates exactly one row and returns it. The negative control
       — without it, every reuse assertion above could pass against an implementation that returns some
       arbitrary row regardless of input.
-- [ ] `wasRecentlyCreated` is `true` on the create path and `false` on the reuse path — the flag 0061
+- [x] `wasRecentlyCreated` is `true` on the create path and `false` on the reuse path — the flag 0061
       will read instead of this story inventing a return shape (**D-10**).
-- [ ] Blank and whitespace-only input are **refused before any lookup or insert**, and no row of any
+- [x] Blank and whitespace-only input are **refused before any lookup or insert**, and no row of any
       kind is created as a side effect. This is a sharper failure mode than `CreateBlogTag`'s: a
       find-or-create that validates *after* looking up could resolve two different whitespace-only
       inputs to one shared empty-named row, a false-positive success rather than a caught error
       (**R-2**).
-- [ ] Over-length input is refused.
-- [ ] **Concurrency**: with a colliding row pre-inserted directly via
+- [x] Over-length input is refused.
+- [x] **Concurrency**: with a colliding row pre-inserted directly via
       `DB::table('blog_tags')->insert(...)` (simulating another process winning the race between the
       lookup and the insert), `FindOrCreateBlogTag` **returns that existing row** — it does not throw,
       and it does not create a second. Assert the returned id equals the pre-inserted row's. This is
@@ -417,30 +417,30 @@ Backend only — **no browser tests**, since this story ships no screen.
       A genuinely simultaneous two-connection race is not reachable under `RefreshDatabase`'s
       single-transaction strategy, so the *mechanism* is simulated and the *outcome* is what is
       asserted.
-- [ ] Two clearly-different names never collide — a sanity check on the normaliser's aggressiveness,
+- [x] Two clearly-different names never collide — a sanity check on the normaliser's aggressiveness,
       so an over-folding regression fails here rather than silently merging unrelated tags.
 
 **Feature — `tests/Feature/Policies/BlogTagPolicyTest.php`** (shape copied from
 `tests/Feature/Policies/SalesRegionPolicyTest.php`)
-- [ ] Every ability gets **both an allow and a deny test**, per
+- [x] Every ability gets **both an allow and a deny test**, per
       [what-not-to-test.md](../../../docs/testing/qa/what-not-to-test.md)'s authorization rule.
-- [ ] A **narrowness** test per ability: an actor holding a *related but wrong* `blog.*` permission
+- [x] A **narrowness** test per ability: an actor holding a *related but wrong* `blog.*` permission
       (e.g. `blog.view` when the ability under test is `create`) is still denied. This catches a policy
       that accidentally checks "any `blog.*` permission" instead of the exact string.
-- [ ] A `Super Admin` actor is allowed through `Gate::before`, consistent with every other policy here.
-- [ ] The permission names are asserted against `RolePermissionSeeder`'s seeded catalog (seed it and
+- [x] A `Super Admin` actor is allowed through `Gate::before`, consistent with every other policy here.
+- [x] The permission names are asserted against `RolePermissionSeeder`'s seeded catalog (seed it and
       call `forgetCachedPermissions()` in `beforeEach`) — a permission string not in the catalog throws
       `PermissionDoesNotExist` at runtime, so this is a correctness test.
 
 **Feature — `tests/Feature/Blog/FindOrCreateBlogTagAuthorizationTest.php`** — its own file because
 **D-11**'s conditional ability is the story's one novel authorization shape, and it needs a dataset
 rather than a pair:
-- [ ] An actor holding `blog.view` **but not** `blog.create` **reuses** an existing tag successfully.
-- [ ] The same actor is **refused** when the name does not exist (the branch that would insert).
-- [ ] An actor holding `blog.create` succeeds on both branches.
-- [ ] An actor holding neither is refused on both.
-- [ ] The refusal on the create branch is an `AuthorizationException`, and **no row is written**.
-- [ ] Every one of the four `Gate` refusal sites writes exactly one `Log::warning('Privileged action
+- [x] An actor holding `blog.view` **but not** `blog.create` **reuses** an existing tag successfully.
+- [x] The same actor is **refused** when the name does not exist (the branch that would insert).
+- [x] An actor holding `blog.create` succeeds on both branches.
+- [x] An actor holding neither is refused on both.
+- [x] The refusal on the create branch is an `AuthorizationException`, and **no row is written**.
+- [x] Every one of the four `Gate` refusal sites writes exactly one `Log::warning('Privileged action
       refused', …)` line carrying `target_type: 'blog_tag'`, set-equated against an existing screen's
       context keys in one `Log::spy()` session — the equivalence test
       [the refusal-logging recipe](../../../docs/architecture/authorization.md#copyable-what-a-third-admin-screen-inherits)
@@ -472,45 +472,45 @@ operation, and every action authorizes itself so a non-dashboard caller inherits
 user-visible yet: the management screen is 0060, and the posts that attach a tag are 0061.
 
 ## Acceptance criteria
-- [ ] `blog_tags` exists with `id` (UUID v7 PK), `name`, `normalized_name` (unique), `created_at`,
+- [x] `blog_tags` exists with `id` (UUID v7 PK), `name`, `normalized_name` (unique), `created_at`,
       `updated_at` — and nothing else. There is **no** unique index on `name`.
-- [ ] `normalized_name` is sized **wider** than `name`, and Phase 3 has recorded the measured
+- [x] `normalized_name` is sized **wider** than `name`, and Phase 3 has recorded the measured
       worst-case `Str::ascii()` expansion that justifies the chosen widths (**R-4**). A max-length
       **accented** name round-trips through create and rename without a `22001`.
-- [ ] `App\Models\BlogTag` uses `HasUuids`, exposes `name` as its only fillable attribute, derives
+- [x] `App\Models\BlogTag` uses `HasUuids`, exposes `name` as its only fillable attribute, derives
       `normalized_name` on every write that changes `name`, and does **not** use `SoftDeletes`.
-- [ ] A tag can be created with a valid name; blank, whitespace-only, over-length and duplicate names
+- [x] A tag can be created with a valid name; blank, whitespace-only, over-length and duplicate names
       are all refused with a validation message on `name`.
-- [ ] A tag can be renamed; renaming onto another tag's name is refused, saving a tag under its own
+- [x] A tag can be renamed; renaming onto another tag's name is refused, saving a tag under its own
       unchanged name is accepted, and a case-only self-rename is accepted.
-- [ ] A tag can be deleted **unconditionally** — no in-use guard exists, and the row is really gone —
+- [x] A tag can be deleted **unconditionally** — no in-use guard exists, and the row is really gone —
       and its name becomes immediately reusable.
-- [ ] `FindOrCreateBlogTag` returns the existing tag for a name differing only by case, accents or
+- [x] `FindOrCreateBlogTag` returns the existing tag for a name differing only by case, accents or
       whitespace, creates one only when nothing matches, never refuses on a name collision, and
       resolves a lost insert race to the winning row rather than throwing.
-- [ ] Case-, accent- and whitespace-only duplicates are refused (or reused) via the shared
+- [x] Case-, accent- and whitespace-only duplicates are refused (or reused) via the shared
       `App\Actions\NormalizeForSearch` — no fold logic is inlined in `BlogTagValidationRules`, in any
       `app/Actions/Blog/` class or in the model, and no second normaliser is added to the tree.
-- [ ] Authorization is expressed in `BlogTagPolicy` **and** enforced by each action itself, with both
+- [x] Authorization is expressed in `BlogTagPolicy` **and** enforced by each action itself, with both
       an allow and a deny test per ability plus a narrowness test.
-- [ ] Every `Gate` refusal is logged through `LogRefusedPrivilegedAttempt` with `target_type:
+- [x] Every `Gate` refusal is logged through `LogRefusedPrivilegedAttempt` with `target_type:
       'blog_tag'`, set-equated against an existing screen's context keys.
-- [ ] Blog tags share no table, model, or namespace with blog categories or product categories.
-- [ ] No permission-catalog, route, `config/modules.php`, Livewire, view or `lang/` file is added by
+- [x] Blog tags share no table, model, or namespace with blog categories or product categories.
+- [x] No permission-catalog, route, `config/modules.php`, Livewire, view or `lang/` file is added by
       this story, and no pivot table or `blog_posts` column is created.
 
 ## Definition of Done
-- [ ] Tests written and green, plus the full existing suite (per
+- [x] Tests written and green, plus the full existing suite (per
       [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule).
-- [ ] **All three quality gates run unscoped and each result recorded, including "not run"** —
+- [x] **All three quality gates run unscoped and each result recorded, including "not run"** —
       `php artisan test`, `vendor/bin/pint --format agent`, and `vendor/bin/phpstan analyse` (Larastan
       level 7). The third is the one nothing else prompts you to run; see
       [errors-log.md](../../../docs/errors-log-archive.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
       **This story registers a model event, so its blast radius is the whole suite by construction** —
       the unscoped run is not optional here.
-- [ ] Code reviewed (code-reviewer).
-- [ ] No security findings (appsec-auditor).
-- [ ] Documentation updated (docs-keeper): `docs/database/schema.md` gains a `blog_tags` section and an
+- [x] Code reviewed (code-reviewer).
+- [x] No security findings (appsec-auditor).
+- [x] Documentation updated (docs-keeper): `docs/database/schema.md` gains a `blog_tags` section and an
       ER-diagram entry; `docs/conventions/base-standards.md`'s directory listing gains
       `app/Actions/Blog/`; `docs/architecture/authorization.md` gains `BlogTagPolicy` as the fourth
       policy. **And — the one this story is uniquely placed to close —
@@ -518,7 +518,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
       Blog Tags**, along with the matching bullet in `docs/database/schema.md`'s Notes. `blog_tags` is
       one of the ADR's seven *named* entities (unlike `sales_regions`, which needed a "beyond ADR
       0001" caveat), so this is the first story to close one of them cleanly.
-- [ ] **Hand-off note recorded for 0060 and 0061** (a real obligation, not a formality):
+- [x] **Hand-off note recorded for 0060 and 0061** (a real obligation, not a formality):
       - **0060** (tag management UI) gives `BlogTagPolicy` its first *component* call site. It must
         authorize before opening each modal and keep the id fed to `->ignore()` server-authoritative
         (`#[Locked]` / re-read from the model), per
@@ -527,7 +527,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
         `foreignUuid('blog_tag_id')->constrained()->cascadeOnDelete()`. The exact constraint, and why
         copying `sales_regions`' `restrictOnDelete()` habit would silently contradict this story's
         shipped delete test, is **D-8**.
-- [ ] Acceptance criteria met.
+- [x] Acceptance criteria met.
 
 ## Documented functional decisions
 
@@ -575,7 +575,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
      simply does not arise here.
   3. **It is the indexed read path story 0063's autocomplete needs.** The post editor's tag field
      queries on every keystroke. `WHERE normalized_name LIKE 'term%'` against a real BTREE index is
-     the shape [0032's `geography_entries`](../done/0032-shipping-geography-catalog-seed.md) was designed
+     the shape [0032's `geography_entries`](0032-shipping-geography-catalog-seed.md) was designed
      around for the identical reason — and the `UNIQUE` index serves both the constraint and the
      prefix scan, so no second index is needed. Folding every row in PHP per keystroke is not a
      viable read path.
@@ -664,7 +664,7 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
   structural difference from every taxonomy story before it.** PRD's own Gherkin says deleting a tag
   *"is removed from every post that used it"* — there is no hard block, no count, no
   reassign-first requirement. Contrast blog **categories** (story 0058), which PRD hard-blocks with a
-  count, exactly as [0023](../done/0023-product-categories-backend.md) defers its in-use guard to [0024b](../done/0024b-product-category-in-use-delete-guard.md).
+  count, exactly as [0023](0023-product-categories-backend.md) defers its in-use guard to [0024b](0024b-product-category-in-use-delete-guard.md).
 
   So where `DeleteProductCategory` exists as its own file *specifically so a later story can extend
   it*, `DeleteBlogTag` exists as its own file and **no later story extends it**. Its body is a bare
@@ -1190,8 +1190,9 @@ recommendations already stated above.
   `22001`. The same guard refuses a name that folds to nothing or to something with edge whitespace.
 - **`nameFormatRules()` takes the normaliser.** Because the folded-length guard is part of the format
   contract, the signature is `nameFormatRules(NormalizeForSearch $normalizeForSearch)`. It still carries
-  **no** uniqueness rule, which the unit test proves behaviourally (a colliding row passes it and fails
-  `nameRules()`).
+  **no** uniqueness rule: the unit test pins it structurally (`nameRules()` is `nameFormatRules()` plus
+  exactly one closure, and only that closure captures the tag id), and the behavioural half — an existing
+  name is a hit, not an error — lives in `FindOrCreateBlogTagTest`.
 - **The trim is Unicode-aware** (`trimName()`, as in 0058): PHP's `trim()` leaves a non-breaking or
   zero-width space in place, which would let a visually identical duplicate through. It runs before
   validation in every action (R-2).
@@ -1203,3 +1204,25 @@ recommendations already stated above.
 - **Known duplication, deliberately not refactored here:** `trimName()` and the folded-length guard now
   exist in both `BlogCategoryValidationRules` and `BlogTagValidationRules`. Extracting a shared concern
   would edit a shipped, sibling-owned file outside this story's scope fences; recorded as a follow-up.
+
+## Verification record (2026-09-24)
+
+- **Quality gates, all unscoped, on the final tree:** `php -d memory_limit=-1 vendor/bin/pest` — **3599
+  tests, 3596 passed, 3 skipped (pre-existing), 12516 assertions, exit 0**; `vendor/bin/pint --format agent`
+  — passed; `vendor/bin/phpstan analyse` (Larastan level 7) — **0 errors**. (`php artisan test` was not used:
+  its child process ignores `-d memory_limit` and dies at 128 MB on this host, see
+  `docs/testing/ci/commands.md`.) The blog-tag files alone: 104 tests.
+- **R-4 measured by execution:** one code point folds to at most 5 characters (U+104C → `hnaik`); shipped the
+  validation-bound option, boundary pinned at 51 vs 52 × U+104C.
+- **Phase 4 (appsec-auditor):** no authorization bypass or privilege escalation. Fixed here: the race
+  re-fetch is now a locking read (a plain read cannot see a row committed after an outer transaction's
+  snapshot); `trimName()` made linear (was 29 s for 50,000 interior spaces with PCRE JIT off) and
+  invalid UTF-8 now trims to an empty, refused name. Recorded as follow-ups, not fixed (they change the
+  name policy and equally affect 0058): interior zero-width/bidi/control characters, and the same quadratic
+  regex still in `BlogCategoryValidationRules` — see `ai-spec/tasks/_digests/epic-4.md`.
+- **Phase 5 (code-reviewer):** no must-fix defect. Fixed: the rename duplicate tests now prove the refusal
+  happens in validation and not at the index (they could not fail against a rule that skipped the
+  normaliser); the `bail` test now uses an input that breaks two rules; a misleading R-8 comment;
+  stale "red step" headers.
+- **Hand-offs recorded** in `DeleteBlogTag`'s docblock (0061's cascading pivot), `docs/database/schema-blog.md`,
+  `docs/architecture/authorization.md` (0060's component obligations) and the Epic 4 digest.
