@@ -148,40 +148,49 @@ test('every refusal site writes exactly one warning with target_type blog_tag an
         //
     }
 
-    $captured = [];
+    // Mockery invokes a withArgs() closure more than once while verifying, so nothing is captured
+    // in a list here: each expectation matches on the whole line and ->once() counts the matches,
+    // which is what proves "exactly one warning per refusal".
+    $sortedKeys = function (array $context): array {
+        $keys = array_keys($context);
+        sort($keys);
+
+        return $keys;
+    };
+
+    $referenceKeys = null;
 
     Log::shouldHaveReceived('warning')
-        ->withArgs(function (string $message, array $context) use (&$captured): bool {
-            $captured[] = $context;
+        ->withArgs(function (string $message, array $context) use ($referenceActor, $sortedKeys, &$referenceKeys): bool {
+            if ($message !== 'Privileged action refused' || $context['actor_id'] !== $referenceActor->id) {
+                return false;
+            }
 
-            return $message === 'Privileged action refused';
+            $referenceKeys = $sortedKeys($context);
+
+            return true;
         })
-        ->times(6);
+        ->once();
 
-    $expectedSites = [
+    expect($referenceKeys)->toBe(['ability', 'actor_id', 'target_id', 'target_type']);
+
+    foreach ([
         [$creator, 'create', null],
         [$editor, 'update', $tag->id],
         [$remover, 'delete', $tag->id],
         [$looker, 'viewAny', null],
         [$minter, 'create', null],
-    ];
-
-    $reference = collect($captured)->firstWhere('actor_id', $referenceActor->id);
-    $referenceKeys = array_keys($reference);
-    sort($referenceKeys);
-
-    foreach ($expectedSites as [$actor, $ability, $targetId]) {
-        $lines = collect($captured)->where('actor_id', $actor->id);
-
-        expect($lines)->toHaveCount(1);
-
-        $line = $lines->first();
-        $keys = array_keys($line);
-        sort($keys);
-
-        expect($line['ability'])->toBe($ability)
-            ->and($line['target_type'])->toBe('blog_tag')
-            ->and($line['target_id'])->toBe($targetId)
-            ->and($keys)->toBe($referenceKeys);
+    ] as [$actor, $ability, $targetId]) {
+        Log::shouldHaveReceived('warning')
+            ->withArgs(fn (string $message, array $context): bool => $message === 'Privileged action refused'
+                && $context['actor_id'] === $actor->id
+                && $context['ability'] === $ability
+                && $context['target_type'] === 'blog_tag'
+                && $context['target_id'] === $targetId
+                && $sortedKeys($context) === $referenceKeys)
+            ->once();
     }
+
+    // Nothing else was logged: five blog-tag refusals plus the one reference line.
+    Log::shouldHaveReceived('warning')->times(6);
 });

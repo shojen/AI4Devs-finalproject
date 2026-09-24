@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
-// Story 0059, Phase 3 (TDD "red" step): App\Models\BlogTag, its factory and the blog_tags migration
-// do not exist yet -- every test below is expected to fail until they do.
-
 test('a factory-created blog tag receives a uuidv7 string primary key', function () {
     $tag = BlogTag::factory()->create();
 

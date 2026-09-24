@@ -8,7 +8,7 @@ use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
-// Story 0059, Phase 3 (TDD "red" step). D-12: DeleteBlogTag authorizes itself first, so every test
+// Story 0059. D-12: DeleteBlogTag authorizes itself first, so every test
 // runs actingAs() an actor holding blog.delete (plus create/view for the reuse tests).
 beforeEach(function () {
     $this->seed(RolePermissionSeeder::class);

@@ -3,7 +3,7 @@
 use App\Actions\NormalizeForSearch;
 use App\Concerns\BlogTagValidationRules;
 
-// Story 0059, Phase 3 (TDD "red" step): App\Concerns\BlogTagValidationRules does not exist yet.
+// Story 0059.
 //
 // The exhaustive folding table is NOT re-asserted here -- tests/Unit/Actions/NormalizeForSearchTest.php
 // owns it (story 0022, D-2); a second specification of the fold could drift from the first. This file

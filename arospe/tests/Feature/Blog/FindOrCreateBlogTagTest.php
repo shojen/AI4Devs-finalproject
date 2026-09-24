@@ -8,8 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
-// Story 0059, Phase 3 (TDD "red" step): FindOrCreateBlogTag does not exist yet. The story's
-// highest-value file -- no 0023/0058 precedent exists, because neither has a find-or-create.
+// Story 0059. The story's highest-value file -- no 0023/0058 precedent exists, because neither has a find-or-create.
 //
 // D-11/D-12: the action authorizes itself before it reads anything, so every test runs actingAs() an
 // actor holding both blog.view and blog.create. The conditional-ability matrix has its own file.
@@ -62,7 +61,9 @@ test('an accent-only variant resolves to the existing tag', function () {
 
 // R-8, BLOCKING: utf8mb4_unicode_ci folds case and accents by itself, so the two tests above would
 // stay green against an implementation that skips NormalizeForSearch entirely. No collation folds
-// whitespace, so this test and the next are the only ones that prove the normaliser is in the path.
+// INTERNAL whitespace, so the double-space test below is the one that proves the normaliser is in the
+// path. The padded-name test only proves the trim (trimName() also handles it), and is kept as the
+// companion case.
 test('a whitespace-padded name resolves to the existing tag', function () {
     $existing = BlogTag::factory()->create(['name' => 'running']);
 

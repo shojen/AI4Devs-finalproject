@@ -8,9 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
-// Story 0059, Phase 3 (TDD "red" step): the action, model, factory, trait and migration do not exist yet.
-//
-// D-12: CreateBlogTag authorizes itself BEFORE it validates, so every test runs actingAs() an actor
+// Story 0059. D-12: CreateBlogTag authorizes itself BEFORE it validates, so every test runs actingAs() an actor
 // holding blog.create -- without one, each negative-validation test below would throw
 // AuthorizationException and pass (or fail) for entirely the wrong reason.
 beforeEach(function () {
@@ -116,10 +114,31 @@ test('a name that is only invisible characters, or that folds to nothing, is ref
     'a symbol the fold drops' => ['™'],
 ]);
 
+// 101 x U+104C breaks BOTH `max:100` and the folded-length bound (505 > 255), so without `bail` it
+// would report two errors; a plain ASCII overflow only breaks the first and could not detect its loss.
 test('a name over the maximum reports the length error exactly once', function () {
-    $caught = blogTagCreateOutcome(str_repeat('b', 101));
+    $caught = blogTagCreateOutcome(str_repeat("\u{104C}", 101));
 
     expect($caught->errors()['name'])->toHaveCount(1);
+});
+
+// The trim runs on the raw input, before `max:` can refuse it, so it must stay linear: the plain-`+`
+// regex measured 34 s for 50,000 interior spaces with PCRE's JIT off. 5 s is a generous ceiling for a
+// linear one and a hard fail for a quadratic one.
+test('a very long run of interior whitespace is refused quickly', function () {
+    $start = microtime(true);
+    $caught = blogTagCreateOutcome('a'.str_repeat(' ', 50000).'a');
+
+    expect($caught)->toBeInstanceOf(ValidationException::class)
+        ->and(microtime(true) - $start)->toBeLessThan(5.0);
+});
+
+test('a name that is not valid UTF-8 is refused instead of being stored or aliased', function () {
+    $caught = blogTagCreateOutcome("abc\xFF");
+
+    expect($caught)->toBeInstanceOf(ValidationException::class)
+        ->and($caught->errors())->toHaveKey('name')
+        ->and(BlogTag::count())->toBe(0);
 });
 
 test('a name with leading and trailing whitespace is stored trimmed', function () {

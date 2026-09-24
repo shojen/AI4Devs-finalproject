@@ -8,8 +8,7 @@ use Illuminate\Support\Facades\Gate;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
-// Story 0059, Phase 3 (TDD "red" step): BlogTagPolicy does not exist yet. Every ability gets both an
-// allow and a deny test, per docs/testing/qa/what-not-to-test.md's authorization rule.
+// Story 0059. Every ability gets both an allow and a deny test, per docs/testing/qa/what-not-to-test.md's authorization rule.
 
 beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();

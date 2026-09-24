@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
-// Story 0059, Phase 3 (TDD "red" step). D-12: every test runs actingAs() an actor holding blog.edit,
+// Story 0059. D-12: every test runs actingAs() an actor holding blog.edit,
 // or the call throws AuthorizationException before validation ever runs.
 beforeEach(function () {
     $this->seed(RolePermissionSeeder::class);
@@ -18,6 +18,25 @@ beforeEach(function () {
     $this->actor->givePermissionTo('blog.edit');
     $this->actingAs($this->actor);
 });
+
+/**
+ * Whether any UPDATE on blog_tags was attempted while $callback ran -- what tells a pre-flight
+ * validation refusal apart from the unique index refusing a rename that validation let through.
+ */
+function blogTagUpdateAttempted(Closure $callback): bool
+{
+    DB::enableQueryLog();
+
+    try {
+        $callback();
+    } finally {
+        $queries = collect(DB::getQueryLog())->pluck('query');
+        DB::disableQueryLog();
+        DB::flushQueryLog();
+    }
+
+    return $queries->contains(fn (string $sql): bool => str_starts_with($sql, 'update `blog_tags`'));
+}
 
 function blogTagRenameOutcome(BlogTag $tag, string $name): ?Throwable
 {
@@ -47,10 +66,14 @@ test('renaming onto another tag\'s name is refused and the target keeps its name
     BlogTag::factory()->create(['name' => 'running']);
     $target = BlogTag::factory()->create(['name' => 'invierno']);
 
-    $caught = blogTagRenameOutcome($target, 'running');
+    $caught = null;
+    $attempted = blogTagUpdateAttempted(function () use (&$caught, $target) {
+        $caught = blogTagRenameOutcome($target, 'running');
+    });
 
     expect($caught)->toBeInstanceOf(ValidationException::class)
         ->and($caught->errors())->toHaveKey('name')
+        ->and($attempted)->toBeFalse()
         ->and($target->fresh()->name)->toBe('invierno')
         ->and($target->fresh()->normalized_name)->toBe('invierno');
 });
@@ -59,10 +82,20 @@ test('renaming onto a case-only, accent-only or whitespace variant of another ta
     BlogTag::factory()->create(['name' => 'Niño trail']);
     $target = BlogTag::factory()->create(['name' => 'invierno']);
 
-    expect(blogTagRenameOutcome($target, 'NIÑO TRAIL'))->toBeInstanceOf(ValidationException::class)
-        ->and(blogTagRenameOutcome($target, 'Nino trail'))->toBeInstanceOf(ValidationException::class)
-        ->and(blogTagRenameOutcome($target, 'nino  trail'))->toBeInstanceOf(ValidationException::class)
-        ->and($target->fresh()->name)->toBe('invierno');
+    // Refused by validation, never by the unique index: no UPDATE may even be attempted. Without this
+    // probe the 23000 catch would turn an index refusal into the same ValidationException, and these
+    // cases would stay green against a uniqueness rule that skipped the normaliser (R-8).
+    foreach (['NIÑO TRAIL', 'Nino trail', 'nino  trail'] as $variant) {
+        $caught = null;
+        $attempted = blogTagUpdateAttempted(function () use (&$caught, $target, $variant) {
+            $caught = blogTagRenameOutcome($target, $variant);
+        });
+
+        expect($caught)->toBeInstanceOf(ValidationException::class)
+            ->and($attempted)->toBeFalse();
+    }
+
+    expect($target->fresh()->name)->toBe('invierno');
 });
 
 // R-1, in three parts so a rule that rejects everything cannot pass the first trivially.
