@@ -8,7 +8,7 @@ moment the *"a scheduled post goes live"* half of the
 becomes observable, so this story also defines the single trigger story **0065** consumes.
 
 It is **backend only, and narrower than it looks**: no screen, no route, no migration, no column, no
-model change and no notification class. Story [0061](0061-blog-posts-core-crud-backend.md) ships the
+model change and no notification class. Story [0061](done/0061-blog-posts-core-crud-backend.md) ships the
 `published_at` column, the `Scheduled` status, the validation rule that guarantees a scheduled date is
 in the future, and the composite index built specifically for this sweep. This story ships **an
 Artisan command, a domain action, one schedule entry, and the event that says a post went live.**
@@ -190,7 +190,7 @@ Schedule::command(PublishScheduledBlogPosts::class)
 ### Consumed, not created by this story
 
 - `App\Models\BlogPost`, `App\Enums\BlogPostStatus`, `blog_posts.published_at` and the
-  `(deleted_at, status, published_at)` index — all story [0061](0061-blog-posts-core-crud-backend.md).
+  `(deleted_at, status, published_at)` index — all story [0061](done/0061-blog-posts-core-crud-backend.md).
   **Consumed unchanged; this story modifies none of them.**
 - `App\Models\BlogPost`'s `SoftDeletingScope` — consumed by *doing nothing*, which is the whole point
   of **D-9**.
@@ -211,7 +211,7 @@ area route file · `config/modules.php` · `app/Livewire/**` · `resources/views
 Backend only — no browser tests, since this story ships no screen.
 
 > **Read this before writing any test in this story.** Two disciplines carry over from
-> [0061](0061-blog-posts-core-crud-backend.md) and one is new.
+> [0061](done/0061-blog-posts-core-crud-backend.md) and one is new.
 > **(a) Every case in this story freezes the clock** with `Carbon::setTestNow()` — a sweep is a
 > time-dependent operation by definition, and [mocking-and-fakes.md](../../docs/testing/backend/mocking-and-fakes.md)
 > already names an unfrozen `now()` comparison as non-deterministic by construction.
@@ -1175,7 +1175,7 @@ Phase 1 (Three Amigos) debate run on 2026-08-27 with `backend-expert` (files and
 [PRD](../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's blog-post status requirement and the
 [cross-cutting notification list](../../docs/PRD/sections/foundations.md#cross-cutting-global-search--notifications)'s
 *"a blog post is published or a scheduled post goes live"*, plus the human product decision recorded
-as **D-0**, and story [0061](0061-blog-posts-core-crud-backend.md)'s explicit hand-off, which is this
+as **D-0**, and story [0061](done/0061-blog-posts-core-crud-backend.md)'s explicit hand-off, which is this
 story's entire backend contract.
 
 All three amigos' contributions are reflected above. **Two facilitator findings changed this document

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -41,6 +42,18 @@ class BlogTag extends Model
      * fold would not fit (R-4).
      */
     public const NORMALIZED_NAME_MAX_LENGTH = 255;
+
+    /**
+     * The posts carrying this tag, through `blog_post_tag` (story 0061). Read-only from here: the
+     * pivot is written by App\Actions\Blog\SyncBlogPostTags alone. A plain `withCount('posts')`
+     * excludes trashed posts, which is the right number for a screen (D-7c).
+     *
+     * @return BelongsToMany<BlogPost, $this>
+     */
+    public function posts(): BelongsToMany
+    {
+        return $this->belongsToMany(BlogPost::class, 'blog_post_tag', 'blog_tag_id', 'blog_post_id');
+    }
 
     /**
      * `normalized_name` is the folded key the UNIQUE index guards and every lookup compares

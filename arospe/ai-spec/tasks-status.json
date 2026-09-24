@@ -3,37 +3,57 @@
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
     {
-      "id": "0061",
-      "slug": "0061-blog-posts-core-crud-backend",
-      "title": "Blog posts — core CRUD backend (+ the blog-category in-use delete guard)",
+      "id": "0061a",
+      "slug": "0061a-blog-post-publish-with-future-date-schedules",
+      "title": "Blog posts — publishing with a future date schedules the post (backend)",
       "depends_on": [],
       "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
-        "database/migrations/*_create_blog_posts_table.php",
-        "app/Models/BlogPost.php",
-        "app/Enums/BlogPostStatus.php",
-        "app/Policies/BlogPostPolicy.php",
-        "app/Concerns/BlogPostValidationRules.php",
         "app/Actions/Blog/CreateBlogPost.php",
         "app/Actions/Blog/UpdateBlogPost.php",
-        "app/Actions/Blog/DeleteBlogCategory.php",
-        "app/Actions/Blog/RestoreBlogPost.php",
-        "app/Actions/Blog/SyncBlogPostTags.php",
-        "lang/en/blog.php",
-        "lang/es/blog.php"
+        "app/Concerns/BlogPostValidationRules.php",
+        "tests/Feature/Blog/BlogPostStatusAndPublicationDateTest.php",
+        "tests/Feature/Blog/BlogPostPublishedNotificationTest.php",
+        "docs/database/schema-blog.md"
       ],
-      "conflict_risk_with": []
+      "conflict_risk_with": [
+        "0061b",
+        "0063",
+        "0065"
+      ]
+    },
+    {
+      "id": "0061b",
+      "slug": "0061b-blog-post-body-must-have-visible-content",
+      "title": "Blog posts — a body must actually show something (backend)",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Actions/Blog/BlogBodyHasVisibleContent.php",
+        "app/Actions/Blog/CreateBlogPost.php",
+        "app/Actions/Blog/UpdateBlogPost.php",
+        "tests/Unit/Actions/Blog/BlogBodyHasVisibleContentTest.php",
+        "tests/Feature/Blog/CreateBlogPostTest.php",
+        "tests/Feature/Blog/UpdateBlogPostTest.php",
+        "docs/security/html-sanitization.md",
+        "docs/database/schema-blog.md"
+      ],
+      "conflict_risk_with": [
+        "0061a",
+        "0063",
+        "0065"
+      ]
     },
     {
       "id": "0062",
       "slug": "0062-blog-categories-ui",
       "title": "Blog categories — management screen (list, create/edit modal, blocked delete)",
-      "depends_on": [
-        "0061"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -52,10 +72,8 @@
       "id": "0063",
       "slug": "0063-blog-posts-list-editor-ui",
       "title": "Blog posts — list + editor UI",
-      "depends_on": [
-        "0061"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -69,6 +87,8 @@
         "config/modules.php"
       ],
       "conflict_risk_with": [
+        "0061a",
+        "0061b",
         "0062",
         "0072",
         "0074",
@@ -79,10 +99,8 @@
       "id": "0064",
       "slug": "0064-scheduled-post-auto-publish-backend",
       "title": "Scheduled post auto-publish — backend (the app's first scheduled command)",
-      "depends_on": [
-        "0061"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -97,7 +115,6 @@
       "slug": "0065-blog-post-published-notification-backend",
       "title": "Blog post published — notification (backend)",
       "depends_on": [
-        "0061",
         "0064"
       ],
       "status": "blocked",
@@ -110,7 +127,10 @@
         "app/Actions/Blog/UpdateBlogPost.php",
         "app/Actions/Blog/CreateBlogPost.php"
       ],
-      "conflict_risk_with": []
+      "conflict_risk_with": [
+        "0061a",
+        "0061b"
+      ]
     },
     {
       "id": "0066",
@@ -389,7 +409,6 @@
       "slug": "0078-translatable-content-retrofit-blog-posts-backend",
       "title": "Translatable content retrofit — Blog Posts backend",
       "depends_on": [
-        "0061",
         "0068",
         "0070"
       ],

@@ -2,11 +2,11 @@
 
 ## Description
 Introduce `blog_posts` as Epic 4's central entity: a new `blog_posts` table (UUID v7 primary key per
-[ADR 0001](../../docs/decisions/0001-uuid-primary-keys.md) and
-[PRD](../../docs/PRD/sections/foundations.md#assumptions--confirmed-decisions) assumption 19) plus the
+[ADR 0001](../../../docs/decisions/0001-uuid-primary-keys.md) and
+[PRD](../../../docs/PRD/sections/foundations.md#assumptions--confirmed-decisions) assumption 19) plus the
 `blog_post_tag` pivot, the `App\Models\BlogPost` model, a `BlogPostStatus` backed enum, shared
 validation, and the create / update / **soft**-delete domain actions — including tag assignment with
-**create-on-the-fly** through story [0059](done/0059-blog-tags-backend.md)'s `FindOrCreateBlogTag`. It is
+**create-on-the-fly** through story [0059](../done/0059-blog-tags-backend.md)'s `FindOrCreateBlogTag`. It is
 **backend only** — no screen, no route, no Livewire component; the blog list and post editor are
 story **0063**.
 
@@ -15,18 +15,18 @@ story **0063**.
 recoverable, unlike the two blog taxonomies, which hard-delete.
 
 It also carries a **second, smaller deliverable**: now that `blog_posts.blog_category_id` exists,
-story [0058](done/0058-blog-categories-backend.md)'s `DeleteBlogCategory` gains the **hard block with a
+story [0058](../done/0058-blog-categories-backend.md)'s `DeleteBlogCategory` gains the **hard block with a
 count** the PRD requires ("This category is used by 5 posts — reassign them before deleting"), with
 no confirm-and-proceed path.
 
-Covers [PRD](../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog posts` scenarios (*Create a
+Covers [PRD](../../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog posts` scenarios (*Create a
 post*, *A post has exactly one category*), the tag-attachment half of `Feature: Blog tags` (*Reuse an
 existing tag from the post editor*, *Create a new tag on the fly from the post editor*, *A post can
 hold more than one tag*), and `Feature: Blog categories`' *Deleting a blog category still in use is
 hard-blocked with a count* — i.e. Blog acceptance criteria 1, the block half of 2, the
 create-on-the-fly half of 3, and the UUID-PK criterion 6.
 
-This story is the blog mirror image of [0024 (products-core-crud-backend)](done/0024-products-core-crud-backend.md),
+This story is the blog mirror image of [0024 (products-core-crud-backend)](../done/0024-products-core-crud-backend.md),
 and is deliberately written to be read against it: both create a core entity on top of an
 already-shipped category table, and both are the story that **retrofits** the in-use delete guard
 onto a `Delete<Taxonomy>` action a prior story shipped deliberately unguarded.
@@ -45,9 +45,9 @@ implicit** (see [Provenance](#provenance)).
 ## Gherkin
 
 Every scenario opens with a named business-role actor and carries exactly one `When`, per
-[gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3. The actor
+[gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3. The actor
 term **"blog editor"** and the entity term **"post"** are taken verbatim from the PRD's own Epic 4
-scenarios, per [0058](done/0058-blog-categories-backend.md)'s **OQ-3** recommendation.
+scenarios, per [0058](../done/0058-blog-categories-backend.md)'s **OQ-3** recommendation.
 
 ```gherkin
 Feature: Blog posts — core fields
@@ -353,8 +353,8 @@ drops before `blog_posts`, so the pair is genuinely symmetric.
 > ⚠️ **Do not add `$table->index('blog_category_id')`, `$table->index('blog_tag_id')` or
 > `$table->index('blog_post_id')`.** InnoDB creates the FK index itself, and a hand-written one
 > duplicates it — the shape of the `users_uuid_unique` debt in
-> [errors-log-archive.md](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-redundant-users_uuid_unique-index-survived-the-uuid-primary-key-conversion--2026-08-12).
-> This is [migrations.md](../../docs/database/migrations/uuid-primary-keys.md#an-fk-column-does-not-also-get-an-explicit-index-here)'s
+> [errors-log-archive.md](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-redundant-users_uuid_unique-index-survived-the-uuid-primary-key-conversion--2026-08-12).
+> This is [migrations.md](../../../docs/database/migrations/uuid-primary-keys.md#an-fk-column-does-not-also-get-an-explicit-index-here)'s
 > shipped rule; `create_passkeys_table`'s explicit `$table->index('user_id')` is the documented
 > divergence, not the pattern. **Verify with `php artisan db:table blog_posts` and
 > `php artisan db:table blog_post_tag` after migrating**, never by reading the migration — a
@@ -364,9 +364,9 @@ drops before `blog_posts`, so the pair is genuinely symmetric.
 
 | Path | What & why |
 | --- | --- |
-| `app/Enums/BlogPostStatus.php` | **New.** `case Draft = 'draft'; case Published = 'published'; case Scheduled = 'scheduled';` — the PRD's Borrador / Publicado / Programado. TitleCase keys, lowercase backing values, per project `CLAUDE.md` and [naming.md](../../docs/conventions/naming/classes.md#classes). |
+| `app/Enums/BlogPostStatus.php` | **New.** `case Draft = 'draft'; case Published = 'published'; case Scheduled = 'scheduled';` — the PRD's Borrador / Publicado / Programado. TitleCase keys, lowercase backing values, per project `CLAUDE.md` and [naming.md](../../../docs/conventions/naming/classes.md#classes). |
 
-**No `label()` method**, deliberately — per [naming.md](../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)'s
+**No `label()` method**, deliberately — per [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)'s
 rule that *a `label()` on an enum is not automatic*: add it when a **second** consumer appears, not
 when the first one does. This story renders nothing; 0063 is the first consumer and may add it then.
 This is the same call task 0018 made for `SalesRegionKind`.
@@ -379,7 +379,7 @@ This is the same call task 0018 made for `SalesRegionKind`.
 | `app/Models/BlogCategory.php` | **Modify (0058 creates it).** Gains exactly one method: `/** @return HasMany<BlogPost, $this> */ public function posts(): HasMany`. It is what the delete guard counts through. 0058 deliberately omitted it ("`posts()` references a class and table that do not exist until 0061"). |
 | `app/Models/BlogTag.php` | **Modify (0059 creates it).** Gains exactly one method: `/** @return BelongsToMany<BlogPost, $this> */ public function posts(): BelongsToMany`. 0059's scope fence names this story as its owner. |
 | `database/factories/BlogPostFactory.php` | **New**, via `php artisan make:factory BlogPostFactory --model=BlogPost --no-interaction`. `blog_category_id => BlogCategory::factory()` so a bare `->create()` stands alone; `status => Draft` deliberately matching the column default; `published_at => null`. **Does not set `slug`** — the model hook derives it, which is itself a small proof the hook fires on the insert path. States: `draft()`, `published()`, `scheduled()`, `withTags(int $count)`. |
-| `app/Concerns/BlogPostValidationRules.php` | **New**, `<Noun>ValidationRules` / `<noun>Rules()` per [naming.md](../../docs/conventions/naming-validation-traits.md#traits-and-their-methods), where the noun is the **field**, not the model. Full rule set in **D-12**. |
+| `app/Concerns/BlogPostValidationRules.php` | **New**, `<Noun>ValidationRules` / `<noun>Rules()` per [naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods), where the noun is the **field**, not the model. Full rule set in **D-12**. |
 
 > **Naming trap, inherited from 0024's own debate and live again here.** 0058 claims `nameRules()`
 > on `BlogCategoryValidationRules` and 0059 claims `nameRules()` / `nameFormatRules()` on
@@ -400,7 +400,7 @@ three files to it and **modifies one**.
 | --- | --- |
 | `CreateBlogPost.php` | **New.** `__invoke(string $title, string $body, string $blogCategoryId, BlogPostStatus $status, ?string $publishedAt, array $tagNames): BlogPost`. Authorizes `create` first (**D-13**), sanitizes the body (**D-14**), validates, builds the row from a **literal whitelist** (never a spread of `$validated`), and delegates tags to `SyncBlogPostTags` inside one transaction (**D-15**). **Dispatches `NotifyBlogPostPublished` after the commit when the new post's status is `Published`** (**D-19**). |
 | `UpdateBlogPost.php` | **New.** `__invoke(BlogPost $blogPost, string $title, string $body, string $blogCategoryId, BlogPostStatus $status, ?string $publishedAt, array $tagNames): BlogPost`. **Calls `$blogPost->refresh()` as its literal first statement** — before authorization and before the pre-save status read (**D-19a**) — then authorizes `update`; same sanitize / validate / transaction handling. **Dispatches `NotifyBlogPostPublished` after the commit on a transition *into* `Published`** (**D-19**). |
-| `DeleteBlogPost.php` | **New.** `__invoke(BlogPost $blogPost): bool`. Authorizes `delete` on the target first (**D-13**), then a plain instance `->delete()` — which under `SoftDeletes` stamps `deleted_at` rather than removing the row (**D-7**). **Instance delete only, never the query builder**, per [base-standards.md](../../docs/conventions/base-standards/stack-and-model-conventions.md#deleting-a-user-goes-through-the-model-not-the-query-builder). |
+| `DeleteBlogPost.php` | **New.** `__invoke(BlogPost $blogPost): bool`. Authorizes `delete` on the target first (**D-13**), then a plain instance `->delete()` — which under `SoftDeletes` stamps `deleted_at` rather than removing the row (**D-7**). **Instance delete only, never the query builder**, per [base-standards.md](../../../docs/conventions/base-standards/stack-and-model-conventions.md#deleting-a-user-goes-through-the-model-not-the-query-builder). |
 | `RestoreBlogPost.php` | **New.** `__invoke(BlogPost $blogPost): bool`. `DeleteBlogPost`'s exact mirror image — authorizes **`restore`** on the target first (**D-13**, **D-20**), then a plain instance `->restore()`. The caller resolves the target with `withTrashed()`, since a default query cannot see it. Needs **no** category-existence guard (**D-20**). |
 | `SyncBlogPostTags.php` | **New.** `__invoke(BlogPost $blogPost, array $tagNames): void`. The **single writer** of the `blog_post_tag` pivot, shared by `CreateBlogPost` and `UpdateBlogPost` so the logic exists once — the shape 0024's **D-17** established with `SyncProductGallery`. Resolves each submitted name through 0059's `FindOrCreateBlogTag`, then `sync()`s the resulting id set (**D-17**). |
 | `DeleteBlogCategory.php` | **Modify (0058 creates it; its D-10 says the file exists as its own file precisely so this story extends it).** `__invoke()` gains the count-and-block guard. This is the story's second deliverable — full shape in **D-18**. |
@@ -410,7 +410,7 @@ All five new actions constructor-inject `App\Actions\Auth\LogRefusedPrivilegedAt
 sanitizer, and `SyncBlogPostTags` constructor-injects `FindOrCreateBlogTag`. Constructor injection is
 required here, not stylistic: each `__invoke()` signature is a **public contract** matched verbatim
 by 0063 and by every direct-call test, so widening it with an internal collaborator is the
-anti-pattern [code-style.md](../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)
+anti-pattern [code-style.md](../../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)
 documents. `App\Actions\SalesRegions\SetSalesRegionActive` is the shipped precedent for one action
 constructor-injecting another — verified at `HEAD`:
 
@@ -441,7 +441,7 @@ stories are consistent with each other, not divergent. *Rejected:* `PublishBlogP
 | Path | What & why |
 | --- | --- |
 | `lang/en/blog.php` | **New — this story creates the file.** Verified: `lang/en/` today holds only `navigation.php`, `roles.php`, `sales-regions.php`, `users.php`. 0058 and 0059 both deliberately created none. The only key owned here is `blog.categories.delete_blocked`. |
-| `lang/es/blog.php` | **New**, key-for-key identical, per [naming.md](../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys). |
+| `lang/es/blog.php` | **New**, key-for-key identical, per [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys). |
 
 > **Placement note, recorded so nobody "tidies" it later.** The string is *about* categories but
 > lives in `blog.php` under a `'categories'` group, because the message is about **posts using** the
@@ -456,14 +456,14 @@ stories are consistent with each other, not divergent. *Rejected:* `PublishBlogP
 
 ### Consumed, not created by this story
 
-- `App\Actions\Blog\FindOrCreateBlogTag` — story [0059](done/0059-blog-tags-backend.md)'s reusable
+- `App\Actions\Blog\FindOrCreateBlogTag` — story [0059](../done/0059-blog-tags-backend.md)'s reusable
   resolver. **This story is its only current caller for the attach-during-post-save path** (0060's
   tag-management screen does not use it). Its per-branch authorization (**D-13**) and its
   re-query-on-lost-race semantics (0059's **D-10**) are consumed unchanged, never re-implemented.
 - `App\Actions\Auth\LogRefusedPrivilegedAttempt` — the refusal audit line (story 0015b), already
   constructor-injected into eight domain actions.
 - The HTML sanitizer and `config/html-sanitizer.php` — story
-  [**0024a**](done/0024a-product-description-html-sanitization.md)'s **D-16** deliverable (split out of 0024
+  [**0024a**](../done/0024a-product-description-html-sanitization.md)'s **D-16** deliverable (split out of 0024
   on 2026-09-01). **Consumed, never forked** (**D-14**, **OQ-4**).
 - `App\Actions\Blog\NotifyBlogPostPublished` — story **0065**'s deliverable,
   `__invoke(BlogPost $blogPost): void`. This story **calls** it from two sites and neither defines nor
@@ -492,7 +492,7 @@ Backend only — **no browser tests**, since this story ships no screen.
 > **must freeze the clock** with `Carbon::setTestNow()` — a test computing `now()->addSecond()` and
 > trusting wall-clock timing is flaky by construction on a slow CI run. (b) The `>` vs `>=` boundary
 > must be asserted **from both sides**, the discipline
-> [security/step-up-authentication.md](../../docs/security/step-up-authentication.md) established for
+> [security/step-up-authentication.md](../../../docs/security/step-up-authentication.md) established for
 > the password-freshness window.
 
 **Unit — `tests/Unit/Concerns/BlogPostValidationRulesTest.php`** (new)
@@ -559,7 +559,7 @@ Backend only — **no browser tests**, since this story ships no screen.
       `QueryException`. *Risk if missing:* a broken reference becomes a 500 instead of a form error.
 - [ ] **An invalid `status` string is refused as a `ValidationException`, never an uncaught
       `\ValueError` from the enum cast.** *Risk if missing:* this is exactly
-      [task 0015's finding F8](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
+      [task 0015's finding F8](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
       recurring — Livewire's `EnumSynth` hydrates a forged backing value through `$type::from()`
       **before** validation runs. This story ships the repo's first new status-backed enum since that
       lesson landed, so it is a live precedent rather than a hypothetical.
@@ -666,7 +666,7 @@ notification class, channel or payload, which this story does not own.
       effect): set an attribute the action does not own (e.g. `$post->slug = 'hijacked'`) on the
       instance before calling, and assert the persisted row is unchanged in that column. *Risk if
       missing:* this is the `save()`-writes-the-whole-dirty-set hole
-      [model-instance-trust.md](../../docs/security/model-instance-trust.md#save-writes-the-whole-dirty-set-so-the-single-named-writer-is-a-convention-not-an-enforcement)
+      [model-instance-trust.md](../../../docs/security/model-instance-trust.md#save-writes-the-whole-dirty-set-so-the-single-named-writer-is-a-convention-not-an-enforcement)
       records as **still open** on `UpdateSalesRegion`; the `refresh()` closes it here, and without a
       test nothing stops a later refactor from moving that line and silently reopening it. Belongs in
       `UpdateBlogPostTest.php` rather than this file, since it is not about notifications.
@@ -800,13 +800,13 @@ named residual risk.
       structurally impossible (**D-20**) — `restrictOnDelete()` refuses to delete a category any
       trashed post references — so a test would be asserting a state the database cannot produce, which
       is the vacuous-assertion failure mode
-      [errors-log-archive.md](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18)
+      [errors-log-archive.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18)
       records. The property is already pinned from the other side, by the trashed-post block case in
       `DeleteBlogCategoryTest.php`.
 
 **Feature — `tests/Feature/Policies/BlogPostPolicyTest.php`** (new; mirrors `BlogTagPolicyTest.php`)
 - [ ] **All five** abilities (`viewAny` / `create` / `update` / `delete` / `restore`) get **both an
-      allow and a deny test**, per [what-not-to-test.md](../../docs/testing/qa/what-not-to-test.md)'s
+      allow and a deny test**, per [what-not-to-test.md](../../../docs/testing/qa/what-not-to-test.md)'s
       authorization rule.
 - [ ] **`restore` is allowed by `blog.edit` and refused to a `blog.delete`-only actor** (**D-20**) —
       asserted at the policy level as well as through the action, since this is the one ability whose
@@ -826,14 +826,14 @@ named residual risk.
 - [ ] Each refusal is **logged** with `target_type: 'blog_post'`, asserted against the context array.
 - [ ] **Cross-screen context-key equivalence**: capture a refusal from this story and one from an
       existing screen in a single `Log::spy()` session and set-equate their key sets, per step 4 of
-      [the refusal-logging recipe](../../docs/architecture/authorization/step-up-and-refusal-logging.md#copyable-what-a-third-admin-screen-inherits).
+      [the refusal-logging recipe](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#copyable-what-a-third-admin-screen-inherits).
       This is what proves the recipe generalised to a fourth domain without silently growing a fifth
       context key nobody documented.
 - [ ] **A must-not-over-log test**: a permitted create / update / delete writes **no** warning.
 
 **Explicitly not tested here**
 - `HasUuids`, Eloquent timestamps, `Rule::exists`'s own SQL, or `BelongsToMany::sync()`'s own
-  behaviour — framework/vendor per [what-not-to-test.md](../../docs/testing/qa/what-not-to-test.md).
+  behaviour — framework/vendor per [what-not-to-test.md](../../../docs/testing/qa/what-not-to-test.md).
 - The **sanitizer's own allow-list semantics** — story 0024a's `SanitizeProductDescription` tests own
   that. This story asserts only that the body goes **through** it, pinned by the `<img>`-survives and
   `<script>`-stripped cases above (**D-14**).
@@ -848,7 +848,7 @@ named residual risk.
   class-not-found at collection time, not a red test — the identical reasoning 0058's **OQ-2** and
   0059 both recorded. If Phase 2 wants one anyway, it must be **one rule per namespace**, never
   `expect([...])`, which is disjunctive and has already shipped vacuous here once
-  ([errors-log-archive.md](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18)).
+  ([errors-log-archive.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18)).
 
 ## Expected outcome
 
@@ -958,13 +958,13 @@ is 0065's.
 
 ## Definition of Done
 - [ ] Tests written and green, plus the **full** existing suite in a single isolated run, per
-      [contracts.md](../../docs/contracts.md)'s Full Test Suite Gate Rule.
+      [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule.
 - [ ] All **three** quality gates run **unscoped** and each result recorded explicitly, including any
       that was not run: `php artisan test` (not `--filter`), `vendor/bin/pint --format agent` (not
       `--dirty`), and **Larastan level 7** (`vendor/bin/phpstan analyse`). The third is the one
       nothing else prompts you to run, and a record naming only two of the three is a record of two
       gates — see
-      [errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+      [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
       **This story registers a model event, so its blast radius is the whole suite by construction**;
       the unscoped run is not optional.
 - [ ] Index reality verified with `php artisan db:table blog_posts` **and**
@@ -977,7 +977,7 @@ is 0065's.
       `blog_post_tag` sections plus ER entities and the deliberate-index-omission notes;
       `docs/architecture/authorization.md` gains `BlogPostPolicy`; `docs/conventions/base-standards.md`'s
       directory listing gains `App\Models\BlogPost`, `App\Enums\BlogPostStatus` and
-      `BlogPostValidationRules`; **[ADR 0001](../../docs/decisions/0001-uuid-primary-keys.md)'s
+      `BlogPostValidationRules`; **[ADR 0001](../../../docs/decisions/0001-uuid-primary-keys.md)'s
       "future" list drops Blog Posts** — verified: its line 11 currently reads *"Blog Categories, Blog
       Tags, Blog Posts — future, PRD Epic 4 … not yet implemented"*, and this story is the last of the
       three, so that whole line goes.
@@ -1008,7 +1008,7 @@ is 0065's.
       ```
 
       Method-inject `RestoreBlogPost` on the Livewire action method, per
-      [code-style.md](../../docs/conventions/code-style.md#inject-single-purpose-actions-per-method).
+      [code-style.md](../../../docs/conventions/code-style.md#inject-single-purpose-actions-per-method).
       Gate the row control on **`blog.edit`**, not `blog.delete` (**D-20**) — so the per-row
       `Gate::allows('restore', $post)` hint mirrors what the click actually does. **Force-delete is
       deliberately not available**; restore is the only exit, and it is sufficient.
@@ -1034,7 +1034,7 @@ is 0065's.
       a console caller has no actor for) or through a narrower dedicated action; that is 0064's
       decision, flagged here so it is not discovered late.
 - [ ] **Hand-off recorded for story 0065** (published-post notification): the four confirmed
-      notification events in [PRD](../../docs/PRD/sections/foundations.md#cross-cutting-global-search--notifications)
+      notification events in [PRD](../../../docs/PRD/sections/foundations.md#cross-cutting-global-search--notifications)
       include *"a blog post is published or a scheduled post goes live"* — which enumerates
       **outcomes**, and **three** code paths reach them (**D-19**): an update **into** `Published`, a
       **creation already `Published`**, and 0064's scheduled sweep. **This story owns the first two
@@ -1056,7 +1056,7 @@ is 0065's.
 The UI is stories 0062/0063; building a screen now would either sit unrouted and untested end to end,
 or invent a route the product owner has not asked for. This follows 0058's **D-1**, 0059's **D-1**,
 0024's **D-1** and the `RequestEmailChange`/`ConfirmEmailChange` precedent. It also means **no
-`config/modules.php` entry**: per [api/routes.md](../../docs/api/routes.md#app-owned-routes), a gated
+`config/modules.php` entry**: per [api/routes.md](../../../docs/api/routes.md#app-owned-routes), a gated
 module route and its registry entry ship together, and this story ships neither.
 
 ### D-2 — `blog_category_id` is NOT NULL with `restrictOnDelete()`
@@ -1072,7 +1072,7 @@ depth rather than the only protection.
   PRD-sanctioned path where a post ends up categoryless as a side effect of a category delete.
 - **`restrictOnDelete()` makes the block a database invariant.** It still refuses a bulk cleanup, a
   seeder, or `BlogCategory::where(...)->delete()` through the **query builder**, which per
-  [base-standards.md](../../docs/conventions/base-standards/stack-and-model-conventions.md#deleting-a-user-goes-through-the-model-not-the-query-builder)
+  [base-standards.md](../../../docs/conventions/base-standards/stack-and-model-conventions.md#deleting-a-user-goes-through-the-model-not-the-query-builder)
   skips model-level behaviour entirely.
 
 This is the same reasoning `products.product_category_id` uses (0024 **D-9**/**D-14**), and it is the
@@ -1104,7 +1104,7 @@ resolved in **D-7d**, which is why the guard counts `withTrashed()`.
 
 **`backend-expert` argued for omitting `slug` entirely**, on two real grounds: PRD assumption 14 lists
 slug/SEO fields under Epic 5's translatable content, and nothing in this phase resolves a post by URL
-(PRD's [Out of scope](../../docs/PRD/sections/roadmap-scope-open-questions.md#out-of-scope) excludes public storefront browsing), so a
+(PRD's [Out of scope](../../../docs/PRD/sections/roadmap-scope-open-questions.md#out-of-scope) excludes public storefront browsing), so a
 column no route reads is speculative scaffolding of the kind `sales_regions`' **D-6** and 0058's
 **D-6** consistently reject.
 
@@ -1210,7 +1210,7 @@ measurements**; `vendor/` is absent from this worktree so nothing here was execu
 
 **Consequence to implement knowingly** (`database-expert`'s point, and the same one 0024 recorded as
 its **R-9**): in InnoDB DYNAMIC a short `MEDIUMTEXT` value stays **inline** and fattens the clustered
-index, the exact defect [schema.md](../../docs/database/schema.md) records for `users`' two `TEXT`
+index, the exact defect [schema.md](../../../docs/database/schema.md) records for `users`' two `TEXT`
 columns. The mitigation is a query rule, not a schema one: **0063's blog list must select explicit
 columns, never `SELECT *`** (**R-7**).
 
@@ -1266,7 +1266,7 @@ protected function publishedAtRules(BlogPostStatus $status): array
 
 `after:now` is **strictly** `>`, which is the intended boundary: a date equal to the current instant
 is not meaningfully "scheduled", it is already publishable. Assert it **from both sides**, per
-[step-up-authentication.md](../../docs/security/step-up-authentication.md)'s rule for telling `>` from
+[step-up-authentication.md](../../../docs/security/step-up-authentication.md)'s rule for telling `>` from
 `>=`.
 
 Three behaviours the rule alone cannot express, which the actions enforce as defence in depth:
@@ -1329,7 +1329,7 @@ weight:
    person* may legitimately need, which is what justifies freeing it. A slug is derived from a title,
    and an editor reusing a title simply gets `mi-post-2` from **OQ-2**'s collision handling. The cost
    is one suffixed slug; the cost of the alternative is a broken restore.
-3. **`User`'s own stated reason does not transfer.** [schema.md](../../docs/database/schema-users-auth.md#soft-deletes)
+3. **`User`'s own stated reason does not transfer.** [schema.md](../../../docs/database/schema-users-auth.md#soft-deletes)
    gives two: freeing the address, and **revoking everything keyed by that string** —
    `password_reset_tokens`, which has no FK and would otherwise hand a live reset link to whoever
    claims the address next. **Nothing in this database is keyed by a blog slug**: no tokens, no auth,
@@ -1468,7 +1468,7 @@ because it FKs into `blog_tags` *and* `blog_posts` — the same reason `product_
 ### D-9 — The `(deleted_at, status, published_at)` composite index, and why it departs from this repo's default
 
 > **`deleted_at` leads, and that is a direct consequence of D-7 rather than a preference.**
-> [schema.md](../../docs/database/schema-users-auth.md#users) states the rule for `users.status` in as many
+> [schema.md](../../../docs/database/schema-users-auth.md#users) states the rule for `users.status` in as many
 > words: *"If one is ever added it must be composite `(deleted_at, status)`, never plain `status`,
 > because the `SoftDeletingScope` puts `deleted_at IS NULL` into every one of those queries."* Once
 > `BlogPost` soft-deletes, 0064's sweep is really
@@ -1508,7 +1508,7 @@ happen is the decision being silently defaulted either way (**OQ-6**).
 Stated explicitly because both sibling Epic 4 tables have one and a reviewer will look for it. Both
 experts reached the same conclusion independently, on two separate grounds:
 
-1. **`title` is not a uniqueness-gated taxonomy name.** [0032's D-N1](done/0032-shipping-geography-catalog-seed.md)'s
+1. **`title` is not a uniqueness-gated taxonomy name.** [0032's D-N1](../done/0032-shipping-geography-catalog-seed.md)'s
    whole premise is a catalog label that must be unique within its catalog, where "Guías" and "guías"
    are two humans meaning the same thing. Two posts can legitimately share a title (a series, a
    "Part 2"), so there is **no uniqueness rule on `title` at all** — normalized or otherwise — and
@@ -1602,7 +1602,7 @@ derive the boundary test from the same constant.
 
 All five actions call the policy as their own first statement, before reading or writing anything,
 via `LogRefusedPrivilegedAttempt::authorize()` rather than a bare `Gate::authorize()` — the
-[refusal-logging recipe](../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail),
+[refusal-logging recipe](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail),
 with `target_type: 'blog_post'` passed **explicitly** (the recipe records that `resolveTarget()`
 auto-resolves only `User` and `Role`, so a new domain must pass it).
 
@@ -1614,7 +1614,7 @@ time these land, and not following it would make one folder internally inconsist
 "third idiom" 0024's own D-15 warns against, arrived at from the opposite direction.
 
 > ✅ **Strengthened, not weakened, on 2026-09-01 — the disagreement has largely dissolved.**
-> [0024](done/0024-products-core-crud-backend.md) **reversed** its **D-15**/**RQ-10** at its three-way
+> [0024](../done/0024-products-core-crud-backend.md) **reversed** its **D-15**/**RQ-10** at its three-way
 > split (its **C-1**): the decision had rested on a claim that `App\Actions\Users\CreateUser` and
 > `UpdateUser` contain no `Gate` call, and they do. Its four product actions now self-authorize. So
 > this story's conclusion is unchanged and its *reasoning gets simpler*: there is no longer a genuine
@@ -1623,7 +1623,7 @@ time these land, and not following it would make one folder internally inconsist
 > exception, deferred to 0025. Read "two idioms are live" as historical.
 
 **Gating is the already-seeded `blog.*` tier; no new module slug.**
-[architecture/authorization.md](../../docs/architecture/authorization.md) states granularity is
+[architecture/authorization.md](../../../docs/architecture/authorization.md) states granularity is
 *"deliberately coarse per module: `products.*` covers categories and variants, `blog.*` covers
 categories and tags"* — this story extends that framing to posts, which is the reading PRD Epic 1's
 "Blog (with categories & tags)" as one permission-gated module already implies. Verified:
@@ -1670,7 +1670,7 @@ So: **no new Composer dependency, no second `config/html-sanitizer.php`, no blog
 Sanitize **on write, before persistence** — the property that binds every call site forever, so a
 seeder, an Artisan command or a future import inherits the guarantee without knowing it exists.
 Sanitizing on render is bypassed by the first consumer that forgets, and this codebase already has the
-rule that [a control enforced only in a component is bypassed by every other call site](../../docs/security/livewire-authorization.md).
+rule that [a control enforced only in a component is bypassed by every other call site](../../../docs/security/livewire-authorization.md).
 The stored value is therefore always safe HTML, which is what will let 0063 render it unescaped.
 
 **Would sanitizing strip the shared gallery's images? No — verified against both sides of the
@@ -1696,7 +1696,7 @@ a single `DB::transaction()`. Without it, a refusal during tag resolution (the `
 **D-13**) leaves a post whose title, body and category committed while its tags did not — a worse
 state than an outright failure, and one no error message describes.
 
-⚠️ **Read [errors-log.md's transaction-wrapper entry](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
+⚠️ **Read [errors-log.md's transaction-wrapper entry](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
 before writing this.** Wrapping code in a transaction is a change to **every** side effect that code
 already performs, including ones the diff does not show. Two land inside this boundary and must be
 examined deliberately rather than discovered: `FindOrCreateBlogTag`'s own insert — which 0059's
@@ -1766,7 +1766,7 @@ one that settles it:
 1. **There is no `restore` permission to use.** `RolePermissionSeeder::ACTIONS` is the four CRUD verbs
    and nothing else, so a dedicated ability would be a **catalog change** — the same argument
    `SalesRegionPolicy` made when it declined to invent a second tier for its default swap
-   ([authorization.md](../../docs/architecture/authorization/policies-sales-media-categories.md#salesregionpolicy--the-third-policy-and-the-first-with-no-target-branch)).
+   ([authorization.md](../../../docs/architecture/authorization/policies-sales-media-categories.md#salesregionpolicy--the-third-policy-and-the-first-with-no-target-branch)).
    The permission model here is deliberately coarse, and this is not the story to widen it.
 2. **Restore is the *non-destructive* direction, so it should not require the destructive
    permission.** An actor holding `blog.edit` can already rewrite a post's title, body, category,
@@ -1816,7 +1816,7 @@ deleted — it is a taxonomy entity the post does not own, and removing it from 
 screen, not a side effect of a post save.
 
 **Why the full-replace-`sync()` trap this repo has hit twice does not bite here — stated rather than
-assumed.** [errors-log.md](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
+assumed.** [errors-log.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
 records the rule that *absence in a payload from a partially-visible form is not a decision* — the
 roles screen's permission matrix, where an actor who cannot see `roles.manage-administrators` would
 silently revoke it by omission. The distinguishing property is **visibility**: a post editor's tag
@@ -1824,7 +1824,7 @@ field is a chip control showing **every** tag currently on the post, so an omiss
 editor's decision to remove it.
 
 ⚠️ **That safety is conditional on the field staying unfiltered**, exactly as
-[the Roles screen's own ⚠️](../../docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#the-second-grant-meta-rule-you-cannot-grant-what-you-do-not-hold)
+[the Roles screen's own ⚠️](../../../docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#the-second-grant-meta-rule-you-cannot-grant-what-you-do-not-hold)
 is. **If story 0063 ever renders a filtered or paginated tag field — hiding any tag a post currently
 holds — this decision must be revisited before that ships**, because at that moment an omission stops
 being a decision and `sync()` becomes a silent revoke. Recorded in the action's docblock, where 0063's
@@ -1921,7 +1921,7 @@ Record it in the action's docblock; `CreateUser` sets the same precedent by thro
 `default_deactivation_requires_replacement` as the third of its kind. This is a **domain invariant,
 not an authorization rule** — it answers *"would the data still be valid"*, not *"may this actor"* —
 which is why a Super Admin is refused identically and why it can never be a policy method. See
-[A domain invariant is not an authorization rule](../../docs/architecture/authorization/domain-invariants.md#a-domain-invariant-is-not-an-authorization-rule-and-does-not-live-here).
+[A domain invariant is not an authorization rule](../../../docs/architecture/authorization/domain-invariants.md#a-domain-invariant-is-not-an-authorization-rule-and-does-not-live-here).
 
 **The message uses `trans_choice`, not a bare `:count`**, because the singular differs:
 
@@ -1962,7 +1962,7 @@ story's original D-19 nor 0064's hand-off — both said "two triggers" — so a 
 creation would have notified nobody, silently, and the failure would look like nothing at all rather
 than like an error.
 
-PRD's [confirmed notification list](../../docs/PRD/sections/foundations.md#cross-cutting-global-search--notifications)
+PRD's [confirmed notification list](../../../docs/PRD/sections/foundations.md#cross-cutting-global-search--notifications)
 says *"a blog post is published or a scheduled post goes live"*, which enumerates **outcomes**, not
 code paths. Three code paths reach the first outcome and one reaches the second:
 
@@ -2004,7 +2004,7 @@ if ($blogPost->status === BlogPostStatus::Published) {
 - **After the commit, never inside the transaction** (**D-15**). A notification sent from inside
   `DB::transaction()` still goes out when the transaction later rolls back — the tag-sync refusal in
   **D-15** is a live rollback path on both actions — and an unsendable notification cannot be
-  recalled. This is [the errors-log's transaction-wrapper rule](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
+  recalled. This is [the errors-log's transaction-wrapper rule](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
   applied deliberately at the point of writing rather than discovered by a later audit, and it is the
   same *after the commit* placement `security/authorization-patterns.md` requires of the permission
   cache flush.
@@ -2045,7 +2045,7 @@ $blogPost->refresh();
 
 **`refresh()`, not `fresh()`** — this repo's existing convention, and the only real precedent for
 re-reading a caller-supplied instance is
-[`App\Actions\SalesRegions\SetSalesRegionActive`](../../app/Actions/SalesRegions/SetSalesRegionActive.php)`:143`,
+[`App\Actions\SalesRegions\SetSalesRegionActive`](../../../app/Actions/SalesRegions/SetSalesRegionActive.php)`:143`,
 which uses `refresh()`. The difference matters here: `fresh()` returns a **new** instance, so the
 caller's own object would stay stale and the action's return value would be a different object than
 the one passed in; `refresh()` mutates in place, so the Livewire component holding the model sees the
@@ -2054,7 +2054,7 @@ corrected state too.
 **It closes a second hole this story would otherwise have inherited, and that is the stronger reason
 to place it first.** `refresh()` calls `setRawAttributes()` with the row's real columns and then
 `syncOriginal()`, so it **discards every attribute the caller dirtied before calling**. That matters
-because [security/model-instance-trust.md](../../docs/security/model-instance-trust.md#save-writes-the-whole-dirty-set-so-the-single-named-writer-is-a-convention-not-an-enforcement)
+because [security/model-instance-trust.md](../../../docs/security/model-instance-trust.md#save-writes-the-whole-dirty-set-so-the-single-named-writer-is-a-convention-not-an-enforcement)
 records `save()`-writes-the-whole-dirty-set as **known and still open** on
 `App\Actions\SalesRegions\UpdateSalesRegion` — a caller who dirties a column the action does not own
 persists it, `#[Fillable]` notwithstanding. `UpdateBlogPost` ends in the same `fill(...)->save()`
@@ -2063,7 +2063,7 @@ by adding a second guard. *(Read from `refresh()`'s documented semantics, **not*
 execution — `vendor/` is absent here, **V-8**.)*
 
 **Placed before `Gate::authorize()`, deliberately.**
-[base-standards.md](../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+[base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
 ⚠️ records that *"authorize before the first write"* and *"re-read what you authorize against"* pull
 in opposite directions. Three reasons the re-read wins here:
 
@@ -2081,7 +2081,7 @@ in opposite directions. Three reasons the re-read wins here:
 ⚠️ **This narrows the window; it does not close it, and the file should not claim otherwise.** A sweep
 landing between the `refresh()` and the transaction still produces the duplicate. Fully closing it
 means capturing the pre-save status **inside** `DB::transaction()` from a `lockForUpdate()` re-read —
-the shape [model-instance-trust.md](../../docs/security/model-instance-trust.md#a-guard-must-re-read-its-subject-under-lock-inside-its-own-transaction)
+the shape [model-instance-trust.md](../../../docs/security/model-instance-trust.md#a-guard-must-re-read-its-subject-under-lock-inside-its-own-transaction)
 prescribes for a **domain invariant**. **Deliberately not adopted**, on proportionality: the
 consequence here is a duplicate notification, not a corrupted row or a bypassed guard, and taking a
 row lock on every post save to prevent a rare double-announcement is the same wide-lock-for-small-gain
@@ -2159,7 +2159,7 @@ Executed or read against this worktree during the debate.
 - **V-8 — `vendor/` is absent from this worktree**, so nothing requiring PHP execution was verified:
   the `mediumText` sizing arithmetic in **D-4**, `Str::slug()`'s exact output, and the `EXPLAIN` plans
   in **D-11** are all reasoned rather than measured, and are flagged as such at each site per this
-  project's [hedge rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24).
+  project's [hedge rule](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24).
 - **V-9 — `tests/Unit/Concerns/` does not exist yet.** 0058 creates it. This story's
   `BlogPostValidationRulesTest.php` lands in a folder its sibling introduces.
 
@@ -2170,7 +2170,7 @@ Executed or read against this worktree during the debate.
 - **0059 (blog tags backend) — hard, blocking.** The pivot FKs into `blog_tags`, this story adds a
   relation method to its model, and `SyncBlogPostTags` calls its `FindOrCreateBlogTag`. Not yet
   implemented (**V-1**).
-- **[0024a](done/0024a-product-description-html-sanitization.md) (product description HTML sanitization) —
+- **[0024a](../done/0024a-product-description-html-sanitization.md) (product description HTML sanitization) —
   soft, for the HTML sanitizer only** (**D-14**, **OQ-4**). Its **D-16** owns
   `symfony/html-sanitizer`, `config/html-sanitizer.php` and the allow-list this story consumes.
   ⚠️ **Repointed 2026-09-01**: this named 0024, which no longer owns the sanitizer — it was split into
@@ -2180,7 +2180,7 @@ Executed or read against this worktree during the debate.
   0024 used to be.
 - **0022 — not a dependency**, unlike its sibling Epic 4 stories: this story does not call
   `NormalizeForSearch` at all (**D-10**).
-- Per [workflow.md](../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule) the numbering is already correct; what
+- Per [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule) the numbering is already correct; what
   must be enforced is the **sequencing** — 0058 and 0059 both reach Phase 7 before 0061 starts Phase 3.
 - **Stories 0062, 0063, 0064 and 0065 all depend on this one.** 0062 needs **D-18**'s guard and its
   error-bag key; 0063 needs the whole component contract plus **D-11**'s scopes; 0064 needs **D-6**'s
@@ -2302,7 +2302,7 @@ changed shipped behaviour in this story, the category guard's count (**D-7d**), 
 
 ### Open questions
 
-Per [contracts.md](../../docs/contracts.md)'s Uncertainty Handling Rule these are recorded rather than
+Per [contracts.md](../../../docs/contracts.md)'s Uncertainty Handling Rule these are recorded rather than
 guessed. **None blocks Phase 2 review. OQ-2 and OQ-3 must be settled before Phase 3.**
 
 - **OQ-2 — What happens when two titles slugify to the same value? ✅ RESOLVED 2026-08-30 — option (b),
@@ -2313,7 +2313,7 @@ guessed. **None blocks Phase 2 review. OQ-2 and OQ-3 must be settled before Phas
   `ValidationException::withMessages(['title' => …])`, or a pre-flight `exists()` check before the
   insert — either is acceptable, but the pre-flight check is race-prone under concurrent saves of the
   identical title and must still fall back to the `23000` catch as the last-word guard, per this
-  project's [signed-link-verification.md](../../docs/security/signed-link-verification.md#a-pre-flight-check-is-not-a-race-guard--re-check-under-a-lock-and-let-the-unique-index-have-the-last-word)
+  project's [signed-link-verification.md](../../../docs/security/signed-link-verification.md#a-pre-flight-check-is-not-a-race-guard--re-check-under-a-lock-and-let-the-unique-index-have-the-last-word)
   precedent). This closes the collision question for every Epic 5 story that inherited it as an open
   dependency: 0078 (Blog Posts translatable retrofit) assumed this exact resolution already and needs
   no rework; 0079 (Blog Post editor language tabs) can now render the refusal on the **title** field for
@@ -2339,7 +2339,7 @@ guessed. **None blocks Phase 2 review. OQ-2 and OQ-3 must be settled before Phas
   `LONGTEXT` as the brief specified, at the cost of that signal. **Nothing else in the story depends
   on the answer** — the column is nullable either way, and the status-parameterised rule is unaffected.
 
-- **OQ-4 — Sequencing of the shared HTML sanitizer between [0024a](done/0024a-product-description-html-sanitization.md)
+- **OQ-4 — Sequencing of the shared HTML sanitizer between [0024a](../done/0024a-product-description-html-sanitization.md)
   and 0061.** *(Repointed 2026-09-01: the sanitizer was **D-16** of story 0024 when this question was
   written; it is now its own story, 0024a, whose sole hard dependency is 0024's two write actions.)*
   0024a's **D-16** owns `symfony/html-sanitizer` and `config/html-sanitizer.php`, and neither exists in
@@ -2361,7 +2361,7 @@ guessed. **None blocks Phase 2 review. OQ-2 and OQ-3 must be settled before Phas
   domain with an unbounded growth story. *Alternative:* defer to 0064, which then owns the decision
   once its query plan is real. Either is defensible; what is not acceptable is letting it default
   silently. **The column order is no longer part of this question** — `deleted_at` must lead once
-  `BlogPost` soft-deletes, per [schema.md](../../docs/database/schema-users-auth.md#users)'s own rule for
+  `BlogPost` soft-deletes, per [schema.md](../../../docs/database/schema-users-auth.md#users)'s own rule for
   `users.status`, so only *whether* the index ships here is open, not *what it looks like*.
 
 - **OQ-7 — Refusal-logging test file naming: fold or split?** Two conventions are live in this repo
@@ -2370,7 +2370,7 @@ guessed. **None blocks Phase 2 review. OQ-2 and OQ-3 must be settled before Phas
   **Recommendation: fold, matching the immediate Epic 4 siblings (recommended)** — intra-epic
   consistency beats cross-epic consistency for a file a reader opens while working on Epic 4. Flagged
   explicitly rather than defaulted because
-  [playwright-setup.md](../../docs/testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure)'s
+  [playwright-setup.md](../../../docs/testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure)'s
   generalisable rule is that **a story file naming a test path is making a convention decision, and
   the path belongs in the Phase 2 review.**
 
@@ -2378,8 +2378,8 @@ guessed. **None blocks Phase 2 review. OQ-2 and OQ-3 must be settled before Phas
 
 Phase 1 (Three Amigos) debate run on 2026-08-27 with `backend-expert` (files and approach),
 `database-expert` (schema, FK semantics, indexes) and `backend-qa` (test design), per
-[workflow.md](../../docs/workflow/phases.md#phase-1--three-amigos-debate). Derived from
-[PRD](../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's three Gherkin blocks and its Blog acceptance
+[workflow.md](../../../docs/workflow/phases.md#phase-1--three-amigos-debate). Derived from
+[PRD](../../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's three Gherkin blocks and its Blog acceptance
 criteria, plus assumptions 13, 14, 17 and 19 and the cross-cutting notifications list. The
 `blog_posts`-completes-the-taxonomy scoping, the 0058 → 0061 hand-off of the in-use delete guard and
 the 0059 → 0061 hand-off of the pivot contract all mirror the confirmed 0023 → 0024 decomposition,
@@ -2430,7 +2430,7 @@ See the ✅ note on **D-13**.)*
 
 **One thing this story deliberately does *not* inherit from its Epic 4 siblings, stated so its absence
 is not read as an oversight:** the stored `normalized_name` + `NormalizeForSearch` convention that
-0058's **D-4** and 0059's **D-3** both build on, and which [0032's **D-N1**](done/0032-shipping-geography-catalog-seed.md)
+0058's **D-4** and 0059's **D-3** both build on, and which [0032's **D-N1**](../done/0032-shipping-geography-catalog-seed.md)
 establishes project-wide. Both experts independently concluded it has **no bearing here**, for two
 separate reasons — `title` carries no uniqueness rule at all, and a `Str::slug()` output is already
 normalized by construction — so this story neither stores a fold nor calls the shared normaliser, and
@@ -2491,7 +2491,7 @@ original decision's scope** — they are the reason this revision is more than a
   durable form.
 - **The composite index had to be reordered** (**D-9**). `deleted_at` now leads, because the
   `SoftDeletingScope` puts `deleted_at IS NULL` into 0064's sweep and
-  [schema.md](../../docs/database/schema-users-auth.md#users) states exactly this rule for `users.status`.
+  [schema.md](../../../docs/database/schema-users-auth.md#users) states exactly this rule for `users.status`.
 - **The slug's fate on delete became a real design call** (**D-7b**), and it is answered *against* the
   `App\Models\User::delete()` precedent: no override, no obfuscation, the slug stays reserved.
   Obfuscating it would make a restore lossy or fallible, which defeats the decision that motivated the
@@ -2513,3 +2513,28 @@ One thing Phase 2 should check that is **not** an open question: **D-7d**'s acce
 an administrator can be blocked by a post they cannot see until story 0063 ships a trash affordance.
 The decision is sound and the obligation is recorded in the Definition of Done, but it is the kind of
 cross-story dependency that is cheapest to confirm now and expensive to discover in 0063's own review.
+
+## Verification record (2026-09-24)
+
+Run from worktree `0061-blog-posts-core-crud-backend` against `finalproject-ARP` @ `d8ee2ff`, in a per-worktree database (`testing_0061`).
+
+| Gate | Result |
+| --- | --- |
+| Full suite, unscoped (`vendor/bin/pest`, isolated database) | **passed** — 3872 tests, 3869 passed, 3 skipped, 0 failed |
+| `vendor/bin/pint --format agent` (unscoped) | passed |
+| `vendor/bin/phpstan analyse` (Larastan level 7) | passed, 0 errors |
+| Index reality (`php artisan db:table blog_posts` / `blog_post_tag`) | only the FK-backing indexes InnoDB creates, plus `(deleted_at, status, published_at)`, `slug` unique and the composite PK; no hand-written FK index |
+| Mutation spot-check | removing `refresh()`, dropping `withTrashed()` from the category count, gating `restore` on `blog.delete`, and dispatching inside the transaction each turned the suite red |
+| Phase 4/5 — independent review | no blockers. Four medium findings fixed with tests: `RestoreBlogPost` restored the caller's dirtied instance (now re-reads via `withTrashed()`); `UpdateBlogPost` accepted a trashed or never-persisted instance (now `ModelNotFoundException`, since `refresh()` neither fails nor skips them); the notification ran inside a caller's outer transaction (now `DB::afterCommit()`); an oversized body was silently truncated by the sanitizer (now refused on `body`). |
+
+### Deviations from the task file, and decisions it left open
+
+- **`NotifyBlogPostPublished` is a no-op placeholder created here.** 0065 depends on 0061 and this story must inject the class, so it exists as an empty `__invoke(BlogPost): void` that 0065 fills in (human-approved). This contradicts D-19's "defines nothing"; 0065 keeps the signature and must replace, not re-create, the file.
+- **`status`, `blogCategoryId` and `body` are nullable strings, not typed values.** `CreateBlogPost`/`UpdateBlogPost` take `?string $status` (null means Draft on create): the spec's own tests require an omitted status to become Draft and a forged one to be a `ValidationException`, which a typed `BlogPostStatus` parameter cannot receive. Validation error keys are the snake_case column names (`title`, `body`, `blog_category_id`, `status`, `published_at`, `tag_names`); the category guard keeps `blogCategoryId`. Story 0063 must match these.
+- **`DeleteBlogPost` and `RestoreBlogPost` re-read the row** (default query / `withTrashed()`) instead of acting on the caller's instance, like the sibling delete actions.
+- **Slug handling (OQ-2).** A title whose slug is empty, wider than the column, or held by another post (trashed included) is refused on `title`; the unique index's `1062` is the last word.
+- **`DeleteBlogCategory`** uses `deleteOrFail()`, narrows to `1451` and floors the recount at 1, as `DeleteProductCategory` does.
+- **`BlogPost` is the third soft-deleting model**, not the second: `Customer` landed in between.
+- **Fixed after the review, beyond the spec:** `published_at` is refused outside the MySQL `TIMESTAMP` range (`after:1970-01-01` for `Published`, `before:2038-01-19` for `Published` and `Scheduled`, `BlogPost::PUBLISHED_AT_AFTER` / `PUBLISHED_AT_BEFORE`), so a far date is a form error instead of a raw 1292 error; and one save may carry at most `BlogPost::MAX_TAGS` (50) tags, since each unknown name mints a tag inside the single transaction.
+- **Moved to follow-up stories (human decision, 2026-09-24):** [0061a](../0061a-blog-post-publish-with-future-date-schedules.md) — `Published` with a future date is stored as `Scheduled` instead of being accepted as a live post dated in the future (amends **D-6**); [0061b](../0061b-blog-post-body-must-have-visible-content.md) — a body that renders nothing (`<p><br></p>`, `&nbsp;`, an empty hidden `<div>`, …) is treated as no body, so `Published`/`Scheduled` refuse it.
+- **OQ-3, OQ-6, OQ-7 stand as recommended:** `mediumText`, the composite index ships here, refusal logging folded into the authorization test.

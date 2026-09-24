@@ -337,7 +337,7 @@ defaults, and keep the list in `config/html-sanitizer.php` so it is reviewable i
 
 **Scope fence:** the sanitizer is applied to `products.description` only. Epic 4's blog body is a
 separate story; when it arrives it must **reuse this configuration** rather than define a second
-allow-list, or the two drift. [0061](../0061-blog-posts-core-crud-backend.md) already records that
+allow-list, or the two drift. [0061](0061-blog-posts-core-crud-backend.md) already records that
 obligation and cites this decision by name.
 
 ### D-A1 — The call sites are the two actions, before `validate()` — not a model event, not a validation rule

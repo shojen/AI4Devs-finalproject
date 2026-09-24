@@ -109,7 +109,7 @@ The Blog module's headline screen, and the last of Epic 4's three: a permission-
 posts) plus a routed **post editor** (title, category select, status select with a conditionally
 revealed publication date, a WYSIWYG body, and a tag chip field that both reuses existing tags and
 creates new ones on the fly). It is **UI only**: every write goes through story
-[0061](0061-blog-posts-core-crud-backend.md)'s domain actions, and this story writes **nothing** under
+[0061](done/0061-blog-posts-core-crud-backend.md)'s domain actions, and this story writes **nothing** under
 `app/Actions/` — matching how 0060 and 0062 only ever call actions their backend siblings own.
 
 It also discharges an obligation 0061 wrote into its own Definition of Done by name: **a way to reach
@@ -452,7 +452,7 @@ Feature: The blog posts screen is permission-gated
 > recorded — including "already closed". Five to seven stories land between this debate and that
 > point.
 
-From **[0061](0061-blog-posts-core-crud-backend.md)** — the whole backend:
+From **[0061](done/0061-blog-posts-core-crud-backend.md)** — the whole backend:
 
 ```php
 App\Models\BlogPost                       // HasUuids (v7), SoftDeletes, #[Fillable(['title','body','blog_category_id','status'])]
@@ -2173,7 +2173,7 @@ no schema, no query plan and no index.
 Derived from [PRD](../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog posts`, the two
 post-editor scenarios inside `Feature: Blog tags`, the taxonomy-filter `Scenario Outline`, and Blog
 acceptance criteria 1, 3 and 4 — plus the four hand-off items
-[0061](0061-blog-posts-core-crud-backend.md)'s Definition of Done addresses to this story by name.
+[0061](done/0061-blog-posts-core-crud-backend.md)'s Definition of Done addresses to this story by name.
 
 **Four conflicts between the two amigos were resolved by the facilitator rather than left implicit.**
 

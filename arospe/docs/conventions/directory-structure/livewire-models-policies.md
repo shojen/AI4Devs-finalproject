@@ -79,7 +79,12 @@ app/
                        by a `saving` hook in booted() and never mass-assignable;
                        BlogTag — story 0059, a second standalone taxonomy with the same stored-key
                        shape (`name` 100, `normalized_name` 255, the folded length bounded in
-                       validation); deliberately no `posts()` relation until story 0061 adds the pivot;
+                       validation); its `posts()` relation (through the `blog_post_tag` pivot) arrived with story 0061;
+                       BlogPost — story 0061, Epic 4's central entity and the third SoftDeletes model
+                       (after User and Customer), with NO delete() override (a trashed post keeps its
+                       slug); `title`, `body`, `blog_category_id` and `status` are fillable, `slug`
+                       (derived by a `saving` hook) and `published_at` (governed by the status) are not;
+                       BlogCategory gains `posts()` and BlogTag `posts()` in the same story;
                        Role, which
                        subclasses
                        the package's role model). product_media, product_sales_region and
@@ -98,7 +103,8 @@ app/
                        Blog actions from day one, BlogTagPolicy — story 0059, the same four
                        `blog.*` abilities on a second model (one `blog.*` tier gates every Blog
                        taxonomy; a shared BlogPolicy would not be auto-discovered for any of
-                       them), ProductPolicy,
+                       them), BlogPostPolicy — story 0061, five abilities over four permission strings:
+                       `restore` is gated on `blog.edit`, not `blog.delete`, ProductPolicy,
                        ProductAttributeTypePolicy, ShippingZonePolicy — story 0033, a pre-existing
                        gap in this listing closed here rather than left stale, ShippingRatePolicy
                        — story 0036, matching ShippingZonePolicy's shape exactly: four abilities,

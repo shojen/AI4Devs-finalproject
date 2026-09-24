@@ -8,7 +8,6 @@ Seven domain entities need public, non-sequential identifiers that are safe to e
 
 - `users` — the only one of the seven that already exists in code today (see [database/schema.md](../database/schema.md) and [`App\Models\User`](../../app/Models/User.php)), currently keyed by a `bigint` auto-increment `id`.
 - Products, Product Variants, Product Categories — future, PRD Epic 2 (see [../PRD/PRD.md](../PRD/PRD.md)), not yet implemented.
-- Blog Categories, Blog Tags, Blog Posts — future, PRD Epic 4 (see [../PRD/PRD.md](../PRD/PRD.md)), not yet implemented.
 
 The naive way to get a non-sequential key is a random UUIDv4, but this app runs on MySQL/InnoDB (see [database/schema.md](../database/schema.md)), where every table is physically stored as a clustered index ordered by its primary key. A random PK forces inserts into arbitrary points of that index, causing page splits, index fragmentation, and write amplification — a real, measurable cost at scale, not a theoretical one.
 
@@ -127,6 +126,12 @@ One bookkeeping correction that follows normally: Amendment 7's "two [of the ori
 
 One thing that is *not* part of this ADR but is worth pointing at from it: this table's pivot to `blog_posts` (story 0061's `blog_post_tag`) will reference `blog_tags.id` with `foreignUuid('blog_tag_id')->constrained()->cascadeOnDelete()`, and the cascade is what makes deleting a tag remove it from every post — see [`blog_tags`](../database/schema-blog.md#blog_tags).
 
-_Last updated: 2026-09-24 — Story 0059 (Blog tags — backend): added **Amendment 8**, recording `blog_tags` as the fifth of the original seven entities to ship (needing no amendment) and narrowing Amendment 7's "two still future" note to one (Blog Posts). Amendments 1–7 above record the earlier stories; no rule changed._
+## Amendment 9 (2026-09-24) — `blog_posts` is the last of the original seven to ship
 
-_Earlier revision notes: [decisions--0001-uuid-primary-keys.md](../history/decisions--0001-uuid-primary-keys.md)._
+**Status: accepted. This amendment closes the last stale count and removes the Context section's "future" bullet; it changes no rule.**
+
+[`blog_posts`](../database/schema-blog.md#blog_posts) (story 0061) is the sixth and last of the original seven entities to ship (with `blog_post_tag`, a pivot whose composite primary key of two UUIDs carries no id of its own). "Blog Posts" was named in the Context section, so — like every named entity before it — it needed no amendment to the policy: a plain greenfield `create_*` migration with `HasUuids` and a single `uuid('id')->primary()`.
+
+Bookkeeping that follows normally: Amendment 8's "one [of the original seven] is still future" note is now **none**. Every entity the Context section named is implemented, so the Context bullet that listed Blog Categories, Blog Tags and Blog Posts as *"future, PRD Epic 4 … not yet implemented"* has been removed rather than left to mislead; Amendments 7 and 8 above quote it as the record of what was true on 2026-07-22.
+
+_Last updated: 2026-09-24 — Story 0061 (Blog posts — core CRUD backend): added **Amendment 9**, recording `blog_posts` as the last of the original seven entities to ship (needing no amendment), and removed the Context section's now-false *Blog Categories, Blog Tags, Blog Posts — future* bullet. Amendments 1–8 above record the earlier stories; no rule changed._

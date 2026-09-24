@@ -34,6 +34,8 @@ inherit `User::delete()`'s reasoning by proximity just because both models sit u
 
 See [database/schema.md](../database/schema-other/customers.md#soft-deletes-and-why-the-users-reasoning-does-not-transfer) for the full column-level writeup, and [conventions/base-standards.md](../conventions/base-standards/stack-and-model-conventions.md#deleting-a-user-goes-through-the-model-not-the-query-builder) for the corrected "only model using `SoftDeletes`" claim this story's own Definition of Done required fixing.
 
+**A third `SoftDeletes` model, `App\Models\BlogPost` (story 0061), is unalike in a third way: it is neither authenticatable nor identifier-freeing.** None of the rules above bind it, for `Customer`'s reasons plus one of its own: it overrides **no** `delete()` and deliberately does *not* obfuscate its `slug`, because a restore must return the post to its own URL and nothing in the database is keyed by a slug (no tokens, no auth, no string-joined table), so the security half of the `User` pattern has no analogue. The rules that do apply to it are data-integrity ones, documented in [`blog_posts`](../database/schema-blog.md#blog_posts): the pivot rows survive a soft delete, and a guard sitting in front of a `restrictOnDelete()` FK must count `withTrashed()`, because a foreign key cannot see `deleted_at`.
+
 ## The global scope *is* the sign-in refusal — there is no second check
 
 Nothing in `app/` refuses a soft-deleted user's login. The refusal is entirely a side effect of
@@ -243,12 +245,7 @@ Verified during this audit and worth not re-deriving:
   request through the scope, so an in-flight session stops authenticating immediately. No explicit
   session-invalidation step is required for that alone.
 
-_Last updated: 2026-09-10 — Story 0042 (Customers — soft delete, backend). Added the
-**A second soft-deleted model, deliberately unalike** section: `App\Models\Customer` is this
-repo's second `SoftDeletes` model, and none of this page's five rules bind it (it is not an
-authenticatable) — recorded explicitly so a later story does not inherit `User::delete()`'s
-obfuscation reasoning by proximity. No existing rule changed; every section below this one is
-still about `users` specifically._
+_Last updated: 2026-09-24 — Story 0061 (Blog posts — core CRUD backend). Added the third soft-deleted model, `BlogPost`, to the *unalike* section: no `delete()` override and no slug obfuscation, since nothing is keyed by a slug. Earlier changes: story 0042 added the `Customer` section and story 0005's audit the `users` rules._
 
 _Previously: 2026-08-14 — created by the Phase 4 audit of task 0005 (soft-delete users +
 administrator-level protection guard); the identifier-revocation section extended during the

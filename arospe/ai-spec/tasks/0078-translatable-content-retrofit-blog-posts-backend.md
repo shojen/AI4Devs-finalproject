@@ -5,7 +5,7 @@ Applies story [0070](0070-translatable-content-mechanism-product-categories-back
 per-store-language translatable-content mechanism to **Blog Posts**
 ([PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization), whose translatable-content
 list names *"Blog post **title** and **body**"* and *"**Slug / SEO fields** … on products and posts"*).
-Story [0061](0061-blog-posts-core-crud-backend.md)'s `title`, `body` and `slug` columns move to a
+Story [0061](done/0061-blog-posts-core-crud-backend.md)'s `title`, `body` and `slug` columns move to a
 `blog_post_translations` child table, one row per `(post, store language)`, with slug uniqueness
 re-scoped from global to **per store language**. `status`, `published_at`, `blog_category_id` and tag
 attachments stay on the parent — the PRD puts *"status, dates"* explicitly outside the language tabs.
@@ -885,7 +885,7 @@ load-bearing:** since `SetTranslation` authorizes nothing, each action's `Gate` 
 
 ### Dependencies
 
-- **[Story 0061](0061-blog-posts-core-crud-backend.md)** — hard, and **not implemented**. This story
+- **[Story 0061](done/0061-blog-posts-core-crud-backend.md)** — hard, and **not implemented**. This story
   retrofits its table, its model, its validation trait and two of its six actions. **Its OQ-2 is now
   closed** (✅ resolved 2026-08-30, option (b) — see **R-4**), which was this dependency's one remaining
   gate.
