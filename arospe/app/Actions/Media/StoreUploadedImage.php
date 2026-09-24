@@ -166,8 +166,21 @@ class StoreUploadedImage
             // rethrown unchanged.
             if ($e instanceof ImageException) {
                 throw ValidationException::withMessages([
-                    'photo' => trans('media.upload_rejected').' [TEMP-DEBUG '.get_class($e).': '.$e->getMessage().' | prev: '.($e->getPrevious() ? get_class($e->getPrevious()).': '.$e->getPrevious()->getMessage() : 'none').']',
-                ]);
+                    'photo' => trans('media.upload_rejected').' [TEMP-DEBUG '.(function () use ($disk, $path, $e): string {
+                        $bytes = (string) $disk->get($path);
+                        try {
+                            (new \Imagick)->readImageBlob($bytes);
+                            $direct = 'direct read OK';
+                        } catch (Throwable $t) {
+                            $direct = get_class($t).': '.$t->getMessage();
+                        }
+
+                        return get_class($e).' | direct: '.$direct.' | imagick: '.\Imagick::getVersion()['versionString']
+                            .' | bytes='.strlen($bytes).' head='.bin2hex(substr($bytes, 0, 8)).' size_on_disk='.(is_file($disk->path($path)) ? filesize($disk->path($path)) : 'missing')
+                            .' | uptime_s='.trim((string) shell_exec('ps -o etimes= -p '.getmypid()))
+                            .' | limits time='.\Imagick::getResourceLimit(\Imagick::RESOURCETYPE_TIME).' mem='.\Imagick::getResourceLimit(\Imagick::RESOURCETYPE_MEMORY).' disk='.\Imagick::getResourceLimit(\Imagick::RESOURCETYPE_DISK).' thread='.\Imagick::getResourceLimit(\Imagick::RESOURCETYPE_THREAD)
+                            .' | token='.getenv('TEST_TOKEN');
+                    })().']',                ]);
             }
 
             throw $e;
