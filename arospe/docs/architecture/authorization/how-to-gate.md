@@ -232,11 +232,12 @@ Six rules come with it, each load-bearing:
   'groups' => [
       'store' => ['heading' => 'navigation.groups.store', 'icon' => 'building-storefront', 'expandable' => false, 'expanded_when' => null, 'class' => null],
       'settings' => ['heading' => 'navigation.groups.settings', 'icon' => 'cog-6-tooth', 'expandable' => true, 'expanded_when' => 'roles.*', 'class' => null],
-      // no 'content' entry yet (that is story 0060's, or whichever Blog story ships first, to add)
+      'content' => ['heading' => 'navigation.groups.content', 'icon' => 'newspaper', 'expandable' => false, 'expanded_when' => null, 'class' => null],   // story 0060: Blog's group
   ],
   'clusters' => [
       'products' => ['group' => 'store', 'label' => 'navigation.clusters.products', 'icon' => 'cube'],
       'store_settings' => ['group' => 'store', 'label' => 'navigation.clusters.store_settings', 'icon' => 'adjustments-horizontal'],
+      'blog' => ['group' => 'content', 'label' => 'navigation.clusters.blog', 'icon' => 'document-text'],   // story 0060; blog categories/posts append items, not clusters
   ],
   'items' => [
       'dashboard' => ['group' => null, 'cluster' => null, /* ... */ 'permissions' => []],
@@ -246,6 +247,7 @@ Six rules come with it, each load-bearing:
       'product_categories' => ['group' => null, 'cluster' => 'products', /* ... */ 'permissions' => ['products.view']],
       'products' => ['group' => null, 'cluster' => 'products', /* ... */ 'permissions' => ['products.view']],
       'product_attribute_types' => ['group' => null, 'cluster' => 'products', /* ... */ 'permissions' => ['products.view']],
+      'blog_tags' => ['group' => null, 'cluster' => 'blog', /* ... */ 'permissions' => ['blog.view']],
   ],
   ```
 
