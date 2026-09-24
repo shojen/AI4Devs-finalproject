@@ -7,9 +7,9 @@
       "slug": "0060-blog-tags-ui",
       "title": "Blog tags — management screen (list, create/edit modal, unconditional delete)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree 0060-blog-tags-ui",
+      "claimed_at": "2026-09-24T00:00:00Z",
       "touches": [
         "app/Livewire/BlogTags/Index.php",
         "resources/views/livewire/blog-tags.blade.php",
