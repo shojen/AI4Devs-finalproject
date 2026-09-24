@@ -48,13 +48,24 @@ class GenerateImageConversions
     private const BYTES_PER_PIXEL_CEILING = 64;
 
     /**
-     * A wall-clock backstop against any input shape the pixel/byte limits
-     * above don't otherwise bound (e.g. a pathological animation or a
-     * format-specific decode cost). Generous for a single small backoffice
-     * upload (D4 already assumes synchronous decoding is sub-second to a
-     * few seconds).
+     * ImageMagick's TIME resource is deliberately left effectively unlimited.
+     *
+     * It reads like a per-operation wall-clock budget, but the ImageMagick 6.9 build this project
+     * runs on (Sail, GitHub Actions) evaluates it against the LIFETIME of the process: once a
+     * worker has been alive longer than the limit, every later decode raises
+     * "time limit exceeded @ fatal/cache.c/GetImagePixelCache", which Intervention rewraps as a
+     * decoder failure and this app shows as "This image could not be processed". A finite value
+     * therefore turns a backstop into a permanent failure of every upload handled by a
+     * long-lived PHP worker (php-fpm, queue, or a parallel test worker). Work is already bounded
+     * by the width/height/area/memory/map limits below and, for web requests, by PHP's
+     * max_execution_time.
+     *
+     * Set explicitly rather than left alone, so an ambient ImageMagick policy.xml (or a limit an
+     * earlier caller in the same process set) cannot reintroduce a short value. The value is 2^31-1
+     * seconds (about 68 years), not PHP_INT_MAX and not -1 (ImageMagick's own "infinity"): both of
+     * those make Imagick raise TimeLimitExceeded on the very first decode.
      */
-    private const TIME_LIMIT_SECONDS = 60;
+    private const TIME_LIMIT_UNBOUNDED = 2_147_483_647;
 
     /**
      * Decode the file at `$originalPath` on the `public` disk and encode it
@@ -76,30 +87,7 @@ class GenerateImageConversions
         // decodeBinary(), never decodePath()/decode($path) -- the source is
         // read through the Storage facade so this works identically against
         // Storage::fake('public') in tests and the real local disk.
-        $bytes = $disk->get($originalPath);
-
-        // TEMP-DEBUG: capture the state at the exact moment the decode is about to run.
-        try {
-            (new Imagick)->readImageBlob((string) $bytes);
-            $direct = 'direct read OK';
-        } catch (Throwable $t) {
-            $direct = get_class($t).': '.$t->getMessage();
-        }
-
-        if ((string) $bytes === '' || $direct !== 'direct read OK') {
-            $abs = $disk->path($originalPath);
-
-            throw new RuntimeException('TEMP-DEBUG decode probe: '.$direct
-                .' | bytes='.strlen((string) $bytes).' head='.bin2hex(substr((string) $bytes, 0, 8))
-                .' | path='.$abs.' is_file='.var_export(is_file($abs), true).' filesize='.(is_file($abs) ? filesize($abs) : 'n/a')
-                .' getimagesize='.json_encode(@getimagesize($abs))
-                .' | dir='.json_encode(is_dir(dirname($abs)) ? array_slice(scandir(dirname($abs)), 0, 12) : 'no dir')
-                .' | disk_root='.$disk->path('').' facade='.get_class(Storage::getFacadeRoot())
-                .' | imagick='.Imagick::getVersion()['versionString'].' uptime_s='.trim((string) shell_exec('ps -o etimes= -p '.getmypid()))
-                .' token='.getenv('TEST_TOKEN'));
-        }
-
-        $image = Image::decodeBinary($bytes);
+        $image = Image::decodeBinary($disk->get($originalPath));
 
         $basename = preg_replace('/\.[^.\/]+$/', '', $originalPath);
         $webpPath = $basename.'.webp';
@@ -193,6 +181,6 @@ class GenerateImageConversions
         Imagick::setResourceLimit(Imagick::RESOURCETYPE_MEMORY, $byteCeiling);
         Imagick::setResourceLimit(Imagick::RESOURCETYPE_MAP, $byteCeiling);
         Imagick::setResourceLimit(Imagick::RESOURCETYPE_DISK, 0);
-        Imagick::setResourceLimit(Imagick::RESOURCETYPE_TIME, self::TIME_LIMIT_SECONDS);
+        Imagick::setResourceLimit(Imagick::RESOURCETYPE_TIME, self::TIME_LIMIT_UNBOUNDED);
     }
 }
