@@ -2,7 +2,7 @@
 
 ## Description
 Today a post saved as `Published` with a **future** `published_at` is accepted as-is: story
-[0061](done/0061-blog-posts-core-crud-backend.md)'s **D-6** gives `Published` the rule
+[0061](../done/0061-blog-posts-core-crud-backend.md)'s **D-6** gives `Published` the rule
 `nullable|date` and nothing else. The result is a post that is `Published` **now** and announced now,
 yet dated in the future — a state that means nothing, that a public reader filtering on
 `published_at <= now` would not show, and that dodges the `Scheduled` path (and 0064's sweep) entirely.
@@ -10,14 +10,14 @@ yet dated in the future — a state that means nothing, that a public reader fil
 **This story makes "publish with a future date" mean what an editor intends by it: schedule the post.**
 When `CreateBlogPost` or `UpdateBlogPost` is asked for `Published` and the resolved `published_at` is
 **strictly in the future**, the post is stored as **`Scheduled`** with that date, and **no
-`NotifyBlogPostPublished` is dispatched** — story [0064](0064-scheduled-post-auto-publish-backend.md)'s
+`NotifyBlogPostPublished` is dispatched** — story [0064](../0064-scheduled-post-auto-publish-backend.md)'s
 sweep flips it to `Published` when its time comes and announces it then (trigger 3 of 0061's **D-19**).
 A `Published` request with no date, or a date at or before now, behaves exactly as today.
 
 Backend only: no screen, route, Livewire component or migration.
 
 Raised by the human owner while closing 0061 (2026-09-24), as one of two follow-ups to 0061's
-"open, not fixed" list; its sibling is [0061b](0061b-blog-post-body-must-have-visible-content.md).
+"open, not fixed" list; its sibling is [0061b](../0061b-blog-post-body-must-have-visible-content.md).
 
 ## Type
 backend | includes database-expert: **no** (no schema change; the existing
@@ -156,9 +156,9 @@ A date equal to the current instant is already publishable, the same boundary 00
 ## Dependencies, risks and open questions
 
 ### Dependencies
-- **[0061](done/0061-blog-posts-core-crud-backend.md) — done.** Owns the actions, the rule set and D-6.
-- **Conflicts with [0061b](0061b-blog-post-body-must-have-visible-content.md), [0063](0063-blog-posts-list-editor-ui.md) and
-  [0065](0065-blog-post-published-notification-backend.md)**, which also touch `CreateBlogPost` / `UpdateBlogPost`
+- **[0061](../done/0061-blog-posts-core-crud-backend.md) — done.** Owns the actions, the rule set and D-6.
+- **Conflicts with [0061b](../0061b-blog-post-body-must-have-visible-content.md), [0063](../0063-blog-posts-list-editor-ui.md) and
+  [0065](../0065-blog-post-published-notification-backend.md)**, which also touch `CreateBlogPost` / `UpdateBlogPost`
   (0065's file list names both). They are independent in behaviour, so any order works; run them one at a time or
   reconcile the two action files at merge.
 
