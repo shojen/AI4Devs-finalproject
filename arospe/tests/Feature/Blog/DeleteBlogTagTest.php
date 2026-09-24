@@ -3,10 +3,12 @@
 use App\Actions\Blog\CreateBlogTag;
 use App\Actions\Blog\DeleteBlogTag;
 use App\Actions\Blog\FindOrCreateBlogTag;
+use App\Models\BlogPost;
 use App\Models\BlogTag;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
 
 // Story 0059. D-12: DeleteBlogTag authorizes itself first, so every test
 // runs actingAs() an actor holding blog.delete (plus create/view for the reuse tests).
@@ -85,4 +87,72 @@ test('deleting is unconditional: a tag that has been reused many times is still 
 
     expect(app(DeleteBlogTag::class)($tag))->toBeTrue()
         ->and(BlogTag::count())->toBe(0);
+});
+
+// --- Story 0061: the post-side half of PRD "deleting a tag removes it from every post" (0059's R-6) ---
+//
+// Honest against the REAL blog_post_tag pivot, never a stub. The cascade is the database's:
+// blog_tag_id is cascadeOnDelete(), and these tests go red if anyone writes restrictOnDelete() there.
+
+test('deleting a tag attached to several posts removes exactly its pivot rows', function () {
+    $running = BlogTag::factory()->create(['name' => 'running']);
+    $invierno = BlogTag::factory()->create(['name' => 'invierno']);
+
+    foreach (BlogPost::factory()->count(3)->create() as $post) {
+        $post->tags()->attach([$running->id, $invierno->id]);
+    }
+
+    expect(app(DeleteBlogTag::class)($running))->toBeTrue();
+
+    $this->assertDatabaseMissing('blog_post_tag', ['blog_tag_id' => $running->id]);
+    $this->assertDatabaseMissing('blog_tags', ['id' => $running->id]);
+    expect(DB::table('blog_post_tag')->where('blog_tag_id', $invierno->id)->count())->toBe(3);
+});
+
+// The control: without it, a bug that deletes the POST instead of detaching the tag still passes a
+// "the pivot row is gone" assertion.
+test('every post that carried the deleted tag survives, untouched, with its other tags intact', function () {
+    $running = BlogTag::factory()->create(['name' => 'running']);
+    $invierno = BlogTag::factory()->create(['name' => 'invierno']);
+    $posts = BlogPost::factory()->count(3)->create();
+
+    foreach ($posts as $post) {
+        $post->tags()->attach([$running->id, $invierno->id]);
+    }
+
+    app(DeleteBlogTag::class)($running);
+
+    foreach ($posts as $post) {
+        $this->assertNotSoftDeleted('blog_posts', ['id' => $post->id, 'title' => $post->title]);
+        $this->assertDatabaseHas('blog_post_tag', ['blog_post_id' => $post->id, 'blog_tag_id' => $invierno->id]);
+        expect($post->fresh()->tags->pluck('id')->all())->toBe([$invierno->id]);
+    }
+
+    expect(BlogPost::count())->toBe(3);
+});
+
+test('deleting a tag leaves another post\'s unrelated tag associations alone', function () {
+    $running = BlogTag::factory()->create(['name' => 'running']);
+    $other = BlogTag::factory()->create(['name' => 'invierno']);
+    $decoy = BlogPost::factory()->create();
+    $decoy->tags()->attach($other->id);
+    BlogPost::factory()->create()->tags()->attach($running->id);
+
+    app(DeleteBlogTag::class)($running);
+
+    $this->assertDatabaseHas('blog_post_tag', ['blog_post_id' => $decoy->id, 'blog_tag_id' => $other->id]);
+});
+
+// D-7c: the tag-side cascade is unaffected by the post-side soft delete, because tags still
+// hard-delete. Otherwise a restored post would come back carrying a tag the catalog no longer has.
+test('deleting a tag also detaches it from a trashed post', function () {
+    $running = BlogTag::factory()->create(['name' => 'running']);
+    $post = BlogPost::factory()->create();
+    $post->tags()->attach($running->id);
+    $post->delete();
+
+    app(DeleteBlogTag::class)($running);
+
+    $this->assertDatabaseMissing('blog_post_tag', ['blog_tag_id' => $running->id]);
+    $this->assertSoftDeleted('blog_posts', ['id' => $post->id]);
 });
