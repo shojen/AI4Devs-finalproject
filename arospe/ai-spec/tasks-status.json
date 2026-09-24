@@ -3,27 +3,6 @@
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
     {
-      "id": "0060",
-      "slug": "0060-blog-tags-ui",
-      "title": "Blog tags — management screen (list, create/edit modal, unconditional delete)",
-      "depends_on": [],
-      "status": "claimed",
-      "claimed_by": "worktree 0060-blog-tags-ui",
-      "claimed_at": "2026-09-24T00:00:00Z",
-      "touches": [
-        "app/Livewire/BlogTags/Index.php",
-        "resources/views/livewire/blog-tags.blade.php",
-        "routes/blog-tags.php",
-        "lang/en/blog.php",
-        "lang/es/blog.php",
-        "config/modules.php"
-      ],
-      "conflict_risk_with": [
-        "0062",
-        "0063"
-      ]
-    },
-    {
       "id": "0061",
       "slug": "0061-blog-posts-core-crud-backend",
       "title": "Blog posts — core CRUD backend (+ the blog-category in-use delete guard)",
@@ -66,7 +45,6 @@
         "config/modules.php"
       ],
       "conflict_risk_with": [
-        "0060",
         "0063"
       ]
     },
@@ -91,7 +69,6 @@
         "config/modules.php"
       ],
       "conflict_risk_with": [
-        "0060",
         "0062",
         "0072",
         "0074",
@@ -348,7 +325,6 @@
       "slug": "0075-blog-tags-language-tabs-ui",
       "title": "Blog Tags screen — language tabs",
       "depends_on": [
-        "0060",
         "0068",
         "0070",
         "0071",

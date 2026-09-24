@@ -582,69 +582,69 @@ rather than the full matrix.
 **Feature — `tests/Feature/Blog/BlogTagsIndexTest.php`**
 
 *Listing*
-- [ ] The list is ordered by name. Create out of order, assert alphabetical. *Why it can fail:*
+- [x] The list is ordered by name. Create out of order, assert alphabetical. *Why it can fail:*
       nothing in the schema enforces order (0059 **D-6** ships no `sort_order`); only the query does,
       silently.
-- [ ] Each row exposes exactly `{id, name, canEdit, canDelete}` — **and asserts the absence of any
+- [x] Each row exposes exactly `{id, name, canEdit, canDelete}` — **and asserts the absence of any
       post/usage-count key.** *Why it can fail:* a developer mechanically adapting
       `ProductCategories\Index`'s specified `->withCount('products')` would reach for
       `->withCount('posts')` against a relation `BlogTag` does not have — or, worse, hardcode a `0`
       that reads as real data (**D-5**).
 
 *Create*
-- [ ] A valid name persists exactly one row and the modal closes.
-- [ ] Blank and whitespace-only names produce `assertHasErrors(['name'])` and add zero rows. *Why:*
+- [x] A valid name persists exactly one row and the modal closes.
+- [x] Blank and whitespace-only names produce `assertHasErrors(['name'])` and add zero rows. *Why:*
       proves `save()` reaches the action's own trim-then-validate rather than persisting the raw
       `wire:model` value (0059 **R-2**, one layer up).
-- [ ] A duplicate name (exact case) produces `assertHasErrors(['name'])`.
-- [ ] **One canary each** for a case-only and an accent-only duplicate — not the full matrix. *Why
+- [x] A duplicate name (exact case) produces `assertHasErrors(['name'])`.
+- [x] **One canary each** for a case-only and an accent-only duplicate — not the full matrix. *Why
       this is not redundant with 0059:* a component built independently could bypass the action and
       validate with a bare `Rule::unique('blog_tags', 'name')`, missing **D-3**'s normalised
       comparison entirely; this is the only test at this layer that would catch that. **See R-3 for
       why these two canaries cannot prove the normaliser ran.**
-- [ ] **One** length-boundary canary (max accepted, max+1 refused), reading the maximum from the
+- [x] **One** length-boundary canary (max accepted, max+1 refused), reading the maximum from the
       shared trait/constant rather than a hardcoded literal — 0059's **OQ-1** (100 vs 255) may still
       be open when this is written (**OQ-2**).
-- [ ] **`save()`'s injected actions are `CreateBlogTag` / `RenameBlogTag`, never
+- [x] **`save()`'s injected actions are `CreateBlogTag` / `RenameBlogTag`, never
       `FindOrCreateBlogTag`.** *Why it can fail:* swapping in the find-or-create action would make
       every duplicate-name submission silently **succeed** instead of erroring, quietly deleting half
       this story's Gherkin — and every `assertHasErrors()` test above would go red in a way that
       invites "fixing" the assertion rather than the call (**R-7**).
 
 *Rename*
-- [ ] Renaming to a free name updates the row.
-- [ ] Saving under the tag's **own unchanged name** is accepted — 0059 **R-1**'s canary, exercised
+- [x] Renaming to a free name updates the row.
+- [x] Saving under the tag's **own unchanged name** is accepted — 0059 **R-1**'s canary, exercised
       here for the first time against a component call site.
-- [ ] **The `->ignore()` id is server-authoritative.** `->call('openEditModal', $a->id)
+- [x] **The `->ignore()` id is server-authoritative.** `->call('openEditModal', $a->id)
       ->set('editingTagId', $b->id)` must **throw**, not silently retarget the rename onto `$b`.
       *Why it earns its own test:* 0059's Definition of Done names this as **this story's** hand-off
       obligation by number, and nothing else in the plan proves it. **The single most important test
       in this file.**
-- [ ] Renaming onto another tag's exact-case name is refused and the target keeps its name.
+- [x] Renaming onto another tag's exact-case name is refused and the target keeps its name.
 
 *Delete — the structural divergence from every prior taxonomy screen*
-- [ ] Deleting a tag removes the row unconditionally and it disappears from the reloaded list.
-- [ ] `deleteTag()` closes the modal in one round trip — there is no branch in which it stays open
+- [x] Deleting a tag removes the row unconditionally and it disappears from the reloaded list.
+- [x] `deleteTag()` closes the modal in one round trip — there is no branch in which it stays open
       with an inline error, because `DeleteBlogTag` throws nothing to catch. *Why it can fail:* an
       implementer structurally copying `deleteProductCategory()` (built to leave the modal open on a
       caught `ValidationException`) would paste defensive branching around an exception that cannot
       occur here — harmless as code, and the seed of **R-2**.
-- [ ] **No `force` / confirm-and-proceed path exists** — assert positively that the delete is
+- [x] **No `force` / confirm-and-proceed path exists** — assert positively that the delete is
       unconditional, since the *absence* of a guard is this story's actual contract (**D-2**) and a
       later reader would otherwise read it as an oversight. This mirrors 0059's own "no in-use guard
       exists" test one layer up.
 
 *Authorization*
-- [ ] `viewAny` / `create` / `update` / `delete` each get **both an allow and a deny** at **two
+- [x] `viewAny` / `create` / `update` / `delete` each get **both an allow and a deny** at **two
       layers**: the route (`$this->get(route('blog-tags.index'))->assertOk()` / `assertForbidden()`)
       **and** the component (`Livewire::test()` mounting directly, and `save()` / `deleteTag()`
       throwing `AuthorizationException` for a denied actor). Genuinely not substitutes, per
       [testing/README.md](../../../docs/testing/README.md) — the route test never exercises the
       component's own `Gate::authorize()`, and `/livewire/update` never runs most route middleware.
-- [ ] A Super Admin holding zero permission rows passes all four via `Gate::before`.
-- [ ] **One** global-state test that an actor holding only `blog.view` sees every row action
+- [x] A Super Admin holding zero permission rows passes all four via `Gate::before`.
+- [x] **One** global-state test that an actor holding only `blog.view` sees every row action
       disabled — deliberately **not** a Users-shaped per-row matrix (**D-7**, and **OQ-1**).
-- [ ] **Every `Gate` refusal this component raises writes exactly one
+- [x] **Every `Gate` refusal this component raises writes exactly one
       `Log::warning('Privileged action refused', …)` carrying `target_type: 'blog_tag'`**,
       set-equated against an existing screen's context keys in one `Log::spy()` session — the
       equivalence test the refusal-logging recipe mandates as step 4. *Why it can fail:* this is
@@ -654,16 +654,16 @@ rather than the full matrix.
       follows. `mount()` is the one deliberate exclusion.
 
 *Malformed / unknown ids*
-- [ ] `openEditModal()` and `confirmDelete()` with an unknown or malformed UUID fail cleanly
+- [x] `openEditModal()` and `confirmDelete()` with an unknown or malformed UUID fail cleanly
       (`ModelNotFoundException`), not as a silent no-op. `HasUuids`' `resolveRouteBindingQuery()`
       rejects a non-UUID before querying.
 
 **Feature — `tests/Feature/Blog/BlogTagsIndexRenderingTest.php`**
-- [ ] The list renders each tag's name.
-- [ ] The empty state renders when the catalog holds no tags.
-- [ ] The create/edit modal contains exactly **one** input and **no `<select>`** — a cheap guard
+- [x] The list renders each tag's name.
+- [x] The empty state renders when the catalog holds no tags.
+- [x] The create/edit modal contains exactly **one** input and **no `<select>`** — a cheap guard
       against a stray element copy-pasted in from a heavier screen.
-- [ ] **The delete-confirmation modal renders no usage count, no "used by N posts" message, no
+- [x] **The delete-confirmation modal renders no usage count, no "used by N posts" message, no
       "cannot be deleted" string and no blocked state, and its destructive button is never
       `disabled`.** ***The signature test of this story.*** *Why it can fail:* an implementer
       following 0025 as the named structural template could paste that screen's blocked-delete
@@ -671,11 +671,11 @@ rather than the full matrix.
       markup would be **dead but present**, and an ordinary "delete succeeds" test would still pass
       with it sitting in the DOM. Only this negative assertion catches it. Assert against the
       *rendered* modal, not the component's error bag.
-- [ ] Validation messages appear next to the name field and the modal stays open.
-- [ ] Row action `data-test` hooks are present on **both** the enabled and the disabled branch.
+- [x] Validation messages appear next to the name field and the modal stays open.
+- [x] Row action `data-test` hooks are present on **both** the enabled and the disabled branch.
       *Why:* a browser test must select the same control either way; a hook present only when enabled
       makes the disabled-state test unwritable.
-- [ ] A disabled row action's disabled state is asserted by matching `disabled="disabled"`, **never**
+- [x] A disabled row action's disabled state is asserted by matching `disabled="disabled"`, **never**
       a bare `disabled` substring — Flux's compiled class list carries the literal `disabled:opacity-75`
       on the *enabled* branch too, so the naive helper reports every control as disabled and the test
       can never fail.
@@ -685,34 +685,34 @@ rather than the full matrix.
 flat `sidebar-group-blog` hook and a "Blog group"; `blog` is a `clusters.blog` entry nested inside a
 new `groups.content`, so the assertions below target the `content` group and the `blog` cluster
 hooks 0080 introduced.)*
-- [ ] A role holding exactly `blog.view` sees `sidebar-group-content`, `sidebar-cluster-blog` and
+- [x] A role holding exactly `blog.view` sees `sidebar-group-content`, `sidebar-cluster-blog` and
       `sidebar-link-blog_tags` — all three.
-- [ ] A role holding the related-but-different `blog.edit` sees **none of the three** — the entry gates
+- [x] A role holding the related-but-different `blog.edit` sees **none of the three** — the entry gates
       on the exact ability its route does, not on any `blog.*`.
-- [ ] The Content group vanishes entirely, heading included, for a role without the ability — the same
+- [x] The Content group vanishes entirely, heading included, for a role without the ability — the same
       two-level vanish rule 0080's own Store group exercises (a group with zero visible clusters and
       zero direct items renders nothing).
-- [ ] **Do not hand-write a registry↔route cross-check.** Task 0018 verified that both generic drift
+- [x] **Do not hand-write a registry↔route cross-check.** Task 0018 verified that both generic drift
       guards already in this file pick a new entry up **for free**; 0018's own plan assumed the
       opposite and would have shipped a redundant copy.
 
 **Browser — `tests/Browser/BlogTags/IndexTest.php`** (path per **V-1**)
-- [ ] Opening the create form shows a blank field (no stale prefill leaking from a previous edit).
-- [ ] Creating a tag through a real `fill()` + `click('Save')` round trip: the new name appears in the
+- [x] Opening the create form shows a blank field (no stale prefill leaking from a previous edit).
+- [x] Creating a tag through a real `fill()` + `click('Save')` round trip: the new name appears in the
       list, no JS errors. **This is the one test that proves `wire:model` actually delivers the typed
       value** — `Livewire::test()->set()` writes the property directly and never touches the DOM.
-- [ ] Editing prefills the name; re-saving it unchanged preserves it.
-- [ ] Cancelling the create form adds nothing.
-- [ ] **Deleting a tag through the confirmation modal removes it in one click, with no intermediate
+- [x] Editing prefills the name; re-saving it unchanged preserves it.
+- [x] Cancelling the create form adds nothing.
+- [x] **Deleting a tag through the confirmation modal removes it in one click, with no intermediate
       count or blocked step ever appearing, and no JS errors.** ***The highest-value browser test in
       this story*** — and the exact inverse of
       [0025's highest-value test](../done/0025-product-categories-ui.md#tests-to-perform), which proves a
       real block *does* render. Only a real DOM click proves the confirm control was never wired to a
       guard that does not exist server-side, and only a browser test goes through the compiled
       `wire:click` at all.
-- [ ] Creating a duplicate name through the real form shows the inline error — proves the `@error`
+- [x] Creating a duplicate name through the real form shows the inline error — proves the `@error`
       binding works in a browser, not merely in the component's error bag.
-- [ ] One continuous smoke pass (open create → cancel → open edit → cancel → open delete → cancel)
+- [x] One continuous smoke pass (open create → cancel → open edit → cancel → open delete → cancel)
       asserting `assertNoJavaScriptErrors()` after every step.
 
 > **Browser-testing rules that bind this file**, from
@@ -724,7 +724,7 @@ hooks 0080 introduced.)*
 > `[wire:snapshot]` ground truth rather than waiting longer.
 
 **Unit — `tests/Unit/ArchitectureTest.php` (extend — optional, see OQ-5)**
-- [ ] `App\Livewire\BlogTags\*` references no product-taxonomy namespace, written as **one
+- [x] `App\Livewire\BlogTags\*` references no product-taxonomy namespace, written as **one
       `expect()` per namespace, never `expect([...])`** — that form is disjunctive and this repo has
       already shipped one vacuous `arch()` rule that way.
 
@@ -807,10 +807,10 @@ product taxonomy.
 > Epic 5 pass might erode — are the **unconditional delete** bullet (**D-2**) and the **`->ignore()` id
 > is `#[Locked]` and read back out of the database** bullet (**D-6**). Both stand exactly as written.
 
-- [ ] `/blog/tags` is registered as `blog-tags.index`, gated **`can:blog.view`** (never
+- [x] `/blog/tags` is registered as `blog-tags.index`, gated **`can:blog.view`** (never
       `permission:`), in its own `routes/blog-tags.php` inside that file's own `auth`+`verified`
       group, `require`d from `web.php` by a one-line diff.
-- [ ] `config/modules.php` gains a `groups.content` group, a nested `clusters.blog` cluster (`group:
+- [x] `config/modules.php` gains a `groups.content` group, a nested `clusters.blog` cluster (`group:
       'content'`), and an `items.blog_tags` entry (`group: null, cluster: 'blog'`) whose `permissions`
       is **exactly** `['blog.view']` — the same single ability the route's `can:` enforces — with
       matching leaves in `lang/{en,es}/navigation.php`. The registry key is `blog_tags`, **snake_case**,
@@ -819,43 +819,43 @@ product taxonomy.
       **not** edited. *(Corrected 2026-09-08 per story 0080's Phase 5 review, D-4 — this criterion
       originally named a flat `groups.blog` group with no cluster; see the Description-section
       correction block above for why.)*
-- [ ] The list renders every tag ordered by name, with an empty state when the catalog is empty, and
+- [x] The list renders every tag ordered by name, with an empty state when the catalog is empty, and
       icon-only row actions carrying `aria-label` plus `data-test="edit-blog-tag-{id}"` /
       `data-test="delete-blog-tag-{id}"` hooks **present on both the enabled and the disabled
       branch**.
-- [ ] A tag can be created and renamed through a modal whose only field is `name`; blank,
+- [x] A tag can be created and renamed through a modal whose only field is `name`; blank,
       whitespace-only, over-length, duplicate, case-only-duplicate and accent-only-duplicate names are
       each refused with a message on the `name` field and add no row.
-- [ ] Saving a tag under its own unchanged name is accepted.
-- [ ] **A tag can be deleted unconditionally from a confirmation modal naming the target, and no
+- [x] Saving a tag under its own unchanged name is accepted.
+- [x] **A tag can be deleted unconditionally from a confirmation modal naming the target, and no
       usage count, blocked state, reassign-first instruction or confirm-and-proceed control exists
       anywhere on the screen.**
-- [ ] The component does **not** compose `BlogTagValidationRules` and does **not** call
+- [x] The component does **not** compose `BlogTagValidationRules` and does **not** call
       `$this->validate()`; it calls the action and lets `ValidationException` propagate into the
       error bag (**D-1**). It never references `FindOrCreateBlogTag`.
-- [ ] `Gate::authorize()` (through `LogRefusedPrivilegedAttempt`) is the first statement of every
+- [x] `Gate::authorize()` (through `LogRefusedPrivilegedAttempt`) is the first statement of every
       public method that mutates **or discloses**, `mount()` excepted and unlogged; every refusal logs
       `target_type: 'blog_tag'`.
-- [ ] The id fed to `Rule::unique()->ignore()` is `#[Locked]` and read back out of the database, and a
+- [x] The id fed to `Rule::unique()->ignore()` is `#[Locked]` and read back out of the database, and a
       client-side retarget attempt throws.
-- [ ] Per-row `canEdit` / `canDelete` come from the same `BlogTagPolicy` methods the mutating methods
+- [x] Per-row `canEdit` / `canDelete` come from the same `BlogTagPolicy` methods the mutating methods
       authorize against.
-- [ ] `closeModal()` calls `resetValidation()`.
-- [ ] Every user-facing string is a translation key in `lang/{en,es}/blog-tags.php` or a bare `__()`
+- [x] `closeModal()` calls `resetValidation()`.
+- [x] Every user-facing string is a translation key in `lang/{en,es}/blog-tags.php` or a bare `__()`
       call per **D-8**; the two locale files stay key-for-key identical.
-- [ ] No model, migration, action, policy, factory, seeder, enum, validation trait or
+- [x] No model, migration, action, policy, factory, seeder, enum, validation trait or
       permission-catalog change is made.
-- [ ] Nothing on the screen references blog posts, blog categories or any product taxonomy.
+- [x] Nothing on the screen references blog posts, blog categories or any product taxonomy.
 
 ## Definition of Done
 
-- [ ] Tests written and green, plus the **full** existing suite in a single isolated run, per
+- [x] Tests written and green, plus the **full** existing suite in a single isolated run, per
       [contracts.md](../../../docs/contracts/testing-and-parallel-agents.md#full-test-suite-gate-rule)'s Full Test Suite Gate Rule.
-- [ ] **All three quality gates run unscoped and each result recorded, including "not run"** —
+- [x] **All three quality gates run unscoped and each result recorded, including "not run"** —
       `php artisan test`, `vendor/bin/pint --format agent`, and `vendor/bin/phpstan analyse`
       (Larastan level 7). The third is the one nothing else prompts you to run; see
       [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
-- [ ] **Story 0059 is closed, with its two *blocking* whitespace tests intact** — a hard prerequisite,
+- [x] **Story 0059 is closed, with its two *blocking* whitespace tests intact** — a hard prerequisite,
       not a courtesy. See **R-3**: this story's own case/accent canaries cannot prove
       `NormalizeForSearch` is in the call path, and that proof lives entirely in 0059's suite.
       ⚠️ **Amended, 2026-08-30 — [0074](../0074-translatable-content-retrofit-blog-tags-backend.md) joins
@@ -867,14 +867,14 @@ product taxonomy.
       simplification drop them as redundant on either side of the retrofit.** Sequencing: 0074 before
       0060 (0075 **Q-2** — this story is unbuildable as specified in the other order), and 0075 after
       both.
-- [ ] Code reviewed (code-reviewer). Point the review specifically at **D-1** (validation lives in the
+- [x] Code reviewed (code-reviewer). Point the review specifically at **D-1** (validation lives in the
       action, confirmed against 0059's *shipped* code rather than its task file) and at **V-1**'s
       browser-test path, which is a convention decision the review is the right place to ratify.
-- [ ] No security findings (appsec-auditor). Point the audit specifically at: the `#[Locked]` +
+- [x] No security findings (appsec-auditor). Point the audit specifically at: the `#[Locked]` +
       server-read id pair behind `Rule::unique()->ignore()`; that every mutating **and disclosing**
       method gates before it acts; and that the registry entry's `permissions` set-equals the route's
       `can:` ability.
-- [ ] Documentation updated (docs-keeper):
+- [x] Documentation updated (docs-keeper):
       [api/routes.md](../../../docs/api/routes.md) gains a `blog-tags.index` subsection (what the view
       renders, its `data-test` hooks, the registry entry) and its "all three gated routes" sentence
       becomes **four**;
@@ -884,10 +884,10 @@ product taxonomy.
       `blog_tags` beside `sales_regions`;
       and [testing/frontend/playwright-setup.md](../../../docs/testing/frontend/playwright-setup.md)'s
       folder-structure block is corrected — see **F-3**, which this story must fix rather than inherit.
-- [ ] **0059's hand-off item is discharged and marked as such in that file**: "0060 gives
+- [x] **0059's hand-off item is discharged and marked as such in that file**: "0060 gives
       `BlogTagPolicy` its first component call site and keeps the `->ignore()` id
       server-authoritative" is closed by this story.
-- [ ] Acceptance criteria met.
+- [x] Acceptance criteria met.
 
 ## Documented functional decisions
 
@@ -1413,3 +1413,26 @@ Validated by the orchestrating session against `HEAD` (`finalproject-ARP` @ `d58
 | **Sequencing vs 0074** | The Epic 5 amendment says 0074 must precede this story. The claim registry (`tasks-status.json`) says otherwise: 0060 is `ready` with no dependencies, and 0075 lists **0060** and 0074 as dependencies, so 0060 → 0074 → 0075 is the registered order. This story is built against the **shipped** `blog_tags.name` column; the retrofit of this component to translations is 0074/0075's scope, as their files state. |
 
 Verdict: **INVEST passes; advance to Phase 3.**
+
+## Verification record (2026-09-24)
+
+Run from worktree `0060-blog-tags-ui` against `finalproject-ARP` @ `d58f225`, in a per-worktree database (`testing_0060`).
+
+| Gate | Result |
+| --- | --- |
+| Full suite, unscoped (`vendor/bin/pest`, isolated database) | **passed** — 3688 tests, 3685 passed, 3 skipped, 0 failed |
+| `vendor/bin/pint --format agent` (unscoped) | passed |
+| `vendor/bin/phpstan analyse` (Larastan level 7) | passed, 0 errors |
+| Story tests | `BlogTagsIndexTest` + `BlogTagsIndexRenderingTest` (72 tests), `tests/Browser/BlogTags/IndexTest.php` (8 browser tests), 4 new sidebar gating tests, the topbar dataset entry, 2 architecture fences |
+| Phase 4 — security audit | no findings at or above the reporting threshold. Audited: the `#[Locked]` id plus `findOrFail()` re-read behind `RenameBlogTag`; authorization on every mutating **and** disclosing method; the registry entry's `permissions` set-equal to the route's `can:blog.view`; `@js()` encoding and escaping of tag names. |
+| Phase 5 — code review | no findings. Acceptance criteria and every point of the review brief (D-1, D-2, `#[Locked]`, refusal logging, registry-vs-route ability) confirmed. |
+
+### Deviations from the task file, and decisions it left open
+
+- **The topbar was not foreseen.** This file predates story 0057a. `tests/Feature/Layout/TopbarTest.php` fails for any authenticated screen missing from its `topbarScreens()` dataset, so the view declares the `heading`/`subheading` slots, `blog-tags.index` joined the dataset, and `lang/{en,es}/topbar.php` gained `blog_tags.subtitle`.
+- **The create button is gated in the view.** The Gherkin asks for "create, edit and delete controls shown as unavailable" to a view-only actor, but the specified component surface has no create hint. The header button uses `@can('create', BlogTag::class)` with the same disabled-plus-tooltip branch as the row actions; no public property was added.
+- **Story 0080's "no content group yet" guard was flipped.** `SidebarModuleGatingTest` asserted that `groups.content` and `clusters.blog` did not exist; that is exactly what this story creates, so the guard became a render-order test (Store, Content, Blog cluster, Tags link, Settings).
+- **The create field keeps the bare hook `blog-tag-name-input`.** Story 0075's file states two incompatible things about it; this story ships the unchanged one-field create form, so the bare hook stands. 0075 renames the edit form's hooks.
+- **OQ-4 / OQ-6 stand as recommended:** no post count column and no header summary line. OQ-5 (a) was taken: two single-namespace `arch()` fences.
+- **Sequencing vs 0074.** Built against the shipped `blog_tags.name` column (see the Phase 2 record). Stories 0074 and 0075 retrofit this component to translations; until 0074 reaches Phase 3, this component's `orderBy('name')`, `$tag->name` and `$target->name` depend on that column.
+- **Browser suite.** One first run of the whole browser file hung until the local timeout, and each of the eight tests passed alone (about 10 s each) and together (28 s); the hang did not reproduce, and no `playwright` process of this session was left behind.

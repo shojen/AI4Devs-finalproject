@@ -56,3 +56,32 @@ backfill.
 - **Story 0061's `tagNames` array needs an upper bound** (see `docs/security/array-validation-bounds.md`):
   every unmatched name mints a permanent taxonomy row for a `blog.create` holder. Any transaction
   around `FindOrCreateBlogTag` is safe: its race re-fetch is a locking read — story 0059.
+
+## Story 0060 — Blog tags management screen
+
+- `App\Livewire\BlogTags\Index`, route `blog-tags.index` at `/blog/tags` gated `can:blog.view`, view
+  `resources/views/livewire/blog-tags.blade.php` (the flat path), copy in `lang/{en,es}/blog-tags.php`
+  — story 0060.
+- **Validation lives only in `CreateBlogTag`/`RenameBlogTag`.** The component composes no validation
+  trait and never calls `$this->validate()`; the actions' `name`-keyed `ValidationException` lands in
+  the error bag and keeps the modal open. It never calls `FindOrCreateBlogTag` — that would turn every
+  duplicate refusal into a silent success — story 0060.
+- **Deleting is unconditional and the screen shows nothing about usage**: no count, blocked state,
+  reassign step or error outlet, and the destructive button is never disabled. A rendered-HTML test
+  asserts those absences, because no "delete succeeds" test can see dead blocked-delete markup —
+  story 0060.
+- `$editingTagId` and every other id-carrying property are `#[Locked]`; `save()` re-reads the row with
+  `findOrFail()` and hands the model to the action. Every public method except `mount()` and the two
+  `close*()` resets authorizes through `LogRefusedPrivilegedAttempt` with `target_type: 'blog_tag'` —
+  story 0060.
+- **This story created the `content` sidebar group and its nested `blog` cluster** (and `items.blog_tags`,
+  `cluster: 'blog'`, `permissions: ['blog.view']`). Stories 0062 and 0063 append one `items.*` entry each
+  with `cluster: 'blog'` and declare no new group or cluster — story 0060.
+- **Every new authenticated screen must be added to `TopbarTest::topbarScreens()`** and declare the
+  `heading`/`subheading` slots; a guard test fails otherwise. Story 0062 and 0063's task files predate
+  the topbar and do not say so — story 0060.
+- The header's create button is gated with `@can('create', BlogTag::class)` (disabled branch plus
+  tooltip); the row actions use per-row `canEdit`/`canDelete` from `Gate::allows()`. There is no
+  `canCreate` property — story 0060.
+- Story 0074 removes `blog_tags.name`; until it reaches Phase 3 this component reads `name` directly
+  (`orderBy('name')`, `$tag->name`), and 0075 rewrites it per language — story 0060.

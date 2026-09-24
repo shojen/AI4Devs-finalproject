@@ -36,7 +36,7 @@ dividers (see the `common.js` note below), not a considered taxonomy. This story
 - **CONTENIDO (Content)** is reserved for **Blog** and, once it ships, its own
   categories/tags/posts sub-resources — the only genuinely editorial content this app has.
 
-This is **not** a conflict with queued story [`0060-blog-tags-ui.md`](../in-progress/0060-blog-tags-ui.md) — it *resolves*
+This is **not** a conflict with queued story [`0060-blog-tags-ui.md`](0060-blog-tags-ui.md) — it *resolves*
 the ambiguity that story's own plan left open. See R-2, now recorded as a resolved dependency rather than
 an open conflict.
 
@@ -211,7 +211,7 @@ The registry's own convention — "a later epic appends data when its screen shi
 about items, but the same reasoning applies to a top-level group with zero members: an empty `content`
 group entry renders nothing today (per the vanish-when-empty rule) and serves no purpose until something
 references it. Declaring it now would be exactly the kind of premature scaffolding this codebase's
-registry conventions avoid elsewhere. **Story [`0060-blog-tags-ui.md`](../in-progress/0060-blog-tags-ui.md) — or whichever
+registry conventions avoid elsewhere. **Story [`0060-blog-tags-ui.md`](0060-blog-tags-ui.md) — or whichever
 Blog story ships first — adds `groups.content` together with a `blog` cluster (`group: 'content'`) holding
 its own sub-resources (tags, categories, posts) as they ship**, following the placement rule this story's
 own D-6 already put in both documentation locations. This is what resolves R-2: there is no fourth
@@ -475,7 +475,7 @@ nested disclosures do not behave, the fallback is a non-expandable cluster (a pl
 heading), which still satisfies every grouping acceptance criterion and only loses the collapse
 affordance — decide that at Phase 3, do not force the expandable shape.
 
-**R-2 — RESOLVED: no conflict with queued story [`0060-blog-tags-ui.md`](../in-progress/0060-blog-tags-ui.md).** That
+**R-2 — RESOLVED: no conflict with queued story [`0060-blog-tags-ui.md`](0060-blog-tags-ui.md).** That
 story currently plans a brand-new top-level `groups.blog` entry. This story's own design (D-4/D-5) removes
 the ambiguity that plan was written against: Products moves to Store, so Content is free to be exactly
 what Blog needs — `0060` (or whichever Blog story ships first) should add `groups.content` **and** a

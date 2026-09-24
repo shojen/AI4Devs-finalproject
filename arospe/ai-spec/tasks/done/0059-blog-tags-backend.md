@@ -523,6 +523,9 @@ user-visible yet: the management screen is 0060, and the posts that attach a tag
         authorize before opening each modal and keep the id fed to `->ignore()` server-authoritative
         (`#[Locked]` / re-read from the model), per
         [security/livewire-authorization.md](../../../docs/security/livewire-authorization.md).
+        ✅ **Discharged by story 0060** ([`App\Livewire\BlogTags\Index`](../../../app/Livewire/BlogTags/Index.php)):
+        every public method except `mount()` authorizes through `LogRefusedPrivilegedAttempt`, and
+        `$editingTagId` is `#[Locked]` and re-read with `findOrFail()` before `RenameBlogTag`.
       - **0061** (blog posts backend) **must** create `blog_post_tag` with
         `foreignUuid('blog_tag_id')->constrained()->cascadeOnDelete()`. The exact constraint, and why
         copying `sales_regions`' `restrictOnDelete()` habit would silently contradict this story's

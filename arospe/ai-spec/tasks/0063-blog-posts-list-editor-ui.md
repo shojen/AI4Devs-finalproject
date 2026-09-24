@@ -119,7 +119,7 @@ be permanently undeletable because of a post that no screen displays.
 Covers [PRD](../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog posts` scenarios, the two
 **post-editor** scenarios inside `Feature: Blog tags` (*Reuse an existing tag from the post editor*,
 *Create a new tag on the fly from the post editor* — the management-screen scenarios beside them are
-story [0060](in-progress/0060-blog-tags-ui.md)'s, not this one's), the `Scenario Outline: Filter the blog list by
+story [0060](done/0060-blog-tags-ui.md)'s, not this one's), the `Scenario Outline: Filter the blog list by
 taxonomy`, and Blog acceptance criteria 1, the create-on-the-fly half of 3, and 4.
 
 > ⚠️ **Correction, 2026-08-30 — the paragraph above reads as one title, one body and one category
@@ -507,7 +507,7 @@ From **[0020](done/0020-shared-media-gallery-modal-ui.md)** **D2**: consumed *tr
 here so a reviewer can confirm this story writes no `select-event`, no `#[On]` listener and no
 `:multi` prop anywhere.
 
-From **[0060](in-progress/0060-blog-tags-ui.md)** **D-4**: `config/modules.php`'s `groups.blog` already exists —
+From **[0060](done/0060-blog-tags-ui.md)** **D-4**: `config/modules.php`'s `groups.blog` already exists —
 this story **appends an item to it**, and does not create it.
 
 > ⛔ **Correction, 2026-08-30 — six lines of the contract block above are falsified by the three Epic 5
@@ -989,7 +989,7 @@ reproduces the remount problem while also giving up the URL.
 `livewire/blog.blade.php`. `frontend-qa` proposed `App\Livewire\BlogPosts\Index`, route
 `blog-posts.index`. **Resolved in favour of QA's, on 0060's own words rather than on preference.**
 
-[0060](in-progress/0060-blog-tags-ui.md)'s **D-3** is the file that owns this question, and it cuts both ways in
+[0060](done/0060-blog-tags-ui.md)'s **D-3** is the file that owns this question, and it cuts both ways in
 its two halves. Its body says `blog-tags.index` "leaves `blog-categories.index` and a bare
 `blog.index` — the natural name for 0063's post list — both free and unambiguous", which is what
 `frontend-expert` cited. But its *Rejected* clause, arguing against a different alternative, names the

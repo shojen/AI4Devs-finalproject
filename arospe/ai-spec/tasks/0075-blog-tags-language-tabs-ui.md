@@ -37,7 +37,7 @@
 ## Description
 
 Add per-store-language name editing to the Blog Tags management screen that story
-[0060](in-progress/0060-blog-tags-ui.md) specifies, so an administrator can provide a tag's `name` in every
+[0060](done/0060-blog-tags-ui.md) specifies, so an administrator can provide a tag's `name` in every
 **active** store language through language tabs — [PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization):
 *"Each active store language then appears as a **tab** … (and in the taxonomy management screens),
 switching the translatable fields in place"*, and *"**Category and tag names** … each becomes a
@@ -872,7 +872,7 @@ renders. The mismatch is a property of the *edit* form's array binding, not of t
 
 - **[0074](0074-translatable-content-retrofit-blog-tags-backend.md)** — hard, **not implemented**.
   `blog_tag_translations`, `BlogTagTranslation`, the re-signed `nameRules()`, per-language uniqueness.
-- **[0060](in-progress/0060-blog-tags-ui.md)** — hard, **not implemented**. The screen, the route, the sidebar
+- **[0060](done/0060-blog-tags-ui.md)** — hard, **not implemented**. The screen, the route, the sidebar
   group, the lang files, the policy call site. This story modifies its component and view.
 - **[0070](0070-translatable-content-mechanism-product-categories-backend.md)** — hard, **not
   implemented**. `HasTranslations`, `SetTranslation`, `defaultStoreLanguage()` and its memo.
