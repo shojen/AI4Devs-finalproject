@@ -166,7 +166,7 @@ class StoreUploadedImage
             // rethrown unchanged.
             if ($e instanceof ImageException) {
                 throw ValidationException::withMessages([
-                    'photo' => trans('media.upload_rejected'),
+                    'photo' => trans('media.upload_rejected').' [TEMP-DEBUG '.get_class($e).': '.$e->getMessage().' | prev: '.($e->getPrevious() ? get_class($e->getPrevious()).': '.$e->getPrevious()->getMessage() : 'none').']',
                 ]);
             }
 
