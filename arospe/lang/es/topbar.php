@@ -74,6 +74,10 @@ return [
         'subtitle' => 'Organiza las entradas del blog con etiquetas.',
     ],
 
+    'blog_categories' => [
+        'subtitle' => 'Agrupa las entradas del blog en categorías.',
+    ],
+
     'settings' => [
         'profile' => 'Perfil',
         'security' => 'Seguridad',
