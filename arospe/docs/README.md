@@ -54,7 +54,7 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Payment Methods](api/payment-methods.md) | `payment-methods.index`. |
 | [Customers](api/customers.md) | `customers.index`, `customers.show`. |
 | [Orders](api/orders.md) | `orders.index`, `orders.show`, `<x-money>`, `<x-confirm-dialog>`. |
-| [Blog](api/blog.md) | `blog-tags.index`. |
+| [Blog](api/blog.md) | `blog-tags.index`, `blog-categories.index`. |
 
 ## Conventions
 

@@ -618,6 +618,7 @@ posts that reference a category arrive in 0061.
       from the model), per
       [security/livewire-authorization.md](../../../docs/security/livewire-authorization.md). Story 0061
       must extend `DeleteBlogCategory` **in place** rather than adding the guard elsewhere.
+      *Discharged by story 0062 (2026-09-25): `App\Livewire\BlogCategories\Index` is `BlogCategoryPolicy`'s first component call site — it authorizes in every public method except `mount()` and the `close*()` resets, and keeps `editingCategoryId` `#[Locked]` and re-read.*
 - [x] Acceptance criteria met.
 
 **Verification record (2026-09-23), all three gates run unscoped:** `php artisan test` equivalent

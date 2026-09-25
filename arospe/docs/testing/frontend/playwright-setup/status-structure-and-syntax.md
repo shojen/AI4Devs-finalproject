@@ -56,7 +56,9 @@ tests/
                status transitions, cancellation, refund visibility; story 0055 — mirrored folder from
                the start; shared fixtures in tests/Support/Orders/OrdersUi.php) and
                tests/Browser/BlogTags/IndexTest.php (the blog tag screen, story 0060 — mirrored
-               folder, ratified at that story's Phase 2)
+               folder, ratified at that story's Phase 2) and
+               tests/Browser/BlogCategories/IndexTest.php (the blog category screen, story 0062 —
+               the same mirrored convention)
   Browser/Fixtures/  Real, checked-in binary fixtures a browser test needs as bytes on disk
                      (sample-upload.jpg) — never generated at runtime
   ```

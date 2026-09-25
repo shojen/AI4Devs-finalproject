@@ -1,10 +1,11 @@
 # Blog Routes
 
-Part of [Routes](routes.md) — see [routes.md](routes.md#why-this-file-exists) for the full app-owned route table and the shared module-gate pattern. This file covers the Blog area's permission-gated routes; today that is the tags screen. Blog categories (story 0062) and the post list/editor (story 0063) append their own subsections here.
+Part of [Routes](routes.md) — see [routes.md](routes.md#why-this-file-exists) for the full app-owned route table and the shared module-gate pattern. This file covers the Blog area's permission-gated routes; today that is the tags and categories screens. The post list/editor (story 0063) appends its own subsection here.
 
 ## Table of Contents
 
 - [`blog-tags.index` — the thirteenth permission-gated route](#blog-tagsindex--the-thirteenth-permission-gated-route)
+- [`blog-categories.index` — the fourteenth permission-gated route](#blog-categoriesindex--the-fourteenth-permission-gated-route)
 
 ### `blog-tags.index` — the thirteenth permission-gated route
 
@@ -35,3 +36,30 @@ The URI is nested (`/blog/tags`) and the name is flat (`blog-tags.index`), match
 - **Sidebar.** [`config/modules.php`](../../config/modules.php) gained `groups.content`, a nested `clusters.blog` (`group: 'content'`) and `items.blog_tags` (`group: null, cluster: 'blog'`, `permissions: ['blog.view']` — exactly the route's ability). Stories 0062 and 0063 append one `items.*` entry each with `cluster: 'blog'` and declare no new group or cluster.
 - **Topbar.** The view declares the `heading`/`subheading` slots (`blog-tags.index.title`, `topbar.blog_tags.subtitle`); `blog-tags.index` is in `TopbarTest`'s screen dataset, which fails for any authenticated screen missing from it.
 - **Copy** lives in `lang/{en,es}/blog-tags.php`; there is deliberately no "blocked" or count copy.
+
+### `blog-categories.index` — the fourteenth permission-gated route
+
+Story 0062 (route, component, view, sidebar entry). It consumes [story 0058](../../ai-spec/tasks/done/0058-blog-categories-backend.md)'s model, policy and three actions and [story 0061](../../ai-spec/tasks/done/0061-blog-posts-core-crud-backend.md)'s delete guard unchanged, and is the screen 0061's `blogCategoryId` error-bag contract was built for.
+
+```php
+// routes/blog-categories.php
+use App\Livewire\BlogCategories\Index as BlogCategoriesIndex;   // aliased: `Index` is ambiguous across areas
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    // `can:blog.view`, not Spatie's `permission:` — see architecture/authorization.md.
+    Route::livewire('blog/categories', BlogCategoriesIndex::class)
+        ->middleware(['can:blog.view'])
+        ->name('blog-categories.index');
+});
+```
+
+- **Access and authorization** follow the tags screen exactly: the route gates on `blog.view`, `mount()` re-checks `viewAny` (unlogged), and every other public method except the two `close*()` resets routes through [`LogRefusedPrivilegedAttempt`](../architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail) with `target_type: 'blog_category'`. `deleteCategory()` authorizes in the component too and does not double-log: the helper writes only on refusal. This is [`BlogCategoryPolicy`](../../app/Policies/BlogCategoryPolicy.php)'s first *component* call site.
+- **Validation lives in the actions.** `save()` calls `CreateBlogCategory` / `RenameBlogCategory` and lets their `name`-keyed `ValidationException` propagate; the component composes no validation trait, never calls `$this->validate()` and contains no fold logic. `$editingCategoryId` is `#[Locked]` and assigned only from a re-read row; `$categories`, `$blogCategoryId` and `$deletingCategoryName` are `#[Locked]` too.
+- **Deleting is hard-blocked with a count, at every privilege level.** While any post — draft, scheduled, published **or trashed** — references the category, `deleteCategory()` throws `ValidationException` keyed **`blogCategoryId`** with story 0061's `trans_choice('blog.categories.delete_blocked')` message. The component catches nothing, so the throw aborts the method before the modal closes and the refusal renders inline (`@error('blogCategoryId')`, `data-test="blog-category-delete-blocked"`). The delete target's property is named `$blogCategoryId` to match that key: Livewire drops an error whose key the component does not declare. A Super Admin is refused identically (a domain invariant, not an authorization rule), and there is **no** force, confirm-and-proceed or reassign control on the screen — reassigning belongs to the post editor (0063). `closeDeleteModal()` clears the `blogCategoryId` error; `closeModal()` clears the `name` error; the two are distinct resets.
+- **Rows** are `{id, name, postCount, canEdit, canDelete}` ordered `name ASC, id ASC`. `postCount` is `withCount(['posts' => fn ($q) => $q->withTrashed()])` — the **same** scope the guard counts with, so the row and the refusal cannot state different numbers. A bare `withCount('posts')` excludes soft-deleted posts (verified by execution) and would undercount. The count is informational: it never disables the delete action, and it is not a delete-eligibility gate — the action re-counts at click time.
+- **`data-test` hooks:** `create-blog-category-button`, `edit-blog-category-{id}` and `delete-blog-category-{id}` (present on the enabled *and* the disabled branch), `blog-category-post-count-{id}`, `blog-category-name-input`, `confirm-delete-blog-category`, `blog-category-delete-blocked`; the sidebar renders `sidebar-link-blog_categories`. Both row `wire:click` arguments are single `@js()` calls.
+- **Sidebar.** [`config/modules.php`](../../config/modules.php) gained `items.blog_categories` (`group: null, cluster: 'blog'`, icon `rectangle-stack`, `permissions: ['blog.view']` — exactly the route's ability), appended to the cluster story 0060 created; no group or cluster was declared.
+- **Topbar.** `blog-categories.index` is in `TopbarTest`'s screen dataset (`blog.categories.index.title`, `topbar.blog_categories.subtitle`).
+- **Copy** extends `lang/{en,es}/blog.php` under `categories.index`, beside story 0061's `categories.delete_blocked`, which this screen never edits.
+- **Known, accepted gap (0061 D-7d).** The refusal counts trashed posts, so an administrator can be blocked by posts that appear in no list; the exit is story 0063's trashed-post affordance, not this screen.
+
