@@ -1,7 +1,7 @@
 # [0061b] Blog posts — a body must actually show something
 
 ## Description
-Story [0061](done/0061-blog-posts-core-crud-backend.md) refuses a `Published` or `Scheduled` post with **no**
+Story [0061](../done/0061-blog-posts-core-crud-backend.md) refuses a `Published` or `Scheduled` post with **no**
 body, but "no body" is judged on the **string**, so a body that *renders as nothing* passes. The WYSIWYG editors
 in common use emit exactly such markup when an editor empties the field: `<p><br></p>`, `<br>`, `<p></p>`,
 `&nbsp;`, a run of zero-width characters, an empty `<ul><li></li></ul>`, `<a href="…"></a>`, or an empty
@@ -17,14 +17,22 @@ body rule, and for a `Draft` it is stored as `null` (see **OQ-1**), so "no body"
 Backend only.
 
 Raised by the human owner while closing 0061 (2026-09-24). Sibling of
-[0061a](done/0061a-blog-post-publish-with-future-date-schedules.md).
+[0061a](../done/0061a-blog-post-publish-with-future-date-schedules.md).
 
 ## Type
 backend | includes database-expert: **no**
 
 ## Three Amigos participants
-**Not yet convened.** A Phase 1 *draft* from a direct product instruction; the debate and Phase 2 INVEST
-validation have not run.
+**Not convened as a debate.** A Phase 1 *draft* from a direct product instruction, whose two open questions the
+human owner answered on 2026-09-25 (see **OQ-1** / **OQ-2**). Phase 2 was run inline by the implementing session
+(no separate `code-reviewer` dispatch) — see **Phase 2 record**.
+
+### Phase 2 record (2026-09-25)
+**Approved.** *Independent* (only dependency `0061` is done; the conflict with 0063/0065 is by file, not behaviour),
+*Negotiable* (OQ-1/OQ-2 answered), *Valuable* (closes the gap 0061 recorded), *Estimable* (one pure action, two
+one-line call-site changes), *Small* (no migration, route, view or dependency), *Testable* (every example is a dataset
+row). Consistent with `docs/security/html-sanitization.md` (the sanitizer is unchanged) and 0061's D-4 (a draft may
+be bodiless).
 
 ## Gherkin
 
@@ -154,11 +162,11 @@ re-implement every way of hiding content. Judging what is **left** needs only "i
 ## Dependencies, risks and open questions
 
 ### Dependencies
-- **[0061](done/0061-blog-posts-core-crud-backend.md) — done.** Owns the actions and `bodyRules()`.
-- **[0024a](done/0024a-product-description-html-sanitization.md) — done.** Owns the allow-list this story relies on
+- **[0061](../done/0061-blog-posts-core-crud-backend.md) — done.** Owns the actions and `bodyRules()`.
+- **[0024a](../done/0024a-product-description-html-sanitization.md) — done.** Owns the allow-list this story relies on
   *not* keeping `style`/`hidden`/`class`.
-- **Conflicts with [0061a](done/0061a-blog-post-publish-with-future-date-schedules.md), [0063](0063-blog-posts-list-editor-ui.md)
-  and [0065](0065-blog-post-published-notification-backend.md)** on `CreateBlogPost` / `UpdateBlogPost`; independent in
+- **Conflicts with [0061a](../done/0061a-blog-post-publish-with-future-date-schedules.md), [0063](../0063-blog-posts-list-editor-ui.md)
+  and [0065](../0065-blog-post-published-notification-backend.md)** on `CreateBlogPost` / `UpdateBlogPost`; independent in
   behaviour, run them one at a time.
 
 ### Risks
@@ -176,7 +184,8 @@ re-implement every way of hiding content. Judging what is **left** needs only "i
   "there must be no body that shows nothing, not even empty" can be read two ways. **Recommendation: accept the
   save but store `null` (recommended)** — the draft is still creatable, the invisible markup is never persisted, and
   an autosave of a cleared editor does not fail. *Alternative:* refuse an invisible body for a `Draft` as well, which
-  reverses 0061's D-4 for the empty case and would make a draft impossible to save before anything is written. Needs the
-  product owner's answer before Phase 3.
+  reverses 0061's D-4 for the empty case and would make a draft impossible to save before anything is written.
+  **Answered 2026-09-25 by the human owner: accept the save and store `null` (the recommendation).**
 - **OQ-2 — Is an image-only body content?** Recommended **yes**, as 0061's own scenario "a post body keeps the images
   inserted from the shared gallery" implies. *Alternative:* require text as well.
+  **Answered 2026-09-25 by the human owner: yes, an image-only body is content (the recommendation).**

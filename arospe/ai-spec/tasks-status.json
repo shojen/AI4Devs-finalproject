@@ -7,9 +7,9 @@
       "slug": "0061b-blog-post-body-must-have-visible-content",
       "title": "Blog posts — a body must actually show something (backend)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree 0061b-blog-post-body-must-have-visible-content",
+      "claimed_at": "2026-09-25T16:52:55Z",
       "touches": [
         "app/Actions/Blog/BlogBodyHasVisibleContent.php",
         "app/Actions/Blog/CreateBlogPost.php",
