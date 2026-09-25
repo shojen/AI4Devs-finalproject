@@ -536,6 +536,44 @@ test('the blog_tags registry entry nests in the blog cluster of the content grou
 });
 
 // =====================================================================
+// Story 0062 — the blog_categories entry, appended to the `blog` cluster of the `content` group
+// story 0060 created. Entry-specific assertions only: the two generic drift guards already cover a
+// new entry for free, so no hand-written registry↔route cross-check is added here.
+// =====================================================================
+
+test('a role holding exactly blog.view sees the Categories entry inside the Blog cluster', function () {
+    $this->actingAs(sidebarNavUserWith(['blog.view']));
+
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('data-test="sidebar-cluster-blog"', false)
+        ->assertSee('data-test="sidebar-link-blog_categories"', false);
+});
+
+test('a role holding the related-but-different blog.edit permission does not see the Categories entry', function () {
+    // routes/blog-categories.php gates blog-categories.index on exactly can:blog.view, so the
+    // registry entry must gate on that exact ability -- not on any blog.*.
+    $this->actingAs(sidebarNavUserWith(['blog.edit']));
+
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertDontSee('data-test="sidebar-cluster-blog"', false)
+        ->assertDontSee('data-test="sidebar-link-blog_categories"', false);
+});
+
+test('the blog_categories registry entry nests in the existing blog cluster, declares no group or cluster of its own and gates on exactly its route\'s ability', function () {
+    $entry = config('modules.items.blog_categories');
+
+    expect($entry['group'])->toBeNull()
+        ->and($entry['cluster'])->toBe('blog')
+        ->and($entry['route'])->toBe('blog-categories.index')
+        ->and($entry['permissions'])->toBe(['blog.view'])
+        ->and($entry['icon'])->not->toBe(config('modules.items.blog_tags.icon'))
+        ->and(config('modules.clusters.blog.group'))->toBe('content')
+        ->and(config('modules.groups'))->not->toHaveKey('blog');
+});
+
+// =====================================================================
 // Edge — the Super Admin bypass, exercised through the real Gate::before
 // closure (task 0002/0008) with zero permission rows of its own.
 // =====================================================================

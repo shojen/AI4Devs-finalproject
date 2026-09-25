@@ -160,3 +160,12 @@ arch('App\Models\BlogCategory does not reference the product category taxonomy')
 arch('App\Models\ProductCategory does not reference the blog category taxonomy')
     ->expect('App\Models\ProductCategory')
     ->not->toUse('App\Models\BlogCategory');
+
+// Story 0062 (OQ-3): App\Livewire\BlogCategories\* must remain structurally independent from the
+// product taxonomy. Unlike the fences above, this one asserts an absence that CAN be violated:
+// `ProductCategory` and `BlogCategory` are four characters apart and both exist, so an IDE
+// autocomplete accident is a real mechanism. One `expect()` per namespace, never `expect([...])`,
+// which evaluates disjunctively (docs/errors-log.md's vacuous-arch()-rule entry).
+arch('App\Livewire\BlogCategories does not reference the product category model')
+    ->expect('App\Livewire\BlogCategories')
+    ->not->toUse('App\Models\ProductCategory');

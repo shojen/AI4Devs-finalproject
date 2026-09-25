@@ -49,6 +49,7 @@ function topbarScreens(): array
         'customers' => ['customers.index', 'topbar.customers.title'],
         'orders' => ['orders.index', 'topbar.orders.title'],
         'blog tags' => ['blog-tags.index', 'blog-tags.index.title'],
+        'blog categories' => ['blog-categories.index', 'blog.categories.index.title'],
         'profile settings' => ['profile.edit', 'topbar.settings.profile'],
         'security settings' => ['security.edit', 'topbar.settings.security'],
         'appearance settings' => ['appearance.edit', 'topbar.settings.appearance'],
