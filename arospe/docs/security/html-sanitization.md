@@ -172,6 +172,20 @@ guarantees.
    `dropped_elements` rather than the `block` default, does it need a scheme restriction) is a new
    sink, indistinguishable in review from any other one-line config change.
 
+## A sanitized body must still show something (blog posts, story 0061b)
+
+Sanitizing decides what markup is *safe*; it does not decide whether what is left is *visible*. A WYSIWYG
+editor that empties its field emits `<p><br></p>`, `<p>&nbsp;</p>`, an empty list or an empty link, all of which
+survive the allow-list yet render as an empty page. `CreateBlogPost` and `UpdateBlogPost` therefore run
+[`BlogBodyHasVisibleContent`](../../app/Actions/Blog/BlogBodyHasVisibleContent.php) on the **sanitized** value,
+never on raw input, and store `null` when it answers false, so a `Published`/`Scheduled` post is refused by the
+existing `required` rule and a `Draft` simply carries no body. Judging after the sanitizer is what keeps the rule
+small: `style`, `hidden`, `<script>` and comments are already gone, so it only asks whether any visible character
+or any `<img>` with a non-empty `src` remains (whitespace, separators and format characters such as `&nbsp;` and
+zero-width spaces do not count). The check parses offline (`LIBXML_NONET`, no `LIBXML_NOENT`), so it can never
+load an external entity, and it is linear in the input. It depends on the allow-list *not* keeping `style` or
+`hidden`; a test pins that, so widening the list fails loudly and forces this rule to be revisited.
+
 ## Consumers unblocked
 
 This story's closure lifts [0024](../../ai-spec/tasks/done/0024-products-core-crud-backend.md)'s
@@ -182,8 +196,8 @@ own scope fence forbidding any code from rendering, echoing or returning `produc
 for the correction to that page's own prior, speculative attribution of this class to stories other
 than the one that actually created it.
 
-_Last updated: 2026-09-02 — Story 0024a (Product description — HTML sanitization on write). First
-version of this page, written after Phase 4's audit and re-audit closed both findings it documents
+_Last updated: 2026-09-25 — Story 0061b (blog post body must show something): added the visibility rule that runs after the sanitizer. The rest of the page is Story 0024a's (Product
+description — HTML sanitization on write), written after Phase 4's audit and re-audit closed both findings it documents
 (F-1, the `block`-vs-`drop` distinction; F-2, the idempotence-to-convergence correction), so both are
 recorded here as ❌/✅ pairs describing the shipped, closed state from the outset rather than the
 vulnerable state the audit found — per [errors-log.md](../errors-log/archive-2026-08-17-to-2026-08-21.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
