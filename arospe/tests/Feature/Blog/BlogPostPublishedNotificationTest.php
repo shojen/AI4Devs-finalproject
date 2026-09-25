@@ -157,6 +157,39 @@ test('updating a draft into scheduled dispatches zero times', function () {
     expect($post->fresh()->status->value)->toBe('scheduled');
 });
 
+// Story 0061a: a post published with a future date is stored as Scheduled, so it is not live yet and
+// announces nothing now; 0064's sweep announces it when its date arrives (D-19's trigger 3).
+test('creating a post with status published and a future date dispatches nothing', function () {
+    $post = bpnCreate('published', '2026-09-25 12:00:00');
+
+    $this->notifier->shouldNotHaveReceived('__invoke');
+    expect($post->status->value)->toBe('scheduled');
+});
+
+test('updating a draft into published with a future date dispatches nothing', function () {
+    $post = BlogPost::factory()->draft()->create();
+
+    bpnUpdate($post, ['status' => 'published', 'published_at' => '2026-09-25 12:00:00']);
+
+    $this->notifier->shouldNotHaveReceived('__invoke');
+    expect($post->fresh()->status->value)->toBe('scheduled');
+});
+
+test('creating a post with status published and a date equal to now still dispatches once', function () {
+    bpnCreate('published', now()->toDateTimeString());
+
+    $this->notifier->shouldHaveReceived('__invoke')->once();
+});
+
+test('a refused move of a published post into the future dispatches nothing', function () {
+    $post = BlogPost::factory()->published()->create();
+
+    expect(fn () => bpnUpdate($post, ['published_at' => '2026-09-25 12:00:00']))
+        ->toThrow(ValidationException::class);
+
+    $this->notifier->shouldNotHaveReceived('__invoke');
+});
+
 // D-15: a dispatch placed inside the transaction would still fire on a rollback, telling subscribers
 // about a post that was never saved. Driven through the REAL rollback path: an actor holding
 // blog.edit but not blog.create saving a Published post carrying one NEW tag name is refused by

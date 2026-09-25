@@ -138,6 +138,11 @@ trait BlogPostValidationRules
      * The date rule is decided by the submitted status (D-6). `after:now` is strictly `>`: a date
      * equal to the current instant is already publishable, not scheduled.
      *
+     * A Published post's rule set has no upper bound short of the TIMESTAMP ceiling on purpose: a future
+     * date is not refused here but resolved by the actions (story 0061a) -- a new or not-yet-live post is
+     * stored as Scheduled, an already-live one is refused -- because a rule cannot change the status
+     * it is validating.
+     *
      * $enforceFuture is false only for a Scheduled post being re-saved with the very date it already
      * carries: an editor retitling an overdue scheduled post resubmits the stored, now-past date,
      * and an unconditional `after:now` would make every such edit impossible.

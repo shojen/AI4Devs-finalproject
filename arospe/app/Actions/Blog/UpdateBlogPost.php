@@ -56,6 +56,11 @@ class UpdateBlogPost
      * transition into Scheduled, must still be strictly in the future. A Published post re-saved
      * without a date keeps the one it has instead of being re-stamped.
      *
+     * A Published request whose resolved date is strictly in the future is stored as Scheduled and
+     * announces nothing (story 0061a, D-1), unless the post is ALREADY live: moving a live post out of
+     * view is refused on `published_at` instead (D-4), so a date edit never un-publishes a post nor
+     * makes the sweep announce it a second time.
+     *
      * ⚠️ The tag set is a full replace -- see SyncBlogPostTags: pass the COMPLETE set on every save.
      *
      * @param  list<string>  $tagNames
@@ -121,6 +126,9 @@ class UpdateBlogPost
             ],
         )->validate();
 
+        // One instant for the whole decision, so the stamp and the future-or-not comparison cannot
+        // disagree across a second boundary.
+        $now = now();
         $resolvedStatus = BlogPostStatus::from($status);
         $resolvedPublishedAt = match ($resolvedStatus) {
             BlogPostStatus::Draft => null,
@@ -128,9 +136,19 @@ class UpdateBlogPost
             BlogPostStatus::Published => match (true) {
                 $publishedAt !== null => Carbon::parse($publishedAt),
                 $wasPublished && $storedPublishedAt !== null => $storedPublishedAt,
-                default => now(),
+                default => $now,
             },
         };
+
+        if ($resolvedStatus === BlogPostStatus::Published && $resolvedPublishedAt->greaterThan($now)) {
+            if ($wasPublished) {
+                throw ValidationException::withMessages([
+                    'published_at' => trans('validation.before_or_equal', ['attribute' => 'published_at', 'date' => 'now']),
+                ]);
+            }
+
+            $resolvedStatus = BlogPostStatus::Scheduled;
+        }
 
         try {
             DB::transaction(function () use ($blogPost, $title, $body, $blogCategoryId, $resolvedStatus, $resolvedPublishedAt, $tagNames): void {

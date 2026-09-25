@@ -45,6 +45,9 @@ class CreateBlogPost
      *
      * `$publishedAt` is governed by the status (D-6): a Draft's date is discarded, a Scheduled post
      * needs a strictly future one, a Published post takes a given date verbatim or is stamped `now()`.
+     * A Published request whose resolved date is strictly in the future is stored as Scheduled instead
+     * (story 0061a, D-1): the caller gets the model back with its real status, and nothing is announced
+     * now -- the sweep announces the post when its date arrives.
      *
      * The row is built from a literal whitelist through `forceCreate()`, never a spread of validated
      * input, and the post and its tag sync are ONE transaction (D-15): a refusal while resolving a
@@ -98,12 +101,19 @@ class CreateBlogPost
             ],
         )->validate();
 
+        // One instant for the whole decision, so the stamp and the future-or-not comparison cannot
+        // disagree across a second boundary.
+        $now = now();
         $resolvedStatus = BlogPostStatus::from($status);
         $resolvedPublishedAt = match ($resolvedStatus) {
             BlogPostStatus::Draft => null,
             BlogPostStatus::Scheduled => Carbon::parse((string) $publishedAt),
-            BlogPostStatus::Published => $publishedAt === null ? now() : Carbon::parse($publishedAt),
+            BlogPostStatus::Published => $publishedAt === null ? $now : Carbon::parse($publishedAt),
         };
+
+        if ($resolvedStatus === BlogPostStatus::Published && $resolvedPublishedAt->greaterThan($now)) {
+            $resolvedStatus = BlogPostStatus::Scheduled;
+        }
 
         try {
             $post = DB::transaction(function () use ($title, $body, $blogCategoryId, $resolvedStatus, $resolvedPublishedAt, $tagNames): BlogPost {

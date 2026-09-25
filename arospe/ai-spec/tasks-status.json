@@ -3,28 +3,6 @@
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
     {
-      "id": "0061a",
-      "slug": "0061a-blog-post-publish-with-future-date-schedules",
-      "title": "Blog posts — publishing with a future date schedules the post (backend)",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "app/Actions/Blog/CreateBlogPost.php",
-        "app/Actions/Blog/UpdateBlogPost.php",
-        "app/Concerns/BlogPostValidationRules.php",
-        "tests/Feature/Blog/BlogPostStatusAndPublicationDateTest.php",
-        "tests/Feature/Blog/BlogPostPublishedNotificationTest.php",
-        "docs/database/schema-blog.md"
-      ],
-      "conflict_risk_with": [
-        "0061b",
-        "0063",
-        "0065"
-      ]
-    },
-    {
       "id": "0061b",
       "slug": "0061b-blog-post-body-must-have-visible-content",
       "title": "Blog posts — a body must actually show something (backend)",
@@ -43,7 +21,6 @@
         "docs/database/schema-blog.md"
       ],
       "conflict_risk_with": [
-        "0061a",
         "0063",
         "0065"
       ]
@@ -87,7 +64,6 @@
         "config/modules.php"
       ],
       "conflict_risk_with": [
-        "0061a",
         "0061b",
         "0062",
         "0072",
@@ -128,7 +104,6 @@
         "app/Actions/Blog/CreateBlogPost.php"
       ],
       "conflict_risk_with": [
-        "0061a",
         "0061b"
       ]
     },
