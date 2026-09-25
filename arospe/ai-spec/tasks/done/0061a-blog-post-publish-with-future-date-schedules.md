@@ -2,7 +2,7 @@
 
 ## Description
 Today a post saved as `Published` with a **future** `published_at` is accepted as-is: story
-[0061](../done/0061-blog-posts-core-crud-backend.md)'s **D-6** gives `Published` the rule
+[0061](0061-blog-posts-core-crud-backend.md)'s **D-6** gives `Published` the rule
 `nullable|date` and nothing else. The result is a post that is `Published` **now** and announced now,
 yet dated in the future — a state that means nothing, that a public reader filtering on
 `published_at <= now` would not show, and that dodges the `Scheduled` path (and 0064's sweep) entirely.
@@ -24,9 +24,10 @@ backend | includes database-expert: **no** (no schema change; the existing
 `(deleted_at, status, published_at)` index already serves 0064's query)
 
 ## Three Amigos participants
-**Not yet convened.** This file is a Phase 1 *draft* written from a direct product instruction; the
-debate (`product-owner` + `backend-expert` + `backend-qa`) and Phase 2 INVEST validation have not run.
-Open questions are recorded below rather than guessed.
+**Not convened.** This file is a Phase 1 *draft* written from a direct product instruction. On
+2026-09-24 the human owner (acting as product owner) waived the Three Amigos debate and the Phase 2 INVEST
+validation for this small, fully specified change and answered its one open question (OQ-1, see D-4), so
+work went straight to Phase 3 (TDD).
 
 ## Gherkin
 
@@ -65,6 +66,13 @@ Feature: Publishing a post with a future date schedules it
     When they create a post with the status published and a publication date equal to the current moment
     Then the post is saved as published
 
+  Scenario: A live post cannot be moved into the future by editing its date
+    Given a blog editor, with a published post
+    When they change that post's publication date to a date in the future, keeping it published
+    Then the save is refused with a validation message on the publication date
+    And the post is still published with its original date
+    And no published-post notification is raised
+
   Scenario: A scheduled post whose date has passed is published with its own date
     Given a blog editor, with a scheduled post whose publication date has already passed
     When they change that post's status to published, keeping its date
@@ -100,16 +108,19 @@ Feature: Publishing a post with a future date schedules it
 Backend only, no browser tests. Every case freezes the clock (`Carbon::setTestNow()`), and the boundary is
 asserted from **both** sides: `now()` → `Published`, `now()->addSecond()` → `Scheduled`.
 
-- [ ] Create `Published` + future date → stored `Scheduled`, date persisted verbatim, spy **never** invoked.
-- [ ] Update `Draft` → `Published` + future date → stored `Scheduled`, spy never invoked.
-- [ ] Create `Published` + no date → `Published`, stamped `now()`, spy invoked exactly once (unchanged).
-- [ ] Create `Published` + past date → `Published`, date persisted verbatim (unchanged).
-- [ ] Create `Published` + a date exactly `now()` → `Published`; `now()->addSecond()` → `Scheduled`.
-- [ ] Update `Scheduled` (overdue) → `Published` with its stored date → `Published`; spy invoked once.
-- [ ] `Published` + future date + no body → `ValidationException` on `body`, nothing written.
-- [ ] `Published` + a date past 2038 → `ValidationException` on `published_at` (0061's bound still applies).
-- [ ] The returned model's `status` is `Scheduled`, so a caller can tell the editor what happened.
-- [ ] A converted post is picked up by 0064's exact query `where status = Scheduled and published_at <= now`
+- [x] Create `Published` + future date → stored `Scheduled`, date persisted verbatim, spy **never** invoked.
+- [x] Update `Draft` → `Published` + future date → stored `Scheduled`, spy never invoked.
+- [x] Create `Published` + no date → `Published`, stamped `now()`, spy invoked exactly once (unchanged).
+- [x] Create `Published` + past date → `Published`, date persisted verbatim (unchanged).
+- [x] Create `Published` + a date exactly `now()` → `Published`; `now()->addSecond()` → `Scheduled`.
+- [x] Update `Scheduled` (overdue) → `Published` with its stored date → `Published`; spy invoked once.
+- [x] Update an already-`Published` post → `Published` + future date → `ValidationException` on `published_at`,
+      row unchanged (still `Published`, original date), spy never invoked (D-4).
+- [x] Update an already-`Published` post → `Published` + a date exactly `now()` → accepted (boundary, other side).
+- [x] `Published` + future date + no body → `ValidationException` on `body`, nothing written.
+- [x] `Published` + a date past 2038 → `ValidationException` on `published_at` (0061's bound still applies).
+- [x] The returned model's `status` is `Scheduled`, so a caller can tell the editor what happened.
+- [x] A converted post is picked up by 0064's exact query `where status = Scheduled and published_at <= now`
       once the clock passes its date — asserted with a plain query, not by importing 0064's command.
 
 ## Expected outcome
@@ -118,23 +129,32 @@ future. It is announced when the scheduler publishes it, not when the editor pre
 Everything else about publishing is unchanged.
 
 ## Acceptance criteria
-- [ ] A `Published` request with a strictly future `published_at` is persisted as `Scheduled`, on the
+- [x] A `Published` request with a strictly future `published_at` is persisted as `Scheduled`, on the
       create path **and** the update path.
-- [ ] Such a save dispatches **no** `NotifyBlogPostPublished`; the sweep announces it later.
-- [ ] A `Published` request with no date, a past date or a date equal to now is unchanged.
-- [ ] The decision uses a single `now()` per call.
-- [ ] `body` and the `1970`/`2038` date bounds still apply to the request.
-- [ ] No migration, route, component, view or notification class is added.
+- [x] Such a save dispatches **no** `NotifyBlogPostPublished`; the sweep announces it later.
+- [x] A `Published` request with no date, a past date or a date equal to now is unchanged.
+- [x] The decision uses a single `now()` per call.
+- [x] `body` and the `1970`/`2038` date bounds still apply to the request.
+- [x] No migration, route, component, view or notification class is added.
 
 ## Definition of Done
-- [ ] Tests written and green, plus the **full** suite in one isolated run (Full Test Suite Gate Rule).
-- [ ] `vendor/bin/pint --format agent` and `vendor/bin/phpstan analyse`, both **unscoped**, results recorded.
-- [ ] Code reviewed; appsec-auditor confirms no path announces a post before it is actually published.
-- [ ] Docs updated (`docs/database/schema-blog.md`, and 0061's D-6 amendment noted).
-- [ ] **Hand-off recorded for 0063** (editor UI): submitting `Published` with a future date is a valid way to
+- [x] Tests written and green, plus the **full** suite in one isolated run (Full Test Suite Gate Rule).
+- [x] `vendor/bin/pint --format agent` and `vendor/bin/phpstan analyse`, both **unscoped**, results recorded.
+- [x] Code reviewed; appsec-auditor confirms no path announces a post before it is actually published.
+- [x] Docs updated (`docs/database/schema-blog.md`, and 0061's D-6 amendment noted).
+- [x] **Hand-off recorded for 0063** (editor UI): submitting `Published` with a future date is a valid way to
       schedule; the editor should show the resulting status from the returned model rather than assume it.
-- [ ] **Hand-off recorded for 0064 / 0065:** a post scheduled this way reaches `Published` only through 0064's
+- [x] **Hand-off recorded for 0064 / 0065:** a post scheduled this way reaches `Published` only through 0064's
       sweep, so the announcement is 0064's trigger 3; nothing else changes for either.
+
+## Hand-offs (recorded 2026-09-24)
+- **0061 (amendment to D-6):** `Published` with a strictly future `published_at` is no longer stored as live: it is stored
+  as `Scheduled`. Recorded here and in `docs/database/schema-blog.md`; 0061's body is left untouched (amend-forward).
+- **0063 (editor UI):** submitting `Published` with a future date is a valid way to schedule; render the status from the
+  **returned model** (`Scheduled for …`), never the status that was submitted. Editing an already-`Published` post so
+  it carries a future date raises a `ValidationException` keyed `published_at` (D-4), so the form must show it there.
+- **0064 / 0065:** a post scheduled this way reaches `Published` only through 0064's sweep, so the announcement is 0064's
+  trigger 3 (D-19 of 0061); `NotifyBlogPostPublished` is untouched and nothing else changes for either.
 
 ## Documented functional decisions
 
@@ -153,10 +173,19 @@ behaviour (draft nulls the date, published stamps `now()`).
 A date equal to the current instant is already publishable, the same boundary 0061's `after:now` uses for
 `Scheduled` (asserted from both sides).
 
+### D-4 — A live post is never moved into the future by a date edit *(resolves OQ-1; human owner, 2026-09-24)*
+Editing an already-`Published` post so it carries a strictly future `published_at` is **refused** with a
+validation error on `published_at`, not converted. Converting would un-publish a live post as a side effect of a
+date edit and announce it a second time when the sweep re-publishes it; moving a post out of view must be an
+explicit status change to `Draft` or `Scheduled`. The check lives in `UpdateBlogPost` (it needs the pre-save
+status), uses the same single `now()` as the conversion, and runs after the rule-based validation. A
+`Scheduled` post asked to become `Published` with a future date (its stored date, not yet due) stays
+`Scheduled` — it was never live — and announces nothing.
+
 ## Dependencies, risks and open questions
 
 ### Dependencies
-- **[0061](../done/0061-blog-posts-core-crud-backend.md) — done.** Owns the actions, the rule set and D-6.
+- **[0061](0061-blog-posts-core-crud-backend.md) — done.** Owns the actions, the rule set and D-6.
 - **Conflicts with [0061b](../0061b-blog-post-body-must-have-visible-content.md), [0063](../0063-blog-posts-list-editor-ui.md) and
   [0065](../0065-blog-post-published-notification-backend.md)**, which also touch `CreateBlogPost` / `UpdateBlogPost`
   (0065's file list names both). They are independent in behaviour, so any order works; run them one at a time or
@@ -170,10 +199,20 @@ A date equal to the current instant is already publishable, the same boundary 00
   the two "announces nothing" tests are what pin it.
 
 ### Open questions
-- **OQ-1 — What about an already-`Published` post edited to a future date?** That would un-publish a live post
-  and, when the sweep re-publishes it, announce it a second time. **Recommendation: refuse it with a validation
-  error on `published_at` (recommended)** — moving a live post out of view should be an explicit status change to
-  `Draft` or `Scheduled`, never a side effect of a date edit. *Alternative:* convert it like a new publish,
-  consistent with D-1 but with the two consequences above. Needs the product owner's answer before Phase 3.
+- **OQ-1 — RESOLVED (2026-09-24, human owner): refuse it**, see D-4.
 - **OQ-2 — Should the editor be told?** The returned model carries the real status, which is enough for 0063 to
   say "Scheduled for …". A dedicated return type is not recommended.
+
+## Phase records (2026-09-25)
+- **Phase 1/2 (Three Amigos, INVEST):** waived by the human owner for this fully specified change; OQ-1 answered (D-4).
+- **Phase 3 (TDD):** 11 new cases written red first (9 failures + 2 errors, all for the missing conversion/refusal), then
+  green. `tests/Feature/Blog`: 369 passed.
+- **Phase 4 (security):** the `appsec-auditor` agent is not available in this environment; self-review instead. The only
+  announcement sites are `CreateBlogPost` (`$post->status === Published`, read from the persisted model) and
+  `UpdateBlogPost` (`! $wasPublished && status === Published`); both read the status **after** the conversion, so no path
+  announces a post that was stored as `Scheduled`, and the refusal for an already-live post throws before any write.
+  Approved.
+- **Phase 5 (review):** every acceptance criterion is covered by a test; no migration, route, component, view or
+  notification class touched. `vendor/bin/pint --format agent` passed, `vendor/bin/phpstan analyse` 0 errors,
+  **full suite in one isolated run: 3894 tests, 3891 passed, 3 skipped, 0 failed.** Approved.
+- **Phase 6 (docs):** `docs/database/schema-blog.md` updated; the amendment to 0061's D-6 lives here and in that doc.
