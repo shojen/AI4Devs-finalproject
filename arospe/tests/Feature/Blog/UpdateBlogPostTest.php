@@ -318,3 +318,73 @@ test('updating a never-persisted instance cannot create a post with only blog.ed
 
     expect(BlogPost::withTrashed()->count())->toBe(0);
 });
+
+// Story 0061b. The same "what a reader would see" rule on the update path, including promoting a draft.
+test('a published or scheduled update whose body renders nothing is refused and changes nothing', function (string $status, string $body) {
+    Carbon::setTestNow('2026-06-15 12:00:00');
+    $post = BlogPost::factory()->create([
+        'title' => 'Botas de invierno',
+        'body' => '<p>Original</p>',
+        'blog_category_id' => $this->category->id,
+    ]);
+
+    expect(updateBlogPostErrorKeys($post, [
+        'status' => $status,
+        'body' => $body,
+        'publishedAt' => $status === 'scheduled' ? '2026-07-01 09:00:00' : null,
+    ]))->toContain('body');
+
+    expect($post->fresh()->body)->toBe('<p>Original</p>');
+})->with([
+    'published, line break' => ['published', '<p><br></p>'],
+    'published, non-breaking space' => ['published', '<p>&nbsp;</p>'],
+    'published, hidden empty div' => ['published', '<div style="display:none"></div>'],
+    'published, only a script' => ['published', '<script>alert(1)</script>'],
+    'scheduled, line break' => ['scheduled', '<p><br></p>'],
+    'scheduled, zero-width space' => ['scheduled', '<p>&#8203;</p>'],
+]);
+
+test('promoting a draft whose body renders nothing is refused and the post is still a draft', function () {
+    $post = BlogPost::factory()->create([
+        'status' => BlogPostStatus::Draft,
+        'published_at' => null,
+        'body' => '<p><br></p>',
+        'blog_category_id' => $this->category->id,
+    ]);
+
+    expect(updateBlogPostErrorKeys($post, ['status' => 'published']))->toContain('body');
+
+    expect($post->fresh()->status)->toBe(BlogPostStatus::Draft);
+});
+
+test('a draft saved with a body that renders nothing carries no body', function () {
+    $post = BlogPost::factory()->create([
+        'status' => BlogPostStatus::Draft,
+        'published_at' => null,
+        'body' => '<p>Antes</p>',
+        'blog_category_id' => $this->category->id,
+    ]);
+
+    $updated = updateBlogPostWith($post, ['body' => '<p><br></p>']);
+
+    expect($updated->fresh()->body)->toBeNull()
+        ->and($updated->fresh()->status)->toBe(BlogPostStatus::Draft);
+});
+
+test('an update whose body has visible text or only an image is accepted', function (string $body) {
+    $post = BlogPost::factory()->create([
+        'status' => BlogPostStatus::Draft,
+        'published_at' => null,
+        'body' => null,
+        'blog_category_id' => $this->category->id,
+    ]);
+
+    $updated = updateBlogPostWith($post, ['status' => 'published', 'body' => $body]);
+
+    expect($updated->fresh()->status)->toBe(BlogPostStatus::Published)
+        ->and($updated->fresh()->body)->not->toBeNull();
+})->with([
+    'visible text' => ['<p>Botas de invierno</p>'],
+    'only an image' => ['<img src="https://cdn.example.com/media/bota.jpg" alt="Bota">'],
+    'text the sanitizer unwraps' => ['<div style="display:none">hola</div>'],
+]);

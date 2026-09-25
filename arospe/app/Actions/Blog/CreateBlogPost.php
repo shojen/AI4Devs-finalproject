@@ -27,6 +27,7 @@ class CreateBlogPost
         private readonly LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt,
         private readonly SyncBlogPostTags $syncBlogPostTags,
         private readonly SanitizeProductDescription $sanitizeBody,
+        private readonly BlogBodyHasVisibleContent $bodyHasVisibleContent,
         private readonly NotifyBlogPostPublished $notifyBlogPostPublished,
     ) {}
 
@@ -149,10 +150,15 @@ class CreateBlogPost
         return $post;
     }
 
+    /**
+     * Sanitize the body, then judge what is LEFT (story 0061b, D-3): a body that renders no visible
+     * text and no image is no body at all, so it becomes null and bodyRules() decides, exactly as for
+     * an empty string.
+     */
     private function cleanBody(?string $body): ?string
     {
         $sanitized = ($this->sanitizeBody)($body === null ? null : trim($body));
 
-        return $sanitized === null || trim($sanitized) === '' ? null : $sanitized;
+        return ($this->bodyHasVisibleContent)($sanitized) ? $sanitized : null;
     }
 }
