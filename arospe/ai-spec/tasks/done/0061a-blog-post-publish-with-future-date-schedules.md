@@ -17,7 +17,7 @@ A `Published` request with no date, or a date at or before now, behaves exactly 
 Backend only: no screen, route, Livewire component or migration.
 
 Raised by the human owner while closing 0061 (2026-09-24), as one of two follow-ups to 0061's
-"open, not fixed" list; its sibling is [0061b](../in-progress/0061b-blog-post-body-must-have-visible-content.md).
+"open, not fixed" list; its sibling is [0061b](0061b-blog-post-body-must-have-visible-content.md).
 
 ## Type
 backend | includes database-expert: **no** (no schema change; the existing
@@ -186,7 +186,7 @@ status), uses the same single `now()` as the conversion, and runs after the rule
 
 ### Dependencies
 - **[0061](0061-blog-posts-core-crud-backend.md) — done.** Owns the actions, the rule set and D-6.
-- **Conflicts with [0061b](../in-progress/0061b-blog-post-body-must-have-visible-content.md), [0063](../0063-blog-posts-list-editor-ui.md) and
+- **Conflicts with [0061b](0061b-blog-post-body-must-have-visible-content.md), [0063](../0063-blog-posts-list-editor-ui.md) and
   [0065](../0065-blog-post-published-notification-backend.md)**, which also touch `CreateBlogPost` / `UpdateBlogPost`
   (0065's file list names both). They are independent in behaviour, so any order works; run them one at a time or
   reconcile the two action files at merge.

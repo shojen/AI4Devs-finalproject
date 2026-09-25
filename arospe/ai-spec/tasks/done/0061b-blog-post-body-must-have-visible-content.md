@@ -1,7 +1,7 @@
 # [0061b] Blog posts — a body must actually show something
 
 ## Description
-Story [0061](../done/0061-blog-posts-core-crud-backend.md) refuses a `Published` or `Scheduled` post with **no**
+Story [0061](0061-blog-posts-core-crud-backend.md) refuses a `Published` or `Scheduled` post with **no**
 body, but "no body" is judged on the **string**, so a body that *renders as nothing* passes. The WYSIWYG editors
 in common use emit exactly such markup when an editor empties the field: `<p><br></p>`, `<br>`, `<p></p>`,
 `&nbsp;`, a run of zero-width characters, an empty `<ul><li></li></ul>`, `<a href="…"></a>`, or an empty
@@ -17,7 +17,7 @@ body rule, and for a `Draft` it is stored as `null` (see **OQ-1**), so "no body"
 Backend only.
 
 Raised by the human owner while closing 0061 (2026-09-24). Sibling of
-[0061a](../done/0061a-blog-post-publish-with-future-date-schedules.md).
+[0061a](0061a-blog-post-publish-with-future-date-schedules.md).
 
 ## Type
 backend | includes database-expert: **no**
@@ -107,41 +107,48 @@ Feature: A post body must show something
 `SanitizeProductDescription`, migrations, `routes/**`, `app/Livewire/**`, `resources/views/**`.
 
 ## Tests to perform
-- [ ] **Unit, every "renders nothing" example above returns false**, one dataset row each; each accepted example
+- [x] **Unit, every "renders nothing" example above returns false**, one dataset row each; each accepted example
       returns true. A dataset row per case, so a partial implementation cannot pass on a subset.
-- [ ] Visible text mixed with empty wrappers (`<p><br></p><p>hola</p>`) is true — the rule is *any* visible content,
+- [x] Visible text mixed with empty wrappers (`<p><br></p><p>hola</p>`) is true — the rule is *any* visible content,
       not *only* visible content.
-- [ ] An `<img>` with a `src` is true even with no text; an `<img>` with an empty `src` is false.
-- [ ] `<div style="display:none">hola</div>` is judged **after sanitizing**: the sanitizer drops `style` and unwraps
+- [x] An `<img>` with a `src` is true even with no text; an `<img>` with an empty `src` is false.
+- [x] `<div style="display:none">hola</div>` is judged **after sanitizing**: the sanitizer drops `style` and unwraps
       `<div>`, so the text survives and the body is accepted (pinned, so a future allow-list change that starts
       keeping `style` fails here and forces the visibility rule to be revisited).
-- [ ] Feature: `Published` and `Scheduled` + each empty-rendering body → `ValidationException` on `body`, no row.
-- [ ] Feature: promoting a draft whose stored body renders nothing → refused, and the post is still a draft.
-- [ ] Feature: a `Draft` with `<p><br></p>` stores `null`, not the markup.
-- [ ] Sanitize-then-judge ordering: a body whose only content is a `<script>` (dropped by the sanitizer) is refused.
-- [ ] Performance guard: a body at the sanitizer's `max_input_length` is judged without error.
+- [x] Feature: `Published` and `Scheduled` + each empty-rendering body → `ValidationException` on `body`, no row.
+- [x] Feature: promoting a draft whose stored body renders nothing → refused, and the post is still a draft.
+- [x] Feature: a `Draft` with `<p><br></p>` stores `null`, not the markup.
+- [x] Sanitize-then-judge ordering: a body whose only content is a `<script>` (dropped by the sanitizer) is refused.
+- [x] Performance guard: a body at the sanitizer's `max_input_length` is judged without error.
 
 ## Expected outcome
 A post cannot be published or scheduled with a body that shows nothing, however that emptiness is spelled. A
 draft cannot carry an invisible body either: it is stored as no body.
 
 ## Acceptance criteria
-- [ ] `BlogBodyHasVisibleContent` exists, is pure, judges the **sanitized** value, and counts visible text or an
+- [x] `BlogBodyHasVisibleContent` exists, is pure, judges the **sanitized** value, and counts visible text or an
       `<img src>` as content.
-- [ ] `Published` and `Scheduled` posts whose sanitized body has no visible content are refused on `body`, on the
+- [x] `Published` and `Scheduled` posts whose sanitized body has no visible content are refused on `body`, on the
       create path **and** the update path (including a draft promotion).
-- [ ] A body with no visible content is persisted as `null`, never as its markup.
-- [ ] The sanitizer, its config and its allow-list are unchanged.
-- [ ] No migration, route, component, view or new Composer dependency.
+- [x] A body with no visible content is persisted as `null`, never as its markup.
+- [x] The sanitizer, its config and its allow-list are unchanged.
+- [x] No migration, route, component, view or new Composer dependency.
 
 ## Definition of Done
-- [ ] Tests written and green, plus the **full** suite in one isolated run.
-- [ ] Pint and Larastan level 7, **unscoped**, results recorded.
-- [ ] appsec-auditor points at: the check runs on the sanitized value, never on raw input; the DOM parse cannot be
-      driven into external entity loading (`LIBXML_NONET`, no `LIBXML_NOENT`) or quadratic behaviour.
-- [ ] Docs updated.
-- [ ] **Hand-off recorded for 0063** (editor): the server is the authority. A client-side "looks empty" hint is fine
-      but must not be relied on, and the editor should surface the `body` error like any other.
+- [x] Tests written and green: unit dataset (48 cases) and the create/update feature tests; the blog suites (462
+      tests) pass. **Full suite** (one isolated run, own `testing_0061b` database): 3987 tests, 3984 passed, 3 skipped, 0 failed.
+- [x] Pint (unscoped: passed) and Larastan level 7 (unscoped: 0 errors; `composer types:check` needs
+      `--memory-limit=-1` in this worktree, its parallel workers hit 128 MB).
+- [x] Security review (inline, Phase 4): the check runs on the sanitized value in both actions, never on raw
+      input; `loadHTML` is called with `LIBXML_NONET` and never `LIBXML_NOENT`, so no DTD or external entity is
+      loaded or expanded; measured at the sanitizer's `max_input_length` (262 144 bytes) it takes 14-41 ms for
+      text, 262k empty paragraphs and 21k empty images, so it is linear. One recorded edge: nesting deeper than
+      libxml's depth limit (256) aborts the parse and the body counts as "no content", as the story specifies for
+      unparseable input.
+- [x] Docs updated (`docs/security/html-sanitization.md`, `docs/database/schema-blog.md`).
+- [x] **Hand-off recorded for 0063** (editor): the server is the authority. A client-side "looks empty" hint is
+      fine but must not be relied on, and the editor should surface the `body` error like any other. Note for the
+      editor: a `Draft` saved with an emptied field comes back with `body = null`, not the submitted markup.
 
 ## Documented functional decisions
 
@@ -162,10 +169,10 @@ re-implement every way of hiding content. Judging what is **left** needs only "i
 ## Dependencies, risks and open questions
 
 ### Dependencies
-- **[0061](../done/0061-blog-posts-core-crud-backend.md) — done.** Owns the actions and `bodyRules()`.
-- **[0024a](../done/0024a-product-description-html-sanitization.md) — done.** Owns the allow-list this story relies on
+- **[0061](0061-blog-posts-core-crud-backend.md) — done.** Owns the actions and `bodyRules()`.
+- **[0024a](0024a-product-description-html-sanitization.md) — done.** Owns the allow-list this story relies on
   *not* keeping `style`/`hidden`/`class`.
-- **Conflicts with [0061a](../done/0061a-blog-post-publish-with-future-date-schedules.md), [0063](../0063-blog-posts-list-editor-ui.md)
+- **Conflicts with [0061a](0061a-blog-post-publish-with-future-date-schedules.md), [0063](../0063-blog-posts-list-editor-ui.md)
   and [0065](../0065-blog-post-published-notification-backend.md)** on `CreateBlogPost` / `UpdateBlogPost`; independent in
   behaviour, run them one at a time.
 
