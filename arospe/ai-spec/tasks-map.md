@@ -41,6 +41,8 @@ Phase-3 blocker (`0048`–`0054`) is now `done/` — so it moves from `blocked` 
 terminal node finally unblocked. `0057`'s own node is likewise dropped from the graph; it had no pending dependent of its own to
 re-derive against `done/`.
 
+As of this snapshot, `ai-spec/tasks/in-progress/` holds one file: `0062-blog-categories-ui.md`, checked out for Phase 3 by worktree `0062-blog-categories-ui` (it keeps its node and its `tasks-status.json` entry, both `claimed`).
+
 Update (2026-09-25): `0061b-blog-post-body-must-have-visible-content.md` completed Phase 7 and moved from `in-progress/` to `done/` — the sixth Epic 4 story to close. Its node and its `tasks-status.json` entry (the `claimed` one) are dropped, and `"0061b"` is removed from the `conflict_risk_with` lists of `0063` and `0065`. It had no dependents, so its closure re-derives nothing. `ai-spec/tasks/in-progress/` is empty again.
 
 Update (2026-09-25): `0061a-blog-post-publish-with-future-date-schedules.md` completed Phase 7 and moved from `in-progress/` to `done/` — the fifth Epic 4 story to close. Its node and its `tasks-status.json` entry (the `claimed` one) are dropped, and `"0061a"` is removed from the `conflict_risk_with` of `0061b`, `0063` and `0065`; it had no dependents, so no `status` changes. `ai-spec/tasks/in-progress/` is empty again.
@@ -362,13 +364,14 @@ flowchart LR
     P0068 --> P0079
 
     class P0065,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0062,P0063,P0064,P0068 ready;
+    class P0063,P0064,P0068 ready;
+    class P0062 claimed;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(none is `claimed` in this snapshot); yellow (`pending`) = still blocked on at least one open
+(`0062` is the one `claimed` node in this snapshot); yellow (`pending`) = still blocked on at least one open
 pending dependency.
 
 ## Analysis
