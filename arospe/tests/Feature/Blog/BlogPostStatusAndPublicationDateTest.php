@@ -325,3 +325,143 @@ test('the same ceiling applies when updating', function () {
 
     expect($post->fresh()->published_at->toDateTimeString())->toBe('2026-07-01 00:00:00');
 });
+
+// Story 0061a (D-1, D-3, D-4): asking for Published with a strictly future date schedules the post
+// instead of leaving a live post dated in the future. The `>` boundary is asserted from BOTH sides.
+test('publishing with a future date saves the post as scheduled, carrying that date', function () {
+    $post = createDatedPost($this->category, [
+        'status' => 'published',
+        'publishedAt' => '2026-07-01 09:30:00',
+    ]);
+
+    expect($post->status)->toBe(BlogPostStatus::Scheduled)
+        ->and($post->fresh()->status)->toBe(BlogPostStatus::Scheduled)
+        ->and($post->fresh()->published_at->toDateTimeString())->toBe('2026-07-01 09:30:00');
+});
+
+test('a published date equal to the current moment is published, one second later is scheduled', function () {
+    $atNow = createDatedPost($this->category, [
+        'title' => 'Botas de verano',
+        'status' => 'published',
+        'publishedAt' => now()->toDateTimeString(),
+    ]);
+    $afterNow = createDatedPost($this->category, [
+        'title' => 'Botas de otoño',
+        'status' => 'published',
+        'publishedAt' => now()->addSecond()->toDateTimeString(),
+    ]);
+
+    expect($atNow->fresh()->status)->toBe(BlogPostStatus::Published)
+        ->and($atNow->fresh()->published_at->toDateTimeString())->toBe('2026-06-15 12:00:00')
+        ->and($afterNow->fresh()->status)->toBe(BlogPostStatus::Scheduled)
+        ->and($afterNow->fresh()->published_at->toDateTimeString())->toBe('2026-06-15 12:00:01');
+});
+
+test('publishing a draft with a future date on the update path saves it as scheduled', function () {
+    $post = BlogPost::factory()->draft()->create();
+
+    $returned = updateDatedPost($post, ['status' => 'published', 'publishedAt' => '2026-07-01 09:30:00']);
+
+    expect($returned->status)->toBe(BlogPostStatus::Scheduled)
+        ->and($post->fresh()->status)->toBe(BlogPostStatus::Scheduled)
+        ->and($post->fresh()->published_at->toDateTimeString())->toBe('2026-07-01 09:30:00');
+});
+
+test('the update path draws the same boundary: now is published, one second later is scheduled', function () {
+    $first = BlogPost::factory()->draft()->create();
+    $second = BlogPost::factory()->draft()->create();
+
+    updateDatedPost($first, ['status' => 'published', 'publishedAt' => now()->toDateTimeString()]);
+    updateDatedPost($second, ['status' => 'published', 'publishedAt' => now()->addSecond()->toDateTimeString()]);
+
+    expect($first->fresh()->status)->toBe(BlogPostStatus::Published)
+        ->and($second->fresh()->status)->toBe(BlogPostStatus::Scheduled);
+});
+
+test('a scheduled post whose date has passed is published with its own date', function () {
+    $post = BlogPost::factory()->scheduled()->create(['published_at' => Carbon::parse('2026-06-16 12:00:00')]);
+
+    Carbon::setTestNow('2026-06-20 12:00:00');
+
+    updateDatedPost($post->fresh(), ['status' => 'published', 'publishedAt' => '2026-06-16 12:00:00']);
+
+    expect($post->fresh()->status)->toBe(BlogPostStatus::Published)
+        ->and($post->fresh()->published_at->toDateTimeString())->toBe('2026-06-16 12:00:00');
+});
+
+test('a scheduled post not yet due that is asked to publish with its future date stays scheduled', function () {
+    $post = BlogPost::factory()->scheduled()->create(['published_at' => Carbon::parse('2026-06-16 12:00:00')]);
+
+    updateDatedPost($post, ['status' => 'published', 'publishedAt' => '2026-06-16 12:00:00']);
+
+    expect($post->fresh()->status)->toBe(BlogPostStatus::Scheduled)
+        ->and($post->fresh()->published_at->toDateTimeString())->toBe('2026-06-16 12:00:00');
+});
+
+test('publishing with a future date still requires a body', function () {
+    $keys = datedPostErrorKeys(fn () => createDatedPost($this->category, [
+        'body' => null,
+        'status' => 'published',
+        'publishedAt' => '2026-07-01 09:30:00',
+    ]));
+
+    expect($keys)->toContain('body');
+    expect(BlogPost::withTrashed()->count())->toBe(0);
+});
+
+test('publishing with a future date is still bounded by the TIMESTAMP ceiling', function () {
+    $keys = datedPostErrorKeys(fn () => createDatedPost($this->category, [
+        'status' => 'published',
+        'publishedAt' => '2039-01-01 00:00:00',
+    ]));
+
+    expect($keys)->toContain('published_at');
+    expect(BlogPost::withTrashed()->count())->toBe(0);
+});
+
+// D-4: 0064's sweep reads `status = scheduled and published_at <= now`, asserted with a plain query so
+// this story does not import a command that does not exist yet.
+test('a post scheduled by publishing with a future date is what the sweep query selects once its date passes', function () {
+    $post = createDatedPost($this->category, ['status' => 'published', 'publishedAt' => '2026-06-16 12:00:00']);
+
+    $due = fn () => BlogPost::query()
+        ->where('status', BlogPostStatus::Scheduled)
+        ->where('published_at', '<=', now())
+        ->pluck('id')
+        ->all();
+
+    expect($due())->toBe([]);
+
+    Carbon::setTestNow('2026-06-16 12:00:00');
+
+    expect($due())->toBe([$post->id]);
+});
+
+// D-4 (OQ-1): a live post is never moved into the future by editing its date.
+test('editing a published post to a future date is refused and leaves the post untouched', function () {
+    $post = BlogPost::factory()->published()->create(['published_at' => Carbon::parse('2026-06-10 10:00:00')]);
+
+    $keys = datedPostErrorKeys(fn () => updateDatedPost($post, [
+        'title' => 'Botas de invierno 2026',
+        'publishedAt' => '2026-07-01 09:30:00',
+    ]));
+
+    expect($keys)->toBe(['published_at']);
+    expect($post->fresh()->status)->toBe(BlogPostStatus::Published)
+        ->and($post->fresh()->title)->not->toBe('Botas de invierno 2026')
+        ->and($post->fresh()->published_at->toDateTimeString())->toBe('2026-06-10 10:00:00');
+});
+
+test('editing a published post to a date equal to now is accepted, one second later is refused', function () {
+    $post = BlogPost::factory()->published()->create(['published_at' => Carbon::parse('2026-06-10 10:00:00')]);
+
+    $keys = datedPostErrorKeys(fn () => updateDatedPost($post, ['publishedAt' => now()->addSecond()->toDateTimeString()]));
+
+    expect($keys)->toBe(['published_at']);
+    expect($post->fresh()->published_at->toDateTimeString())->toBe('2026-06-10 10:00:00');
+
+    updateDatedPost($post, ['publishedAt' => now()->toDateTimeString()]);
+
+    expect($post->fresh()->status)->toBe(BlogPostStatus::Published)
+        ->and($post->fresh()->published_at->toDateTimeString())->toBe('2026-06-15 12:00:00');
+});
