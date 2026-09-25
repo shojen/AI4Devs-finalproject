@@ -254,3 +254,82 @@ test('a body larger than the sanitizer limit is refused rather than silently tru
         ->toBe(['body'])
         ->and(BlogPost::count())->toBe(0);
 });
+
+// Story 0061b. "No body" is judged on what a reader would SEE, after sanitizing -- not on the string -- so an
+// editor that emptied its field (`<p><br></p>`) is the same case as `''`.
+test('a published or scheduled post whose body renders nothing is refused', function (string $status, string $body) {
+    Carbon::setTestNow('2026-06-15 12:00:00');
+
+    expect(createBlogPostErrorKeys($this->category, [
+        'status' => $status,
+        'body' => $body,
+        'publishedAt' => $status === 'scheduled' ? '2026-07-01 09:00:00' : null,
+    ]))->toContain('body');
+    expect(BlogPost::withTrashed()->count())->toBe(0);
+})->with(function () {
+    $bodies = [
+        'line break in a paragraph' => '<p><br></p>',
+        'bare line break' => '<br>',
+        'empty paragraph' => '<p></p>',
+        'non-breaking space' => '<p>&nbsp;</p>',
+        'spaces only' => '<p>   </p>',
+        'hidden empty div' => '<div style="display:none"></div>',
+        'empty list' => '<ul><li></li></ul>',
+        'empty heading' => '<h2></h2>',
+        'empty link' => '<a href="https://example.com"></a>',
+        'zero-width space' => '<p>&#8203;</p>',
+        'html comment' => '<!-- just a comment -->',
+        'only a script the sanitizer drops' => '<script>alert(1)</script>',
+        'image with an empty src' => '<img src="" alt="Bota">',
+    ];
+
+    foreach (['published', 'scheduled'] as $status) {
+        foreach ($bodies as $label => $body) {
+            yield "{$status}, {$label}" => [$status, $body];
+        }
+    }
+});
+
+test('a draft whose body renders nothing is saved with no body', function (string $body) {
+    $post = createBlogPostWith($this->category, ['status' => 'draft', 'body' => $body]);
+
+    expect($post->status)->toBe(BlogPostStatus::Draft)
+        ->and($post->fresh()->body)->toBeNull();
+})->with([
+    'line break in a paragraph' => ['<p><br></p>'],
+    'non-breaking space' => ['<p>&nbsp;</p>'],
+    'empty list' => ['<ul><li></li></ul>'],
+    'zero-width space' => ['<p>&#8203;</p>'],
+    'html comment' => ['<!-- just a comment -->'],
+]);
+
+test('a published post with visible text is saved', function () {
+    $post = createBlogPostWith($this->category, ['status' => 'published', 'body' => '<p>Botas de invierno</p>']);
+
+    expect($post->fresh()->body)->toBe('<p>Botas de invierno</p>')
+        ->and($post->status)->toBe(BlogPostStatus::Published);
+});
+
+test('a published post whose body is only an image from the shared gallery is saved', function () {
+    $post = createBlogPostWith($this->category, [
+        'status' => 'published',
+        'body' => '<img src="https://cdn.example.com/media/bota.jpg" alt="Bota">',
+    ]);
+
+    expect($post->fresh()->body)->toContain('src="https://cdn.example.com/media/bota.jpg"');
+});
+
+// Pinned on purpose: the sanitizer drops `style` and unwraps `<div>`, so the text survives and is judged as what
+// REMAINS. If the allow-list ever starts keeping `style`, this fails and forces the visibility rule to be revisited.
+test('text hidden by markup the sanitizer removes is judged as what remains', function () {
+    $post = createBlogPostWith($this->category, [
+        'status' => 'published',
+        'body' => '<div style="display:none">hola</div>',
+    ]);
+
+    $body = $post->fresh()->body;
+
+    expect($body)->toContain('hola')
+        ->and($body)->not->toContain('style')
+        ->and($body)->not->toContain('display');
+});
