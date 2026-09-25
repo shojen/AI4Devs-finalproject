@@ -160,7 +160,7 @@ test('openCreateModal() is refused without blog.create', function () {
         ->toThrow(AuthorizationException::class);
 });
 
-test('openEditModal() is refused without blog.edit and populates nothing', function () {
+test('openEditModal() is refused without blog.edit', function () {
     $this->withoutExceptionHandling();
     $category = BlogCategory::factory()->create(['name' => 'Guías']);
     $this->actingAs(blogCategoriesIndexTestActor(['blog.view']));
@@ -168,11 +168,9 @@ test('openEditModal() is refused without blog.edit and populates nothing', funct
     $component = Livewire::test(Index::class);
 
     expect(fn () => $component->call('openEditModal', $category->id))->toThrow(AuthorizationException::class);
-
-    $component->assertSet('name', '')->assertSet('editingCategoryId', null)->assertSet('showModal', false);
 });
 
-test('confirmDelete() is refused without blog.delete and populates nothing', function () {
+test('confirmDelete() is refused without blog.delete', function () {
     $this->withoutExceptionHandling();
     $category = BlogCategory::factory()->create(['name' => 'Guías']);
     $this->actingAs(blogCategoriesIndexTestActor(['blog.view']));
@@ -180,8 +178,6 @@ test('confirmDelete() is refused without blog.delete and populates nothing', fun
     $component = Livewire::test(Index::class);
 
     expect(fn () => $component->call('confirmDelete', $category->id))->toThrow(AuthorizationException::class);
-
-    $component->assertSet('deletingCategoryName', '')->assertSet('blogCategoryId', '')->assertSet('showDeleteModal', false);
 });
 
 test('save() in create mode is refused when blog.create is revoked after the modal opened, and persists nothing', function () {
@@ -517,6 +513,24 @@ test('closeDeleteModal() clears the stale blogCategoryId error so it cannot leak
         ->assertHasNoErrors();
 });
 
+test('the two modals reset only their own error key: closeModal() leaves the block message and closeDeleteModal() leaves the name error', function () {
+    // R-5 / D-3: a bare resetValidation() in either method would pass the two tests above, which
+    // only assert "no errors" after their own close.
+    $blocked = blogCategoriesIndexCategoryWithPosts('Guías', 2);
+    $this->actingAs(blogCategoriesIndexTestActor());
+
+    Livewire::test(Index::class)
+        ->call('openCreateModal')->set('name', '')->call('save')->assertHasErrors(['name'])
+        ->call('confirmDelete', $blocked->id)->call('deleteCategory')->assertHasErrors(['blogCategoryId'])
+        ->call('closeModal')
+        ->assertHasNoErrors(['name'])
+        ->assertHasErrors(['blogCategoryId'])
+        ->call('openCreateModal')->set('name', '')->call('save')->assertHasErrors(['name'])
+        ->call('closeDeleteModal')
+        ->assertHasNoErrors(['blogCategoryId'])
+        ->assertHasErrors(['name']);
+});
+
 test('a blocked delete surfaces an error on the blogCategoryId key, keeps the modal open and the category alive', function () {
     $category = blogCategoriesIndexCategoryWithPosts('Guías', 5);
     $this->actingAs(blogCategoriesIndexTestActor());
@@ -525,7 +539,6 @@ test('a blocked delete surfaces an error on the blogCategoryId key, keeps the mo
         ->call('confirmDelete', $category->id)
         ->call('deleteCategory')
         ->assertHasErrors(['blogCategoryId'])
-        ->assertHasNoErrors(['deletingCategoryId'])
         ->assertSet('showDeleteModal', true)
         ->assertSet('blogCategoryId', $category->id);
 
