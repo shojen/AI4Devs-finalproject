@@ -7,9 +7,9 @@
       "slug": "0062-blog-categories-ui",
       "title": "Blog categories — management screen (list, create/edit modal, blocked delete)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree 0062-blog-categories-ui",
+      "claimed_at": "2026-09-25T21:05:29Z",
       "touches": [
         "app/Livewire/BlogCategories/Index.php",
         "resources/views/livewire/blog-categories.blade.php",
