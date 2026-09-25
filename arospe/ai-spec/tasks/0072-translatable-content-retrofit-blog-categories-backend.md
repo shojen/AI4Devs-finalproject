@@ -806,7 +806,7 @@ is one no post uses, and its translations are exactly the data that has just bec
 
 - **R-1 — Dropping the parent's `name` (D-2) breaks two already-written sibling stories, and this story
   cannot fix them.** Verified by grep against `ai-spec/tasks/`:
-  [`0062-blog-categories-ui.md`](in-progress/0062-blog-categories-ui.md) line 370 specifies
+  [`0062-blog-categories-ui.md`](done/0062-blog-categories-ui.md) line 370 specifies
   `BlogCategory::query()->withCount(...)->orderBy('name')->orderBy('id')`, and its component surface
   (line ~329) declares a row shape `array{id: string, name: string, postCount: int, canEdit: bool,
   canDelete: bool}` plus a `$deletingCategoryName` property, all fed from `$category->name`;
@@ -906,7 +906,7 @@ close:
 
 Derived from this debate; **none are in scope for 0072**.
 
-1. **Amend stories [0062](in-progress/0062-blog-categories-ui.md) and [0063](0063-blog-posts-list-editor-ui.md)** so
+1. **Amend stories [0062](done/0062-blog-categories-ui.md) and [0063](0063-blog-posts-list-editor-ui.md)** so
    their queries no longer reference a `blog_categories.name` column — an ordered join over the
    translation for the requested language, and a replacement for the `category:id,name` partial select
    (**R-1**). The coordinator's, not this story's. Note this is the blog half of the same amendment 0070's

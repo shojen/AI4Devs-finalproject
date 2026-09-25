@@ -1,7 +1,7 @@
 # [0073] Blog Categories screen — language tabs
 
 ## Description
-Retrofit story [0062](in-progress/0062-blog-categories-ui.md)'s Blog Categories management screen so a category's
+Retrofit story [0062](done/0062-blog-categories-ui.md)'s Blog Categories management screen so a category's
 name is authored **per active store language** through language tabs, satisfying
 [PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization)'s *"each active store
 language surfaces as a tab … in the taxonomy management screens"* and its `Taxonomy names are
@@ -930,7 +930,7 @@ user meets it, 0058 **D-13**'s authorize-before-validate trap (absent from 0071 
 - **[0071](0071-product-categories-language-tabs-ui.md)** — hard, blocking. Supplies
   `<x-language-tab-strip>` and the `setActiveLanguageTab()` contract. ⚠️ **A new dependency this
   debate did not originally have**, and the reason 0071 must be sequenced first.
-- **[0062](in-progress/0062-blog-categories-ui.md)** — hard, blocking. The component, view, route and sidebar
+- **[0062](done/0062-blog-categories-ui.md)** — hard, blocking. The component, view, route and sidebar
   entry this story widens. Itself blocked on 0058 → 0061.
 - **[0070](0070-translatable-content-mechanism-product-categories-backend.md)** — hard.
   `HasTranslations`, `SetTranslation`, `defaultStoreLanguage()`. **0070's Q1 is still open**; this
@@ -1048,7 +1048,7 @@ independent ruling on this file.**
 
 Derived from this debate; **none are in scope for 0073.**
 
-1. **Amend [0062](in-progress/0062-blog-categories-ui.md)** for the superseded component surface, the invalidated
+1. **Amend [0062](done/0062-blog-categories-ui.md)** for the superseded component surface, the invalidated
    "exactly one input" rendering test, the `{id, name, …}` row shape, the `orderBy('name')` query and
    the renamed `blog-category-name-input` hook (**R-1**). Not this story's to write.
 2. **Amend [0063](0063-blog-posts-list-editor-ui.md)**, whose `->with(['category:id,name'])` partial
