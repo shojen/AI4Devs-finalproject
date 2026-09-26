@@ -101,6 +101,14 @@ Documented once, linked everywhere else — do not duplicate these explanations 
 
 `php artisan db:seed --class=RolePermissionSeeder` is a **required** step on every deploy, not a developer convenience: `RolePermissionSeeder` is the only source of the roles and permissions the app authorizes against. Prefer that targeted form over a bare `db:seed` — see [authorization.md](authorization/overview-catalog-seeding.md#seeding).
 
+**The scheduler needs a cron entry on the server — a required one-time setup step, not a per-deploy step (story 0064).** The app's scheduled jobs (today only `blog:publish-scheduled-posts`, every minute) run only if something calls Laravel's scheduler every minute. Do **not** add one cron line per command; add exactly one for the whole scheduler, as the user that runs the app (inside the container when the app runs in one):
+
+```cron
+* * * * * cd /path/to/arospe && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Check it with `php artisan schedule:list`, which must show `* * * * * php artisan blog:publish-scheduled-posts`. **Nothing in the app detects a missing cron:** posts scheduled for the future simply never go live, with no error anywhere, so it is the first thing to check when someone reports that scheduling "does not work". A future queued notification (story 0064b's) would additionally need a `queue:work` process, because `QUEUE_CONNECTION=database`.
+
 ## Where things live
 
 | Layer | Path |
@@ -127,4 +135,4 @@ Documented once, linked everywhere else — do not duplicate these explanations 
 
 > **A scheduled command is a second entry point, not a node on the request-lifecycle diagram above.** Story 0064's `blog:publish-scheduled-posts` enters through `php artisan schedule:run` (a cron tick), so there is no request, no middleware, no session and no authenticated user: the lifecycle diagram is deliberately left unchanged rather than stretched to cover it, and a second diagram waits for a second scheduled job to earn one. What a reader needs instead is the rule for its writes — [a system-triggered write may be ungated](authorization/domain-invariants.md#a-system-triggered-write-may-be-ungated--autocancelfullyrefundedorder-and-the-three-conditions-that-make-it-safe) — and the testing guide, [scheduled-commands.md](../testing/backend/scheduled-commands.md). The scheduler itself must be on a cron in the deployment (`* * * * * php artisan schedule:run`); nothing in the app detects that it is not.
 
-_Last updated: 2026-09-26 — Story 0064 (scheduled post auto-publish). Added the `Scheduled commands and the schedule` row, the `ScheduledBlogPostPublished` mention and the note that a scheduled command is a second entry point rather than a node on the lifecycle diagram; the revision history of earlier stories lives in [history/architecture--overview.md](../history/architecture--overview.md)._
+_Last updated: 2026-09-26 — Story 0064 (scheduled post auto-publish). Added the `Scheduled commands and the schedule` row, the deployment note's required scheduler cron entry, the `ScheduledBlogPostPublished` mention and the note that a scheduled command is a second entry point rather than a node on the lifecycle diagram; the revision history of earlier stories lives in [history/architecture--overview.md](../history/architecture--overview.md)._
