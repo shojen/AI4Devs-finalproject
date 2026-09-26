@@ -47,13 +47,18 @@ routes/                 web.php, plus one file per functional area that web.php 
                         (settings.php, roles.php, users.php, sales-regions.php,
                         product-categories.php, product-attribute-types.php, products.php,
                         shipping.php, payment-methods.php, customers.php since story 0044, orders.php since story 0055, blog-tags.php,
-                        blog-categories.php and blog-posts.php since stories 0060, 0062 and 0063) — no
+                        blog-categories.php and blog-posts.php since stories 0060, 0062 and 0063),
+                        plus console.php since story 0064 — NOT an area file: loaded by the console kernel,
+                        registers no HTTP route, holds the `Schedule::` entries — no
                         api.php yet. web.php no longer
                         holds the story 0020/0021 environment-gated dev route (story 0020's
                         browser-test harness) — story 0027 retired it once Products/Editor
                         supplied a real host page; see ../api/routes.md
 tests/
-  Feature/              Feature tests, mirrors app structure (Actions/Auth/, Auth/, Settings/,
+  Feature/              Feature tests, mirrors app structure (Actions/Auth/, Auth/, Settings/, Console/Commands/
+                        since story 0064 — mirrors app/Console/Commands/ — and Console/ beside it for the
+                        schedule-registration test, which mirrors nothing in app/; shared sweep fixtures live in
+                        tests/Support/Blog/,
                         Seeders/, Users/, Roles/, SalesRegions/, Media/, ProductCategories/,
                         Products/, Components/, Models/, Policies/, Authorization/,
                         Navigation/, PaymentMethods/ since story 0038 — the story's own

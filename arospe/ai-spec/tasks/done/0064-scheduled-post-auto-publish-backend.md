@@ -4,11 +4,11 @@
 A scheduled Artisan command sweeps for blog posts whose status is `BlogPostStatus::Scheduled` and
 whose `published_at` has arrived, and transitions each one to `Published`. That transition is the
 moment the *"a scheduled post goes live"* half of the
-[PRD](../../docs/PRD/sections/foundations.md#cross-cutting-global-search--notifications)'s confirmed notification list
+[PRD](../../../docs/PRD/sections/foundations.md#cross-cutting-global-search--notifications)'s confirmed notification list
 becomes observable, so this story also defines the single trigger story **0065** consumes.
 
 It is **backend only, and narrower than it looks**: no screen, no route, no migration, no column, no
-model change and no notification class. Story [0061](done/0061-blog-posts-core-crud-backend.md) ships the
+model change and no notification class. Story [0061](0061-blog-posts-core-crud-backend.md) ships the
 `published_at` column, the `Scheduled` status, the validation rule that guarantees a scheduled date is
 in the future, and the composite index built specifically for this sweep. This story ships **an
 Artisan command, a domain action, one schedule entry, and the event that says a post went live.**
@@ -19,14 +19,14 @@ disproportionately convention-setting for its size: three of its decisions (wher
 lives, how a system-triggered write authorizes, how a scheduled command is tested) are the project's
 first, and every later scheduled job inherits them.
 
-Covers the automatic half of [PRD](../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's Blog post status
+Covers the automatic half of [PRD](../../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's Blog post status
 (`Programado`) and the *"or a scheduled post goes live"* clause of the cross-cutting notification
 list. **The full-auto-publish behaviour is a human product decision, confirmed before this batch was
 decomposed** — see [D-0](#d-0--full-auto-publish-is-a-confirmed-product-decision-not-an-inference).
 
 > ### ⚠️ Epic 5 amendments — 2026-08-30
 >
-> Story [0078](0078-translatable-content-retrofit-blog-posts-backend.md) (translatable-content retrofit
+> Story [0078](../0078-translatable-content-retrofit-blog-posts-backend.md) (translatable-content retrofit
 > for blog posts) **drops `blog_posts.title`, `blog_posts.slug` and `blog_posts.body` entirely**, moving
 > all three to a `blog_post_translations` child table read through
 > `BlogPost::translated('title', $languageId)`. Its **R-1(b)** names this story as one of three it
@@ -41,7 +41,7 @@ decomposed** — see [D-0](#d-0--full-auto-publish-is-a-confirmed-product-decisi
 > **D-7**'s conditional `UPDATE` writes `status` alone, **D-13**'s log line carries `blog_post_id` and
 > nothing else, and **OQ-3** leaves console output copy unresolved with no title in either candidate
 > shape. **Nothing here needs to resolve a store language**, which is what separates this story from its
-> sibling [0065](0065-blog-post-published-notification-backend.md), where the same retrofit forces a
+> sibling [0065](../0065-blog-post-published-notification-backend.md), where the same retrofit forces a
 > real product choice.
 >
 > Sequencing: whichever of 0078 and this story reaches Phase 3 second inherits the other's shape. If
@@ -55,7 +55,7 @@ backend | includes database-expert: **yes**
 answerable question: whether the sweep's `WHERE deleted_at IS NULL AND status = ? AND published_at
 <= ?` actually uses 0061's `(deleted_at, status, published_at)` composite index, or whether the
 trailing `<=` **range** predicate breaks it — the boundary-operator question this repo's own
-[schema.md](../../docs/database/schema.md) index-reasoning sections make a habit of asking. It does
+[schema.md](../../../docs/database/schema.md) index-reasoning sections make a habit of asking. It does
 use it, and the range is in the one position where it costs nothing (**D-6**). That amigo also
 resolved the story's sharpest technical conflict (**D-7**) and found a latent data-integrity gap
 nobody else did (**R-6**).
@@ -73,7 +73,7 @@ merely supporting it** — one of which overturns the premise the story was brie
 ## Gherkin
 
 Every scenario carries exactly one `When`, per
-[gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rule 3. Rule 1 — *open with
+[gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rule 3. Rule 1 — *open with
 a named business-role actor, never `I`* — needed a ruling here, because **the actor for an automated
 sweep is not a person**. The convention this story establishes, and the reasoning, is **D-14**: the
 `Given` names the **blog editor** whose earlier decision created the state, and the `When` names
@@ -149,8 +149,8 @@ Feature: Scheduled posts go live automatically
 
 | Path | What & why |
 | --- | --- |
-| `routes/console.php` | **New — and it resolves a dangling reference that already exists.** [`bootstrap/app.php`](../../bootstrap/app.php) already passes `commands: __DIR__.'/../routes/console.php'` to `withRouting()` for a file that has never existed (**V-2**). Creating it is sufficient; **`bootstrap/app.php` needs no edit at all**. Holds exactly one `Schedule::command(...)` entry (**D-2**). |
-| `app/Console/Commands/PublishScheduledBlogPosts.php` | **New.** The scheduled command. `app/Console/Commands/` is a **stock Laravel location already named in [base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)**'s directory listing (`Console/Commands/    Artisan commands`), so it needs no new-base-folder approval — the same category as `app/Enums/` or `app/Listeners/`. It is empty-and-untracked on disk today (git does not track empty directories), which is why it is absent from this worktree. |
+| `routes/console.php` | **New — and it resolves a dangling reference that already exists.** [`bootstrap/app.php`](../../../bootstrap/app.php) already passes `commands: __DIR__.'/../routes/console.php'` to `withRouting()` for a file that has never existed (**V-2**). Creating it is sufficient; **`bootstrap/app.php` needs no edit at all**. Holds exactly one `Schedule::command(...)` entry (**D-2**). |
+| `app/Console/Commands/PublishScheduledBlogPosts.php` | **New.** The scheduled command. `app/Console/Commands/` is a **stock Laravel location already named in [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure)**'s directory listing (`Console/Commands/    Artisan commands`), so it needs no new-base-folder approval — the same category as `app/Enums/` or `app/Listeners/`. It is empty-and-untracked on disk today (git does not track empty directories), which is why it is absent from this worktree. |
 
 ```php
 // routes/console.php — the whole file
@@ -185,12 +185,12 @@ Schedule::command(PublishScheduledBlogPosts::class)
 
 | Path | What & why |
 | --- | --- |
-| `app/Events/Blog/ScheduledBlogPostPublished.php` | **New**, and **this creates `app/Events/`, a folder that does not exist in this repo today** (**V-3**) — a structural addition to [base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)'s directory listing, not a line edit. Carries the **`BlogPost` model**, not its id — settled by story [0065](0065-blog-post-published-notification-backend.md)'s **D-9**, which resolves this story's OQ-2. Dispatched once per successfully-transitioned post. **This story defines and dispatches it; story 0065 defines the listener and the notification** (**D-12**, **OQ-1**). |
+| `app/Events/Blog/ScheduledBlogPostPublished.php` | **New**, and **this creates `app/Events/`, a folder that does not exist in this repo today** (**V-3**) — a structural addition to [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure)'s directory listing, not a line edit. Carries the **`BlogPost` model**, not its id — settled by story [0065](../0065-blog-post-published-notification-backend.md)'s **D-9**, which resolves this story's OQ-2. Dispatched once per successfully-transitioned post. **This story defines and dispatches it; story 0065 defines the listener and the notification** (**D-12**, **OQ-1**). |
 
 ### Consumed, not created by this story
 
 - `App\Models\BlogPost`, `App\Enums\BlogPostStatus`, `blog_posts.published_at` and the
-  `(deleted_at, status, published_at)` index — all story [0061](done/0061-blog-posts-core-crud-backend.md).
+  `(deleted_at, status, published_at)` index — all story [0061](0061-blog-posts-core-crud-backend.md).
   **Consumed unchanged; this story modifies none of them.**
 - `App\Models\BlogPost`'s `SoftDeletingScope` — consumed by *doing nothing*, which is the whole point
   of **D-9**.
@@ -211,12 +211,12 @@ area route file · `config/modules.php` · `app/Livewire/**` · `resources/views
 Backend only — no browser tests, since this story ships no screen.
 
 > **Read this before writing any test in this story.** Two disciplines carry over from
-> [0061](done/0061-blog-posts-core-crud-backend.md) and one is new.
+> [0061](0061-blog-posts-core-crud-backend.md) and one is new.
 > **(a) Every case in this story freezes the clock** with `Carbon::setTestNow()` — a sweep is a
-> time-dependent operation by definition, and [mocking-and-fakes.md](../../docs/testing/backend/mocking-and-fakes.md)
+> time-dependent operation by definition, and [mocking-and-fakes.md](../../../docs/testing/backend/mocking-and-fakes.md)
 > already names an unfrozen `now()` comparison as non-deterministic by construction.
 > **(b) The boundary is asserted from both sides**, per the discipline
-> [step-up-authentication.md](../../docs/security/step-up-authentication.md) established for telling
+> [step-up-authentication.md](../../../docs/security/step-up-authentication.md) established for telling
 > `>` from `>=`.
 > **(c) New here — the inverse of 0061's authorization warning.** 0061's test list warns that its
 > actions authorize before they validate, so a test without `actingAs()` fails for the wrong reason.
@@ -241,7 +241,7 @@ Backend only — no browser tests, since this story ships no screen.
       > ⚠️ **Correction, 2026-08-30 — this assertion names three columns that no longer exist on
       > `blog_posts`.** As written it reads *"Assert `title`, `slug`, `body` and `blog_category_id` are
       > byte-identical before and after"*, all four against the parent row. Story
-      > [0078](0078-translatable-content-retrofit-blog-posts-backend.md) moves `title`, `slug` and
+      > [0078](../0078-translatable-content-retrofit-blog-posts-backend.md) moves `title`, `slug` and
       > `body` to `blog_post_translations`, so **the assertion splits in two** and the split is what
       > keeps it able to fail:
       >
@@ -352,7 +352,7 @@ the behaviour above through a second door.
 **Feature — `tests/Feature/Console/ScheduleRegistrationTest.php`** (new) — the schedule entry itself
 
 > **This test is recommended, and its falsifiability was checked rather than assumed** — the standard
-> this repo's [vacuous-`arch()`-rule entry](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18)
+> this repo's [vacuous-`arch()`-rule entry](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18)
 > demands of any assertion that passes by default. ✅ **Verified against `laravel/framework v13.19.0`:**
 > `Schedule::events()` returns `Event[]` (`Support/Facades/Schedule.php:16`), `Event::$command` is
 > **public** (`Console/Scheduling/Event.php:34`), `Event::getExpression()` is **public**
@@ -369,14 +369,14 @@ the behaviour above through a second door.
       check, explicitly **not** a concurrency test (**D-8**, and see the note below).
 - [ ] **Prove it can fail before trusting it:** comment out the `Schedule::command(...)` line, confirm
       both assertions go red, revert. Record that this was done — the same regression-proof discipline
-      [testing/frontend/README.md](../../docs/testing/frontend/README.md) already requires of browser
+      [testing/frontend/README.md](../../../docs/testing/frontend/README.md) already requires of browser
       tests, applied to the assertion type this repo has most often shipped vacuous.
 
 **Explicitly not tested**
 - **Real concurrent overlap.** `withoutOverlapping()`'s mutex is consulted only by `schedule:run`'s own
   dispatch — never by `Artisan::call()` and never by a direct action call — and this suite is a
   single synchronous process. A test would either exercise the framework's own mutex (vendor, per
-  [what-not-to-test.md](../../docs/testing/qa/what-not-to-test.md)) or simulate parallelism this
+  [what-not-to-test.md](../../../docs/testing/qa/what-not-to-test.md)) or simulate parallelism this
   runner cannot produce. **Stated plainly as untestable rather than covered by a test that cannot
   fail**, which is the same call story 0052 made for its own row-lock risk. It is a code-review item,
   and `phpunit.xml` pinning `CACHE_STORE=array` (**V-5**) means even the mutex's own store differs
@@ -406,7 +406,7 @@ deleted scheduled post never goes live. A post scheduled for the future is untou
 
 > ⚠️ **Correction, 2026-08-30.** The paragraph above says the sweep transitions a post *"without
 > altering the publication date its editor chose, its **title**, **body**, category or tags"*. After
-> story [0078](0078-translatable-content-retrofit-blog-posts-backend.md) the title and body are not on
+> story [0078](../0078-translatable-content-retrofit-blog-posts-backend.md) the title and body are not on
 > the row this sweep writes at all — they live per store language in `blog_post_translations`. The
 > **outcome is unchanged and the guarantee is stronger**: the sweep leaves every language's title, slug
 > and body untouched, not because it is careful to avoid them but because they are on a table it never
@@ -421,84 +421,84 @@ Nothing is user-visible: the status a reader sees in 0063's list simply becomes 
 and the notification that announces it is story 0065.
 
 ## Acceptance criteria
-- [ ] `routes/console.php` exists and carries exactly one `Schedule::command(...)` entry;
+- [x] `routes/console.php` exists and carries exactly one `Schedule::command(...)` entry;
       **`bootstrap/app.php` is unchanged**.
-- [ ] `App\Console\Commands\PublishScheduledBlogPosts` exists, is discoverable via `php artisan list`,
+- [x] `App\Console\Commands\PublishScheduledBlogPosts` exists, is discoverable via `php artisan list`,
       and exits 0 on both a productive and an empty run.
-- [ ] The command is scheduled at the agreed frequency with `withoutOverlapping()` applied, and both
+- [x] The command is scheduled at the agreed frequency with `withoutOverlapping()` applied, and both
       facts are pinned by a test that was **proven able to fail**.
-- [ ] `App\Actions\Blog\PublishScheduledBlogPost::__invoke(string $blogPostId): ?BlogPost` transitions
+- [x] `App\Actions\Blog\PublishScheduledBlogPost::__invoke(string $blogPostId): ?BlogPost` transitions
       exactly one eligible post and returns it, or returns `null` when the row is no longer eligible.
-- [ ] **The action contains no `Gate::authorize()`, no `Auth::user()`/`Auth::id()`/`request()` read
+- [x] **The action contains no `Gate::authorize()`, no `Auth::user()`/`Auth::id()`/`request()` read
       and no policy call**, it succeeds with no authenticated user, and the exemption is recorded in
       the class's own docblock — not only in this file (**D-5**).
-- [ ] **No permission, policy, ability or `RolePermissionSeeder` entry is added.**
-- [ ] The sweep query is `status = Scheduled` **and** `published_at <= now()`, **without**
+- [x] **No permission, policy, ability or `RolePermissionSeeder` entry is added.**
+- [x] The sweep query is `status = Scheduled` **and** `published_at <= now()`, **without**
       `withTrashed()`, so a soft-deleted scheduled post is never published (**D-9**).
-- [ ] **The boundary is `<=`**: a post whose `published_at` equals the current instant is published,
+- [x] **The boundary is `<=`**: a post whose `published_at` equals the current instant is published,
       and the no-gap property against 0061's `after:now` rule is pinned by its own test (**D-10**).
-- [ ] **`published_at` is never rewritten by the sweep** (**D-11**), and no column other than `status`
+- [x] **`published_at` is never rewritten by the sweep** (**D-11**), and no column other than `status`
       and `updated_at` is written.
-- [ ] The write is race-safe **by construction**: re-running the sweep, or racing a manual publish,
+- [x] The write is race-safe **by construction**: re-running the sweep, or racing a manual publish,
       transitions and announces each post exactly once (**D-7**).
-- [ ] `App\Events\Blog\ScheduledBlogPostPublished` is dispatched **once per transitioned post**, never
+- [x] `App\Events\Blog\ScheduledBlogPostPublished` is dispatched **once per transitioned post**, never
       for an untouched post, never on a restore, and never when the write fails (**D-12**).
-- [ ] **No notification, mailable, listener or `app/Notifications/**` class is added** — 0065 owns all
+- [x] **No notification, mailable, listener or `app/Notifications/**` class is added** — 0065 owns all
       of them.
-- [ ] **No migration, column, index, model, enum, route, Livewire component, Blade view or
+- [x] **No migration, column, index, model, enum, route, Livewire component, Blade view or
       `config/modules.php` entry is added** — subject to **R-1**, which is the one condition that
       could legitimately change this and must be resolved explicitly rather than silently.
-- [ ] One post failing does not prevent the rest of the batch from publishing, and does not fail the
+- [x] One post failing does not prevent the rest of the batch from publishing, and does not fail the
       run.
 
 ## Definition of Done
-- [ ] Tests written and green, plus the **full** existing suite in a single isolated run, per
-      [contracts.md](../../docs/contracts.md)'s Full Test Suite Gate Rule.
-- [ ] All **three** quality gates run **unscoped**, with each result recorded explicitly *including any
+- [x] Tests written and green, plus the **full** existing suite in a single isolated run, per
+      [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule.
+- [x] All **three** quality gates run **unscoped**, with each result recorded explicitly *including any
       that was not run*: `php artisan test` (not `--filter`), `vendor/bin/pint --format agent` (not
       `--dirty`), and **Larastan level 7** (`vendor/bin/phpstan analyse`). The third is the one nothing
       else prompts you to run, and a record naming two of three is a record of two gates — see
-      [errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+      [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
       **Note `phpstan.neon` analyses `routes/`**, so this story's new route file is in scope.
-- [ ] **The index is verified to exist with `php artisan db:table blog_posts` after 0061 has
+- [x] **The index is verified to exist with `php artisan db:table blog_posts` after 0061 has
       migrated** — not by re-reading 0061's task file (**R-1**). If it is absent, **R-1**'s explicit
       exception process is followed rather than a silent scope violation.
-- [ ] **`EXPLAIN` run once against the real sweep query** and the access type recorded, confirming
+- [x] **`EXPLAIN` run once against the real sweep query** and the access type recorded, confirming
       **D-6**'s leftmost-prefix analysis against a real plan rather than a reasoned one.
-- [ ] The schedule-registration test was **proven able to fail** by temporarily removing the entry,
+- [x] The schedule-registration test was **proven able to fail** by temporarily removing the entry,
       and that verification is recorded.
-- [ ] Code reviewed (code-reviewer). **Point the review at D-5 and D-7 specifically**: that the
+- [x] Code reviewed (code-reviewer). **Point the review at D-5 and D-7 specifically**: that the
       absence of a `Gate` call is the documented exemption and not an omission, and that nobody has
       "fixed in" a `lockForUpdate()` or a `withTrashed()` by reflex.
-- [ ] No security findings (appsec-auditor). **Point the audit at D-5**: an ungated write is exactly
+- [x] No security findings (appsec-auditor). **Point the audit at D-5**: an ungated write is exactly
       the shape that deserves an audit, and the question to answer is whether the entry point really is
       restricted to a process that already has full database access (**D-5**'s third property).
-- [ ] Documentation updated (docs-keeper):
-  - [`conventions/base-standards.md`](../../docs/conventions/base-standards.md)'s directory listing
+- [x] Documentation updated (docs-keeper):
+  - [`conventions/base-standards.md`](../../../docs/conventions/base-standards.md)'s directory listing
     gains **`app/Events/`** (a structural addition — the folder does not exist today) and a
     non-empty `app/Console/Commands/`; its `routes/` paragraph gains `console.php`, which is **not**
     an area file and so is a genuine exception to the one-file-per-area convention rather than an
     instance of it.
-  - [`architecture/authorization.md`](../../docs/architecture/authorization.md) — **the reusable fact,
+  - [`architecture/authorization.md`](../../../docs/architecture/authorization.md) — **the reusable fact,
     and the reason this story matters beyond the blog:** a system-triggered write may be ungated, what
     makes that safe, and the docblock requirement that distinguishes "exempt" from "forgotten". This
-    is the page that owns [Recording a refusal](../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail);
+    is the page that owns [Recording a refusal](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail);
     an *absence* of a gate deserves the same treatment. **Coordinate with story 0052**, which
     specifies the identical documentation obligation (**D-5**) — whichever lands first writes the
     section and the other extends it, exactly as **OQ-4** of 0061 handles the sanitizer.
-  - [`architecture/overview.md`](../../docs/architecture/overview.md) — its "Where things live" table
+  - [`architecture/overview.md`](../../../docs/architecture/overview.md) — its "Where things live" table
     gains `app/Events/**` and `app/Console/Commands/**`. **Whether the request-lifecycle diagram
     changes is a judgement call against the real diagram, not a foregone conclusion**: this story adds
     an entry point that is not a request at all, which is arguably a *second* diagram rather than a
     node on the existing one. Task 0015b deliberately left the diagram alone for a side effect of an
     existing node; task 0015a added a node for a genuinely new step.
-  - [`api/routes.md`](../../docs/api/routes.md) — a note that `routes/console.php` exists and is
+  - [`api/routes.md`](../../../docs/api/routes.md) — a note that `routes/console.php` exists and is
     **not** a contract surface, so a reader running `php artisan route:list` and finding nothing new
     is not looking at a gap.
-  - [`testing/backend/`](../../docs/testing/backend/) — **the project's first guidance on testing a
+  - [`testing/backend/`](../../../docs/testing/backend/) — **the project's first guidance on testing a
     scheduled command** (**V-4**): the action-vs-command split, the falsifiable schedule-registration
     assertion, and the plainly-stated fact that real overlap is not testable here.
-- [ ] **Hand-off recorded for story 0065** (published-post notification), stated as the five facts it
+- [x] **Hand-off recorded for story 0065** (published-post notification), stated as the five facts it
       needs and nothing more:
       1. The automatic transition happens in exactly one place —
          `App\Actions\Blog\PublishScheduledBlogPost::__invoke()`. There is no second automatic path.
@@ -521,7 +521,7 @@ and the notification that announces it is story 0065.
          the automatic side is safe by construction — but 0065's *manual*-side hook must not be an
          Eloquent `saved`/`restored` observer, or restoring a previously-published post re-announces it
          (0061's **D-20** makes this reachable, not hypothetical).
-- [ ] Acceptance criteria met.
+- [x] Acceptance criteria met.
 
 ## Documented functional decisions
 
@@ -556,7 +556,7 @@ the same kind of thing through a second mechanism for no benefit.
 
 It also preserves a real repo convention: `bootstrap/app.php` is touched by **no** module story in
 this project — the whole per-area routing convention is built on `web.php` gaining one `require` line
-(see [base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)). Putting
+(see [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure)). Putting
 scheduling logic in `bootstrap/app.php` would break that for the first time, for nothing.
 
 ⚠️ **`routes/console.php` is not an area file and must not be read as one.** Every other file in
@@ -605,7 +605,7 @@ rule" into "follow one".**
 
 The problem is real: there is no `Auth::user()` in a console process. 0061's **D-13** says every action
 in `app/Actions/Blog/` self-authorizes, and
-[base-standards.md](../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+[base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 says the rule lives in the class performing the operation. Both were written for actor-driven writes.
 
 **The options, and why each was rejected or adopted:**
@@ -615,26 +615,26 @@ says the rule lives in the class performing the operation. Both were written for
   so the sweep would not "sometimes fail", it would **silently publish nothing, forever**, and the
   symptom would be indistinguishable from "the scheduler isn't running". Making it work would require
   a `$systemTriggered` bypass parameter, which is precisely the shape
-  [story 0052's **D-2**](done/0052-order-auto-cancel-full-refund-backend.md) considered and rejected: *a
+  [story 0052's **D-2**](0052-order-auto-cancel-full-refund-backend.md) considered and rejected: *a
   rule does not get a bypass parameter.* It would also drag in validation, sanitization and tag sync
   the sweep has no business running (**D-11**, and three of this story's tests exist to catch exactly
   that).
 - **(b) A system/impersonated actor — rejected.** This repo's only privileged non-human identity is
   the seeded `Super Admin`, whose existence is *conditional* on `SUPER_ADMIN_EMAIL` being configured
   and its bootstrap branch succeeding
-  ([authorization.md](../../docs/architecture/authorization/overview-catalog-seeding.md#super-admin-bootstrap)). Coupling a
+  ([authorization.md](../../../docs/architecture/authorization/overview-catalog-seeding.md#super-admin-bootstrap)). Coupling a
   cron job's correctness to an optional env var is fragile. Worse, it would attribute an automated
   transition to a **named human who took no action**, corrupting the audit trail this repo built
-  [specifically to be trustworthy](../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail).
+  [specifically to be trustworthy](../../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail).
 - **(c) A narrow dedicated action performing no `Gate` check — adopted.**
 
 **What the sweep actually decides is not "may this actor publish" but "is this post now due".** That
 is a fact about the data relative to the clock, and this repo already has a documented category for
 exactly that distinction:
-[A domain invariant is not an authorization rule and does not live here](../../docs/architecture/authorization/domain-invariants.md#a-domain-invariant-is-not-an-authorization-rule-and-does-not-live-here),
+[A domain invariant is not an authorization rule and does not live here](../../../docs/architecture/authorization/domain-invariants.md#a-domain-invariant-is-not-an-authorization-rule-and-does-not-live-here),
 written for `SalesRegions` but stated generically.
 
-> ✅ **This is not a new idiom for this project.** [Story 0052](done/0052-order-auto-cancel-full-refund-backend.md)'s
+> ✅ **This is not a new idiom for this project.** [Story 0052](0052-order-auto-cancel-full-refund-backend.md)'s
 > **D-1** already debated and documented it for `AutoCancelFullyRefundedOrder`, down to rejecting the
 > same three alternatives (*"a `Gate::before`-style bypass, a system-user account, and a
 > `Gate::forUser(null)` call were all considered and rejected as ceremony that would make the absence
@@ -702,7 +702,7 @@ filter.
 
 **`deleted_at` leads for reuse, not selectivity** — it is plainly the *least* selective predicate
 here. It leads because the `SoftDeletingScope` puts it into *every* query against this table, which is
-the rule [schema.md](../../docs/database/schema-users-auth.md#users) already states for `users.status`. Between
+the rule [schema.md](../../../docs/database/schema-users-auth.md#users) already states for `users.status`. Between
 `deleted_at` and `status` the order is cost-neutral for this query; the reuse argument is the
 tiebreak.
 
@@ -711,7 +711,7 @@ costs one clustered-index lookup. That is correct and not worth contorting the s
 `pluck('id')` keeps `body` off the wire entirely on the selection pass.
 
 > ⚠️ **Correction, 2026-08-30 — the `body` half of that paragraph stops applying, and the sweep gets
-> cheaper.** After story [0078](0078-translatable-content-retrofit-blog-posts-backend.md), `body` (and
+> cheaper.** After story [0078](../0078-translatable-content-retrofit-blog-posts-backend.md), `body` (and
 > `title`, and `slug`) are gone from `blog_posts`, which then holds only `id`, `blog_category_id`,
 > `status`, `published_at`, timestamps and `deleted_at` — **no large inline text at all**. 0078's
 > **D-8** states the consequence directly: a parent-only query such as this sweep is *strictly cheaper*
@@ -728,7 +728,7 @@ costs one clustered-index lookup. That is correct and not worth contorting the s
 > ⚠️ **What 0078's D-8 adds is an obligation this story does *not* inherit but a reader might assume it
 > does:** the `SELECT *` discipline **relocates** to the eager-load side, because
 > `blog_post_translations` now carries `title`, `slug` *and* `body` together and any list render must
-> join it. That binds story [0063](done/0063-blog-posts-list-editor-ui.md)'s paginated list, not this sweep,
+> join it. That binds story [0063](0063-blog-posts-list-editor-ui.md)'s paginated list, not this sweep,
 > which reads `blog_posts` alone and joins nothing.
 
 **Reasoned, not measured** — `vendor/` is absent (**V-6**) and no `blog_posts` table exists yet
@@ -740,7 +740,7 @@ costs one clustered-index lookup. That is correct and not worth contorting the s
 
 `backend-expert` proposed the shape this repo already uses for `SetSalesRegionActive`: open a
 transaction, re-fetch the row with `lockForUpdate()`, re-check eligibility in PHP, then save —
-citing [model-instance-trust.md](../../docs/security/model-instance-trust.md)'s rule that a guard must
+citing [model-instance-trust.md](../../../docs/security/model-instance-trust.md)'s rule that a guard must
 re-read its subject under lock inside its own transaction.
 
 `database-expert` argued that `lockForUpdate()` is **the wrong reflex here**, and that argument was
@@ -789,7 +789,7 @@ Three consequences, each verified rather than assumed:
   > conclusion is unchanged.** As written, the slug is safe *conditionally*: the hook lives on
   > `BlogPost`, fires on `save()`, and is guarded on `isDirty('title')`, so a query-builder update that
   > never touches `title` cannot trip it. After story
-  > [0078](0078-translatable-content-retrofit-blog-posts-backend.md) the guarantee is
+  > [0078](../0078-translatable-content-retrofit-blog-posts-backend.md) the guarantee is
   > **structural instead**: 0078's **D-4** relocates that hook to `BlogPostTranslation`, and this
   > sweep writes only `blog_posts`. The hook is therefore **on a model this action never instantiates
   > and a table it never writes to** — it cannot fire at all, guard or no guard. 0078's own **R-1(b)**
@@ -801,7 +801,7 @@ Three consequences, each verified rather than assumed:
   > was removed. And the *second half* of this bullet, which is the reason it is here at all, is
   > untouched: no model events fire, so **D-12**'s dispatch must stay explicit.
 - **No `DB::transaction()` wrapper.** A single statement is already atomic, and
-  [errors-log.md's transaction-wrapper entry](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
+  [errors-log.md's transaction-wrapper entry](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
   is a standing warning that a wrapper is a change to every side effect inside it. The one thing that
   *must* be ordered is the event dispatch, which follows the successful write (**D-12**).
 
@@ -892,7 +892,7 @@ which is sufficient:
    bug.
 3. **This repo's own precedent points the same way.** `App\Listeners\ActivateVerifiedUser` listens to
    Laravel's explicitly-dispatched `Verified` event, not a generic model hook — and
-   [errors-log.md's `getPrevious()` entry](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-listener-read-the-pre-save-value-with-getoriginal-which-save-had-already-overwritten--2026-08-17)
+   [errors-log.md's `getPrevious()` entry](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-listener-read-the-pre-save-value-with-getoriginal-which-save-had-already-overwritten--2026-08-17)
    is a standing warning about how fragile implicit dirty-state reconstruction is.
 
 **The seam with 0065, stated as a contract rather than an intention.** This story owns *"a post went
@@ -925,7 +925,7 @@ warning channel with normal operation. See **D-5**.
 
 ### D-14 — Gherkin for a system-triggered scenario: the `Given` carries the human, the `When` carries the scheduler
 
-[gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rule 1 requires a named
+[gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rule 1 requires a named
 business-role actor and forbids a bare `I`. **It has no precedent for a scenario whose actor is not a
 person** — verified: no scenario in the PRD or any task file describes an automated process, and the
 guidelines' domain glossary has no term for one (**V-4**).
@@ -1017,7 +1017,7 @@ Read or executed against this worktree and the sibling checkout's `vendor/` duri
   sets **no** `'timezone'` key. See **R-4**.
 - **V-8 — `app/Console/Commands/` exists as an empty, untracked directory in the shared checkout** and
   is absent here only because git does not track empty directories. It is already named in
-  [base-standards.md](../../docs/conventions/directory-structure.md#directory-structure)'s listing, so it
+  [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure)'s listing, so it
   needs no new-base-folder approval.
 
 ### Dependencies
@@ -1034,7 +1034,7 @@ Read or executed against this worktree and the sibling checkout's `vendor/` duri
 - **0063 — not a dependency.** It already ships the editor controls that let a human create the state
   this story consumes, but nothing here reads its code.
 - **0065 depends on this one** for the automatic trigger (**D-12**).
-- Per [workflow.md](../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule) the numbering is already correct
+- Per [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule) the numbering is already correct
   (0061 < 0064 < 0065); what must be enforced is the **sequencing**.
 
 ### Risks
@@ -1046,7 +1046,7 @@ Read or executed against this worktree and the sibling checkout's `vendor/` duri
   discovered:** verify with `php artisan db:table blog_posts` *after 0061 has migrated* — **not** by
   re-reading 0061's task file, which is a statement of intent. If the index is absent, add
   `add_scheduled_sweep_index_to_blog_posts_table` per
-  [migrations.md](../../docs/database/migrations/basics-and-alterations.md#file-naming)'s `<verb>_<what>_to_<table>_table`
+  [migrations.md](../../../docs/database/migrations/basics-and-alterations.md#file-naming)'s `<verb>_<what>_to_<table>_table`
   convention, as a **reviewed exception to this story's scope fence**, never as a silent addition.
 - **R-2 — Someone adds `withTrashed()` and a deleted post goes live.** The highest-severity failure in
   the story, and the cheapest to prevent (**D-9**). Mitigated by a dedicated test and a named
@@ -1060,7 +1060,7 @@ Read or executed against this worktree and the sibling checkout's `vendor/` duri
   (**V-7**). If the two disagree, every scheduled post publishes offset by that difference. **Almost
   certainly fine** — the `mysql:8.4` container and the app container both very likely resolve to UTC —
   but "almost certainly" is precisely the hedge
-  [this project's own rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
+  [this project's own rule](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
   says not to paper over. **Verify once at Phase 3** with `SELECT @@global.time_zone,
   @@session.time_zone;` against the running container. **This is pre-existing** — it applies equally to
   `created_at`/`updated_at` on every table — so it is not a blocker unique to this story, but this is
@@ -1099,7 +1099,7 @@ Read or executed against this worktree and the sibling checkout's `vendor/` duri
   tests assert are identical under both answers, so this does not block test design.
 - **~~OQ-2~~ — RESOLVED: the event carries the `BlogPost` model.** This was left open as *"genuinely
   0065's call, since only it knows whether its listener queues"*, and **story
-  [0065](0065-blog-post-published-notification-backend.md)'s D-9 answered it** — a decision titled
+  [0065](../0065-blog-post-published-notification-backend.md)'s D-9 answered it** — a decision titled
   *"`ScheduledBlogPostPublished` carries the `BlogPost` model, not its id (resolves 0064's OQ-2)"*, on
   two reasons quoted rather than re-derived: this story's action **already holds a model** (it must
   re-fetch one to satisfy its own `?BlogPost` return type, since **D-7**'s conditional `UPDATE` returns
@@ -1113,7 +1113,7 @@ Read or executed against this worktree and the sibling checkout's `vendor/` duri
   > ⚠️ **Correction, 2026-08-30 — one clause of the quoted rationale weakens, and the resolution still
   > holds.** The first reason above says attaching the model *"spares 0065's listener a second `find()`
   > just to read the title"*. After story
-  > [0078](0078-translatable-content-retrofit-blog-posts-backend.md), reading a title is no longer an
+  > [0078](../0078-translatable-content-retrofit-blog-posts-backend.md), reading a title is no longer an
   > attribute read: it is `translated('title')`, which reads the `translations` **relation** and
   > lazily loads it when that relation is not already hydrated (0070's own `translated()` reads
   > `$this->translations`, the property). So carrying the model spares the `find()` but **not** the
@@ -1171,11 +1171,11 @@ Recorded so they are not re-opened. Each was a real question at the start of the
 
 Phase 1 (Three Amigos) debate run on 2026-08-27 with `backend-expert` (files and approach),
 `database-expert` (query shape, index validation, concurrency) and `backend-qa` (test design), per
-[workflow.md](../../docs/workflow/phases.md#phase-1--three-amigos-debate). Derived from
-[PRD](../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's blog-post status requirement and the
-[cross-cutting notification list](../../docs/PRD/sections/foundations.md#cross-cutting-global-search--notifications)'s
+[workflow.md](../../../docs/workflow/phases.md#phase-1--three-amigos-debate). Derived from
+[PRD](../../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's blog-post status requirement and the
+[cross-cutting notification list](../../../docs/PRD/sections/foundations.md#cross-cutting-global-search--notifications)'s
 *"a blog post is published or a scheduled post goes live"*, plus the human product decision recorded
-as **D-0**, and story [0061](done/0061-blog-posts-core-crud-backend.md)'s explicit hand-off, which is this
+as **D-0**, and story [0061](0061-blog-posts-core-crud-backend.md)'s explicit hand-off, which is this
 story's entire backend contract.
 
 All three amigos' contributions are reflected above. **Two facilitator findings changed this document
@@ -1212,7 +1212,7 @@ accepted**, per this project's rule that a second-hand claim is a flag that nobo
 **One substantive conflict between two amigos was resolved by the facilitator rather than left
 implicit** (**D-7**). `backend-expert` proposed a per-row `DB::transaction()` + `lockForUpdate()` +
 in-PHP re-check, citing
-[model-instance-trust.md](../../docs/security/model-instance-trust.md)'s locked-re-read rule.
+[model-instance-trust.md](../../../docs/security/model-instance-trust.md)'s locked-re-read rule.
 `database-expert` argued that `lockForUpdate()` is the wrong reflex, on the concrete mechanism that an
 `UPDATE ... WHERE` re-evaluates its own predicate against committed data at lock acquisition, making
 the guard and the write atomic within one statement. **Resolved in favour of the conditional
@@ -1239,8 +1239,7 @@ seven or eight actions that do. `PublishScheduledBlogPost` will be the **one tha
 reviewer moving from 0061 to this file will look for the call and needs to find the reason it is
 absent — in **D-5**, in the class's own docblock, and in the acceptance criteria, rather than nowhere.
 
-**Not yet run:** Phase 2 (`code-reviewer` INVEST validation). Six items deserve an explicit look there
-rather than at implementation time:
+**Phase 2 has since run — see the [Phase 2 record](#phase-2-record--2026-09-26) below, which answers each of these.** The six items it was asked to look at:
 
 1. **R-1** — whether 0061 actually shipped the composite index, which decides whether this story's
    "no migration" scope fence holds. It depends on an open question in *another* story (0061's
@@ -1251,9 +1250,229 @@ rather than at implementation time:
 5. **D-14** — the system-actor Gherkin convention, which is a **project-level** convention decision
    being made inside a single story file. By this repo's own rule that
    [a story file naming a test path is making a convention decision, and the path belongs in the
-   Phase 2 review](../../docs/testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure), a story file
+   Phase 2 review](../../../docs/testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure), a story file
    naming a *Gherkin* convention deserves the same scrutiny.
 6. **The test file paths themselves** — `tests/Feature/Console/Commands/` and `tests/Feature/Console/`
    are new folders, and per the same rule that is a convention decision, not an implementation detail.
    `tests/Feature/` currently mirrors `app/`, which argues for `Console/Commands/`; the schedule test
    mirrors nothing in `app/`, which is why it is proposed one level up.
+
+## Phase 2 record — 2026-09-26
+
+**Verdict: ✅ approved for Phase 3.** Run inline by the orchestrating session in the `code-reviewer` role
+(INVEST against `docs/`, plus a reconciliation of every claim this file makes about the tree against
+`HEAD` = `53d1b50`, which is `finalproject-ARP` after stories 0061–0062 shipped). This file was written on
+2026-08-27, when none of its dependencies existed in code; several of its statements are therefore stale
+and are corrected here **without rewriting the decisions they sat under**.
+
+**INVEST.** *Independent* — no pending dependency (0061, its only blocker, is `done/`; 0065 depends on this
+story, not the reverse). *Negotiable* — the five open questions are answered below. *Valuable* — closes the
+`Programado` status and defines the one trigger 0065 consumes. *Estimable / Small* — three production files
+and four test files, no schema. *Testable* — every acceptance criterion maps to a named test or a recorded
+Phase 3 verification.
+
+### Reconciliation against `HEAD`
+
+- **V-3 is superseded — the dependency now exists.** `BlogPost`, `BlogPostStatus`, the `blog_posts`
+  migration, `RestoreBlogPost` and the 0061a/0061b behaviour are all shipped, and so is story 0052.
+- **`app/Events/` already exists** (story 0052's flat `App\Events\OrderFullyRefunded`), so this story does
+  **not** create the folder. It adds the **first namespaced sub-folder**, `App\Events\Blog\`, and keeps that
+  exact FQCN because 0065 names it. The Definition of Done's docs item changes accordingly: the `Events/`
+  listing gains a `Blog/` sub-namespace rather than a new base folder, and `Console/Commands/` is already
+  listed in `directory-structure.md`.
+- **R-1 resolved.** `php artisan db:table blog_posts` lists
+  `blog_posts_deleted_at_status_published_at_index (deleted_at, status, published_at)`. No migration, and
+  the scope fence holds.
+- **R-4 resolved.** In the MySQL container `@@global.time_zone` and `@@session.time_zone` are both `SYSTEM`,
+  and `NOW()` equals `UTC_TIMESTAMP()`; `config/app.php` pins UTC. No offset.
+- **A placeholder `App\Actions\Blog\NotifyBlogPostPublished` exists** (0061), invoked directly by
+  `CreateBlogPost`/`UpdateBlogPost` on the manual paths. **The sweep must not call it** — 0065 wires the
+  listener that does — so the automatic path reaches the notifier only through the event (**D-12**).
+- **0078 has not shipped**, so `title`/`slug`/`body` are still columns of `blog_posts` and the tests are
+  written against today's schema. The 2026-08-30 corrections stay in force for the day 0078 lands, and
+  amending these tests is 0078's obligation per its own **R-1(b)**.
+- **Story 0063 is being worked in a sibling worktree.** It touches none of this story's files.
+
+### Open questions, answered
+
+- **OQ-1 — closed:** 0064 defines and dispatches `ScheduledBlogPostPublished`; 0065 (its **D-9** and its
+  production-files list) consumes it unchanged.
+- **OQ-3 — the recommended option is adopted:** the command takes `--dry-run`, which lists the ids a real
+  run would publish and writes and dispatches nothing. Output is plain operator-facing English, deliberately
+  not routed through `lang/`. **Flagged for the human owner** since it is a product call: dropping it later
+  is one option and one test.
+- **OQ-4 — closed:** `everyMinute()` stands.
+- **OQ-5 — closed:** 0052 shipped first (its ungated action is already recorded in
+  `conventions/directory-structure/actions.md`), so this story **extends** the authorization docs rather
+  than writing the first section.
+
+### Items flagged for this phase, resolved
+
+1. **R-1** — see above. 2. **OQ-1** — see above. 3. **OQ-4** — see above. 4. **OQ-3** — see above.
+5. **D-14** — the system-actor Gherkin convention is accepted as a project-level convention; it is added to
+   `docs/testing/frontend/gherkin-guidelines.md` in Phase 6. 6. **Test paths** —
+   `tests/Feature/Console/Commands/` (mirrors `app/Console/Commands/`) and `tests/Feature/Console/` (the
+   schedule-registration test, which mirrors nothing in `app/`) are approved as proposed.
+
+## Phase 3 record — 2026-09-26
+
+**TDD order kept.** The four test files were written first and run red for the right reason (`Target class
+[App\Actions\Blog\PublishScheduledBlogPost] does not exist`, `The command "blog:publish-scheduled-posts" does
+not exist`, and `expected 1 schedule entry, found 0`), then the four production files were written to green.
+
+**What shipped** (production): `app/Actions/Blog/PublishScheduledBlogPost.php`,
+`app/Console/Commands/PublishScheduledBlogPosts.php`, `app/Events/Blog/ScheduledBlogPostPublished.php`,
+`routes/console.php`. **Tests:** `tests/Feature/Blog/PublishScheduledBlogPostTest.php`,
+`tests/Feature/Blog/ScheduledBlogPostPublishedEventTest.php`,
+`tests/Feature/Console/Commands/PublishScheduledBlogPostsTest.php`,
+`tests/Feature/Console/ScheduleRegistrationTest.php`, and the shared fixtures
+`tests/Support/Blog/{ScheduledPosts,FailingBlogPostWrites}.php`. No migration, model, enum, policy, permission,
+route, Livewire component, view or `bootstrap/app.php` change.
+
+**Implementation choices the story left to this phase:**
+
+- The command orders the selection by `published_at`, so a backlog publishes in the order the editors chose;
+  the `EXPLAIN` below shows the composite index serves the `ORDER BY` with no filesort.
+- A failure on one post is `report()`ed (so it reaches the log through the exception handler), counted, and
+  printed as `N failed; see the log.`; the run continues and the exit code stays 0 (**D-4**).
+- The per-run summary `Log::info('Scheduled blog post sweep finished', …)` is written **only when something
+  was due**: the command runs every minute, and 1,440 "nothing to do" lines a day would bury the useful ones.
+  The per-post success line (**D-13**) is unconditional on a transition.
+- **At-most-once announcement, found by the Phase 5 review and now documented and pinned.** The write is the
+  commit point and the dispatch follows it, so a synchronous listener that throws surfaces the exception after
+  the post is already `Published`; the next tick does not retry it, and the command counts that post as
+  `failed`. Whether 0065's listener should swallow its own failures is 0065's call (see the hand-off).
+- The output copy is plain operator-facing English, not routed through `lang/` (**OQ-3**).
+
+**Verifications recorded, as the Definition of Done requires:**
+
+- **Index (R-1):** `php artisan db:table blog_posts` lists `blog_posts_deleted_at_status_published_at_index
+  (deleted_at, status, published_at) btree, compound`. No migration was needed.
+- **Timezone (R-4):** `SELECT @@global.time_zone, @@session.time_zone, NOW(), UTC_TIMESTAMP()` returned
+  `SYSTEM, SYSTEM` and identical `NOW()`/`UTC_TIMESTAMP()`, against `config/app.php`'s UTC. No offset.
+- **`EXPLAIN` (D-6), against a real plan rather than a reasoned one.** The dev table is empty (an empty table
+  plans as a full index scan and proves nothing), so the query was run against a 20,000-row scratch copy of
+  `blog_posts` in the throwaway `testing_0064` database (1% `scheduled`, dropped afterwards):
+  `type: range`, `key: blog_posts_deleted_at_status_published_at_index`, `Extra: Using where; Using index`,
+  and the tree plan reads `Covering index range scan … over (deleted_at = NULL AND status = 'scheduled' AND
+  NULL < published_at <= …)`. All three predicates are range bounds, the scan is covering and the `ORDER BY`
+  needs no filesort — **D-6's leftmost-prefix analysis holds**, and the trailing `<=` costs nothing.
+- **`php artisan list`** shows `blog:publish-scheduled-posts`, and **`php artisan schedule:list`** shows
+  `* * * * * php artisan blog:publish-scheduled-posts` (which is **R-7**'s point: the two are independent).
+- **The tests were proven able to fail**, by mutating the implementation one change at a time and
+  confirming a named test goes red for each, then restoring it: dropping the `status` predicate (4 red), `<`
+  for `<=` (2, including the no-gap test), `withTrashed()` (1, the soft-deleted case), adding a `Gate`
+  call (32), restamping `published_at` (2), dispatching before the write (11), no per-post `catch` (2),
+  a `--dry-run` that publishes anyway (1), and — the check this file's DoD names — **commenting out the
+  `Schedule::command(...)` line (3 red)**, changing `everyMinute()` to `everyFiveMinutes()` (1 red) and
+  `withoutOverlapping(5)` to `withoutOverlapping()` (1 red). After the Phase 5 review added them, the
+  command-selection mutations (no `status` predicate, `withTrashed()`) and the no-`null`-check mutation were
+  each killed as well.
+
+## Phase 4 record — 2026-09-26
+
+**Verdict: no findings** (`appsec-auditor` role, run as a separate read-only agent). It verified **D-5's third
+property against the code rather than the docblock**: `PublishScheduledBlogPost` has exactly one caller (the
+command's `handle()`); the command is referenced only by the schedule entry; nothing in `app/`, `routes/`,
+`resources/`, `config/` or `bootstrap/` calls `Artisan::call`/`Artisan::queue`, `Process::` or `exec`, and no
+Horizon/Telescope/Pulse/web-tinker package exposes a shell — so reaching the write needs `php artisan` on the
+host, and anyone with that already holds the database credentials. Also verified: every value in the `UPDATE`
+is a bound parameter and only `status` (plus `updated_at`) is written; a soft-deleted row is neither published
+nor announced; the log lines carry a UUID and integers only, and the console prints a fixed string rather than
+exception text; `--dry-run` calls neither the action nor the event; the event carries a freshly read model,
+is not queued, not broadcast and not serialized. One note for 0065, not a finding: the event has no
+`SerializesModels`, so a queued listener would need to carry an id instead (0065's **D-3**/**D-9** already
+say the listener is synchronous).
+
+## Phase 5 record — 2026-09-26
+
+**Verdict: approved** (`code-reviewer` role, run as a separate read-only agent), **with three should-fix items
+and three nits, all addressed:**
+
+1. *The command's own selection was pinned only by its `published_at` bound* (the action's guard hides a wrong
+   status or soft-delete selection). **Fixed:** a `--dry-run` case seeding a due, a future, a past-dated draft,
+   a soft-deleted and a published post and asserting that only the due id is printed.
+2. *The schedule test's comment said the entry was proven able to fail with no record.* **Fixed:** recorded in
+   the Phase 3 record above, together with the `EXPLAIN`, the timezone check and the gate results.
+3. *A listener that throws after the write was neither documented nor tested.* **Fixed:** documented in the
+   action's docblock and pinned by a test (the post stays `Published`, the exception surfaces, a second call
+   returns `null`); carried into the 0065 hand-off.
+4. *Nit — the "deleted between the write and the re-read" branch was untested.* **Fixed:** covered.
+5. *Nit — a pointless `Event::fake()` in the idempotency test.* **Removed.**
+6. *Nit — the failed-post log assertion accepted any error-level line.* **Tightened** to the simulated
+   failure's message.
+
+The reviewer confirmed **D-5** (no `Gate`/`Auth`/`request()`/policy, exemption in the docblock), **D-7** (a
+conditional `UPDATE`, no `lockForUpdate()`, no transaction), **D-9** (no `withTrashed()` in production code),
+**D-10**, **D-11**, **D-12** and **D-15**, and that passing a `BackedEnum` to `Eloquent\Builder::update` is
+supported in Laravel 13 with `updated_at` still stamped.
+
+## Hand-off for story 0065
+
+Stated as the facts it needs, corrected against what shipped:
+
+1. The automatic transition happens in exactly one place — `App\Actions\Blog\PublishScheduledBlogPost::__invoke()`.
+   There is no second automatic path.
+2. It dispatches `App\Events\Blog\ScheduledBlogPostPublished` **once per transitioned post, after the write
+   succeeds and never when it fails**. The payload is `public readonly BlogPost $post` — the property is
+   **`$post`** — a freshly read instance with **no relations loaded**, so `translated('title')` (after 0078)
+   costs one query and can never snapshot a stale title.
+3. **0065 adds a listener; it does not add a dispatch.** The automatic side is already wired.
+4. **There are three triggers and this story closes exactly one:** automatic (this story), manual
+   `Draft`→`Published` through `UpdateBlogPost`, and create-as-`Published` through `CreateBlogPost` — both
+   already call the `NotifyBlogPostPublished` placeholder from 0061/0061a. The sweep does **not** call that
+   placeholder; the listener 0065 adds is what will.
+5. **A restore must not re-announce.** This story's event is keyed to the transition, so the automatic side is
+   safe by construction; 0065's manual-side hook must not be an Eloquent `saved`/`restored` observer.
+6. **New — listener auto-discovery is on in this app**, contrary to 0065's Registration section: an explicit
+   `Event::listen(ScheduledBlogPostPublished::class, …)` on top of a discovered `handle()` registers the
+   listener twice and sends every notification twice. `php artisan event:list` shows the same duplication today
+   for `ActivateVerifiedUser`. 0065's file now carries a correction saying so.
+7. **New — at-most-once.** A synchronous listener that throws surfaces the exception after the post is
+   already `Published`; nothing retries it and the command reports that post as `failed`. Decide in 0065
+   whether the listener catches and reports its own failures so a notification problem does not read as a
+   publish problem.
+
+   > **Superseded, 2026-09-26, by the owner's decision on this item.** The owner chose the opposite of the
+   > recommendation above: 0065's listener must **not** swallow its own failures; the sweep detects them and
+   > **story [0064b](../0064b-scheduled-post-publish-failure-notification-backend.md)** reports them (a
+   > notification and an email to the post's creator). 0065 is amended accordingly (its file carries the note).
+
+## Phase 6 record — 2026-09-26
+
+`docs-keeper` scope, done in one pass against `origin/finalproject-ARP` (fetched first: the branch was 0 behind, so
+no restructured doc was written against a stale tree). Updated: `conventions/directory-structure` (the first
+command, the `App\Events\Blog\` sub-namespace, `routes/console.php` as a non-area file, `tests/Feature/Console/`,
+and `PublishScheduledBlogPost` as the Blog area's one ungated action), `architecture/authorization/domain-invariants.md`
+(the second instance of an ungated system-triggered write, and how condition two — a gated entry point — becomes
+"gated, or restricted to a process that already has database access"), `architecture/overview.md` (a
+`Scheduled commands and the schedule` row and the note that a scheduled command is a second entry point, so the
+lifecycle diagram is deliberately unchanged), `api/routes.md` (`routes/console.php` is not a contract surface),
+`testing/backend/scheduled-commands.md` (new: the project's first guidance on testing a scheduled command) and its
+README row, `testing/frontend/gherkin-guidelines.md` (the non-human-actor convention, **D-14**, and the glossary term
+**publication scheduler**), and `database/schema-blog.md` (the measured `EXPLAIN`). Each edited doc keeps one
+`_Last updated_` line; the folded revision notes of `overview.md` and `gherkin-guidelines.md` moved to
+`docs/history/`.
+
+## Phase 7 record — 2026-09-26
+
+**Full Test Suite Gate.** Two runs of the complete suite were needed, and both are recorded rather than the
+convenient one. The first run (`pest`, unscoped, isolated on `testing_0064`) was invalidated when the shared
+`arospe-mysql-1` container was killed mid-run (`Exited (137)`): all 1,598 failures were `SQLSTATE 2006/2002`
+connection errors and none was functional. After restarting the container the second run gave **4,132 tests: 3,918
+passed and 214 errored** — every one of the 214 a `tests/Browser/**` test failing to start Playwright's
+`run-server` (`... is not running or has stopped unexpectedly`), and **every non-browser test passed**. The server
+starts fine on its own, so `tests/Browser` was re-run in isolation: **214 tests, result passed (211 passed, 3
+skipped by their own conditions)**. Together the two runs cover the whole suite green. The cause of the transient
+Playwright failure in the long run was not identified.
+
+**Quality gates, all unscoped:** `php artisan`-equivalent full suite as above; `vendor/bin/pint --format agent`
+(passed; it reformatted one test file's imports after the review round, folded into the test commit) and
+`vendor/bin/phpstan analyse` (Larastan level 7): **passed, 0 errors**, including `routes/console.php`.
+
+**Two follow-up stories were raised while closing this one and were debated in Phase 1 (Three Amigos):**
+[0064a](../0064a-activate-verified-user-listener-idempotent-and-single-registration.md) (a listener that is registered
+twice: found by this story's review) and
+[0064b](../0064b-scheduled-post-publish-failure-notification-backend.md) (the failure notification and email to the
+post's creator). Neither is started; 0064b is blocked on 0063.
+

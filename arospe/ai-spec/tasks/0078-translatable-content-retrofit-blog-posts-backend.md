@@ -919,7 +919,7 @@ load-bearing:** since `SetTranslation` authorizes nothing, each action's `Gate` 
     deliberately orders by `created_at`, **not** `title` (its own note, line ~806), precisely because
     0061's **D-10** says posts carry no title uniqueness — so unlike 0062/0025 there is no `orderBy`
     break. Its line ~298 quote of `#[Fillable]` also goes stale (**D-9**).
-  - **(b) [0064](0064-scheduled-post-auto-publish-backend.md)** asserts at line ~212 that *"only `status`
+  - **(b) [0064](done/0064-scheduled-post-auto-publish-backend.md)** asserts at line ~212 that *"only `status`
     and `updated_at` change"* by checking `title`, `slug` and `body` are untouched — those assertions must
     retarget the translation table. Its underlying reasoning gets **simpler**, not harder: its line ~709
     note that the slug is safe *"because 0061's hook is guarded on `isDirty('title')`"* is superseded by
@@ -1085,7 +1085,7 @@ meta title/description)"*, but story 0061 ships **no** meta columns — only `sl
 
 Derived from this debate; **none are in scope for 0078.**
 
-1. **Amend [0063](done/0063-blog-posts-list-editor-ui.md), [0064](0064-scheduled-post-auto-publish-backend.md)
+1. **Amend [0063](done/0063-blog-posts-list-editor-ui.md), [0064](done/0064-scheduled-post-auto-publish-backend.md)
    and [0065](0065-blog-post-published-notification-backend.md)** per **R-1**. 0063 needs one coherent
    amendment covering all three Epic 5 taxonomy/content retrofits at once, not three separate ones. The
    coordinator's, not this story's. **Include Q-1's resolution explicitly** (added 2026-08-30, QA review
