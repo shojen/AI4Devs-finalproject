@@ -212,31 +212,31 @@ a named mutation. A future listener that is added both by discovery **and** by h
 administrator can observe changes.
 
 ## Acceptance criteria
-- [ ] `AppServiceProvider::configureEventListeners()`, its call in `boot()` and every import it alone
+- [x] `AppServiceProvider::configureEventListeners()`, its call in `boot()` and every import it alone
       used are removed; no listener is registered by hand anywhere in `app/`.
-- [ ] `bootstrap/app.php` is unchanged (discovery stays on, as story 0052 shipped it).
-- [ ] `tests/Feature/Providers/EventListenerRegistrationTest.php` asserts no duplicate binding per event
+- [x] `bootstrap/app.php` is unchanged (discovery stays on, as story 0052 shipped it).
+- [x] `tests/Feature/Providers/EventListenerRegistrationTest.php` asserts no duplicate binding per event
       **and** the four positive bindings, with failure messages naming the event and the entry, and was
       **proven able to fail** by re-adding an explicit `Event::listen` and by renaming `handleAuthenticated`.
-- [ ] The runs-once test resolves each of `ActivateVerifiedUser` (on `Verified`) and
+- [x] The runs-once test resolves each of `ActivateVerifiedUser` (on `Verified`) and
       `RejectNonActiveUserLogin` (on `Login` and `Authenticated`) exactly **once** per dispatch, was seen
       at **2** before the deletion, and uses the real dispatcher (no `Event::fake()`).
-- [ ] The four unit idempotency cases and the one real-database characterisation test exist, each with the
+- [x] The four unit idempotency cases and the one real-database characterisation test exist, each with the
       mutation it kills recorded in the task file; the characterisation test is honestly labelled.
-- [ ] `app/Listeners/**` is unchanged: `ActivateVerifiedUser`'s logic and its `getPrevious()` docblock are
+- [x] `app/Listeners/**` is unchanged: `ActivateVerifiedUser`'s logic and its `getPrevious()` docblock are
       intact, and `getOriginal()` is not used anywhere in it.
-- [ ] `php artisan event:list` (run once, by hand, at Phase 3) shows one entry per listener per event.
-- [ ] None of story 0064's files, and no other task file, is edited by this story — **content**-wise. The stage move to `in-progress/` and the later one to `done/` re-point one link line each in `0065` and `done/0064` (the mandatory link-integrity check), and regenerate `tasks-map.md`/`tasks-status.json`; nothing else in them changes.
+- [x] `php artisan event:list` (run once, by hand, at Phase 3) shows one entry per listener per event.
+- [x] None of story 0064's files, and no other task file, is edited by this story — **content**-wise. The stage move to `in-progress/` and the later one to `done/` re-point one link line each in `0065` and `done/0064` (the mandatory link-integrity check), and regenerate `tasks-map.md`/`tasks-status.json`; nothing else in them changes.
 
 ## Definition of Done
-- [ ] Tests written and green, plus the **full** existing suite in a **single isolated run**, per
+- [x] Tests written and green, plus the **full** existing suite in a **single isolated run**, per
       [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule.
-- [ ] All **three** quality gates run **unscoped**, each result recorded explicitly *including any that
+- [x] All **three** quality gates run **unscoped**, each result recorded explicitly *including any that
       was not run*: `php artisan test` (not `--filter`), `vendor/bin/pint --format agent` (not
       `--dirty`), and **Larastan level 7** (`vendor/bin/phpstan analyse`). A record naming two of three
       is a record of two gates — see
       [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
-- [ ] The red-then-green sequence and every mutation in **D-8** are recorded in the task file with the
+- [x] The red-then-green sequence and every mutation in **D-8** are recorded in the task file with the
       test that went red.
 - [ ] Code reviewed (code-reviewer). **Point the review at D-1 and D-2**: that no listener logic was
       changed under cover of an "idempotency" story, and that nobody re-added an explicit registration
@@ -248,13 +248,13 @@ administrator can observe changes.
       `Authenticated` after the deletion, does the registry test genuinely fail if either binding is
       lost, and is there any deployment path (a cached event manifest — **R-3**) on which discovery
       could leave it unregistered while the suite is green?
-- [ ] Documentation updated (docs-keeper) — every entry in the *Docs* table above, in one pass, with
+- [x] Documentation updated (docs-keeper) — every entry in the *Docs* table above, in one pass, with
       **one** `_Last updated_` line per touched doc and the base branch fetched first.
 - [ ] Task-coordination files regenerated when this file is created and again when it moves
       (`ai-spec/tasks-map.md`, `ai-spec/tasks-status.json`), and the two-direction link-integrity check
       run at each stage move, per
       [task-files-links-and-ordering.md](../../../docs/workflow/task-files-links-and-ordering.md).
-- [ ] **Hand-off to 0065 recorded** exactly as stated below.
+- [x] **Hand-off to 0065 recorded** exactly as stated below.
 - [ ] The compare-and-set race (**R-2**) is logged as a **separate follow-up story** (**OQ-3**), not fixed here.
 - [ ] Acceptance criteria met.
 
@@ -512,7 +512,9 @@ committed separately: the production commit `c07e44d` precedes the test commit.)
 The characterisation test is labelled as not independently falsifiable (**D-6**).
 
 **Quality gates (unscoped):** `vendor/bin/pint --format agent` passed; `vendor/bin/phpstan analyse` (level 7) passed, 0 errors;
-full `pest` run: see below.
+full `pest` run, single isolated pass on the final tree: **4384 passed, 3 skipped, 0 failed**. An earlier pass overlapped with other work and had
+one unrelated `tests/Browser/Components/WysiwygEditorOutputHtmlTest.php` failure that passed 11/11 in isolation and did not recur. Run with
+`vendor/bin/pest -d memory_limit=-1`, because `php artisan test` cannot raise its child process's memory limit in this worktree setup.
 
 **Phase 4/5 review** (independent read-only agent, not the project's `code-reviewer`/`appsec-auditor` definitions, which were
 not available in this session): D-1 and D-2 hold (`app/Listeners/**`, `bootstrap/app.php` byte-identical to base; no explicit
