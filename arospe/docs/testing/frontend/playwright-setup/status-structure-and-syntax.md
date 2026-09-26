@@ -58,7 +58,11 @@ tests/
                tests/Browser/BlogTags/IndexTest.php (the blog tag screen, story 0060 — mirrored
                folder, ratified at that story's Phase 2) and
                tests/Browser/BlogCategories/IndexTest.php (the blog category screen, story 0062 —
-               the same mirrored convention)
+               the same mirrored convention) and
+               tests/Browser/BlogPosts/IndexTest.php + tests/Browser/BlogPosts/EditorJourneyTest.php
+               (the blog post list and editor, story 0063 — the same mirrored convention; the journey
+               wraps its select/`wire:model` flow in `retry(3, ...)`, and uses a non-zero seconds part
+               in its `datetime-local` value because Chromium drops `:00`)
   Browser/Fixtures/  Real, checked-in binary fixtures a browser test needs as bytes on disk
                      (sample-upload.jpg) — never generated at runtime
   ```

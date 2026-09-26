@@ -31,6 +31,15 @@ app/
                        action; `#[Locked]` orderId, method-injected actions, computeds read as
                        properties) — the Index-flat / other-nested depth asymmetry's second shipped
                        Index/Show pair, see naming.md.
+                       BlogTags/ and BlogCategories/ — Index.php each (stories 0060 and 0062, modal
+                       create/edit/delete screens, flat views livewire/blog-tags.blade.php and
+                       livewire/blog-categories.blade.php). BlogPosts/ — Index.php (story 0063, the
+                       paginated list with URL-bound filters, the delete modal and the deleted-posts
+                       restore section, flat view livewire/blog-posts.blade.php) and Editor.php (a routed
+                       create/edit page behind two routes, nested view livewire/blog-posts/editor.blade.php;
+                       reaches tags only through the post actions, an arch test fences the tag actions out
+                       of this namespace) — the Index-flat / other-nested asymmetry's third Index/Editor-style
+                       pair, see naming.md.
                        Dev/ (story 0020, the media-gallery-harness
                        scaffolding) was RETIRED by story 0027 once Products/Editor supplied a real
                        host page — see below. Components/ (story 0021, extended by 0022) is not a module area

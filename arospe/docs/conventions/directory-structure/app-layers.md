@@ -9,8 +9,8 @@ app/
   Concerns/            Shared traits (validation rule sets, incl. BlogCategoryValidationRules — story 0058; BlogTagValidationRules — story 0059 (two name-rule methods, `nameFormatRules()` and `nameRules()`, because create and find-or-create disagree about what an existing name means); BlogPostValidationRules — story 0061 (field-named methods, two of them status-parameterised: `bodyRules()` and `publishedAtRules()`); ResolvesSalesRegionFromAddress — the country/Spain-postal-prefix → Sales Region mapping shared by the physical and virtual tax-region resolvers; ResolvesFlagReasonLabel — story 0055, the `flag_reason` → copy resolution shared by the orders list marker and the detail callout, so the two never word one flag differently)
   Console/Commands/    Artisan commands
   Enums/               Backed enums for domain value sets (UserStatus, RoleName, SalesRegionKind,
-                       BlogPostStatus — story 0061, draft/published/scheduled, no label() until a second
-                       consumer appears, ProductType, ProductStatus — exactly two persisted cases — and
+                       BlogPostStatus — story 0061, draft/published/scheduled, with label() since story 0063
+                       (the posts list badge and the editor's status select), ProductType, ProductStatus — exactly two persisted cases — and
                        ProductDisplayStatus, a badge-only third enum never persisted, never
                        validated and carrying no column or cast of its own; GeographyLevel, story
                        0032 — deliberately no label(), since this story ships no rendering site at
