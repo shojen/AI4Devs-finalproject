@@ -127,7 +127,13 @@ test('the trashed query is explicit too, and selects only trashed rows', functio
         fn (string $sql): bool => preg_match('/from [`"]blog_posts[`"].*[`"]deleted_at[`"] is not null/is', $sql) === 1,
     );
 
-    expect($trashedStatements)->toHaveCount(1);
+    // One row fetch for the section and one aggregate for its true total; only the fetch has columns.
+    $fetches = $trashedStatements->reject(fn (string $sql): bool => preg_match('/^select count\(/i', $sql) === 1);
+
+    expect($fetches)->toHaveCount(1)
+        ->and($trashedStatements->count() - $fetches->count())->toBe(1);
+
+    $trashedStatements = $fetches;
 
     $columns = blogPostsQuerySelectedColumns($trashedStatements->all())[0];
 

@@ -135,7 +135,7 @@ test('the category select renders every category plus exactly one disabled, sele
     $real = array_values(array_filter($options, fn (array $option): bool => $option['value'] !== ''));
 
     expect($placeholders)->toHaveCount(1)
-        ->and($placeholders[0]['attributes'])->toContain('disabled')
+        ->and($placeholders[0]['attributes'])->toMatch('/\bdisabled\b(=|\s|$)/')
         ->and($placeholders[0]['attributes'])->toContain('selected')
         ->and($options[0]['value'])->toBe('')
         ->and(array_column($real, 'value'))->toEqualCanonicalizing([$guides->id, $news->id])

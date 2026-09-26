@@ -21,6 +21,7 @@ use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Url;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
@@ -269,8 +270,39 @@ test('a soft-deleted post is not among the rows', function () {
     BlogPost::factory()->create(['title' => 'Trashed post'])->delete();
     $this->actingAs(blogPostsIndexActor(['blog.view']));
 
-    expect(blogPostsIndexTitles(Livewire::test(Index::class)))->toBe(['Live post']);
-    expect($live->exists)->toBeTrue();
+    expect(blogPostsIndexTitles(Livewire::test(Index::class)))->toBe(['Live post'])
+        ->and(BlogPost::onlyTrashed()->pluck('title')->all())->toBe(['Trashed post'])
+        ->and(BlogPost::query()->pluck('id')->all())->toBe([$live->id]);
+});
+
+test('the deleted-posts section is bounded, and says how many exist when it is truncated', function () {
+    $limit = (new ReflectionClassConstant(Index::class, 'TRASHED_LIMIT'))->getValue();
+    $category = BlogCategory::factory()->create();
+    BlogPost::factory()->count($limit + 1)->create(['blog_category_id' => $category->id]);
+    BlogPost::query()->update(['deleted_at' => now()]);
+    $this->actingAs(blogPostsIndexActor(['blog.view']));
+
+    $queries = [];
+    DB::listen(function ($query) use (&$queries): void {
+        $queries[] = $query->sql;
+    });
+
+    $component = Livewire::test(Index::class);
+
+    expect($component->get('trashedPosts'))->toHaveCount($limit)
+        ->and($component->get('trashedPostsTotal'))->toBe($limit + 1)
+        ->and(collect($queries)->contains(fn (string $sql): bool => str_contains($sql, 'from `blog_posts`') && str_contains($sql, 'limit '.$limit)))->toBeTrue();
+    $component->assertSeeHtml('data-test="trashed-posts-truncated"')
+        ->assertSee(__('blog-posts.index.trashed_truncated', ['shown' => $limit, 'total' => $limit + 1]));
+});
+
+test('the truncation notice is absent while every deleted post is listed', function () {
+    BlogPost::factory()->create()->delete();
+    $this->actingAs(blogPostsIndexActor(['blog.view']));
+
+    Livewire::test(Index::class)
+        ->assertSeeHtml('data-test="trashed-posts-section"')
+        ->assertDontSeeHtml('data-test="trashed-posts-truncated"');
 });
 
 // =====================================================================
@@ -308,6 +340,71 @@ test('the list is paginated at 25 rows per page', function () {
 
     expect($page1->total())->toBe(27)->and($page1->count())->toBe(25)
         ->and($page2->count())->toBe(2)->and($page2->currentPage())->toBe(2);
+});
+
+test('deleting the only row of the last page returns to the previous page instead of an empty one', function () {
+    BlogPost::factory()->count(26)->create();
+    $this->actingAs(blogPostsIndexActor());
+
+    $component = Livewire::test(Index::class)->call('gotoPage', 2);
+    $lonelyId = $component->get('posts')->items()[0]['id'];
+
+    $component->call('confirmDelete', $lonelyId)->call('deleteBlogPost');
+
+    $posts = $component->get('posts');
+
+    expect($posts->currentPage())->toBe(1)
+        ->and($posts->count())->toBe(25)
+        ->and($posts->total())->toBe(25);
+    $component->assertSet('paginators.page', 1)->assertDontSeeHtml('data-test="blog-posts-empty-state"');
+});
+
+test('a forged page beyond the last never reads as "no posts yet" while posts exist', function () {
+    BlogPost::factory()->count(3)->create();
+    $this->actingAs(blogPostsIndexActor(['blog.view']));
+
+    $component = Livewire::withQueryParams(['page' => 99])->test(Index::class);
+
+    expect($component->get('posts')->total())->toBe(3)
+        ->and($component->get('posts')->count())->toBe(3);
+    $component->assertDontSeeHtml('data-test="blog-posts-empty-state"');
+});
+
+test('a forged page on a filter that matches nothing still shows the filtered empty state, never a blank table', function () {
+    $category = BlogCategory::factory()->create();
+    BlogPost::factory()->count(2)->create();
+    $this->actingAs(blogPostsIndexActor(['blog.view']));
+
+    Livewire::withQueryParams(['page' => 99, 'category' => $category->id])
+        ->test(Index::class)
+        ->assertSeeHtml('data-test="blog-posts-empty-state"')
+        ->assertSee(__('blog-posts.index.empty_filtered'));
+});
+
+test('a filter pair that is not a known category and tag from the URL is discarded on mount and the full list is shown', function () {
+    BlogPost::factory()->count(3)->create();
+    $this->actingAs(blogPostsIndexActor(['blog.view']));
+
+    $component = Livewire::withQueryParams(['category' => 'nope', 'tag' => 'x'])->test(Index::class);
+
+    $component->assertSet('categoryFilter', '')->assertSet('tagFilter', '');
+    expect($component->get('posts')->total())->toBe(3);
+});
+
+test('a valid filter id is accepted even when the option dropdown is capped below it', function () {
+    // sanitizeFilters() asks the database whether the id exists; it must not consult the (capped,
+    // uncached) option list, or a real id beyond FILTER_OPTIONS_LIMIT would read as forged.
+    $limit = (new ReflectionClassConstant(Index::class, 'FILTER_OPTIONS_LIMIT'))->getValue();
+    BlogCategory::factory()->count($limit)->sequence(fn ($sequence) => ['name' => sprintf('a-%04d', $sequence->index)])->create();
+    BlogTag::factory()->count($limit)->sequence(fn ($sequence) => ['name' => sprintf('a-%04d', $sequence->index)])->create();
+    $category = BlogCategory::factory()->create(['name' => 'zzz last']);
+    $tag = BlogTag::factory()->create(['name' => 'zzz last']);
+    $this->actingAs(blogPostsIndexActor(['blog.view']));
+
+    Livewire::withQueryParams(['category' => $category->id, 'tag' => $tag->id])
+        ->test(Index::class)
+        ->assertSet('categoryFilter', $category->id)
+        ->assertSet('tagFilter', $tag->id);
 });
 
 // =====================================================================
@@ -607,20 +704,28 @@ test('every refusal this component raises writes exactly one warning with target
     'restoreBlogPost' => ['restore', 'blog.edit', fn ($c, $p, $t, $phase) => $phase === 'refuse' ? $c->call('restoreBlogPost', $t->id) : null],
 ]);
 
-test('the delete and restore refusals name the target post id', function () {
-    $post = BlogPost::factory()->create();
+test('the delete and restore refusals name the target post id', function (string $method, bool $trashed) {
+    $target = BlogPost::factory()->create();
+
+    if ($trashed) {
+        $target->delete();
+    }
+
     $this->actingAs(blogPostsIndexActor(['blog.view']));
 
-    $context = blogPostsIndexRefusedContext(function () use ($post): void {
+    $context = blogPostsIndexRefusedContext(function () use ($method, $target): void {
         try {
-            Livewire::test(Index::class)->call('confirmDelete', $post->id);
+            Livewire::test(Index::class)->call($method, $target->id);
         } catch (AuthorizationException) {
             //
         }
     });
 
-    expect($context['target_id'])->toBe($post->id);
-});
+    expect($context['target_id'])->toBe($target->id);
+})->with([
+    'delete' => ['confirmDelete', false],
+    'restore' => ['restoreBlogPost', true],
+]);
 
 test('a permitted delete and a permitted restore write no warning at all', function () {
     $post = BlogPost::factory()->create();

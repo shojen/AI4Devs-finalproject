@@ -98,7 +98,7 @@ function blogPostsClickedMethods(string $html): array
 // Row content
 // =====================================================================
 
-test('each status renders its own label and colour through its row-scoped hook', function (string $state, BlogPostStatus $status, string $colour) {
+test('each status renders its own label and exact colour class through its row-scoped hook', function (string $state, BlogPostStatus $status, string $colourClass) {
     $post = BlogPost::factory()->{$state}()->create();
     // Decoys of the OTHER two statuses, so a hook resolving to the wrong row (or a page-global
     // match) cannot pass.
@@ -110,11 +110,18 @@ test('each status renders its own label and colour through its row-scoped hook',
 
     expect($badge)->not->toBeNull()
         ->and($badge['text'])->toBe($status->label())
-        ->and($badge['open'])->toContain($colour.'-');
+        ->and($badge['open'])->toContain($colourClass);
+
+    // Never one of the other two statuses' colours. (Flux's badge falls back to zinc for an unknown
+    // colour, so the Draft class alone cannot tell "zinc" from "no colour matched"; the exact text
+    // class of each of the three does distinguish the three from one another.)
+    foreach (array_diff(['text-zinc-700', 'text-amber-700', 'text-lime-800'], [$colourClass]) as $other) {
+        expect($badge['open'])->not->toContain($other);
+    }
 })->with([
-    'draft is zinc' => ['draft', BlogPostStatus::Draft, 'zinc'],
-    'scheduled is amber' => ['scheduled', BlogPostStatus::Scheduled, 'amber'],
-    'published is lime' => ['published', BlogPostStatus::Published, 'lime'],
+    'draft is zinc' => ['draft', BlogPostStatus::Draft, 'text-zinc-700'],
+    'scheduled is amber' => ['scheduled', BlogPostStatus::Scheduled, 'text-amber-700'],
+    'published is lime' => ['published', BlogPostStatus::Published, 'text-lime-800'],
 ]);
 
 test('the status badge speaks Spanish under the es locale', function () {

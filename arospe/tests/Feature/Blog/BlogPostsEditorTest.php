@@ -783,6 +783,42 @@ test('the same actor is refused when one name is new, and the whole save rolls b
         ->and($valid->posts()->count())->toBe(0);
 });
 
+test('an actor who cannot create tags cannot add a NEW name as a chip from the keyboard, and sees why', function () {
+    $this->actingAs(blogPostsEditorActor(['blog.view', 'blog.edit']));
+
+    Livewire::test(Editor::class, ['blogPost' => BlogPost::factory()->create()])
+        ->set('tagInput', 'brand-new')
+        ->call('addTypedTag')
+        ->assertSet('tagNames', [])
+        ->assertHasErrors(['tagNames'])
+        ->assertSee(__('blog-posts.editor.tag_create_not_allowed'));
+});
+
+test('the same actor still adds an existing name (by case or accent) from the input and from a suggestion', function () {
+    $this->actingAs(blogPostsEditorActor(['blog.view', 'blog.edit']));
+    BlogTag::factory()->create(['name' => 'Niño']);
+    BlogTag::factory()->create(['name' => 'running']);
+
+    Livewire::test(Editor::class, ['blogPost' => BlogPost::factory()->create()])
+        ->set('tagInput', 'NINO')
+        ->call('addTypedTag')
+        ->assertSet('tagNames', ['NINO'])
+        ->assertHasNoErrors()
+        ->call('addTag', 'running')
+        ->assertSet('tagNames', ['NINO', 'running'])
+        ->assertHasNoErrors();
+});
+
+test('an actor holding blog.create still adds a brand-new name as a chip', function () {
+    $this->actingAs(blogPostsEditorActor(['blog.view', 'blog.create', 'blog.edit']));
+
+    Livewire::test(Editor::class)
+        ->set('tagInput', 'brand-new')
+        ->call('addTypedTag')
+        ->assertSet('tagNames', ['brand-new'])
+        ->assertHasNoErrors();
+});
+
 // =====================================================================
 // The chip field's own mutations
 // =====================================================================
@@ -829,7 +865,8 @@ test('a name longer than a tag name may be is not added', function () {
 
     Livewire::test(Editor::class)
         ->call('addTag', str_repeat('a', BlogTag::NAME_MAX_LENGTH + 1))
-        ->assertSet('tagNames', []);
+        ->assertSet('tagNames', [])
+        ->assertHasErrors(['tagNames']);
 });
 
 test('removing a chip removes exactly that name and keeps the order of the rest', function () {
@@ -896,7 +933,7 @@ test('the suggestion list is small and bounded however many tags match', functio
 
     $suggestions = Livewire::test(Editor::class)->set('tagInput', 'tag')->get('tagSuggestions');
 
-    expect($suggestions)->not->toBeEmpty()->and(count($suggestions))->toBeLessThanOrEqual(10);
+    expect($suggestions)->toHaveCount(8);
 });
 
 test('the suggestion query is gated on viewing the tag catalog, and a refusal is logged against a blog_tag', function () {
@@ -917,6 +954,38 @@ test('the suggestion query is gated on viewing the tag catalog, and a refusal is
     expect($contexts)->not->toBeEmpty()
         ->and($contexts[0]['ability'])->toBe('viewAny')
         ->and($contexts[0]['target_type'])->toBe('blog_tag');
+});
+
+// =====================================================================
+// A forged $tagNames must never 500 the chip field (it is client-writable state)
+// =====================================================================
+
+test('a forged tagNames (non-strings, oversized names, far more than the maximum) does not break suggestions, rendering or the chip mutations', function () {
+    $this->actingAs(blogPostsEditorActor());
+    BlogTag::factory()->create(['name' => 'running']);
+
+    $forged = [123, ['x'], null, str_repeat('a', 300), ...array_map(fn (int $n): string => 'tag'.$n, range(1, 60))];
+
+    $component = Livewire::test(Editor::class)->set('tagNames', $forged);
+
+    expect($component->set('tagInput', 'run')->get('tagSuggestions'))->toBe(['running']);
+    $component->assertOk()->assertDontSee('Array');
+
+    $component->call('addTag', 'fresh')->assertOk();
+    $component->call('removeTag', 'tag1')->assertOk();
+
+    expect(collect($component->get('tagNames'))->every(fn ($name): bool => is_string($name)))->toBeTrue()
+        ->and(count($component->get('tagNames')))->toBeLessThanOrEqual(BlogPost::MAX_TAGS);
+});
+
+test('a forged non-string tag set is still refused by the action on save, never silently repaired', function () {
+    $this->actingAs(blogPostsEditorActor());
+
+    $component = blogPostsEditorFill(Livewire::test(Editor::class), BlogCategory::factory()->create(), ['tagNames' => [123, ['x']]])
+        ->call('save');
+
+    $component->assertHasErrors();
+    expect(BlogPost::count())->toBe(0);
 });
 
 // =====================================================================
