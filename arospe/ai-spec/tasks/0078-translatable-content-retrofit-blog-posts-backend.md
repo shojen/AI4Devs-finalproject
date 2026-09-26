@@ -907,7 +907,7 @@ load-bearing:** since `SetTranslation` authorizes nothing, each action's `Gate` 
 
 - **R-1 — Dropping `blog_posts.title` breaks three already-written sibling stories, and this story cannot
   fix them.** Verified by grep against `ai-spec/tasks/`:
-  - **(a) [0063](0063-blog-posts-list-editor-ui.md) is the worst-hit file in the whole Epic 5 plan.** Its
+  - **(a) [0063](in-progress/0063-blog-posts-list-editor-ui.md) is the worst-hit file in the whole Epic 5 plan.** Its
     **D-4** list query (line ~789) is
     `->select(['id', 'blog_category_id', 'title', 'status', 'published_at', 'created_at'])
     ->with(['category:id,name', 'tags:id,name'])` — a **partial column select naming `title`**, which is
@@ -1085,7 +1085,7 @@ meta title/description)"*, but story 0061 ships **no** meta columns — only `sl
 
 Derived from this debate; **none are in scope for 0078.**
 
-1. **Amend [0063](0063-blog-posts-list-editor-ui.md), [0064](0064-scheduled-post-auto-publish-backend.md)
+1. **Amend [0063](in-progress/0063-blog-posts-list-editor-ui.md), [0064](0064-scheduled-post-auto-publish-backend.md)
    and [0065](0065-blog-post-published-notification-backend.md)** per **R-1**. 0063 needs one coherent
    amendment covering all three Epic 5 taxonomy/content retrofits at once, not three separate ones. The
    coordinator's, not this story's. **Include Q-1's resolution explicitly** (added 2026-08-30, QA review

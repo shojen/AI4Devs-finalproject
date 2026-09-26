@@ -1,7 +1,7 @@
 # [0079] Blog post editor — language tabs (frontend)
 
 ## Description
-Retrofit story [0063](0063-blog-posts-list-editor-ui.md)'s Blog post list and routed editor page so a
+Retrofit story [0063](in-progress/0063-blog-posts-list-editor-ui.md)'s Blog post list and routed editor page so a
 post's **title** and **body** are authored per active store language through language tabs, satisfying
 [PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization)'s *"each active store language
 surfaces as a tab in the Product and **Blog editors**"* and its `Switching an editor's language tab
@@ -1292,7 +1292,7 @@ a post's French title is neither identity-sensitive nor hard to reverse.
   implemented**. Supplies `blog_post_translations`, `BlogPostTranslation` and its slug hook, the widened
   `titleRules()`, the unchanged `CreateBlogPost`/`UpdateBlogPost` signatures and the registry entry.
   **Its own hard gate — 0061's OQ-2 — is inherited here** (**R-4**).
-- **[0063](0063-blog-posts-list-editor-ui.md)** — hard, blocking, not implemented. The list, the routed
+- **[0063](in-progress/0063-blog-posts-list-editor-ui.md)** — hard, blocking, not implemented. The list, the routed
   editor, the routes, the registry entry and the lang files this story widens. See **R-1**.
 - **[0071](0071-product-categories-language-tabs-ui.md)** — hard. The shared strip, `setActiveLanguageTab()`,
   the two-layer pattern, the `x-show` rendering mode, the derived error key. **Consumed, never edited.**

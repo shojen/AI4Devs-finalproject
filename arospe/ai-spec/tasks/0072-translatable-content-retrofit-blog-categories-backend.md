@@ -810,7 +810,7 @@ is one no post uses, and its translations are exactly the data that has just bec
   `BlogCategory::query()->withCount(...)->orderBy('name')->orderBy('id')`, and its component surface
   (line ~329) declares a row shape `array{id: string, name: string, postCount: int, canEdit: bool,
   canDelete: bool}` plus a `$deletingCategoryName` property, all fed from `$category->name`;
-  [`0063-blog-posts-list-editor-ui.md`](0063-blog-posts-list-editor-ui.md) lines 792 and 978 specify
+  [`0063-blog-posts-list-editor-ui.md`](in-progress/0063-blog-posts-list-editor-ui.md) lines 792 and 978 specify
   `->with(['category:id,name', ...])` — a **partial column select**, which is a sharper break than an
   `orderBy` because it names the dropped column explicitly in the eager load. All are **unimplemented
   Phase 1 files**, so the cost is an amendment rather than a code break — but the amendment is real and
@@ -906,7 +906,7 @@ close:
 
 Derived from this debate; **none are in scope for 0072**.
 
-1. **Amend stories [0062](done/0062-blog-categories-ui.md) and [0063](0063-blog-posts-list-editor-ui.md)** so
+1. **Amend stories [0062](done/0062-blog-categories-ui.md) and [0063](in-progress/0063-blog-posts-list-editor-ui.md)** so
    their queries no longer reference a `blog_categories.name` column — an ordered join over the
    translation for the requested language, and a replacement for the `category:id,name` partial select
    (**R-1**). The coordinator's, not this story's. Note this is the blog half of the same amendment 0070's

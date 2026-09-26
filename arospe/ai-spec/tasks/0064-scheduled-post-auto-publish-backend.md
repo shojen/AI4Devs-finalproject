@@ -728,7 +728,7 @@ costs one clustered-index lookup. That is correct and not worth contorting the s
 > ⚠️ **What 0078's D-8 adds is an obligation this story does *not* inherit but a reader might assume it
 > does:** the `SELECT *` discipline **relocates** to the eager-load side, because
 > `blog_post_translations` now carries `title`, `slug` *and* `body` together and any list render must
-> join it. That binds story [0063](0063-blog-posts-list-editor-ui.md)'s paginated list, not this sweep,
+> join it. That binds story [0063](in-progress/0063-blog-posts-list-editor-ui.md)'s paginated list, not this sweep,
 > which reads `blog_posts` alone and joins nothing.
 
 **Reasoned, not measured** — `vendor/` is absent (**V-6**) and no `blog_posts` table exists yet

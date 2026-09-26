@@ -41,6 +41,8 @@ Phase-3 blocker (`0048`–`0054`) is now `done/` — so it moves from `blocked` 
 terminal node finally unblocked. `0057`'s own node is likewise dropped from the graph; it had no pending dependent of its own to
 re-derive against `done/`.
 
+Update (2026-09-26): `0063-blog-posts-list-editor-ui.md` moved from `ai-spec/tasks/` to `in-progress/` (Phase 3 starts; `claimed` in `tasks-status.json`). Its inbound links from `0064`, `0072`, `0073`, `0078`, `0079` and the `done/` files that cite it were re-pointed. No dependency edge changes.
+
 Update (2026-09-26): `0062-blog-categories-ui.md` completed Phase 7 and moved from `in-progress/` to `done/` — the seventh Epic 4 story to close, and the second Blog screen. Its node and every edge touching it are dropped from the graph below and its `tasks-status.json` entry (the `claimed` one) was deleted. Its one hard dependent, `0073`, drops `"0062"` and stays `blocked` on `0068`/`0070`/`0071`/`0072`; `0063` drops it from `conflict_risk_with`. `ai-spec/tasks/in-progress/` is empty again.
 
 Update (2026-09-25): `0061b-blog-post-body-must-have-visible-content.md` completed Phase 7 and moved from `in-progress/` to `done/` — the sixth Epic 4 story to close. Its node and its `tasks-status.json` entry (the `claimed` one) are dropped, and `"0061b"` is removed from the `conflict_risk_with` lists of `0063` and `0065`. It had no dependents, so its closure re-derives nothing. `ai-spec/tasks/in-progress/` is empty again.
