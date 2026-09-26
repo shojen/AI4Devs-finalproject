@@ -7,7 +7,12 @@
 ```
 app/
   Concerns/            Shared traits (validation rule sets, incl. BlogCategoryValidationRules — story 0058; BlogTagValidationRules — story 0059 (two name-rule methods, `nameFormatRules()` and `nameRules()`, because create and find-or-create disagree about what an existing name means); BlogPostValidationRules — story 0061 (field-named methods, two of them status-parameterised: `bodyRules()` and `publishedAtRules()`); ResolvesSalesRegionFromAddress — the country/Spain-postal-prefix → Sales Region mapping shared by the physical and virtual tax-region resolvers; ResolvesFlagReasonLabel — story 0055, the `flag_reason` → copy resolution shared by the orders list marker and the detail callout, so the two never word one flag differently)
-  Console/Commands/    Artisan commands
+  Console/Commands/    Artisan commands (PublishScheduledBlogPosts, `blog:publish-scheduled-posts` — story 0064,
+                       the app's first: run every minute by the schedule entry in routes/console.php. The
+                       command owns the selection and the per-post loop, Actions/Blog/PublishScheduledBlogPost
+                       owns the transition). Auto-discovered from this folder, so it needs no registration —
+                       which also means `php artisan list` showing it proves nothing about the schedule entry;
+                       see ../../testing/backend/scheduled-commands.md
   Enums/               Backed enums for domain value sets (UserStatus, RoleName, SalesRegionKind,
                        BlogPostStatus — story 0061, draft/published/scheduled, no label() until a second
                        consumer appears, ProductType, ProductStatus — exactly two persisted cases — and
@@ -53,7 +58,10 @@ app/
   Http/Controllers/    Abstract base + domain controllers used as HTTP boundaries in front of actions
   Events/              Domain events dispatched by actions (OrderFullyRefunded — story 0052, the
                        app's first: carries only `string $orderId`, never a hydrated Order, not
-                       queued, dispatched by RecordRefund AFTER its transaction commits). A stock
+                       queued, dispatched by RecordRefund AFTER its transaction commits; and, in a `Blog/`
+                       sub-namespace, App\Events\Blog\ScheduledBlogPostPublished — story 0064, dispatched
+                       once per post by PublishScheduledBlogPost after its write succeeds, with no actor;
+                       carries the BlogPost model, not queued; story 0065 adds its listener). A stock
                        Laravel location (`make:event`), no approval needed
   Listeners/           Event listeners (ActivateVerifiedUser; CancelFullyRefundedOrder — story
                        0052, a thin synchronous adapter to Actions/Orders/AutoCancelFullyRefunded

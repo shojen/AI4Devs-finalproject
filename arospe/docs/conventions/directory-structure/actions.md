@@ -132,7 +132,10 @@ app/
                        withTrashed() count). NotifyBlogPostPublished is a no-op PLACEHOLDER created by
                        0061 because CreateBlogPost/UpdateBlogPost must call it and story 0065, which
                        owns the real notification, depends on 0061; 0065 keeps its `__invoke(BlogPost): void`
-                       signature and fills the body in
+                       signature and fills the body in. PublishScheduledBlogPost (story 0064) is the area's ONE
+                       action that does not self-authorize: system-triggered and deliberately ungated, one
+                       conditional UPDATE per post, reached only from the scheduled command (see
+                       architecture/authorization/domain-invariants.md#a-system-triggered-write-may-be-ungated--autocancelfullyrefundedorder-and-the-three-conditions-that-make-it-safe)
   Actions/Products/    Domain actions for the Products area (CreateProduct, UpdateProduct,
                        DeleteProduct — each self-authorizes, unlike ProductCategories/ above;
                        SyncProductGallery — the single writer of featured_media_id and every

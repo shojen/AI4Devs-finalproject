@@ -14,6 +14,7 @@ Every rule below is grounded in this app's **real, existing flows** (login, regi
   5. [Consistent language / shared glossary](#5-consistent-language--shared-domain-glossary)
   6. [No ghost scenarios](#6-no-ghost-scenarios)
   7. [No loss of ubiquitous language](#7-no-loss-of-ubiquitous-language)
+- [Scenarios whose actor is not a person](#scenarios-whose-actor-is-not-a-person-scheduled-and-system-triggered)
 - [Domain glossary](#domain-glossary)
 - [Given/When/Then → Pest it() translation convention](#givenwhenthen--pest-it-translation-convention)
 
@@ -198,6 +199,15 @@ Scenario: Remove a passkey
   Then the passkey can no longer be used to sign in
 ```
 
+## Scenarios whose actor is not a person (scheduled and system-triggered)
+
+Rule 1 requires a named business-role actor and forbids a bare `I`. It had no precedent for a scenario whose acting subject is not a person — a scheduled sweep, an automatic cancellation — and story 0064 (a scheduled command that publishes due posts) set the convention every later scheduled or queued feature inherits:
+
+- **The `When` names the acting subject in business language** — *"the publication scheduler runs"*. Not `Given I`, and not *"the system"*: "system" is exactly the technical leakage rule 2 warns against and says nothing about what the process is for.
+- **The `Given` still carries a named business-role actor wherever a human decision created the state** — *"a post scheduled by a blog editor for a time that has now arrived"*. This keeps rule 1's intent (business framing, real domain roles), not only its letter.
+- **Never attribute the automatic transition to the human who did not perform it.** *"When the blog editor's scheduled time arrives"* reads as though a person acted, which is the specific confusion this kind of feature causes when it goes wrong.
+- **Rule 3 is unaffected**: one `When` per scenario. Idempotency is its own scenario with its own `When` — *"a post the publication scheduler has already published … when the publication scheduler runs again"*.
+
 ## Domain glossary
 
 Canonical terms for what exists in the code **today**, derived from [`app/Models/User.php`](../../../app/Models/User.php), [../../database/schema.md](../../database/schema.md), and [../../architecture/authentication.md](../../architecture/authentication.md). Use these exact terms in scenarios; don't substitute synonyms.
@@ -228,6 +238,7 @@ Canonical terms for what exists in the code **today**, derived from [`app/Models
 | --- | --- |
 | **post** | A single blog entry (the PRD's word — not "article"). |
 | **blog editor** | The actor who manages the blog, as the PRD's Epic 4 scenarios name them. |
+| **publication scheduler** | The automated process that publishes a scheduled post once its time arrives; the acting subject of a `When`, never a person (story 0064; see [Scenarios whose actor is not a person](#scenarios-whose-actor-is-not-a-person-scheduled-and-system-triggered)). |
 
 ### TODO — blog / ecommerce vocabulary (undefined)
 
@@ -254,8 +265,4 @@ Conventions for the translation:
 
 See [examples/](examples/) for three complete scenario → Pest translations built on this convention.
 
-_Last updated: 2026-08-24 — Task 0015a (step-up authentication for privileged Users actions): one glossary term added, **Step-up authentication**, with its "not re-login / not 2FA" disambiguation — the story's own Gherkin needed a settled word for "requiring a *recently* confirmed password from an actor who already holds the permission", and the existing **Password confirmation** entry pointed only at `security.edit`'s middleware, which is now one of two places the app requires one. Nothing else on this page changed._
-
-_Previously: 2026-08-21 — Task 0012, Phase 6 link sweep: fixed this file's own table-of-contents anchor for rule 5, which read `#5-consistent-language--shared-glossary` while the heading is "Consistent language / **shared domain** glossary". Content unchanged._
-
-_Previously: 2026-07-19 — New frontend/browser testing guide added by the docs-maintainer skill._
+_Last updated: 2026-09-26 — Story 0064 (scheduled post auto-publish): added the section for scenarios whose actor is not a person and the glossary term **publication scheduler**; earlier revision notes live in [history/testing--frontend--gherkin-guidelines.md](../../history/testing--frontend--gherkin-guidelines.md)._
