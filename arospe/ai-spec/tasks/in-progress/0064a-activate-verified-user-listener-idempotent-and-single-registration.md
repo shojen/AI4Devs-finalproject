@@ -111,7 +111,7 @@ shipped — **D-2**), `bootstrap/app.php` (**D-1** rejects `withEvents(discover:
 | `docs/architecture/authentication/two-factor-passkeys-logout-and-map.md` | Lines 111 and 114 (the file map) say both listeners are *"registered in `app/Providers/AppServiceProvider.php`"*. Found while writing this story; reword to *"auto-discovered"*. |
 | `docs/security/login-status-enforcement.md` | Lines 316-318 say *"Single guard, no event auto-discovery. … `bootstrap/app.php` never calls `withEvents()`, so the explicit `Event::listen()` registrations in `AppServiceProvider` are the only ones — the listener is not double-fired."* **That claim is false**: `Application::configure()` calls `->withEvents()` itself (`vendor/laravel/framework/src/Illuminate/Foundation/Application.php:243`). Correct it, and — per this repo's convention for audit-authored pages — quote what it used to say rather than silently rewriting it. Keep the true half (single `web` guard). |
 | `docs/conventions/naming/classes.md` | One line, in the paragraph at line 17 that names listeners: listeners are auto-discovered from `app/Listeners`; do not register one by hand. |
-| `docs/errors-log/2026-09-10-to-2026-09-23.md` | One entry (the current file — its row in [`docs/errors-log.md`](../../../docs/errors-log.md) covers *2026-09-10 to 2026-09-24*): **an explicit `Event::listen()` on top of Laravel 13's listener auto-discovery double-registers a listener**, why nothing failed (the second run returned early), and the rule adopted. Add the topic-index line in `docs/errors-log.md`. |
+| `docs/errors-log/2026-09-25-to-2026-09-26.md` | One entry (the current file at implementation time; this row originally named `2026-09-10-to-2026-09-23.md` — its row in [`docs/errors-log.md`](../../../docs/errors-log.md) covers *2026-09-10 to 2026-09-24*): **an explicit `Event::listen()` on top of Laravel 13's listener auto-discovery double-registers a listener**, why nothing failed (the second run returned early), and the rule adopted. Add the topic-index line in `docs/errors-log.md`. |
 | `docs/README.md` and every touched doc's footer | **Fetch the base branch first** so the docs are edited against current content (a conflicting docs PR silently gets no CI). Each doc keeps **one** `_Last updated_` line — no `_Previously:` chain. No new doc file is created, so the index changes only if an entry's summary became wrong. |
 
 ## Tests to perform
@@ -226,7 +226,7 @@ administrator can observe changes.
 - [ ] `app/Listeners/**` is unchanged: `ActivateVerifiedUser`'s logic and its `getPrevious()` docblock are
       intact, and `getOriginal()` is not used anywhere in it.
 - [ ] `php artisan event:list` (run once, by hand, at Phase 3) shows one entry per listener per event.
-- [ ] None of story 0064's files, and no other task file, is edited by this story.
+- [ ] None of story 0064's files, and no other task file, is edited by this story — **content**-wise. The stage move to `in-progress/` and the later one to `done/` re-point one link line each in `0065` and `done/0064` (the mandatory link-integrity check), and regenerate `tasks-map.md`/`tasks-status.json`; nothing else in them changes.
 
 ## Definition of Done
 - [ ] Tests written and green, plus the **full** existing suite in a **single isolated run**, per
@@ -440,6 +440,15 @@ it wants an extra positive assertion**, which is recommended: it adds
   `event:cache` or `optimize`. It is a question for the appsec audit's deployment-path check, not a
   reason to keep the explicit lines: they would not survive a cached manifest any better than
   discovery does.
+  **Phase 4 correction (2026-09-26):** the last sentence above is wrong. An explicit `Event::listen()` in
+  `AppServiceProvider::boot()` runs on every boot and ignores `bootstrap/cache/events.php`, whereas
+  discovery reads that cache when `eventsAreCached()` is true (`Foundation/Support/Providers/EventServiceProvider.php`),
+  so the explicit lines were an accidental backstop against a stale manifest and this story removes it. Verified in
+  the repo: nothing runs `event:cache`, `optimize` or `event:clear` (workflows, composer scripts, Dockerfiles,
+  compose); CI builds from a fresh checkout. **Not verifiable from the repo:** `.github/workflows/prod.yml` runs
+  `ssh root@$HOST "deploy $SHA"`, and that script lives on the VPS. **Open for the owner:** confirm the deploy
+  script does not `event:cache` without clearing/rebuilding on each release, or add a post-deploy `event:list` check.
+
 - **R-4 — A future queued or non-`handle*` listener.** Discovery also picks up `__invoke`; a listener
   written that way is registered without any `handle` in its name. The registry test's `@handle`
   normalisation means an `__invoke` listener would appear as `Class@__invoke`, which the positive list does
@@ -478,6 +487,38 @@ it wants an extra positive assertion**, which is recommended: it adds
   confirms it.
 - **Deployment-time event caching** (**R-3**).
 
+## Phase 3-5 record (2026-09-26)
+
+**Red first (D-7).** Against the unmodified `AppServiceProvider`, `tests/Feature/Providers/EventListenerRegistrationTest.php`
+failed 7 of 8: the duplicate assertion named `ActivateVerifiedUser@handle` bound to `Verified` twice; the three positive
+cases found `Login`/`Authenticated`/`Verified` each bound twice; and the runs-once dataset counted **2** for `Verified`,
+`Login` and `Authenticated` (`OrderFullyRefunded` passed at 1). After deleting `configureEventListeners()` all pass at **1**,
+and `php artisan event:list` shows one entry per `App\` listener per event. (The red run preceded the deletion but was not
+committed separately: the production commit `c07e44d` precedes the test commit.)
+
+**Mutations (D-8)**, each applied alone to production code, the tests run, then reverted (`git checkout -- app`):
+
+| Mutation | Tests that went red |
+| --- | --- |
+| Re-add `Event::listen(Verified, ActivateVerifiedUser)` | registry duplicate (names event and entry), `Verified` positive binding, runs-once `Verified` |
+| Re-add `Event::listen(Authenticated, [RejectNonActiveUserLogin, 'handleAuthenticated'])` | registry duplicate, `Authenticated` positive binding, runs-once `Authenticated` |
+| Rename `handleAuthenticated` to `onAuthenticated` | `Authenticated` positive binding, runs-once `Authenticated` |
+| Drop the `Verified` type-hint on `handle` | `Verified` positive binding, runs-once `Verified`, the characterisation test |
+| Remove the `status !== Inactive` guard | same-instance unit test (second `save()`), suspended unit test |
+| `array_key_exists(...)` to `($previous[...] ?? null) === null` | reloaded-`Inactive` unit test, existing "not part of the last save" test |
+| Drop the previous-value null check | previously-verified-`Inactive` unit test, reloaded-`Inactive` unit test, two existing tests |
+| Guard `!== Inactive` to `=== Active` | suspended unit test |
+
+The characterisation test is labelled as not independently falsifiable (**D-6**).
+
+**Quality gates (unscoped):** `vendor/bin/pint --format agent` passed; `vendor/bin/phpstan analyse` (level 7) passed, 0 errors;
+full `pest` run: see below.
+
+**Phase 4/5 review** (independent read-only agent, not the project's `code-reviewer`/`appsec-auditor` definitions, which were
+not available in this session): D-1 and D-2 hold (`app/Listeners/**`, `bootstrap/app.php` byte-identical to base; no explicit
+registration left in `app/`); `RejectNonActiveUserLogin` is still bound to `Login` and `Authenticated` once each; the registry
+test cannot pass vacuously. Finding carried into **R-3** above (deploy script unverifiable).
+
 ## Provenance
 
 - **Raised by:** the human owner, 2026-09-26, while closing story 0064; the duplicate was found by 0064's
@@ -494,4 +535,4 @@ it wants an extra positive assertion**, which is recommended: it adds
   what already is" once the listener was read against its own guards (**D-2**).
 - **Models followed for tone and structure:** [0064](../done/0064-scheduled-post-auto-publish-backend.md)
   and [0061a](../done/0061a-blog-post-publish-with-future-date-schedules.md).
-- **Status:** Phase 1 output (new stage). Phase 2 (INVEST validation) not yet run.
+- **Status:** in Phase 3-5 (implemented, reviewed). Phase 2 (INVEST validation) was not run as a separate step.
