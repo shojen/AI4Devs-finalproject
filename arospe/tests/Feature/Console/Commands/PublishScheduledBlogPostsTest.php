@@ -70,7 +70,8 @@ test('running the whole sweep twice publishes N posts the first time and none th
 });
 
 // D-4's whole justification: without a per-post catch, one bad row silently blocks every scheduled post
-// behind it on every subsequent tick, with the backlog growing behind it.
+// behind it on every subsequent tick, with the backlog growing behind it. The command publishes in
+// `published_at` order, so the earlier post is the one whose write is made to fail.
 test('a failure on one post does not stop the rest of the run, and does not fail it', function () {
     $first = ScheduledPosts::scheduled(-30);
     $second = ScheduledPosts::scheduled(-20);
@@ -95,7 +96,7 @@ test('a failed post is reported to the log rather than swallowed', function () {
 
     $this->artisan('blog:publish-scheduled-posts')->assertExitCode(0);
 
-    Log::shouldHaveReceived('error')->once();
+    Log::shouldHaveReceived('error')->once()->withArgs(fn (string $message): bool => str_contains($message, 'Simulated blog_posts write failure'));
 });
 
 // OQ-3: the operator's safe look before enabling the first scheduled write in production.
@@ -111,6 +112,28 @@ test('--dry-run lists what is due and publishes and announces nothing', function
 
     expect(ScheduledPosts::row($due))->toBe($before);
     Event::assertNotDispatched(ScheduledBlogPostPublished::class);
+});
+
+// The selection is observable nowhere else: the action's own guard makes a wrong selection harmless to the
+// transition, so this is the only test that pins the command's query -- its status predicate, its due-time
+// bound and its default soft-delete scope (D-9).
+test('--dry-run lists only the due, non-deleted, Scheduled posts', function () {
+    $due = ScheduledPosts::scheduled();
+    $future = ScheduledPosts::scheduled(3600);
+    $draft = BlogPost::factory()->draft()->create();
+    BlogPost::query()->whereKey($draft->id)->toBase()->update(['published_at' => now()->subDay()]);
+    $trashed = ScheduledPosts::scheduled();
+    $trashed->delete();
+    $published = BlogPost::factory()->published()->create();
+
+    $this->artisan('blog:publish-scheduled-posts', ['--dry-run' => true])
+        ->expectsOutputToContain('Dry run: 1 scheduled blog post is due.')
+        ->expectsOutputToContain($due->id)
+        ->doesntExpectOutputToContain($future->id)
+        ->doesntExpectOutputToContain($draft->id)
+        ->doesntExpectOutputToContain($trashed->id)
+        ->doesntExpectOutputToContain($published->id)
+        ->assertExitCode(0);
 });
 
 test('--dry-run with nothing due says so', function () {

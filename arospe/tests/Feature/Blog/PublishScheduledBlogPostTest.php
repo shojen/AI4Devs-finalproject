@@ -11,6 +11,7 @@ use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Events\Blog\ScheduledBlogPostPublished;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Tests\Support\Blog\ScheduledPosts;
@@ -247,7 +248,6 @@ describe('idempotency', function () {
     test('calling it twice publishes once, and the second call writes nothing', function () {
         $post = ScheduledPosts::scheduled();
 
-        Event::fake();
         $first = app(PublishScheduledBlogPost::class)($post->id);
         $afterFirst = ScheduledPosts::row($post);
 
@@ -257,5 +257,42 @@ describe('idempotency', function () {
         expect($first)->not->toBeNull()
             ->and($second)->toBeNull()
             ->and(ScheduledPosts::row($post))->toBe($afterFirst);
+    });
+});
+
+describe('when the announcement or the re-read goes wrong after the write', function () {
+    // At-most-once, by design: the write is the commit point (D-7) and the announcement follows it (D-12).
+    // A synchronous listener that throws (story 0065's is not queued) surfaces the exception to the caller,
+    // but the post is already Published and the next tick will not retry it -- so the announcement is lost
+    // and reported, never duplicated. Pinned so a later change to that trade-off is a decision, not drift.
+    test('a listener that throws surfaces after the write and does not undo the publication', function () {
+        Event::listen(ScheduledBlogPostPublished::class, function (): never {
+            throw new RuntimeException('listener failed');
+        });
+        $post = ScheduledPosts::scheduled();
+
+        expect(fn () => app(PublishScheduledBlogPost::class)($post->id))->toThrow(RuntimeException::class, 'listener failed');
+
+        expect(BlogPost::query()->find($post->id)->status)->toBe(BlogPostStatus::Published)
+            ->and(app(PublishScheduledBlogPost::class)($post->id))->toBeNull();
+    });
+
+    // The post went live and was deleted in the same instant: announcing a deleted post is the worse mistake.
+    test('a post deleted between the write and the re-read is not announced', function () {
+        Event::fake([ScheduledBlogPostPublished::class]);
+        $post = ScheduledPosts::scheduled();
+        $deletedOnce = false;
+
+        DB::listen(function ($query) use ($post, &$deletedOnce): void {
+            if (! $deletedOnce && str_starts_with($query->sql, 'update `blog_posts` set `status`')) {
+                $deletedOnce = true;
+                DB::table('blog_posts')->where('id', $post->id)->update(['deleted_at' => now()]);
+            }
+        });
+
+        expect(app(PublishScheduledBlogPost::class)($post->id))->toBeNull();
+
+        Event::assertNotDispatched(ScheduledBlogPostPublished::class);
+        expect(BlogPost::withTrashed()->find($post->id)->status)->toBe(BlogPostStatus::Published);
     });
 });
