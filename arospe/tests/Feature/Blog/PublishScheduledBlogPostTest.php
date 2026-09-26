@@ -3,6 +3,7 @@
 use App\Actions\Blog\CreateBlogPost;
 use App\Actions\Blog\PublishScheduledBlogPost;
 use App\Enums\BlogPostStatus;
+use App\Events\Blog\ScheduledBlogPostPublished;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Models\BlogTag;
@@ -11,7 +12,6 @@ use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use App\Events\Blog\ScheduledBlogPostPublished;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Tests\Support\Blog\ScheduledPosts;
