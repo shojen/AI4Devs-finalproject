@@ -448,6 +448,10 @@ it wants an extra positive assertion**, which is recommended: it adds
   compose); CI builds from a fresh checkout. **Not verifiable from the repo:** `.github/workflows/prod.yml` runs
   `ssh root@$HOST "deploy $SHA"`, and that script lives on the VPS. **Open for the owner:** confirm the deploy
   script does not `event:cache` without clearing/rebuilding on each release, or add a post-deploy `event:list` check.
+  **Resolved (2026-09-26, owner):** the deploy runs `php artisan optimize`, which rebuilds the event cache from the deployed
+  code on every release, so the manifest cannot go stale. Checked locally on this branch: after `php artisan event:cache`,
+  `event:list` still shows all four `App\` bindings once each (`bootstrap/cache/events.php` is gitignored; cleared afterwards).
+  Residual, accepted: the registry test runs against the uncached dispatcher, so it does not exercise the cached manifest.
 
 - **R-4 — A future queued or non-`handle*` listener.** Discovery also picks up `__invoke`; a listener
   written that way is registered without any `handle` in its name. The registry test's `@handle`
