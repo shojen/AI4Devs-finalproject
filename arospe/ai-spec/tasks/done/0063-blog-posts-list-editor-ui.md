@@ -655,6 +655,14 @@ this story **appends an item to it**, and does not create it.
       middleware at all, so the component tests below prove nothing about the gate.
 - [ ] The same four cases on `blog-posts.create` and `blog-posts.edit` — all three gate on
       `can:blog.view` (**D-3**), so a reviewer who "tightens" one route silently changes the contract.
+
+      > **Correction, 2026-09-26 (Phase 6, at the review's request) — the bullet above does not describe the
+      > shipped contract for create and edit.** The route middleware is `can:blog.view` on all three, but
+      > `Editor::mount()` authorizes `create` / `update` as its own first statement, so the four cases
+      > differ: an actor holding exactly `blog.view` gets **200 on `blog-posts.index` and 403 on
+      > `blog-posts.create` and `blog-posts.edit`**; `blog.view` + `blog.create` → 200 on create;
+      > `blog.view` + `blog.edit` → 200 on edit; a Super Admin holding zero permission rows → 200 on all
+      > three; guest → login redirect; no `blog.view` → 403. The tests assert exactly that.
 - [ ] A **misspelled ability denies silently**, so each 200 case is asserted positively beside its 403
       — the module-gate pattern's own rule.
 - [ ] `$posts` carries the documented row shape, and each row's `canEdit`/`canDelete` agrees with
@@ -770,6 +778,13 @@ deliberately does not re-derive 0061's rules:
       custom role fixture (**R-3**).
 - [ ] A forged `restoringBlogPostId` naming a post the actor may not restore is refused by the action,
       and the component writes nothing — the hint is a layer, never the control.
+
+      > **Correction, 2026-09-26 (Phase 6) — there is no `restoringBlogPostId` property.** The id to restore
+      > is the **method argument**: `restoreBlogPost(string $blogPostId, RestoreBlogPost $restoreBlogPost,
+      > LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt)`. The forged-id case is therefore a forged
+      > *argument* naming a post the actor may not restore, refused by the component's own
+      > `LogRefusedPrivilegedAttempt::authorize('restore', ...)` and again by the action; the component
+      > writes nothing.
 - [ ] **No force-delete control exists anywhere in the rendered markup** (**D-13b**) — a negative
       assertion, because 0061 makes its absence a decision rather than an omission.
 
@@ -893,47 +908,68 @@ Nothing about the data model changes: this story adds no table, column, migratio
 > | *(worth adding)* | **A post that resolves to no title, and a category that resolves to no name, each render a placeholder rather than raising** — a state reachable in normal operation right after a store-default change (0070 **R-2**), and one no criterion above covers. |
 
 ## Definition of Done
-- [ ] Tests written and green, plus the **full** existing suite in a single isolated run, per
+- [x] Tests written and green, plus the **full** existing suite in a single isolated run, per
       [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule.
-- [ ] All **three** quality gates run **unscoped** and each result recorded explicitly, including any
+- [x] All **three** quality gates run **unscoped** and each result recorded explicitly, including any
       not run: `php artisan test` (not `--filter`), `vendor/bin/pint --format agent` (not `--dirty`),
       and **Larastan level 7**. A record naming two of three is a record of two gates — see
       [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
-- [ ] **Every citation in [Interface contract consumed](#interface-contract-consumed) re-verified
+- [x] **Every citation in [Interface contract consumed](#interface-contract-consumed) re-verified
       against `HEAD` before Phase 3, with each disposition recorded** — including "already closed".
       **V-1**: none of the six dependency stories exists in code today.
-- [ ] The flat view path confirmed **by running the component**, and the tree checked for a stray
+- [x] The flat view path confirmed **by running the component**, and the tree checked for a stray
       `resources/views/livewire/blog-posts/index.blade.php` scaffold.
-- [ ] Code reviewed (code-reviewer). **Point Phase 2 at OQ-4 first** — the filters' liveness against
+- [x] Code reviewed (code-reviewer). **Point Phase 2 at OQ-4 first** — the filters' liveness against
       **R-1**'s recorded `<flux:select>` race is now the open decision with the widest blast radius,
       since this screen ships four such controls.
-- [ ] No security findings (appsec-auditor). **Point the audit at D-11**: that the disabled "add tag"
+- [x] No security findings (appsec-auditor). **Point the audit at D-11**: that the disabled "add tag"
       control is a *hint* and the server-side `blog.create` refusal is intact and un-bypassable.
-- [ ] Documentation updated (docs-keeper): `docs/api/routes.md` gains a `blog-posts.index` subsection
+- [x] Documentation updated (docs-keeper): `docs/api/routes.md` gains a `blog-posts.index` subsection
       and its registry-entry note; `docs/architecture/authorization.md`'s sidebar-registry section
       records the **insertion-position** property (**V-2**) that the first four entries could not show;
       `docs/conventions/base-standards.md`'s directory listing gains `app/Livewire/BlogPosts/` and
       `routes/blog-posts.php`.
-- [ ] **`docs/testing/frontend/gherkin-guidelines.md`'s glossary `TODO (product owner)` closed for the
+- [x] **`docs/testing/frontend/gherkin-guidelines.md`'s glossary `TODO (product owner)` closed for the
       blog half** — the canonical term is **post** (**D-22**) — and that section's own justification
       corrected: it still reads *"`app/Models/` contains only `User`"*, false since task 0016, which is
       this project's recurring
       [bare-negative-claim](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
       failure mode.
-- [ ] **`docs/testing/frontend/playwright-setup.md`'s file count corrected** — it says the browser
+- [x] **`docs/testing/frontend/playwright-setup.md`'s file count corrected** — it says the browser
       suite holds three files; `ls tests/Browser/` returns **four** (**V-4**). 0060's Phase 1 already
       caught this and it is still open; whichever story closes first should fix it once.
-- [ ] **Hand-off recorded for story 0062** (blog categories UI), which is being written in parallel and
+- [x] **Hand-off recorded for story 0062** (blog categories UI), which is being written in parallel and
       cannot know these: it appends `items.blog_categories` to the **same** `groups.blog` group, and
       **position within `items` decides render order** (**V-2**) — so 0062 and 0063 must agree on the
       order rather than both appending. It also inherits the `lang/` resolution in **D-17**. And per
       0061's **D-7d**, the count in its delete-block message includes **trashed** posts, whose exit is
       this story's trashed section.
-- [ ] **Hand-off recorded for story 0064** (scheduled auto-publish): this screen renders the
+- [x] **Hand-off recorded for story 0064** (scheduled auto-publish): this screen renders the
       `Scheduled` badge and the `published_at` date it will flip. When it does, a post moves between
       badges with **no UI change required here** — but if 0064 ever adds a "last swept at" or failure
       state, this list is where it would surface.
-- [ ] Acceptance criteria met.
+- [x] Acceptance criteria met.
+
+> **Phase 6 record, 2026-09-26 (docs-keeper).** Ticked above: the citation re-verification (its dispositions are
+> the *Phase 2 pre-flight record* at the end of this file), the flat-view-path check (only
+> `resources/views/livewire/blog-posts.blade.php` and `blog-posts/editor.blade.php` exist; no
+> `blog-posts/index.blade.php`), the documentation item, the two glossary/playwright items and the two
+> hand-offs. **Not ticked, by design:** the full-suite and three-gates items, the code review and security
+> audit, and *Acceptance criteria met* — the orchestrator records those. The documentation item's targets
+> were re-pointed in Phase 2 (docs had been split): `docs/api/blog.md` (the `blog-posts.*` section) and
+> `docs/api/routes.md` (rows, file list, Blog summary line), `docs/architecture/authorization/how-to-gate.md`
+> (the insertion-position property and the shipped order Posts / Tags / Categories),
+> `docs/conventions/naming/` (the `Index`-in-a-subfolder table and the multi-word registry-key sentence),
+> `docs/testing/frontend/` (the browser inventory and the glossary), `docs/errors-log/` (four entries) and
+> `ai-spec/tasks/_digests/epic-4.md`. The `base-standards.md` directory-listing target no longer exists: no
+> current doc lists per-area `app/Livewire/` folders or `routes/*.php` files except `docs/api/routes.md`, so
+> nothing there was stale. The playwright "three files" sentence is gone from the split docs.
+> **Hand-off to 0062 (recorded, 0062 is already shipped):** the sidebar order is **Posts / Tags / Categories**
+> (Posts inserted before Tags; Categories was appended earlier and left alone); the lang decision is a new
+> `lang/{en,es}/blog-posts.php`, not an extension of `blog.php`; and the count in
+> `blog.categories.delete_blocked` includes **trashed** posts, whose exit is this screen's deleted-posts
+> section (restore, then reassign). **Hand-off to 0064:** this list already renders the `Scheduled` badge and
+> the `published_at` date, so a post flipped by the sweep changes badge with no UI change here.
 
 > ⚠️ **Correction, 2026-08-30 — two items to add, both cheap and both easy to lose.** Everything above
 > stands unchanged, including the three-gates rule and the hand-offs to 0062 and 0064.
@@ -1245,6 +1281,12 @@ value differing per field:
 `$posts`, `$editingBlogPostId`, `$deletingBlogPostId` and `$deletingBlogPostTitle` are `#[Locked]`,
 following the newer `SalesRegions\Index::$regions` precedent and 0060's **D-6**.
 
+> **Correction, 2026-09-26 (Phase 6) — `$posts` is not `#[Locked]`, and `$editingBlogPostId` does not
+> exist.** `$posts` is a `#[Computed]` method returning the paginator (a computed value is never
+> serialized into the snapshot, so there is nothing to lock). The `#[Locked]` properties are
+> `Index::$deletingBlogPostId` and `Index::$deletingBlogPostTitle`, and, on the editor, `Editor::$blogPostId`
+> (null on create, set only from the route-bound post).
+
 > ⚠️ **Correction, 2026-08-30 — two rows of the table above are superseded by
 > [0079](../0079-blog-post-editor-language-tabs-ui.md), five are untouched, and one `#[Locked]` property
 > is fed from a column that no longer exists.**
@@ -1543,6 +1585,13 @@ public function restoreBlogPost(RestoreBlogPost $restoreBlogPost): void
 }
 ```
 
+> **Correction, 2026-09-26 (Phase 6) — the signature above is not the shipped one.** The shipped method is
+> `restoreBlogPost(string $blogPostId, RestoreBlogPost $restoreBlogPost, LogRefusedPrivilegedAttempt
+> $logRefusedPrivilegedAttempt)`: it takes the id as an argument (there is no `$restoringBlogPostId`),
+> resolves `BlogPost::withTrashed()->findOrFail($blogPostId)`, authorizes `restore` through the logging
+> helper with `target_type: 'blog_post'` **before** calling the action, and unsets `posts`, `trashedPosts`
+> and `trashedPostsTotal` (it does not `resetPage()`).
+
 Two properties this inherits rather than decides:
 
 - **The action authorizes `restore` as its own first statement**, so this component's own check is a
@@ -1678,6 +1727,15 @@ genuine, small divergence from the registry's usual "append data, never behavior
 own ✅ describes the cost as "two appended array literals"), and it is worth recording because **0062
 faces the same choice and the two stories must agree.** Recommended final order: **Posts, Categories,
 Tags** — the content first, then the taxonomies that classify it, coarsest first.
+
+> **Correction, 2026-09-26 (Phase 6) — the recommended order, the group key and the icon above are not what
+> shipped.** (1) **Order:** 0062 had already **appended** `blog_categories` (after `blog_tags`) before this
+> story ran, so inserting `blog_posts` before `blog_tags` gives **Posts / Tags / Categories**, not the
+> recommended Posts / Categories / Tags; 0062's entry was deliberately left untouched. (2) **Group key:**
+> after story 0080 there is no `groups.blog`; the entry is `'group' => null, 'cluster' => 'blog'`, nested in
+> `clusters.blog` of `groups.content`. (3) **Icon:** `pencil-square`, chosen to differ from the cluster's
+> `document-text`, `blog_tags`' `hashtag` and `blog_categories`' `rectangle-stack`. The literal in the code
+> block above is therefore historical; `config/modules.php` is the source of truth.
 
 ⚠️ **0060's group ships `expandable => false` with one entry.** With three entries it should almost
 certainly become `expandable => true` with an `expanded_when` of `'blog-posts.*'`… except that a
@@ -2283,3 +2341,13 @@ exactly as 0062 did. The Epic 5 amendment blocks are **not applied**; the cheap 
 7. Timezone is UTC everywhere: the date field carries a translated "UTC" hint.
 
 **INVEST:** ✅ Independent (all dependencies done), Negotiable, Valuable, Estimable, Testable; ⚠️ Small — large, implemented unsplit in two green layers (list first, editor second), as 0027 did for Products. No blocking finding.
+
+## Phase 3-7 verification record (2026-09-26)
+
+- **Tests.** Written red first in two layers. List: `BlogPostsIndexTest` / `BlogPostsIndexQueryTest` / `BlogPostsIndexRenderingTest`, `BlogPostStatusTest`, sidebar, topbar and single-namespace `arch()` additions, `tests/Browser/BlogPosts/IndexTest.php` (120 of 263 red before the component existed). Editor: `BlogPostsEditorTest` and `BlogPostsEditorRenderingTest` (91 tests, 84 red against the stub), `tests/Browser/BlogPosts/EditorJourneyTest.php` (real Chromium, three consecutive runs with no retry firing). Mutations run and caught: dropping `withTrashed()` from restore, dropping `resetPage()` from a filter hook, dropping the `status === scheduled` guard on `publishedAt`, dropping the `blog_category_id` re-key, hydrating the date at minute precision, and removing `sanitizeFilters()` from `mount()`.
+- **Full suite gate**, one isolated run against the per-worktree database `testing_0063`: `vendor/bin/pest` — **4332 tests, 4329 passed, 3 skipped, 0 failed** (14,910 assertions). `vendor/bin/pint --format agent` (unscoped) — passed. Larastan level 7 (`vendor/bin/phpstan analyse --memory-limit=-1`) — 0 errors. All three gates were re-run after the last code change.
+- **Phase 4 (security audit, read-only reviewer — the project's `appsec-auditor` definition could not be dispatched):** PASS, no Critical/High/Medium. D-11 confirmed: the disabled add-tag control is a hint and the server-side `blog.create` refusal is intact, with the whole save rolled back. Two Low findings fixed in this story: an unbounded deleted-posts query (now bounded at `TRASHED_LIMIT`, with a "showing N of M" notice) and forged `$tagNames` elements/length reaching the suggestion and chip paths (now sanitized there, while `save()` still submits the raw set so the action's validation owns the refusal).
+- **Phase 5 (code review, read-only reviewer):** PASS, no blockers. Fixed in this story: S1 (the keyboard bypassed the disabled add-tag hint and lost the form to a 403), S2 (deleting the last row of the last page, or a forged `?page=`, rendered "no posts yet"), S3 (a filter-sanitizing test that could not fail), plus the cheap nits (filters validated with `whereKey()->exists()` instead of a capped option list, five weak assertions tightened, the unused `BlogPostFactory::trashed()` removed, the duplicated authorize block extracted).
+- **Deviations from the file as written, all recorded above in dated correction blocks:** `blog.view` alone is 200 on the list and 403 on create/edit (D-3 governs, not the test bullet); `restoreBlogPost` takes the id as an argument plus a `LogRefusedPrivilegedAttempt`; the list uses `#[Computed]` paginator, not `#[Locked]` rows; the sidebar order is **Posts / Tags / Categories** (Posts inserted before `blog_tags` per the acceptance criterion; 0062's Categories entry was already appended); `lang/{en,es}/blog-posts.php` holds this screen's copy (D-17).
+- **Not done, and why:** the Epic 5 per-language shapes (0072–0079 are not implemented); the `(deleted_at, status, published_at)` index does not serve `ORDER BY created_at DESC` (a known cost — the story forbids a migration); `docs/how-to-gate.md` is slightly over its size budget and is the next split candidate.
+- **Hand-offs discharged:** to 0062 (order, lang decision, and that the delete-block count includes trashed posts whose exit is this screen's deleted-posts section) and to 0064 (the list already renders the Scheduled badge and date).

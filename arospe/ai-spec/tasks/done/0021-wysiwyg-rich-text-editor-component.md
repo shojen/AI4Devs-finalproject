@@ -1159,7 +1159,7 @@ Low, 1 Info.
   race against 0024), and 0079's D-8 constructor-injects the real
   `App\Actions\Products\SanitizeProductDescription` class into `SetBlogPostTranslation`, sanitizing
   before `validate()` on every language path. Only
-  [0063](../in-progress/0063-blog-posts-list-editor-ui.md) carries thin (one-line, deferring-to-0061) coverage,
+  [0063](0063-blog-posts-list-editor-ui.md) carries thin (one-line, deferring-to-0061) coverage,
   which is acceptable since 0063 never itself writes the sanitized column.
   **Re-audit correction (code-reviewer, round 2, finding F4): a fifth consumer was missed above.**
   [0077](../0077-product-editor-language-tabs-ui.md) (product editor language tabs) also binds

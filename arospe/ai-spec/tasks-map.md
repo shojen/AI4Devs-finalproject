@@ -41,7 +41,7 @@ Phase-3 blocker (`0048`–`0054`) is now `done/` — so it moves from `blocked` 
 terminal node finally unblocked. `0057`'s own node is likewise dropped from the graph; it had no pending dependent of its own to
 re-derive against `done/`.
 
-Update (2026-09-26): `0063-blog-posts-list-editor-ui.md` moved from `ai-spec/tasks/` to `in-progress/` (Phase 3 starts; `claimed` in `tasks-status.json`). Its inbound links from `0064`, `0072`, `0073`, `0078`, `0079` and the `done/` files that cite it were re-pointed. No dependency edge changes.
+Update (2026-09-26): `0063-blog-posts-list-editor-ui.md` completed Phase 7 and moved from `in-progress/` to `done/` — the eighth Epic 4 story to close, and the third Blog screen. Its node and every edge touching it are dropped from the graph below and its `tasks-status.json` entry (the `claimed` one) was deleted. Its one hard dependent, `0079`, drops `"0063"` and stays `blocked` on the Epic 5 retrofit stories it still needs; `0072`/`0074`/`0078` drop it from `conflict_risk_with`. `ai-spec/tasks/in-progress/` is empty again.
 
 Update (2026-09-26): `0062-blog-categories-ui.md` completed Phase 7 and moved from `in-progress/` to `done/` — the seventh Epic 4 story to close, and the second Blog screen. Its node and every edge touching it are dropped from the graph below and its `tasks-status.json` entry (the `claimed` one) was deleted. Its one hard dependent, `0073`, drops `"0062"` and stays `blocked` on `0068`/`0070`/`0071`/`0072`; `0063` drops it from `conflict_risk_with`. `ai-spec/tasks/in-progress/` is empty again.
 
@@ -219,7 +219,6 @@ appears as a node in the dependency graph below:
 
 | ID | Title | Epic area |
 | --- | --- | --- |
-| 0063 | Blog posts — list + editor UI | Epic 4 — Blog |
 | 0064 | Scheduled post auto-publish — backend (the app's first scheduled command) | Epic 4 — Blog |
 | 0065 | Blog post published — notification (backend) | Epic 4 — Blog |
 | 0066 | Admin UI locale preference & resolution — backend | Epic 5 — i18n |
@@ -268,7 +267,6 @@ flowchart LR
 
     subgraph PEND_BLOG["Epic 4 — Blog"]
         direction TB
-        P0063["0063 Blog posts list/editor UI"]
         P0064["0064 Scheduled auto-publish BE"]
         P0065["0065 Post published notif BE"]
     end
@@ -335,14 +333,12 @@ flowchart LR
     P0070 --> P0071
     P0070 --> P0072
     P0068 --> P0072
-    P0063 -.-> P0072
     P0072 --> P0073
     P0071 --> P0073
     P0070 --> P0073
     P0068 --> P0073
     P0070 --> P0074
     P0068 --> P0074
-    P0063 -.-> P0074
     P0074 --> P0075
     P0070 --> P0075
     P0068 --> P0075
@@ -354,16 +350,14 @@ flowchart LR
     P0068 --> P0077
     P0070 --> P0078
     P0068 --> P0078
-    P0063 -.-> P0078
     P0078 --> P0079
-    P0063 --> P0079
     P0071 --> P0079
     P0077 -.-> P0079
     P0070 --> P0079
     P0068 --> P0079
 
     class P0065,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0063,P0064,P0068 ready;
+    class P0064,P0068 ready;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue

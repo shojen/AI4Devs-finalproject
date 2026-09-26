@@ -1051,7 +1051,7 @@ Derived from this debate; **none are in scope for 0073.**
 1. **Amend [0062](done/0062-blog-categories-ui.md)** for the superseded component surface, the invalidated
    "exactly one input" rendering test, the `{id, name, …}` row shape, the `orderBy('name')` query and
    the renamed `blog-category-name-input` hook (**R-1**). Not this story's to write.
-2. **Amend [0063](in-progress/0063-blog-posts-list-editor-ui.md)**, whose `->with(['category:id,name'])` partial
+2. **Amend [0063](done/0063-blog-posts-list-editor-ui.md)**, whose `->with(['category:id,name'])` partial
    select names the dropped column explicitly (0072 **R-1**).
 3. **Mark [0070's Q3](0070-translatable-content-mechanism-product-categories-backend.md) answered** —
    0071 for Product Categories, 0073 for Blog Categories, 0075 for Blog Tags.
