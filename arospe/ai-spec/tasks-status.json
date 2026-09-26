@@ -21,34 +21,62 @@
         "config/modules.php"
       ],
       "conflict_risk_with": [
+        "0064b",
         "0072",
         "0074",
         "0078"
       ]
     },
     {
-      "id": "0064",
-      "slug": "0064-scheduled-post-auto-publish-backend",
-      "title": "Scheduled post auto-publish — backend (the app's first scheduled command)",
+      "id": "0064a",
+      "slug": "0064a-activate-verified-user-listener-idempotent-and-single-registration",
+      "title": "Activate-verified-user listener — idempotent, and every listener registered exactly once",
       "depends_on": [],
-      "status": "claimed",
-      "claimed_by": "worktree 0064-scheduled-post-auto-publish-backend",
-      "claimed_at": "2026-09-26T10:40:59Z",
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
       "touches": [
-        "routes/console.php",
-        "app/Console/Commands/PublishScheduledBlogPosts.php",
-        "app/Events/Blog/ScheduledBlogPostPublished.php"
+        "app/Providers/AppServiceProvider.php",
+        "tests/Unit/Listeners/ActivateVerifiedUserTest.php",
+        "tests/Feature/Providers/EventListenerRegistrationTest.php"
       ],
-      "conflict_risk_with": []
+      "conflict_risk_with": [
+        "0065"
+      ]
+    },
+    {
+      "id": "0064b",
+      "slug": "0064b-scheduled-post-publish-failure-notification-backend",
+      "title": "Scheduled post publish failure — notification and email to the post's creator (backend)",
+      "depends_on": [
+        "0063"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/migrations/*_add_created_by_to_blog_posts_table.php",
+        "app/Models/BlogPost.php",
+        "app/Actions/Blog/CreateBlogPost.php",
+        "app/Actions/Blog/NotifyScheduledBlogPostPublishFailed.php",
+        "app/Notifications/ScheduledBlogPostPublishFailed.php",
+        "app/Enums/BlogPostPublishFailureStage.php",
+        "app/Console/Commands/PublishScheduledBlogPosts.php",
+        "lang/en/notifications.php",
+        "lang/es/notifications.php"
+      ],
+      "conflict_risk_with": [
+        "0063",
+        "0065",
+        "0078"
+      ]
     },
     {
       "id": "0065",
       "slug": "0065-blog-post-published-notification-backend",
       "title": "Blog post published — notification (backend)",
-      "depends_on": [
-        "0064"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -58,7 +86,10 @@
         "app/Actions/Blog/UpdateBlogPost.php",
         "app/Actions/Blog/CreateBlogPost.php"
       ],
-      "conflict_risk_with": []
+      "conflict_risk_with": [
+        "0064a",
+        "0064b"
+      ]
     },
     {
       "id": "0066",
@@ -352,6 +383,7 @@
       ],
       "conflict_risk_with": [
         "0063",
+        "0064b",
         "0072",
         "0074",
         "0076"

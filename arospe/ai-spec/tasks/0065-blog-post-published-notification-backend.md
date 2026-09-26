@@ -29,7 +29,7 @@ table is story [0043](done/0043-customers-new-customer-notification-backend.md)'
 > **Triggers 1 and 2 reach this story's action by a direct call; trigger 3 reaches it through a
 > listener this story adds.** Concretely:
 >
-> - **The automatic trigger (3).** Story [0064](in-progress/0064-scheduled-post-auto-publish-backend.md) already
+> - **The automatic trigger (3).** Story [0064](done/0064-scheduled-post-auto-publish-backend.md) already
 >   defines and dispatches `ScheduledBlogPostPublished`, once per successfully transitioned post, after
 >   the write, never on a failed write and never on a restore. Per its **D-12** and hand-off fact 3:
 >   **0065 adds a *listener*; it does not add a second dispatch on this path.** 0064's **OQ-2** (does
@@ -80,7 +80,7 @@ table is story [0043](done/0043-customers-new-customer-notification-backend.md)'
 > Fully specified now, but Phase 3 cannot start until **all** of the following are `done`:
 > [0043](done/0043-customers-new-customer-notification-backend.md) (owns the `notifications` table),
 > [0061](done/0061-blog-posts-core-crud-backend.md) (owns `BlogPost`, `BlogPostStatus`, `UpdateBlogPost`,
-> `RestoreBlogPost`) and [0064](in-progress/0064-scheduled-post-auto-publish-backend.md) (owns
+> `RestoreBlogPost`) and [0064](done/0064-scheduled-post-auto-publish-backend.md) (owns
 > `ScheduledBlogPostPublished` and the sweep that dispatches it). 0061 and 0064 transitively require
 > [0058](done/0058-blog-categories-backend.md) and [0059](done/0059-blog-tags-backend.md).
 >
@@ -441,6 +441,29 @@ and no `discoverEventsWithin()` call anywhere; `AppServiceProvider::boot()` regi
 hand (**V-4**). Do not add auto-discovery for this one listener; it would be the first inconsistency in
 an otherwise uniform mechanism.
 
+> ⚠️ **Correction, 2026-09-26 (found while implementing story 0064) — the paragraph above is wrong, and
+> following it would send every notification twice.** Listener auto-discovery **is on** in this app:
+> Laravel 13 discovers `app/Listeners` by default, with no `EventServiceProvider` needed. Verified with
+> `php artisan event:list` — `Illuminate\Auth\Events\Verified` lists **`ActivateVerifiedUser` and
+> `ActivateVerifiedUser@handle`** (the explicit `Event::listen` in `AppServiceProvider` plus the discovered
+> `handle()`), and `OrderFullyRefunded` lists only `CancelFullyRefundedOrder@handle` because story 0052
+> deliberately did **not** register it by hand ([app-layers.md](../../docs/conventions/directory-structure/app-layers.md)
+> records why). A `SendBlogPostPublishedNotification::handle(ScheduledBlogPostPublished $event)` would be
+> discovered on its own, so the `Event::listen(...)` line above would register it a second time: two
+> notifications per scheduled post, the exact duplicate 0064's **D-12** exists to prevent. **Either drop the
+> line and rely on discovery (0052's shape), or keep it and confirm with `event:list` that the listener
+> appears once** — and make the un-faked end-to-end test count notifications, not just assert presence.
+
+> ⚠️ **Amendment, 2026-09-26 (story [0064b](0064b-scheduled-post-publish-failure-notification-backend.md), H-2) — the
+> listener must not swallow its errors.** Story 0064 recommended that `SendBlogPostPublishedNotification::handle()`
+> catch and report its own failures; **the owner decided the opposite**: an exception from `NotifyBlogPostPublished`
+> propagates out of `ScheduledBlogPostPublished::dispatch()`, so the sweep's per-post catch can detect it and 0064b can
+> notify the post's creator (a notification and an email). This story's tests pin that propagation instead of a
+> swallow, and its end-to-end test is extended once both ship. Story
+> [0064a](0064a-activate-verified-user-listener-idempotent-and-single-registration.md) also removes hand registration
+> of listeners: this story adds no `Event::listen` line, and its registry assertion is extended by
+> `ScheduledBlogPostPublished -> SendBlogPostPublishedNotification@handle`.
+
 **This edit has no analogue in 0043 or 0046** — both only ever added a *call*, never an event
 registration, because neither had a second trigger arriving through an event. Called out explicitly so
 Phase 2 does not read the file list as "the 0043 shape plus one" and miss it. It is also the failure
@@ -517,7 +540,7 @@ has no transition; the submitted status *is* the whole condition, which is what 
 ### Consumed, not created by this story
 
 - `App\Events\Blog\ScheduledBlogPostPublished` and its dispatch — story
-  [0064](in-progress/0064-scheduled-post-auto-publish-backend.md). **Consumed unchanged; this story adds no second
+  [0064](done/0064-scheduled-post-auto-publish-backend.md). **Consumed unchanged; this story adds no second
   dispatch on the automatic path and does not edit `PublishScheduledBlogPost`.**
 - `App\Models\BlogPost`, `App\Enums\BlogPostStatus`, `App\Actions\Blog\RestoreBlogPost` — story
   [0061](done/0061-blog-posts-core-crud-backend.md).
@@ -1404,7 +1427,7 @@ none.
 | --- | --- | --- |
 | [0043](done/0043-customers-new-customer-notification-backend.md) — new-customer notification | **hard, `new`** | Owns the `notifications` table and its `uuidMorphs('notifiable')` correction. This story adds **no** migration and cannot run one Feature test without it |
 | [0061](done/0061-blog-posts-core-crud-backend.md) — blog posts core CRUD | **hard, `new`** | Owns `BlogPost`, `BlogPostStatus`, `BlogPostFactory`, `RestoreBlogPost`, and — since **OQ-1** was confirmed — **both manual dispatch sites**, `UpdateBlogPost` and `CreateBlogPost` (its revised **D-19**, **V-9**). The coupling is now one-way: 0061 calls this story's action, and this story edits nothing of 0061's |
-| [0064](in-progress/0064-scheduled-post-auto-publish-backend.md) — scheduled auto-publish | **hard, `new`** | Owns `App\Events\Blog\ScheduledBlogPostPublished` and the only automatic transition. **D-9** resolves its **OQ-2** |
+| [0064](done/0064-scheduled-post-auto-publish-backend.md) — scheduled auto-publish | **hard, `new`** | Owns `App\Events\Blog\ScheduledBlogPostPublished` and the only automatic transition. **D-9** resolves its **OQ-2** |
 | [0078](0078-translatable-content-retrofit-blog-posts-backend.md) — translatable-content retrofit (Epic 5) | **hard once it lands, `new`** *(added 2026-08-30)* | Removes `blog_posts.title` and supplies `BlogPost::translated()`, which **D-4a**'s payload calls. Ordering is one-directional but **either order works**: if 0078 ships first this story is written against `translated()` from the outset; if this story ships first, 0078's retrofit changes one line here and the amendments above describe the end state. What must **not** happen is this story implementing `$post->title` after 0078 has landed — the property would be undefined and the payload would silently store `null` on a `?string` type. Transitively brings [0068](0068-store-languages-catalog-backend.md) (`StoreLanguage`) and [0070](0070-translatable-content-mechanism-product-categories-backend.md) (`HasTranslations`) |
 | [0058](done/0058-blog-categories-backend.md) / [0059](done/0059-blog-tags-backend.md) | **transitive, via 0061** | No direct use |
 | [0046](done/0046-orders-new-order-notification-backend.md) | **not a dependency** | This story copies its *shape*, not its code. Sequencing is free either way |
@@ -1648,7 +1671,7 @@ Recorded so they are not re-opened. Each was a real question at the start.
   **D-13**.
 - **Upstream contracts:** [0061](done/0061-blog-posts-core-crud-backend.md)'s **revised D-19** and its 0065
   hand-off (the two manual triggers, and the restore constraint), and
-  [0064](in-progress/0064-scheduled-post-auto-publish-backend.md)'s **D-12**, **OQ-2** and its five-fact hand-off
+  [0064](done/0064-scheduled-post-auto-publish-backend.md)'s **D-12**, **OQ-2** and its five-fact hand-off
   (the automatic trigger). **0061's D-19 was revised at this story's request**, after this file's
   **OQ-1** found a trigger its original text denied — so the contract this story consumes is partly a
   product of this story, which is worth knowing when reading the two files side by side.
