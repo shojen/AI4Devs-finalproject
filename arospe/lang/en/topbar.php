@@ -74,6 +74,14 @@ return [
         'subtitle' => 'Track, edit and fulfil the order book.',
     ],
 
+    'blog_posts' => [
+        'subtitle' => 'Write, schedule and publish blog posts.',
+    ],
+
+    'blog_post_editor' => [
+        'subtitle' => 'Title, category, status, body and tags.',
+    ],
+
     'blog_tags' => [
         'subtitle' => 'Organise blog posts with tags.',
     ],

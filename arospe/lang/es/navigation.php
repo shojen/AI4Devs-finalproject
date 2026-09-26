@@ -39,6 +39,7 @@ return [
         'payment_methods' => 'Métodos de pago',
         'customers' => 'Clientes',
         'orders' => 'Pedidos',
+        'blog_posts' => 'Entradas',
         'blog_tags' => 'Etiquetas',
         'blog_categories' => 'Categorías',
     ],

@@ -70,6 +70,14 @@ return [
         'subtitle' => 'Consulta, edita y gestiona el libro de pedidos.',
     ],
 
+    'blog_posts' => [
+        'subtitle' => 'Escribe, programa y publica las entradas del blog.',
+    ],
+
+    'blog_post_editor' => [
+        'subtitle' => 'Título, categoría, estado, contenido y etiquetas.',
+    ],
+
     'blog_tags' => [
         'subtitle' => 'Organiza las entradas del blog con etiquetas.',
     ],
