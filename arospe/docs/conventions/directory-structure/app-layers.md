@@ -65,8 +65,12 @@ app/
                        Laravel location (`make:event`), no approval needed
   Listeners/           Event listeners (ActivateVerifiedUser; CancelFullyRefundedOrder — story
                        0052, a thin synchronous adapter to Actions/Orders/AutoCancelFullyRefunded
-                       Order). ActivateVerifiedUser is registered in AppServiceProvider; the new
-                       listener is NOT — Laravel's listener auto-discovery already registers any
-                       app/Listeners handle() that type-hints an event, and an explicit
-                       Event::listen() on top would fire it twice (verified with `event:list`)
+                       Order). Listeners are registered by discovery only: Laravel 13
+                       auto-discovers every public `handle*` method of a class in app/Listeners whose
+                       first parameter is a typed event, so no listener is registered by hand — an
+                       explicit Event::listen() on top would fire it twice (story 0064a). The
+                       `handle*` method name is load-bearing: renaming `handleAuthenticated` silently
+                       unregisters the sign-in safety net, and a stray typed `handleX(Event $e)` becomes
+                       a live listener. tests/Feature/Providers/EventListenerRegistrationTest.php fails
+                       on a duplicate binding or a lost known one
 ```

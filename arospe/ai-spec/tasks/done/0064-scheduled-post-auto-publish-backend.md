@@ -1471,7 +1471,7 @@ Playwright failure in the long run was not identified.
 `vendor/bin/phpstan analyse` (Larastan level 7): **passed, 0 errors**, including `routes/console.php`.
 
 **Two follow-up stories were raised while closing this one and were debated in Phase 1 (Three Amigos):**
-[0064a](../0064a-activate-verified-user-listener-idempotent-and-single-registration.md) (a listener that is registered
+[0064a](../in-progress/0064a-activate-verified-user-listener-idempotent-and-single-registration.md) (a listener that is registered
 twice: found by this story's review) and
 [0064b](../0064b-scheduled-post-publish-failure-notification-backend.md) (the failure notification and email to the
 post's creator). Neither is started; 0064b is blocked on 0063.
