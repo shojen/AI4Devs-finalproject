@@ -7,9 +7,9 @@
       "slug": "0063-blog-posts-list-editor-ui",
       "title": "Blog posts — list + editor UI",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree 0063-blog-posts-list-editor-ui",
+      "claimed_at": "2026-09-26T10:40:14Z",
       "touches": [
         "app/Livewire/BlogPosts/Index.php",
         "app/Livewire/BlogPosts/Editor.php",
