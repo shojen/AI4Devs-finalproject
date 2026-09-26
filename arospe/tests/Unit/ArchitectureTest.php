@@ -1,5 +1,7 @@
 <?php
 
+use App\Actions\Blog\FindOrCreateBlogTag;
+use App\Actions\Blog\SyncBlogPostTags;
 use App\Actions\Shipping\ResolveApplicableShippingRate;
 use Spatie\Permission\Models\Role;
 
@@ -169,3 +171,20 @@ arch('App\Models\ProductCategory does not reference the blog category taxonomy')
 arch('App\Livewire\BlogCategories does not reference the product category model')
     ->expect('App\Livewire\BlogCategories')
     ->not->toUse('App\Models\ProductCategory');
+
+// Story 0063 (OQ-7): App\Livewire\BlogPosts\* reaches tags ONLY through the post actions.
+// SyncBlogPostTags is a FULL-REPLACE sync() (0061 D-17) and FindOrCreateBlogTag asks a different
+// ability per branch (0059 D-11); 0061's hand-off forbids any caller other than CreateBlogPost /
+// UpdateBlogPost, because a component that called either directly would bypass the transaction
+// that makes a refused new-tag name roll the whole save back. Unlike a scope fence, this asserts an
+// absence that CAN be violated: both classes are one import away from the editor, and a "helpful"
+// direct call is the exact temptation this line fences off. One `expect()` per rule and per
+// namespace, never `expect([...])`, which evaluates disjunctively (docs/errors-log.md's
+// vacuous-arch()-rule entry).
+arch('App\Livewire\BlogPosts does not sync post tags directly')
+    ->expect('App\Livewire\BlogPosts')
+    ->not->toUse(SyncBlogPostTags::class);
+
+arch('App\Livewire\BlogPosts does not resolve or mint tags directly')
+    ->expect('App\Livewire\BlogPosts')
+    ->not->toUse(FindOrCreateBlogTag::class);

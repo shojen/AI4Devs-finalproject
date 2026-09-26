@@ -574,6 +574,80 @@ test('the blog_categories registry entry nests in the existing blog cluster, dec
 });
 
 // =====================================================================
+// Story 0063 — the blog_posts entry, INSERTED before `blog_tags` in the same `blog` cluster of the
+// `content` group (declaration order is render order, so posts -- the module's headline screen --
+// renders first). Entry-specific assertions only: the two generic drift guards already cover a new
+// entry for free, so no hand-written registry↔route cross-check is added here.
+// =====================================================================
+
+test('a role holding exactly blog.view sees the Posts entry inside the Blog cluster', function () {
+    $this->actingAs(sidebarNavUserWith(['blog.view']));
+
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('data-test="sidebar-group-content"', false)
+        ->assertSee('data-test="sidebar-cluster-blog"', false)
+        ->assertSee('data-test="sidebar-link-blog_posts"', false);
+});
+
+test('a role holding the related-but-different blog.edit permission does not see the Posts entry', function () {
+    // routes/blog-posts.php gates all three post routes on exactly can:blog.view, so the registry
+    // entry must gate on that exact ability -- not on any blog.*.
+    $this->actingAs(sidebarNavUserWith(['blog.edit']));
+
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertDontSee('data-test="sidebar-cluster-blog"', false)
+        ->assertDontSee('data-test="sidebar-link-blog_posts"', false);
+});
+
+test('the blog_posts registry entry nests in the existing blog cluster, declares no group of its own and gates on exactly its route\'s ability', function () {
+    $entry = config('modules.items.blog_posts');
+
+    expect($entry['group'])->toBeNull()
+        ->and($entry['cluster'])->toBe('blog')
+        ->and($entry['label'])->toBe('navigation.items.blog_posts')
+        ->and($entry['route'])->toBe('blog-posts.index')
+        ->and($entry['current_when'])->toBe('blog-posts.*')
+        ->and($entry['permissions'])->toBe(['blog.view'])
+        ->and(config('modules.clusters.blog.group'))->toBe('content')
+        ->and(config('modules.groups'))->not->toHaveKey('blog');
+});
+
+test('the blog_posts icon differs from its cluster and both blog siblings, so no two read as duplicates', function () {
+    $icon = config('modules.items.blog_posts.icon');
+
+    expect($icon)->not->toBe(config('modules.clusters.blog.icon'))
+        ->and($icon)->not->toBe(config('modules.items.blog_tags.icon'))
+        ->and($icon)->not->toBe(config('modules.items.blog_categories.icon'));
+});
+
+test('the blog_posts entry is declared before blog_tags, so Posts renders first in the Blog cluster', function () {
+    $blogItems = collect(config('modules.items'))->filter(fn (array $item) => $item['cluster'] === 'blog')->keys()->all();
+
+    expect(array_search('blog_posts', $blogItems, true))->toBeLessThan(array_search('blog_tags', $blogItems, true))
+        ->and($blogItems[0])->toBe('blog_posts');
+
+    $this->actingAs(sidebarNavSuperAdmin());
+
+    $html = $this->get(route('dashboard'))->assertOk()->getContent();
+
+    expect(strpos($html, 'data-test="sidebar-cluster-blog"'))->toBeLessThan(strpos($html, 'data-test="sidebar-link-blog_posts"'))
+        ->and(strpos($html, 'data-test="sidebar-link-blog_posts"'))->toBeLessThan(strpos($html, 'data-test="sidebar-link-blog_tags"'));
+});
+
+test('the Posts link is marked current on the list, the create screen and the edit screen', function () {
+    $entry = config('modules.items.blog_posts');
+
+    foreach (['blog-posts.index', 'blog-posts.create', 'blog-posts.edit'] as $routeName) {
+        expect(Str::is($entry['current_when'], $routeName))->toBeTrue();
+    }
+
+    expect(Str::is($entry['current_when'], 'blog-tags.index'))->toBeFalse()
+        ->and(Str::is($entry['current_when'], 'blog-categories.index'))->toBeFalse();
+});
+
+// =====================================================================
 // Edge — the Super Admin bypass, exercised through the real Gate::before
 // closure (task 0002/0008) with zero permission rows of its own.
 // =====================================================================
@@ -604,6 +678,7 @@ test('a Super Admin holding zero permission rows sees every registered module en
     // Story 0060 — the Content group and its nested Blog cluster.
     $response->assertSee('data-test="sidebar-group-content"', false);
     $response->assertSee('data-test="sidebar-cluster-blog"', false);
+    $response->assertSee('data-test="sidebar-link-blog_posts"', false);
     $response->assertSee('data-test="sidebar-link-blog_tags"', false);
 });
 
@@ -627,6 +702,7 @@ test('a user with zero module permissions still sees the Dashboard entry', funct
     $response->assertDontSee('data-test="sidebar-cluster-products"', false);
     $response->assertDontSee('data-test="sidebar-cluster-store_settings"', false);
     $response->assertDontSee('data-test="sidebar-group-content"', false);
+    $response->assertDontSee('data-test="sidebar-link-blog_posts"', false);
     $response->assertDontSee('data-test="sidebar-link-blog_tags"', false);
 });
 
