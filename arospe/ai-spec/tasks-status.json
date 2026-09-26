@@ -31,9 +31,9 @@
       "slug": "0064-scheduled-post-auto-publish-backend",
       "title": "Scheduled post auto-publish — backend (the app's first scheduled command)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree 0064-scheduled-post-auto-publish-backend",
+      "claimed_at": "2026-09-26T10:40:59Z",
       "touches": [
         "routes/console.php",
         "app/Console/Commands/PublishScheduledBlogPosts.php",

@@ -41,6 +41,8 @@ Phase-3 blocker (`0048`–`0054`) is now `done/` — so it moves from `blocked` 
 terminal node finally unblocked. `0057`'s own node is likewise dropped from the graph; it had no pending dependent of its own to
 re-derive against `done/`.
 
+Update (2026-09-26): `0064-scheduled-post-auto-publish-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0) and is claimed in `tasks-status.json`. It is still pending work, so it keeps its node and its `0064 --> 0065` edge; its node moves from the green `ready` class to the blue `claimed` class, and its `depends_on` is unchanged (`0065` stays `blocked` on it). `ai-spec/tasks/in-progress/` now holds exactly this one file.
+
 Update (2026-09-26): `0062-blog-categories-ui.md` completed Phase 7 and moved from `in-progress/` to `done/` — the seventh Epic 4 story to close, and the second Blog screen. Its node and every edge touching it are dropped from the graph below and its `tasks-status.json` entry (the `claimed` one) was deleted. Its one hard dependent, `0073`, drops `"0062"` and stays `blocked` on `0068`/`0070`/`0071`/`0072`; `0063` drops it from `conflict_risk_with`. `ai-spec/tasks/in-progress/` is empty again.
 
 Update (2026-09-25): `0061b-blog-post-body-must-have-visible-content.md` completed Phase 7 and moved from `in-progress/` to `done/` — the sixth Epic 4 story to close. Its node and its `tasks-status.json` entry (the `claimed` one) are dropped, and `"0061b"` is removed from the `conflict_risk_with` lists of `0063` and `0065`. It had no dependents, so its closure re-derives nothing. `ai-spec/tasks/in-progress/` is empty again.
@@ -361,13 +363,14 @@ flowchart LR
     P0068 --> P0079
 
     class P0065,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0063,P0064,P0068 ready;
+    class P0063,P0068 ready;
+    class P0064 claimed;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(no node is `claimed` in this snapshot); yellow (`pending`) = still blocked on at least one open
+(only `0064` is `claimed` in this snapshot); yellow (`pending`) = still blocked on at least one open
 pending dependency.
 
 ## Analysis

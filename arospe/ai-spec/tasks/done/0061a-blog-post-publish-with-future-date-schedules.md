@@ -10,7 +10,7 @@ yet dated in the future — a state that means nothing, that a public reader fil
 **This story makes "publish with a future date" mean what an editor intends by it: schedule the post.**
 When `CreateBlogPost` or `UpdateBlogPost` is asked for `Published` and the resolved `published_at` is
 **strictly in the future**, the post is stored as **`Scheduled`** with that date, and **no
-`NotifyBlogPostPublished` is dispatched** — story [0064](../0064-scheduled-post-auto-publish-backend.md)'s
+`NotifyBlogPostPublished` is dispatched** — story [0064](../in-progress/0064-scheduled-post-auto-publish-backend.md)'s
 sweep flips it to `Published` when its time comes and announces it then (trigger 3 of 0061's **D-19**).
 A `Published` request with no date, or a date at or before now, behaves exactly as today.
 
