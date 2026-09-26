@@ -39,6 +39,11 @@ final class ActivateVerifiedUserTrackedUser extends User
 {
     public bool $saveWasCalled = false;
 
+    // Story 0064a: idempotency needs "how many times", not just "whether". Deliberately does not
+    // call syncChanges(), so getPrevious() keeps its pre-save value across the whole test and a
+    // second delivery on the same instance is stopped by the status guard alone.
+    public int $saveCallCount = 0;
+
     // Unit tests in this repo boot no Laravel application at all (see
     // tests/Pest.php -- only Feature/Browser extend Tests\TestCase), so
     // Eloquent's date-cast conversion cannot fall back to
@@ -50,6 +55,7 @@ final class ActivateVerifiedUserTrackedUser extends User
     public function save(array $options = []): bool
     {
         $this->saveWasCalled = true;
+        $this->saveCallCount++;
 
         return true;
     }
@@ -159,3 +165,72 @@ test('does nothing when the verified user is not an App\Models\User instance', f
 
     (new ActivateVerifiedUser)->handle(new Verified($notAUser));
 })->throwsNoExceptions();
+
+// Story 0064a (decision D-0) -- idempotency: delivering `Verified` again must leave exactly the state
+// one delivery would. The listener is already idempotent, so these tests pin that rather than
+// drive a change; each one is validated by a named mutation of the listener, not by a first red run.
+
+// Kills: removing the `status !== Inactive` guard. The double's save() never calls syncChanges(),
+// so getPrevious() still says "never verified" on the second delivery -- only the status check
+// stops it.
+test('delivering Verified twice to the same instance saves exactly once', function () {
+    $user = new ActivateVerifiedUserTrackedUser;
+    $user->setRawAttributes(['email_verified_at' => null], true);
+    $user->status = UserStatus::Inactive;
+    $user->email_verified_at = now();
+    $user->syncChanges();
+
+    (new ActivateVerifiedUser)->handle(new Verified($user));
+    (new ActivateVerifiedUser)->handle(new Verified($user));
+
+    expect($user->status)->toBe(UserStatus::Active)
+        ->and($user->saveCallCount)->toBe(1);
+});
+
+// Kills: replacing the array_key_exists('email_verified_at', ...) guard with
+// `($previous['email_verified_at'] ?? null) === null`, which would activate a user whose last
+// save never touched that column.
+test('leaves a reloaded inactive user inactive when getPrevious() is empty', function () {
+    $user = new ActivateVerifiedUserTrackedUser;
+    $user->setRawAttributes(['email_verified_at' => null, 'status' => UserStatus::Inactive->value], true);
+
+    expect($user->getPrevious())->toBe([]);
+
+    (new ActivateVerifiedUser)->handle(new Verified($user));
+
+    expect($user->status)->toBe(UserStatus::Inactive)
+        ->and($user->saveCallCount)->toBe(0);
+});
+
+// Kills: dropping the previous-value null check (an administrator-deactivated user would be
+// reactivated by a later confirmation).
+test('never reactivates a previously verified inactive user, however often Verified arrives', function () {
+    $user = new ActivateVerifiedUserTrackedUser;
+    $user->setRawAttributes(['email_verified_at' => now()->subDays(30)->toDateTimeString()], true);
+    $user->status = UserStatus::Inactive;
+    $user->email_verified_at = now();
+    $user->syncChanges();
+
+    (new ActivateVerifiedUser)->handle(new Verified($user));
+    (new ActivateVerifiedUser)->handle(new Verified($user));
+
+    expect($user->status)->toBe(UserStatus::Inactive)
+        ->and($user->saveCallCount)->toBe(0);
+});
+
+// Kills: changing the guard from `!== Inactive` to `=== Active`, which lets a suspended user
+// through. The previous value is null (the would-be first verification) so only the status
+// check can refuse.
+test('never activates a suspended user whose email was never verified before, however often Verified arrives', function () {
+    $user = new ActivateVerifiedUserTrackedUser;
+    $user->setRawAttributes(['email_verified_at' => null], true);
+    $user->status = UserStatus::Suspended;
+    $user->email_verified_at = now();
+    $user->syncChanges();
+
+    (new ActivateVerifiedUser)->handle(new Verified($user));
+    (new ActivateVerifiedUser)->handle(new Verified($user));
+
+    expect($user->status)->toBe(UserStatus::Suspended)
+        ->and($user->saveCallCount)->toBe(0);
+});
