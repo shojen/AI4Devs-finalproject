@@ -41,6 +41,8 @@ Phase-3 blocker (`0048`–`0054`) is now `done/` — so it moves from `blocked` 
 terminal node finally unblocked. `0057`'s own node is likewise dropped from the graph; it had no pending dependent of its own to
 re-derive against `done/`.
 
+Update (2026-09-26): `0064a-activate-verified-user-listener-idempotent-and-single-registration.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0) and is claimed in `tasks-status.json`. It is still pending work, so it keeps its node and edges; its node moves from the green `ready` class to the blue `claimed` class, and its `depends_on` is unchanged. `ai-spec/tasks/in-progress/` now holds exactly this one file.
+
 Update (2026-09-26): `0063-blog-posts-list-editor-ui.md` completed Phase 7 and moved from `in-progress/` to `done/` — the ninth Epic 4 story to close, and the third Blog screen. Its node and every edge touching it are dropped from the graph below and its `tasks-status.json` entry (the `claimed` one) was deleted. Its one hard dependent, `0079`, drops `"0063"` and stays `blocked` on the Epic 5 retrofit stories it still needs; `0064b`, `0072`, `0074` and `0078` drop it from `conflict_risk_with`. `ai-spec/tasks/in-progress/` is empty again.
 
 Update (2026-09-26): `0064-scheduled-post-auto-publish-backend.md` completed Phase 7 and moved from `in-progress/` to `done/` — the eighth Epic 4 story to close. Its node and its `0064 --> 0065` edge are dropped and its `tasks-status.json` entry (the `claimed` one) was deleted; its one hard dependent, `0065`, drops `"0064"` and moves from `blocked` to `ready` (its other dependency, `0061`, was already `done/`). Two follow-up stories raised while closing it were added as new pending files: `0064a-activate-verified-user-listener-idempotent-and-single-registration.md` (`ready`, no dependency, `conflict_risk_with` `0065` on `app/Providers/AppServiceProvider.php`) and `0064b-scheduled-post-publish-failure-notification-backend.md` (`blocked` on `0063`, whose routes its email links to; `conflict_risk_with` `0063`, `0065` and `0078`). `ai-spec/tasks/in-progress/` is empty again.
@@ -366,13 +368,14 @@ flowchart LR
     P0068 --> P0079
 
     class P0064b,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0064a,P0065,P0068 ready;
+    class P0064a claimed;
+    class P0065,P0068 ready;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(no node is `claimed` in this snapshot); yellow (`pending`) = still blocked on at least one open
+(`0064a` is `claimed` in this snapshot); yellow (`pending`) = still blocked on at least one open
 pending dependency.
 
 ## Analysis

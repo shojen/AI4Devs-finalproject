@@ -2,7 +2,7 @@
 
 ## Description
 Two things about the listeners that run when a user confirms an email address or signs in, both found
-while closing story [0064](done/0064-scheduled-post-auto-publish-backend.md) and both raised by
+while closing story [0064](../done/0064-scheduled-post-auto-publish-backend.md) and both raised by
 the human owner.
 
 1. **`App\Listeners\ActivateVerifiedUser` must be idempotent** — receiving `Verified` twice for the
@@ -24,7 +24,7 @@ Why it matters beyond tidiness: today both duplicated listeners run their logic 
 `ActivateVerifiedUser` the second run returns early, so nothing visible happens. For
 `RejectNonActiveUserLogin` — the sign-in safety net of story 0007 — the duplicate runs a logout path
 twice; it is harmless today, but a listener that *sends* something (story
-[0065](0065-blog-post-published-notification-backend.md)'s notification) would send twice. The same
+[0065](../0065-blog-post-published-notification-backend.md)'s notification) would send twice. The same
 mechanism will bite the next listener unless one policy and one guard exist.
 
 Raised by the human owner while closing 0064 (2026-09-26); found by 0064's Phase 5 work, which already
@@ -43,7 +43,7 @@ the debate's agreed outcome; each decision records the alternative that was reje
 ## Gherkin
 
 Every scenario carries exactly one `When` and opens with a named business-role actor, per
-[gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3.
+[gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3.
 *"A listener runs once"* is an implementation property, not business language, so it gets **no
 scenario**; it is pinned by tests (**D-3**, **D-4**). The four scenarios below state the business
 outcome the idempotent listener must keep true however many times the event arrives.
@@ -111,7 +111,7 @@ shipped — **D-2**), `bootstrap/app.php` (**D-1** rejects `withEvents(discover:
 | `docs/architecture/authentication/two-factor-passkeys-logout-and-map.md` | Lines 111 and 114 (the file map) say both listeners are *"registered in `app/Providers/AppServiceProvider.php`"*. Found while writing this story; reword to *"auto-discovered"*. |
 | `docs/security/login-status-enforcement.md` | Lines 316-318 say *"Single guard, no event auto-discovery. … `bootstrap/app.php` never calls `withEvents()`, so the explicit `Event::listen()` registrations in `AppServiceProvider` are the only ones — the listener is not double-fired."* **That claim is false**: `Application::configure()` calls `->withEvents()` itself (`vendor/laravel/framework/src/Illuminate/Foundation/Application.php:243`). Correct it, and — per this repo's convention for audit-authored pages — quote what it used to say rather than silently rewriting it. Keep the true half (single `web` guard). |
 | `docs/conventions/naming/classes.md` | One line, in the paragraph at line 17 that names listeners: listeners are auto-discovered from `app/Listeners`; do not register one by hand. |
-| `docs/errors-log/2026-09-10-to-2026-09-23.md` | One entry (the current file — its row in [`docs/errors-log.md`](../../docs/errors-log.md) covers *2026-09-10 to 2026-09-24*): **an explicit `Event::listen()` on top of Laravel 13's listener auto-discovery double-registers a listener**, why nothing failed (the second run returned early), and the rule adopted. Add the topic-index line in `docs/errors-log.md`. |
+| `docs/errors-log/2026-09-10-to-2026-09-23.md` | One entry (the current file — its row in [`docs/errors-log.md`](../../../docs/errors-log.md) covers *2026-09-10 to 2026-09-24*): **an explicit `Event::listen()` on top of Laravel 13's listener auto-discovery double-registers a listener**, why nothing failed (the second run returned early), and the rule adopted. Add the topic-index line in `docs/errors-log.md`. |
 | `docs/README.md` and every touched doc's footer | **Fetch the base branch first** so the docs are edited against current content (a conflicting docs PR silently gets no CI). Each doc keeps **one** `_Last updated_` line — no `_Previously:` chain. No new doc file is created, so the index changes only if an entry's summary became wrong. |
 
 ## Tests to perform
@@ -144,7 +144,7 @@ shipped — **D-2**), `bootstrap/app.php` (**D-1** rejects `withEvents(discover:
       to `AppServiceProvider` → assertion (a) goes red naming the event and the entry; (2) temporarily
       rename `handleAuthenticated` to `onAuthenticated` → assertion (b) goes red for the
       `Authenticated` binding. Both are the standard this repo's
-      [vacuous-`arch()`-rule entry](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18)
+      [vacuous-`arch()`-rule entry](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18)
       demands of any assertion that passes by default.
 
 *Each listener runs once per dispatch (**D-3**)*
@@ -230,19 +230,19 @@ administrator can observe changes.
 
 ## Definition of Done
 - [ ] Tests written and green, plus the **full** existing suite in a **single isolated run**, per
-      [contracts.md](../../docs/contracts.md)'s Full Test Suite Gate Rule.
+      [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule.
 - [ ] All **three** quality gates run **unscoped**, each result recorded explicitly *including any that
       was not run*: `php artisan test` (not `--filter`), `vendor/bin/pint --format agent` (not
       `--dirty`), and **Larastan level 7** (`vendor/bin/phpstan analyse`). A record naming two of three
       is a record of two gates — see
-      [errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+      [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
 - [ ] The red-then-green sequence and every mutation in **D-8** are recorded in the task file with the
       test that went red.
 - [ ] Code reviewed (code-reviewer). **Point the review at D-1 and D-2**: that no listener logic was
       changed under cover of an "idempotency" story, and that nobody re-added an explicit registration
       "to be safe".
 - [ ] No security findings (appsec-auditor). **Point the audit at
-      [`RejectNonActiveUserLogin`](../../app/Listeners/RejectNonActiveUserLogin.php)**: it is the
+      [`RejectNonActiveUserLogin`](../../../app/Listeners/RejectNonActiveUserLogin.php)**: it is the
       sign-in safety net for remember-me recall and the two-factor mid-challenge race, and this story
       changes *how it is registered*. Questions to answer: is it still bound to `Login` **and**
       `Authenticated` after the deletion, does the registry test genuinely fail if either binding is
@@ -253,7 +253,7 @@ administrator can observe changes.
 - [ ] Task-coordination files regenerated when this file is created and again when it moves
       (`ai-spec/tasks-map.md`, `ai-spec/tasks-status.json`), and the two-direction link-integrity check
       run at each stage move, per
-      [task-files-links-and-ordering.md](../../docs/workflow/task-files-links-and-ordering.md).
+      [task-files-links-and-ordering.md](../../../docs/workflow/task-files-links-and-ordering.md).
 - [ ] **Hand-off to 0065 recorded** exactly as stated below.
 - [ ] The compare-and-set race (**R-2**) is logged as a **separate follow-up story** (**OQ-3**), not fixed here.
 - [ ] Acceptance criteria met.
@@ -270,7 +270,7 @@ why this story carries idempotency tests at all, even though **D-2** finds nothi
 ### D-1 — One policy: listeners are registered by discovery only
 Delete `configureEventListeners()`; let Laravel 13's auto-discovery (`Application::configure()` →
 `->withEvents()`, `vendor/laravel/framework/src/Illuminate/Foundation/Application.php:243`) be the single
-mechanism, exactly as story [0052](done/0052-order-auto-cancel-full-refund-backend.md) already ships
+mechanism, exactly as story [0052](../done/0052-order-auto-cancel-full-refund-backend.md) already ships
 `CancelFullyRefundedOrder`. Discovery registers every **public** method of a class in `app/Listeners`
 whose name matches `handle*` (or is `__invoke`) and whose **first parameter is a typed event**
 (`vendor/laravel/framework/src/Illuminate/Foundation/Events/DiscoverEvents.php:87`).
@@ -325,7 +325,7 @@ twice, by the two mutations in **D-8**.
 *Rejected:* an **optional single-target `arch()` rule** (for example "no class in `App\Providers` calls
 `Event::listen`") — it guards one spelling of one mistake, and this repo has already shipped an `arch()`
 rule over an array that passed while proving nothing
-([errors-log entry](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18)).
+([errors-log entry](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18)).
 A runtime read of the real dispatcher is closer to the failure and cannot pass vacuously.
 
 ### D-5 — Unit idempotency tests extend the existing double
@@ -399,14 +399,14 @@ Fortify's HTTP route never re-dispatches `Verified` for an already-verified user
   `tests/Feature/Orders/AutoCancelFullyRefundedOrderTest.php:213-215`.
 
 ### Dependencies
-- **No blocking dependency.** Independent of [0064](done/0064-scheduled-post-auto-publish-backend.md),
-  0063 and [0065](0065-blog-post-published-notification-backend.md). Numbered **0064a** because it was
+- **No blocking dependency.** Independent of [0064](../done/0064-scheduled-post-auto-publish-backend.md),
+  0063 and [0065](../0065-blog-post-published-notification-backend.md). Numbered **0064a** because it was
   found closing 0064; the ordering rule (a dependency's number is lower than its dependents') is satisfied
   since nothing depends on it in either direction.
-- **Conflict risk — [0065](0065-blog-post-published-notification-backend.md):** its file list edits
+- **Conflict risk — [0065](../0065-blog-post-published-notification-backend.md):** its file list edits
   `AppServiceProvider::configureEventListeners()`, the method this story deletes. Whichever lands second
   reconciles at merge; with the hand-off below, 0065 simply drops that edit.
-- Builds on [0052](done/0052-order-auto-cancel-full-refund-backend.md) (which shipped
+- Builds on [0052](../done/0052-order-auto-cancel-full-refund-backend.md) (which shipped
   `CancelFullyRefundedOrder` by discovery alone) and on story 0007's
   `RejectNonActiveUserLogin`; changes neither.
 
@@ -492,6 +492,6 @@ it wants an extra positive assertion**, which is recommended: it adds
   lines 316-318 assert that discovery is off, which the installed framework contradicts — it is corrected,
   not merely reworded; (3) the idempotency work is reframed from "make it idempotent" to "prove and pin
   what already is" once the listener was read against its own guards (**D-2**).
-- **Models followed for tone and structure:** [0064](done/0064-scheduled-post-auto-publish-backend.md)
-  and [0061a](done/0061a-blog-post-publish-with-future-date-schedules.md).
+- **Models followed for tone and structure:** [0064](../done/0064-scheduled-post-auto-publish-backend.md)
+  and [0061a](../done/0061a-blog-post-publish-with-future-date-schedules.md).
 - **Status:** Phase 1 output (new stage). Phase 2 (INVEST validation) not yet run.

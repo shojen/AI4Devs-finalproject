@@ -460,7 +460,7 @@ an otherwise uniform mechanism.
 > propagates out of `ScheduledBlogPostPublished::dispatch()`, so the sweep's per-post catch can detect it and 0064b can
 > notify the post's creator (a notification and an email). This story's tests pin that propagation instead of a
 > swallow, and its end-to-end test is extended once both ship. Story
-> [0064a](0064a-activate-verified-user-listener-idempotent-and-single-registration.md) also removes hand registration
+> [0064a](in-progress/0064a-activate-verified-user-listener-idempotent-and-single-registration.md) also removes hand registration
 > of listeners: this story adds no `Event::listen` line, and its registry assertion is extended by
 > `ScheduledBlogPostPublished -> SendBlogPostPublishedNotification@handle`.
 

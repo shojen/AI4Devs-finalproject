@@ -7,9 +7,9 @@
       "slug": "0064a-activate-verified-user-listener-idempotent-and-single-registration",
       "title": "Activate-verified-user listener — idempotent, and every listener registered exactly once",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree 0064a-activate-verified-user-listener-idempotent-and-single-registration",
+      "claimed_at": "2026-09-26T00:00:00Z",
       "touches": [
         "app/Providers/AppServiceProvider.php",
         "tests/Unit/Listeners/ActivateVerifiedUserTest.php",
