@@ -1288,6 +1288,8 @@ moment 0059's code exists. Each carries a recommendation, per
   what the editor may do (unlike categories, where the count *is* the block). Genuinely defensible;
   worth a product-owner call rather than a default.
 
+  > ✅ **Resolved by execution, 2026-09-25 (story 0062, F-3).** `withCount('posts')` **excludes** soft-deleted related rows by default: a category with 1 live and 2 trashed posts rendered `1` until `->withTrashed()` was written into the count closure, which made it `3`. The reading below is therefore correct, and 0061's **D-7c** as it stands in `done/` already says the same — the *"now includes trashed posts unless scoped"* wording quoted below does not appear there. The ⚠️ is kept for history.
+  >
   > ⚠️ **Whenever (a) is taken, the count must be explicit about trashed posts — and the direction of
   > the default is *contested*, so settle it by execution before writing the query.** Story
   > [0061](0061-blog-posts-core-crud-backend.md) is done, `BlogPost` uses `SoftDeletes` (its **D-7**),

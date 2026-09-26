@@ -294,5 +294,19 @@ return [
             'current_when' => 'blog-tags.*',
             'permissions' => ['blog.view'],
         ],
+        // Story 0062 -- Blog categories, appended to the SAME `blog` cluster of the `content` group
+        // story 0060 created: no group and no cluster is declared here. 'permissions' is EXACTLY
+        // the ability routes/blog-categories.php's own `can:` middleware enforces. The icon differs
+        // visibly from blog_tags' `hashtag`, so two siblings in one cluster do not read as
+        // duplicates at a glance.
+        'blog_categories' => [
+            'group' => null,
+            'cluster' => 'blog',
+            'label' => 'navigation.items.blog_categories',
+            'icon' => 'rectangle-stack',
+            'route' => 'blog-categories.index',
+            'current_when' => 'blog-categories.*',
+            'permissions' => ['blog.view'],
+        ],
     ],
 ];

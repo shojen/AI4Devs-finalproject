@@ -85,3 +85,13 @@ backfill.
   `canCreate` property — story 0060.
 - Story 0074 removes `blog_tags.name`; until it reaches Phase 3 this component reads `name` directly
   (`orderBy('name')`, `$tag->name`), and 0075 rewrites it per language — story 0060.
+
+## Story 0062 — Blog categories management screen
+
+- `App\Livewire\BlogCategories\Index`, route `blog-categories.index` at `/blog/categories` gated `can:blog.view`, view `resources/views/livewire/blog-categories.blade.php` (the flat path), copy under `categories.index` in `lang/{en,es}/blog.php` beside 0061's `categories.delete_blocked` — story 0062.
+- **Delete is hard-blocked with a count at every privilege level, and there is no confirm-and-proceed control.** The refusal is 0061's `ValidationException` on `blogCategoryId`, rendered inline with `@error`; the component catches nothing, so the throw keeps the modal open by construction. The delete target's property is named `$blogCategoryId` to match the error key, because Livewire drops an error whose key the component does not declare — story 0062.
+- **A count rendered beside a guarded action is part of that guard's contract:** the row count uses `withCount(['posts' => fn ($q) => $q->withTrashed()])`, the same scope the guard counts with. A bare `withCount()` **excludes** soft-deleted rows by default (verified by execution), so it would undercount — story 0062.
+- `closeModal()` resets the `name` key and `closeDeleteModal()` resets `blogCategoryId`; the two are distinct on purpose and a test proves each leaves the other alone — story 0062.
+- The sidebar entry is `items.blog_categories` (`group: null, cluster: 'blog'`, icon `rectangle-stack`), appended to 0060's cluster with no group or cluster declared; the screen is in `TopbarTest::topbarScreens()` — story 0062.
+- Story 0072 removes `blog_categories.name`; until it reaches Phase 3 this component reads `name` directly (`orderBy('name')`, `$category->name`), and 0073 rewrites it per language — story 0062.
+

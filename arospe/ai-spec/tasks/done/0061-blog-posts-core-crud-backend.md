@@ -981,7 +981,7 @@ is 0065's.
       "future" list drops Blog Posts** — verified: its line 11 currently reads *"Blog Categories, Blog
       Tags, Blog Posts — future, PRD Epic 4 … not yet implemented"*, and this story is the last of the
       three, so that whole line goes.
-- [ ] **Hand-off recorded for story 0062** (blog categories UI): the delete-confirmation modal binds
+- [x] **Hand-off recorded for story 0062** (blog categories UI) — *discharged by story 0062, 2026-09-25: `blog-categories.index` binds `@error('blogCategoryId')`, renders this story's `trans_choice()` message, offers no confirm-and-proceed control and authorizes in the component too:* the delete-confirmation modal binds
       its `@error` outlet to the error-bag key **`blogCategoryId`** verbatim (**D-18**), renders the
       `trans_choice()` message rather than composing its own count string, and offers **no**
       confirm-and-proceed control at any privilege level. It must also call `Gate::authorize()` in the

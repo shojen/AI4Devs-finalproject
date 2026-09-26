@@ -78,6 +78,10 @@ return [
         'subtitle' => 'Organise blog posts with tags.',
     ],
 
+    'blog_categories' => [
+        'subtitle' => 'Group blog posts into categories.',
+    ],
+
     'settings' => [
         'profile' => 'Profile',
         'security' => 'Security',

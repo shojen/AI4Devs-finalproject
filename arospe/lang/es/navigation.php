@@ -40,6 +40,7 @@ return [
         'customers' => 'Clientes',
         'orders' => 'Pedidos',
         'blog_tags' => 'Etiquetas',
+        'blog_categories' => 'Categorías',
     ],
 
 ];

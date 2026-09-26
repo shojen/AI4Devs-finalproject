@@ -41,6 +41,8 @@ Phase-3 blocker (`0048`–`0054`) is now `done/` — so it moves from `blocked` 
 terminal node finally unblocked. `0057`'s own node is likewise dropped from the graph; it had no pending dependent of its own to
 re-derive against `done/`.
 
+Update (2026-09-26): `0062-blog-categories-ui.md` completed Phase 7 and moved from `in-progress/` to `done/` — the seventh Epic 4 story to close, and the second Blog screen. Its node and every edge touching it are dropped from the graph below and its `tasks-status.json` entry (the `claimed` one) was deleted. Its one hard dependent, `0073`, drops `"0062"` and stays `blocked` on `0068`/`0070`/`0071`/`0072`; `0063` drops it from `conflict_risk_with`. `ai-spec/tasks/in-progress/` is empty again.
+
 Update (2026-09-25): `0061b-blog-post-body-must-have-visible-content.md` completed Phase 7 and moved from `in-progress/` to `done/` — the sixth Epic 4 story to close. Its node and its `tasks-status.json` entry (the `claimed` one) are dropped, and `"0061b"` is removed from the `conflict_risk_with` lists of `0063` and `0065`. It had no dependents, so its closure re-derives nothing. `ai-spec/tasks/in-progress/` is empty again.
 
 Update (2026-09-25): `0061a-blog-post-publish-with-future-date-schedules.md` completed Phase 7 and moved from `in-progress/` to `done/` — the fifth Epic 4 story to close. Its node and its `tasks-status.json` entry (the `claimed` one) are dropped, and `"0061a"` is removed from the `conflict_risk_with` of `0061b`, `0063` and `0065`; it had no dependents, so no `status` changes. `ai-spec/tasks/in-progress/` is empty again.
@@ -112,7 +114,7 @@ infrastructure fix (not a PRD-derived user story) and is already marked `Status:
 documented` inside its own file, so it is listed for completeness but excluded from the dependency
 graph and from the parallelization analysis below.
 
-- **99 files total**: 98 numbered user stories (78 `done/`, 20 still in `ai-spec/tasks/`, none
+- **99 files total**: 98 numbered user stories (79 `done/`, 19 still in `ai-spec/tasks/`, none
   checked out to `ai-spec/tasks/in-progress/`) + 1 non-numbered infrastructure doc (already resolved). The
   `done/` count jumps from 67 to 72 in this pass — one from this story's own closure (`0054`), four
   from the reconciliation of `0052`/`0053`/`0053a`/`0057` noted above.
@@ -125,7 +127,7 @@ graph and from the parallelization analysis below.
 
 - [Inventory](#inventory)
   - [Done (78) — shipped, out of scope for this graph](#done-78--shipped-out-of-scope-for-this-graph)
-  - [Pending — not started (18 numbered + 1 infra doc)](#pending--not-started-18-numbered--1-infra-doc)
+  - [Pending — not started (17 numbered + 1 infra doc)](#pending--not-started-17-numbered--1-infra-doc)
 - [Dependency graph (pending tasks only)](#dependency-graph-pending-tasks-only)
 - [Analysis](#analysis)
   - [Pending tasks that are independent of each other and safe to parallelize](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
@@ -197,7 +199,7 @@ appears as a node in the dependency graph below:
   0055 — Orders list + detail/editor UI, the eighteenth story to close and the epic's terminal node:
   nothing named it as a hard dependent, so its closure re-derives no `depends_on`/`status` change
   against this pending list.
-- **Epic 4 — Blog (6):** 0058 — Blog categories (backend), the first Epic 4 story to close; its four
+- **Epic 4 — Blog (7):** 0058 — Blog categories (backend), the first Epic 4 story to close; its four
   dependents (0061, 0062, 0063, 0072) are re-derived against `done/` from here on and all stay
   `blocked` on other pending dependencies. 0059 — Blog tags (backend), the second, which frees 0060 and
   0061 into `ready` (its other two dependents, 0063 and 0074, stay `blocked`). The two were never a
@@ -211,11 +213,10 @@ appears as a node in the dependency graph below:
   0061, likewise with no dependents, so its closure re-derives nothing; the pending 0063/0065 drop it from
   `conflict_risk_with`.
 
-### Pending — not started (18 numbered + 1 infra doc)
+### Pending — not started (17 numbered + 1 infra doc)
 
 | ID | Title | Epic area |
 | --- | --- | --- |
-| 0062 | Blog categories — management screen (list, create/edit modal, blocked delete) | Epic 4 — Blog |
 | 0063 | Blog posts — list + editor UI | Epic 4 — Blog |
 | 0064 | Scheduled post auto-publish — backend (the app's first scheduled command) | Epic 4 — Blog |
 | 0065 | Blog post published — notification (backend) | Epic 4 — Blog |
@@ -265,7 +266,6 @@ flowchart LR
 
     subgraph PEND_BLOG["Epic 4 — Blog"]
         direction TB
-        P0062["0062 Blog categories UI"]
         P0063["0063 Blog posts list/editor UI"]
         P0064["0064 Scheduled auto-publish BE"]
         P0065["0065 Post published notif BE"]
@@ -336,7 +336,6 @@ flowchart LR
     P0063 -.-> P0072
     P0072 --> P0073
     P0071 --> P0073
-    P0062 --> P0073
     P0070 --> P0073
     P0068 --> P0073
     P0070 --> P0074
@@ -362,13 +361,13 @@ flowchart LR
     P0068 --> P0079
 
     class P0065,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0062,P0063,P0064,P0068 ready;
+    class P0063,P0064,P0068 ready;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(none is `claimed` in this snapshot); yellow (`pending`) = still blocked on at least one open
+(no node is `claimed` in this snapshot); yellow (`pending`) = still blocked on at least one open
 pending dependency.
 
 ## Analysis
@@ -382,10 +381,8 @@ more: each closed to `done/` in this or a prior regeneration pass, so per this f
 tasks are omitted from the graph" rule none has a node at all any more. See the note at the top of
 this file.)
 
-- **0062 — Blog categories management screen (UI), 0063 — Blog posts list + editor (UI) and 0064 — Scheduled
-  post auto-publish (backend).** Each had `0061` as its only pending dependency, and `0061` is `done/` now,
-  so all three are `ready`. `0062` and `0063` are an explicit parallel-write hazard against each other
-  (see the file/merge-conflict section below), so do not hand both to parallel sessions without coordinating.
+- **0063 — Blog posts list + editor (UI) and 0064 — Scheduled post auto-publish (backend).** Each had `0061`
+  as its only pending dependency, and `0061` is `done/` now, so both are `ready`.
 - **0068 — Store Languages catalog (backend).** Depends only on `done/0002` (the
   `store-languages.*` permissions) and cites `done/0016`/`0017`/`0018` only as a *precedent*, not a
   code dependency. Ready now — and, being the root of the entire Epic 5 chain (every i18n story
@@ -439,7 +436,7 @@ for every remaining task that named it as a dependency" rule, which recomputes a
 merely strips a satisfied id. `0050`, `0052` and `0055` also cited `0045` and dropped it the same
 way, but stay `blocked` on other still-pending dependencies (see the note two paragraphs above).
 
-**The Blog backend pair is fully `done/`.** `0058` and `0059` (the two taxonomies inside `app/Actions/Blog/`) have both closed; `0061`, which extended both, has closed too (`done/`), freeing `0062`, `0063` and `0064` into `ready`.
+**The Blog backend pair is fully `done/`.** `0058` and `0059` (the two taxonomies inside `app/Actions/Blog/`) have both closed; `0061`, which extended both, has closed too (`done/`), freeing `0062`, `0063` and `0064` into `ready`; `0062` has since closed as well.
 
 Once those land, the same "ready" property propagates outward in a few places — **0037**, **0038**,
 **0041**, **0042**, **0043**, **0044** and **0045** already did (per the note above), and that
@@ -470,8 +467,8 @@ parallelization one. The major chains, in the order they must be executed:
    `0057`, closed too. `0046` was never a hard blocker of either — only a soft/informational,
    non-blocking sibling that made their "two distinct notification types" test meaningful — and it
    too is `done/` as of an earlier pass, so that soft reference is fully satisfied either way.
-3. **Blog (Epic 4).** `{0062, 0063, 0064 → 0065}` (`0058`, `0059`, `0060`, `0061`, `0061a` and `0061b` are `done/`); `0060` created the
-   `content` sidebar group and its `blog` cluster that `0062`/`0063` append one item each to.
+3. **Blog (Epic 4).** `{0063, 0064 → 0065}` (`0058`, `0059`, `0060`, `0061`, `0061a`, `0061b` and `0062` are `done/`); `0060` created the
+   `content` sidebar group and its `blog` cluster that `0062` (done) and `0063` append one item each to.
 4. **Internationalization (Epic 5).** This is the most heavily sequenced part of the backlog, and
    it is **cross-epic**: every retrofit story blocks on `0068` (Store Languages catalog) and
    `0070` (the translatable-content mechanism, itself gated on `0068`), and each UI-facing i18n
@@ -483,7 +480,7 @@ parallelization one. The major chains, in the order they must be executed:
                                  0068's LocaleSetting piece even though 0066 < 0068 numerically)
    0068 → 0069                 (Store Languages settings UI)
    0068 → 0070 → 0071          (translatable-content mechanism, piloted + UI'd on Product Categories)
-   0062 → 0068 → 0070 → 0071 → 0072 → 0073   (Blog Categories retrofit + i18n UI)
+   0068 → 0070 → 0071 → 0072 → 0073          (Blog Categories retrofit + i18n UI; 0062 is `done/`)
    0063 → 0068 → 0070 → 0074 → 0075          (Blog Tags retrofit + i18n UI, 0075 also
                                                               needs 0071's shared <x-language-tab-strip>)
    0068 → 0070 → 0076 → 0077                                (Products retrofit + i18n UI — 0024, the
@@ -521,10 +518,7 @@ in [`ai-spec/tasks-status.json`](tasks-status.json):
 - **`App\Concerns\ResolvesSalesRegionFromAddress` was a create-if-absent shared trait between
   `0053` and `0054` — both now `done/`, so this pairing is resolved.** `0053` reached Phase 3
   first and created the file; `0054` consumed it unchanged, as specified.
-- **`0062` and `0063` each append one `items.*` entry (`cluster: 'blog'`) to the `content` group and `blog` cluster that `0060` created**, and touch `lang/{en,es}/navigation.php`, without a formal dependency forcing an order.
 - **`0063` and `0065` both edit `app/Actions/Blog/CreateBlogPost.php` and `UpdateBlogPost.php`** (`0061a` and `0061b`, now `done/`, were the others), without a formal dependency forcing an order; every pair is recorded symmetrically in `conflict_risk_with` (`0064` does not touch these files and needs no entry).
-- **`0062` and `0063` are also an explicit parallel-write hazard against each other**, per `0063`'s
-  own dependency notes, for the same registry/lang-file reason.
 - **The Epic 5 retrofit stories (`0072`, `0074`, `0076`, `0078`) all depend on the same pair,
   `0068` and `0070`**, and each also touches `config/modules.php` / `lang/{en,es}/*.php` for its
   own domain. They do not depend on each other and their tables are disjoint (blog categories vs.

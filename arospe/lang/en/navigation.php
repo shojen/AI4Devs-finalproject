@@ -39,6 +39,7 @@ return [
         'customers' => 'Customers',
         'orders' => 'Orders',
         'blog_tags' => 'Tags',
+        'blog_categories' => 'Categories',
     ],
 
 ];
