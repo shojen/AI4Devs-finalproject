@@ -41,6 +41,8 @@ Phase-3 blocker (`0048`–`0054`) is now `done/` — so it moves from `blocked` 
 terminal node finally unblocked. `0057`'s own node is likewise dropped from the graph; it had no pending dependent of its own to
 re-derive against `done/`.
 
+Update (2026-09-26): `0063-blog-posts-list-editor-ui.md` completed Phase 7 and moved from `in-progress/` to `done/` — the ninth Epic 4 story to close, and the third Blog screen. Its node and every edge touching it are dropped from the graph below and its `tasks-status.json` entry (the `claimed` one) was deleted. Its one hard dependent, `0079`, drops `"0063"` and stays `blocked` on the Epic 5 retrofit stories it still needs; `0064b`, `0072`, `0074` and `0078` drop it from `conflict_risk_with`. `ai-spec/tasks/in-progress/` is empty again.
+
 Update (2026-09-26): `0064-scheduled-post-auto-publish-backend.md` completed Phase 7 and moved from `in-progress/` to `done/` — the eighth Epic 4 story to close. Its node and its `0064 --> 0065` edge are dropped and its `tasks-status.json` entry (the `claimed` one) was deleted; its one hard dependent, `0065`, drops `"0064"` and moves from `blocked` to `ready` (its other dependency, `0061`, was already `done/`). Two follow-up stories raised while closing it were added as new pending files: `0064a-activate-verified-user-listener-idempotent-and-single-registration.md` (`ready`, no dependency, `conflict_risk_with` `0065` on `app/Providers/AppServiceProvider.php`) and `0064b-scheduled-post-publish-failure-notification-backend.md` (`blocked` on `0063`, whose routes its email links to; `conflict_risk_with` `0063`, `0065` and `0078`). `ai-spec/tasks/in-progress/` is empty again.
 
 Update (2026-09-26): `0062-blog-categories-ui.md` completed Phase 7 and moved from `in-progress/` to `done/` — the seventh Epic 4 story to close, and the second Blog screen. Its node and every edge touching it are dropped from the graph below and its `tasks-status.json` entry (the `claimed` one) was deleted. Its one hard dependent, `0073`, drops `"0062"` and stays `blocked` on `0068`/`0070`/`0071`/`0072`; `0063` drops it from `conflict_risk_with`. `ai-spec/tasks/in-progress/` is empty again.
@@ -221,7 +223,6 @@ appears as a node in the dependency graph below:
 
 | ID | Title | Epic area |
 | --- | --- | --- |
-| 0063 | Blog posts — list + editor UI | Epic 4 — Blog |
 | 0064a | Activate-verified-user listener — idempotent, and every listener registered exactly once | Epic 1 — Users, Roles & Auth |
 | 0064b | Scheduled post publish failure — notification and email to the post's creator (backend) | Epic 4 — Blog |
 | 0065 | Blog post published — notification (backend) | Epic 4 — Blog |
@@ -276,7 +277,6 @@ flowchart LR
 
     subgraph PEND_BLOG["Epic 4 — Blog"]
         direction TB
-        P0063["0063 Blog posts list/editor UI"]
         P0064b["0064b Publish-failure notif BE"]
         P0065["0065 Post published notif BE"]
     end
@@ -329,7 +329,6 @@ flowchart LR
     %% Blog
     %% (P0061 --> P0062/P0063/P0064/P0065/P0078 dropped: 0061 closed to done/ this pass, so its node
     %% and every edge touching it are removed; 0062/0063/0064 had no other incoming edge and are now ready)
-    P0063 --> P0064b
 
     %% i18n
     P0068 --> P0066
@@ -343,14 +342,12 @@ flowchart LR
     P0070 --> P0071
     P0070 --> P0072
     P0068 --> P0072
-    P0063 -.-> P0072
     P0072 --> P0073
     P0071 --> P0073
     P0070 --> P0073
     P0068 --> P0073
     P0070 --> P0074
     P0068 --> P0074
-    P0063 -.-> P0074
     P0074 --> P0075
     P0070 --> P0075
     P0068 --> P0075
@@ -362,16 +359,14 @@ flowchart LR
     P0068 --> P0077
     P0070 --> P0078
     P0068 --> P0078
-    P0063 -.-> P0078
     P0078 --> P0079
-    P0063 --> P0079
     P0071 --> P0079
     P0077 -.-> P0079
     P0070 --> P0079
     P0068 --> P0079
 
     class P0064b,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0063,P0064a,P0065,P0068 ready;
+    class P0064a,P0065,P0068 ready;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue

@@ -90,7 +90,7 @@ The alternative — gate the whole action on `blog.create` — would refuse an a
 
 | Ability | Rule | Authorized from |
 | --- | --- | --- |
-| `viewAny` | holds `blog.view` (`VIEW_PERMISSION`) | not yet called by an action; story 0063's list |
+| `viewAny` | holds `blog.view` (`VIEW_PERMISSION`) | no action; `App\Livewire\BlogPosts\Index::mount()` (story 0063) |
 | `create` | holds `blog.create` (`CREATE_PERMISSION`) | `CreateBlogPost` |
 | `update` | holds `blog.edit` (`EDIT_PERMISSION`) — `$target` is not consulted | `UpdateBlogPost` |
 | `delete` | holds `blog.delete` (`DELETE_PERMISSION`) — `$target` is not consulted | `DeleteBlogPost` |
@@ -101,3 +101,5 @@ The alternative — gate the whole action on `blog.create` — would refuse an a
 All four actions authorize as their own first statement through [`LogRefusedPrivilegedAttempt`](step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail) with `target_type: 'blog_post'` passed explicitly. `UpdateBlogPost` calls `$blogPost->refresh()` *before* authorizing, so the policy is never shown a stale or caller-dirtied instance ([security/model-instance-trust.md](../../security/model-instance-trust.md)). `SyncBlogPostTags` does not re-authorize the post (its caller did); each tag it may mint inherits `FindOrCreateBlogTag`'s per-branch check, so an actor with `blog.edit` but not `blog.create` can attach existing tags and is refused the moment a name is new, rolling the whole save back.
 
 **A second, non-`Gate` refusal joins the blog actions:** `DeleteBlogCategory`'s in-use block logs the reason `category_still_in_use` through `LogRefusedPrivilegedAttempt::log()` and binds a Super Admin like anyone else — a [domain invariant](domain-invariants.md#a-domain-invariant-is-not-an-authorization-rule-and-does-not-live-here), not an authorization rule.
+
+**`BlogPostPolicy`'s component call sites (story 0063):** [`App\Livewire\BlogPosts\Index`](../../../app/Livewire/BlogPosts/Index.php) authorizes `viewAny` (mount), `delete` and `restore`, and [`App\Livewire\BlogPosts\Editor`](../../../app/Livewire/BlogPosts/Editor.php) authorizes `create` / `update`, all three routes gating on `blog.view` alone — see [api/blog.md](../../api/blog.md#blog-postsindex-blog-postscreate-blog-postsedit--the-fifteenth-to-seventeenth-permission-gated-routes). The per-row and header controls read the same abilities as UI hints. The `restore` refusal is reached with a trashed target (`BlogPost::withTrashed()->findOrFail()`), which the default query cannot see.

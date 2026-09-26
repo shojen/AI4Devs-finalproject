@@ -6,7 +6,7 @@
 > body and **one** slug, a blog category had **one** name and a blog tag had **one** name. **Three
 > separate, already-finalized Epic 5 stories each drop one of those column sets**, and this screen is
 > the only file in the epic that all three break. Per
-> [0078's technical task 1](0078-translatable-content-retrofit-blog-posts-backend.md#6-technical-tasks-for-later-backlog-creation)
+> [0078's technical task 1](../0078-translatable-content-retrofit-blog-posts-backend.md#6-technical-tasks-for-later-backlog-creation)
 > — *"0063 needs one coherent amendment covering all three Epic 5 taxonomy/content retrofits at once,
 > not three separate ones"* — this is that single amendment.
 >
@@ -14,9 +14,9 @@
 >
 > | Pair | What it removes from under this screen |
 > | --- | --- |
-> | [**0072** — Blog Categories backend](0072-translatable-content-retrofit-blog-categories-backend.md) + [**0073** — Blog Categories language tabs](0073-blog-categories-language-tabs-ui.md) | Drops `blog_categories.name` **and** `normalized_name` into `blog_category_translations`. A category's name is now `translated('name', $languageId)`. |
-> | [**0074** — Blog Tags backend](0074-translatable-content-retrofit-blog-tags-backend.md) + [**0075** — Blog Tags language tabs](0075-blog-tags-language-tabs-ui.md) | Drops `blog_tags.name` **and** `normalized_name` into `blog_tag_translations`, with uniqueness re-scoped per store language. A tag's name is read the same way. |
-> | [**0078** — Blog Posts backend](0078-translatable-content-retrofit-blog-posts-backend.md) + [**0079** — Blog post editor language tabs](0079-blog-post-editor-language-tabs-ui.md) | **The largest.** Drops `blog_posts.title`, `body` **and** `slug` into `blog_post_translations`, one row per `(post, store language)`, with `UNIQUE(store_language_id, slug)`. `BlogPost` narrows to `#[Fillable(['blog_category_id', 'status'])]`. 0079 then turns this story's editor into per-language tabs and adds `App\Actions\Blog\SetBlogPostTranslation`. |
+> | [**0072** — Blog Categories backend](../0072-translatable-content-retrofit-blog-categories-backend.md) + [**0073** — Blog Categories language tabs](../0073-blog-categories-language-tabs-ui.md) | Drops `blog_categories.name` **and** `normalized_name` into `blog_category_translations`. A category's name is now `translated('name', $languageId)`. |
+> | [**0074** — Blog Tags backend](../0074-translatable-content-retrofit-blog-tags-backend.md) + [**0075** — Blog Tags language tabs](../0075-blog-tags-language-tabs-ui.md) | Drops `blog_tags.name` **and** `normalized_name` into `blog_tag_translations`, with uniqueness re-scoped per store language. A tag's name is read the same way. |
+> | [**0078** — Blog Posts backend](../0078-translatable-content-retrofit-blog-posts-backend.md) + [**0079** — Blog post editor language tabs](../0079-blog-post-editor-language-tabs-ui.md) | **The largest.** Drops `blog_posts.title`, `body` **and** `slug` into `blog_post_translations`, one row per `(post, store language)`, with `UNIQUE(store_language_id, slug)`. `BlogPost` narrows to `#[Fillable(['blog_category_id', 'status'])]`. 0079 then turns this story's editor into per-language tabs and adds `App\Actions\Blog\SetBlogPostTranslation`. |
 >
 > **These are corrections, not a redesign.** This story's job is unchanged — the list, the routed
 > editor, the filters, delete, the trashed section, the registry entry — and it does **not** grow the
@@ -34,7 +34,7 @@
 >    below, and 0079's own ⛔ block, which corrects an earlier coordinator brief that said the
 >    opposite.
 > 2. **A slug collision is refused with a validation error, not auto-suffixed** — 0061's **OQ-2**,
->    resolved 2026-08-30 to option **(b)** ([0078 **R-4**](0078-translatable-content-retrofit-blog-posts-backend.md), ✅ CLOSED).
+>    resolved 2026-08-30 to option **(b)** ([0078 **R-4**](../0078-translatable-content-retrofit-blog-posts-backend.md), ✅ CLOSED).
 >    Since there is no slug field, that refusal must land on the **title** field of whichever language
 >    is being edited (0079 **D-2**, **R-4**).
 > 3. **`status`, `published_at`, `blog_category_id` and the tag set stay *outside* the tabs and render
@@ -73,10 +73,10 @@
 > **What needed a decision and how each was settled** — stated here rather than left to be inferred:
 >
 > - **Which language the list renders the post title in — ✅ already answered, and not by this
->   amendment.** [0079](0079-blog-post-editor-language-tabs-ui.md) scripts it
+>   amendment.** [0079](../0079-blog-post-editor-language-tabs-ui.md) scripts it
 >   (*"The list shows each post's title in the store's default language"*), states it in its Expected
 >   outcome and pins it in its disposition table. **The store default**, consistent with
->   [0027's OQ-10](done/0027-products-list-and-editor-ui.md#open-questions), resolved the same way on
+>   [0027's OQ-10](../done/0027-products-list-and-editor-ui.md#open-questions), resolved the same way on
 >   2026-08-30 for the Products list.
 > - **Which language the editor opens on — ✅ already answered by 0079.** The store default's tab
 >   (its Gherkin *"The default store language's tab is the one shown first"*, and its acceptance
@@ -96,7 +96,7 @@
 >   here** — its **Q-1** (how `SetBlogPostTranslation` expresses "a non-default body is never
 >   required" without editing 0078's trait) and its **Q-2** (whether a tab discloses its derived slug
 >   read-only). Both are that story's to close before its Phase 3.
-> - **One genuinely open cross-story gap is inherited, not closed:** [0079's **R-3**](0079-blog-post-editor-language-tabs-ui.md) —
+> - **One genuinely open cross-story gap is inherited, not closed:** [0079's **R-3**](../0079-blog-post-editor-language-tabs-ui.md) —
 >   `FindOrCreateBlogTag` has no language context after 0074, and neither 0074 nor 0078 closes it.
 >   The *behaviour* is settled (the store default, 0074 **D-7**/**Q-1(a)**, confirmed by 0079
 >   **D-12**); what is unsettled is whether the signature and the lookup shape survive intact.
@@ -109,17 +109,17 @@ The Blog module's headline screen, and the last of Epic 4's three: a permission-
 posts) plus a routed **post editor** (title, category select, status select with a conditionally
 revealed publication date, a WYSIWYG body, and a tag chip field that both reuses existing tags and
 creates new ones on the fly). It is **UI only**: every write goes through story
-[0061](done/0061-blog-posts-core-crud-backend.md)'s domain actions, and this story writes **nothing** under
+[0061](../done/0061-blog-posts-core-crud-backend.md)'s domain actions, and this story writes **nothing** under
 `app/Actions/` — matching how 0060 and 0062 only ever call actions their backend siblings own.
 
 It also discharges an obligation 0061 wrote into its own Definition of Done by name: **a way to reach
 trashed posts.** Without one, 0061's **D-7d** category-delete block has no exit — a blog category can
 be permanently undeletable because of a post that no screen displays.
 
-Covers [PRD](../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog posts` scenarios, the two
+Covers [PRD](../../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog posts` scenarios, the two
 **post-editor** scenarios inside `Feature: Blog tags` (*Reuse an existing tag from the post editor*,
 *Create a new tag on the fly from the post editor* — the management-screen scenarios beside them are
-story [0060](done/0060-blog-tags-ui.md)'s, not this one's), the `Scenario Outline: Filter the blog list by
+story [0060](../done/0060-blog-tags-ui.md)'s, not this one's), the `Scenario Outline: Filter the blog list by
 taxonomy`, and Blog acceptance criteria 1, the create-on-the-fly half of 3, and 4.
 
 > ⚠️ **Correction, 2026-08-30 — the paragraph above reads as one title, one body and one category
@@ -135,7 +135,7 @@ taxonomy`, and Blog acceptance criteria 1, the create-on-the-fly half of 3, and 
 >   **R-2**) — which renders an **em dash**, never an error. The language is the **store default**
 >   for the title (0079) and, per [OQ-10](#open-questions), for the category too.
 > - **The editor's `title` and body are authored once per active store language**, inside language
->   tabs — but the tabs are **[0079](0079-blog-post-editor-language-tabs-ui.md)'s to build, not this
+>   tabs — but the tabs are **[0079](../0079-blog-post-editor-language-tabs-ui.md)'s to build, not this
 >   story's**. This story still ships the single-field editor as written until 0079 lands on top of
 >   it; what is corrected here is only what this file *asserts*.
 > - **`status`, the publication date, the category select and the tag chips render exactly once,
@@ -184,7 +184,7 @@ read-only, except through the post editor's own tag field.
 ## Gherkin
 
 Every scenario opens with the named business-role actor **"a blog editor"** and carries exactly one
-`When`, per [gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3.
+`When`, per [gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3.
 The actor term and the entity term **"post"** are taken verbatim from the PRD and from 0061's own
 Gherkin — see **D-22** on why "post" rather than "article", which closes a live `TODO (product owner)`
 in that guidelines file.
@@ -217,7 +217,7 @@ in that guidelines file.
 >
 > **Nothing is added here.** The per-language scenarios — one tab per active language, an
 > untranslated tab opening empty rather than pre-filled, a refusal on a hidden tab bringing it into
-> view — belong to [0079's own Gherkin](0079-blog-post-editor-language-tabs-ui.md) and are
+> view — belong to [0079's own Gherkin](../0079-blog-post-editor-language-tabs-ui.md) and are
 > deliberately not duplicated into this file.
 
 ```gherkin
@@ -436,9 +436,9 @@ Feature: The blog posts screen is permission-gated
 > **One PRD scenario is deliberately not translated as its own scenario**: *"A post has exactly one
 > category"*. Its `When they select a category / Then the post has exactly that one category` asserts
 > a **control shape** (one `<select>`, no multi-select affordance, no "none" option), which
-> [rule 2](../../docs/testing/frontend/gherkin-guidelines.md#2-no-overly-technical-details) puts in the
+> [rule 2](../../../docs/testing/frontend/gherkin-guidelines.md#2-no-overly-technical-details) puts in the
 > Pest translation rather than in a scenario, and which the create scenario above already exercises.
-> Restating it would be a [ghost scenario](../../docs/testing/frontend/gherkin-guidelines.md) —
+> Restating it would be a [ghost scenario](../../../docs/testing/frontend/gherkin-guidelines.md) —
 > `frontend-qa`'s call, adopted.
 
 ## Interface contract consumed
@@ -447,12 +447,12 @@ Feature: The blog posts screen is permission-gated
 > 0020, 0021, 0022, 0058, 0059 or 0061 exists in this tree — `app/Models/` holds only `Role.php`,
 > `SalesRegion.php`, `User.php`, and `app/Livewire/` holds only `Actions/`, `Roles/`, `SalesRegions/`,
 > `Settings/`, `Users/`. Per this project's
-> [deferred-findings rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
+> [deferred-findings rule](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
 > **every citation below must be re-verified against `HEAD` before Phase 3**, and each disposition
 > recorded — including "already closed". Five to seven stories land between this debate and that
 > point.
 
-From **[0061](done/0061-blog-posts-core-crud-backend.md)** — the whole backend:
+From **[0061](../done/0061-blog-posts-core-crud-backend.md)** — the whole backend:
 
 ```php
 App\Models\BlogPost                       // HasUuids (v7), SoftDeletes, #[Fillable(['title','body','blog_category_id','status'])]
@@ -488,12 +488,12 @@ Five constraints 0061 binds this story to, quoted rather than paraphrased:
   the Livewire action method, and its target is resolved `withTrashed()` because a default query
   cannot see the row. **Force-delete is deliberately not available**; restore is the only exit.
 
-From **[0059](done/0059-blog-tags-backend.md)**: `FindOrCreateBlogTag::__invoke(string $name): BlogTag` —
+From **[0059](../done/0059-blog-tags-backend.md)**: `FindOrCreateBlogTag::__invoke(string $name): BlogTag` —
 name-keyed, case- and accent-insensitive via `normalized_name`, and asking a **different ability per
 branch** (`blog.view` to reuse, `blog.create` to mint — its **D-11**). Reached only through the post
-actions. From **[0058](done/0058-blog-categories-backend.md)**: `App\Models\BlogCategory`, `#[Fillable(['name'])]`.
+actions. From **[0058](../done/0058-blog-categories-backend.md)**: `App\Models\BlogCategory`, `#[Fillable(['name'])]`.
 
-From **[0021](done/0021-wysiwyg-rich-text-editor-component.md)** **D3**/**D4**:
+From **[0021](../done/0021-wysiwyg-rich-text-editor-component.md)** **D3**/**D4**:
 
 ```blade
 <livewire:components.wysiwyg-editor wire:model="body" wire:key="blog-post-body-editor" :label="__('…')" />
@@ -503,11 +503,11 @@ From **[0021](done/0021-wysiwyg-rich-text-editor-component.md)** **D3**/**D4**:
 embeds the media gallery itself** — so this story embeds **no** `Gallery` (**D-14**), and passes it
 nothing about media.
 
-From **[0020](done/0020-shared-media-gallery-modal-ui.md)** **D2**: consumed *transitively only*. Named
+From **[0020](../done/0020-shared-media-gallery-modal-ui.md)** **D2**: consumed *transitively only*. Named
 here so a reviewer can confirm this story writes no `select-event`, no `#[On]` listener and no
 `:multi` prop anywhere.
 
-From **[0060](done/0060-blog-tags-ui.md)** **D-4**: `config/modules.php`'s `groups.blog` already exists —
+From **[0060](../done/0060-blog-tags-ui.md)** **D-4**: `config/modules.php`'s `groups.blog` already exists —
 this story **appends an item to it**, and does not create it.
 
 > ⛔ **Correction, 2026-08-30 — six lines of the contract block above are falsified by the three Epic 5
@@ -540,10 +540,10 @@ this story **appends an item to it**, and does not create it.
 
 | Path | Change | Why |
 | --- | --- | --- |
-| `app/Livewire/BlogPosts/Index.php` | **New.** | The list. Class-based per [base-standards.md](../../docs/conventions/base-standards/livewire-and-flux-conventions.md#livewire-component-convention-class-based-not-single-file). Namespace in **D-2**. |
-| `resources/views/livewire/blog-posts.blade.php` | **New — the *flat* path.** | The [`Index`-in-a-subfolder exception](../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name): `.index` is dropped and the folder kebab-cases. **Do not create `livewire/blog-posts/index.blade.php`, and check afterwards that an `artisan make:` scaffold did not deposit one** — task 0017's did, and it broke nothing and simply sat there. |
+| `app/Livewire/BlogPosts/Index.php` | **New.** | The list. Class-based per [base-standards.md](../../../docs/conventions/base-standards/livewire-and-flux-conventions.md#livewire-component-convention-class-based-not-single-file). Namespace in **D-2**. |
+| `resources/views/livewire/blog-posts.blade.php` | **New — the *flat* path.** | The [`Index`-in-a-subfolder exception](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name): `.index` is dropped and the folder kebab-cases. **Do not create `livewire/blog-posts/index.blade.php`, and check afterwards that an `artisan make:` scaffold did not deposit one** — task 0017's did, and it broke nothing and simply sat there. |
 | `app/Livewire/BlogPosts/Editor.php` | **New.** | The routed create/edit page (**D-1**). |
-| `resources/views/livewire/blog-posts/editor.blade.php` | **New — the ordinary mirror.** | `Editor` is not named `Index`, so the exception does not apply. It sits one level *deeper* than the list's view; [naming.md](../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name) already records that asymmetry as expected. |
+| `resources/views/livewire/blog-posts/editor.blade.php` | **New — the ordinary mirror.** | `Editor` is not named `Index`, so the exception does not apply. It sits one level *deeper* than the list's view; [naming.md](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name) already records that asymmetry as expected. |
 | `routes/blog-posts.php` | **New.** | Three routes, one `auth`+`verified` group — the one-file-per-area convention. Snippet in **D-3**. |
 | `routes/web.php` | **Modify — one `require` line.** | `require __DIR__.'/blog-posts.php';` |
 | `app/Enums/BlogPostStatus.php` | **Modify — add `label()`.** | 0061 explicitly defers it to "the first consumer", and this story has three (**D-18**). **This is the only file outside `app/Livewire/**`, `routes/`, `config/` and `lang/` that this story writes.** |
@@ -580,11 +580,11 @@ this story **appends an item to it**, and does not create it.
 | `app/Actions/NormalizeForSearch.php` | 0022 — reached only transitively |
 
 > ⚠️ **Correction, 2026-08-30 — nine of the files above are also opened by
-> [0079](0079-blog-post-editor-language-tabs-ui.md), and one entry in the *not touched* table needs
+> [0079](../0079-blog-post-editor-language-tabs-ui.md), and one entry in the *not touched* table needs
 > narrowing.** Neither table changes: every file this story creates it still creates, and every file
 > it declines to touch it still declines to touch. What is added is the **sequencing constraint**,
 > which under this repo's
-> [Parallel Agent File-Ownership Rule](../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule) is a
+> [Parallel Agent File-Ownership Rule](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule) is a
 > real scheduling fact rather than a footnote — this story's **R-9** already names 0062 as a
 > parallel-write hazard, and 0079 is a second, larger one.
 >
@@ -602,7 +602,7 @@ this story **appends an item to it**, and does not create it.
 > is not re-litigated.
 >
 > **The one narrowing:** `resources/views/components/language-tab-strip.blade.php` is
-> [**0071's**](0071-product-categories-language-tabs-ui.md) and is **consumed, never edited, forked or
+> [**0071's**](../0071-product-categories-language-tabs-ui.md) and is **consumed, never edited, forked or
 > copied** — by 0073, 0075, 0077 and 0079 alike. It does not appear in either table above because it
 > did not exist when this file was written; add it to the *not touched* list mentally, owned by 0071.
 >
@@ -619,7 +619,7 @@ this story **appends an item to it**, and does not create it.
 
 > ⚠️ **Correction, 2026-08-30 — six cases below are invalidated by the three retrofits, one of them
 > ⛔ *fatally* (it asserts against a column that will not exist). The dispositions are
-> [0079's own](0079-blog-post-editor-language-tabs-ui.md), adopted verbatim rather than re-derived.**
+> [0079's own](../0079-blog-post-editor-language-tabs-ui.md), adopted verbatim rather than re-derived.**
 > Every other case in every file below is **unaffected** — the route gate, the ordering, the
 > soft-delete, the refusal logging, the filters, the `\ValueError` guard, the date boundary, the
 > restore block and the whole trashed section survive unchanged, because none of them touches a
@@ -655,6 +655,14 @@ this story **appends an item to it**, and does not create it.
       middleware at all, so the component tests below prove nothing about the gate.
 - [ ] The same four cases on `blog-posts.create` and `blog-posts.edit` — all three gate on
       `can:blog.view` (**D-3**), so a reviewer who "tightens" one route silently changes the contract.
+
+      > **Correction, 2026-09-26 (Phase 6, at the review's request) — the bullet above does not describe the
+      > shipped contract for create and edit.** The route middleware is `can:blog.view` on all three, but
+      > `Editor::mount()` authorizes `create` / `update` as its own first statement, so the four cases
+      > differ: an actor holding exactly `blog.view` gets **200 on `blog-posts.index` and 403 on
+      > `blog-posts.create` and `blog-posts.edit`**; `blog.view` + `blog.create` → 200 on create;
+      > `blog.view` + `blog.edit` → 200 on edit; a Super Admin holding zero permission rows → 200 on all
+      > three; guest → login redirect; no `blog.view` → 403. The tests assert exactly that.
 - [ ] A **misspelled ability denies silently**, so each 200 case is asserted positively beside its 403
       — the module-gate pattern's own rule.
 - [ ] `$posts` carries the documented row shape, and each row's `canEdit`/`canDelete` agrees with
@@ -770,6 +778,13 @@ deliberately does not re-derive 0061's rules:
       custom role fixture (**R-3**).
 - [ ] A forged `restoringBlogPostId` naming a post the actor may not restore is refused by the action,
       and the component writes nothing — the hint is a layer, never the control.
+
+      > **Correction, 2026-09-26 (Phase 6) — there is no `restoringBlogPostId` property.** The id to restore
+      > is the **method argument**: `restoreBlogPost(string $blogPostId, RestoreBlogPost $restoreBlogPost,
+      > LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt)`. The forged-id case is therefore a forged
+      > *argument* naming a post the actor may not restore, refused by the component's own
+      > `LogRefusedPrivilegedAttempt::authorize('restore', ...)` and again by the action; the component
+      > writes nothing.
 - [ ] **No force-delete control exists anywhere in the rendered markup** (**D-13b**) — a negative
       assertion, because 0061 makes its absence a decision rather than an omission.
 
@@ -793,7 +808,7 @@ deliberately does not re-derive 0061's rules:
       browser test reaches this: a component test can assert the rendered HTML contains the field but
       cannot prove the client-side reveal fires.
 - [ ] **A `<select>` pick of the *first* option**, for both status and category. *Risk if missing:*
-      the [null-`<select>` desync](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16),
+      the [null-`<select>` desync](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16),
       which neither `Livewire::test()->set()` nor a scripted `->select()` can reproduce. The two fail
       **differently** here and both are worth driving: `status` has a real fallback (`Draft`), so it
       fails *quietly correct-looking*; `blog_category_id` has **none** (NOT NULL, no "none" option), so
@@ -814,7 +829,7 @@ deliberately does not re-derive 0061's rules:
 | The WYSIWYG's tag emission, caret restore, toolbar `aria-pressed` | 0021 |
 | The media gallery's search, upload, tile cap, detail editing | 0019 / 0020 |
 | `SearchableMultiSelect`'s debounce and truncation | 0022 — **not used by this story at all** (**D-10**) |
-| The HTML sanitizer's allow-list | [0024a](done/0024a-product-description-html-sanitization.md), consumed unchanged through 0061 |
+| The HTML sanitizer's allow-list | [0024a](../done/0024a-product-description-html-sanitization.md), consumed unchanged through 0061 |
 | The blog-category delete block's count, race and logging | 0058 + 0061; this story consumes only the fact that an exit must exist |
 | The scheduled auto-publish transition | 0064 |
 | The published-post notification | 0065 |
@@ -893,54 +908,75 @@ Nothing about the data model changes: this story adds no table, column, migratio
 > | *(worth adding)* | **A post that resolves to no title, and a category that resolves to no name, each render a placeholder rather than raising** — a state reachable in normal operation right after a store-default change (0070 **R-2**), and one no criterion above covers. |
 
 ## Definition of Done
-- [ ] Tests written and green, plus the **full** existing suite in a single isolated run, per
-      [contracts.md](../../docs/contracts.md)'s Full Test Suite Gate Rule.
-- [ ] All **three** quality gates run **unscoped** and each result recorded explicitly, including any
+- [x] Tests written and green, plus the **full** existing suite in a single isolated run, per
+      [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule.
+- [x] All **three** quality gates run **unscoped** and each result recorded explicitly, including any
       not run: `php artisan test` (not `--filter`), `vendor/bin/pint --format agent` (not `--dirty`),
       and **Larastan level 7**. A record naming two of three is a record of two gates — see
-      [errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
-- [ ] **Every citation in [Interface contract consumed](#interface-contract-consumed) re-verified
+      [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+- [x] **Every citation in [Interface contract consumed](#interface-contract-consumed) re-verified
       against `HEAD` before Phase 3, with each disposition recorded** — including "already closed".
       **V-1**: none of the six dependency stories exists in code today.
-- [ ] The flat view path confirmed **by running the component**, and the tree checked for a stray
+- [x] The flat view path confirmed **by running the component**, and the tree checked for a stray
       `resources/views/livewire/blog-posts/index.blade.php` scaffold.
-- [ ] Code reviewed (code-reviewer). **Point Phase 2 at OQ-4 first** — the filters' liveness against
+- [x] Code reviewed (code-reviewer). **Point Phase 2 at OQ-4 first** — the filters' liveness against
       **R-1**'s recorded `<flux:select>` race is now the open decision with the widest blast radius,
       since this screen ships four such controls.
-- [ ] No security findings (appsec-auditor). **Point the audit at D-11**: that the disabled "add tag"
+- [x] No security findings (appsec-auditor). **Point the audit at D-11**: that the disabled "add tag"
       control is a *hint* and the server-side `blog.create` refusal is intact and un-bypassable.
-- [ ] Documentation updated (docs-keeper): `docs/api/routes.md` gains a `blog-posts.index` subsection
+- [x] Documentation updated (docs-keeper): `docs/api/routes.md` gains a `blog-posts.index` subsection
       and its registry-entry note; `docs/architecture/authorization.md`'s sidebar-registry section
       records the **insertion-position** property (**V-2**) that the first four entries could not show;
       `docs/conventions/base-standards.md`'s directory listing gains `app/Livewire/BlogPosts/` and
       `routes/blog-posts.php`.
-- [ ] **`docs/testing/frontend/gherkin-guidelines.md`'s glossary `TODO (product owner)` closed for the
+- [x] **`docs/testing/frontend/gherkin-guidelines.md`'s glossary `TODO (product owner)` closed for the
       blog half** — the canonical term is **post** (**D-22**) — and that section's own justification
       corrected: it still reads *"`app/Models/` contains only `User`"*, false since task 0016, which is
       this project's recurring
-      [bare-negative-claim](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
+      [bare-negative-claim](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
       failure mode.
-- [ ] **`docs/testing/frontend/playwright-setup.md`'s file count corrected** — it says the browser
+- [x] **`docs/testing/frontend/playwright-setup.md`'s file count corrected** — it says the browser
       suite holds three files; `ls tests/Browser/` returns **four** (**V-4**). 0060's Phase 1 already
       caught this and it is still open; whichever story closes first should fix it once.
-- [ ] **Hand-off recorded for story 0062** (blog categories UI), which is being written in parallel and
+- [x] **Hand-off recorded for story 0062** (blog categories UI), which is being written in parallel and
       cannot know these: it appends `items.blog_categories` to the **same** `groups.blog` group, and
       **position within `items` decides render order** (**V-2**) — so 0062 and 0063 must agree on the
       order rather than both appending. It also inherits the `lang/` resolution in **D-17**. And per
       0061's **D-7d**, the count in its delete-block message includes **trashed** posts, whose exit is
       this story's trashed section.
-- [ ] **Hand-off recorded for story 0064** (scheduled auto-publish): this screen renders the
+- [x] **Hand-off recorded for story 0064** (scheduled auto-publish): this screen renders the
       `Scheduled` badge and the `published_at` date it will flip. When it does, a post moves between
       badges with **no UI change required here** — but if 0064 ever adds a "last swept at" or failure
       state, this list is where it would surface.
-- [ ] Acceptance criteria met.
+- [x] Acceptance criteria met.
+
+> **Phase 6 record, 2026-09-26 (docs-keeper).** Ticked above: the citation re-verification (its dispositions are
+> the *Phase 2 pre-flight record* at the end of this file), the flat-view-path check (only
+> `resources/views/livewire/blog-posts.blade.php` and `blog-posts/editor.blade.php` exist; no
+> `blog-posts/index.blade.php`), the documentation item, the two glossary/playwright items and the two
+> hand-offs. **Not ticked, by design:** the full-suite and three-gates items, the code review and security
+> audit, and *Acceptance criteria met* — the orchestrator records those. The documentation item's targets
+> were re-pointed in Phase 2 (docs had been split): `docs/api/blog.md` (the `blog-posts.*` section) and
+> `docs/api/routes.md` (rows, file list, Blog summary line), `docs/architecture/authorization/how-to-gate.md`
+> (the insertion-position property and the shipped order Posts / Tags / Categories),
+> `docs/conventions/naming/` (the `Index`-in-a-subfolder table and the multi-word registry-key sentence),
+> `docs/testing/frontend/` (the browser inventory and the glossary), `docs/errors-log/` (four entries) and
+> `ai-spec/tasks/_digests/epic-4.md`. The `base-standards.md` directory-listing target no longer exists: no
+> current doc lists per-area `app/Livewire/` folders or `routes/*.php` files except `docs/api/routes.md`, so
+> nothing there was stale. The playwright "three files" sentence is gone from the split docs.
+> **Hand-off to 0062 (recorded, 0062 is already shipped):** the sidebar order is **Posts / Tags / Categories**
+> (Posts inserted before Tags; Categories was appended earlier and left alone); the lang decision is a new
+> `lang/{en,es}/blog-posts.php`, not an extension of `blog.php`; and the count in
+> `blog.categories.delete_blocked` includes **trashed** posts, whose exit is this screen's deleted-posts
+> section (restore, then reassign). **Hand-off to 0064:** this list already renders the `Scheduled` badge and
+> the `published_at` date, so a post flipped by the sweep changes badge with no UI change here.
 
 > ⚠️ **Correction, 2026-08-30 — two items to add, both cheap and both easy to lose.** Everything above
 > stands unchanged, including the three-gates rule and the hand-offs to 0062 and 0064.
 >
 > - [ ] **[OQ-10](#open-questions) ratified before Phase 3 starts** — which store language this
 >       screen's **taxonomy labels** resolve in. Adopted here as the store default by analogy with
->       [0027's own resolved OQ-10](done/0027-products-list-and-editor-ui.md#open-questions) and with
+>       [0027's own resolved OQ-10](../done/0027-products-list-and-editor-ui.md#open-questions) and with
 >       0079's list decision, and recorded as an adoption rather than an independent ruling. It gates
 >       [D-4](#d-4--the-list-query-explicit-columns-two-eager-loads-real-pagination)'s corrected
 >       query, both filter dropdowns, the editor's category select, the tag chips **and**
@@ -950,7 +986,7 @@ Nothing about the data model changes: this story adds no table, column, migratio
 >       against `HEAD`; 0072, 0074, 0078 and 0079 have since amended what those citations describe, so
 >       the check is against the **post-retrofit** shape and each disposition — including "already
 >       closed" — is recorded. This is the
->       [deferred-findings rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+>       [deferred-findings rule](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
 >       at this file's widest exposure: **ten** unshipped stories now stand between this debate and
 >       Phase 3.
 >
@@ -967,7 +1003,7 @@ The Users (0006), Roles (0011), Sales Regions (0018), Product Categories (0025) 
 screens all put create/edit in a `flux:modal`, so this is a deliberate divergence from the house
 pattern and needs its reasons stated. Both amigos converged on it independently.
 
-The decisive reason is a mechanism, not a component count. **[0021](done/0021-wysiwyg-rich-text-editor-component.md)'s
+The decisive reason is a mechanism, not a component count. **[0021](../done/0021-wysiwyg-rich-text-editor-component.md)'s
 D9 states the `contenteditable` region is seeded from `$value` at *client initialisation only*, and
 never re-written by a Livewire re-render.** A modal that closes and reopens for a different post
 therefore either remounts the editor (needing a `wire:key` dance to force it) or serves the previous
@@ -989,7 +1025,7 @@ reproduces the remount problem while also giving up the URL.
 `livewire/blog.blade.php`. `frontend-qa` proposed `App\Livewire\BlogPosts\Index`, route
 `blog-posts.index`. **Resolved in favour of QA's, on 0060's own words rather than on preference.**
 
-[0060](done/0060-blog-tags-ui.md)'s **D-3** is the file that owns this question, and it cuts both ways in
+[0060](../done/0060-blog-tags-ui.md)'s **D-3** is the file that owns this question, and it cuts both ways in
 its two halves. Its body says `blog-tags.index` "leaves `blog-categories.index` and a bare
 `blog.index` — the natural name for 0063's post list — both free and unambiguous", which is what
 `frontend-expert` cited. But its *Rejected* clause, arguing against a different alternative, names the
@@ -1075,7 +1111,7 @@ for the create case, and one route name for two entry points).
 
 > ⛔ **Correction, 2026-08-30 — the query below no longer runs. It names *three* dropped columns, and
 > this is the sharpest break the three Epic 5 retrofits make in this file.** It is
-> [0078's **R-1(a)**](0078-translatable-content-retrofit-blog-posts-backend.md) — *"the worst-hit file
+> [0078's **R-1(a)**](../0078-translatable-content-retrofit-blog-posts-backend.md) — *"the worst-hit file
 > in the whole Epic 5 plan"* — and 0079's scope fence puts it **outside** that story
 > (*"this story is not the 0063 amendment"*), so **nobody else fixes it**. It is this file's, and the
 > corrected shape is below.
@@ -1110,7 +1146,7 @@ for the create case, and one route name for two entry points).
 >   returns through a different door, and **under this screen's pagination it returns per page**. A
 >   bare `with('translations')` reinstates it silently, with no test failing.
 > - **The two taxonomy loads become one eager load each over the translation relation**, following
->   [0073 **D-12**](0073-blog-categories-language-tabs-ui.md)'s shape: resolve and, where a sibling
+>   [0073 **D-12**](../0073-blog-categories-language-tabs-ui.md)'s shape: resolve and, where a sibling
 >   screen sorts, sort **in PHP through `translated()`**, never through a SQL join filtered to one
 >   language — a join **bypasses the fallback chain** and silently mis-orders or (with `INNER`) omits
 >   any row lacking a default-language translation.
@@ -1124,7 +1160,7 @@ for the create case, and one route name for two entry points).
 > ✅ **The ordering needs no change at all, and this file earns that.** It orders by
 > `created_at DESC, id ASC` and deliberately **not** `orderBy('title')` — see the paragraph below,
 > written before Epic 5 existed and correct for a different reason (0061 **D-10**: posts carry no
-> title uniqueness). So unlike [0027](done/0027-products-list-and-editor-ui.md), which needed a whole new
+> title uniqueness). So unlike [0027](../done/0027-products-list-and-editor-ui.md), which needed a whole new
 > `scopeOrderByTranslatedName()` and a resolved OQ-10 before its ordering test could be written, and
 > unlike 0062/0025, whose `orderBy('name')` breaks outright — **this story's ordering survives the
 > retrofit untouched**, and 0078 ships no ordering scope for posts because none is needed. Do not
@@ -1219,14 +1255,14 @@ because the answer interacts with that race.
 >   than either choice alone. The same answer governs the editor's category select and the tag chips.
 >
 > ⚠️ **`R-1`'s `<flux:select>` Playwright race is *unchanged in kind and worse in count*.** This
-> decision already ships four such controls; once [0079](0079-blog-post-editor-language-tabs-ui.md)
+> decision already ships four such controls; once [0079](../0079-blog-post-editor-language-tabs-ui.md)
 > lands the same page also carries a tab strip whose own dynamic attributes must use
 > `{{ Js::from(...) }}` rather than `@js(...)`. Neither problem causes the other, and **OQ-4** is
 > still the open decision with the widest blast radius on this screen.
 
 ### D-6 — Every `wire:model`-bound property's type and empty value
 
-The [null-`<select>` desync](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
+The [null-`<select>` desync](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
 is the single most relevant prior incident to this screen, and this screen carries **more bound
 controls than any shipped one**. The rule — *a `wire:model`-bound property must never be `null`; give
 it a real empty value in the type the DOM expects* — applies to all of them, with the right empty
@@ -1245,8 +1281,14 @@ value differing per field:
 `$posts`, `$editingBlogPostId`, `$deletingBlogPostId` and `$deletingBlogPostTitle` are `#[Locked]`,
 following the newer `SalesRegions\Index::$regions` precedent and 0060's **D-6**.
 
+> **Correction, 2026-09-26 (Phase 6) — `$posts` is not `#[Locked]`, and `$editingBlogPostId` does not
+> exist.** `$posts` is a `#[Computed]` method returning the paginator (a computed value is never
+> serialized into the snapshot, so there is nothing to lock). The `#[Locked]` properties are
+> `Index::$deletingBlogPostId` and `Index::$deletingBlogPostTitle`, and, on the editor, `Editor::$blogPostId`
+> (null on create, set only from the route-bound post).
+
 > ⚠️ **Correction, 2026-08-30 — two rows of the table above are superseded by
-> [0079](0079-blog-post-editor-language-tabs-ui.md), five are untouched, and one `#[Locked]` property
+> [0079](../0079-blog-post-editor-language-tabs-ui.md), five are untouched, and one `#[Locked]` property
 > is fed from a column that no longer exists.**
 >
 > **The rule itself does not merely survive — it *widens*, and this is the single most important
@@ -1276,7 +1318,7 @@ following the newer `SalesRegions\Index::$regions` precedent and 0060's **D-6**.
 > [OQ-10](#open-questions)** — the same answer as the list, since a confirmation naming a post
 > differently from the row the editor just clicked is worse than either choice alone.
 >
-> This is the exact shape [0027's `$deletingProductName`](done/0027-products-list-and-editor-ui.md) carries
+> This is the exact shape [0027's `$deletingProductName`](../done/0027-products-list-and-editor-ui.md) carries
 > (0076's **R-1(b)**, named there as that story's hand-off). **Here it is named by nothing** — neither
 > 0078's **R-1(a)**, which lists three break sites, nor 0079's **R-1**, which adds a fourth. It is
 > found by reading this file rather than by following the upstream hand-offs, and it is recorded as
@@ -1388,7 +1430,7 @@ is name-based and case/accent-insensitive.
 - **The chip list is never filtered, paginated or truncated.** This is not cosmetic: 0061's **D-17** ⚠️
   says the full-replace `sync()` is safe *only* while the field shows every tag the post holds — the
   moment one is hidden, an omission stops being the editor's decision and becomes a silent revoke,
-  which is [the exact trap this repo has already hit twice](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20).
+  which is [the exact trap this repo has already hit twice](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20).
   **This constraint must be repeated in the component's own docblock**, where the next author reads.
 - **Suggestions exclude names already on the post**, compared case-insensitively, matching 0022's D11
   rule and 0059's own folding semantics.
@@ -1396,11 +1438,11 @@ is name-based and case/accent-insensitive.
 > ⚠️ **Correction, 2026-08-30 — the hydration line above names a dropped column, and this is the
 > break site that neither 0078 nor its own R-1 catches.** *"`public array $tagNames = []` is the
 > post's complete set, hydrated in `mount()` from `$blogPost->tags->pluck('name')`"* — and
-> [0074](0074-translatable-content-retrofit-blog-tags-backend.md) drops `blog_tags.name` **and**
+> [0074](../0074-translatable-content-retrofit-blog-tags-backend.md) drops `blog_tags.name` **and**
 > `normalized_name` (verified: its second migration is `dropColumn(['name', 'normalized_name'])`).
 >
 > **0078's R-1(a) lists three break sites in this file and this is not one of them; it is
-> [0079's **R-1**](0079-blog-post-editor-language-tabs-ui.md), found by opening the editor rather than
+> [0079's **R-1**](../0079-blog-post-editor-language-tabs-ui.md), found by opening the editor rather than
 > by following the hand-off — so this file is broken by three Epic 5 stories across *four* sites, and
 > the editor is one of them, not just the list.** The hydration becomes a resolved read
 > (`translated('name', $languageId)` per tag, coalescing a `null` away), loaded through the same
@@ -1435,7 +1477,7 @@ is name-based and case/accent-insensitive.
 > step. Accepted as a curation problem for the tag management screen (0075) rather than solved here.
 >
 > ⛔ **One genuinely open gap, inherited and not closed by this amendment:**
-> [0079's **R-3**](0079-blog-post-editor-language-tabs-ui.md). The *behaviour* is settled, but whether
+> [0079's **R-3**](../0079-blog-post-editor-language-tabs-ui.md). The *behaviour* is settled, but whether
 > `FindOrCreateBlogTag::__invoke(string $name)` really keeps its signature while its lookup spans a
 > translation table is closed by neither 0074 (which defers the UI half here) nor 0078 (whose scope
 > fence excludes tag names as *"0074's, already retrofitted"*). **A coordination item, not a guess.**
@@ -1523,7 +1565,7 @@ The section's restore control calls 0061's `RestoreBlogPost` and is gated on `bl
 questions are answered by a dependency and were never this story's to settle.
 
 `RestoreBlogPost` is **method-injected** on the Livewire action method, per
-[code-style.md](../../docs/conventions/code-style.md#inject-single-purpose-actions-per-method) — the
+[code-style.md](../../../docs/conventions/code-style.md#inject-single-purpose-actions-per-method) — the
 same rule every other action call site on this screen follows, since a Livewire action method has no
 external signature contract to protect:
 
@@ -1542,6 +1584,13 @@ public function restoreBlogPost(RestoreBlogPost $restoreBlogPost): void
     $this->resetPage();
 }
 ```
+
+> **Correction, 2026-09-26 (Phase 6) — the signature above is not the shipped one.** The shipped method is
+> `restoreBlogPost(string $blogPostId, RestoreBlogPost $restoreBlogPost, LogRefusedPrivilegedAttempt
+> $logRefusedPrivilegedAttempt)`: it takes the id as an argument (there is no `$restoringBlogPostId`),
+> resolves `BlogPost::withTrashed()->findOrFail($blogPostId)`, authorizes `restore` through the logging
+> helper with `target_type: 'blog_post'` **before** calling the action, and unsets `posts`, `trashedPosts`
+> and `trashedPostsTotal` (it does not `resetPage()`).
 
 Two properties this inherits rather than decides:
 
@@ -1596,7 +1645,7 @@ column 0061 did not create.
 
 > ⚠️ **Correction, 2026-08-30 — one embed becomes **N**, and the negative assertion below stays
 > *literally* true while ceasing to mean what it meant.** After
-> [0079](0079-blog-post-editor-language-tabs-ui.md) **D-4** the editor mounts **one `WysiwygEditor`
+> [0079](../0079-blog-post-editor-language-tabs-ui.md) **D-4** the editor mounts **one `WysiwygEditor`
 > per active store language**, all mounted simultaneously and hidden with `x-show`, each bound to its
 > own `bodies.{languageId}` leaf with a per-language `wire:key`. Three consequences:
 >
@@ -1679,6 +1728,15 @@ own ✅ describes the cost as "two appended array literals"), and it is worth re
 faces the same choice and the two stories must agree.** Recommended final order: **Posts, Categories,
 Tags** — the content first, then the taxonomies that classify it, coarsest first.
 
+> **Correction, 2026-09-26 (Phase 6) — the recommended order, the group key and the icon above are not what
+> shipped.** (1) **Order:** 0062 had already **appended** `blog_categories` (after `blog_tags`) before this
+> story ran, so inserting `blog_posts` before `blog_tags` gives **Posts / Tags / Categories**, not the
+> recommended Posts / Categories / Tags; 0062's entry was deliberately left untouched. (2) **Group key:**
+> after story 0080 there is no `groups.blog`; the entry is `'group' => null, 'cluster' => 'blog'`, nested in
+> `clusters.blog` of `groups.content`. (3) **Icon:** `pencil-square`, chosen to differ from the cluster's
+> `document-text`, `blog_tags`' `hashtag` and `blog_categories`' `rectangle-stack`. The literal in the code
+> block above is therefore historical; `config/modules.php` is the source of truth.
+
 ⚠️ **0060's group ships `expandable => false` with one entry.** With three entries it should almost
 certainly become `expandable => true` with an `expanded_when` of `'blog-posts.*'`… except that a
 pattern naming only one screen would collapse the group while an editor sits on the Tags screen.
@@ -1691,7 +1749,7 @@ worth a line in their own files". This is that line, and it is **OQ-8**, because
 **Two already-written sibling stories contradict each other here**, and neither amigo could resolve it
 alone. 0060's **D-8** explicitly *rejects* a shared `blog.php` for UI copy — "one screen, one domain
 file… it recreates precisely the file-ownership hazard the
-[Parallel Agent File-Ownership Rule](../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule) makes a
+[Parallel Agent File-Ownership Rule](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule) makes a
 real scheduling constraint — for no benefit". 0061's hand-off says the opposite for this story by
 name: "it extends `lang/{en,es}/blog.php` rather than creating it".
 
@@ -1718,7 +1776,7 @@ unavoidable (it mirrors the registry) and is a two-leaf append, not a structural
 ### D-18 — `BlogPostStatus::label()` ships here, and this is the first story to earn it
 
 0061 deliberately shipped **no** `label()`, citing
-[naming.md](../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)'s rule that *a `label()` on an enum is not
+[naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)'s rule that *a `label()` on an enum is not
 automatic — add it when a **second** consumer appears, not when the first one does* — and noting "0063
 is the first consumer and may add it then."
 
@@ -1747,7 +1805,7 @@ defaulted because a badge palette is the kind of thing nobody revisits once ship
 
 Per 0060's **V-2** ruling — a hook "names the model, not an abbreviation", forestalling collisions
 across three sibling Blog screens — and per
-[playwright-setup.md](../../docs/testing/frontend/playwright-setup.md)'s ⚠️ that "prefer visible text"
+[playwright-setup.md](../../../docs/testing/frontend/playwright-setup.md)'s ⚠️ that "prefer visible text"
 **inverts** on an admin list whose row controls are icon-only.
 
 `edit-blog-post-{id}` · `delete-blog-post-{id}` · `restore-blog-post-{id}` ·
@@ -1761,7 +1819,7 @@ control either way.
 
 ⚠️ **Three page-global assertions are unsafe on this screen specifically**, and this is sharper here
 than on any prior list because a blog list realistically has many rows sharing a status and
-overlapping dates — the [`assertSee('0%')`-matches-inside-`10%`](../../docs/errors-log.md) trap's
+overlapping dates — the [`assertSee('0%')`-matches-inside-`10%`](../../../docs/errors-log.md) trap's
 analogue: a status word (`assertSee('Borrador')` passes the moment *any* row is a draft), a date
 fragment, and a tag name (which appears both as a filter option and in a row). Assert all three
 through their row-scoped hooks. And a disabled-state helper must match `disabled="disabled"`, never a
@@ -1771,7 +1829,7 @@ branch.
 ### D-21 — Test paths: `tests/Feature/Blog/`, and **mirrored** browser paths *(resolved conflict — C-3)*
 
 Named explicitly because
-[playwright-setup.md](../../docs/testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure) states the
+[playwright-setup.md](../../../docs/testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure) states the
 generalisable rule: **"a story file that names a test path is making a convention decision, so the
 path belongs in the Phase 2 review"** — noting that twice now it has not been, and twice the
 convention has lost by default.
@@ -1797,7 +1855,7 @@ are list-plus-modal screens covered by a single file.
 
 ### D-22 — The canonical term is "post", and this closes a live product-owner TODO
 
-[gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md)'s domain glossary carries an
+[gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md)'s domain glossary carries an
 explicit, unanswered `TODO (product owner)` asking, among other things: *"(a) for a blog entry, is the
 term 'post' or 'article'?"* That is this facilitator's call, and Epic 4 cannot ship three screens'
 worth of Gherkin without answering it.
@@ -1813,7 +1871,7 @@ Recorded in the Definition of Done as a docs-keeper hand-off, together with a co
 needs anyway: its stated justification is *"No blog or ecommerce domain exists in the code yet
 (`app/Models/` contains only `User`)"*, which has been false since task 0016 shipped `SalesRegion` —
 this project's recurring
-[bare-negative-claim](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
+[bare-negative-claim](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
 failure mode, arriving in a file nobody opens while adding a model.
 
 ## Scope fences: what this story must NOT do
@@ -1844,7 +1902,7 @@ failure mode, arriving in a file nobody opens while adding a model.
 >
 > - ***"No SEO/meta fields, no per-locale tabs — Epic 5."*** **Both halves are still true of this
 >   story**, and the sentence has stopped being a statement about the schema. **Per-locale tabs are
->   [0079's](0079-blog-post-editor-language-tabs-ui.md)**, built on this editor and explicitly not
+>   [0079's](../0079-blog-post-editor-language-tabs-ui.md)**, built on this editor and explicitly not
 >   here. **SEO/meta fields still do not exist anywhere** — 0078's **Q-2** resolved 2026-08-30 to
 >   option **(a), out of scope**: 0061 ships no meta columns and a translation retrofit is the wrong
 >   place to invent them. Note this is a *per-entity* decision rather than a family-wide one — 0076
@@ -1870,7 +1928,7 @@ failure mode, arriving in a file nobody opens while adding a model.
 ### Verified: no single-slug assumption survives in this file
 
 The one check this amendment was asked to run explicitly, because
-[0079's own ⛔ block](0079-blog-post-editor-language-tabs-ui.md) records a coordinator brief that
+[0079's own ⛔ block](../0079-blog-post-editor-language-tabs-ui.md) records a coordinator brief that
 asserted the opposite (*"slug is per-language-unique and administrator-facing"*) and was **false
 against 0078 as written**. Verified by grep rather than by recollection: **`slug` appears three times
 in this file and none of them is a form control, a bound property, a rendered cell, a `data-test` hook
@@ -1897,7 +1955,7 @@ action an editor can take to resolve it.
 
 Executed read-only against this worktree during the debate. **`vendor/` is absent (V-6)**, so nothing
 requiring PHP execution was verified and every such claim is flagged at its site, per this project's
-[hedge rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24).
+[hedge rule](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24).
 
 - **V-1 — Not one dependency exists in code.** `app/Models/` holds `Role.php`, `SalesRegion.php`,
   `User.php`. `app/Livewire/` holds `Actions/`, `Roles/`, `SalesRegions/`, `Settings/`, `Users/`.
@@ -1911,7 +1969,7 @@ requiring PHP execution was verified and every such claim is flagged at its site
 - **V-3 — `blog` is already in the seeded catalog.** `RolePermissionSeeder::MODULES` contains
   `'blog'`; `ACTIONS` is the four CRUD verbs. **Zero seeder change.**
 - **V-4 — `tests/Browser/` holds four files**, not the three
-  [playwright-setup.md](../../docs/testing/frontend/playwright-setup.md) claims: `Auth/LoginSmokeTest.php`,
+  [playwright-setup.md](../../../docs/testing/frontend/playwright-setup.md) claims: `Auth/LoginSmokeTest.php`,
   `RolesIndexTest.php`, `SalesRegionsIndexTest.php`, `UsersIndexTest.php`. 0060's Phase 1 caught the
   same under-count and it is still open.
 - **V-5 — This repo has no `#[Url]`, no `WithPagination`, no `paginate()` and no date input anywhere.**
@@ -1933,7 +1991,7 @@ requiring PHP execution was verified and every such claim is flagged at its site
   group itself, following 0060's **D-4** shape verbatim.
 - **0022 — explicitly *not* a dependency** (**D-10**), unlike 0027's editor.
 - **0062 — not a dependency**, but a **parallel-write hazard** (**R-9**).
-- Per [workflow.md](../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule) the numbering is already correct; what must
+- Per [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule) the numbering is already correct; what must
   be enforced is the **sequencing** — 0058, 0059, 0061, 0020, 0021 and 0060 all reach Phase 7 before
   this story starts Phase 3.
 
@@ -1943,19 +2001,19 @@ requiring PHP execution was verified and every such claim is flagged at its site
 >
 > | Story | Kind | Why |
 > | --- | --- | --- |
-> | [**0072**](0072-translatable-content-retrofit-blog-categories-backend.md) | **hard**, not implemented | Drops `blog_categories.name`. Two of this screen's queries and two of its option sets name it. |
-> | [**0074**](0074-translatable-content-retrofit-blog-tags-backend.md) | **hard**, not implemented | Drops `blog_tags.name`. The list's eager load and the editor's chip hydration name it. |
-> | [**0078**](0078-translatable-content-retrofit-blog-posts-backend.md) | **hard, blocking, total**, not implemented | Drops `blog_posts.title`/`body`/`slug`. The list query, the editor's two fields, the delete modal's label and the body rules all depend on it. |
-> | [**0079**](0079-blog-post-editor-language-tabs-ui.md) | **depends on this story**, not the reverse | It builds the language tabs *on top of* this editor and rewrites this list's query. It must land **strictly after** this story and must never be batched with it. |
-> | [**0070**](0070-translatable-content-mechanism-product-categories-backend.md) / [**0068**](0068-store-languages-catalog-backend.md) | hard, transitively | `HasTranslations`, `translated()`, `withTranslationsFor()`, `SetTranslation`, `StoreLanguage` and its `is_default` row. Consumed, never re-implemented. |
-> | [**0071**](0071-product-categories-language-tabs-ui.md) | soft, via 0079 | Owns `<x-language-tab-strip>`, `setActiveLanguageTab()` and the two-layer pattern 0079 consumes. |
+> | [**0072**](../0072-translatable-content-retrofit-blog-categories-backend.md) | **hard**, not implemented | Drops `blog_categories.name`. Two of this screen's queries and two of its option sets name it. |
+> | [**0074**](../0074-translatable-content-retrofit-blog-tags-backend.md) | **hard**, not implemented | Drops `blog_tags.name`. The list's eager load and the editor's chip hydration name it. |
+> | [**0078**](../0078-translatable-content-retrofit-blog-posts-backend.md) | **hard, blocking, total**, not implemented | Drops `blog_posts.title`/`body`/`slug`. The list query, the editor's two fields, the delete modal's label and the body rules all depend on it. |
+> | [**0079**](../0079-blog-post-editor-language-tabs-ui.md) | **depends on this story**, not the reverse | It builds the language tabs *on top of* this editor and rewrites this list's query. It must land **strictly after** this story and must never be batched with it. |
+> | [**0070**](../0070-translatable-content-mechanism-product-categories-backend.md) / [**0068**](../0068-store-languages-catalog-backend.md) | hard, transitively | `HasTranslations`, `translated()`, `withTranslationsFor()`, `SetTranslation`, `StoreLanguage` and its `is_default` row. Consumed, never re-implemented. |
+> | [**0071**](../0071-product-categories-language-tabs-ui.md) | soft, via 0079 | Owns `<x-language-tab-strip>`, `setActiveLanguageTab()` and the two-layer pattern 0079 consumes. |
 >
 > **The sequencing, strictly:** 0058 → 0059 → 0061 → **0063** → 0068 → 0070 → 0072 → 0074 → 0078 →
 > 0079, each fully closed before the next starts, with 0020/0021/0060 landing before this story as
 > already required.
 >
 > ⚠️ **There is one ordering the coordinator should decide rather than inherit**, and it is
-> [0078's **R-14**](0078-translatable-content-retrofit-blog-posts-backend.md) reaching this file: if
+> [0078's **R-14**](../0078-translatable-content-retrofit-blog-posts-backend.md) reaching this file: if
 > **0078 lands before 0061 is implemented**, the far cheaper path is to amend 0061 so `title`, `body`
 > and `slug` are *never created* on `blog_posts` — which deletes 0078's second migration, its
 > backfill and its sharpest hazard (a backfill that silently and permanently empties every
@@ -2001,7 +2059,7 @@ requiring PHP execution was verified and every such claim is flagged at its site
   revision removed entirely by shipping the action itself.
 - **R-9 — Three stories claim `config/modules.php`, `lang/{en,es}/navigation.php` and the `blog` group:
   0060 (done), 0062 (being written in parallel *right now*) and this one.** Under the
-  [Parallel Agent File-Ownership Rule](../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule) this is
+  [Parallel Agent File-Ownership Rule](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule) this is
   a real scheduling constraint, not a footnote: 0062 and 0063 must not implement concurrently, and they
   must agree on **item order** (**V-2**) and on the group's `expandable` flag (**OQ-8**). **D-17**
   removes the lang-file half of this hazard by giving each screen its own file.
@@ -2042,7 +2100,7 @@ requiring PHP execution was verified and every such claim is flagged at its site
 >   `withTranslationsScoped()` helper is the plausible mistake — both screens live under Blog.
 > - **R-13 — `$deletingBlogPostTitle` is fed from a dropped column and *no upstream story names it*.**
 >   Recorded in the [D-6 correction](#d-6--every-wiremodel-bound-propertys-type-and-empty-value). It is
->   the same shape [0027's `$deletingProductName`](done/0027-products-list-and-editor-ui.md) carries, where
+>   the same shape [0027's `$deletingProductName`](../done/0027-products-list-and-editor-ui.md) carries, where
 >   0076's **R-1(b)** *does* name it — here neither 0078's three-site R-1(a) nor 0079's four-site R-1
 >   does. Found by reading this file rather than by following a hand-off, which is precisely the
 >   failure mode a hand-off-driven amendment produces.
@@ -2060,7 +2118,7 @@ requiring PHP execution was verified and every such claim is flagged at its site
 
 ### Open questions
 
-Per [contracts.md](../../docs/contracts.md)'s Uncertainty Handling Rule these are recorded rather than
+Per [contracts.md](../../../docs/contracts.md)'s Uncertainty Handling Rule these are recorded rather than
 guessed. **None blocks Phase 2 review.**
 
 > ✅ **OQ-1, OQ-2 and OQ-3 are closed by story 0061's revision** and are kept here as retired entries
@@ -2125,7 +2183,7 @@ guessed. **None blocks Phase 2 review.**
   artifact default to" question this epic has raised. No longer an adoption pending ratification.
 
   **The post-title half of this question is already answered and is not re-opened**:
-  [0079](0079-blog-post-editor-language-tabs-ui.md) resolves the list's title to the **store default**
+  [0079](../0079-blog-post-editor-language-tabs-ui.md) resolves the list's title to the **store default**
   (its Gherkin, its Expected outcome and its disposition table all say so) and opens the editor on the
   **store default's** tab. **Ordering raises no question at all**, because **D-4** orders by
   `created_at` and never by a translated column. What remains unnamed by *any* story is the language
@@ -2136,7 +2194,7 @@ guessed. **None blocks Phase 2 review.**
   **(a) The store default _(recommended, adopted)_.** Three reasons, none of them novel. It is the one
   language guaranteed to resolve for every row (0070 **Q1(a)**: every entity always holds a
   default-language translation), so a cell or an option can never render blank for a *reachable
-  ordinary* reason. It is the answer [0027's OQ-10](done/0027-products-list-and-editor-ui.md#open-questions)
+  ordinary* reason. It is the answer [0027's OQ-10](../done/0027-products-list-and-editor-ui.md#open-questions)
   received from the human on 2026-08-30 for the structurally identical question on the Products list —
   **and that resolution explicitly covered its `$deletingProductName` too**, on the reasoning that *a
   confirmation naming a record differently from the row above it is worse than either choice alone*,
@@ -2145,7 +2203,7 @@ guessed. **None blocks Phase 2 review.**
   resolve consistently.
 
   **(b) The administrator's UI locale.** Rejected for the reason 0077 and 0027 both give: it conflates
-  the two i18n axes [0068](0068-store-languages-catalog-backend.md) draws apart deliberately — the
+  the two i18n axes [0068](../0068-store-languages-catalog-backend.md) draws apart deliberately — the
   **interface** language (ES/EN, an administrator preference) and the **store content** languages
   (open-ended, a catalog property) — and it would make two administrators see different labels on the
   same page.
@@ -2164,16 +2222,16 @@ guessed. **None blocks Phase 2 review.**
 
 Phase 1 (Three Amigos) debate run on 2026-08-27 with `frontend-expert` (files and approach) and
 `frontend-qa` (Gherkin and test design), per
-[workflow.md](../../docs/workflow/phases.md#phase-1--three-amigos-debate). Both were dispatched concurrently
+[workflow.md](../../../docs/workflow/phases.md#phase-1--three-amigos-debate). Both were dispatched concurrently
 under an explicit **read-only** instruction — neither wrote any file — which is the
-[Parallel Agent File-Ownership Rule](../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule) applied
+[Parallel Agent File-Ownership Rule](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule) applied
 at debate time rather than at implementation time. `database-expert` was not convened: this story adds
 no schema, no query plan and no index.
 
-Derived from [PRD](../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog posts`, the two
+Derived from [PRD](../../../docs/PRD/sections/epic-4-blog.md#epic-4--blog) Epic 4's `Feature: Blog posts`, the two
 post-editor scenarios inside `Feature: Blog tags`, the taxonomy-filter `Scenario Outline`, and Blog
 acceptance criteria 1, 3 and 4 — plus the four hand-off items
-[0061](done/0061-blog-posts-core-crud-backend.md)'s Definition of Done addresses to this story by name.
+[0061](../done/0061-blog-posts-core-crud-backend.md)'s Definition of Done addresses to this story by name.
 
 **Four conflicts between the two amigos were resolved by the facilitator rather than left implicit.**
 
@@ -2197,7 +2255,7 @@ later instruction contradicting a settled decision.
 **C-3 — The browser test path.** `frontend-expert` left it open ("worth re-litigating"); `frontend-qa`
 applied 0060's V-1 ruling and recommended mirrored. **Resolved in favour of mirrored** (**D-21**), and
 deliberately **not** re-litigated: 0060 already settled it against the identical evidence, and
-[playwright-setup.md](../../docs/testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure) records that the
+[playwright-setup.md](../../../docs/testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure) records that the
 convention has already lost by default twice.
 
 **C-4 — The restore ability.** `frontend-expert` recommended `blog.delete`; `frontend-qa` recommended
@@ -2236,7 +2294,7 @@ as **V-1**–**V-7**. Three changed the document rather than merely supporting i
 
 **One question this debate answered that belongs to the product owner rather than to either amigo**:
 the canonical term for a blog entry, an open `TODO (product owner)` in
-[gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md)'s glossary. Answered **"post"**
+[gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md)'s glossary. Answered **"post"**
 (**D-22**), ratifying what the PRD and all four Epic 4 stories already do, with "artículo" recorded as
 Spanish copy rather than as a second domain term.
 
@@ -2248,3 +2306,48 @@ is id-keyed and its `resolveSelected()` throws on any id it cannot vouch for, so
 exist yet is unrepresentable in it. **D-10** records the reasoning, because the alternative — widening
 a confirmed contract that three other stories bind to — is a decision belonging to 0022's story rather
 than to this one.
+
+## Phase 2 pre-flight record (2026-09-26)
+
+Recorded by the implementing session when the story moved to `in-progress/`, from a read-only review of
+`HEAD` (not a `code-reviewer` agent-definition dispatch). Every dependency (0058, 0059, 0060, 0061/a/b,
+0062, 0020–0022, 0080) is in `done/`; 0064/0065 and 0072–0079 are not implemented, so this screen is built
+against the **pre-retrofit** schema (`blog_posts.title/body/slug`, `blog_categories.name`, `blog_tags.name`),
+exactly as 0062 did. The Epic 5 amendment blocks are **not applied**; the cheap ones are carried (below).
+
+| Claim | Disposition against `HEAD` |
+| --- | --- |
+| `BlogPost` model, `forCategory`/`forTag` scopes (both apply the soft-delete scope), `BlogPostPolicy` (5 abilities), `RestoreBlogPost`, `FindOrCreateBlogTag`/`SyncBlogPostTags` | ✅ Confirmed. |
+| Action signatures `(string $title, string $body, string $blogCategoryId, BlogPostStatus $status, ...)` | ❌ Stale. Real: `CreateBlogPost(string $title, ?string $body, ?string $blogCategoryId, ?string $status, ?string $publishedAt, array $tagNames)`; `UpdateBlogPost(BlogPost, string $title, ?string $body, ?string $blogCategoryId, string $status, ?string $publishedAt, array $tagNames)`. `status` is passed as a **plain string**. |
+| D-6/D-7/D-9 date and body rules | ❌ Superseded by 0061a (Published + future date is stored as **Scheduled**, no notification) and 0061b (`BlogBodyHasVisibleContent`: a body that renders nothing is "no body"; a draft stores `null`). |
+| Validation-key names | ❌ Omitted. The actions throw `title`, `body`, `blog_category_id`, `status`, `published_at`, `tag_names`, and `name` (from `FindOrCreateBlogTag`); the editor's properties are `$blogCategoryId`, `$publishedAt`, `$tagNames`. `save()` must catch the `ValidationException` and **re-key** it onto declared properties. |
+| D-16 / AC: `groups.blog`, `'group' => 'blog'`, insert before `blog_tags` | ❌ Stale (story 0080). Real: `'group' => null, 'cluster' => 'blog'` in `groups.content`/`clusters.blog`; icon must differ from the cluster's `document-text`. Inserted **before `blog_tags`** per the AC; 0062's `blog_categories` entry is left untouched. |
+| Files table (no topbar change) | ❌ Incomplete. Screens now pass `<x-slot:heading>/<x-slot:subheading>`; `lang/{en,es}/topbar.php` and `tests/Feature/Layout/TopbarTest.php` (`blog-posts.index`, `.create`, `.edit`) must be extended. Also add `tests/Unit/Enums/BlogPostStatusTest.php`. |
+| D-17 lang file; "0061's `blog.php` is not extended" | ⚠️ Premise expired (0062 extended `blog.php`, 0060 uses `blog-tags.php`). **Ruling: keep `lang/{en,es}/blog-posts.php`** (list + editor + trashed + statuses ≈ 80–100 keys), superseding the `blog.php` header sentence. |
+| V-1, V-4, V-5, V-7 | ❌/⚠️ Stale: dependencies exist; the browser suite has ~30 files (blog folders already mirrored); `WithPagination`/`paginate()` exist in `Products\Index` (still no `#[Url]` and no date input); seven enums have `label()`. |
+| V-6 / OQ-6: Flux Free forwards `type="datetime-local"`, has no date picker | ✅ Confirmed (`flux/input/index.blade.php`). |
+| D-14 WYSIWYG API | ✅ Confirmed (`#[Modelable] $value`; embeds `media.gallery` itself under `@can`); no client-side sanitization — the actions sanitize. |
+| DoD docs targets (`base-standards.md` listing, `playwright-setup.md` count) | ❌ Stale: docs were split. Real targets: `docs/api/blog.md`, `docs/api/routes.md`, the authorization registry section, `docs/testing/frontend/playwright-setup/status-structure-and-syntax.md`, `gherkin-guidelines.md` (already has a *provisional* blog vocabulary), `_digests/epic-4.md`. |
+
+**Rulings recorded here (in place of open questions):** OQ-4 `wire:model.live` filters with an `updated…Filter()` → `resetPage()` hook; OQ-5 `PER_PAGE = 25`; OQ-6 `datetime-local` with `step="1"`; OQ-7 add the single-namespace `arch()` fence; OQ-8 moot (a cluster's open state derives from `current_when`); OQ-9 `zinc`/`amber`/`lime`; OQ-10 n/a (pre-retrofit).
+
+**Implementation constraints from the review (binding):**
+1. `save()` passes `publishedAt` **only** when `status === scheduled`, otherwise `null` (a hidden date must never silently schedule a post, 0061a); hydrate `published_at` as `Y-m-d\TH:i:s` so R-9 (retitling an overdue Scheduled post) is not broken by minute precision.
+2. Editor does not compose `BlogPostValidationRules` or call `$this->validate()` (the actions own the rules; 0060/0062 D-1).
+3. Trashed post's edit URL is a 404 (default binding); editor shows a zero-categories callout linking to `blog-categories.index`.
+4. `#[Url]` filters accept arbitrary input: unknown ids are treated as `''`, never a 500.
+5. Carried from the Epic 5 amendments: list `select()` excludes `body` and `slug`; `#[Locked] $deletingBlogPostTitle`, never `null`; titles/category names read through one private mapper; order `created_at DESC, id ASC`; chip list never filtered/truncated; no slug field.
+6. Helper names in new test files use unique prefixes (`blogPostsIndex*`, `blogPostsEditor*`).
+7. Timezone is UTC everywhere: the date field carries a translated "UTC" hint.
+
+**INVEST:** ✅ Independent (all dependencies done), Negotiable, Valuable, Estimable, Testable; ⚠️ Small — large, implemented unsplit in two green layers (list first, editor second), as 0027 did for Products. No blocking finding.
+
+## Phase 3-7 verification record (2026-09-26)
+
+- **Tests.** Written red first in two layers. List: `BlogPostsIndexTest` / `BlogPostsIndexQueryTest` / `BlogPostsIndexRenderingTest`, `BlogPostStatusTest`, sidebar, topbar and single-namespace `arch()` additions, `tests/Browser/BlogPosts/IndexTest.php` (120 of 263 red before the component existed). Editor: `BlogPostsEditorTest` and `BlogPostsEditorRenderingTest` (91 tests, 84 red against the stub), `tests/Browser/BlogPosts/EditorJourneyTest.php` (real Chromium, three consecutive runs with no retry firing). Mutations run and caught: dropping `withTrashed()` from restore, dropping `resetPage()` from a filter hook, dropping the `status === scheduled` guard on `publishedAt`, dropping the `blog_category_id` re-key, hydrating the date at minute precision, and removing `sanitizeFilters()` from `mount()`.
+- **Full suite gate**, one isolated run against the per-worktree database `testing_0063`: `vendor/bin/pest` — **4332 tests, 4329 passed, 3 skipped, 0 failed** (14,910 assertions). `vendor/bin/pint --format agent` (unscoped) — passed. Larastan level 7 (`vendor/bin/phpstan analyse --memory-limit=-1`) — 0 errors. All three gates were re-run after the last code change.
+- **Phase 4 (security audit, read-only reviewer — the project's `appsec-auditor` definition could not be dispatched):** PASS, no Critical/High/Medium. D-11 confirmed: the disabled add-tag control is a hint and the server-side `blog.create` refusal is intact, with the whole save rolled back. Two Low findings fixed in this story: an unbounded deleted-posts query (now bounded at `TRASHED_LIMIT`, with a "showing N of M" notice) and forged `$tagNames` elements/length reaching the suggestion and chip paths (now sanitized there, while `save()` still submits the raw set so the action's validation owns the refusal).
+- **Phase 5 (code review, read-only reviewer):** PASS, no blockers. Fixed in this story: S1 (the keyboard bypassed the disabled add-tag hint and lost the form to a 403), S2 (deleting the last row of the last page, or a forged `?page=`, rendered "no posts yet"), S3 (a filter-sanitizing test that could not fail), plus the cheap nits (filters validated with `whereKey()->exists()` instead of a capped option list, five weak assertions tightened, the unused `BlogPostFactory::trashed()` removed, the duplicated authorize block extracted).
+- **Deviations from the file as written, all recorded above in dated correction blocks:** `blog.view` alone is 200 on the list and 403 on create/edit (D-3 governs, not the test bullet); `restoreBlogPost` takes the id as an argument plus a `LogRefusedPrivilegedAttempt`; the list uses `#[Computed]` paginator, not `#[Locked]` rows; the sidebar order is **Posts / Tags / Categories** (Posts inserted before `blog_tags` per the acceptance criterion; 0062's Categories entry was already appended); `lang/{en,es}/blog-posts.php` holds this screen's copy (D-17).
+- **Not done, and why:** the Epic 5 per-language shapes (0072–0079 are not implemented); the `(deleted_at, status, published_at)` index does not serve `ORDER BY created_at DESC` (a known cost — the story forbids a migration); `docs/how-to-gate.md` is slightly over its size budget and is the next split candidate.
+- **Hand-offs discharged:** to 0062 (order, lang decision, and that the delete-block count includes trashed posts whose exit is this screen's deleted-posts section) and to 0064 (the list already renders the Scheduled badge and date).

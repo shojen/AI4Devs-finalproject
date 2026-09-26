@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\BlogPost;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
@@ -48,6 +49,8 @@ function topbarScreens(): array
         'payment methods' => ['payment-methods.index', 'payment-methods.index.heading'],
         'customers' => ['customers.index', 'topbar.customers.title'],
         'orders' => ['orders.index', 'topbar.orders.title'],
+        'blog posts' => ['blog-posts.index', 'blog-posts.index.title'],
+        'new blog post' => ['blog-posts.create', 'blog-posts.editor.title_create'],
         'blog tags' => ['blog-tags.index', 'blog-tags.index.title'],
         'blog categories' => ['blog-categories.index', 'blog.categories.index.title'],
         'profile settings' => ['profile.edit', 'topbar.settings.profile'],
@@ -134,6 +137,24 @@ test('the product editor titles the topbar for editing an existing product', fun
         ->and(substr_count($html, 'data-test="notification-bell"'))->toBe(1);
 });
 
+test('the blog post editor titles the topbar for editing an existing post', function () {
+    $post = BlogPost::factory()->create();
+
+    $html = renderScreen('blog-posts.edit', ['blogPost' => $post]);
+
+    expect(topbarText($html, 'topbar-title'))->toBe(__('blog-posts.editor.title_edit'))
+        ->and(topbarText($html, 'topbar-subtitle'))->toBe(__('topbar.blog_post_editor.subtitle'))
+        ->and(substr_count($html, 'data-test="notification-bell"'))->toBe(1);
+});
+
+test('the blog post list and the blog post editor carry their own topbar subtitles', function () {
+    $post = BlogPost::factory()->create();
+
+    expect(topbarText(renderScreen('blog-posts.index'), 'topbar-subtitle'))->toBe(__('topbar.blog_posts.subtitle'))
+        ->and(topbarText(renderScreen('blog-posts.create'), 'topbar-subtitle'))->toBe(__('topbar.blog_post_editor.subtitle'))
+        ->and(topbarText(renderScreen('blog-posts.edit', ['blogPost' => $post]), 'topbar-subtitle'))->toBe(__('topbar.blog_post_editor.subtitle'));
+});
+
 test('the sidebar no longer contains the bell', function () {
     $html = renderScreen('dashboard');
 
@@ -145,7 +166,7 @@ test('every authenticated app screen is covered by the dataset or an explicit ex
     $excludedPrefixes = ['verification.', 'password.', 'passkey.', 'two-factor.', 'login', 'register', 'email-change.'];
     $covered = array_merge(
         collect(topbarScreens())->pluck(0)->all(),
-        ['customers.show', 'orders.show', 'products.edit'],
+        ['customers.show', 'orders.show', 'products.edit', 'blog-posts.edit'],
     );
 
     $uncovered = collect(Route::getRoutes()->getRoutes())

@@ -14,8 +14,8 @@ app/
                        which also means `php artisan list` showing it proves nothing about the schedule entry;
                        see ../../testing/backend/scheduled-commands.md
   Enums/               Backed enums for domain value sets (UserStatus, RoleName, SalesRegionKind,
-                       BlogPostStatus — story 0061, draft/published/scheduled, no label() until a second
-                       consumer appears, ProductType, ProductStatus — exactly two persisted cases — and
+                       BlogPostStatus — story 0061, draft/published/scheduled, with label() since story 0063
+                       (the posts list badge and the editor's status select), ProductType, ProductStatus — exactly two persisted cases — and
                        ProductDisplayStatus, a badge-only third enum never persisted, never
                        validated and carrying no column or cast of its own; GeographyLevel, story
                        0032 — deliberately no label(), since this story ships no rendering site at

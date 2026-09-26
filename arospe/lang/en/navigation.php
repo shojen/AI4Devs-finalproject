@@ -38,6 +38,7 @@ return [
         'payment_methods' => 'Payment methods',
         'customers' => 'Customers',
         'orders' => 'Orders',
+        'blog_posts' => 'Posts',
         'blog_tags' => 'Tags',
         'blog_categories' => 'Categories',
     ],

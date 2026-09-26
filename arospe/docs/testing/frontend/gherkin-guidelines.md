@@ -232,7 +232,7 @@ Canonical terms for what exists in the code **today**, derived from [`app/Models
 
 ### Blog vocabulary
 
-**Provisional — pending product owner confirmation.** Story 0058 (blog categories — backend) needed two terms for its Gherkin and adopted them **verbatim from the PRD's own Epic 4 scenarios** rather than coining any; its OQ-3 recommended ratifying them, but no product-owner decision is recorded yet. If the product owner disagrees, change them here and, since it is contested, record an ADR in `docs/decisions/`.
+**Ratified by story 0063 (its D-22).** Stories 0058 to 0061 adopted these two terms **verbatim from the PRD's own Epic 4 scenarios** rather than coining any, and story 0063, whose three screens needed the whole Blog vocabulary at once, made them canonical. The Spanish UI copy renders a post as *artículo* (the PRD's caption reads "Nuevo artículo"); that is a translation choice living in `lang/es/blog-posts.php`, **not** a second domain term, so an English scenario never says "article". If the product owner disagrees, change the terms here and, since it is contested, record an ADR in `docs/decisions/`.
 
 | Term | Meaning |
 | --- | --- |
@@ -242,9 +242,9 @@ Canonical terms for what exists in the code **today**, derived from [`app/Models
 
 ### TODO — blog / ecommerce vocabulary (undefined)
 
-No blog or ecommerce domain exists in the code yet (`app/Models/` contains only `User`). Do **not** invent terms for it. When that domain is built, this section needs canonical terms decided by the product owner:
+The blog domain is built (`BlogPost`, `BlogCategory`, `BlogTag` in `app/Models/`) and its vocabulary is settled in [Blog vocabulary](#blog-vocabulary) above; the ecommerce domain is built too (products, orders, customers), and what this file still leaves unanswered is the purchase vocabulary in (b) and (c) below. Do **not** invent terms for what is undecided. This section still needs canonical terms decided by the product owner:
 
-> `TODO (product owner): define the canonical vocabulary for the future content/commerce domain. Concretely: (a) *[provisionally answered by story 0058 — see "Blog vocabulary" above; still needs confirming]* (b) for a purchase, what is the canonical term for the whole purchase ("order" vs. "sale") and for a single purchased item within it ("order line" vs. "line item" vs. "order item")? (c) is a buyer a "customer", "client", or "user"? Record the answers as a new row set here and, if the choice is contested, as an ADR in docs/decisions/.`
+> `TODO (product owner): define the canonical vocabulary for the commerce domain. Concretely: (a) *[answered — "post", see "Blog vocabulary" above]* (b) for a purchase, what is the canonical term for the whole purchase ("order" vs. "sale") and for a single purchased item within it ("order line" vs. "line item" vs. "order item")? (c) is a buyer a "customer", "client", or "user"? Record the answers as a new row set here and, if the choice is contested, as an ADR in docs/decisions/.`
 
 ## Given/When/Then → Pest it() translation convention
 
@@ -265,4 +265,4 @@ Conventions for the translation:
 
 See [examples/](examples/) for three complete scenario → Pest translations built on this convention.
 
-_Last updated: 2026-09-26 — Story 0064 (scheduled post auto-publish): added the section for scenarios whose actor is not a person and the glossary term **publication scheduler**; earlier revision notes live in [history/testing--frontend--gherkin-guidelines.md](../../history/testing--frontend--gherkin-guidelines.md)._
+_Last updated: 2026-09-26 — Story 0063 (blog posts list + editor): closed the blog half of the glossary `TODO` ("post" and "blog editor" are canonical; *artículo* is Spanish copy only) and corrected that section's stale "`app/Models/` contains only `User`" justification. Also: Story 0064 (scheduled post auto-publish): added the section for scenarios whose actor is not a person and the glossary term **publication scheduler**; earlier revision notes live in [history/testing--frontend--gherkin-guidelines.md](../../history/testing--frontend--gherkin-guidelines.md)._

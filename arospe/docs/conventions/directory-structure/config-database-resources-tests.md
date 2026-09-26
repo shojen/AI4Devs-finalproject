@@ -25,7 +25,10 @@ lang/                   Published translation files, one folder per locale (en/,
                         the file 0041 deliberately deferred to this story, D-14; orders.php since
                         story 0045 — statuses/payment_statuses, errors, transitions, refunds, cancellation,
                         flag_reasons, then (story 0055) the screen copy: index, detail, line_items, lifecycle;
-                        en/es key parity pinned by tests/Feature/Orders/OrdersLangParityTest.php)
+                        en/es key parity pinned by tests/Feature/Orders/OrdersLangParityTest.php;
+                        blog.php (story 0061's category delete-blocked message and 0062's categories.index copy),
+                        blog-tags.php (story 0060) and blog-posts.php (story 0063 — index.*, editor.*, statuses.*,
+                        its own file rather than an extension of blog.php), each key-for-key identical across en/es)
 resources/
   views/
     components/        Blade components — all anonymous (no app/View/Components/ in this repo). Story
@@ -43,7 +46,8 @@ resources/
 routes/                 web.php, plus one file per functional area that web.php requires
                         (settings.php, roles.php, users.php, sales-regions.php,
                         product-categories.php, product-attribute-types.php, products.php,
-                        shipping.php, payment-methods.php, customers.php since story 0044, orders.php since story 0055),
+                        shipping.php, payment-methods.php, customers.php since story 0044, orders.php since story 0055, blog-tags.php,
+                        blog-categories.php and blog-posts.php since stories 0060, 0062 and 0063),
                         plus console.php since story 0064 — NOT an area file: loaded by the console kernel,
                         registers no HTTP route, holds the `Schedule::` entries — no
                         api.php yet. web.php no longer
@@ -107,7 +111,9 @@ tests/
                         missed ProductCategoriesIndexTest.php entirely, a gap present since story
                         0025 and corrected by story 0027's own pass); see
                         ../../testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure. Story 0055 adds
-                        Browser/Orders/ (six files, one per concern) and Support/Orders/OrdersUi.php
+                        Browser/Orders/ (six files, one per concern), Browser/BlogPosts/ (story 0063: IndexTest.php and
+                        EditorJourneyTest.php, beside 0060's and 0062's Browser/BlogTags/ and Browser/BlogCategories/)
+                        and Support/Orders/OrdersUi.php
                         (shared permission profiles and rendered-HTML probes, a class of static methods
                         rather than global Pest helpers, which would redeclare-fatal across the many
                         Feature/Orders files)

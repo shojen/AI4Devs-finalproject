@@ -281,6 +281,24 @@ return [
             'current_when' => 'orders.*',
             'permissions' => ['orders.view'],
         ],
+        // Story 0063 -- Blog posts, INSERTED before `blog_tags` rather than appended: declaration
+        // order is render order (sidebar-nav.blade.php's groupBy()/@foreach preserve it), and the
+        // posts screen is the Blog module's headline, so it renders first in the cluster. Joins the
+        // SAME `blog` cluster of the `content` group story 0060 created. 'current_when' is
+        // 'blog-posts.*' so the entry stays highlighted on blog-posts.create and blog-posts.edit
+        // too. 'permissions' is EXACTLY the ability routes/blog-posts.php's own `can:` middleware
+        // enforces on all three routes -- never a broader set and never a related blog.* ability.
+        // The icon differs from the cluster's `document-text`, from blog_tags' `hashtag` and from
+        // blog_categories' `rectangle-stack`, so no two entries read as duplicates at a glance.
+        'blog_posts' => [
+            'group' => null,
+            'cluster' => 'blog',
+            'label' => 'navigation.items.blog_posts',
+            'icon' => 'pencil-square',
+            'route' => 'blog-posts.index',
+            'current_when' => 'blog-posts.*',
+            'permissions' => ['blog.view'],
+        ],
         // Story 0060 -- Blog tags, nested in the `blog` cluster of the `content` group (D-4).
         // 'permissions' is EXACTLY the ability routes/blog-tags.php's own `can:` middleware
         // enforces -- never a broader set, and never a related blog.* ability (see this file's

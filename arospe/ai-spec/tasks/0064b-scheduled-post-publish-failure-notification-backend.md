@@ -36,7 +36,7 @@ ordering rule is satisfied because every dependency (0064, 0063) has a lower num
 >
 > - [0064](done/0064-scheduled-post-auto-publish-backend.md) is merged (owns the command, the action and the
 >   event this story hooks into; it is the branch this file was written on).
-> - [0063](0063-blog-posts-list-editor-ui.md) is `done` — it **owns the two routes the email links to**
+> - [0063](done/0063-blog-posts-list-editor-ui.md) is `done` — it **owns the two routes the email links to**
 >   (`blog-posts.edit` and `blog-posts.index`, its **D-3**). Neither route exists today (`routes/` has no
 >   `blog-posts.php`), and `route()` throws `RouteNotFoundException` for an unknown name. The owner's wording
 >   ("a link to edit it or to the posts page") needs those routes. The alternative — link to `dashboard` now and
@@ -869,7 +869,7 @@ inconsistency.
 ### D-10 — The links are `url(route('blog-posts.edit', …))` and `url(route('blog-posts.index'))`, so this story is blocked on 0063
 
 Absolute URLs (`url(route(...))`), because an email is read outside the app. The routes and their parameter
-(`{blogPost}`) belong to story [0063](0063-blog-posts-list-editor-ui.md) (**D-3**) and do not exist today (**V-4**), so
+(`{blogPost}`) belong to story [0063](done/0063-blog-posts-list-editor-ui.md) (**D-3**) and do not exist today (**V-4**), so
 0064b is **blocked** on it (**OQ-1**). The bell (story 0057) renders this notification type through its permanent
 `default` arm — *"New notification"*, **no link** — until it gains an arm; that is a follow-up (**H-3**), not this story.
 
@@ -999,7 +999,7 @@ Read against this worktree (`vendor/` present) at `HEAD` = `d1e507f`; nothing he
 | Depends on | State | Why |
 | --- | --- | --- |
 | [0064](done/0064-scheduled-post-auto-publish-backend.md) — scheduled auto-publish | **hard, in progress (this branch)** | Owns the command, the action, the event and `FailingBlogPostWrites`. Hooked into, not changed |
-| [0063](0063-blog-posts-list-editor-ui.md) — blog posts list and editor | **hard, `new`** | Owns `blog-posts.index` and `blog-posts.edit`. **OQ-1** |
+| [0063](done/0063-blog-posts-list-editor-ui.md) — blog posts list and editor | **hard, `new`** | Owns `blog-posts.index` and `blog-posts.edit`. **OQ-1** |
 | [0043](done/0043-customers-new-customer-notification-backend.md) — notifications table | **shipped** | Owns `notifications` (`uuidMorphs('notifiable')`) |
 | [0061](done/0061-blog-posts-core-crud-backend.md) — blog posts core CRUD | **shipped** | `BlogPost`, `CreateBlogPost`, the factory |
 | [0065](0065-blog-post-published-notification-backend.md) | **not a dependency for class 1; must be amended (H-1, H-2)** | Its listener must not swallow errors (**D-0**) |

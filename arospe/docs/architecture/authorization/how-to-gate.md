@@ -237,7 +237,7 @@ Six rules come with it, each load-bearing:
   'clusters' => [
       'products' => ['group' => 'store', 'label' => 'navigation.clusters.products', 'icon' => 'cube'],
       'store_settings' => ['group' => 'store', 'label' => 'navigation.clusters.store_settings', 'icon' => 'adjustments-horizontal'],
-      'blog' => ['group' => 'content', 'label' => 'navigation.clusters.blog', 'icon' => 'document-text'],   // story 0060; blog categories/posts append items, not clusters
+      'blog' => ['group' => 'content', 'label' => 'navigation.clusters.blog', 'icon' => 'document-text'],   // story 0060; blog categories/posts add items, not clusters
   ],
   'items' => [
       'dashboard' => ['group' => null, 'cluster' => null, /* ... */ 'permissions' => []],
@@ -247,9 +247,21 @@ Six rules come with it, each load-bearing:
       'product_categories' => ['group' => null, 'cluster' => 'products', /* ... */ 'permissions' => ['products.view']],
       'products' => ['group' => null, 'cluster' => 'products', /* ... */ 'permissions' => ['products.view']],
       'product_attribute_types' => ['group' => null, 'cluster' => 'products', /* ... */ 'permissions' => ['products.view']],
+      'blog_posts' => ['group' => null, 'cluster' => 'blog', /* ... */ 'permissions' => ['blog.view']],        // story 0063: INSERTED before blog_tags, not appended
       'blog_tags' => ['group' => null, 'cluster' => 'blog', /* ... */ 'permissions' => ['blog.view']],
+      'blog_categories' => ['group' => null, 'cluster' => 'blog', /* ... */ 'permissions' => ['blog.view']],   // story 0062
   ],
   ```
+
+  **Position in `items` is render order, so where a new entry is inserted is a decision, not a default.**
+  The sidebar walks the `items` array in declaration order (`sidebar-nav.blade.php`'s `groupBy()` and
+  `@foreach` both preserve it), so appending puts a new entry last in its cluster and inserting it earlier
+  puts it earlier. Story 0063 inserted `blog_posts` **before** `blog_tags`, because the posts screen is the
+  Blog module's headline; the cluster therefore renders **Posts / Tags / Categories**, although
+  `blog_categories` (0062) was already appended after `blog_tags`. Nothing but the array order decides
+  this: there is no `order`/`position` key. A story that wants a specific place says where, and its test
+  asserts the resulting order rather than only the entry's presence
+  ([`tests/Feature/Navigation/SidebarModuleGatingTest.php`](../../../tests/Feature/Navigation/SidebarModuleGatingTest.php)).
 
   Each item carries two mutually exclusive, independently-nullable keys: both `group` and `cluster` `null`
   is a bare top-level item with no wrapping element (`dashboard`/`users`); `group` set and `cluster` `null`
@@ -330,4 +342,4 @@ The one place `hasPermissionTo()` is correct is **inside a policy body**, which 
 | Tests | `tests/Feature/Seeders/`, `tests/Feature/Authorization/`, `tests/Feature/Policies/`, `tests/Feature/Users/`, `tests/Feature/Roles/`, `tests/Feature/SalesRegions/`, `tests/Feature/Models/RoleTest.php`, `tests/Feature/Actions/Auth/`, `tests/Unit/Actions/Auth/`, `tests/Unit/Exceptions/` |
 | Security rules derived from this foundation | [`docs/security/`](../../security/README.md) |
 
-_Last updated: 2026-09-23 — Story 0055 (orders list + detail/editor UI). Added [The order detail screen — the first three-ability screen](domain-invariants.md#the-order-detail-screen--the-first-three-ability-screen) (permission vs state dimensions rendered differently; the Super Admin/Cancel drift), gave `OrderPolicy::viewAny` its Orders callers, marked the 0049/0050 UI-hint forward references as shipped, and recorded the fourth reader of the line-item block (`Order::isLineItemEditable()`/`isRefundable()`). Earlier history folded: 0051 took the catalog to 43 permissions via `ORDER_PERMISSIONS` (`orders.refund`); 0050 added `OrderPolicy::cancel` (two permissions plus the state clause) and its section; 0049 added `transitionStatus` and the regression-confirmation section; 0048 added the order-editability section. Each is described in its own section above._
+_Last updated: 2026-09-26 — Story 0063 (blog posts list + editor). Recorded that `items` declaration order is sidebar render order (`blog_posts` was inserted before `blog_tags`; the Blog cluster renders Posts / Tags / Categories) and completed the shipped-shape sample with the three Blog entries. Earlier, 2026-09-23 — Story 0055 (orders list + detail/editor UI). Added [The order detail screen — the first three-ability screen](domain-invariants.md#the-order-detail-screen--the-first-three-ability-screen) (permission vs state dimensions rendered differently; the Super Admin/Cancel drift), gave `OrderPolicy::viewAny` its Orders callers, marked the 0049/0050 UI-hint forward references as shipped, and recorded the fourth reader of the line-item block (`Order::isLineItemEditable()`/`isRefundable()`). Earlier history folded: 0051 took the catalog to 43 permissions via `ORDER_PERMISSIONS` (`orders.refund`); 0050 added `OrderPolicy::cancel` (two permissions plus the state clause) and its section; 0049 added `transitionStatus` and the regression-confirmation section; 0048 added the order-editability section. Each is described in its own section above._

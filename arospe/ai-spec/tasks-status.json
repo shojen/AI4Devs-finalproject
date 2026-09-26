@@ -3,31 +3,6 @@
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
     {
-      "id": "0063",
-      "slug": "0063-blog-posts-list-editor-ui",
-      "title": "Blog posts — list + editor UI",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "app/Livewire/BlogPosts/Index.php",
-        "app/Livewire/BlogPosts/Editor.php",
-        "resources/views/livewire/blog-posts.blade.php",
-        "resources/views/livewire/blog-posts/editor.blade.php",
-        "routes/blog-posts.php",
-        "lang/en/blog.php",
-        "lang/es/blog.php",
-        "config/modules.php"
-      ],
-      "conflict_risk_with": [
-        "0064b",
-        "0072",
-        "0074",
-        "0078"
-      ]
-    },
-    {
       "id": "0064a",
       "slug": "0064a-activate-verified-user-listener-idempotent-and-single-registration",
       "title": "Activate-verified-user listener — idempotent, and every listener registered exactly once",
@@ -48,9 +23,7 @@
       "id": "0064b",
       "slug": "0064b-scheduled-post-publish-failure-notification-backend",
       "title": "Scheduled post publish failure — notification and email to the post's creator (backend)",
-      "depends_on": [
-        "0063"
-      ],
+      "depends_on": [],
       "status": "blocked",
       "claimed_by": null,
       "claimed_at": null,
@@ -66,7 +39,6 @@
         "lang/es/notifications.php"
       ],
       "conflict_risk_with": [
-        "0063",
         "0065",
         "0078"
       ]
@@ -246,7 +218,6 @@
         "app/Actions/Blog/RenameBlogCategory.php"
       ],
       "conflict_risk_with": [
-        "0063",
         "0074",
         "0076",
         "0078"
@@ -292,7 +263,6 @@
         "app/Actions/Blog/FindOrCreateBlogTag.php"
       ],
       "conflict_risk_with": [
-        "0063",
         "0072",
         "0076",
         "0078"
@@ -382,7 +352,6 @@
         "app/Actions/Blog/UpdateBlogPost.php"
       ],
       "conflict_risk_with": [
-        "0063",
         "0064b",
         "0072",
         "0074",
@@ -394,7 +363,6 @@
       "slug": "0079-blog-post-editor-language-tabs-ui",
       "title": "Blog post editor — language tabs (frontend)",
       "depends_on": [
-        "0063",
         "0068",
         "0070",
         "0071",

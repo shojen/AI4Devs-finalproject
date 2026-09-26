@@ -172,7 +172,7 @@ re-implement every way of hiding content. Judging what is **left** needs only "i
 - **[0061](0061-blog-posts-core-crud-backend.md) — done.** Owns the actions and `bodyRules()`.
 - **[0024a](0024a-product-description-html-sanitization.md) — done.** Owns the allow-list this story relies on
   *not* keeping `style`/`hidden`/`class`.
-- **Conflicts with [0061a](0061a-blog-post-publish-with-future-date-schedules.md), [0063](../0063-blog-posts-list-editor-ui.md)
+- **Conflicts with [0061a](0061a-blog-post-publish-with-future-date-schedules.md), [0063](0063-blog-posts-list-editor-ui.md)
   and [0065](../0065-blog-post-published-notification-backend.md)** on `CreateBlogPost` / `UpdateBlogPost`; independent in
   behaviour, run them one at a time.
 

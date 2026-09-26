@@ -313,7 +313,7 @@ is a registry key.
 > than a files-table footnote.
 >
 > ⚠️ **Correction, 2026-08-30 — the `lang/{en,es}/blog.php` collision is now FOUR stories, not two.**
-> [0063](../0063-blog-posts-list-editor-ui.md) appends its own group, and
+> [0063](0063-blog-posts-list-editor-ui.md) appends its own group, and
 > [0073](../0073-blog-categories-language-tabs-ui.md) appends a `categories.index.tabs.*` group to this
 > screen's own block. 0073 carries the four-story form of this fence and notes it is *"the worse of
 > the two"* such collisions in flight (the other being `lang/*/products.php` at three). The rule is
