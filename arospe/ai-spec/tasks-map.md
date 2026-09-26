@@ -41,6 +41,8 @@ Phase-3 blocker (`0048`–`0054`) is now `done/` — so it moves from `blocked` 
 terminal node finally unblocked. `0057`'s own node is likewise dropped from the graph; it had no pending dependent of its own to
 re-derive against `done/`.
 
+Update (2026-09-26): a follow-up story raised by `0064a` (its R-2 / OQ-3) was added as a new pending file: `0064c-activate-verified-user-status-race-compare-and-set-backend.md` (`blocked` on `0064a`, a hard dependency because it modifies the unit test file `0064a` extends and keeps `0064a`'s idempotency and registry tests as its regression net; no `conflict_risk_with`, since no other pending story modifies `ActivateVerifiedUser`, its callers or `LogRefusedPrivilegedAttempt`).
+
 Update (2026-09-26): `0064a-activate-verified-user-listener-idempotent-and-single-registration.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0) and is claimed in `tasks-status.json`. It is still pending work, so it keeps its node and edges; its node moves from the green `ready` class to the blue `claimed` class, and its `depends_on` is unchanged. `ai-spec/tasks/in-progress/` now holds exactly this one file.
 
 Update (2026-09-26): `0063-blog-posts-list-editor-ui.md` completed Phase 7 and moved from `in-progress/` to `done/` — the ninth Epic 4 story to close, and the third Blog screen. Its node and every edge touching it are dropped from the graph below and its `tasks-status.json` entry (the `claimed` one) was deleted. Its one hard dependent, `0079`, drops `"0063"` and stays `blocked` on the Epic 5 retrofit stories it still needs; `0064b`, `0072`, `0074` and `0078` drop it from `conflict_risk_with`. `ai-spec/tasks/in-progress/` is empty again.
@@ -221,11 +223,12 @@ appears as a node in the dependency graph below:
   command: its one hard dependent, 0065, drops it and moves to `ready`; two follow-ups it raised, 0064a and 0064b,
   are new pending files.
 
-### Pending — not started (18 numbered + 1 infra doc)
+### Pending — not started (19 numbered + 1 infra doc)
 
 | ID | Title | Epic area |
 | --- | --- | --- |
 | 0064a | Activate-verified-user listener — idempotent, and every listener registered exactly once | Epic 1 — Users, Roles & Auth |
+| 0064c | Activate-verified-user — a suspension that lands mid-request must not be overwritten by the activation (backend) | Epic 1 — Users, Roles & Auth |
 | 0064b | Scheduled post publish failure — notification and email to the post's creator (backend) | Epic 4 — Blog |
 | 0065 | Blog post published — notification (backend) | Epic 4 — Blog |
 | 0066 | Admin UI locale preference & resolution — backend | Epic 5 — i18n |
@@ -275,6 +278,7 @@ flowchart LR
     subgraph PEND_AUTH["Epic 1 — Users, Roles & Auth"]
         direction TB
         P0064a["0064a Listener idempotent + single registration BE"]
+        P0064c["0064c Activation CAS vs suspension race BE"]
     end
 
     subgraph PEND_BLOG["Epic 4 — Blog"]
@@ -366,8 +370,9 @@ flowchart LR
     P0077 -.-> P0079
     P0070 --> P0079
     P0068 --> P0079
+    P0064a --> P0064c
 
-    class P0064b,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
+    class P0064b,P0064c,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
     class P0064a claimed;
     class P0065,P0068 ready;
 ```

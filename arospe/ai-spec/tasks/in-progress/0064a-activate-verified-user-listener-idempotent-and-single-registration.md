@@ -255,7 +255,7 @@ administrator can observe changes.
       run at each stage move, per
       [task-files-links-and-ordering.md](../../../docs/workflow/task-files-links-and-ordering.md).
 - [x] **Hand-off to 0065 recorded** exactly as stated below.
-- [ ] The compare-and-set race (**R-2**) is logged as a **separate follow-up story** (**OQ-3**), not fixed here.
+- [x] The compare-and-set race (**R-2**) is logged as a **separate follow-up story** (**OQ-3**), not fixed here — raised as [0064c](../0064c-activate-verified-user-status-race-compare-and-set-backend.md), which carries its own Phase 1 debate.
 - [ ] Acceptance criteria met.
 
 ## Documented functional decisions

@@ -20,6 +20,25 @@
       ]
     },
     {
+      "id": "0064c",
+      "slug": "0064c-activate-verified-user-status-race-compare-and-set-backend",
+      "title": "Activate-verified-user — a suspension that lands mid-request must not be overwritten by the activation (backend)",
+      "depends_on": [
+        "0064a"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Actions/Users/ActivateInactiveUser.php",
+        "app/Listeners/ActivateVerifiedUser.php",
+        "tests/Unit/Listeners/ActivateVerifiedUserTest.php",
+        "tests/Feature/Actions/Users/ActivateInactiveUserTest.php",
+        "tests/Feature/Auth/ActivateVerifiedUserSuspensionRaceTest.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
       "id": "0064b",
       "slug": "0064b-scheduled-post-publish-failure-notification-backend",
       "title": "Scheduled post publish failure — notification and email to the post's creator (backend)",
