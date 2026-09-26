@@ -12,4 +12,4 @@ This document is split into parts so an agent reads only the one its task touche
 | [Sign-in block and pending email changes](authentication/sign-in-block-and-email-change.md) | you touch the sign-in account-status block or the pending-email change mechanism. | Sign-in: the account-status block; Pending email changes |
 | [Two-factor, passkeys, logout, where it lives](authentication/two-factor-passkeys-logout-and-map.md) | you touch two-factor authentication, passkeys, logout, or need the map of where auth code lives. | Two-factor authentication flow; Passkeys; Logout; Where it lives |
 
-_Last updated: 2026-09-24 — split into the parts above (docs optimization pass); no content changed. The prior revision-history footer, if any, stays at the end of the last part._
+_Last updated: 2026-09-26 — activation and sign-in-safety-net listeners are described as auto-discovered, not hand-registered (story 0064a); the parts above are otherwise as split on 2026-09-24. The prior revision-history footer, if any, stays at the end of the last part._

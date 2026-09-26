@@ -72,13 +72,7 @@ Passkeys::authorizeLoginUsing(
 
 The `?User` is required, not defensive style: `Passkeys::allowsLogin()` passes `$passkey->user` unchecked, and that `BelongsTo` is soft-delete-scoped, so it resolves `null` for a trashed owner. A non-nullable parameter turns a clean refusal into a `TypeError`.
 
-**3. [`App\Listeners\RejectNonActiveUserLogin`](../../../app/Listeners/RejectNonActiveUserLogin.php) — remember-me recall, and the mid-challenge race.** Registered on **two** events, alongside the activation listener:
-
-```php
-// app/Providers/AppServiceProvider.php
-Event::listen(Login::class, RejectNonActiveUserLogin::class);
-Event::listen(Authenticated::class, [RejectNonActiveUserLogin::class, 'handleAuthenticated']);
-```
+**3. [`App\Listeners\RejectNonActiveUserLogin`](../../../app/Listeners/RejectNonActiveUserLogin.php) — remember-me recall, and the mid-challenge race.** Registered on **two** events, alongside the activation listener, and by discovery rather than by hand: Laravel auto-discovers the `Login` handler from `handle(Login $event)` and the `Authenticated` handler from `handleAuthenticated(Authenticated $event)`, so `AppServiceProvider` registers neither. The `handle*` method name is load-bearing — rename `handleAuthenticated` and the safety net is silently unregistered; `tests/Feature/Providers/EventListenerRegistrationTest.php` fails if either binding is lost or doubled.
 
 Two events, because one is not enough. `SessionGuard::login()` fires `Login` and then calls `setUser($user)` on the very next line, which resurrects a session the `Login` handler just logged out. So the `Login` handler is the real fix only for the recaller path (`SessionGuard::user()` fires `Login` last, with no `setUser()` after it, and the logout there also clears the recaller cookie and rotates `remember_token`); on every `$guard->login()` path it instead records the detected user's identifier on `request()->attributes`, and the `Authenticated` handler — which necessarily runs *inside* `setUser()` — performs the logout that sticks. That second hook is what closes the case of a user suspended *between* the password step and the two-factor code step, since Fortify's `TwoFactorAuthenticatedSessionController` resolves the challenged user from the session and never re-consults point 1.
 
