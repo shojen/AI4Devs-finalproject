@@ -2,17 +2,11 @@
 
 namespace App\Providers;
 
-use App\Listeners\ActivateVerifiedUser;
-use App\Listeners\RejectNonActiveUserLogin;
 use App\Models\Role;
 use App\Models\User;
 use Carbon\CarbonImmutable;
-use Illuminate\Auth\Events\Authenticated;
-use Illuminate\Auth\Events\Login;
-use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\ParallelTesting;
 use Illuminate\Support\ServiceProvider;
@@ -35,7 +29,6 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureAuthorization();
-        $this->configureEventListeners();
         $this->configureParallelTesting();
     }
 
@@ -111,20 +104,6 @@ class AppServiceProvider extends ServiceProvider
             // guard can never satisfy the bypass.
             return $user->hasRole(Role::superAdminName(), 'web') ? true : null;
         });
-    }
-
-    /**
-     * Register application event listeners.
-     */
-    protected function configureEventListeners(): void
-    {
-        Event::listen(Verified::class, ActivateVerifiedUser::class);
-
-        // Story 0007: safety net for remember-me/recaller re-authentication
-        // and the two-factor mid-challenge race -- both handlers are needed;
-        // see App\Listeners\RejectNonActiveUserLogin's class docblock for why.
-        Event::listen(Login::class, RejectNonActiveUserLogin::class);
-        Event::listen(Authenticated::class, [RejectNonActiveUserLogin::class, 'handleAuthenticated']);
     }
 
     /**
