@@ -58,17 +58,6 @@ class BlogPostFactory extends Factory
     }
 
     /**
-     * A soft-deleted post. Not part of the default state: a factory whose default row is trashed would
-     * silently vanish from every default-scope query.
-     */
-    public function trashed(): static
-    {
-        return $this->state(fn (): array => [
-            'deleted_at' => now(),
-        ]);
-    }
-
-    /**
      * Attach $count freshly created tags after the post is created.
      */
     public function withTags(int $count = 1): static

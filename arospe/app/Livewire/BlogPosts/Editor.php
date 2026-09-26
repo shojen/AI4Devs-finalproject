@@ -116,12 +116,7 @@ class Editor extends Component
      */
     public function mount(LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt, ?BlogPost $blogPost = null): void
     {
-        $logRefusedPrivilegedAttempt->authorize(
-            $blogPost === null ? 'create' : 'update',
-            $blogPost ?? BlogPost::class,
-            targetType: 'blog_post',
-            targetId: $blogPost?->id,
-        );
+        $this->authorizeSaving($logRefusedPrivilegedAttempt, $blogPost);
 
         if ($blogPost === null) {
             return;
@@ -157,7 +152,16 @@ class Editor extends Component
     {
         $this->resetErrorBag('tagNames');
 
+        // Length BEFORE folding: the name is client-supplied, and measuring it first keeps an
+        // oversized value away from the normalizer entirely.
         $name = trim($name);
+
+        if (mb_strlen($name) > BlogTag::NAME_MAX_LENGTH) {
+            $this->addError('tagNames', __('blog-posts.editor.tag_too_long', ['max' => BlogTag::NAME_MAX_LENGTH]));
+
+            return;
+        }
+
         $normalize = app(NormalizeForSearch::class);
         $key = $normalize($name);
 
@@ -167,25 +171,32 @@ class Editor extends Component
             return;
         }
 
-        if (mb_strlen($name) > BlogTag::NAME_MAX_LENGTH) {
-            $this->addError('tagNames', __('blog-posts.editor.tag_too_long', ['max' => BlogTag::NAME_MAX_LENGTH]));
+        $names = $this->cleanTagNames();
+
+        if (in_array($key, array_map($normalize, $names), true)) {
+            $this->tagInput = '';
+
+            return;
+        }
+
+        // UI-only guard: the action refuses a new tag name from an actor without blog.create, rolling
+        // the whole save back, so do not let the keyboard put a chip on screen that Save can only
+        // reject. Existing names always add; the action's own refusal stays the real control.
+        if (! $this->canCreateTags() && ! BlogTag::query()->where('normalized_name', $key)->exists()) {
+            $this->addError('tagNames', __('blog-posts.editor.tag_create_not_allowed'));
 
             return;
         }
 
         $this->tagInput = '';
 
-        if (in_array($key, array_map($normalize, $this->tagNames), true)) {
-            return;
-        }
-
-        if (count($this->tagNames) >= BlogPost::MAX_TAGS) {
+        if (count($names) >= BlogPost::MAX_TAGS) {
             $this->addError('tagNames', __('blog-posts.editor.tags_limit', ['max' => BlogPost::MAX_TAGS]));
 
             return;
         }
 
-        $this->tagNames[] = $name;
+        $this->tagNames = [...$names, $name];
     }
 
     /**
@@ -195,7 +206,7 @@ class Editor extends Component
     {
         $this->resetErrorBag('tagNames');
 
-        $this->tagNames = array_values(array_filter($this->tagNames, fn (string $tag): bool => $tag !== $name));
+        $this->tagNames = array_values(array_filter($this->cleanTagNames(), fn (string $tag): bool => $tag !== $name));
     }
 
     /**
@@ -216,12 +227,7 @@ class Editor extends Component
     ): mixed {
         $blogPost = $this->blogPostId === null ? null : BlogPost::findOrFail($this->blogPostId);
 
-        $logRefusedPrivilegedAttempt->authorize(
-            $blogPost === null ? 'create' : 'update',
-            $blogPost ?? BlogPost::class,
-            targetType: 'blog_post',
-            targetId: $blogPost?->id,
-        );
+        $this->authorizeSaving($logRefusedPrivilegedAttempt, $blogPost);
 
         $this->resetErrorBag();
 
@@ -307,13 +313,26 @@ class Editor extends Component
         return array_values(
             BlogTag::query()
                 ->where('normalized_name', 'like', '%'.addcslashes($term, '\\%_').'%')
-                ->whereNotIn('normalized_name', array_map($normalize, $this->tagNames))
+                ->whereNotIn('normalized_name', array_map($normalize, $this->cleanTagNames()))
                 ->orderBy('name')
                 ->orderBy('id')
                 ->limit(self::SUGGESTION_LIMIT)
                 ->pluck('name')
                 ->all()
         );
+    }
+
+    /**
+     * The chips the view renders: exactly `$tagNames` for any state this component itself produced.
+     * `$tagNames` is client-writable, so a forged non-string element or an over-long list is dropped
+     * here rather than allowed to 500 the render; nothing legitimate is ever hidden by this.
+     *
+     * @return list<string>
+     */
+    #[Computed]
+    public function chipNames(): array
+    {
+        return $this->cleanTagNames();
     }
 
     /**
@@ -351,6 +370,34 @@ class Editor extends Component
     private function tagSearchTerm(): string
     {
         return app(NormalizeForSearch::class)(mb_substr($this->tagInput, 0, BlogTag::NAME_MAX_LENGTH));
+    }
+
+    /**
+     * `$tagNames` with anything a forged snapshot could have put there removed: non-string elements
+     * and everything beyond BlogPost::MAX_TAGS. Read in every path that inspects the set. It is NOT
+     * what save() submits -- the action's own validation owns that, so a forged set still ends in a
+     * validation error rather than a silent repair.
+     *
+     * @return list<string>
+     */
+    private function cleanTagNames(): array
+    {
+        return array_slice(array_values(array_filter($this->tagNames, 'is_string')), 0, BlogPost::MAX_TAGS);
+    }
+
+    /**
+     * Authorize the write this screen is about to perform -- `create` with no post, `update` on the
+     * post being edited -- through the logging helper, attributing a refusal to a `blog_post` (the
+     * helper auto-resolves only User and Role targets). Shared by mount() and save().
+     */
+    private function authorizeSaving(LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt, ?BlogPost $blogPost): void
+    {
+        $logRefusedPrivilegedAttempt->authorize(
+            $blogPost === null ? 'create' : 'update',
+            $blogPost ?? BlogPost::class,
+            targetType: 'blog_post',
+            targetId: $blogPost?->id,
+        );
     }
 
     private function authorizeTagLookup(): void

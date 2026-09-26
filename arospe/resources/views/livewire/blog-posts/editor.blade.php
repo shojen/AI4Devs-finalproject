@@ -106,7 +106,7 @@
             <flux:description>{{ __('blog-posts.editor.tags_hint') }}</flux:description>
 
             <div class="mt-2 flex flex-wrap gap-2" data-test="blog-post-tag-chips">
-                @foreach ($tagNames as $tagName)
+                @foreach ($this->chipNames as $tagName)
                     <span
                         wire:key="tag-chip-{{ $tagName }}"
                         data-test="tag-chip-{{ $tagName }}"

@@ -37,6 +37,7 @@ return [
         'delete_confirm' => 'Eliminar :title',
         'cancel' => 'Cancelar',
         'trashed_heading' => 'Entradas eliminadas',
+        'trashed_truncated' => 'Mostrando las :shown entradas eliminadas más recientemente de :total.',
         'trashed_column_deleted' => 'Eliminada el',
         'restore_aria' => 'Restaurar :title',
         'restore_not_allowed' => 'Restaurar una entrada requiere permiso para editar entradas',

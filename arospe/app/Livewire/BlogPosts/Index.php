@@ -9,6 +9,7 @@ use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Models\BlogTag;
 use DateTimeInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
@@ -53,6 +54,13 @@ class Index extends Component
      * an unbounded query on a select would be one runaway import away from a slow page.
      */
     private const FILTER_OPTIONS_LIMIT = 500;
+
+    /**
+     * Upper bound on the deleted-posts section, which is rendered whole rather than paginated. Deleted
+     * posts only ever accumulate (there is no force-delete, 0061 D-20), so the block is capped and
+     * says so when it is truncated; the total comes from its own count query.
+     */
+    private const TRASHED_LIMIT = 200;
 
     /**
      * The id of the category the list is narrowed to; '' means every category. A plain,
@@ -145,7 +153,7 @@ class Index extends Component
 
         $deleteBlogPost($target);
 
-        unset($this->posts, $this->trashedPosts);
+        unset($this->posts, $this->trashedPosts, $this->trashedPostsTotal);
         $this->closeDeleteModal();
     }
 
@@ -176,7 +184,7 @@ class Index extends Component
 
         $restoreBlogPost($target);
 
-        unset($this->posts, $this->trashedPosts);
+        unset($this->posts, $this->trashedPosts, $this->trashedPostsTotal);
     }
 
     /**
@@ -199,31 +207,42 @@ class Index extends Component
     #[Computed]
     public function posts(): LengthAwarePaginator
     {
-        return BlogPost::query()
+        $query = BlogPost::query()
             ->select(['id', 'blog_category_id', 'title', 'status', 'published_at', 'created_at'])
             ->with(['category:id,name', 'tags:id,name'])
             ->when($this->categoryFilter !== '', fn ($query) => $query->forCategory($this->categoryFilter))
             ->when($this->tagFilter !== '', fn ($query) => $query->forTag($this->tagFilter))
             ->orderByDesc('created_at')
-            ->orderBy('id')
-            ->paginate(self::PER_PAGE)
-            ->through(fn (BlogPost $post): array => [
-                'id' => $post->id,
-                'title' => $post->title,
-                'categoryName' => $post->category->name,
-                'status' => $post->status,
-                'date' => $this->formatDate($post->published_at ?? $post->created_at),
-                'tags' => $post->tags->pluck('name')->all(),
-                'canEdit' => Gate::allows('update', $post),
-                'canDelete' => Gate::allows('delete', $post),
-            ]);
+            ->orderBy('id');
+
+        $paginator = (clone $query)->paginate(self::PER_PAGE);
+
+        // A page past the end -- a forged ?page=99, or the last row of the last page just deleted --
+        // holds no rows although posts exist. Land on the real last page instead of an empty one that
+        // reads as "no posts".
+        if ($paginator->isEmpty() && $paginator->currentPage() > 1 && $paginator->total() > 0) {
+            $this->setPage($paginator->lastPage());
+            $paginator = (clone $query)->paginate(self::PER_PAGE);
+        }
+
+        return $paginator->through(fn (BlogPost $post): array => [
+            'id' => $post->id,
+            'title' => $post->title,
+            'categoryName' => $post->category->name,
+            'status' => $post->status,
+            'date' => $this->formatDate($post->published_at ?? $post->created_at),
+            'tags' => $post->tags->pluck('name')->all(),
+            'canEdit' => Gate::allows('update', $post),
+            'canDelete' => Gate::allows('delete', $post),
+        ]);
     }
 
     /**
      * The deleted-posts section: only trashed rows, most recently deleted first, explicit columns
      * (no `body`, no `slug`), rendered independently of the filters -- it deliberately does NOT use
      * forCategory()/forTag(), whose default soft-delete scope would return nothing. `get()`, not a
-     * paginator: a small, rarely-touched block, like Sales Regions' collapsed section.
+     * paginator: a small, rarely-touched block, like Sales Regions' collapsed section. Bounded by
+     * TRASHED_LIMIT; trashedPostsTotal() says how many exist.
      *
      * @return array<int, array{id: string, title: string, categoryName: string, deletedAt: string, canRestore: bool}>
      */
@@ -235,6 +254,7 @@ class Index extends Component
             ->with('category:id,name')
             ->orderByDesc('deleted_at')
             ->orderBy('id')
+            ->limit(self::TRASHED_LIMIT)
             ->get()
             ->map(fn (BlogPost $post): array => [
                 'id' => $post->id,
@@ -244,6 +264,15 @@ class Index extends Component
                 'canRestore' => Gate::allows('restore', $post),
             ])
             ->all();
+    }
+
+    /**
+     * How many deleted posts exist, whatever the cap on the listed ones.
+     */
+    #[Computed]
+    public function trashedPostsTotal(): int
+    {
+        return BlogPost::onlyTrashed()->count();
     }
 
     /**
@@ -280,18 +309,27 @@ class Index extends Component
 
     /**
      * A filter is bookmarkable, so both properties accept arbitrary input from the URL; anything
-     * that is not the id of a category / tag in the option sets is treated as "no filter", never a
-     * 500 and never a query against a forged value.
+     * that is not the id of an existing category / tag is treated as "no filter", never a 500 and
+     * never a query against a forged value. Existence is asked of the database directly, not of the
+     * (capped) dropdown option sets, so a real id beyond the cap is not mistaken for a forged one.
      */
     private function sanitizeFilters(): void
     {
-        if ($this->categoryFilter !== '' && ! collect($this->categoryOptions())->contains('id', $this->categoryFilter)) {
+        if ($this->categoryFilter !== '' && ! $this->exists(BlogCategory::query(), $this->categoryFilter)) {
             $this->categoryFilter = '';
         }
 
-        if ($this->tagFilter !== '' && ! collect($this->tagOptions())->contains('id', $this->tagFilter)) {
+        if ($this->tagFilter !== '' && ! $this->exists(BlogTag::query(), $this->tagFilter)) {
             $this->tagFilter = '';
         }
+    }
+
+    /**
+     * @param  Builder<BlogCategory>|Builder<BlogTag>  $query
+     */
+    private function exists(Builder $query, mixed $id): bool
+    {
+        return is_string($id) && $id !== '' && $query->whereKey($id)->exists();
     }
 
     private function formatDate(?DateTimeInterface $date): string

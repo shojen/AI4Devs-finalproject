@@ -61,7 +61,7 @@
     </div>
 
     <div class="mt-6">
-        @if ($this->posts->count() > 0)
+        @if ($this->posts->total() > 0)
             <flux:table>
                 <flux:table.columns>
                     <flux:table.column>{{ __('blog-posts.index.column_title') }}</flux:table.column>
@@ -185,7 +185,7 @@
     preserves across a round trip, so the disclosure survives a restore. The panel is hidden
     server-side (`display: none`, which Alpine's x-show then takes over) so there is no flash of open
     content before Alpine boots. Restore only: there is no force-delete control (0061 D-20). --}}
-    @if (count($this->trashedPosts) > 0)
+    @if ($this->trashedPostsTotal > 0)
         <div class="mt-8" x-data="{ open: false }" data-test="trashed-posts-section">
             <flux:button
                 variant="ghost"
@@ -195,10 +195,16 @@
                 class="cursor-pointer!"
             >
                 <flux:icon name="chevron-down" variant="micro" class="size-4 transition-transform" x-bind:class="{ '-rotate-90': ! open }" />
-                {{ __('blog-posts.index.trashed_heading') }} (<span data-test="trashed-posts-count">{{ count($this->trashedPosts) }}</span>)
+                {{ __('blog-posts.index.trashed_heading') }} (<span data-test="trashed-posts-count">{{ $this->trashedPostsTotal }}</span>)
             </flux:button>
 
             <div x-show="open" style="display: none" class="mt-3" data-test="trashed-posts-list">
+                @if ($this->trashedPostsTotal > count($this->trashedPosts))
+                    <flux:text class="mb-2" data-test="trashed-posts-truncated">
+                        {{ __('blog-posts.index.trashed_truncated', ['shown' => count($this->trashedPosts), 'total' => $this->trashedPostsTotal]) }}
+                    </flux:text>
+                @endif
+
                 <flux:table>
                     <flux:table.columns>
                         <flux:table.column>{{ __('blog-posts.index.column_title') }}</flux:table.column>

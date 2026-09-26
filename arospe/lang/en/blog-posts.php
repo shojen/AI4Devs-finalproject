@@ -37,6 +37,7 @@ return [
         'delete_confirm' => 'Delete :title',
         'cancel' => 'Cancel',
         'trashed_heading' => 'Deleted posts',
+        'trashed_truncated' => 'Showing the :shown most recently deleted posts of :total.',
         'trashed_column_deleted' => 'Deleted on',
         'restore_aria' => 'Restore :title',
         'restore_not_allowed' => 'Restoring a post requires permission to edit posts',
