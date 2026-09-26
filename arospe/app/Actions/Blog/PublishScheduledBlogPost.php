@@ -40,7 +40,10 @@ class PublishScheduledBlogPost
      * dispatches anything. A post deleted in the instant between the write and the re-read is also null:
      * it went live and was deleted at once, and announcing a deleted post is the worse mistake.
      *
-     * A failed write throws and dispatches nothing.
+     * A failed write throws and dispatches nothing. The write is the commit point and the announcement
+     * follows it, so a synchronous listener that throws surfaces after the post is already Published: the
+     * next tick will not retry it, and the announcement is lost and reported rather than duplicated
+     * (at-most-once). Making that retryable is a decision for story 0065, which owns the listener.
      */
     public function __invoke(string $blogPostId): ?BlogPost
     {
