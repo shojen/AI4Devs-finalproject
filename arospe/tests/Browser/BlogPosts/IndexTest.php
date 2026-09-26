@@ -2,7 +2,7 @@
 
 // Story 0063 (layer 1) -- Pest 4 browser tests for the blog post list (route blog-posts.index,
 // GET /blog/posts). Mirrored folder per 0060's V-1, like tests/Browser/BlogTags/ and
-// tests/Browser/BlogCategories/; the editor's own journey (EditorJourneyTest.php) is layer 2.
+// tests/Browser/BlogCategories/; the editor's own journey lives in EditorJourneyTest.php.
 //
 // What only a real browser proves, and Livewire::test() cannot: that BOTH `wire:model.live` filter
 // selects actually deliver a picked value to the server (->set() writes the property directly), that
