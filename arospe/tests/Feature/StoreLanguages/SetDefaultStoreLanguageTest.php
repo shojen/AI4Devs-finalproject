@@ -128,6 +128,46 @@ test('the row is re-read under lock: a concurrent deactivation between hydration
 });
 
 // =====================================================================
+// Invariant durability -- the task file's own "Tests to perform" checklist requires this
+// explicitly: "SetDefaultStoreLanguage never leaves the catalog with zero defaults or two --
+// asserted across a forced mid-transaction failure, mirroring SetDefaultSalesRegion's own test."
+// Mirrors tests/Feature/SalesRegions/SetSalesRegionActiveTest.php's "a forced failure on the
+// deactivation write rolls back the just-completed promotion too" test exactly: a
+// StoreLanguage::saving() listener, registered on this test's own fresh per-test event
+// dispatcher (so it cannot leak into any other test in the suite), forces the SECOND write
+// inside the transaction to throw -- here, the promotion (`$target->forceFill(['is_default' =>
+// true])->save()`, the last statement in the action), which runs AFTER the old default's clear
+// write. Forcing failure on this later write is what proves the EARLIER clear-write was rolled
+// back too: if the transaction boundary were missing or misplaced, the old default would already
+// be cleared (is_default = false) while the promotion never lands, leaving the catalog with
+// ZERO defaults -- exactly the state D6 forbids.
+// =====================================================================
+
+test('a forced failure on the promotion write rolls back the just-cleared previous default too', function () {
+    $oldDefault = StoreLanguage::factory()->default()->create();
+    $candidate = StoreLanguage::factory()->create();
+
+    StoreLanguage::saving(function (StoreLanguage $model) use ($candidate): void {
+        if ($model->is($candidate) && $model->is_default === true) {
+            throw new RuntimeException('forced failure for the 0068 atomicity test');
+        }
+    });
+
+    $actor = setDefaultStoreLanguageActor();
+    $this->actingAs($actor);
+
+    expect(fn () => app(SetDefaultStoreLanguage::class)($candidate))
+        ->toThrow(RuntimeException::class, 'forced failure for the 0068 atomicity test');
+
+    // The old default's clear-write (the transaction's FIRST write) must have been rolled back
+    // by the surrounding DB::transaction() -- not left half-applied -- so the catalog still has
+    // exactly one default, never zero and never two.
+    expect($oldDefault->fresh()->is_default)->toBeTrue()
+        ->and($candidate->fresh()->is_default)->toBeFalse()
+        ->and(StoreLanguage::where('is_default', true)->count())->toBe(1);
+});
+
+// =====================================================================
 // Phase-4-style finding (docs/security/model-instance-trust.md) -- save() writes the whole dirty
 // set, not a fill() allow-list. A caller-dirtied attribute on the passed-in instance must not
 // persist through this action, even though #[Fillable([])] makes it tempting to assume the model

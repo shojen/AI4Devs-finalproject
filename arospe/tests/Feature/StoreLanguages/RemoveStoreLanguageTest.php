@@ -99,6 +99,36 @@ test('removing the last remaining active language throws ValidationException key
     expect($onlyActive->fresh()->is_active)->toBeTrue();
 });
 
+// Phase 5 code review finding 2 (non-blocking): removing an ALREADY-inactive language was
+// previously unspecified. Arranged with exactly one OTHER active row so the pre-fix behaviour
+// would have been the misleading `cannot_remove_last_active_language` refusal (the real reason is
+// "already removed") rather than a silent no-op -- proving the new `already_inactive` check runs
+// before that guard is ever reached, not merely that some refusal happens.
+test('removing an already-inactive language is refused with a distinct already_inactive reason', function () {
+    Log::spy();
+
+    StoreLanguage::factory()->create(); // one other active language
+    $alreadyInactive = StoreLanguage::factory()->inactive()->create();
+
+    $this->actingAs(removeStoreLanguageActor());
+
+    try {
+        app(RemoveStoreLanguage::class)($alreadyInactive);
+        $this->fail('Expected a ValidationException.');
+    } catch (ValidationException $exception) {
+        expect($exception->errors())->toHaveKey('languageId');
+    }
+
+    Log::shouldHaveReceived('warning')->once();
+    Log::shouldHaveReceived('warning')
+        ->withArgs(fn (string $message, array $context): bool => $message === 'Privileged action refused'
+            && ($context['ability'] ?? null) === 'already_inactive'
+            && $context['ability'] !== 'cannot_remove_last_active_language')
+        ->once();
+
+    expect($alreadyInactive->fresh()->is_active)->toBeFalse();
+});
+
 // A row that is BOTH the default AND the last active language must log exactly one refusal
 // reason -- the more specific one -- never two. Per the task file's own Gherkin ordering ("The
 // current default language cannot be removed" is listed before "The last remaining active

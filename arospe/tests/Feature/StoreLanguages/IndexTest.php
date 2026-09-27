@@ -21,11 +21,13 @@ test('guests are redirected to the login page when visiting the store languages 
     $this->get('/settings/store-languages')->assertRedirect(route('login'));
 });
 
-test('a signed-in user without store-languages.view is forbidden from the store languages screen', function () {
+test('a signed-in user without store-languages.view is forbidden from the store languages screen, without naming the permission', function () {
     $actor = User::factory()->create();
     $this->actingAs($actor);
 
-    $this->get('/settings/store-languages')->assertForbidden();
+    $this->get('/settings/store-languages')
+        ->assertForbidden()
+        ->assertDontSee('store-languages.view');
 });
 
 test('a user holding store-languages.view can reach the store languages screen', function () {
