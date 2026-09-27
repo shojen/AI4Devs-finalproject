@@ -2,7 +2,7 @@
 
 ## Description
 Two things about the listeners that run when a user confirms an email address or signs in, both found
-while closing story [0064](../done/0064-scheduled-post-auto-publish-backend.md) and both raised by
+while closing story [0064](0064-scheduled-post-auto-publish-backend.md) and both raised by
 the human owner.
 
 1. **`App\Listeners\ActivateVerifiedUser` must be idempotent** — receiving `Verified` twice for the
@@ -133,14 +133,14 @@ shipped — **D-2**), `bootstrap/app.php` (**D-1** rejects `withEvents(discover:
 **Feature — `tests/Feature/Providers/EventListenerRegistrationTest.php`** (new)
 
 *The registry guard (**D-4**)*
-- [ ] Loop `Event::getRawListeners()`; normalise each entry to `Class@method` (a bare class name means
+- [x] Loop `Event::getRawListeners()`; normalise each entry to `Class@method` (a bare class name means
       `@handle`; an array means `[0]@[1]`; skip closures); restrict to classes in the `App\` namespace.
       Assert **(a) no event lists the same `Class@method` twice** and **(b) each of the four known
       bindings appears exactly once**:
       `Login` → `RejectNonActiveUserLogin@handle`, `Authenticated` → `RejectNonActiveUserLogin@handleAuthenticated`,
       `Verified` → `ActivateVerifiedUser@handle`, `OrderFullyRefunded` → `CancelFullyRefundedOrder@handle`.
       Failure messages **name the event and the entry**, so a red run says what to delete.
-- [ ] **Proven able to fail, twice, and recorded:** (1) temporarily re-add one `Event::listen(...)` line
+- [x] **Proven able to fail, twice, and recorded:** (1) temporarily re-add one `Event::listen(...)` line
       to `AppServiceProvider` → assertion (a) goes red naming the event and the entry; (2) temporarily
       rename `handleAuthenticated` to `onAuthenticated` → assertion (b) goes red for the
       `Authenticated` binding. Both are the standard this repo's
@@ -148,7 +148,7 @@ shipped — **D-2**), `bootstrap/app.php` (**D-1** rejects `withEvents(discover:
       demands of any assertion that passes by default.
 
 *Each listener runs once per dispatch (**D-3**)*
-- [ ] **One dataset-driven test over three events** — `Verified` (for `ActivateVerifiedUser`), `Login`
+- [x] **One dataset-driven test over three events** — `Verified` (for `ActivateVerifiedUser`), `Login`
       and `Authenticated` (both for `RejectNonActiveUserLogin`). For each: count container resolutions with
       `app()->resolving(<ListenerClass>::class, function () use (&$resolved) { $resolved++; })`, dispatch
       the **real** event with `event(...)` for `User::factory()->make([...])` — **Active**, with an
@@ -163,27 +163,27 @@ pre-save value across the whole test and the second delivery is stopped by **the
 That is deliberate: it makes the `status !== Inactive` guard independently falsifiable, which the real
 database cannot.
 
-- [ ] **Same instance, `Verified` twice** (first-ever verification: previous `email_verified_at` is
+- [x] **Same instance, `Verified` twice** (first-ever verification: previous `email_verified_at` is
       `null`): exactly **one** `save()`, and the user is still `Active`. *Kills:* removing the
       `status !== Inactive` guard.
-- [ ] **Reloaded `Inactive` user, empty `getPrevious()`**, `Verified` delivered: stays `Inactive`, **0**
+- [x] **Reloaded `Inactive` user, empty `getPrevious()`**, `Verified` delivered: stays `Inactive`, **0**
       saves — the fail-closed branch. *Kills:* replacing the `array_key_exists('email_verified_at', …)`
       guard with `($previous['email_verified_at'] ?? null) === null`, which would activate a user whose
       last save never touched that column.
-- [ ] **Previously-verified `Inactive` user** (administrator-deactivated; previous `email_verified_at`
+- [x] **Previously-verified `Inactive` user** (administrator-deactivated; previous `email_verified_at`
       non-null), `Verified` twice: stays `Inactive`, **0** saves. *Kills:* dropping the previous-value
       null check (a deactivated user would be reactivated).
-- [ ] **`Suspended` user whose previous `email_verified_at` is `null`** (the would-be first verification),
+- [x] **`Suspended` user whose previous `email_verified_at` is `null`** (the would-be first verification),
       `Verified` twice: stays `Suspended`, **0** saves. *Kills:* changing the guard from
       `!== Inactive` to `=== Active`, which lets a suspended user through.
 
 **Feature — `tests/Feature/Auth/ActivateVerifiedUserIdempotencyTest.php`** (new) — characterisation (**D-6**)
 
-- [ ] A persisted `Inactive` user; `forceFill(['email_verified_at' => now()])->save()`; start
+- [x] A persisted `Inactive` user; `forceFill(['email_verified_at' => now()])->save()`; start
       `DB::listen`; dispatch `Verified` twice on that instance; then `User::find()` and dispatch a third
       time on the reloaded instance. Assert: `Active`, **exactly one** `UPDATE` on `users` in the whole
       sequence, and `updated_at` unchanged after the first delivery.
-- [ ] **State plainly in the test's comment that this is a characterisation test, not independently
+- [x] **State plainly in the test's comment that this is a characterisation test, not independently
       falsifiable**: with the status guard removed, the second delivery is still stopped in the real
       database because the first `save()` re-runs `syncChanges()` and `getPrevious()` then no longer
       carries `email_verified_at`. The unit test above is what kills that mutation; this test pins the
@@ -238,10 +238,10 @@ administrator can observe changes.
       [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
 - [x] The red-then-green sequence and every mutation in **D-8** are recorded in the task file with the
       test that went red.
-- [ ] Code reviewed (code-reviewer). **Point the review at D-1 and D-2**: that no listener logic was
+- [x] Code reviewed (code-reviewer). **Point the review at D-1 and D-2**: that no listener logic was
       changed under cover of an "idempotency" story, and that nobody re-added an explicit registration
       "to be safe".
-- [ ] No security findings (appsec-auditor). **Point the audit at
+- [x] No security findings (appsec-auditor). **Point the audit at
       [`RejectNonActiveUserLogin`](../../../app/Listeners/RejectNonActiveUserLogin.php)**: it is the
       sign-in safety net for remember-me recall and the two-factor mid-challenge race, and this story
       changes *how it is registered*. Questions to answer: is it still bound to `Login` **and**
@@ -250,13 +250,13 @@ administrator can observe changes.
       could leave it unregistered while the suite is green?
 - [x] Documentation updated (docs-keeper) — every entry in the *Docs* table above, in one pass, with
       **one** `_Last updated_` line per touched doc and the base branch fetched first.
-- [ ] Task-coordination files regenerated when this file is created and again when it moves
+- [x] Task-coordination files regenerated when this file is created and again when it moves
       (`ai-spec/tasks-map.md`, `ai-spec/tasks-status.json`), and the two-direction link-integrity check
       run at each stage move, per
       [task-files-links-and-ordering.md](../../../docs/workflow/task-files-links-and-ordering.md).
 - [x] **Hand-off to 0065 recorded** exactly as stated below.
 - [x] The compare-and-set race (**R-2**) is logged as a **separate follow-up story** (**OQ-3**), not fixed here — raised as [0064c](../0064c-activate-verified-user-status-race-compare-and-set-backend.md), which carries its own Phase 1 debate.
-- [ ] Acceptance criteria met.
+- [x] Acceptance criteria met.
 
 ## Documented functional decisions
 
@@ -270,7 +270,7 @@ why this story carries idempotency tests at all, even though **D-2** finds nothi
 ### D-1 — One policy: listeners are registered by discovery only
 Delete `configureEventListeners()`; let Laravel 13's auto-discovery (`Application::configure()` →
 `->withEvents()`, `vendor/laravel/framework/src/Illuminate/Foundation/Application.php:243`) be the single
-mechanism, exactly as story [0052](../done/0052-order-auto-cancel-full-refund-backend.md) already ships
+mechanism, exactly as story [0052](0052-order-auto-cancel-full-refund-backend.md) already ships
 `CancelFullyRefundedOrder`. Discovery registers every **public** method of a class in `app/Listeners`
 whose name matches `handle*` (or is `__invoke`) and whose **first parameter is a typed event**
 (`vendor/laravel/framework/src/Illuminate/Foundation/Events/DiscoverEvents.php:87`).
@@ -399,14 +399,16 @@ Fortify's HTTP route never re-dispatches `Verified` for an already-verified user
   `tests/Feature/Orders/AutoCancelFullyRefundedOrderTest.php:213-215`.
 
 ### Dependencies
-- **No blocking dependency.** Independent of [0064](../done/0064-scheduled-post-auto-publish-backend.md),
+- **No blocking dependency.** Independent of [0064](0064-scheduled-post-auto-publish-backend.md),
   0063 and [0065](../0065-blog-post-published-notification-backend.md). Numbered **0064a** because it was
   found closing 0064; the ordering rule (a dependency's number is lower than its dependents') is satisfied
-  since nothing depends on it in either direction.
+  since nothing depended on it when this story was written. **Update (2026-09-26):** its R-2 follow-up,
+  [0064c](../0064c-activate-verified-user-status-race-compare-and-set-backend.md), now depends on it and stays
+  `blocked` until this story lands.
 - **Conflict risk — [0065](../0065-blog-post-published-notification-backend.md):** its file list edits
   `AppServiceProvider::configureEventListeners()`, the method this story deletes. Whichever lands second
   reconciles at merge; with the hand-off below, 0065 simply drops that edit.
-- Builds on [0052](../done/0052-order-auto-cancel-full-refund-backend.md) (which shipped
+- Builds on [0052](0052-order-auto-cancel-full-refund-backend.md) (which shipped
   `CancelFullyRefundedOrder` by discovery alone) and on story 0007's
   `RejectNonActiveUserLogin`; changes neither.
 
@@ -496,7 +498,7 @@ it wants an extra positive assertion**, which is recommended: it adds
 **Red first (D-7).** Against the unmodified `AppServiceProvider`, `tests/Feature/Providers/EventListenerRegistrationTest.php`
 failed 7 of 8: the duplicate assertion named `ActivateVerifiedUser@handle` bound to `Verified` twice; the three positive
 cases found `Login`/`Authenticated`/`Verified` each bound twice; and the runs-once dataset counted **2** for `Verified`,
-`Login` and `Authenticated` (`OrderFullyRefunded` passed at 1). After deleting `configureEventListeners()` all pass at **1**,
+`Login` and `Authenticated` (the `OrderFullyRefunded` positive-binding case passed). After deleting `configureEventListeners()` all pass at **1**,
 and `php artisan event:list` shows one entry per `App\` listener per event. (The red run preceded the deletion but was not
 committed separately: the production commit `c07e44d` precedes the test commit.)
 
@@ -520,10 +522,42 @@ full `pest` run, single isolated pass on the final tree: **4384 passed, 3 skippe
 one unrelated `tests/Browser/Components/WysiwygEditorOutputHtmlTest.php` failure that passed 11/11 in isolation and did not recur. Run with
 `vendor/bin/pest -d memory_limit=-1`, because `php artisan test` cannot raise its child process's memory limit in this worktree setup.
 
-**Phase 4/5 review** (independent read-only agent, not the project's `code-reviewer`/`appsec-auditor` definitions, which were
-not available in this session): D-1 and D-2 hold (`app/Listeners/**`, `bootstrap/app.php` byte-identical to base; no explicit
+**First-pass review** (an independent read-only general-purpose agent standing in, because the project's `code-reviewer`/`appsec-auditor` definitions were
+not registered in that session; superseded by the real Phase 4 and Phase 5 records below): D-1 and D-2 hold (`app/Listeners/**`, `bootstrap/app.php` byte-identical to base; no explicit
 registration left in `app/`); `RejectNonActiveUserLogin` is still bound to `Login` and `Authenticated` once each; the registry
-test cannot pass vacuously. Finding carried into **R-3** above (deploy script unverifiable).
+test cannot pass vacuously. The deploy-script question it raised is resolved under **R-3** above.
+
+**Phase 4 — security audit (`appsec-auditor`, real agent, 2026-09-27): PASS.** No Critical, High or Medium findings.
+`RejectNonActiveUserLogin` is still bound to `Login` and `Authenticated` once each (live `event:list`, no `events.php` present); the registry
+test goes red if either binding is lost; no `Event::listen` remains in `app/`, `bootstrap/`, `config/` or `routes/`. `optimize` runs `event:cache`,
+which clears then rebuilds from the deployed code, so a failed rebuild falls back to live discovery (the safe outcome): R-3 is closed for the
+normal deploy. `ActivateVerifiedUser` (unchanged) keeps the no-self-activation invariant. Findings and dispositions:
+
+| ID | Severity | Finding | Disposition |
+| --- | --- | --- | --- |
+| L-1 | Low | The event manifest is trusted outside the normal deploy: a manual hotfix, a rollback that keeps a shared `bootstrap/cache`, or a deploy that stops before `optimize` leaves the safety net unregistered; `optimize` returns 0 even if `event:cache` fails; opcache with `validate_timestamps=0` serves an old `events.php`. | **Documented** in `docs/security/login-status-enforcement.md`. The post-deploy smoke check the auditor recommends (`php artisan event:list --event=...` grepping for both `RejectNonActiveUserLogin` handlers) belongs in the VPS deploy script, which is **outside this repository**: an owner action, not done here. |
+| L-2 | Low | A leftover local `bootstrap/cache/events.php` makes the test process read that manifest instead of discovery. CI is unaffected (fresh checkout, gitignored). | **Documented** (run `php artisan event:clear` before trusting a local result). The optional `! app()->eventsAreCached()` assertion was **not added**: it would change a test after the recorded full-suite pass. Candidate for a later hardening. |
+| I-1 | Info | `handle*` naming is load-bearing for the *stray* listener half (R-1). | Accepted knowingly under OQ-1(a). |
+
+**Phase 5 — final code review (`code-reviewer`, real agent, 2026-09-27): APPROVE.** D-1 and D-2 hold: `git diff` over
+`app/Listeners`, `bootstrap`, `config`, `routes`, `database`, `resources` is empty; the only production change is the deletion in
+`AppServiceProvider`; no explicit registration was re-added. The reviewer treated the suite/Pint/Larastan/CI results as reported, not re-verified.
+Findings and dispositions:
+
+| # | Severity | Finding | Disposition |
+| --- | --- | --- | --- |
+| 1 | Medium (process) | The appsec DoD item was open (only a stand-in had audited). | **Closed** by the real Phase 4 record above. |
+| 2 | Low (process) | Phase 2 (INVEST) was skipped. | **Retroactive INVEST check by the reviewer: holds** (Independent, Negotiable via OQ-1..4, Valuable, Estimable, Small — one deletion, Testable — mutation-validated). Recorded here rather than run as a separate phase. |
+| 3 | Low | Stale text: "nothing depends on it" and "deploy script unverifiable". | **Fixed** in this file. |
+| 4 | Low | `tasks-status.json` `touches` omitted the idempotency test. | **Moot**: the entry is deleted at closure. |
+| 5 | Low | Inbound links to re-point on the move to `done/` (0064c, 0065, `done/0064`). | **Done** at closure. |
+| 6 | Nit | The no-duplicate test makes zero assertions if no `App\` listener is registered; the positive-binding test still goes red then. | **Accepted**; not changed, to keep the recorded full-suite pass valid. |
+| 7 | Nit | The "(the `OrderFullyRefunded` positive-binding case passed)" wording in the red-first paragraph. | **Fixed**: `OrderFullyRefunded` is a positive-binding case; the runs-once dataset has three events. |
+
+**Closure gate.** Full suite in a single isolated run on the tested tree: 4384 passed, 3 skipped (2026-09-26). Since then only docs, task and
+coordination files changed, plus a merge of `origin/finalproject-ARP` that touched only `README.md` and `docs/architecture/overview.md`; CI on the PR
+re-runs the suite.
+
 
 ## Provenance
 
@@ -539,6 +573,6 @@ test cannot pass vacuously. Finding carried into **R-3** above (deploy script un
   lines 316-318 assert that discovery is off, which the installed framework contradicts — it is corrected,
   not merely reworded; (3) the idempotency work is reframed from "make it idempotent" to "prove and pin
   what already is" once the listener was read against its own guards (**D-2**).
-- **Models followed for tone and structure:** [0064](../done/0064-scheduled-post-auto-publish-backend.md)
-  and [0061a](../done/0061a-blog-post-publish-with-future-date-schedules.md).
-- **Status:** in Phase 3-5 (implemented, reviewed). Phase 2 (INVEST validation) was not run as a separate step.
+- **Models followed for tone and structure:** [0064](0064-scheduled-post-auto-publish-backend.md)
+  and [0061a](0061a-blog-post-publish-with-future-date-schedules.md).
+- **Status:** closed 2026-09-27 (Phase 7). Phase 2 (INVEST) was checked retroactively by the Phase 5 reviewer, not run as a separate step.

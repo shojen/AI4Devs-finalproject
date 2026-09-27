@@ -41,9 +41,11 @@ Phase-3 blocker (`0048`–`0054`) is now `done/` — so it moves from `blocked` 
 terminal node finally unblocked. `0057`'s own node is likewise dropped from the graph; it had no pending dependent of its own to
 re-derive against `done/`.
 
-Update (2026-09-26): a follow-up story raised by `0064a` (its R-2 / OQ-3) was added as a new pending file: `0064c-activate-verified-user-status-race-compare-and-set-backend.md` (`blocked` on `0064a`, a hard dependency because it modifies the unit test file `0064a` extends and keeps `0064a`'s idempotency and registry tests as its regression net; no `conflict_risk_with`, since no other pending story modifies `ActivateVerifiedUser`, its callers or `LogRefusedPrivilegedAttempt`).
+Update (2026-09-27): `0064a-activate-verified-user-listener-idempotent-and-single-registration.md` completed Phase 7 and moved from `in-progress/` to `done/`. Its node, its `0064a --> 0064c` edge and its `tasks-status.json` entry (the `claimed` one) are dropped. Its one dependent, `0064c`, drops `"0064a"` and moves from `blocked` to `ready`; `0065` drops `"0064a"` from its `conflict_risk_with` (0064a deleted the `AppServiceProvider` method 0065's file list still names — 0065 reconciles that in its own Phase 2/3). `ai-spec/tasks/in-progress/` is empty again.
 
-Update (2026-09-26): `0064a-activate-verified-user-listener-idempotent-and-single-registration.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0) and is claimed in `tasks-status.json`. It is still pending work, so it keeps its node and edges; its node moves from the green `ready` class to the blue `claimed` class, and its `depends_on` is unchanged. `ai-spec/tasks/in-progress/` now holds exactly this one file.
+Update (2026-09-26): a follow-up story raised by `0064a` (its R-2 / OQ-3) was added as a new pending file: `0064c-activate-verified-user-status-race-compare-and-set-backend.md` (`blocked` on `0064a` when created; `ready` once `0064a` closed, a hard dependency because it modifies the unit test file `0064a` extends and keeps `0064a`'s idempotency and registry tests as its regression net; no `conflict_risk_with`, since no other pending story modifies `ActivateVerifiedUser`, its callers or `LogRefusedPrivilegedAttempt`).
+
+Earlier update (2026-09-26, superseded): `0064a-activate-verified-user-listener-idempotent-and-single-registration.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0) and is claimed in `tasks-status.json`. It is still pending work, so it keeps its node and edges; its node moves from the green `ready` class to the blue `claimed` class, and its `depends_on` is unchanged. `ai-spec/tasks/in-progress/` now holds exactly this one file.
 
 Update (2026-09-26): `0063-blog-posts-list-editor-ui.md` completed Phase 7 and moved from `in-progress/` to `done/` — the ninth Epic 4 story to close, and the third Blog screen. Its node and every edge touching it are dropped from the graph below and its `tasks-status.json` entry (the `claimed` one) was deleted. Its one hard dependent, `0079`, drops `"0063"` and stays `blocked` on the Epic 5 retrofit stories it still needs; `0064b`, `0072`, `0074` and `0078` drop it from `conflict_risk_with`. `ai-spec/tasks/in-progress/` is empty again.
 
@@ -145,15 +147,15 @@ graph and from the parallelization analysis below.
 
 ## Inventory
 
-### Done (78) — shipped, out of scope for this graph
+### Done (79) — shipped, out of scope for this graph
 
 Already merged into `main`/`finalproject-ARP` and closed via the workflow's Phase 7; see
 [`ai-spec/tasks/done/`](tasks/done/) for each story's full file. Listed here only as IDs, grouped
 by the epic area they belong to, since — per the note at the top of this file — none of them
 appears as a node in the dependency graph below:
 
-- **Epic 1 — Users, Roles & Auth (20):** 0001, 0002, 0003, 0004, 0005, 0006, 0006b, 0007, 0008,
-  0008a, 0009, 0010, 0011, 0012, 0013, 0014, 0015, 0015a, 0015b, 0040.
+- **Epic 1 — Users, Roles & Auth (21):** 0001, 0002, 0003, 0004, 0005, 0006, 0006b, 0007, 0008,
+  0008a, 0009, 0010, 0011, 0012, 0013, 0014, 0015, 0015a, 0015b, 0040, 0064a.
 - **Epic 2 — Products, Taxes, Media, Shipping (35):** 0016, 0017, 0018, 0019, 0019a, 0019b,
   0019c, 0019d, 0020, 0021, 0022, 0023, 0024, 0024a, 0024b, 0025, 0026, 0027, 0028, 0029, 0029a,
   0029b, 0030, 0030a, 0031, 0031a, 0032, 0033, 0034, 0035, 0036, 0037, 0038, 0039, 0080.
@@ -223,11 +225,10 @@ appears as a node in the dependency graph below:
   command: its one hard dependent, 0065, drops it and moves to `ready`; two follow-ups it raised, 0064a and 0064b,
   are new pending files.
 
-### Pending — not started (19 numbered + 1 infra doc)
+### Pending — not started (18 numbered + 1 infra doc)
 
 | ID | Title | Epic area |
 | --- | --- | --- |
-| 0064a | Activate-verified-user listener — idempotent, and every listener registered exactly once | Epic 1 — Users, Roles & Auth |
 | 0064c | Activate-verified-user — a suspension that lands mid-request must not be overwritten by the activation (backend) | Epic 1 — Users, Roles & Auth |
 | 0064b | Scheduled post publish failure — notification and email to the post's creator (backend) | Epic 4 — Blog |
 | 0065 | Blog post published — notification (backend) | Epic 4 — Blog |
@@ -277,7 +278,6 @@ flowchart LR
 
     subgraph PEND_AUTH["Epic 1 — Users, Roles & Auth"]
         direction TB
-        P0064a["0064a Listener idempotent + single registration BE"]
         P0064c["0064c Activation CAS vs suspension race BE"]
     end
 
@@ -370,17 +370,15 @@ flowchart LR
     P0077 -.-> P0079
     P0070 --> P0079
     P0068 --> P0079
-    P0064a --> P0064c
 
-    class P0064b,P0064c,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0064a claimed;
-    class P0065,P0068 ready;
+    class P0064b,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
+    class P0064c,P0065,P0068 ready;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(`0064a` is `claimed` in this snapshot); yellow (`pending`) = still blocked on at least one open
+(no node is `claimed` in this snapshot); yellow (`pending`) = still blocked on at least one open
 pending dependency.
 
 ## Analysis
@@ -480,7 +478,7 @@ parallelization one. The major chains, in the order they must be executed:
    `0057`, closed too. `0046` was never a hard blocker of either — only a soft/informational,
    non-blocking sibling that made their "two distinct notification types" test meaningful — and it
    too is `done/` as of an earlier pass, so that soft reference is fully satisfied either way.
-3. **Blog (Epic 4).** `{0063 → 0064b}` and `{0065}` (`0058`, `0059`, `0060`, `0061`, `0061a`, `0061b`, `0062` and `0064` are `done/`); `0064a`, an Epic 1 listener fix raised by `0064`, is a free-standing `ready` node; `0060` created the
+3. **Blog (Epic 4).** `{0063 → 0064b}` and `{0065}` (`0058`, `0059`, `0060`, `0061`, `0061a`, `0061b`, `0062` and `0064` are `done/`); `0064a` (an Epic 1 listener fix raised by `0064`) is now `done/`, and its follow-up `0064c` is a free-standing `ready` node; `0060` created the
    `content` sidebar group and its `blog` cluster that `0062` (done) and `0063` append one item each to.
 4. **Internationalization (Epic 5).** This is the most heavily sequenced part of the backlog, and
    it is **cross-epic**: every retrofit story blocks on `0068` (Store Languages catalog) and
@@ -531,7 +529,7 @@ in [`ai-spec/tasks-status.json`](tasks-status.json):
 - **`App\Concerns\ResolvesSalesRegionFromAddress` was a create-if-absent shared trait between
   `0053` and `0054` — both now `done/`, so this pairing is resolved.** `0053` reached Phase 3
   first and created the file; `0054` consumed it unchanged, as specified.
-- **`0063` and `0065` both edit `app/Actions/Blog/CreateBlogPost.php` and `UpdateBlogPost.php`** (`0061a` and `0061b`, now `done/`, were the others), without a formal dependency forcing an order; every pair is recorded symmetrically in `conflict_risk_with` (`0064` — now `done/` — did not touch these files). **`0064b` also edits `CreateBlogPost.php`** (it writes the new `created_by` column) and `BlogPost.php`/`blog_posts` (as does `0078`), so it is recorded symmetrically against `0063`, `0065` and `0078`; **`0064a` and `0065` both edit `app/Providers/AppServiceProvider.php`** (0064a deletes `configureEventListeners()`, which 0065's Modify section still names).
+- **`0063` and `0065` both edit `app/Actions/Blog/CreateBlogPost.php` and `UpdateBlogPost.php`** (`0061a` and `0061b`, now `done/`, were the others), without a formal dependency forcing an order; every pair is recorded symmetrically in `conflict_risk_with` (`0064` — now `done/` — did not touch these files). **`0064b` also edits `CreateBlogPost.php`** (it writes the new `created_by` column) and `BlogPost.php`/`blog_posts` (as does `0078`), so it is recorded symmetrically against `0063`, `0065` and `0078`; **`0064a` (now `done/`) deleted `AppServiceProvider::configureEventListeners()`, which `0065`'s Modify section still names** — no formal edge remains; `0065` reconciles it in its own Phase 2/3.
 - **The Epic 5 retrofit stories (`0072`, `0074`, `0076`, `0078`) all depend on the same pair,
   `0068` and `0070`**, and each also touches `config/modules.php` / `lang/{en,es}/*.php` for its
   own domain. They do not depend on each other and their tables are disjoint (blog categories vs.

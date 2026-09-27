@@ -5,7 +5,7 @@
 writes `status = Active` with a blind `save()`. If an administrator suspends the account between the moment
 that instance was loaded and the moment the listener's `save()` runs, the listener **overwrites `Suspended`
 with `Active`**: a privilege-grant race — a suspended account becomes active. This is **R-2** of story
-[0064a](in-progress/0064a-activate-verified-user-listener-idempotent-and-single-registration.md), which
+[0064a](done/0064a-activate-verified-user-listener-idempotent-and-single-registration.md), which
 recorded it, declined to fix it under that story's **D-2** ("prove and pin, do not change the listener's
 write"), and required it to be logged as its own story (**OQ-3**). This is that story.
 
@@ -390,8 +390,8 @@ decisions, not scenarios.
   Livewire caller loads the target with `findOrFail()` outside the action.
 
 ### Dependencies
-- **Hard dependency on [0064a](in-progress/0064a-activate-verified-user-listener-idempotent-and-single-registration.md)**
-  (open as PR #37 at the time of writing): this story **modifies** the unit test file 0064a extends and keeps
+- **Depended on [0064a](done/0064a-activate-verified-user-listener-idempotent-and-single-registration.md)**
+  (PR #37; closed 2026-09-27, so this story is now `ready`): this story **modifies** the unit test file 0064a extends and keeps
   0064a's idempotency and registry tests as its regression net, so it cannot start before 0064a lands.
   (`0064a` < `0064c`: the ordering rule is satisfied.) The debate started from "no dependency beyond the same
   listener"; reading the test files showed the edit overlap, so the dependency is recorded.
@@ -475,6 +475,6 @@ decisions, not scenarios.
   became the deciding argument for A; (4) `ConfirmEmailChange` already locks, so it is defence in depth, not
   a fix; (5) 0064a's **D-2** wording ("needs a compare-and-set on a different condition") is loose — R-2 itself
   names `WHERE status = 'inactive'`.
-- **Models followed for tone and structure:** [0064a](in-progress/0064a-activate-verified-user-listener-idempotent-and-single-registration.md)
+- **Models followed for tone and structure:** [0064a](done/0064a-activate-verified-user-listener-idempotent-and-single-registration.md)
   and [0064](done/0064-scheduled-post-auto-publish-backend.md).
 - **Status:** Phase 1 output (new stage). Phase 2 (INVEST validation) not yet run.

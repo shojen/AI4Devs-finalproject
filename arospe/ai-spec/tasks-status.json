@@ -3,30 +3,11 @@
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
     {
-      "id": "0064a",
-      "slug": "0064a-activate-verified-user-listener-idempotent-and-single-registration",
-      "title": "Activate-verified-user listener — idempotent, and every listener registered exactly once",
-      "depends_on": [],
-      "status": "claimed",
-      "claimed_by": "worktree 0064a-activate-verified-user-listener-idempotent-and-single-registration",
-      "claimed_at": "2026-09-26T00:00:00Z",
-      "touches": [
-        "app/Providers/AppServiceProvider.php",
-        "tests/Unit/Listeners/ActivateVerifiedUserTest.php",
-        "tests/Feature/Providers/EventListenerRegistrationTest.php"
-      ],
-      "conflict_risk_with": [
-        "0065"
-      ]
-    },
-    {
       "id": "0064c",
       "slug": "0064c-activate-verified-user-status-race-compare-and-set-backend",
       "title": "Activate-verified-user — a suspension that lands mid-request must not be overwritten by the activation (backend)",
-      "depends_on": [
-        "0064a"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -78,7 +59,6 @@
         "app/Actions/Blog/CreateBlogPost.php"
       ],
       "conflict_risk_with": [
-        "0064a",
         "0064b"
       ]
     },
