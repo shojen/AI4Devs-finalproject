@@ -240,8 +240,12 @@ still synchronous. No route, screen, schema or caller changes.
       soft-deleted row log nothing and throw nothing.
 - [ ] The three callers, `UpdateUser`, `User`, `bootstrap/app.php`, `database/**` and `routes/**` are unchanged.
 - [ ] 0064a's idempotency and registry tests pass **unmodified**; the unit tests keep their names and rules.
-- [ ] Every mutation in **D-8** was seen red against a named test and recorded in this file; the tests that
-      can be red first were.
+- [x] Every mutation in **D-8** was seen red against a named test and recorded in this file; the tests that
+      can be red first were. The 2026-09-27 verification run recorded in D-8 found two problems: A12 was
+      not seen red by any test in the suite, and A9's F1b entry was factually wrong (F8 alone kills it).
+      Both are now closed: A9's row is corrected, and A12 is killed by a new test,
+      `ActivateInactiveUserTest`'s "activates via the targeted sync, not refresh(), leaving every other
+      in-memory change alone" (confirmed red under the `refresh()` mutation, green against the real code).
 - [ ] No other task file is edited by this story beyond the link-integrity re-points and the 0064a DoD
       pointer.
 
@@ -252,7 +256,9 @@ still synchronous. No route, screen, schema or caller changes.
       not run*: `php artisan test` (or `vendor/bin/pest -d memory_limit=-1` where the artisan child cannot
       raise its limit), `vendor/bin/pint --format agent` (not `--dirty`), and **Larastan level 7**
       (`vendor/bin/phpstan analyse`).
-- [ ] The red-then-green sequence and every **D-8** mutation recorded in the task file.
+- [x] The red-then-green sequence and every **D-8** mutation recorded in the task file. **Recording done**
+      (2026-09-27, D-8) and now correct: the two open findings (A9's F1b entry, A12 fully uncovered) are
+      closed — see D-8's "Open findings".
 - [ ] Code reviewed (code-reviewer). **Point the review at D-2 and D-3**: that the in-memory guards and the
       `getPrevious()` docblock are untouched, and that no path writes `status` except the guarded `UPDATE`.
 - [ ] No security findings (appsec-auditor). **Point the audit at** `ActivateVerifiedUser` /
@@ -369,12 +375,73 @@ Each applied alone to production code, the named test seen red, the change rever
 | **A6** `withTrashed()` / `DB::table` | F5 |
 | **A7** bind the wrong enum value | F8 |
 | **A8** invert the affected-rows test | F8, F1 |
-| **A9** never sync the instance | F8, F1b |
+| **A9** never sync the instance | F8 |
 | **A10** remove the listener's in-memory `status !== Inactive` guard | the same-instance idempotency unit test (fake invoked twice) |
 | **A11** log when the row is `Active`, or when it is absent | F4, F6 |
-| **A12** `refresh()` instead of the targeted sync | F8 (`getPrevious()` lost) |
+| **A12** `refresh()` instead of the targeted sync | the action's targeted-sync test (`ActivateInactiveUserTest`, "activates via the targeted sync, not refresh(), leaving every other in-memory change alone") |
 | **A13** move the database access above the in-memory guards | the refusal unit tests, **by error** |
 | **A14** `findOrFail()` in the diagnosis `SELECT` | F6 |
+
+**Mutation verification run (2026-09-27):** every mutation above was applied by hand to the exact
+line(s) it describes, the named test(s) run in isolation
+(`DB_DATABASE=testing_0064c php -d memory_limit=-1 vendor/bin/pest --filter=...`), the result
+observed, and the mutation reverted (`git checkout --`, `git status` confirmed clean) before moving
+to the next one. The full battery of the eight test files under **Tests** above was green (80
+tests, 234 assertions) both before the run started and again after the last mutation was reverted.
+
+| Mutation | Test(s) run | Red confirmed |
+| --- | --- | --- |
+| A1 | F1, F1b, F1c, the action's lost-to-suspension test, `EmailVerificationTest`'s/`PasswordResetTest`'s/`EmailChangeTest`'s mid-flow interleave tests | Yes — all 7 |
+| A2 | F7 | Yes |
+| A3 | F1 | Yes |
+| A4 | F8, the action's win test | Yes — both |
+| A5 | F8 | Yes |
+| A6 | F5 | Yes |
+| A7 | F8 | Yes |
+| A8 | F1, F8 | Yes — both |
+| A9 | F8 | Yes — a clean kill by F8 alone (F1b was never a kill for this mutation, corrected above) |
+| A10 | the same-instance idempotency unit test | Yes |
+| A11 | F4, F6 | Yes — both |
+| A12 | the action's targeted-sync test (`ActivateInactiveUserTest`, added 2026-09-27) | Yes — a new assertion was added specifically to make this mutation detectable (see "Open findings" below) |
+| A13 | the five refusal/idempotency unit tests (0064a's) | Yes — all 5 (4 by assertion, 1 by `TypeError`; mechanism note below) |
+| A14 | F6 | Yes |
+
+**Open findings (2026-09-27 run) — since closed, 2026-09-27:**
+
+- **A9's table entry was corrected, not an open finding.** F1b's row is already `Suspended`
+  before either `Verified` delivery, so both deliveries lose the compare-and-set (`0` affected
+  rows) and never reach the win-branch sync code A9 removes — D-4's loss branch already leaves the
+  instance untouched regardless of A9. Only F8 (the legitimate-activation test) exercises and kills
+  this mutation; the D-8 table above has been corrected to say so (F1b dropped from A9's row).
+- **A12 was a real, uncovered mutation — closed by a new test.** Replacing the targeted sync
+  (`setAttribute()`/`syncOriginalAttributes()`) with `$user->refresh()` passed the full 8-file
+  battery unnoticed. Root cause: `Illuminate\Database\Eloquent\Model::refresh()`
+  (`vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:2081-2102`) calls
+  `setRawAttributes()` then `syncOriginal()` — it never calls `syncChanges()`, and `$previous`
+  (what `getPrevious()` reads) is populated **only** by `syncChanges()`, called from inside
+  `performUpdate()`/`performInsert()`, which only `save()` triggers. Since `refresh()` never calls
+  `save()`, the caller's `$previous` from their own earlier `save()` (before `Verified` fired) is
+  left untouched, so `getPrevious()['email_verified_at']` still reads `null` after a
+  `refresh()`-based sync — exactly what F8 asserts, so F8 alone could not distinguish the two
+  implementations. Closed 2026-09-27 by a new test, `ActivateInactiveUserTest`'s "activates via the
+  targeted sync, not refresh(), leaving every other in-memory change alone": it sets an
+  uncommitted, non-`status`/`updated_at`/`email_verified_at` attribute (`name`) on the in-memory
+  instance before invoking the action, then asserts both that the attribute still holds the
+  uncommitted value (proving no full re-fetch happened) and that `isDirty('name')` is still `true`
+  (proving the instance was not quietly marked clean for an attribute the action never touched).
+  `refresh()` fails this test (confirmed red under the mutation, reverted, confirmed green under
+  the real code); the previously-considered "no assertion can distinguish them" conclusion held
+  only for the attributes this story's other tests already checked, not for an attribute the win
+  branch never touches at all.
+- **A13's mechanism note (not a gap).** The unit test file's own comment (lines 40-44) says A13 is
+  "killed... BY ERROR... with no app booted, any real database touch throws" — but these five unit
+  tests build the listener with a hand-injected `ActivateInactiveUserFake` (never the real,
+  DB-touching `ActivateInactiveUser`), so moving the fake's call above the guards does not itself
+  touch a database. Four of the five go red by ordinary assertion mismatch instead (the fake
+  unconditionally flips `status` to `Active` and increments `callCount` before the guards get a
+  chance to block it); only the not-a-`User`-instance case fails via a `TypeError` (the fake's
+  `__invoke(User $user)` type hint rejects the non-`User` `$notAUser` double). All five still go red
+  as required — this is a documentation nuance about *why*, not a coverage gap.
 
 ### D-9 — Business-language boundary of the Gherkin
 The six scenarios state outcomes an owner recognises (activated, suspension wins, unchanged, not brought
