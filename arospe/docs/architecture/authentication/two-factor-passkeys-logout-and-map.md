@@ -109,6 +109,7 @@ public function deleteUser(Logout $logout): void
 | Register/reset actions | `app/Actions/Fortify/CreateNewUser.php`, `app/Actions/Fortify/ResetUserPassword.php` |
 | Account status enum | `app/Enums/UserStatus.php`, plus `User::isActive()` in `app/Models/User.php` |
 | Activation listener | `app/Listeners/ActivateVerifiedUser.php` (auto-discovered from `app/Listeners`) |
+| Activation write (guarded compare-and-set, story 0064c) | `app/Actions/Users/ActivateInactiveUser.php`, constructor-injected into `ActivateVerifiedUser` |
 | Sign-in status check (password + 2FA) | `app/Actions/Fortify/AuthenticateUser.php` (registered in `app/Providers/FortifyServiceProvider.php::configureActions()`) |
 | Sign-in status check (passkey) | `app/Providers/FortifyServiceProvider.php::configurePasskeys()` |
 | Sign-in status check (remember-me, mid-challenge) | `app/Listeners/RejectNonActiveUserLogin.php` (auto-discovered on `Login` **and** `Authenticated`) |
@@ -127,9 +128,9 @@ public function deleteUser(Logout $logout): void
 | 2FA columns migration | `database/migrations/2025_08_14_170933_add_two_factor_columns_to_users_table.php` |
 | Status / pending-email migrations | `database/migrations/2026_08_11_175426_add_status_to_users_table.php`, `..._175427_add_pending_email_to_users_table.php` |
 | Passkeys table migration | `database/migrations/2024_01_01_000000_create_passkeys_table.php` |
-| Feature tests | `tests/Feature/Auth/**`, `tests/Feature/Actions/Auth/**`, `tests/Feature/Settings/SecurityTest.php`, `tests/Feature/Settings/EmailChangeTest.php` |
+| Feature tests | `tests/Feature/Auth/**` (incl. `ActivateVerifiedUserSuspensionRaceTest.php`, story 0064c), `tests/Feature/Actions/Auth/**`, `tests/Feature/Actions/Users/ActivateInactiveUserTest.php` (story 0064c), `tests/Feature/Settings/SecurityTest.php`, `tests/Feature/Settings/EmailChangeTest.php` |
 | Unit tests | `tests/Unit/Enums/UserStatusTest.php`, `tests/Unit/Listeners/ActivateVerifiedUserTest.php`, `tests/Unit/Models/UserTest.php`, `tests/Unit/Actions/Auth/**`, `tests/Unit/Exceptions/PasswordConfirmationRequiredExceptionTest.php` |
 
-_Last updated: 2026-08-24 — Task 0015a (step-up authentication for privileged Users actions). **No authentication flow changed** — no new route, guard, action registration or `config/fortify.php` feature. What changed is that Fortify's password-confirmation flow acquired a **second consumer outside the auth screens**, and two facts about it belong to this page rather than to the authorization one: `POST /user/confirm-password` is now rate-limited **by this app** (5/min, keyed like Fortify's `login` limiter) because Fortify's `routes.php` consults no `config('fortify.limiters.*')` key for that route, so there was nothing to configure and nothing to make its absence loud; and the confirmation's session scoping — including why `SessionGuard::login()`'s `migrate(true)` would have let a session inherit the previous user's confirmation had either logout path skipped `Session::invalidate()` — is what makes the key usable as a step-up control at all. Added to **Enabled features**, beneath the existing `confirmPassword` paragraph, with four **Where it lives** additions. Verified as unchanged rather than assumed: the registration/reset flow, the account-status block and its three enforcement points, the pending-email mechanism and its two limiters (task 0015's, untouched here), the 2FA and passkey flows, and the logout section._
+_Last updated: 2026-09-27 — story 0064c: added `App\Actions\Users\ActivateInactiveUser` (the guarded compare-and-set the activation listener now delegates its write to) and its tests to the **Where it lives** map; no 2FA, passkey or logout flow changed._
 
 _Earlier revision notes: [architecture--authentication--two-factor-passkeys-logout-and-map.md](../../history/architecture--authentication--two-factor-passkeys-logout-and-map.md)._

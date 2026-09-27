@@ -39,6 +39,7 @@ value was decided by whoever hydrated the instance, at whatever time they did so
 - [`save()` writes the whole dirty set, so "the single named writer" is a convention, not an enforcement](#save-writes-the-whole-dirty-set-so-the-single-named-writer-is-a-convention-not-an-enforcement)
 - [One fix closes both](#one-fix-closes-both)
 - [Re-audit round 2: what the fix itself got subtly wrong](#re-audit-round-2-what-the-fix-itself-got-subtly-wrong)
+- [A single predicate on one row can collapse the guard into the write itself](#a-single-predicate-on-one-row-can-collapse-the-guard-into-the-write-itself)
 
 ## A guard must re-read its subject under lock, inside its own transaction
 
@@ -366,12 +367,67 @@ the pre-fix code (or, for `refresh()`, against the code with that one line remov
 Full suite re-run unscoped: **869/869 passed, 2434 assertions**. `vendor/bin/pint --test --format agent`
 (unscoped): **passed**.
 
-_Last updated: 2026-08-26 — Task 0017 (Sales Region tax configuration — backend), Phase 4 re-audit (round 2)
-and same-day fix. All three sections **closed**. The two original findings' code examples were updated in
-place to match the round-2 fix (the single ordered lock query, the `refresh()` call) rather than left
-describing the round-1 shape a second round found wrong._
+## A single predicate on one row can collapse the guard into the write itself
 
-_Previously: 2026-08-25 — Task 0017, Phase 4 fix, same day as the original audit. Both sections **closed**:
-every ❌ block is the code as it shipped from Phase 3, every ✅ block is the real shipped fix (not a
-recommendation), and every claim in both was verified by execution against the real actions on the `testing`
-database, inside a rolled-back transaction, rather than by reading._
+Every example above — `SalesRegion`'s `SetDefaultSalesRegion`/`SetSalesRegionActive`/`UpdateSalesRegion` —
+shares a shape: a **multi-step** read-decide-write, sometimes across **more than one row** (an invariant
+like "exactly one default"), where the guard's own read has to happen *through* a lock inside the action's
+own transaction, or a caller's stale instance defeats it exactly as [the opening section](#a-guard-must-re-read-its-subject-under-lock-inside-its-own-transaction)
+describes.
+
+Story 0064c (`App\Listeners\ActivateVerifiedUser` / `App\Actions\Users\ActivateInactiveUser`) is a
+narrower case this page had not yet stated a rule for: the decision is **one predicate on one row**
+(`status = 'inactive'`), with no cross-row invariant to protect. When that is true, the read-then-write
+sequence collapses into a **single guarded `UPDATE`**, and the guard and the write become the same
+statement instead of two:
+
+```php
+// app/Actions/Users/ActivateInactiveUser.php
+$affectedRows = User::query()
+    ->whereKey($user->getKey())
+    ->where('status', UserStatus::Inactive->value)
+    ->update([
+        'status' => UserStatus::Active->value,
+        'updated_at' => $now,
+    ]);
+```
+
+MySQL/InnoDB evaluates that `WHERE` as a current read, so a concurrent write that already committed
+`status = 'suspended'` makes the guard match **zero rows**, even under REPEATABLE READ — there is no
+window between "read the row" and "decide" for a stale instance to exploit, because there is no separate
+read. On a win, the caller's own instance is synced without a second write (`setAttribute()` for `status`
+and `updated_at`, then the public `syncOriginalAttributes()` — never `refresh()`, which would also wipe
+`getPrevious()`); on a loss, the instance is left untouched and a single follow-up `SELECT status` (not a
+`findOrFail()`) tells a suspension, a concurrent double-activation and an absent/soft-deleted row apart for
+logging purposes only — the persisted state was already decided atomically by the guarded `UPDATE` itself.
+See the task file's **D-1** ([0064c](../../ai-spec/tasks/in-progress/0064c-activate-verified-user-status-race-compare-and-set-backend.md))
+for the full InnoDB reasoning and why the repo's usual `lockForUpdate()` shape was considered and rejected
+here specifically (it is correct but strictly more expensive, and unlike the `SalesRegion` cases, a missing
+lock in a re-read shape would be invisible to a single-process behavioural test — the guarded `UPDATE`'s
+outcome is behaviourally visible instead).
+
+**This shape is safe only while `User` has no `saving`/`updated` model hooks (R-3).** A guarded `UPDATE`
+through the Eloquent builder bypasses model events the same way any query-builder write does — no
+`saving`/`updated`/`booted` hook or Observer fires. `App\Models\User` was confirmed to have none of these
+at the time this shape shipped, re-confirmed by the story's Phase 4 security audit against the current code
+(not merely the original finding). If a future story adds one, this collapsed shape stops being safe for
+`User` and must go back to a re-read-under-lock, `save()`-based write (the `SalesRegion` shape above) so
+the hook still fires.
+
+**A sibling story will add the mirror-image example on this same page.** `App\Actions\Users\UpdateUser`
+(the administrator-initiated status/role write this story deliberately left alone — see R-2 in the 0064c
+task file) decides `$statusChanged` from a **caller-hydrated instance's** `getRawOriginal('status')` and
+writes with no lock or re-read: a genuinely multi-step, caller-hydrated decision, not a single predicate on
+one row. [Story 0064d](../../ai-spec/tasks/0064d-update-user-status-role-race-lock-and-recheck-backend.md)
+will close that hole with the repo's usual re-read-under-`lockForUpdate()` shape once it ships (Phase 1 only
+as of this writing) — the direct counter-example to the collapsed shape above, kept on this same page when
+it lands rather than written up here ahead of the implementation.
+
+_Last updated: 2026-09-27 — story 0064c: added "A single predicate on one row can collapse the guard into
+the write itself", contrasting `ActivateInactiveUser`'s guarded compare-and-set with the multi-step/locked
+`SalesRegion` shape above, and a forward-pointer to story 0064d for the mirror-image example. Folded the
+prior `_Previously:` entry into this line rather than adding another: Task 0017's Phase 4 fix (2026-08-25)
+and round-2 re-audit (2026-08-26) closed all three original sections — the two findings' code examples match
+the round-2 fix (the single ordered lock query, the `refresh()` call), and every claim in both was verified
+by execution against the real actions on the `testing` database, inside a rolled-back transaction, rather
+than by reading._
