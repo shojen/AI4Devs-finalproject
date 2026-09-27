@@ -7,6 +7,7 @@ use App\Livewire\Settings\Profile;
 use App\Models\User;
 use App\Notifications\PendingEmailVerification;
 use Illuminate\Auth\Events\Verified;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
@@ -472,6 +473,53 @@ test('an address claimed by another account between request and confirmation is 
 
     expect($user->fresh()->getRawOriginal('email'))->not->toBe('contested@example.com')
         ->and($user->fresh()->pending_email)->toBe('contested@example.com');
+});
+
+// Story 0064c (D-6, technique 2) -- an interleave hook lands a suspension exactly between
+// ConfirmEmailChange's own forceFill(email, pending_email, email_verified_at)->save() write and
+// the Verified dispatch that follows it. Defence in depth ONLY: ConfirmEmailChange already
+// re-reads the row under lockForUpdate() inside its own DB::transaction and fires Verified on
+// that same locked instance, so this race cannot actually happen in production -- see the task
+// file's Description and D-1. This hook's own suspending write shares the SAME database
+// connection as ConfirmEmailChange's open transaction and existing row lock (RefreshDatabase
+// keeps every write of this test on one connection, uncommitted -- reading note (e)); it does not
+// and cannot model a second process taking that lock.
+test('a suspension that lands mid-confirmation stays suspended -- defence in depth, one connection only', function () {
+    $user = User::factory()->pendingEmail('new-address@example.com')->create([
+        'status' => UserStatus::Inactive,
+        'email_verified_at' => null,
+    ]);
+
+    $fired = false;
+    DB::listen(function ($query) use (&$fired, $user): void {
+        if ($fired) {
+            return;
+        }
+
+        if (preg_match('/^update\s+[`"]?users[`"]?\s/i', $query->sql) !== 1) {
+            return;
+        }
+
+        if (! str_contains($query->sql, 'pending_email') || ! str_contains($query->sql, 'email_verified_at')) {
+            return;
+        }
+
+        $fired = true;
+
+        DB::table('users')->where('id', $user->id)->update(['status' => UserStatus::Suspended->value]);
+    });
+
+    $url = URL::temporarySignedRoute(
+        'email-change.confirm',
+        now()->addMinutes(60),
+        ['user' => $user->id, 'hash' => sha1('new-address@example.com')],
+    );
+
+    $this->get($url);
+
+    expect($fired)->toBeTrue()
+        ->and($user->fresh()->getRawOriginal('email'))->toBe('new-address@example.com')
+        ->and($user->fresh()->status)->toBe(UserStatus::Suspended);
 });
 
 test('calling ConfirmEmailChange directly returns false and makes no change when the pending value no longer matches', function () {

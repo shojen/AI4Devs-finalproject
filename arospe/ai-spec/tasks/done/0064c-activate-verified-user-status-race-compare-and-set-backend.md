@@ -5,7 +5,7 @@
 writes `status = Active` with a blind `save()`. If an administrator suspends the account between the moment
 that instance was loaded and the moment the listener's `save()` runs, the listener **overwrites `Suspended`
 with `Active`**: a privilege-grant race — a suspended account becomes active. This is **R-2** of story
-[0064a](done/0064a-activate-verified-user-listener-idempotent-and-single-registration.md), which
+[0064a](0064a-activate-verified-user-listener-idempotent-and-single-registration.md), which
 recorded it, declined to fix it under that story's **D-2** ("prove and pin, do not change the listener's
 write"), and required it to be logged as its own story (**OQ-3**). This is that story.
 
@@ -41,7 +41,7 @@ See **D-1** and **OQ-1**. See [Provenance](#provenance).
 ## Gherkin
 
 Every scenario carries exactly one `When` and opens with a named business-role actor, per
-[gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3. *"Compare-and-set"*
+[gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3. *"Compare-and-set"*
 and *"guarded UPDATE"* are mechanism, so they get no scenario (**D-9**).
 
 > Scenarios 2, 5 and 6 are reachable in production only inside a race window that a single PHP process cannot
@@ -145,6 +145,18 @@ the second is why a constructor dependency on the listener cannot break registra
 > uncommitted (a second connection would see nothing and wait out InnoDB's 50 s lock timeout), and a
 > `pcntl_fork` test would test MySQL, not this code, and flake under load (story 0061's ShippingTest
 > timeout). The header of the race test says so plainly.
+> **Correction found at Phase 3 step 1 (2026-09-27):** **(a)**'s claim that **F4**, **F6** and **F8**
+> "cannot be red first" is wrong for F4/F6 and incomplete for F8, once the tests assert what the
+> Gherkin actually requires rather than a weaker proxy. **F4/F6** are red today: today's guard-passed
+> branch sets `$user->status = Active` **in memory unconditionally** before `save()`, regardless of
+> what the row holds — so an assertion on the caller's *in-memory* `status` (the only assertion that
+> deterministically catches A1/logging-on-Active/A11, per **D-8**) is red now; a same-second
+> `updated_at` proxy would not have been. **F8** is red today for a second, distinct reason beyond
+> `updated_at` not advancing under `DB::table` (A5): `$user->save()` itself runs Eloquent's
+> `syncChanges()`, which overwrites `previous` with that save's own dirty set, destroying the
+> pre-save `email_verified_at` `getPrevious()` needs — so `getPrevious()` is red today even before A12
+> is considered. None of this changes D-8's mutation table or any acceptance criterion; it only
+> corrects which tests are actually red before Phase 3 step 2's implementation lands.
 
 **Feature — `tests/Feature/Auth/ActivateVerifiedUserSuspensionRaceTest.php`** (new), listener level
 
@@ -217,45 +229,107 @@ nothing. `ActivateVerifiedUser`'s in-memory guards and its `getPrevious()` docbl
 still synchronous. No route, screen, schema or caller changes.
 
 ## Acceptance criteria
-- [ ] `App\Actions\Users\ActivateInactiveUser` exists, writes through one guarded `UPDATE … WHERE id AND
+- [x] `App\Actions\Users\ActivateInactiveUser` exists, writes through one guarded `UPDATE … WHERE id AND
       status = 'inactive'` via the Eloquent builder, syncs the caller's instance only on a win (targeted
-      sync, no `refresh()`, no second write) and never on a loss.
-- [ ] `ActivateVerifiedUser` keeps its in-memory guards and `getPrevious()` docblock, calls the action in
-      place of `save()`, stays synchronous, and `getOriginal()` is not used in it.
-- [ ] A stale `Inactive` instance for a since-suspended user is **never** activated, on the Fortify, password
-      reset and email-change paths, outside and inside a transaction.
-- [ ] A lost race against a suspension logs one refusal; a concurrent activation, an absent row and a
-      soft-deleted row log nothing and throw nothing.
-- [ ] The three callers, `UpdateUser`, `User`, `bootstrap/app.php`, `database/**` and `routes/**` are unchanged.
-- [ ] 0064a's idempotency and registry tests pass **unmodified**; the unit tests keep their names and rules.
-- [ ] Every mutation in **D-8** was seen red against a named test and recorded in this file; the tests that
-      can be red first were.
-- [ ] No other task file is edited by this story beyond the link-integrity re-points and the 0064a DoD
-      pointer.
+      sync, no `refresh()`, no second write) and never on a loss. **Verified (code-reviewer, 2026-09-27):**
+      confirmed by reading `app/Actions/Users/ActivateInactiveUser.php` directly against the win/loss branches.
+- [x] `ActivateVerifiedUser` keeps its in-memory guards and `getPrevious()` docblock, calls the action in
+      place of `save()`, stays synchronous, and `getOriginal()` is not used in it. **Verified (code-reviewer,
+      2026-09-27):** `git show 08a55d8 -- app/Listeners/ActivateVerifiedUser.php` shows the guards and the
+      existing docblock text are untouched (only one paragraph appended, the last two statements replaced);
+      `getOriginal()` does not appear anywhere in the file; no `ShouldQueue`.
+- [x] A stale `Inactive` instance for a since-suspended user is **never** activated, on the Fortify, password
+      reset and email-change paths, outside and inside a transaction. **Verified (code-reviewer, 2026-09-27):**
+      F1/F1b/F1c pass in the full suite; the three caller interleave tests
+      (`EmailVerificationTest`, `PasswordResetTest`, `EmailChangeTest`) pass in the full suite.
+- [x] A lost race against a suspension logs one refusal; a concurrent activation, an absent row and a
+      soft-deleted row log nothing and throw nothing. **Verified (code-reviewer, 2026-09-27):** all four cases
+      covered and green in `tests/Feature/Actions/Users/ActivateInactiveUserTest.php`.
+- [x] The three callers, `UpdateUser`, `User`, `bootstrap/app.php`, `database/**` and `routes/**` are unchanged.
+      **Verified (code-reviewer, 2026-09-27):** `git diff 4c49512..HEAD --stat` shows none of these paths in
+      the diff.
+- [x] 0064a's idempotency and registry tests pass **unmodified**; the unit tests keep their names and rules.
+      **Verified (code-reviewer, 2026-09-27):** `git log -- tests/Feature/Auth/ActivateVerifiedUserIdempotencyTest.php`
+      and `tests/Feature/Providers/EventListenerRegistrationTest.php` each show only their original 0064a
+      commit; `tests/Unit/Listeners/ActivateVerifiedUserTest.php`'s five pre-existing cases keep their original
+      names and assertions, now counting the injected fake instead of `saveCallCount`.
+- [x] Every mutation in **D-8** was seen red against a named test and recorded in this file; the tests that
+      can be red first were. The 2026-09-27 verification run recorded in D-8 found two problems: A12 was
+      not seen red by any test in the suite, and A9's F1b entry was factually wrong (F8 alone kills it).
+      Both are now closed: A9's row is corrected, and A12 is killed by a new test,
+      `ActivateInactiveUserTest`'s "activates via the targeted sync, not refresh(), leaving every other
+      in-memory change alone" (confirmed red under the `refresh()` mutation, green against the real code).
+- [x] No other task file is edited by this story beyond the link-integrity re-points and the 0064a DoD
+      pointer. **Verified (code-reviewer, 2026-09-27):** `git diff 4c49512..HEAD --stat -- ai-spec/tasks/`
+      touches only this file and 0064a's (two `../0064c-...md` → `../in-progress/0064c-...md` link updates).
 
 ## Definition of Done
-- [ ] Tests written and green, plus the **full** existing suite in a **single isolated run**, per
-      [contracts.md](../../docs/contracts.md)'s Full Test Suite Gate Rule.
-- [ ] All **three** quality gates run **unscoped**, each result recorded explicitly *including any that was
+- [x] Tests written and green, plus the **full** existing suite in a **single isolated run**, per
+      [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule. **Confirmed (code-reviewer,
+      2026-09-27):** `DB_DATABASE=testing_0064c php -d memory_limit=-1 vendor/bin/pest --compact`, run once,
+      foreground/isolated (checked `ps aux` first for concurrent writers of `testing_0064c`: none). Result:
+      `{"tool":"pest","result":"passed","tests":4406,"passed":4403,"assertions":15119,"skipped":3}`, exit code
+      0. The 3 skipped are pre-existing, unrelated (`tests/Browser/Media/GalleryTest.php`). 0 failures.
+- [x] All **three** quality gates run **unscoped**, each result recorded explicitly *including any that was
       not run*: `php artisan test` (or `vendor/bin/pest -d memory_limit=-1` where the artisan child cannot
       raise its limit), `vendor/bin/pint --format agent` (not `--dirty`), and **Larastan level 7**
-      (`vendor/bin/phpstan analyse`).
-- [ ] The red-then-green sequence and every **D-8** mutation recorded in the task file.
-- [ ] Code reviewed (code-reviewer). **Point the review at D-2 and D-3**: that the in-memory guards and the
-      `getPrevious()` docblock are untouched, and that no path writes `status` except the guarded `UPDATE`.
-- [ ] No security findings (appsec-auditor). **Point the audit at** `ActivateVerifiedUser` /
-      `ActivateInactiveUser`: is there any caller path on which a suspended or previously-verified inactive
-      account can still become active; does the logged refusal leak anything; is the CAS safe given `User`
-      has no model hooks today (**R-3**).
-- [ ] Documentation updated (docs-keeper) — every entry in the *Docs* table, in one pass, with **one**
-      `_Last updated_` line per touched doc and the base branch fetched first.
+      (`vendor/bin/phpstan analyse`). **Confirmed (code-reviewer, 2026-09-27):**
+      - Full suite: see the bullet above — 4406 tests, 4403 passed, 3 skipped (unrelated), 0 failed.
+      - `vendor/bin/pint --format agent`: `{"tool":"pint","result":"passed"}`.
+      - `vendor/bin/phpstan analyse --memory-limit=-1 --no-progress` (config confirms `level: 7` in
+        `phpstan.neon`): `{"tool":"phpstan","result":"passed","errors":0}`.
+- [x] The red-then-green sequence and every **D-8** mutation recorded in the task file. **Recording done**
+      (2026-09-27, D-8) and now correct: the two open findings (A9's F1b entry, A12 fully uncovered) are
+      closed — see D-8's "Open findings".
+- [x] Code reviewed (code-reviewer). **PASS (2026-09-27).** **D-2 confirmed:** `git show 08a55d8 --
+      app/Listeners/ActivateVerifiedUser.php` shows the `instanceof User`/`status !== Inactive` guard and the
+      full `getPrevious()`-not-`getOriginal()` docblock reasoning byte-for-byte unchanged — the diff only
+      appends one new paragraph and replaces the trailing `$user->status = Active; $user->save();` with
+      `($this->activateInactiveUser)($user);`. **D-3 confirmed:** `ActivateInactiveUser::__invoke()`'s win
+      branch is exactly `setAttribute('status', ...)`/`setAttribute('updated_at', ...)` then the public
+      `syncOriginalAttributes(['status', 'updated_at'])` — no `refresh()`, no second `save()`; the loss branch
+      leaves the instance untouched. Within the activation flow this story owns, `status` is now written only
+      by the one guarded `UPDATE` inside `ActivateInactiveUser`. **One scope note, not a defect:**
+      `app/Actions/Users/UpdateUser.php:122` (`$user->status = $status; ... $user->save();`) still writes
+      `status` directly through an administrator-initiated, unguarded `save()` — this is **R-2**, explicitly
+      recorded in this same file as an accepted, out-of-scope risk (acceptance criterion "the three callers,
+      `UpdateUser`, ... are unchanged"), not a gap introduced or missed by this story. See the DoD's own
+      unresolved OQ-5 bullet below. Reviewed `app/Actions/Users/ActivateInactiveUser.php` and
+      `app/Listeners/ActivateVerifiedUser.php` against `docs/conventions/base-standards.md` and this repo's
+      `App\Actions\*` shape (compared against `app/Actions/Users/UpdateUser.php`): constructor-promoted
+      readonly dependency, explicit return type, single-purpose class, PHPDoc-first — no convention violation
+      found. Full acceptance-criteria and DoD verification recorded inline above and below.
+- [x] No security findings (appsec-auditor). **PASS (2026-09-27).** Re-verified against current code, not
+      the 2026-09-26 findings: the three `Verified` call sites (`grep -rn "new Verified(" app/`) are
+      unchanged and all reach the listener's byte-for-byte-unchanged guards; no path lets a suspended or
+      previously-verified-then-deactivated account reach `Active`. The logged refusal
+      (`LogRefusedPrivilegedAttempt`) writes only `actor_id`/`ability`/`target_type`/`target_id`, no PII or
+      status value, actor/target both come from the trusted `$user` instance (never raw request input). `User`
+      confirmed to still have no `saving`/`updated`/`booted` hook or Observer, so **R-3** holds as stated.
+      SQLi/mass-assignment/IDOR: clean (bound Eloquent queries throughout, `whereKey()` scoped to the
+      caller's own already-vetted instance). One Low/Informational, non-blocking note: between the 0-row
+      guarded `UPDATE` and the diagnostic `SELECT status`, the row could change again, affecting only
+      whether/how the refusal is logged, never the persisted account state (already decided atomically by
+      the guarded `UPDATE` itself) — no fix required, recorded for awareness.
+- [x] Documentation updated (docs-keeper) — every entry in the *Docs* table, in one pass, with **one**
+      `_Last updated_` line per touched doc and the base branch fetched first. **Done (2026-09-27):**
+      `origin/finalproject-ARP` fetched first, no unrelated staleness found. Touched:
+      `docs/security/login-status-enforcement.md`, `docs/architecture/authentication/features-registration-and-status.md`,
+      `docs/architecture/authentication/two-factor-passkeys-logout-and-map.md`, `docs/security/model-instance-trust.md`
+      (new "single predicate on one row" section plus a forward-pointer to 0064d), and
+      `docs/architecture/authorization/step-up-and-refusal-logging.md` (new refusal reason). Skipped, with reason:
+      `docs/conventions/directory-structure/app-layers.md` and `docs/conventions/naming/classes.md` don't enumerate
+      actions; `docs/README.md`'s summaries didn't go stale.
 - [ ] Task-coordination files regenerated when this file is created and again when it moves
       (`ai-spec/tasks-map.md`, `ai-spec/tasks-status.json`), and the two-direction link-integrity check run at
       each stage move, per
-      [task-files-links-and-ordering.md](../../docs/workflow/task-files-links-and-ordering.md).
-- [ ] The `UpdateUser` stale-write hole (**R-2**) is recorded as a risk here and its owner decision (**OQ-5**)
-      answered.
-- [ ] Acceptance criteria met.
+      [task-files-links-and-ordering.md](../../../docs/workflow/task-files-links-and-ordering.md).
+- [x] The `UpdateUser` stale-write hole (**R-2**) is recorded as a risk here and its owner decision (**OQ-5**)
+      answered. **Owner decision (2026-09-27): (b), raise it now.** Raised as
+      [0064d](../0064d-update-user-status-role-race-lock-and-recheck-backend.md) (Phase 1, Three Amigos debate
+      complete; Phase 2 onward not yet run).
+- [x] Acceptance criteria met. **Verified (code-reviewer, 2026-09-27):** all eight bullets under
+      `## Acceptance criteria` above independently confirmed against the real code/tests and ticked.
 
 ## Documented functional decisions
 
@@ -274,7 +348,7 @@ no migration. `CLIENT_FOUND_ROWS` is not set (`config/database.php`), so MySQL r
 
 *Rejected — **B**, re-read the row with `lockForUpdate()` in the listener's own `DB::transaction`, decide on
 the fresh row, then `save()`.* It is correct and it is this repo's established shape
-([model-instance-trust.md](../../docs/security/model-instance-trust.md), "A guard must re-read its subject
+([model-instance-trust.md](../../../docs/security/model-instance-trust.md), "A guard must re-read its subject
 under lock, inside its own transaction"), and it is the accepted **fallback** (**OQ-1**). It loses here
 because that convention exists for **multi-step read-decide-write and multi-row invariants** (`SalesRegion`'s
 "exactly one default"), not for one predicate on one row; because it costs four round trips (begin, locking
@@ -357,12 +431,73 @@ Each applied alone to production code, the named test seen red, the change rever
 | **A6** `withTrashed()` / `DB::table` | F5 |
 | **A7** bind the wrong enum value | F8 |
 | **A8** invert the affected-rows test | F8, F1 |
-| **A9** never sync the instance | F8, F1b |
+| **A9** never sync the instance | F8 |
 | **A10** remove the listener's in-memory `status !== Inactive` guard | the same-instance idempotency unit test (fake invoked twice) |
 | **A11** log when the row is `Active`, or when it is absent | F4, F6 |
-| **A12** `refresh()` instead of the targeted sync | F8 (`getPrevious()` lost) |
+| **A12** `refresh()` instead of the targeted sync | the action's targeted-sync test (`ActivateInactiveUserTest`, "activates via the targeted sync, not refresh(), leaving every other in-memory change alone") |
 | **A13** move the database access above the in-memory guards | the refusal unit tests, **by error** |
 | **A14** `findOrFail()` in the diagnosis `SELECT` | F6 |
+
+**Mutation verification run (2026-09-27):** every mutation above was applied by hand to the exact
+line(s) it describes, the named test(s) run in isolation
+(`DB_DATABASE=testing_0064c php -d memory_limit=-1 vendor/bin/pest --filter=...`), the result
+observed, and the mutation reverted (`git checkout --`, `git status` confirmed clean) before moving
+to the next one. The full battery of the eight test files under **Tests** above was green (80
+tests, 234 assertions) both before the run started and again after the last mutation was reverted.
+
+| Mutation | Test(s) run | Red confirmed |
+| --- | --- | --- |
+| A1 | F1, F1b, F1c, the action's lost-to-suspension test, `EmailVerificationTest`'s/`PasswordResetTest`'s/`EmailChangeTest`'s mid-flow interleave tests | Yes — all 7 |
+| A2 | F7 | Yes |
+| A3 | F1 | Yes |
+| A4 | F8, the action's win test | Yes — both |
+| A5 | F8 | Yes |
+| A6 | F5 | Yes |
+| A7 | F8 | Yes |
+| A8 | F1, F8 | Yes — both |
+| A9 | F8 | Yes — a clean kill by F8 alone (F1b was never a kill for this mutation, corrected above) |
+| A10 | the same-instance idempotency unit test | Yes |
+| A11 | F4, F6 | Yes — both |
+| A12 | the action's targeted-sync test (`ActivateInactiveUserTest`, added 2026-09-27) | Yes — a new assertion was added specifically to make this mutation detectable (see "Open findings" below) |
+| A13 | the five refusal/idempotency unit tests (0064a's) | Yes — all 5 (4 by assertion, 1 by `TypeError`; mechanism note below) |
+| A14 | F6 | Yes |
+
+**Open findings (2026-09-27 run) — since closed, 2026-09-27:**
+
+- **A9's table entry was corrected, not an open finding.** F1b's row is already `Suspended`
+  before either `Verified` delivery, so both deliveries lose the compare-and-set (`0` affected
+  rows) and never reach the win-branch sync code A9 removes — D-4's loss branch already leaves the
+  instance untouched regardless of A9. Only F8 (the legitimate-activation test) exercises and kills
+  this mutation; the D-8 table above has been corrected to say so (F1b dropped from A9's row).
+- **A12 was a real, uncovered mutation — closed by a new test.** Replacing the targeted sync
+  (`setAttribute()`/`syncOriginalAttributes()`) with `$user->refresh()` passed the full 8-file
+  battery unnoticed. Root cause: `Illuminate\Database\Eloquent\Model::refresh()`
+  (`vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:2081-2102`) calls
+  `setRawAttributes()` then `syncOriginal()` — it never calls `syncChanges()`, and `$previous`
+  (what `getPrevious()` reads) is populated **only** by `syncChanges()`, called from inside
+  `performUpdate()`/`performInsert()`, which only `save()` triggers. Since `refresh()` never calls
+  `save()`, the caller's `$previous` from their own earlier `save()` (before `Verified` fired) is
+  left untouched, so `getPrevious()['email_verified_at']` still reads `null` after a
+  `refresh()`-based sync — exactly what F8 asserts, so F8 alone could not distinguish the two
+  implementations. Closed 2026-09-27 by a new test, `ActivateInactiveUserTest`'s "activates via the
+  targeted sync, not refresh(), leaving every other in-memory change alone": it sets an
+  uncommitted, non-`status`/`updated_at`/`email_verified_at` attribute (`name`) on the in-memory
+  instance before invoking the action, then asserts both that the attribute still holds the
+  uncommitted value (proving no full re-fetch happened) and that `isDirty('name')` is still `true`
+  (proving the instance was not quietly marked clean for an attribute the action never touched).
+  `refresh()` fails this test (confirmed red under the mutation, reverted, confirmed green under
+  the real code); the previously-considered "no assertion can distinguish them" conclusion held
+  only for the attributes this story's other tests already checked, not for an attribute the win
+  branch never touches at all.
+- **A13's mechanism note (not a gap).** The unit test file's own comment (lines 40-44) says A13 is
+  "killed... BY ERROR... with no app booted, any real database touch throws" — but these five unit
+  tests build the listener with a hand-injected `ActivateInactiveUserFake` (never the real,
+  DB-touching `ActivateInactiveUser`), so moving the fake's call above the guards does not itself
+  touch a database. Four of the five go red by ordinary assertion mismatch instead (the fake
+  unconditionally flips `status` to `Active` and increments `callCount` before the guards get a
+  chance to block it); only the not-a-`User`-instance case fails via a `TypeError` (the fake's
+  `__invoke(User $user)` type hint rejects the non-`User` `$notAUser` double). All five still go red
+  as required — this is a documentation nuance about *why*, not a coverage gap.
 
 ### D-9 — Business-language boundary of the Gherkin
 The six scenarios state outcomes an owner recognises (activated, suspension wins, unchanged, not brought
@@ -390,7 +525,7 @@ decisions, not scenarios.
   Livewire caller loads the target with `findOrFail()` outside the action.
 
 ### Dependencies
-- **Depended on [0064a](done/0064a-activate-verified-user-listener-idempotent-and-single-registration.md)**
+- **Depended on [0064a](0064a-activate-verified-user-listener-idempotent-and-single-registration.md)**
   (PR #37; closed 2026-09-27, so this story is now `ready`): this story **modifies** the unit test file 0064a extends and keeps
   0064a's idempotency and registry tests as its regression net, so it cannot start before 0064a lands.
   (`0064a` < `0064c`: the ordering rule is satisfied.) The debate started from "no dependency beyond the same
@@ -442,8 +577,8 @@ decisions, not scenarios.
     `Active`, which is what the Gherkin needs.
   - (b) Sync it to the persisted status — needs the extra `SELECT`'s result and adds little.
 - **OQ-5 — `UpdateUser`'s stale write (R-2).**
-  - **(a) Record it here as a risk only; raise a story if you want it (recommended).**
-  - (b) Raise it now as its own Three Amigos story.
+  - (a) Record it here as a risk only; raise a story if you want it.
+  - **(b) Raise it now as its own Three Amigos story — owner decision, 2026-09-27.**
   - (c) Fold it into this story — mixes two actions and enlarges a security-adjacent change.
 - **OQ-6 — A soft-deleted user's late confirmation (D-5).**
   - **(a) Silent no-op, no error, no log (recommended).**
@@ -475,6 +610,6 @@ decisions, not scenarios.
   became the deciding argument for A; (4) `ConfirmEmailChange` already locks, so it is defence in depth, not
   a fix; (5) 0064a's **D-2** wording ("needs a compare-and-set on a different condition") is loose — R-2 itself
   names `WHERE status = 'inactive'`.
-- **Models followed for tone and structure:** [0064a](done/0064a-activate-verified-user-listener-idempotent-and-single-registration.md)
-  and [0064](done/0064-scheduled-post-auto-publish-backend.md).
+- **Models followed for tone and structure:** [0064a](0064a-activate-verified-user-listener-idempotent-and-single-registration.md)
+  and [0064](0064-scheduled-post-auto-publish-backend.md).
 - **Status:** Phase 1 output (new stage). Phase 2 (INVEST validation) not yet run.

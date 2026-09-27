@@ -105,6 +105,18 @@ AFTER : status=active  isActive=true
 When you add a new state to this enum, or a new event that writes it, ask what the state *denies*
 first and who can undo it second — not what it is called.
 
+> **The suspended-to-active race is closed (story 0064c).** Everything above described the listener's
+> in-memory guards, which decide *whether* to activate. They said nothing about *how* the write itself
+> landed, and until 0064c it was a blind `$user->status = Active; $user->save()` on whatever instance the
+> caller handed the listener — so an administrator suspending the account between that instance being
+> loaded and the listener's `save()` running was silently overwritten back to `Active`. The write is now a
+> guarded compare-and-set in `App\Actions\Users\ActivateInactiveUser`
+> (`UPDATE users SET status = 'active', updated_at = ? WHERE id = ? AND status = 'inactive'`), so a
+> suspension that commits first makes the guard match zero rows and the listener refuses instead of
+> overwriting it. See [architecture/authentication/features-registration-and-status.md](../architecture/authentication/features-registration-and-status.md#account-status-and-activation)
+> for the updated listener code and [model-instance-trust.md](model-instance-trust.md#a-single-predicate-on-one-row-can-collapse-the-guard-into-the-write-itself)
+> for why this shape is safe here.
+
 ## Three login paths, three enforcement points — the map any new path must be checked against
 
 This app grants a fresh session through four vendor call sites, and no single hook covers them.
@@ -350,4 +362,4 @@ not weaken them:
   `ActivateVerifiedUser` ignores `Suspended` outright, and `ResetUserPassword` fires `Verified` only
   when `email_verified_at` was null. (Contrast the `Inactive` case at the top of this page.)
 
-_Last updated: 2026-09-27 — story 0064a: corrected the "no event auto-discovery" claim (the quoted correction in the *Single guard* bullet) and recorded the event-cache deployment consequence; the rest of this page is the task 0007 Phase 4 audit and re-audit, unchanged._
+_Last updated: 2026-09-27 — story 0064c: noted that the suspended-to-active race is now closed (guarded compare-and-set in `App\Actions\Users\ActivateInactiveUser`, replacing the listener's blind `save()`); the rest of this page (the task 0007 Phase 4 audit/re-audit and story 0064a's correction) is unchanged._

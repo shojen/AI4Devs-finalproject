@@ -3,19 +3,17 @@
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
     {
-      "id": "0064c",
-      "slug": "0064c-activate-verified-user-status-race-compare-and-set-backend",
-      "title": "Activate-verified-user — a suspension that lands mid-request must not be overwritten by the activation (backend)",
+      "id": "0064d",
+      "slug": "0064d-update-user-status-role-race-lock-and-recheck-backend",
+      "title": "UpdateUser — a concurrent status/role change must not be decided or overwritten on a stale read (backend)",
       "depends_on": [],
       "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
-        "app/Actions/Users/ActivateInactiveUser.php",
-        "app/Listeners/ActivateVerifiedUser.php",
-        "tests/Unit/Listeners/ActivateVerifiedUserTest.php",
-        "tests/Feature/Actions/Users/ActivateInactiveUserTest.php",
-        "tests/Feature/Auth/ActivateVerifiedUserSuspensionRaceTest.php"
+        "app/Actions/Users/UpdateUser.php",
+        "tests/Feature/Users/UpdateUserStatusRaceTest.php",
+        "tests/Feature/Users/UpdateUserStepUpAuthorizationTest.php"
       ],
       "conflict_risk_with": []
     },

@@ -129,10 +129,23 @@ public function handle(Verified $event): void
         return;
     }
 
-    $user->status = UserStatus::Active;
-    $user->save();
+    ($this->activateInactiveUser)($user);
 }
 ```
+
+**Since story 0064c, the write itself is a guarded action, not a blind `save()`.** The listener's three
+in-memory guards above are unchanged and still decide *whether* to activate — but the actual write is
+delegated to the constructor-injected `App\Actions\Users\ActivateInactiveUser`, a compare-and-set
+(`UPDATE users SET status = 'active', updated_at = ? WHERE id = ? AND status = 'inactive'`) that makes the
+**persisted row**, not the caller's in-memory instance, the authority for `status`. If an administrator's
+suspension commits between the instance being loaded and this handler running, the guarded `UPDATE` matches
+zero rows and the listener refuses instead of overwriting `Suspended` back to `Active`. The instance stays
+the authority for the one question only it can answer — "has this user *ever* verified an email before" —
+which is why the `getPrevious()` reasoning above is untouched. See
+[security/model-instance-trust.md](../../security/model-instance-trust.md#a-single-predicate-on-one-row-can-collapse-the-guard-into-the-write-itself)
+for why this shape (a compare-and-set instead of the repo's usual re-read-under-lock) is safe here, and
+[security/login-status-enforcement.md](../../security/login-status-enforcement.md#status-is-now-an-access-control-state--every-inactive--active-transition-is-a-privilege-grant)
+for the race it closes.
 
 Three flows converge on this single listener rather than each re-implementing the rule — Fortify's own email verification, the invitation/reset path in `ResetUserPassword` (above), and the pending-email confirmation in `ConfirmEmailChange` (below):
 
@@ -168,3 +181,5 @@ The pre-change value must come from **`getPrevious()`, never `getOriginal()`** �
 ### A deleted account stops authenticating, by scope rather than by check
 
 Since task 0005, deleting a user soft-deletes the row (see [database/schema.md](../../database/schema-users-auth.md#soft-deletes) for what that rewrites). Its effect on authentication is total and worth stating here, because **no code in `app/` refuses a deleted user's sign-in**: `Illuminate\Auth\EloquentUserProvider` resolves every credential lookup through `$model->newQuery()`, which applies the `SoftDeletingScope`. That one fact is why password login fails, an in-flight session stops authenticating on its next request, a remember-me cookie is inert, a password-reset or invitation link resolves no user, and the vendor passkey relation returns `null` for a trashed owner. Deletion is therefore an authentication control, not only a data state — treat any code that lifts the scope for a `User` accordingly. The rules that follow (including what must be added if a future login path stops going through the user provider) are in [security/soft-delete-patterns.md](../../security/soft-delete-patterns.md#the-global-scope-is-the-sign-in-refusal--there-is-no-second-check).
+
+_Last updated: 2026-09-27 — story 0064c: updated the `ActivateVerifiedUser` snippet and its surrounding prose to show the write delegated to `App\Actions\Users\ActivateInactiveUser` (a guarded compare-and-set) instead of a blind `save()`; the in-memory guards, `getPrevious()` reasoning and the rest of this page are otherwise unchanged._
