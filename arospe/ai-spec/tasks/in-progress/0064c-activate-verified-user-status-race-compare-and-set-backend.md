@@ -145,6 +145,18 @@ the second is why a constructor dependency on the listener cannot break registra
 > uncommitted (a second connection would see nothing and wait out InnoDB's 50 s lock timeout), and a
 > `pcntl_fork` test would test MySQL, not this code, and flake under load (story 0061's ShippingTest
 > timeout). The header of the race test says so plainly.
+> **Correction found at Phase 3 step 1 (2026-09-27):** **(a)**'s claim that **F4**, **F6** and **F8**
+> "cannot be red first" is wrong for F4/F6 and incomplete for F8, once the tests assert what the
+> Gherkin actually requires rather than a weaker proxy. **F4/F6** are red today: today's guard-passed
+> branch sets `$user->status = Active` **in memory unconditionally** before `save()`, regardless of
+> what the row holds — so an assertion on the caller's *in-memory* `status` (the only assertion that
+> deterministically catches A1/logging-on-Active/A11, per **D-8**) is red now; a same-second
+> `updated_at` proxy would not have been. **F8** is red today for a second, distinct reason beyond
+> `updated_at` not advancing under `DB::table` (A5): `$user->save()` itself runs Eloquent's
+> `syncChanges()`, which overwrites `previous` with that save's own dirty set, destroying the
+> pre-save `email_verified_at` `getPrevious()` needs — so `getPrevious()` is red today even before A12
+> is considered. None of this changes D-8's mutation table or any acceptance criterion; it only
+> corrects which tests are actually red before Phase 3 step 2's implementation lands.
 
 **Feature — `tests/Feature/Auth/ActivateVerifiedUserSuspensionRaceTest.php`** (new), listener level
 
