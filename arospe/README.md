@@ -211,6 +211,14 @@ On a deployed environment, seed with the narrow form so that no local-only fixtu
 php artisan db:seed --class=RolePermissionSeeder
 ```
 
+A deployed environment also needs **one cron entry that runs Laravel's scheduler every minute**, or scheduled blog posts never go live (there is no error if it is missing). Add it once, as the user that runs the app — do not add a cron line per command:
+
+```cron
+* * * * * cd /path/to/arospe && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Verify with `php artisan schedule:list`. See [architecture/overview.md](docs/architecture/overview.md#deployment-note).
+
 ### Tests
 
 The suite uses Pest:
