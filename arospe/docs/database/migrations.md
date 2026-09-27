@@ -10,4 +10,4 @@ This document is split into parts so an agent reads only the one its task touche
 | [UUID primary keys and FK indexes](migrations/uuid-primary-keys.md) | you create a UUID-keyed table or an FK: `foreignUuid`, explicit table names, no hand-written FK index, identifier length limits. | UUID primary keys |
 | [Delete behaviour and vendored migrations](migrations/delete-behaviour-and-vendored.md) | you choose cascade/restrict/null for an FK, or touch a package-vendored or published-stub migration. | The three-way delete-behaviour rule: cascade, restrict, or null; Package-vendored migrations |
 
-_Last updated: 2026-09-24 — split into the parts above (docs optimization pass); no content changed. The prior revision-history footer, if any, stays at the end of the last part._
+_Last updated: 2026-09-27 — Story 0068 (Store Languages catalog + the app's two default-locale settings). [UUID primary keys and FK indexes](migrations/uuid-primary-keys.md) gained a confirming-instance note for `create_store_languages_table` and a further named non-UUID exception, `create_locale_settings_table` (ADR 0001 Amendment 10)._

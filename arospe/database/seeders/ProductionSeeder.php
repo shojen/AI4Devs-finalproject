@@ -17,6 +17,8 @@ class ProductionSeeder extends Seeder
     {
         $this->call(RolePermissionSeeder::class);
         $this->call(SalesRegionSeeder::class);
+        $this->call(StoreLanguageSeeder::class);
+        $this->call(LocaleSettingSeeder::class);
         $this->call(GeographyCatalogSeeder::class);
         $this->call(ShippingCarrierSeeder::class);
         $this->call(PaymentMethodSeeder::class);

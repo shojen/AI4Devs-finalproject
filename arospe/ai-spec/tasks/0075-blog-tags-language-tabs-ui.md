@@ -45,7 +45,7 @@ per-store-language field with the same tab-based editor UX."*
 
 It consumes story [0074](0074-translatable-content-retrofit-blog-tags-backend.md)'s
 `blog_tag_translations` retrofit and story [0070](0070-translatable-content-mechanism-product-categories-backend.md)'s
-`HasTranslations` / `SetTranslation` mechanism, and story [0068](0068-store-languages-catalog-backend.md)'s
+`HasTranslations` / `SetTranslation` mechanism, and story [0068](done/0068-store-languages-catalog-backend.md)'s
 `StoreLanguage::active()` scope. It adds **one** backend artifact — the authorizing, validating write
 path none of those three ships (**Q-1**, **D-3**).
 
@@ -876,7 +876,7 @@ renders. The mismatch is a property of the *edit* form's array binding, not of t
   group, the lang files, the policy call site. This story modifies its component and view.
 - **[0070](0070-translatable-content-mechanism-product-categories-backend.md)** — hard, **not
   implemented**. `HasTranslations`, `SetTranslation`, `defaultStoreLanguage()` and its memo.
-- **[0068](0068-store-languages-catalog-backend.md)** — hard, **not implemented**. `StoreLanguage`,
+- **[0068](done/0068-store-languages-catalog-backend.md)** — hard, **not implemented**. `StoreLanguage`,
   `scopeActive()`, and the factory states every fixture here uses.
 - **[0071](0071-product-categories-language-tabs-ui.md)** — **new, hard, and unusual**: this story
   consumes the shared `language-tab-strip.blade.php` component 0071's **D-1** extracts, and inherits

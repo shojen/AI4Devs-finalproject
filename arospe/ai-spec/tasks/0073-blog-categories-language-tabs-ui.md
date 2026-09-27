@@ -935,7 +935,7 @@ user meets it, 0058 **D-13**'s authorize-before-validate trap (absent from 0071 
 - **[0070](0070-translatable-content-mechanism-product-categories-backend.md)** — hard.
   `HasTranslations`, `SetTranslation`, `defaultStoreLanguage()`. **0070's Q1 is still open**; this
   story assumes its recommended **(a) yes**.
-- **[0068](0068-store-languages-catalog-backend.md)** — hard. `store_languages`, `scopeActive()`, and
+- **[0068](done/0068-store-languages-catalog-backend.md)** — hard. `store_languages`, `scopeActive()`, and
   at least one active row, **without which the tab strip renders nothing at all**.
 - Sequencing, strictly: **0058 → 0061 → 0062 → 0068 → 0070 → 0071 → 0072 → 0073**, each fully closed
   before the next starts. Seven unshipped dependencies.

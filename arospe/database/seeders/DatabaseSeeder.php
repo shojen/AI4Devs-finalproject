@@ -32,6 +32,12 @@ class DatabaseSeeder extends Seeder
         // note on the same reasoning for RolePermissionSeeder.
         $this->call(SalesRegionSeeder::class);
 
+        // Story 0068: the Store Languages catalog's Spanish bootstrap, and the app's default-
+        // locale settings singleton. Required application data, independent of every seeder
+        // above -- no shared table, no FK.
+        $this->call(StoreLanguageSeeder::class);
+        $this->call(LocaleSettingSeeder::class);
+
         // Story 0032: the shipping geography catalog. Also required application data,
         // physically independent of SalesRegionSeeder above -- no shared table, no FK.
         $this->call(GeographyCatalogSeeder::class);

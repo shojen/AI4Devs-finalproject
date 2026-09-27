@@ -29,4 +29,4 @@ This document is split into parts. Each block below gives the **binding core** o
 - Scaffold with `php artisan make:*` and `--no-interaction`.
 - Gates: `php artisan test --compact --filter=<Name>`, `vendor/bin/pint --dirty --format agent`, Larastan level 7. Those are the **iteration** forms — before declaring work done run Pint **unscoped** (`vendor/bin/pint --format agent`) and the **full** test suite unscoped (`php artisan test`, or `--parallel`).
 
-_Last updated: 2026-09-24 — split into the parts above (docs optimization pass); no rule changed. The prior revision-history footer, if any, stays at the end of the last part._
+_Last updated: 2026-09-27 — Story 0068 (Store Languages catalog + the app's two default-locale settings). [Stack versions, model and UUID conventions](base-standards/stack-and-model-conventions.md)'s UUID-examples list gained `StoreLanguage` (twelfth) and now notes its sibling `LocaleSetting` as this repo's first fixed-key singleton model._
