@@ -454,7 +454,7 @@ an otherwise uniform mechanism.
 > line and rely on discovery (0052's shape), or keep it and confirm with `event:list` that the listener
 > appears once** — and make the un-faked end-to-end test count notifications, not just assert presence.
 
-> ⚠️ **Amendment, 2026-09-26 (story [0064b](0064b-scheduled-post-publish-failure-notification-backend.md), H-2) — the
+> ⚠️ **Amendment, 2026-09-26 (story [0064b](done/0064b-scheduled-post-publish-failure-notification-backend.md), H-2) — the
 > listener must not swallow its errors.** Story 0064 recommended that `SendBlogPostPublishedNotification::handle()`
 > catch and report its own failures; **the owner decided the opposite**: an exception from `NotifyBlogPostPublished`
 > propagates out of `ScheduledBlogPostPublished::dispatch()`, so the sweep's per-post catch can detect it and 0064b can

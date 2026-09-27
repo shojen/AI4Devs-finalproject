@@ -105,7 +105,14 @@ app/
                        CustomerCreated — story 0043, `database` channel only, not ShouldQueue,
                        dispatched by Actions/Customers/NotifyCustomerCreated; OrderCreated —
                        story 0046, the same shape as CustomerCreated: `database` channel only,
-                       not ShouldQueue, dispatched by Actions/Orders/NotifyOrderCreated)
+                       not ShouldQueue, dispatched by Actions/Orders/NotifyOrderCreated;
+                       ScheduledBlogPostPublishFailed — story 0064b, the first of the four to
+                       be ShouldQueue on BOTH channels (`['database', 'mail']`), so unlike its
+                       three siblings the bell row also waits for a queue worker; takes only
+                       primitives in its constructor (no SerializesModels, no model), and its
+                       shouldSend() independently re-checks the recipient predicate at delivery
+                       time rather than trusting the dispatch-time selection alone; dispatched by
+                       Actions/Blog/NotifyScheduledBlogPostPublishFailed)
   Policies/            Eloquent model policies (UserPolicy, RolePolicy, SalesRegionPolicy,
                        MediaPolicy, ProductCategoryPolicy, BlogCategoryPolicy — story 0058, four abilities on
                        the seeded `blog.*` permissions (D-8) with real call sites on all three

@@ -23,6 +23,7 @@ erDiagram
     ROLE_HAS_PERMISSIONS }o--|| PERMISSIONS : permission_id
     SALES_REGIONS ||--o{ SALES_REGIONS : "parent_id (fiscal territory of)"
     USERS ||--o{ MEDIA : "uploaded_by (nullable)"
+    USERS ||--o{ BLOG_POSTS : "created_by (nullable)"
     PRODUCT_CATEGORIES ||--o{ PRODUCTS : product_category_id
     MEDIA ||--o{ PRODUCTS : "featured_media_id (nullable)"
     PRODUCT_MEDIA }o--|| PRODUCTS : product_id
@@ -318,6 +319,7 @@ erDiagram
         mediumtext body
         string status
         timestamp published_at
+        uuid created_by FK
         timestamp deleted_at
     }
     BLOG_POST_TAG {
@@ -395,6 +397,8 @@ Split by domain into separate files, per [contracts.md](../contracts/token-and-d
 - For migration authoring conventions (naming, `down()` requirements, real examples), see [database/migrations.md](migrations.md).
 - **UUID (v7) primary keys.** Each table's PK type (`uuid` vs `bigint`) is already visible directly in the ER diagram above, and each per-domain schema file states its own table's status against [ADR 0001](../decisions/0001-uuid-primary-keys.md) at the point that table is documented — so this section no longer restates a consolidated status list. The ADR is the single source of truth for the policy and its full history: which entities it covers, the one named `bigint` exception (`geography_entries`), and every amendment since. The model-side convention (`HasUuids`, `@property string $id`, no restated `$keyType`/`$incrementing`) is in [conventions/base-standards.md](../conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys); the migration-side pattern is in [database/migrations.md](migrations/uuid-primary-keys.md#uuid-primary-keys).
 
-_Last updated: 2026-09-24 — Story 0061 (Blog posts — core CRUD backend). Added `BLOG_POSTS` and `BLOG_POST_TAG` to the ER diagram with their three relationship lines, widened the **Domain tables** [Blog](schema-blog.md) bullet to name both, and recounted the **Notes** model-class inventory to twenty-one (`ls app/Models/*.php`). Every application table is diagrammed, relationships or not — since story 0058._
+_Last updated: 2026-09-27 — Story 0064b (Scheduled post publish failure — notification and email to the post's creator, backend). Added a `uuid created_by FK` line to the `BLOG_POSTS` entity block and `USERS ||--o{ BLOG_POSTS : "created_by (nullable)"` beside the existing `MEDIA`/`uploaded_by` relationship line — the post's creator, the first author attribution on a blog post. See [schema-blog.md](schema-blog.md#blog_posts) for the column and its `nullOnDelete()` reasoning._
+
+_Previously: 2026-09-24 — Story 0061 (Blog posts — core CRUD backend). Added `BLOG_POSTS` and `BLOG_POST_TAG` to the ER diagram with their three relationship lines, widened the **Domain tables** [Blog](schema-blog.md) bullet to name both, and recounted the **Notes** model-class inventory to twenty-one (`ls app/Models/*.php`). Every application table is diagrammed, relationships or not — since story 0058._
 
 _Earlier revision notes: [database--schema.md](../history/database--schema.md)._
