@@ -2,12 +2,15 @@
 
 namespace App\Listeners;
 
+use App\Actions\Users\ActivateInactiveUser;
 use App\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 
 class ActivateVerifiedUser
 {
+    public function __construct(private readonly ActivateInactiveUser $activateInactiveUser) {}
+
     /**
      * Handle the event.
      *
@@ -49,6 +52,17 @@ class ActivateVerifiedUser
      * save's dirty set -- which also means whichever `save()` writes it must
      * be the one immediately preceding `event(new Verified(...))`, with no
      * other intervening save), this fails closed and does not activate.
+     *
+     * Story 0064c: the write itself moved out of this method and into the
+     * injected App\Actions\Users\ActivateInactiveUser, a guarded
+     * compare-and-set that makes the *persisted row* the authority for
+     * `status` -- a suspension that commits between this instance being
+     * loaded and this handler running is no longer overwritten. The
+     * instance stays the authority for the orthogonal question this
+     * listener alone answers -- "has this user *ever* verified an email
+     * before" -- which is exactly why the `getPrevious()` reasoning above
+     * is untouched: that fact only ever lived on the caller's own instance,
+     * never in a column the database could re-derive.
      */
     public function handle(Verified $event): void
     {
@@ -66,7 +80,6 @@ class ActivateVerifiedUser
             return;
         }
 
-        $user->status = UserStatus::Active;
-        $user->save();
+        ($this->activateInactiveUser)($user);
     }
 }
