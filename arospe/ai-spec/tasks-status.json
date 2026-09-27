@@ -22,15 +22,17 @@
       "slug": "0065-blog-post-published-notification-backend",
       "title": "Blog post published — notification (backend)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "0065-blog-post-published-notification-backend worktree",
+      "claimed_at": "2026-09-27T22:00:00Z",
       "touches": [
         "app/Notifications/BlogPostPublished.php",
         "app/Actions/Blog/NotifyBlogPostPublished.php",
-        "app/Providers/AppServiceProvider.php",
-        "app/Actions/Blog/UpdateBlogPost.php",
-        "app/Actions/Blog/CreateBlogPost.php"
+        "app/Listeners/SendBlogPostPublishedNotification.php",
+        "tests/Feature/Blog/NotifyBlogPostPublishedTest.php",
+        "tests/Feature/Blog/ManualPostPublishedNotificationTest.php",
+        "tests/Feature/Blog/ScheduledPostPublishedNotificationTest.php",
+        "tests/Feature/Blog/RestoreBlogPostNotificationTest.php"
       ],
       "conflict_risk_with": []
     },
