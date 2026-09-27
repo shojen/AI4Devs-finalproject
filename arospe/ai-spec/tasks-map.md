@@ -41,6 +41,13 @@ Phase-3 blocker (`0048`–`0054`) is now `done/` — so it moves from `blocked` 
 terminal node finally unblocked. `0057`'s own node is likewise dropped from the graph; it had no pending dependent of its own to
 re-derive against `done/`.
 
+Update (2026-09-27): `0064c-activate-verified-user-status-race-compare-and-set-backend.md` completed
+Phase 7 and moved from `in-progress/` to `done/` — the twenty-second Epic 1 story to close. Its node
+(already blue/`claimed`) and its `tasks-status.json` entry are dropped. It had no pending dependent of
+its own (`0064d`'s link to it is provenance-only, never a `depends_on` edge — see the update below), so
+this closure re-derives no `status` change against the pending list. `ai-spec/tasks/in-progress/` is
+empty again.
+
 Update (2026-09-27): `0064d-update-user-status-role-race-lock-and-recheck-backend.md` was added as a new
 pending file (Phase 1 Three Amigos debate complete) — raised while story `0064c` was still `in-progress/`,
 per its **OQ-5** (owner decision: raise now). No code dependency on `0064c` (the two actions share no file;
@@ -132,10 +139,14 @@ infrastructure fix (not a PRD-derived user story) and is already marked `Status:
 documented` inside its own file, so it is listed for completeness but excluded from the dependency
 graph and from the parallelization analysis below.
 
-- **100 files total**: 99 numbered user stories (79 `done/`, 19 still in `ai-spec/tasks/`, one
-  (`0064c`) checked out to `ai-spec/tasks/in-progress/`) + 1 non-numbered infrastructure doc (already resolved). The
-  `done/` count jumps from 67 to 72 in this pass — one from this story's own closure (`0054`), four
-  from the reconciliation of `0052`/`0053`/`0053a`/`0057` noted above.
+- **103 files total** (ground truth recounted 2026-09-27, this pass): 102 numbered user stories
+  (85 `done/`, 17 still in `ai-spec/tasks/`, none checked out to `ai-spec/tasks/in-progress/`) + 1
+  non-numbered infrastructure doc (already resolved). This pass moves `0064c` to `done/` (84 → 85)
+  and adds `0064d` as a new pending file (raised by `0064c`'s own closure). Some of the prose below
+  this note carries earlier passes' running counts (e.g. "jumps from 67 to 72") that were accurate
+  at the time they were written but have since drifted from a simple recount — the bullet above is
+  the authoritative current count; the narrative below is kept for its *reasoning*, not its totals
+  (its own last worked example was the reconciliation of `0052`/`0053`/`0053a`/`0057` noted above).
 - For a machine-readable, per-task claim registry that two parallel Claude Code sessions can use
   to coordinate against this same dependency data, see
   [`ai-spec/tasks-status.json`](tasks-status.json) and its companion protocol,
@@ -144,8 +155,8 @@ graph and from the parallelization analysis below.
 ## Table of contents
 
 - [Inventory](#inventory)
-  - [Done (78) — shipped, out of scope for this graph](#done-78--shipped-out-of-scope-for-this-graph)
-  - [Pending — not started (19 numbered + 1 infra doc)](#pending--not-started-19-numbered--1-infra-doc)
+  - [Done (85) — shipped, out of scope for this graph](#done-85--shipped-out-of-scope-for-this-graph)
+  - [Pending — not started (17 numbered + 1 infra doc)](#pending--not-started-17-numbered--1-infra-doc)
 - [Dependency graph (pending tasks only)](#dependency-graph-pending-tasks-only)
 - [Analysis](#analysis)
   - [Pending tasks that are independent of each other and safe to parallelize](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
@@ -155,15 +166,20 @@ graph and from the parallelization analysis below.
 
 ## Inventory
 
-### Done (79) — shipped, out of scope for this graph
+### Done (85) — shipped, out of scope for this graph
 
 Already merged into `main`/`finalproject-ARP` and closed via the workflow's Phase 7; see
 [`ai-spec/tasks/done/`](tasks/done/) for each story's full file. Listed here only as IDs, grouped
 by the epic area they belong to, since — per the note at the top of this file — none of them
 appears as a node in the dependency graph below:
 
-- **Epic 1 — Users, Roles & Auth (21):** 0001, 0002, 0003, 0004, 0005, 0006, 0006b, 0007, 0008,
-  0008a, 0009, 0010, 0011, 0012, 0013, 0014, 0015, 0015a, 0015b, 0040, 0064a.
+- **Epic 1 — Users, Roles & Auth (22):** 0001, 0002, 0003, 0004, 0005, 0006, 0006b, 0007, 0008,
+  0008a, 0009, 0010, 0011, 0012, 0013, 0014, 0015, 0015a, 0015b, 0040, 0064a, 0064c. 0064c —
+  activation status race, compare-and-set (backend), the twenty-second Epic 1 story to close: closed
+  a suspended-account privilege-escalation race (R-2 from 0064a); its own Phase 1 hand-off raised
+  0064d (owner decision on OQ-5), which stays pending. Nothing pending named 0064c as a hard
+  `depends_on` dependent — only 0064d's provenance link, never a `depends_on` edge — so this closure
+  re-derives no `status` change against the pending list.
 - **Epic 2 — Products, Taxes, Media, Shipping (35):** 0016, 0017, 0018, 0019, 0019a, 0019b,
   0019c, 0019d, 0020, 0021, 0022, 0023, 0024, 0024a, 0024b, 0025, 0026, 0027, 0028, 0029, 0029a,
   0029b, 0030, 0030a, 0031, 0031a, 0032, 0033, 0034, 0035, 0036, 0037, 0038, 0039, 0080.
@@ -233,12 +249,11 @@ appears as a node in the dependency graph below:
   command: its one hard dependent, 0065, drops it and moves to `ready`; two follow-ups it raised, 0064a and 0064b,
   are new pending files.
 
-### Pending — not started (19 numbered + 1 infra doc)
+### Pending — not started (17 numbered + 1 infra doc)
 
 | ID | Title | Epic area |
 | --- | --- | --- |
 | 0064d | UpdateUser — a concurrent status/role change must not be decided or overwritten on a stale read (backend) | Epic 1 — Users, Roles & Auth |
-| 0064c *(checked out to `in-progress/`, claimed)* | Activate-verified-user — a suspension that lands mid-request must not be overwritten by the activation (backend) | Epic 1 — Users, Roles & Auth |
 | 0064b | Scheduled post publish failure — notification and email to the post's creator (backend) | Epic 4 — Blog |
 | 0065 | Blog post published — notification (backend) | Epic 4 — Blog |
 | 0066 | Admin UI locale preference & resolution — backend | Epic 5 — i18n |
@@ -287,7 +302,6 @@ flowchart LR
 
     subgraph PEND_AUTH["Epic 1 — Users, Roles & Auth"]
         direction TB
-        P0064c["0064c Activation CAS vs suspension race BE"]
         P0064d["0064d UpdateUser stale-read lock+recheck BE"]
     end
 
@@ -383,13 +397,12 @@ flowchart LR
 
     class P0064b,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
     class P0065,P0068,P0064d ready;
-    class P0064c claimed;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(`0064c` is `claimed` in this snapshot); yellow (`pending`) = still blocked on at least one open
+(no node is `claimed` in this snapshot); yellow (`pending`) = still blocked on at least one open
 pending dependency.
 
 ## Analysis
@@ -489,7 +502,7 @@ parallelization one. The major chains, in the order they must be executed:
    `0057`, closed too. `0046` was never a hard blocker of either — only a soft/informational,
    non-blocking sibling that made their "two distinct notification types" test meaningful — and it
    too is `done/` as of an earlier pass, so that soft reference is fully satisfied either way.
-3. **Blog (Epic 4).** `{0063 → 0064b}` and `{0065}` (`0058`, `0059`, `0060`, `0061`, `0061a`, `0061b`, `0062` and `0064` are `done/`); `0064a` (an Epic 1 listener fix raised by `0064`) is now `done/`, and its follow-up `0064c` is a free-standing `ready` node; `0060` created the
+3. **Blog (Epic 4).** `{0063 → 0064b}` and `{0065}` (`0058`, `0059`, `0060`, `0061`, `0061a`, `0061b`, `0062` and `0064` are `done/`); `0064a` (an Epic 1 listener fix raised by `0064`) is now `done/`, its own follow-up `0064c` is now `done/` too, and `0064c`'s own follow-up, `0064d`, is a free-standing `ready` node; `0060` created the
    `content` sidebar group and its `blog` cluster that `0062` (done) and `0063` append one item each to.
 4. **Internationalization (Epic 5).** This is the most heavily sequenced part of the backlog, and
    it is **cross-epic**: every retrofit story blocks on `0068` (Store Languages catalog) and

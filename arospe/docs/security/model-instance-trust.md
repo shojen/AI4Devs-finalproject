@@ -400,7 +400,7 @@ and `updated_at`, then the public `syncOriginalAttributes()` — never `refresh(
 `getPrevious()`); on a loss, the instance is left untouched and a single follow-up `SELECT status` (not a
 `findOrFail()`) tells a suspension, a concurrent double-activation and an absent/soft-deleted row apart for
 logging purposes only — the persisted state was already decided atomically by the guarded `UPDATE` itself.
-See the task file's **D-1** ([0064c](../../ai-spec/tasks/in-progress/0064c-activate-verified-user-status-race-compare-and-set-backend.md))
+See the task file's **D-1** ([0064c](../../ai-spec/tasks/done/0064c-activate-verified-user-status-race-compare-and-set-backend.md))
 for the full InnoDB reasoning and why the repo's usual `lockForUpdate()` shape was considered and rejected
 here specifically (it is correct but strictly more expensive, and unlike the `SalesRegion` cases, a missing
 lock in a re-read shape would be invisible to a single-process behavioural test — the guarded `UPDATE`'s

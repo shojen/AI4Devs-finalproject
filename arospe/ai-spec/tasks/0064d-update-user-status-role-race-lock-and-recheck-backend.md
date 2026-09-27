@@ -10,7 +10,7 @@ re-read of the row. Two administrators racing to change the same user's status t
 authorization *decision* made on data that may already be stale by decision time, and their *write*
 is plain last-writer-wins with no detection that anything moved underneath either of them.
 
-This is **R-2** of story [0064c](in-progress/0064c-activate-verified-user-status-race-compare-and-set-backend.md)
+This is **R-2** of story [0064c](done/0064c-activate-verified-user-status-race-compare-and-set-backend.md)
 (recorded there as a related-but-distinct risk, **not** fixed there — 0064c's own R-2 write-up
 explains why this class of bug cannot reopen 0064c's own fix: once `ActivateVerifiedUser` is a
 guarded compare-and-set, a suspension that commits first makes it refuse, and if the listener
@@ -342,7 +342,7 @@ Pest assertion.
   `database-expert`; not needed for this story's own scope.
 
 ### Dependencies
-- **Depended on [0064c](in-progress/0064c-activate-verified-user-status-race-compare-and-set-backend.md)**
+- **Depended on [0064c](done/0064c-activate-verified-user-status-race-compare-and-set-backend.md)**
   (closed 2026-09-27; raised this story per its OQ-5, owner decision (b)). No code dependency —
   `UpdateUser` and `ActivateVerifiedUser`/`ActivateInactiveUser` do not share a file — only a
   provenance link.
@@ -406,6 +406,6 @@ Pest assertion.
   behaviour change (a soft/hard-deleted target now refuses instead of silently writing through) —
   recorded as D-4 rather than silently adopted or silently dropped.
 - **Models followed for tone and structure:**
-  [0064c](in-progress/0064c-activate-verified-user-status-race-compare-and-set-backend.md), whose D-1/D-6/D-8
+  [0064c](done/0064c-activate-verified-user-status-race-compare-and-set-backend.md), whose D-1/D-6/D-8
   structure this story's D-1/D-5 and testing sections mirror throughout.
 - **Status:** Phase 1 output (new stage). Phase 2 (INVEST validation) not yet run.
