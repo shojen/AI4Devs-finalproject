@@ -16,7 +16,9 @@ use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -125,6 +127,39 @@ test('the validation refusal for an already-active code is keyed on code, a name
 });
 
 // =====================================================================
+// Phase 4 finding L2 (Low, CWE-367): the "already active" validation check and the forceCreate()
+// insert have nothing locking between them, so two concurrent AddStoreLanguage('fr') calls for a
+// BRAND-NEW code can both pass validation (neither sees the other's not-yet-committed row) and
+// both attempt the insert. A genuinely simultaneous two-connection race is unreachable under
+// RefreshDatabase's single transaction, so the MECHANISM is simulated -- a competing row lands in
+// the `creating` hook, after this call's own validation already passed and immediately before its
+// own insert -- and the OUTCOME is asserted: a clean ValidationException, never a raw
+// UniqueConstraintViolationException, and no second row for the code (mirrors
+// tests/Feature/Blog/FindOrCreateBlogTagTest.php's own "a lost insert race" test).
+// =====================================================================
+
+test('a concurrent insert of the same brand-new code is refused with a clean ValidationException, not a raw exception', function () {
+    $this->actingAs(addStoreLanguageActor());
+
+    StoreLanguage::creating(function (StoreLanguage $incoming): void {
+        DB::table('store_languages')->insert([
+            'id' => (string) Str::uuid7(),
+            'code' => 'fr',
+            'name' => 'Français',
+            'is_default' => false,
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    });
+
+    expect(fn () => app(AddStoreLanguage::class)('fr'))
+        ->toThrow(ValidationException::class);
+
+    expect(StoreLanguage::where('code', 'fr')->count())->toBe(1);
+});
+
+// =====================================================================
 // Validation -- codes outside the bundled list are refused on every path. This is a
 // tampered-request test (the picker itself only ever offers a bundled code), not a typo test.
 // =====================================================================
@@ -216,7 +251,12 @@ test('called directly, an actor holding store-languages.create succeeds', functi
 // authorization/step-up-and-refusal-logging.md).
 // =====================================================================
 
-test('an authorization refusal writes exactly one Log::warning with the actor, ability and target type', function () {
+// Phase 4 finding L3 (Low): the authorize() call against the bare StoreLanguage::class cannot
+// derive a target type on its own (LogRefusedPrivilegedAttempt::resolveTarget() only recognises a
+// User/Role instance), so this MUST be passed explicitly -- asserted here against the exact value,
+// not merely that the key exists, since the prior key-presence-only assertion is exactly how a
+// silently-null target_type passed unnoticed.
+test('an authorization refusal writes exactly one Log::warning naming store_language as the target type', function () {
     Log::spy();
 
     $actor = User::factory()->create();
@@ -232,7 +272,7 @@ test('an authorization refusal writes exactly one Log::warning with the actor, a
         ->withArgs(fn (string $message, array $context): bool => $message === 'Privileged action refused'
             && ($context['actor_id'] ?? null) === $actor->id
             && ($context['ability'] ?? null) === 'create'
-            && array_key_exists('target_type', $context)
+            && ($context['target_type'] ?? null) === 'store_language'
             && ! str_contains((string) json_encode($context), 'password'))
         ->once();
 });

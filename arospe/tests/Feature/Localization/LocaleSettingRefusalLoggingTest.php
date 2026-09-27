@@ -95,7 +95,12 @@ test('SetDefaultNotificationLocale called with no authenticated user is refused'
 // Refusal logging -- context array, never the rendered message; no secret-looking key.
 // =====================================================================
 
-test('SetDefaultUiLocale refusal writes exactly one Log::warning with the actor and update ability', function () {
+// Phase 4 finding L3 (Low): authorize('update', LocaleSetting::class) cannot derive a target type
+// on its own (LogRefusedPrivilegedAttempt::resolveTarget() only recognises a User/Role instance),
+// so both actions MUST pass targetType/targetId explicitly -- asserted here against the exact
+// values, not merely that the keys exist, since a key-presence-only assertion is exactly how a
+// silently-null target_type passed unnoticed.
+test('SetDefaultUiLocale refusal writes exactly one Log::warning naming locale_setting as the target', function () {
     Log::spy();
 
     $actor = User::factory()->create(); // holds no permission at all
@@ -111,11 +116,13 @@ test('SetDefaultUiLocale refusal writes exactly one Log::warning with the actor 
         ->withArgs(fn (string $message, array $context): bool => $message === 'Privileged action refused'
             && ($context['actor_id'] ?? null) === $actor->id
             && ($context['ability'] ?? null) === 'update'
+            && ($context['target_type'] ?? null) === 'locale_setting'
+            && ($context['target_id'] ?? null) === LocaleSetting::SINGLETON_ID
             && ! str_contains((string) json_encode($context), 'password'))
         ->once();
 });
 
-test('SetDefaultNotificationLocale refusal writes exactly one Log::warning with the actor and update ability', function () {
+test('SetDefaultNotificationLocale refusal writes exactly one Log::warning naming locale_setting as the target', function () {
     Log::spy();
 
     $actor = User::factory()->create(); // holds no permission at all
@@ -131,6 +138,8 @@ test('SetDefaultNotificationLocale refusal writes exactly one Log::warning with 
         ->withArgs(fn (string $message, array $context): bool => $message === 'Privileged action refused'
             && ($context['actor_id'] ?? null) === $actor->id
             && ($context['ability'] ?? null) === 'update'
+            && ($context['target_type'] ?? null) === 'locale_setting'
+            && ($context['target_id'] ?? null) === LocaleSetting::SINGLETON_ID
             && ! str_contains((string) json_encode($context), 'password'))
         ->once();
 });

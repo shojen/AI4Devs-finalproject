@@ -2,10 +2,12 @@
 
 // Story 0068 -- App\Actions\Localization\SetDefaultUiLocale / SetDefaultNotificationLocale (D23:
 // two narrow single-column actions, never one taking both, to avoid a read-modify-write clobbering
-// a concurrent change to the column the caller never meant to touch). Both firstOrCreate the
-// singleton row if the seeder has not run, write with forceFill() (neither column is fillable),
-// and need no DB::transaction() -- one column, one row, no multi-row invariant (unlike the
-// store_languages default swap).
+// a concurrent change to the column the caller never meant to touch). Both upsert the singleton
+// row -- Phase 4 finding L1 replaced the original find()-then-forceCreate() shape, which raced on
+// the FIRST write to an unseeded table, with a single atomic `INSERT ... ON DUPLICATE KEY UPDATE`
+// naming only the acting column in its `update` list, closing the read-then-write gap structurally
+// while keeping D23's no-lost-update property. No DB::transaction() -- one column, one row, no
+// multi-row invariant (unlike the store_languages default swap).
 
 use App\Actions\Localization\SetDefaultNotificationLocale;
 use App\Actions\Localization\SetDefaultUiLocale;
@@ -14,6 +16,7 @@ use App\Models\LocaleSetting;
 use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\PermissionRegistrar;
 
 beforeEach(function () {
@@ -122,6 +125,57 @@ test('neither action ever creates a second row, on an empty table or a populated
     app(SetDefaultNotificationLocale::class)(UiLocale::English);
 
     expect(LocaleSetting::count())->toBe(1);
+});
+
+// =====================================================================
+// Phase 4 finding L1 (Low, CWE-362/CWE-755): the original find()-then-forceCreate() shape raced on
+// the FIRST write to an unseeded table -- two concurrent first-writes could both see no row and
+// both attempt to insert id=SINGLETON_ID, and the loser surfaced a raw
+// UniqueConstraintViolationException instead of a clean write. The fix (an atomic
+// `INSERT ... ON DUPLICATE KEY UPDATE`) removes the read-then-write gap structurally, so unlike
+// AddStoreLanguage's own race (a real Eloquent create() a `creating` hook can intercept), there is
+// no interleaving point left for a single-process Pest test to drive through -- the write is now
+// one indivisible SQL statement. What IS reproducible, and is exactly the observable outcome any
+// such race would leave behind for its loser, is simulated here: the singleton row already exists
+// at the moment this action's own upsert runs, as if a concurrent call had just won the race to
+// create it. Proving that case commits cleanly, updates only this action's own column, and never
+// throws is the regression test for this finding.
+// =====================================================================
+
+test('SetDefaultUiLocale does not raise a raw exception when the singleton row already exists at write time', function () {
+    DB::table('locale_settings')->insert([
+        'id' => LocaleSetting::SINGLETON_ID,
+        'default_ui_locale' => 'es',
+        'default_notification_locale' => 'es',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $this->actingAs(localeSettingWriteActor());
+
+    $result = app(SetDefaultUiLocale::class)(UiLocale::English);
+
+    expect($result->default_ui_locale)->toBe('en')
+        ->and($result->default_notification_locale)->toBe('es')
+        ->and(LocaleSetting::count())->toBe(1);
+});
+
+test('SetDefaultNotificationLocale does not raise a raw exception when the singleton row already exists at write time', function () {
+    DB::table('locale_settings')->insert([
+        'id' => LocaleSetting::SINGLETON_ID,
+        'default_ui_locale' => 'es',
+        'default_notification_locale' => 'es',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $this->actingAs(localeSettingWriteActor());
+
+    $result = app(SetDefaultNotificationLocale::class)(UiLocale::English);
+
+    expect($result->default_notification_locale)->toBe('en')
+        ->and($result->default_ui_locale)->toBe('es')
+        ->and(LocaleSetting::count())->toBe(1);
 });
 
 // =====================================================================
