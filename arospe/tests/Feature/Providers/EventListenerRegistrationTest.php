@@ -1,15 +1,19 @@
 <?php
 
 use App\Enums\UserStatus;
+use App\Events\Blog\ScheduledBlogPostPublished;
 use App\Events\OrderFullyRefunded;
 use App\Listeners\ActivateVerifiedUser;
 use App\Listeners\CancelFullyRefundedOrder;
 use App\Listeners\RejectNonActiveUserLogin;
+use App\Listeners\SendBlogPostPublishedNotification;
+use App\Models\BlogPost;
 use App\Models\User;
 use Illuminate\Auth\Events\Authenticated;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Event;
+use Spatie\Permission\Models\Permission;
 
 // Story 0064a: every App\ listener is registered by Laravel 13's auto-discovery of app/Listeners
 // and by nothing else (no hand-written Event::listen()). Never Event::fake() in this file: it
@@ -63,6 +67,7 @@ test('each known App listener binding exists exactly once', function (string $ev
     'Authenticated' => [Authenticated::class, RejectNonActiveUserLogin::class.'@handleAuthenticated'],
     'Verified' => [Verified::class, ActivateVerifiedUser::class.'@handle'],
     'OrderFullyRefunded' => [OrderFullyRefunded::class, CancelFullyRefundedOrder::class.'@handle'],
+    'ScheduledBlogPostPublished' => [ScheduledBlogPostPublished::class, SendBlogPostPublishedNotification::class.'@handle'],
 ]);
 
 // The dispatcher builds one listener object per registration per dispatch, so a double
@@ -88,4 +93,15 @@ test('each listener is resolved exactly once per dispatch', function (string $li
     'Verified → ActivateVerifiedUser' => [ActivateVerifiedUser::class, fn (User $user) => new Verified($user)],
     'Login → RejectNonActiveUserLogin' => [RejectNonActiveUserLogin::class, fn (User $user) => new Login('web', $user, false)],
     'Authenticated → RejectNonActiveUserLogin' => [RejectNonActiveUserLogin::class, fn (User $user) => new Authenticated('web', $user)],
+    'ScheduledBlogPostPublished → SendBlogPostPublishedNotification' => [
+        SendBlogPostPublishedNotification::class,
+        function (User $user): ScheduledBlogPostPublished {
+            // The listener's action queries this permission by name (Spatie throws
+            // PermissionDoesNotExist if it is missing entirely), so it must exist even though this
+            // test only cares about resolution COUNT, not the recipient set.
+            Permission::firstOrCreate(['name' => 'blog.view', 'guard_name' => 'web']);
+
+            return new ScheduledBlogPostPublished(BlogPost::factory()->create());
+        },
+    ],
 ]);
