@@ -32,7 +32,11 @@ app/
                        story 0045, pinned by a test, since a translation file is only ever correct
                        relative to the value set it covers; OrderStatus gained two more methods at
                        story 0049, rank()/isBackwardFrom(), covering only the four linear statuses
-                       -- Cancelled deliberately has no rank, see architecture/authorization.md)
+                       -- Cancelled deliberately has no rank, see architecture/authorization.md;
+                       BlogPostPublishFailureStage, story 0064b -- two cases, Publish/Announce,
+                       which of the scheduled sweep's two failure classes a due post's re-read
+                       matches; no label(), no rendering site yet -- see
+                       architecture/authorization/domain-invariants.md)
   Exceptions/          Domain exceptions that render their own response (ImmutableRoleException → 403,
                        RoleInUseException → 409, PasswordConfirmationRequiredException → 423,
                        OrderNotEditableException → 409 since story 0048 -- the state-based hard

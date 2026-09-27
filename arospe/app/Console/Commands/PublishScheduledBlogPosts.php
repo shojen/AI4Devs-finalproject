@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Actions\Blog\NotifyScheduledBlogPostPublishFailed;
 use App\Actions\Blog\PublishScheduledBlogPost;
 use App\Enums\BlogPostStatus;
 use App\Models\BlogPost;
@@ -28,7 +29,7 @@ use Throwable;
 #[Description('Publish the scheduled blog posts whose publication time has arrived')]
 class PublishScheduledBlogPosts extends Command
 {
-    public function handle(PublishScheduledBlogPost $publishScheduledBlogPost): int
+    public function handle(PublishScheduledBlogPost $publishScheduledBlogPost, NotifyScheduledBlogPostPublishFailed $notifyFailure): int
     {
         $dueIds = BlogPost::query()
             ->where('status', BlogPostStatus::Scheduled)
@@ -60,6 +61,16 @@ class PublishScheduledBlogPosts extends Command
             } catch (Throwable $exception) {
                 $failed++;
                 report($exception);
+
+                // Story 0064b, D-11: belt and braces around a notifier that already contains
+                // everything in its own outer try/catch -- this is what makes "a notifier failure is
+                // report()ed and never aborts the loop or changes exit 0" a TESTED property rather than
+                // a promise resting on the notifier's own discipline.
+                try {
+                    $notifyFailure($id);
+                } catch (Throwable $notifierFailure) {
+                    report($notifierFailure);
+                }
             }
         }
 

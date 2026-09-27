@@ -9,6 +9,7 @@ use App\Enums\BlogPostStatus;
 use App\Models\BlogPost;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -116,14 +117,20 @@ class CreateBlogPost
             $resolvedStatus = BlogPostStatus::Scheduled;
         }
 
+        // Read once, after authorize() has passed (D-7): blog_posts.created_by is the first author
+        // attribution on a blog post, written only here, from the actor, never a caller-supplied
+        // parameter -- there is no legitimate way for a caller to name a different creator.
+        $createdBy = Auth::id();
+
         try {
-            $post = DB::transaction(function () use ($title, $body, $blogCategoryId, $resolvedStatus, $resolvedPublishedAt, $tagNames): BlogPost {
+            $post = DB::transaction(function () use ($title, $body, $blogCategoryId, $resolvedStatus, $resolvedPublishedAt, $tagNames, $createdBy): BlogPost {
                 $post = BlogPost::forceCreate([
                     'title' => $title,
                     'body' => $body,
                     'blog_category_id' => (string) $blogCategoryId,
                     'status' => $resolvedStatus,
                     'published_at' => $resolvedPublishedAt,
+                    'created_by' => $createdBy,
                 ]);
 
                 ($this->syncBlogPostTags)($post, $tagNames);
