@@ -33,6 +33,36 @@ Read the entry from the container: `app(Schedule::class)->events()` returns `Eve
 
 **Prove it can fail before trusting it**: comment the `Schedule::command(...)` line out and confirm the assertions go red, then revert. Story 0064 also mutated the frequency (`everyFiveMinutes()`) and the expiry (`withoutOverlapping()` with no argument) and confirmed one test dies for each.
 
+## Testing the failure notice (story 0064b)
+
+`App\Actions\Blog\NotifyScheduledBlogPostPublishFailed` — the command's `catch`-only collaborator that tells the post's creator (or the `blog.edit` administrators) when a sweep tick fails — adds two drivers for its two failure classes, on top of the four layers above.
+
+| Driver | Drives | What it proves |
+| --- | --- | --- |
+| `FailingBlogPostWrites::next()` (already used above) | Stage `publish` — the write itself throws, post stays `Scheduled` | The re-read classifies a still-`Scheduled`, still-due post as `publish` |
+| A **test-registered throwing listener** on `ScheduledBlogPostPublished` | Stage `announce` — the write succeeds but a synchronous listener throws afterwards, post is already `Published` | The re-read classifies an already-`Published` post as `announce`, with no 0065 code needed |
+
+```php
+// the shape used across tests/Feature/Blog/NotifyScheduledBlogPostPublishFailedTest.php
+// and the command's own extended test
+Event::listen(ScheduledBlogPostPublished::class, function (): void {
+    throw new RuntimeException('Simulated announcement failure');
+});
+```
+
+Neither driver hands the notifier the real exception — the action re-reads the post by id and classifies from its **status**, never from the `Throwable`'s type or message (D-2). A test proving the classification is right must therefore assert the notification's `stage` and the post's post-sweep status, not anything about the thrown exception.
+
+**Dedup (one atomic cache key per post/stage/`published_at` episode, D-6) is asserted directly against the cache, not inferred from notification counts alone:**
+
+- **A guard exists at all**: run the command twice with the same failing write (`FailingBlogPostWrites::next(2)`); assert exactly one notification, not two.
+- **The key is per-episode, not per-tick**: advance the clock past the 24-hour TTL with `Carbon::setTestNow()` (the `array` cache store — this suite's `CACHE_STORE`, per `phpunit.xml` — honours the moved clock, verified before relying on it) and assert a second run notifies again.
+- **The key is released on a failed send**, so a queue-push failure never silences a genuinely unreported post: bind a notification dispatcher double that throws, assert `Cache::has($key)` is `false` afterwards, then assert a normal second run does notify.
+- **The key is claimed only *after* recipients resolve, never before** (`backend-qa`'s Phase 1 correction, D-3): with no reachable recipient, assert `Cache::has($key)` stays `false`; then add a `blog.edit` holder and re-run — it must notify, which it could not if the key had been claimed on the first, recipient-less attempt. This is the ordering finding the mutation record calls out as having "no other guard" — assert the cache state directly (`Cache::has($key)`), not only the notification count, or the ordering bug is invisible.
+
+**Containment (a notifier failure must never reach the sweep, D-11/D-12) follows the same "force every boundary to throw" discipline the four layers above already use for the write itself**: bind a double of `NotifyScheduledBlogPostPublishFailed` (or of its own dependencies — the cache store, the notification dispatcher, the recipient query) that throws in turn, and assert `Log::shouldHaveReceived('warning')` or `report()`'s equivalent fired, the loop continued to the remaining posts, and the command's exit code and `N failed; see the log.` line are unchanged. This is [the same rule](#rules) as "a swallowed exception must still reach the log", one level further from the write.
+
+**Payload privacy is a mutation the code makes structurally impossible to construct, not merely a passing test — worth stating because it changes what "proven able to fail" means for this one case.** The action's docblock states it never receives the original `Throwable` at any point in its call chain, so there is no `$e->getMessage()` anywhere to redirect into `toArray()`/`toMail()`/a log line — the literal mutation ("put the exception text in the payload") cannot be written against the shipped code. The property is instead pinned structurally: an exact `->toBe([...])` three-key pin on the notification's `data` (not `toHaveKeys`, since an added key has no update path once persisted) and a `serialize($notification)` assertion that the queued payload contains neither `App\Models\` nor `Throwable`. Record a mutation-equivalence note like this rather than skipping the test when the same situation recurs — see the task file's own [Mutation testing record](../../../ai-spec/tasks/done/0064b-scheduled-post-publish-failure-notification-backend.md#mutation-testing-record) for the full write-up.
+
 ## What is not testable here, stated rather than faked
 
 - **Real concurrent overlap.** `withoutOverlapping()`'s mutex is only consulted by `schedule:run`'s own dispatch — never by `Artisan::call()` or a direct action call — and the suite is one synchronous process. `phpunit.xml` also pins `CACHE_STORE=array`, so even the mutex's store differs from production's `database`. Test the *configuration shape* (the flag and the expiry) and review the rest.

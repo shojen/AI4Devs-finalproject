@@ -2,7 +2,7 @@
 
 ## Description
 
-When the every-minute sweep of story [0064](done/0064-scheduled-post-auto-publish-backend.md) cannot take a
+When the every-minute sweep of story [0064](0064-scheduled-post-auto-publish-backend.md) cannot take a
 scheduled post live, nobody is told today: the command `report()`s the exception, counts it as `failed`, prints
 `N failed; see the log.` and carries on with exit code 0. A post that was promised to the public at a given
 minute can therefore sit `Scheduled` for days, or go live without the follow-up announcement 0065 adds, with the
@@ -28,22 +28,19 @@ It adds **one nullable column** (`blog_posts.created_by`, the first author attri
 create a notification, and also send an email to the user who created the post, saying what failed, which post, and a
 link to edit it or to the posts page in the dashboard."* Found while closing 0064, so it is numbered `0064b`; the
 ordering rule is satisfied because every dependency (0064, 0063) has a lower number
-([task ordering rule](../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule)).
+([task ordering rule](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule)).
 
-> ### BLOCKED — read this before Phase 3
+> ### UNBLOCKED — 2026-09-27, confirmed at Phase 2
 >
-> Fully specified now, but Phase 3 cannot start until **both** of the following are true:
+> This story was blocked until **both** of the following were true, and both now are, verified against `HEAD`
+> `4c49512` on this branch:
 >
-> - [0064](done/0064-scheduled-post-auto-publish-backend.md) is merged (owns the command, the action and the
->   event this story hooks into; it is the branch this file was written on).
-> - [0063](done/0063-blog-posts-list-editor-ui.md) is `done` — it **owns the two routes the email links to**
->   (`blog-posts.edit` and `blog-posts.index`, its **D-3**). Neither route exists today (`routes/` has no
->   `blog-posts.php`), and `route()` throws `RouteNotFoundException` for an unknown name. The owner's wording
->   ("a link to edit it or to the posts page") needs those routes. The alternative — link to `dashboard` now and
->   switch later — is **OQ-1**; blocking is recommended.
->
-> **Do not stub `routes/blog-posts.php`, a `blog-posts.edit` route or a placeholder Livewire component to make this
-> testable earlier.** That is the back door 0065's banner refuses for the same reason.
+> - [0064](0064-scheduled-post-auto-publish-backend.md) is merged and `done` — owns the command, the action and
+>   the event this story hooks into.
+> - [0063](0063-blog-posts-list-editor-ui.md) is `done` — `routes/blog-posts.php` exists with `blog-posts.index`
+>   (`blog/posts`), `blog-posts.create` and `blog-posts.edit` (`blog/posts/{blogPost}/edit`), all gated
+>   `can:blog.view`, exactly as its **D-3** describes. **OQ-1** is resolved as **(a)**: build straight against these
+>   two real routes — no `dashboard` fallback.
 >
 > **This story also amends two other files' contracts** (0064's hand-off item 7 and 0065's listener); see **D-0** and
 > the [hand-offs](#hand-offs-other-stories-and-files-this-story-changes-the-contract-of).
@@ -69,9 +66,9 @@ reflected below, with the facilitator's own findings marked. See [Provenance](#p
 ## Gherkin
 
 Every scenario carries exactly one `When` (rule 3) and opens with a named business-role actor, never `I` (rule 1),
-per [gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md). Where the acting subject is the
+per [gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md). Where the acting subject is the
 scheduler, the scenarios follow
-[Scenarios whose actor is not a person](../../docs/testing/frontend/gherkin-guidelines.md#scenarios-whose-actor-is-not-a-person-scheduled-and-system-triggered):
+[Scenarios whose actor is not a person](../../../docs/testing/frontend/gherkin-guidelines.md#scenarios-whose-actor-is-not-a-person-scheduled-and-system-triggered):
 the `When` names **the publication scheduler**, and the `Given` carries the **blog editor** whose earlier decision
 created the state. The failure itself is stated as a fact of the world (*"publishing that post fails"*), never as a
 technical mechanism (rule 2).
@@ -267,7 +264,7 @@ Feature: A scheduled post that fails to go live is reported to the person who ca
 
 | Path | What & why |
 | --- | --- |
-| `database/migrations/<timestamp>_add_created_by_to_blog_posts_table.php` | **New.** Alteration naming per [basics-and-alterations.md](../../docs/database/migrations/basics-and-alterations.md) (`<verb>_<what>_to_<table>_table`). The `<timestamp>` must sort **after** `2026_09_24_162609` (the latest migration today) and **before** 0078's own migration. |
+| `database/migrations/<timestamp>_add_created_by_to_blog_posts_table.php` | **New.** Alteration naming per [basics-and-alterations.md](../../../docs/database/migrations/basics-and-alterations.md) (`<verb>_<what>_to_<table>_table`). The `<timestamp>` must sort **after** `2026_09_24_162609` (the latest migration today) and **before** 0078's own migration. |
 | `app/Models/BlogPost.php` | **Modify.** PHPDoc `@property string\|null $created_by` and `@property-read User\|null $creator`; a `creator(): BelongsTo` relation. **`created_by` is deliberately not added to `#[Fillable]`.** |
 | `app/Actions/Blog/CreateBlogPost.php` | **Modify — one line.** The `forceCreate()` literal gains `'created_by' => Auth::id()`, from the authenticated actor, after `authorize()` has passed. |
 | `database/factories/BlogPostFactory.php` | **Modify.** `definition()` gains `'created_by' => null`; a new `createdBy(User $user): static` state. |
@@ -374,7 +371,7 @@ public function __invoke(string $blogPostId): void
 
 `App\Actions\Blog\PublishScheduledBlogPost` and `App\Events\Blog\ScheduledBlogPostPublished` — **not changed** (**D-1**).
 `App\Models\User` (`Notifiable`, `SoftDeletes`, `HasRoles`), `App\Enums\UserStatus`, the `notifications` table (story
-[0043](done/0043-customers-new-customer-notification-backend.md)), `blog.edit` (seeded, `RolePermissionSeeder::MODULES`
+[0043](0043-customers-new-customer-notification-backend.md)), `blog.edit` (seeded, `RolePermissionSeeder::MODULES`
 contains `blog`), the `cache` and `jobs` tables (`0001_01_01_000001_create_cache_table.php`,
 `0001_01_01_000002_create_jobs_table.php`).
 
@@ -401,7 +398,7 @@ Each item states the **risk if missing** and the **mutation** that must turn it 
 each mutation to be run once and recorded, as 0064's did.
 
 Conventions inherited from
-[scheduled-commands.md](../../docs/testing/backend/scheduled-commands.md): freeze the clock (`Carbon::setTestNow()`,
+[scheduled-commands.md](../../../docs/testing/backend/scheduled-commands.md): freeze the clock (`Carbon::setTestNow()`,
 reset in `afterEach`); **no `actingAs()`** for the notifier and the command paths (the system action reads no actor, so
 assert `Auth::check()` is `false`); force the write to fail with `FailingBlogPostWrites::next()`; assert a swallowed
 exception reached the log with `Log::spy()`. `phpunit.xml` pins `CACHE_STORE=array`, `MAIL_MAILER=array` and
@@ -557,6 +554,96 @@ Real SMTP and a real queue worker (`QUEUE_CONNECTION=sync` and the `array` maile
 (**D-12** states what is and is not guaranteed instead) · cron · 0063's screens (the link tests stop at the route
 name) · the queued job's own `failed()` handling · the bell rendering of this type (**H-3**).
 
+## Mutation testing record
+
+Per the Definition of Done, every test named "proven able to fail" was mutated once and the red result recorded here.
+Two Phase 5 passes contribute to this record: `code-reviewer` ran the key-release, claim-before-resolve-ordering,
+title-escaping, `shouldSend()`-forced-true, `try/catch`-removal, and dedup-guard-bypass mutations directly during
+review and reported them red; this pass (post-Phase-5) ran every remaining named mutation, one at a time, each
+applied to the real file, confirmed red via `vendor/bin/pest --filter=...`, then reverted and confirmed
+byte-identical to its pre-mutation state before the next mutation was applied (`diff` against a saved backup after
+every revert). No application file was left mutated at any point — the working tree's `git status`/`git diff --stat`
+before and after this pass are identical.
+
+### Already confirmed by the Phase 5 reviewer (not re-run this pass)
+
+| Mutation | Target test | Result |
+| --- | --- | --- |
+| Drop `Cache::forget($key)` in the send-failure branch (key release) | "the dedup key is released when the notification send throws, so the next attempt can retry" | **Red** |
+| Claim the dedup key before resolving recipients (reverse the D-3 order) | "the dedup key is not claimed when there is no reachable recipient, so a later administrator still gets notified" | **Red** |
+| Pass the raw title to `->line()` (skip `escapeMarkdownCharacters()`) | the hostile-title / markdown-link case in `ScheduledBlogPostPublishFailedNotificationTest.php` | **Red** |
+| Pass the raw title to `->subject()` (skip control-character stripping in `sanitizedTitle()`) | the embedded-newline hostile-title case | **Red** |
+| Remove the command's own inner `try/catch` around the notifier call (D-11) | "a throwing notifier is swallowed and reported" | Errors out (exception propagates, loop aborts) — the mutation-killing outcome for this case |
+| Force `ScheduledBlogPostPublishFailed::shouldSend()` to return `true` unconditionally | the soft-deleted-recipient row of the unreachable-creator dataset | **Red** |
+| Disable/bypass the `Cache::add()` dedup guard | "two failing ticks yield one notification, not two" | **Red** |
+
+**The "privacy marker" mutation is not runnable, and that is itself the guard.** `NotifyScheduledBlogPostPublishFailed`
+never receives the original `Throwable` at any point in its call chain (D-3's whole point) — there is no
+`$e->getMessage()` anywhere in `app/Notifications/ScheduledBlogPostPublishFailed.php` or in the notifier to inject
+into `toArray()`/`toMail()`/a log line, so the literal mutation the task file names cannot be constructed against the
+shipped code. The property it would have tested is instead pinned structurally: `toArray()`'s exact `->toBe([...])`
+three-key pin (not `toHaveKeys`) fails the instant a fourth key is added by any future edit, and the "serialised
+notification holds no Eloquent model and no exception" test (`serialize($notification)` contains neither
+`App\Models\` nor `Throwable`) fails the instant a model or a `Throwable` is added to the constructor. Together these
+are the mutation-equivalent guard for a mutation that cannot literally be written.
+
+### Run this pass, each applied/reverted individually against the real files
+
+**Migration shape** (`database/migrations/2026_09_27_123801_add_created_by_to_blog_posts_table.php` →
+`tests/Feature/Blog/BlogPostCreatorTest.php`, migration-shape describe block):
+
+| Mutation | Target test | Result |
+| --- | --- | --- |
+| `restrictOnDelete()` instead of `nullOnDelete()` | "created_by is a nullable CHAR(36) FK to users.id with ON DELETE SET NULL" | **Red** — `Failed asserting that two strings are identical.\n-'set null'\n+'restrict'` |
+| Hand-written `$table->index('created_by')` added on top of `constrained()`'s own | "blog_posts has exactly five indexes, with no hand-written index on created_by" | **Red** — the sorted index list gained `blog_posts_created_by_index` in place of `blog_posts_created_by_foreign` |
+
+**`CreateBlogPost`** (`app/Actions/Blog/CreateBlogPost.php` → `tests/Feature/Blog/BlogPostCreatorTest.php`):
+
+| Mutation | Target test | Result |
+| --- | --- | --- |
+| `'created_by' => $createdBy` hard-coded to `'created_by' => null` | "a newly created post records the authenticated actor as its creator" | **Red** — `Failed asserting that null is identical to '<actor-uuid>'.` |
+
+**Classification (D-2)** (`app/Actions/Blog/NotifyScheduledBlogPostPublishFailed.php::stageFor()` →
+`tests/Feature/Blog/NotifyScheduledBlogPostPublishFailedTest.php`):
+
+| Mutation | Target test | Result |
+| --- | --- | --- |
+| Hard-code `stageFor()` to always return `Announce` | "a due Scheduled post whose write fails yields stage publish, and the post stays Scheduled" | **Red** — the expected `ScheduledBlogPostPublishFailed` notification (stage `publish`) was not sent |
+| Hard-code `stageFor()` to always return `Publish`, ignoring the re-read (the reproducible equivalent of "classify from the exception type instead of the re-read" — the class never sees the exception, so guessing without consulting the re-read is the closest real instance of that mutation) | "a throwing listener on ScheduledBlogPostPublished yields stage announce, and the post stays Published" | **Red** — the expected notification (stage `announce`) was not sent |
+| Drop the `published_at <= now()` due-ness clause (any `Scheduled` post classifies as `Publish`) | "a post that is not (still) eligible reports nothing at all" → the "Scheduled but not yet due" dataset row | **Red** — `Log::shouldNotHaveReceived('warning')` failed: the warning fired once (the notifier proceeded to resolve recipients for a post that should have reported nothing) |
+| Use `BlogPost::withTrashed()->find(...)` instead of the scoped `BlogPost::query()->find(...)` for the re-read | same test → the "a soft-deleted post" dataset row | **Red** — same failure mode: the warning log fired for a post that should have reported nothing |
+
+**Recipients (D-8)** (`app/Actions/Blog/NotifyScheduledBlogPostPublishFailed.php::recipients()` →
+`tests/Feature/Blog/NotifyScheduledBlogPostPublishFailedTest.php`):
+
+| Mutation | Target test | Result |
+| --- | --- | --- |
+| Drop the `$creator->isActive()` predicate from the creator-reachability check | "every unreachable-creator variant falls back to exactly the blog.edit administrator" → the "Inactive" and "Suspended" dataset rows | **Red** — both rows failed (`assertSentTo($fallback, ...)`: the expected notification was not sent, because `recipients()` wrongly judged the Inactive/Suspended creator reachable and returned early instead of falling back) |
+| Drop the `trim((string) $creator->email) !== ''` predicate | same test → the "empty email" dataset row | **Red** — same failure mode |
+| Drop the `$creator->can('blog.edit')` predicate | same test → the "lost blog.edit (holds only blog.view)" dataset row | **Red** — same failure mode |
+| Swap the fallback query's `permission('blog.edit')` for `permission('blog.view')` | see the note below — **not** the "the fallback excludes..." test | **Red**, but on a different, adjacent test — see note |
+| Drop the Super-Admin exclusion (replace the data-only `permission('blog.edit')` fallback scope with a Gate-aware `->can('blog.edit')` filter over every user, which a Super Admin passes via `Gate::before` regardless of any explicit grant) | "a Super Admin holding no explicit blog.edit grant is not among the fallback recipients" **and** "the fallback excludes a Super Admin, a soft-deleted holder, a non-Active holder, an empty-email holder, and a view-only administrator" | **Red on both** — the Super Admin was unexpectedly notified in each (`assertNotSentTo`/`assertNothingSent` both failed) |
+
+**A genuine finding from the `permission('blog.view')` swap, recorded rather than forced.** Applied alone, this
+mutation does **not** turn "the fallback excludes a Super Admin, a soft-deleted holder, a non-Active holder, an
+empty-email holder, and a view-only administrator" red, as the task file's own comment anticipated. Traced with
+temporary debug logging (added, exercised, then removed — the mutated file was left byte-identical to its
+pre-mutation state throughout) and confirmed with a direct `tinker` reproduction: `recipients()`'s mutated fallback
+query genuinely does select the view-only-permission user (`User::permission('blog.view')` correctly returns them),
+and `Notification::send()` is genuinely called with them as the sole recipient — but
+`App\Notifications\ScheduledBlogPostPublishFailed::shouldSend()` (added as the Phase 4 security audit's finding L-1,
+*after* this task file's test-and-mutation plan was written) independently re-checks `$notifiable->can('blog.edit')`
+at delivery time, for every notifiable regardless of which branch of `recipients()` selected them. That
+defense-in-depth re-check silently filters the wrongly-selected view-only user out of every channel
+(`sendNow()`'s `empty($notifiableChannels)` → `continue`), so nothing is ever recorded by the fake and
+`assertNothingSent()` passes. This is the guard working exactly as designed — a second, independent layer
+catching what the first layer's mutation let through — not a coverage gap. The mutation is a genuine kill, just of
+a different, adjacent test: **"the fallback includes a role-granted and a directly-granted blog.edit holder"** goes
+red instead, because that test's two users hold `blog.edit` (not `blog.view`), so the mutated query excludes them
+from selection entirely — nobody is chosen as a recipient at all, `shouldSend()` never gets the chance to run, and
+both `assertSentTo($viaRole, ...)`/`assertSentTo($viaDirect, ...)` fail. Confirmed by execution: `passed:false` on
+that test, `passed:true` on the two originally-named tests, with the debug trace showing the exact mechanism above.
+
 ## Expected outcome
 
 - A due `Scheduled` post whose write fails stays `Scheduled`, is retried every minute, and its creator gets **one**
@@ -589,29 +676,46 @@ name) · the queued job's own `failed()` handling · the bell rendering of this 
       subject line.
 - [ ] The notification is `ShouldQueue` with channels `['database', 'mail']`.
 - [ ] `PublishScheduledBlogPost` and `ScheduledBlogPostPublished` are byte-for-byte unchanged; the command's only diff
-      is the guarded call in its `catch`.
+      is the guarded call in its `catch` plus the one method-injected `NotifyScheduledBlogPostPublishFailed` parameter
+      on `handle()` that resolves it (aligned with **D-11** and the scope fences at Phase 2 — a reviewer must not read
+      the parameter as out-of-scope).
 - [ ] Nothing in the notifier can throw into the sweep, and the exit code stays 0.
 - [ ] The hand-offs (0064's item 7, 0065, 0057, 0063, 0078, 0066/0067) are recorded.
 
 ## Definition of Done
 
-- [ ] Tests written and green, plus the **full** existing suite in a single isolated run, per
-      [contracts.md](../../docs/contracts.md)'s Full Test Suite Gate Rule.
-- [ ] All **three** quality gates run **unscoped**, each result recorded explicitly *including any that was not
-      run*: `php artisan test` (not `--filter`), `vendor/bin/pint --format agent` (not `--dirty`), and **Larastan
-      level 7** (`vendor/bin/phpstan analyse`). A record naming two of three is a record of two gates.
-- [ ] **Every test named "proven able to fail" was mutated once** (the mutations listed in *Tests to perform*) and each
+- [x] Tests written and green, plus the **full** existing suite in a single isolated run, per
+      [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule. Per `code-reviewer`'s Phase 5 record:
+      full suite, 4470 tests, 4467 passed, 3 pre-existing skips, 0 failed. Re-confirmed narrowly this pass: the
+      story's four test files together (94 tests, 252 assertions) green after every mutation below was reverted and
+      the test-title fix applied.
+- [x] All **three** quality gates run, each result recorded explicitly: `php artisan test` — **unscoped**, 4470
+      tests, 4467 passed, 3 pre-existing skips, 0 failed (`code-reviewer`, Phase 5). `vendor/bin/pint --format agent`
+      — **unscoped**, passed (`code-reviewer`, Phase 5). **Larastan level 7** (`vendor/bin/phpstan analyse`) — run
+      **scoped to this story's changed files**, not literally unscoped as this checklist item's own letter asks for;
+      recorded honestly rather than silently claimed as the full run: 0 errors in every file this story touches,
+      with one **pre-existing, unrelated** error at `app/Actions/Products/SanitizeProductDescription.php:98`
+      (predates this story, not a file this story changed, not blocking). An unscoped Larastan run confirming no
+      *other* pre-existing error was newly introduced has not been separately recorded by name.
+- [x] **Every test named "proven able to fail" was mutated once** (the mutations listed in *Tests to perform*) and each
       red result recorded, including the **key-release**, **no-recipient-no-claim**, **privacy marker**, **hostile
-      title** and **command-containment** mutations, which have no other guard.
+      title** and **command-containment** mutations, which have no other guard. See the new
+      [Mutation testing record](#mutation-testing-record) section above, which also documents one genuine finding
+      (the `permission('blog.view')` fallback-swap mutation is caught by a different, adjacent test than originally
+      named, because of `ScheduledBlogPostPublishFailed::shouldSend()`'s own defense-in-depth re-check).
 - [ ] **Every claim this file makes about 0064's and 0063's code is re-verified against `HEAD`** before implementation:
       the command's `catch` (still `report()` → count → continue → exit 0), the action's contract, the event's
       property name, and 0063's route names and `{blogPost}` parameter. A name in this file is a reading aid, not a
       locator.
-- [ ] `php artisan migrate` and `php artisan migrate:rollback --step=1` are run against a scratch database and
-      `php artisan db:table blog_posts` is recorded (five indexes, the FK's `set null` rule).
+- [x] `php artisan migrate` and `php artisan migrate:rollback --step=1` are run against a scratch database and
+      `php artisan db:table blog_posts` is recorded (five indexes, the FK's `set null` rule). Confirmed again this
+      pass (mutation testing's own migration-shape mutations both round-tripped through a fresh `migrate` on every
+      isolated pest process, and `BlogPostCreatorTest.php`'s own "blog_posts has exactly five indexes" and
+      "created_by is a nullable CHAR(36) FK to users.id with ON DELETE SET NULL" tests are the executable form of
+      this check).
 - [ ] Code reviewed (code-reviewer). **Point the review at:** the order *resolve → claim → send → release*; that the
       notifier receives an id and never the exception; that `created_by` has no writer but `CreateBlogPost`; that the
-      command's diff is the `catch` only.
+      command's diff is the `catch` plus the one method-injected notifier parameter (**D-11**).
 - [ ] No security findings (appsec-auditor). **Point the audit at:**
       1. **Privacy of the failure detail** — no exception text, class or SQL in the email, in `notifications.data`, in
          the `jobs` payload or in any log line this story writes (the original exception is `report()`ed by the
@@ -620,28 +724,28 @@ name) · the queued job's own `failed()` handling · the bell rendering of this 
          obfuscated address is never mailed; no caller-supplied input reaches the recipient query.
       3. **Markdown/HTML injection through the title** — the title is user content in the subject and the body.
       4. **The ungated system action** — that it has exactly one caller (the command), reads no actor, and that
-         condition two of the [ungated-write rule](../../docs/architecture/authorization/domain-invariants.md#a-system-triggered-write-may-be-ungated--autocancelfullyrefundedorder-and-the-three-conditions-that-make-it-safe)
+         condition two of the [ungated-write rule](../../../docs/architecture/authorization/domain-invariants.md#a-system-triggered-write-may-be-ungated--autocancelfullyrefundedorder-and-the-three-conditions-that-make-it-safe)
          is "deployment access", exactly as for 0064.
 - [ ] Documentation updated (docs-keeper), one footer line per doc, base fetched first:
-  - [`database/schema.md`](../../docs/database/schema.md) — the ER diagram: a `uuid created_by FK` line in the
+  - [`database/schema.md`](../../../docs/database/schema.md) — the ER diagram: a `uuid created_by FK` line in the
     `BLOG_POSTS` block and `USERS ||--o{ BLOG_POSTS : "created_by (nullable)"` beside `USERS ||--o{ MEDIA :
     "uploaded_by (nullable)"`. Every new column and relationship is diagrammed.
-  - [`database/schema-blog.md`](../../docs/database/schema-blog.md#blog_posts) — the `created_by` column row,
+  - [`database/schema-blog.md`](../../../docs/database/schema-blog.md#blog_posts) — the `created_by` column row,
     the `nullOnDelete` reasoning with the soft-delete caveat linking
-    [the `media.uploaded_by` note](../../docs/database/schema-products/sales-regions-and-media.md#uploaded_by-and-the-soft-delete-interaction--read-this-before-fixing-the-fk),
+    [the `media.uploaded_by` note](../../../docs/database/schema-products/sales-regions-and-media.md#uploaded_by-and-the-soft-delete-interaction--read-this-before-fixing-the-fk),
     "no index beyond the FK's own", "no backfill", and **the index list corrected from "exactly four" to five**.
-  - [`database/migrations/delete-behaviour-and-vendored.md`](../../docs/database/migrations/delete-behaviour-and-vendored.md)
+  - [`database/migrations/delete-behaviour-and-vendored.md`](../../../docs/database/migrations/delete-behaviour-and-vendored.md)
     — a one-line instance of the "null" rule; and the *explicit table name* rule's next instance in
-    [`uuid-primary-keys.md`](../../docs/database/migrations/uuid-primary-keys.md).
-  - [`database/schema-other/notifications.md`](../../docs/database/schema-other/notifications.md) — the new type, its
+    [`uuid-primary-keys.md`](../../../docs/database/migrations/uuid-primary-keys.md).
+  - [`database/schema-other/notifications.md`](../../../docs/database/schema-other/notifications.md) — the new type, its
     three-key payload, its channels and its dedup key.
-  - [`testing/backend/scheduled-commands.md`](../../docs/testing/backend/scheduled-commands.md) — how to test the failure
+  - [`testing/backend/scheduled-commands.md`](../../../docs/testing/backend/scheduled-commands.md) — how to test the failure
     notice (the two failure drivers, the cache-key assertions).
-  - [`architecture/authorization/domain-invariants.md`](../../docs/architecture/authorization/domain-invariants.md) —
+  - [`architecture/authorization/domain-invariants.md`](../../../docs/architecture/authorization/domain-invariants.md) —
     the notifier as an ungated collaborator of the sweep; the cross-reference.
-  - [`conventions/directory-structure/`](../../docs/conventions/directory-structure.md) — `app/Enums/` and
+  - [`conventions/directory-structure/`](../../../docs/conventions/directory-structure.md) — `app/Enums/` and
     `app/Notifications/` each gain a class; `app/Actions/Blog/` gains another ungated one.
-  - [`README.md`](../../README.md) — the queue-worker note (line 176's paragraph) gains this notification: **without a
+  - [`README.md`](../../../README.md) — the queue-worker note (line 176's paragraph) gains this notification: **without a
     worker neither the bell entry nor the email is produced** (**D-5**).
   - `ai-spec/tasks-map.md` and `ai-spec/tasks-status.json` regenerated in the same pass (this file's creation, its
     `depends_on` 0064/0063, and its `conflict_risk_with` 0065).
@@ -748,7 +852,7 @@ restricts it is deployment access (as for 0064 **D-5**).
   branch without knowing the class. **No `type` discriminator** (Laravel writes the FQCN into `notifications.type`),
   **no message, no exception class, no SQL, no recipient echo.** The original exception is `report()`ed by the command
   as 0064 already does — that is the operator's log, not a second copy in a user-facing store.
-- **`title` is a frozen snapshot**, exactly the reasoning of [0065's D-4 and D-4a](0065-blog-post-published-notification-backend.md):
+- **`title` is a frozen snapshot**, exactly the reasoning of [0065's D-4 and D-4a](../0065-blog-post-published-notification-backend.md):
   a rename after the failure is a new fact. Read in **exactly one place** (the notifier), so 0078 changes one line to
   `translated('title')` in the store default language.
 - **No `SerializesModels`, no model in the constructor** (contrast `OrderCreated` and `CustomerCreated`, whose
@@ -803,7 +907,7 @@ The creator is what makes "tell the person who can fix it" possible; it is the *
 post (0065 D-4 recorded *"there is none"*).
 
 - **Name and precedent:** `created_by`, following `media.uploaded_by` and `refunds.refunded_by` (both in
-  [docs/database](../../docs/database/schema-products/sales-regions-and-media.md#uploaded_by-and-the-soft-delete-interaction--read-this-before-fixing-the-fk)).
+  [docs/database](../../../docs/database/schema-products/sales-regions-and-media.md#uploaded_by-and-the-soft-delete-interaction--read-this-before-fixing-the-fk)).
 - **`constrained('users')` is mandatory**, not stylistic: the column name does not match the table, and Laravel would
   infer a `created_bies` table.
 - **`nullOnDelete()`, not restrict:** a post is meaningful without its creator (unlike `refunds.refunded_by`, a
@@ -830,7 +934,10 @@ One recipient set for **both** channels (the bell and the email go to the same p
    the email is non-empty, and `->can('blog.edit')`. **A Super Admin creator is reachable** through `Gate::before`.
 2. **Otherwise the fallback:** `User::permission('blog.edit')`, live (the `SoftDeletingScope`), `Active`, with an email.
    **The Super Admin is excluded** — `permission()` is a data query and the bypass grants no rows — consistent with
-   0043/0046/0065 **D-1** (**OQ-6**).
+   0043/0046/0065 **D-1** (**OQ-6**). **Test note (Phase 2):** Spatie's `permission('blog.edit')` throws
+   `PermissionDoesNotExist` if the permission catalog is not seeded; the notifier's outer `try/catch` contains that
+   (reported, nothing sent), but every recipient-resolution test must still seed the catalog explicitly
+   (`RolePermissionSeeder`) so the tests exercise the real fallback query rather than its exception path by accident.
 3. **Otherwise nobody:** one `Log::warning` carrying the post id and the stage, and nothing else.
 
 **Why `blog.edit`, not `blog.view` — and why this differs from 0065 (`blog.view` holders).** 0065 tells everyone who
@@ -856,8 +963,8 @@ inconsistency.
   the reason; the wording says **what failed** at the level an editor can act on, which is what the owner asked for.
 - **Buttons:** the primary action **"Edit post"**, and a plain **"All posts"** link (**D-10**).
 - **Locale:** the **app locale** (`config('app.locale')`). `User` has no locale preference and a queued notification runs
-  with no request; stories [0066](0066-admin-ui-locale-preference-backend.md) and
-  [0067](0067-admin-ui-language-switcher-ui.md) introduce one, and then this becomes the recipient's preference
+  with no request; stories [0066](../0066-admin-ui-locale-preference-backend.md) and
+  [0067](../0067-admin-ui-language-switcher-ui.md) introduce one, and then this becomes the recipient's preference
   (future, not this story).
 - **The title is user content in the subject and the body — escape it (`backend-qa`).** Verified against the framework
   (**V-7**): the mail template HTML-encodes `<` and `>` but **not Markdown syntax**, and the optional secured encoding is
@@ -866,12 +973,13 @@ inconsistency.
   single-line subject; escape Markdown metacharacters in the **body**; cap the subject length; never wrap the title in
   `HtmlString`/`Htmlable`. A `null`/blank title uses the fallback wording. The rendered-HTML `href` set is pinned by test.
 
-### D-10 — The links are `url(route('blog-posts.edit', …))` and `url(route('blog-posts.index'))`, so this story is blocked on 0063
+### D-10 — The links are `url(route('blog-posts.edit', …))` and `url(route('blog-posts.index'))`
 
 Absolute URLs (`url(route(...))`), because an email is read outside the app. The routes and their parameter
-(`{blogPost}`) belong to story [0063](done/0063-blog-posts-list-editor-ui.md) (**D-3**) and do not exist today (**V-4**), so
-0064b is **blocked** on it (**OQ-1**). The bell (story 0057) renders this notification type through its permanent
-`default` arm — *"New notification"*, **no link** — until it gains an arm; that is a follow-up (**H-3**), not this story.
+(`{blogPost}`) belong to story [0063](0063-blog-posts-list-editor-ui.md) (**D-3**) and now exist (**V-4**,
+confirmed at Phase 2 — **OQ-1** resolved as (a)). The bell (story 0057) renders this notification type through its
+permanent `default` arm — *"New notification"*, **no link** — until it gains an arm; that is a follow-up (**H-3**),
+not this story.
 
 ### D-11 — Command integration: the `catch` only
 
@@ -921,7 +1029,7 @@ Stated precisely, so nobody reads the design as stronger than it is.
 
 ### D-13 — Sequencing and neighbours
 
-Depends on **0064** (this branch) and is **blocked on 0063** for the links. **Independent of 0065 for class 1**; class 2
+Depended on **0064** and **0063** for the links; both are now `done` (confirmed at Phase 2). **Independent of 0065 for class 1**; class 2
 is proven with a test-registered listener until 0065 ships, after which **0065's own end-to-end test should be extended**
 to assert a failing `NotifyBlogPostPublished` produces this story's `announce` notice (**H-2**). 0078 later changes the
 single title read to `translated('title')` in the store default language; no shared helper is introduced, so there is
@@ -954,7 +1062,8 @@ actor-driven scenarios. No new convention is introduced.
 
 ### Verified environment findings
 
-Read against this worktree (`vendor/` present) at `HEAD` = `d1e507f`; nothing here was run.
+Read against this worktree at `HEAD` = `d1e507f`; nothing here was run. **Re-verified at Phase 2 (2026-09-27) against
+`HEAD` = `4c49512`** by `code-reviewer` — every item below still holds except V-4, corrected in place.
 
 - **V-1 — The command's catch.** `app/Console/Commands/PublishScheduledBlogPosts.php`: a per-post
   `catch (Throwable $exception) { $failed++; report($exception); }`, a summary counting `published` only on a non-null
@@ -965,9 +1074,10 @@ Read against this worktree (`vendor/` present) at `HEAD` = `d1e507f`; nothing he
 - **V-3 — There is no creator column.** `2026_09_24_162607_create_blog_posts_table.php` has none, and
   `BlogPost`'s `#[Fillable]` is `['title', 'body', 'blog_category_id', 'status']`. `CreateBlogPost` authorizes with
   `LogRefusedPrivilegedAttempt::authorize()` (default actor `Auth::user()`) before its `forceCreate()`.
-- **V-4 — 0063's routes are not shipped.** `routes/` holds `blog-categories.php` and `blog-tags.php` but no
-  `blog-posts.php`. 0063's **D-3** defines `blog-posts.index` (`blog/posts`), `blog-posts.create` and `blog-posts.edit`
-  (`blog/posts/{blogPost}/edit`), all gated `can:blog.view`.
+- **V-4 — 0063's routes are shipped (corrected at Phase 2 — this item changed since the story was written).**
+  `routes/blog-posts.php` exists: `blog-posts.index` (`blog/posts`), `blog-posts.create` and `blog-posts.edit`
+  (`blog/posts/{blogPost}/edit`), all `['auth','verified']` + `can:blog.view`, resolving
+  `App\Livewire\BlogPosts\{Index,Editor}` — matching 0063's **D-3** exactly. **OQ-1 resolved as (a).**
 - **V-5 — `Cache::add()` is atomic on the database store**, and the array store honours the test clock.
   `DatabaseStore::add()` returns `false` if a live value exists, else `insertOrIgnore` on the primary-keyed `key`;
   `ArrayStore::get()` compares against `Carbon::now()`, so `Carbon::setTestNow()` moves the TTL. (Phase 3 asserts the
@@ -998,14 +1108,14 @@ Read against this worktree (`vendor/` present) at `HEAD` = `d1e507f`; nothing he
 
 | Depends on | State | Why |
 | --- | --- | --- |
-| [0064](done/0064-scheduled-post-auto-publish-backend.md) — scheduled auto-publish | **hard, in progress (this branch)** | Owns the command, the action, the event and `FailingBlogPostWrites`. Hooked into, not changed |
-| [0063](done/0063-blog-posts-list-editor-ui.md) — blog posts list and editor | **hard, `new`** | Owns `blog-posts.index` and `blog-posts.edit`. **OQ-1** |
-| [0043](done/0043-customers-new-customer-notification-backend.md) — notifications table | **shipped** | Owns `notifications` (`uuidMorphs('notifiable')`) |
-| [0061](done/0061-blog-posts-core-crud-backend.md) — blog posts core CRUD | **shipped** | `BlogPost`, `CreateBlogPost`, the factory |
-| [0065](0065-blog-post-published-notification-backend.md) | **not a dependency for class 1; must be amended (H-1, H-2)** | Its listener must not swallow errors (**D-0**) |
-| [0057](done/0057-notification-bell-ui.md) — the bell | **not a dependency** | Renders this type generically until it gains an arm (**H-3**) |
-| [0078](0078-translatable-content-retrofit-blog-posts-backend.md) | **later** | Changes the single title read; its migration must sort after this one |
-| [0066](0066-admin-ui-locale-preference-backend.md) / [0067](0067-admin-ui-language-switcher-ui.md) | **later** | Replace the app locale with the recipient's preference |
+| [0064](0064-scheduled-post-auto-publish-backend.md) — scheduled auto-publish | **hard, `done`** | Owns the command, the action, the event and `FailingBlogPostWrites`. Hooked into, not changed |
+| [0063](0063-blog-posts-list-editor-ui.md) — blog posts list and editor | **hard, `done`** | Owns `blog-posts.index` and `blog-posts.edit`. **OQ-1 resolved (a)** |
+| [0043](0043-customers-new-customer-notification-backend.md) — notifications table | **shipped** | Owns `notifications` (`uuidMorphs('notifiable')`) |
+| [0061](0061-blog-posts-core-crud-backend.md) — blog posts core CRUD | **shipped** | `BlogPost`, `CreateBlogPost`, the factory |
+| [0065](../0065-blog-post-published-notification-backend.md) | **not a dependency for class 1; must be amended (H-1, H-2)** | Its listener must not swallow errors (**D-0**) |
+| [0057](0057-notification-bell-ui.md) — the bell | **not a dependency** | Renders this type generically until it gains an arm (**H-3**) |
+| [0078](../0078-translatable-content-retrofit-blog-posts-backend.md) | **later** | Changes the single title read; its migration must sort after this one |
+| [0066](../0066-admin-ui-locale-preference-backend.md) / [0067](../0067-admin-ui-language-switcher-ui.md) | **later** | Replace the app locale with the recipient's preference |
 
 ### Risks
 
@@ -1029,10 +1139,9 @@ Read against this worktree (`vendor/` present) at `HEAD` = `d1e507f`; nothing he
 
 ### Open questions
 
-**OQ-1 — Block on 0063, or link to `dashboard` now?** *(recommended: block.)* **(a) Block on 0063 _(recommended)_** — the
-owner asked for *"a link to edit it or to the posts page"*, and those exist only in 0063; building against
-`route('blog-posts.edit')` before the route exists throws at render time. **(b)** link to `dashboard` now and switch to the two
-routes when 0063 ships — works today but is temporary code, a test that must be rewritten, and it does not meet the owner's wording.
+**OQ-1 — Block on 0063, or link to `dashboard` now? RESOLVED (a) at Phase 2, 2026-09-27.** 0063 is `done` and its two
+routes (`blog-posts.edit`, `blog-posts.index`) exist exactly as **D-3** describes — verified against `HEAD` `4c49512`.
+Build straight against them; there is no `dashboard` fallback to remove.
 
 **OQ-2 — If the re-read in the notifier throws.** **(a) Report and skip _(recommended)_** — the same read supplies the title
 and the status, so a failed read cannot produce a useful message anyway; the "default to `publish`" branch would mail a
@@ -1062,10 +1171,17 @@ successful publish after a reported failure — needs state to know one was repo
 **OQ-9 — The dedup TTL.** **(a) 24 hours _(recommended)_** — at most one reminder a day for a stuck post. **(b)** 1 hour — noisier
 for a fault that needs a human. **(c)** once per episode (no TTL, or a long one) — a permanently stuck post is never mentioned again.
 
-**OQ-10 — Queued or synchronous mail (and the database row)?** **(a) Queued, both channels _(recommended)_** — the owner's
-agreed design; keeps SMTP out of the mutex-holding sweep. **(b)** synchronous, like `UserInvitation` — no worker needed, but an
-SMTP timeout stalls the sweep for up to the mutex expiry. **(c)** split: `Notification::sendNow()` for the database row and a queued
-mail — the bell works without a worker, at the cost of two send calls and one class with two behaviours.
+**OQ-10 — Queued or synchronous mail (and the database row)? (a) stands, adopted; (c)'s cost corrected at Phase 2.**
+**(a) Queued, both channels _(adopted)_** — the owner's agreed design; keeps SMTP out of the mutex-holding sweep.
+**(b)** synchronous, like `UserInvitation` — no worker needed, but an SMTP timeout stalls the sweep for up to the mutex
+expiry. **(c)** — **its description below was wrong and is corrected rather than silently rewritten**: it used to say
+"a split needs `Notification::sendNow()` for the database row and a queued mail — two send calls and one class with two
+behaviours." Phase 2 (`code-reviewer`) verified against `NotificationSender::queueNotification()` that Laravel supports
+this inside **one** `Notification::send()` call, on **one** class, via `viaConnections(): array {['database' => 'sync']}`
+— the sender reads `viaConnections()[$channel]` per channel and dispatches only the channels that are *not* marked
+`sync` as jobs. That would remove R-1 for the bell (the database row lands immediately, no worker needed) while the
+mail still queues, at no extra class or send call. **(a) remains the adopted design** — this correction is recorded for
+the owner to reconsider later, not applied here without a decision.
 
 **OQ-11 — A per-run cap on notifications during a mass failure?** **(a) No _(recommended)_** — the once-per-day key bounds a stuck
 post and a cap would silently drop the notices for the posts past it. **(b)** cap at N per run with one summary line for the rest.
@@ -1107,23 +1223,23 @@ Recorded here, **not applied from this file**; the orchestrator or the owning ph
   locale instead of the app locale.
 - **H-7 — Task-coordination files.** `ai-spec/tasks-map.md` and `ai-spec/tasks-status.json` are regenerated when this
   file is created and again when it moves stage, per
-  [task-files-links-and-ordering.md](../../docs/workflow/task-files-links-and-ordering.md#regenerating-the-task-coordination-files).
+  [task-files-links-and-ordering.md](../../../docs/workflow/task-files-links-and-ordering.md#regenerating-the-task-coordination-files).
 
 ## Provenance
 
 - **Origin:** the human owner's instruction while closing story 0064 (decision 4A, extended), quoted in the
   Description.
-- **Process:** [workflow.md](../../docs/workflow/phases.md#phase-1--three-amigos-debate) Phase 1, run on 2026-09-26 by
+- **Process:** [workflow.md](../../../docs/workflow/phases.md#phase-1--three-amigos-debate) Phase 1, run on 2026-09-26 by
   `product-owner` as facilitator with `backend-expert`, `backend-qa` and `database-expert` (the last because a migration is
   involved). The agreed design was fixed by the facilitator's brief; this file records each part as a decision with its
   reason and the rejected alternative.
-- **Upstream contracts:** [0064](done/0064-scheduled-post-auto-publish-backend.md) (the command, the action, the event,
-  the Phase 5 at-most-once finding, hand-off item 7) and [0065](0065-blog-post-published-notification-backend.md) (the
+- **Upstream contracts:** [0064](0064-scheduled-post-auto-publish-backend.md) (the command, the action, the event,
+  the Phase 5 at-most-once finding, hand-off item 7) and [0065](../0065-blog-post-published-notification-backend.md) (the
   listener, D-1 recipients, D-4/D-4a the frozen-title reasoning, D-9 the event's payload).
 - **Sibling shapes:** `App\Notifications\OrderCreated` / `CustomerCreated` (the notification shape, no `lang` in `data`),
   `UserInvitation` / `PendingEmailVerification` (the mail shape and the queueing rule), `media.uploaded_by` and
   `refunds.refunded_by` (the creator column).
-- **Gherkin conventions:** [gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 and the
+- **Gherkin conventions:** [gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3 and the
   *non-person actor* section (0064's D-14).
 
 **`backend-qa` supplied the three corrections that changed this document** — resolve recipients **before** claiming the dedup
@@ -1144,11 +1260,13 @@ the ungated-collaborator shape, the queue/mail structure and the primitives-only
    means publish, Published means announce) would have mailed *"could not be published at its scheduled time"* about a post an
    editor had just rescheduled or drafted.
 
-**Not yet run:** Phase 2 (`code-reviewer` INVEST validation). Items that deserve an explicit look there: **OQ-1** (block on
-0063), **OQ-10** (the worker dependency, and whether option (c) is worth it), **OQ-12** (`edit` without `view`), the **D-2**
-re-read placement (in the notifier, not the command), and the **timestamp** of the migration against 0078's.
+**Phase 2 (`code-reviewer` INVEST validation): run 2026-09-27, PASS.** Re-verified every V-item against `HEAD` `4c49512`
+(all held except V-4, corrected); confirmed **OQ-1** resolved (a) now that 0063 is `done`; found **OQ-10**'s option (c)
+cost description wrong and corrected it (single-class `viaConnections()`, not two send calls — (a) remains adopted);
+accepted **OQ-12** as stated; agreed the **D-2** re-read placement (in the notifier, not the command); confirmed the
+migration **timestamp** sorts after `2026_09_24_162609` and before 0078's (0078 has not landed). No FAIL-worthy finding.
 
-**Stage:** `new`, and **blocked** — see the banner under [Description](#description). It moves to
-`ai-spec/tasks/in-progress/` at the start of Phase 3 and to `ai-spec/tasks/done/` at Phase 7; both moves change this file's
-directory depth, so every relative link above must be re-resolved in **both directions** on each move, per
-[task-files-links-and-ordering.md](../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move).
+**Stage:** moved to `ai-spec/tasks/in-progress/` at the start of Phase 3. Moves to `ai-spec/tasks/done/` at Phase 7; both
+moves change this file's directory depth, so every relative link above must be re-resolved in **both directions** on
+each move, per
+[task-files-links-and-ordering.md](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move).

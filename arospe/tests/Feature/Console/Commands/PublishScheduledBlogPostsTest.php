@@ -1,11 +1,18 @@
 <?php
 
+use App\Actions\Blog\NotifyScheduledBlogPostPublishFailed;
 use App\Enums\BlogPostStatus;
+use App\Enums\UserStatus;
 use App\Events\Blog\ScheduledBlogPostPublished;
 use App\Models\BlogPost;
+use App\Models\User;
+use App\Notifications\ScheduledBlogPostPublishFailed;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\Support\Blog\FailingBlogPostWrites;
 use Tests\Support\Blog\ScheduledPosts;
 
@@ -154,4 +161,107 @@ test('a run that published something logs a summary, and an empty run logs none'
     $this->artisan('blog:publish-scheduled-posts')->assertExitCode(0);
 
     Log::shouldHaveReceived('info')->with('Scheduled blog post sweep finished', ['published' => 1, 'failed' => 0])->once();
+});
+
+// =====================================================================
+// Story 0064b, Phase 3 (TDD "red" step): App\Actions\Blog\NotifyScheduledBlogPostPublishFailed does
+// not exist yet -- every test below is expected to fail with a "class not found" error until
+// backend-expert implements D-11's guarded call. Everything above this marker is story 0064's own
+// file, UNCHANGED, and is re-run as part of this story's own regression check (DoD: "the existing
+// assertions ... still hold unchanged").
+//
+// D-11: the command's diff is the catch's own guarded call to the notifier, nothing else -- these
+// tests are deliberately thin, proving the command DELEGATES and CONTAINS a notifier failure, not
+// that the notifier's own classification/recipients/dedup logic is right (that is
+// tests/Feature/Blog/NotifyScheduledBlogPostPublishFailedTest.php's job).
+// =====================================================================
+
+beforeEach(function () {
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+    $this->seed(RolePermissionSeeder::class);
+});
+
+function commandTestReachableCreator(): User
+{
+    $user = User::factory()->create(['status' => UserStatus::Active]);
+    $user->givePermissionTo('blog.edit');
+
+    return $user;
+}
+
+test('one failure of three: the other two publish, exit 0, "1 failed", and exactly one failure notification', function () {
+    $creator = commandTestReachableCreator();
+    $failing = ScheduledPosts::scheduled(-30, createdBy: $creator);
+    $ok1 = ScheduledPosts::scheduled(-20);
+    $ok2 = ScheduledPosts::scheduled(-10);
+    Notification::fake();
+    FailingBlogPostWrites::next();
+
+    $this->artisan('blog:publish-scheduled-posts')
+        ->expectsOutputToContain('Published 2 scheduled blog posts.')
+        ->expectsOutputToContain('1 failed')
+        ->assertExitCode(0);
+
+    expect(BlogPost::query()->find($failing->id)->status)->toBe(BlogPostStatus::Scheduled)
+        ->and(BlogPost::query()->find($ok1->id)->status)->toBe(BlogPostStatus::Published)
+        ->and(BlogPost::query()->find($ok2->id)->status)->toBe(BlogPostStatus::Published);
+    Notification::assertSentTimes(ScheduledBlogPostPublishFailed::class, 1);
+});
+
+// Mutation: remove the command's own try/catch around the call -- without it, the notifier's
+// exception propagates out of the OUTER catch entirely, aborting the whole foreach loop, so $second
+// would never be reached and the command would not exit 0.
+test('a throwing notifier is swallowed and reported, and the rest of the run still finishes', function () {
+    ScheduledPosts::scheduled(-30);
+    $second = ScheduledPosts::scheduled(-20);
+    FailingBlogPostWrites::next();
+    Log::spy();
+
+    $this->mock(NotifyScheduledBlogPostPublishFailed::class, function ($mock): void {
+        $mock->shouldReceive('__invoke')->once()->andThrow(new RuntimeException('notifier exploded'));
+    });
+
+    $this->artisan('blog:publish-scheduled-posts')->assertExitCode(0);
+
+    expect(BlogPost::query()->find($second->id)->status)->toBe(BlogPostStatus::Published);
+    Log::shouldHaveReceived('error')->withArgs(fn (string $message): bool => str_contains($message, 'notifier exploded'));
+});
+
+test('a clean run sends nothing', function () {
+    ScheduledPosts::scheduled();
+    Notification::fake();
+
+    $this->artisan('blog:publish-scheduled-posts')->assertExitCode(0);
+
+    Notification::assertNothingSent();
+});
+
+test('--dry-run sends nothing', function () {
+    ScheduledPosts::scheduled();
+    Notification::fake();
+
+    $this->artisan('blog:publish-scheduled-posts', ['--dry-run' => true])->assertExitCode(0);
+
+    Notification::assertNothingSent();
+});
+
+// Class 2 through the real command (not the notifier called directly): the throwing-listener case
+// yields one announce notification and the post is Published; a second tick sends nothing more,
+// since class-2 failures are never retried (0064's own at-most-once property).
+test('class 2 through the command: a throwing listener yields one announce notification, and a second tick sends nothing more', function () {
+    $creator = commandTestReachableCreator();
+    $post = ScheduledPosts::scheduled(createdBy: $creator);
+    Notification::fake();
+    Event::listen(ScheduledBlogPostPublished::class, function (): never {
+        throw new RuntimeException('listener failed');
+    });
+
+    $this->artisan('blog:publish-scheduled-posts')->assertExitCode(0);
+
+    expect(BlogPost::query()->find($post->id)->status)->toBe(BlogPostStatus::Published);
+    Notification::assertSentTimes(ScheduledBlogPostPublishFailed::class, 1);
+
+    $this->artisan('blog:publish-scheduled-posts')->assertExitCode(0);
+
+    Notification::assertSentTimes(ScheduledBlogPostPublishFailed::class, 1);
 });

@@ -140,6 +140,8 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 ## Testing
 
+- MySQL is the only supported database engine. Before running migrations or tests in a new worktree, ensure its `.env` has been created from `.env.example` and points to the available MySQL service; never switch the project to SQLite as a fallback. `phpunit.xml` pins test runs to MySQL and the `testing` database, so use a separate database name when parallel worktrees need isolation. Never commit `.env` or credentials.
+
 - When creating models for tests, use the factories for the models. Check if the factory has custom states that can be used before manually setting up the model.
 - Faker: Use methods such as `$this->faker->word()` or `fake()->randomDigit()`. Follow existing conventions whether to use `$this->faker` or `fake()`.
 - When creating tests, make use of `php artisan make:test [options] {name}` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.

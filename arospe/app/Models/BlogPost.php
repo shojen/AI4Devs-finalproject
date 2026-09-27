@@ -32,11 +32,13 @@ use Illuminate\Support\Str;
  * @property string|null $body
  * @property BlogPostStatus $status
  * @property Carbon|null $published_at
+ * @property string|null $created_by
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
  * @property-read BlogCategory $category
  * @property-read Collection<int, BlogTag> $tags
+ * @property-read User|null $creator
  */
 #[Fillable(['title', 'body', 'blog_category_id', 'status'])]
 class BlogPost extends Model
@@ -101,6 +103,25 @@ class BlogPost extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(BlogCategory::class, 'blog_category_id');
+    }
+
+    /**
+     * The post's creator (story 0064b, D-7) -- deliberately absent from #[Fillable] and written only
+     * by App\Actions\Blog\CreateBlogPost, from the authenticated actor, once, at creation.
+     * `created_by` never changes afterwards: it means CREATOR, never "last editor".
+     *
+     * Resolves to null for BOTH a NULL column (a legacy row predating this column, or a post created
+     * with no actor) and a SOFT-DELETED creator -- `users` uses SoftDeletes, so a deleted user's row is
+     * excluded by the default SoftDeletingScope on User::query() and this relation returns null exactly
+     * as if no creator had ever been recorded, with no withTrashed() anywhere. The caller
+     * (App\Actions\Blog\NotifyScheduledBlogPostPublishFailed, D-8) treats both causes identically and
+     * falls back to the blog.edit holders.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     /**

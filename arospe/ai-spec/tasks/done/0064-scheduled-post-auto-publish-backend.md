@@ -1435,8 +1435,9 @@ Stated as the facts it needs, corrected against what shipped:
 
    > **Superseded, 2026-09-26, by the owner's decision on this item.** The owner chose the opposite of the
    > recommendation above: 0065's listener must **not** swallow its own failures; the sweep detects them and
-   > **story [0064b](../0064b-scheduled-post-publish-failure-notification-backend.md)** reports them (a
+   > **story [0064b](0064b-scheduled-post-publish-failure-notification-backend.md)** reports them (a
    > notification and an email to the post's creator). 0065 is amended accordingly (its file carries the note).
+   > See 0064b's own **D-0** for the full reasoning behind the reversal.
 
 ## Phase 6 record — 2026-09-26
 
@@ -1473,6 +1474,6 @@ Playwright failure in the long run was not identified.
 **Two follow-up stories were raised while closing this one and were debated in Phase 1 (Three Amigos):**
 [0064a](../done/0064a-activate-verified-user-listener-idempotent-and-single-registration.md) (a listener that is registered
 twice: found by this story's review) and
-[0064b](../0064b-scheduled-post-publish-failure-notification-backend.md) (the failure notification and email to the
+[0064b](0064b-scheduled-post-publish-failure-notification-backend.md) (the failure notification and email to the
 post's creator). Neither is started; 0064b is blocked on 0063.
 

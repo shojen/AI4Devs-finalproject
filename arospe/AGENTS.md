@@ -104,6 +104,8 @@ This is a Laravel application. Abide by these specific packages and versions:
 
 ## Testing
 
+- MySQL is the only supported database engine. Before running migrations or tests in a new worktree, ensure its `.env` has been created from `.env.example` and points to the available MySQL service; never switch the project to SQLite as a fallback. `phpunit.xml` pins test runs to MySQL and the `testing` database, so use a separate database name when parallel worktrees need isolation. Never commit `.env` or credentials.
+
 - Every change must be programmatically tested. Write a new test or update an existing one, then run
   the affected tests and make sure they pass.
 - Run the minimum number of tests needed: `php artisan test --compact` with a specific filename or
