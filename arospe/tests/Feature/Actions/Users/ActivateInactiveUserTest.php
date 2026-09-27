@@ -64,6 +64,32 @@ test('activates an inactive user through exactly one guarded UPDATE and syncs th
     expect($updates[0]->bindings)->toContain(UserStatus::Inactive->value);
 });
 
+test('activates via the targeted sync, not refresh(), leaving every other in-memory change alone', function () {
+    $user = User::factory()->inactive()->create();
+
+    // A genuinely dirty, uncommitted in-memory change to an attribute the win branch never
+    // touches. `name` is an ordinary #[Fillable] string column with no cast and no side effects
+    // from being mutated in memory without a save() -- safe to diverge from the database. This is
+    // the assertion D-3 needs but never had: the real targeted sync (setAttribute()/setAttribute()
+    // on exactly `status` and `updated_at`, then the public syncOriginalAttributes(['status',
+    // 'updated_at'])) leaves every other attribute alone, dirty or not. `refresh()` -- D-3's
+    // rejected alternative -- re-fetches the whole row and overwrites every attribute via
+    // setRawAttributes()/syncOriginal(), which would silently discard this uncommitted `name` and
+    // mark the instance clean on it too. Story 0064c's D-8 mutation A12 (refresh() instead of the
+    // targeted sync) is invisible to every other test in this file/suite -- see the task file's
+    // "Mutation verification run" -- because refresh() happens to reproduce F8's asserted end
+    // state for `status`/`updated_at`/getPrevious(). Only an attribute the action never touches,
+    // asserted both for its uncommitted value and its dirty flag, tells the two implementations
+    // apart.
+    $user->name = 'Not Yet Saved';
+
+    $result = app(ActivateInactiveUser::class)($user);
+
+    expect($result)->toBeTrue()
+        ->and($user->name)->toBe('Not Yet Saved')
+        ->and($user->isDirty('name'))->toBeTrue();
+});
+
 // =====================================================================
 // Lost to a suspension.
 // =====================================================================
