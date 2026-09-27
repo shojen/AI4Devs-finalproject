@@ -5,7 +5,7 @@
 writes `status = Active` with a blind `save()`. If an administrator suspends the account between the moment
 that instance was loaded and the moment the listener's `save()` runs, the listener **overwrites `Suspended`
 with `Active`**: a privilege-grant race — a suspended account becomes active. This is **R-2** of story
-[0064a](done/0064a-activate-verified-user-listener-idempotent-and-single-registration.md), which
+[0064a](../done/0064a-activate-verified-user-listener-idempotent-and-single-registration.md), which
 recorded it, declined to fix it under that story's **D-2** ("prove and pin, do not change the listener's
 write"), and required it to be logged as its own story (**OQ-3**). This is that story.
 
@@ -41,7 +41,7 @@ See **D-1** and **OQ-1**. See [Provenance](#provenance).
 ## Gherkin
 
 Every scenario carries exactly one `When` and opens with a named business-role actor, per
-[gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3. *"Compare-and-set"*
+[gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3. *"Compare-and-set"*
 and *"guarded UPDATE"* are mechanism, so they get no scenario (**D-9**).
 
 > Scenarios 2, 5 and 6 are reachable in production only inside a race window that a single PHP process cannot
@@ -235,7 +235,7 @@ still synchronous. No route, screen, schema or caller changes.
 
 ## Definition of Done
 - [ ] Tests written and green, plus the **full** existing suite in a **single isolated run**, per
-      [contracts.md](../../docs/contracts.md)'s Full Test Suite Gate Rule.
+      [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule.
 - [ ] All **three** quality gates run **unscoped**, each result recorded explicitly *including any that was
       not run*: `php artisan test` (or `vendor/bin/pest -d memory_limit=-1` where the artisan child cannot
       raise its limit), `vendor/bin/pint --format agent` (not `--dirty`), and **Larastan level 7**
@@ -252,7 +252,7 @@ still synchronous. No route, screen, schema or caller changes.
 - [ ] Task-coordination files regenerated when this file is created and again when it moves
       (`ai-spec/tasks-map.md`, `ai-spec/tasks-status.json`), and the two-direction link-integrity check run at
       each stage move, per
-      [task-files-links-and-ordering.md](../../docs/workflow/task-files-links-and-ordering.md).
+      [task-files-links-and-ordering.md](../../../docs/workflow/task-files-links-and-ordering.md).
 - [ ] The `UpdateUser` stale-write hole (**R-2**) is recorded as a risk here and its owner decision (**OQ-5**)
       answered.
 - [ ] Acceptance criteria met.
@@ -274,7 +274,7 @@ no migration. `CLIENT_FOUND_ROWS` is not set (`config/database.php`), so MySQL r
 
 *Rejected — **B**, re-read the row with `lockForUpdate()` in the listener's own `DB::transaction`, decide on
 the fresh row, then `save()`.* It is correct and it is this repo's established shape
-([model-instance-trust.md](../../docs/security/model-instance-trust.md), "A guard must re-read its subject
+([model-instance-trust.md](../../../docs/security/model-instance-trust.md), "A guard must re-read its subject
 under lock, inside its own transaction"), and it is the accepted **fallback** (**OQ-1**). It loses here
 because that convention exists for **multi-step read-decide-write and multi-row invariants** (`SalesRegion`'s
 "exactly one default"), not for one predicate on one row; because it costs four round trips (begin, locking
@@ -390,7 +390,7 @@ decisions, not scenarios.
   Livewire caller loads the target with `findOrFail()` outside the action.
 
 ### Dependencies
-- **Depended on [0064a](done/0064a-activate-verified-user-listener-idempotent-and-single-registration.md)**
+- **Depended on [0064a](../done/0064a-activate-verified-user-listener-idempotent-and-single-registration.md)**
   (PR #37; closed 2026-09-27, so this story is now `ready`): this story **modifies** the unit test file 0064a extends and keeps
   0064a's idempotency and registry tests as its regression net, so it cannot start before 0064a lands.
   (`0064a` < `0064c`: the ordering rule is satisfied.) The debate started from "no dependency beyond the same
@@ -475,6 +475,6 @@ decisions, not scenarios.
   became the deciding argument for A; (4) `ConfirmEmailChange` already locks, so it is defence in depth, not
   a fix; (5) 0064a's **D-2** wording ("needs a compare-and-set on a different condition") is loose — R-2 itself
   names `WHERE status = 'inactive'`.
-- **Models followed for tone and structure:** [0064a](done/0064a-activate-verified-user-listener-idempotent-and-single-registration.md)
-  and [0064](done/0064-scheduled-post-auto-publish-backend.md).
+- **Models followed for tone and structure:** [0064a](../done/0064a-activate-verified-user-listener-idempotent-and-single-registration.md)
+  and [0064](../done/0064-scheduled-post-auto-publish-backend.md).
 - **Status:** Phase 1 output (new stage). Phase 2 (INVEST validation) not yet run.

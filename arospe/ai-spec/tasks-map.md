@@ -41,6 +41,8 @@ Phase-3 blocker (`0048`–`0054`) is now `done/` — so it moves from `blocked` 
 terminal node finally unblocked. `0057`'s own node is likewise dropped from the graph; it had no pending dependent of its own to
 re-derive against `done/`.
 
+Update (2026-09-27): `0064c-activate-verified-user-status-race-compare-and-set-backend.md` passed Phase 2 (INVEST validation, `code-reviewer`: PASS, no rewrite needed) and moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0). It is still pending work, so it keeps its node and edges (it has none, `depends_on: []`); its node moves from the green `ready` class to the blue `claimed` class, and its `tasks-status.json` entry's `status` moved to `"claimed"` (`claimed_by: "0064c-activate-verified-user-status-race-compare-and-set-backend"`). `ai-spec/tasks/in-progress/` now holds exactly this one file.
+
 Update (2026-09-27): `0064a-activate-verified-user-listener-idempotent-and-single-registration.md` completed Phase 7 and moved from `in-progress/` to `done/`. Its node, its `0064a --> 0064c` edge and its `tasks-status.json` entry (the `claimed` one) are dropped. Its one dependent, `0064c`, drops `"0064a"` and moves from `blocked` to `ready`; `0065` drops `"0064a"` from its `conflict_risk_with` (0064a deleted the `AppServiceProvider` method 0065's file list still names — 0065 reconciles that in its own Phase 2/3). `ai-spec/tasks/in-progress/` is empty again.
 
 Update (2026-09-26): a follow-up story raised by `0064a` (its R-2 / OQ-3) was added as a new pending file: `0064c-activate-verified-user-status-race-compare-and-set-backend.md` (`blocked` on `0064a` when created; `ready` once `0064a` closed, a hard dependency because it modifies the unit test file `0064a` extends and keeps `0064a`'s idempotency and registry tests as its regression net; no `conflict_risk_with`, since no other pending story modifies `ActivateVerifiedUser`, its callers or `LogRefusedPrivilegedAttempt`).
@@ -124,8 +126,8 @@ infrastructure fix (not a PRD-derived user story) and is already marked `Status:
 documented` inside its own file, so it is listed for completeness but excluded from the dependency
 graph and from the parallelization analysis below.
 
-- **99 files total**: 98 numbered user stories (79 `done/`, 19 still in `ai-spec/tasks/`, none
-  checked out to `ai-spec/tasks/in-progress/`) + 1 non-numbered infrastructure doc (already resolved). The
+- **99 files total**: 98 numbered user stories (79 `done/`, 18 still in `ai-spec/tasks/`, one
+  (`0064c`) checked out to `ai-spec/tasks/in-progress/`) + 1 non-numbered infrastructure doc (already resolved). The
   `done/` count jumps from 67 to 72 in this pass — one from this story's own closure (`0054`), four
   from the reconciliation of `0052`/`0053`/`0053a`/`0057` noted above.
 - For a machine-readable, per-task claim registry that two parallel Claude Code sessions can use
@@ -229,7 +231,7 @@ appears as a node in the dependency graph below:
 
 | ID | Title | Epic area |
 | --- | --- | --- |
-| 0064c | Activate-verified-user — a suspension that lands mid-request must not be overwritten by the activation (backend) | Epic 1 — Users, Roles & Auth |
+| 0064c *(checked out to `in-progress/`, claimed)* | Activate-verified-user — a suspension that lands mid-request must not be overwritten by the activation (backend) | Epic 1 — Users, Roles & Auth |
 | 0064b | Scheduled post publish failure — notification and email to the post's creator (backend) | Epic 4 — Blog |
 | 0065 | Blog post published — notification (backend) | Epic 4 — Blog |
 | 0066 | Admin UI locale preference & resolution — backend | Epic 5 — i18n |
@@ -372,13 +374,14 @@ flowchart LR
     P0068 --> P0079
 
     class P0064b,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0064c,P0065,P0068 ready;
+    class P0065,P0068 ready;
+    class P0064c claimed;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(no node is `claimed` in this snapshot); yellow (`pending`) = still blocked on at least one open
+(`0064c` is `claimed` in this snapshot); yellow (`pending`) = still blocked on at least one open
 pending dependency.
 
 ## Analysis

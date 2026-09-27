@@ -255,7 +255,7 @@ administrator can observe changes.
       run at each stage move, per
       [task-files-links-and-ordering.md](../../../docs/workflow/task-files-links-and-ordering.md).
 - [x] **Hand-off to 0065 recorded** exactly as stated below.
-- [x] The compare-and-set race (**R-2**) is logged as a **separate follow-up story** (**OQ-3**), not fixed here — raised as [0064c](../0064c-activate-verified-user-status-race-compare-and-set-backend.md), which carries its own Phase 1 debate.
+- [x] The compare-and-set race (**R-2**) is logged as a **separate follow-up story** (**OQ-3**), not fixed here — raised as [0064c](../in-progress/0064c-activate-verified-user-status-race-compare-and-set-backend.md), which carries its own Phase 1 debate.
 - [x] Acceptance criteria met.
 
 ## Documented functional decisions
@@ -403,7 +403,7 @@ Fortify's HTTP route never re-dispatches `Verified` for an already-verified user
   0063 and [0065](../0065-blog-post-published-notification-backend.md). Numbered **0064a** because it was
   found closing 0064; the ordering rule (a dependency's number is lower than its dependents') is satisfied
   since nothing depended on it when this story was written. **Update (2026-09-26):** its R-2 follow-up,
-  [0064c](../0064c-activate-verified-user-status-race-compare-and-set-backend.md), now depends on it and stays
+  [0064c](../in-progress/0064c-activate-verified-user-status-race-compare-and-set-backend.md), now depends on it and stays
   `blocked` until this story lands.
 - **Conflict risk — [0065](../0065-blog-post-published-notification-backend.md):** its file list edits
   `AppServiceProvider::configureEventListeners()`, the method this story deletes. Whichever lands second
