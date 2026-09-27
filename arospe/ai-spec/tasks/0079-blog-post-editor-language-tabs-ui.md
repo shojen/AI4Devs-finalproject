@@ -1301,7 +1301,7 @@ a post's French title is neither identity-sensitive nor hard to reverse.
   its **C-2** reconciliation, **D-18** state triple and **D-19** parameter rule wholesale.
 - **[0070](0070-translatable-content-mechanism-product-categories-backend.md)** — hard.
   `HasTranslations`, `SetTranslation`, `defaultStoreLanguage()`. Consumed unmodified.
-- **[0068](0068-store-languages-catalog-backend.md)** — hard. `StoreLanguage`, `scopeActive()`,
+- **[0068](in-progress/0068-store-languages-catalog-backend.md)** — hard. `StoreLanguage`, `scopeActive()`,
   `is_default`.
 - **[0021](done/0021-wysiwyg-rich-text-editor-component.md)** — hard. Its **D9** is the constraint **D-4** is
   built around; consumed **unmodified**, N times.

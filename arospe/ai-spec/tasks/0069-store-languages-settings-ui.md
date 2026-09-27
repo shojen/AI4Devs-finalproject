@@ -2,7 +2,7 @@
 
 ## Description
 Build the screen behind `GET /settings/store-languages`, replacing the placeholder view story
-[0068](0068-store-languages-catalog-backend.md) ships. **One Livewire component, two visually distinct
+[0068](in-progress/0068-store-languages-catalog-backend.md) ships. **One Livewire component, two visually distinct
 sections** (confirmed by the human — not two components):
 
 1. **Content languages** — the [PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization)
@@ -581,7 +581,7 @@ wrapper on the disabled branch rather than a conditionally-bound `:tooltip` prop
 
 ### Dependencies
 
-- **[Story 0068](0068-store-languages-catalog-backend.md)** — the entire backend contract: both models,
+- **[Story 0068](in-progress/0068-store-languages-catalog-backend.md)** — the entire backend contract: both models,
   both policies, all five actions, the route, the fixture reader and the placeholder view this story
   replaces. **Specified, not implemented** (see R-1).
 - **[Story 0066](0066-admin-ui-locale-preference-backend.md)** — `App\Enums\UiLocale`, which this

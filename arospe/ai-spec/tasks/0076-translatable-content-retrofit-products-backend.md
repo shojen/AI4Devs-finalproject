@@ -623,7 +623,7 @@ Two instructions follow, and they pull in opposite directions on purpose. **(a) 
 
 - **[Story 0024](done/0024-products-core-crud-backend.md)** — hard, and **not implemented**. This story retrofits its table, its model, its validation trait and two of its four actions, and adds a second call site to its sanitizer. See **R-4**.
 - **[Story 0070](0070-translatable-content-mechanism-product-categories-backend.md)** — hard, and **not implemented**. Supplies `HasTranslations`, `SetTranslation`, `StoreLanguage::defaultStoreLanguage()` and the drift guard, all consumed unmodified. **0070's Q1 is still open** (must every entity always hold a default-language translation?) and this story assumes its recommended answer **(a) yes**.
-- **[Story 0068](0068-store-languages-catalog-backend.md)** — hard, and not implemented. Supplies `store_languages`, the `is_default` row the fallback resolves through, and the registry.
+- **[Story 0068](in-progress/0068-store-languages-catalog-backend.md)** — hard, and not implemented. Supplies `store_languages`, the `is_default` row the fallback resolves through, and the registry.
 - **Story 0022** — supplies `App\Actions\NormalizeForSearch`, which this story **does not use** (**D-4**, **D-6**). Listed so its absence reads as a decision rather than an omission.
 - **Stories 0027, 0045 and 0048 depend on this story** and are broken by it — **R-1**, **R-3**.
 - **No new Composer package.** `symfony/html-sanitizer` is [0024a](done/0024a-product-description-html-sanitization.md)'s, already approved there.

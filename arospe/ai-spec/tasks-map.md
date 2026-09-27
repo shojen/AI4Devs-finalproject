@@ -41,6 +41,8 @@ Phase-3 blocker (`0048`–`0054`) is now `done/` — so it moves from `blocked` 
 terminal node finally unblocked. `0057`'s own node is likewise dropped from the graph; it had no pending dependent of its own to
 re-derive against `done/`.
 
+Update (2026-09-27): `0068-store-languages-catalog-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0), after a Phase 2 (INVEST) rejection-and-correction round on the same day (circular dependency on `App\Enums\UiLocale` fixed by moving the enum's ownership here from story 0066; three untestable Gherkin scenarios removed; Q8 resolved). It is still pending work, so it keeps its node and edges; its node moves from the green `ready` class to the blue `claimed` class (it was already `claimed` in `tasks-status.json` from its Phase 2 claim, `claimed_by: "shojen/0068-store-languages-catalog-backend"`), and its `depends_on` is unchanged (still empty). `ai-spec/tasks/in-progress/` now holds exactly this one file.
+
 Update (2026-09-27): `0064a-activate-verified-user-listener-idempotent-and-single-registration.md` completed Phase 7 and moved from `in-progress/` to `done/`. Its node, its `0064a --> 0064c` edge and its `tasks-status.json` entry (the `claimed` one) are dropped. Its one dependent, `0064c`, drops `"0064a"` and moves from `blocked` to `ready`; `0065` drops `"0064a"` from its `conflict_risk_with` (0064a deleted the `AppServiceProvider` method 0065's file list still names — 0065 reconciles that in its own Phase 2/3). `ai-spec/tasks/in-progress/` is empty again.
 
 Update (2026-09-26): a follow-up story raised by `0064a` (its R-2 / OQ-3) was added as a new pending file: `0064c-activate-verified-user-status-race-compare-and-set-backend.md` (`blocked` on `0064a` when created; `ready` once `0064a` closed, a hard dependency because it modifies the unit test file `0064a` extends and keeps `0064a`'s idempotency and registry tests as its regression net; no `conflict_risk_with`, since no other pending story modifies `ActivateVerifiedUser`, its callers or `LogRefusedPrivilegedAttempt`).
@@ -372,7 +374,8 @@ flowchart LR
     P0068 --> P0079
 
     class P0064b,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0064c,P0065,P0068 ready;
+    class P0064c,P0065 ready;
+    class P0068 claimed;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue

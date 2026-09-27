@@ -2005,7 +2005,7 @@ requiring PHP execution was verified and every such claim is flagged at its site
 > | [**0074**](../0074-translatable-content-retrofit-blog-tags-backend.md) | **hard**, not implemented | Drops `blog_tags.name`. The list's eager load and the editor's chip hydration name it. |
 > | [**0078**](../0078-translatable-content-retrofit-blog-posts-backend.md) | **hard, blocking, total**, not implemented | Drops `blog_posts.title`/`body`/`slug`. The list query, the editor's two fields, the delete modal's label and the body rules all depend on it. |
 > | [**0079**](../0079-blog-post-editor-language-tabs-ui.md) | **depends on this story**, not the reverse | It builds the language tabs *on top of* this editor and rewrites this list's query. It must land **strictly after** this story and must never be batched with it. |
-> | [**0070**](../0070-translatable-content-mechanism-product-categories-backend.md) / [**0068**](../0068-store-languages-catalog-backend.md) | hard, transitively | `HasTranslations`, `translated()`, `withTranslationsFor()`, `SetTranslation`, `StoreLanguage` and its `is_default` row. Consumed, never re-implemented. |
+> | [**0070**](../0070-translatable-content-mechanism-product-categories-backend.md) / [**0068**](../in-progress/0068-store-languages-catalog-backend.md) | hard, transitively | `HasTranslations`, `translated()`, `withTranslationsFor()`, `SetTranslation`, `StoreLanguage` and its `is_default` row. Consumed, never re-implemented. |
 > | [**0071**](../0071-product-categories-language-tabs-ui.md) | soft, via 0079 | Owns `<x-language-tab-strip>`, `setActiveLanguageTab()` and the two-layer pattern 0079 consumes. |
 >
 > **The sequencing, strictly:** 0058 → 0059 → 0061 → **0063** → 0068 → 0070 → 0072 → 0074 → 0078 →
@@ -2203,7 +2203,7 @@ guessed. **None blocks Phase 2 review.**
   resolve consistently.
 
   **(b) The administrator's UI locale.** Rejected for the reason 0077 and 0027 both give: it conflates
-  the two i18n axes [0068](../0068-store-languages-catalog-backend.md) draws apart deliberately — the
+  the two i18n axes [0068](../in-progress/0068-store-languages-catalog-backend.md) draws apart deliberately — the
   **interface** language (ES/EN, an administrator preference) and the **store content** languages
   (open-ended, a catalog property) — and it would make two administrators see different labels on the
   same page.
