@@ -6,6 +6,7 @@ use App\Enums\BlogPostStatus;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Models\BlogTag;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,7 +19,9 @@ class BlogPostFactory extends Factory
      *
      * `slug` is deliberately not set: BlogPost's saving hook derives it, which is itself a small proof
      * the hook fires on the insert path. `status` matches the column default, and `published_at` is
-     * null, which is what a Draft carries (D-6).
+     * null, which is what a Draft carries (D-6). `created_by` defaults to null (story 0064b, D-7): the
+     * factory bypasses CreateBlogPost entirely, so there is no authenticated actor to stamp -- a test
+     * that needs a creator uses the createdBy() state below.
      *
      * @return array<string, mixed>
      */
@@ -30,6 +33,7 @@ class BlogPostFactory extends Factory
             'body' => '<p>'.fake()->paragraph().'</p>',
             'status' => BlogPostStatus::Draft,
             'published_at' => null,
+            'created_by' => null,
         ];
     }
 
@@ -55,6 +59,14 @@ class BlogPostFactory extends Factory
             'status' => BlogPostStatus::Scheduled,
             'published_at' => now()->addDay(),
         ]);
+    }
+
+    /**
+     * Record $user as the post's creator (story 0064b, D-7).
+     */
+    public function createdBy(User $user): static
+    {
+        return $this->state(fn (): array => ['created_by' => $user->id]);
     }
 
     /**

@@ -146,7 +146,13 @@ app/
                        signature and fills the body in. PublishScheduledBlogPost (story 0064) is the area's ONE
                        action that does not self-authorize: system-triggered and deliberately ungated, one
                        conditional UPDATE per post, reached only from the scheduled command (see
-                       architecture/authorization/domain-invariants.md#a-system-triggered-write-may-be-ungated--autocancelfullyrefundedorder-and-the-three-conditions-that-make-it-safe)
+                       architecture/authorization/domain-invariants.md#a-system-triggered-write-may-be-ungated--autocancelfullyrefundedorder-and-the-three-conditions-that-make-it-safe).
+                       NotifyScheduledBlogPostPublishFailed (story 0064b) is the area's SECOND ungated
+                       action, called only from the same scheduled command's own `catch` -- never
+                       receives the exception, only the post's id; resolves recipients (the reachable
+                       creator, else the live `blog.edit` holders) BEFORE claiming a one-day dedup
+                       Cache key, and releases the key if the send throws
+                       (architecture/authorization/domain-invariants.md#the-third-instance-and-the-first-collaborator-that-only-ever-reads--notifyscheduledblogpostpublishfailed)
   Actions/Products/    Domain actions for the Products area (CreateProduct, UpdateProduct,
                        DeleteProduct — each self-authorizes, unlike ProductCategories/ above;
                        SyncProductGallery — the single writer of featured_media_id and every

@@ -45,6 +45,10 @@ Update (2026-09-27): `0068-store-languages-catalog-backend.md` completed Phase 7
 
 Earlier update (2026-09-27, superseded): `0068-store-languages-catalog-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0), after a Phase 2 (INVEST) rejection-and-correction round on the same day (circular dependency on `App\Enums\UiLocale` fixed by moving the enum's ownership here from story 0066; three untestable Gherkin scenarios removed; Q8 resolved). It is still pending work, so it keeps its node and edges; its node moves from the green `ready` class to the blue `claimed` class (it was already `claimed` in `tasks-status.json` from its Phase 2 claim, `claimed_by: "shojen/0068-store-languages-catalog-backend"`), and its `depends_on` is unchanged (still empty). `ai-spec/tasks/in-progress/` now holds exactly this one file.
 
+Update (2026-09-27): `0064b-scheduled-post-publish-failure-notification-backend.md` completed Phase 7 and moved from `in-progress/` to `done/` — the tenth Epic 4 story to close. Its node and its `tasks-status.json` entry (the `claimed` one) are dropped. It had no hard (`depends_on`) dependent of its own; `0065` and `0078` each drop it from `conflict_risk_with` (both were file-sharing siblings — `0065`/`0078` also edit `app/Actions/Blog/CreateBlogPost.php`, and `0078` also touches `BlogPost.php`/`blog_posts` — never a `depends_on` edge). `ai-spec/tasks/in-progress/` is empty again.
+
+Earlier update (2026-09-27, superseded): `0064b-scheduled-post-publish-failure-notification-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0) and is claimed in `tasks-status.json`. It is still pending work, so it keeps its node and edges; its node moves from the yellow `pending` class to the blue `claimed` class. Its `depends_on` stays `[]` (both `0064` and `0063` are `done/`) — the registry's `status` had been left stale at `blocked` since 0063 closed despite `depends_on` already being empty, and is corrected to `claimed` in this same pass rather than the `ready` a fresh derivation alone would give, since the task is being checked out right now. `ai-spec/tasks/in-progress/` now holds exactly this one file.
+
 Update (2026-09-27): `0064a-activate-verified-user-listener-idempotent-and-single-registration.md` completed Phase 7 and moved from `in-progress/` to `done/`. Its node, its `0064a --> 0064c` edge and its `tasks-status.json` entry (the `claimed` one) are dropped. Its one dependent, `0064c`, drops `"0064a"` and moves from `blocked` to `ready`; `0065` drops `"0064a"` from its `conflict_risk_with` (0064a deleted the `AppServiceProvider` method 0065's file list still names — 0065 reconciles that in its own Phase 2/3). `ai-spec/tasks/in-progress/` is empty again.
 
 Update (2026-09-26): a follow-up story raised by `0064a` (its R-2 / OQ-3) was added as a new pending file: `0064c-activate-verified-user-status-race-compare-and-set-backend.md` (`blocked` on `0064a` when created; `ready` once `0064a` closed, a hard dependency because it modifies the unit test file `0064a` extends and keeps `0064a`'s idempotency and registry tests as its regression net; no `conflict_risk_with`, since no other pending story modifies `ActivateVerifiedUser`, its callers or `LogRefusedPrivilegedAttempt`).
@@ -140,8 +144,8 @@ graph and from the parallelization analysis below.
 ## Table of contents
 
 - [Inventory](#inventory)
-  - [Done (78) — shipped, out of scope for this graph](#done-78--shipped-out-of-scope-for-this-graph)
-  - [Pending — not started (16 numbered + 1 infra doc)](#pending--not-started-16-numbered--1-infra-doc)
+  - [Done (81) — shipped, out of scope for this graph](#done-81--shipped-out-of-scope-for-this-graph)
+  - [Pending — not started (15 numbered + 1 infra doc)](#pending--not-started-15-numbered--1-infra-doc)
 - [Dependency graph (pending tasks only)](#dependency-graph-pending-tasks-only)
 - [Analysis](#analysis)
   - [Pending tasks that are independent of each other and safe to parallelize](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
@@ -151,7 +155,7 @@ graph and from the parallelization analysis below.
 
 ## Inventory
 
-### Done (79) — shipped, out of scope for this graph
+### Done (81) — shipped, out of scope for this graph
 
 Already merged into `main`/`finalproject-ARP` and closed via the workflow's Phase 7; see
 [`ai-spec/tasks/done/`](tasks/done/) for each story's full file. Listed here only as IDs, grouped
@@ -219,7 +223,7 @@ appears as a node in the dependency graph below:
   preference backend) and 0070 (translatable-content mechanism backend) — move from `blocked` to
   `ready`; every other Epic 5 story drops `"0068"` from its own `depends_on` array but stays
   `blocked` on `0066` or `0070` (or both).
-- **Epic 4 — Blog (8):** 0058 — Blog categories (backend), the first Epic 4 story to close; its four
+- **Epic 4 — Blog (9):** 0058 — Blog categories (backend), the first Epic 4 story to close; its four
   dependents (0061, 0062, 0063, 0072) are re-derived against `done/` from here on and all stay
   `blocked` on other pending dependencies. 0059 — Blog tags (backend), the second, which frees 0060 and
   0061 into `ready` (its other two dependents, 0063 and 0074, stay `blocked`). The two were never a
@@ -233,14 +237,15 @@ appears as a node in the dependency graph below:
   0061, likewise with no dependents, so its closure re-derives nothing; the pending 0063/0065 drop it from
   `conflict_risk_with`. 0064 — Scheduled post auto-publish (backend), the eighth and the app's first scheduled
   command: its one hard dependent, 0065, drops it and moves to `ready`; two follow-ups it raised, 0064a and 0064b,
-  are new pending files.
+  are new pending files. 0064b — Scheduled post publish failure notification (backend), the tenth to close
+  (0063 closed ninth, per the Update note above): it had no hard dependent of its own; `0065` and `0078` drop
+  it from `conflict_risk_with`.
 
-### Pending — not started (16 numbered + 1 infra doc)
+### Pending — not started (15 numbered + 1 infra doc)
 
 | ID | Title | Epic area |
 | --- | --- | --- |
 | 0064c | Activate-verified-user — a suspension that lands mid-request must not be overwritten by the activation (backend) | Epic 1 — Users, Roles & Auth |
-| 0064b | Scheduled post publish failure — notification and email to the post's creator (backend) | Epic 4 — Blog |
 | 0065 | Blog post published — notification (backend) | Epic 4 — Blog |
 | 0066 | Admin UI locale preference & resolution — backend | Epic 5 — i18n |
 | 0067 | Admin UI language switcher — frontend | Epic 5 — i18n |
@@ -292,7 +297,6 @@ flowchart LR
 
     subgraph PEND_BLOG["Epic 4 — Blog"]
         direction TB
-        P0064b["0064b Publish-failure notif BE"]
         P0065["0065 Post published notif BE"]
     end
 
@@ -343,6 +347,9 @@ flowchart LR
     %% Blog
     %% (P0061 --> P0062/P0063/P0064/P0065/P0078 dropped: 0061 closed to done/ this pass, so its node
     %% and every edge touching it are removed; 0062/0063/0064 had no other incoming edge and are now ready)
+    %% (P0064b's own node dropped: 0064b closed to done/ this pass. It had no incoming edge of its
+    %% own -- no pending task named it as a depends_on blocker -- so removing it re-derives nothing
+    %% further; 0065/0078 only held it in conflict_risk_with, not depends_on.)
 
     %% i18n
     %% (P0068 --> P0066/P0067/P0069/P0070/P0071/P0072/P0073/P0074/P0075/P0076/P0077/P0078/P0079
@@ -370,14 +377,15 @@ flowchart LR
     P0077 -.-> P0079
     P0070 --> P0079
 
-    class P0064b,P0067,P0069,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
+    class P0067,P0069,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
     class P0064c,P0065,P0066,P0070 ready;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(no node is `claimed` in this snapshot); yellow (`pending`) = still blocked on at least one open
+(no node is `claimed` in this snapshot — `0064b` and `0068`, the prior `claimed` nodes, both closed
+to `done/` in this reconciled pass); yellow (`pending`) = still blocked on at least one open
 pending dependency.
 
 ## Analysis
@@ -476,8 +484,12 @@ parallelization one. The major chains, in the order they must be executed:
    `0057`, closed too. `0046` was never a hard blocker of either — only a soft/informational,
    non-blocking sibling that made their "two distinct notification types" test meaningful — and it
    too is `done/` as of an earlier pass, so that soft reference is fully satisfied either way.
-3. **Blog (Epic 4).** `{0063 → 0064b}` and `{0065}` (`0058`, `0059`, `0060`, `0061`, `0061a`, `0061b`, `0062` and `0064` are `done/`); `0064a` (an Epic 1 listener fix raised by `0064`) is now `done/`, and its follow-up `0064c` is a free-standing `ready` node; `0060` created the
-   `content` sidebar group and its `blog` cluster that `0062` (done) and `0063` append one item each to.
+3. **Blog (Epic 4) — this chain is now fully resolved too.** `{0065}` is the only Blog-area task still pending
+   (`0058`, `0059`, `0060`, `0061`, `0061a`, `0061b`, `0062`, `0063`, `0064` and `0064b` are all `done/`); `0065`'s
+   own dependencies (`0061`, `0064`) are both `done/`, so it is `ready` with no chain left to sequence. `0064a`
+   (an Epic 1 listener fix raised by `0064`) is now `done/`, and its follow-up `0064c` is a free-standing `ready`
+   node; `0060` created the `content` sidebar group and its `blog` cluster that `0062` and `0063` (both done)
+   each appended one item to.
 4. **Internationalization (Epic 5).** This is the most heavily sequenced part of the backlog, and
    it is **cross-epic**: every retrofit story blocked on `0068` (Store Languages catalog, now
    `done/`) and still blocks on `0070` (the translatable-content mechanism, itself no longer gated
@@ -529,7 +541,7 @@ in [`ai-spec/tasks-status.json`](tasks-status.json):
 - **`App\Concerns\ResolvesSalesRegionFromAddress` was a create-if-absent shared trait between
   `0053` and `0054` — both now `done/`, so this pairing is resolved.** `0053` reached Phase 3
   first and created the file; `0054` consumed it unchanged, as specified.
-- **`0063` and `0065` both edit `app/Actions/Blog/CreateBlogPost.php` and `UpdateBlogPost.php`** (`0061a` and `0061b`, now `done/`, were the others), without a formal dependency forcing an order; every pair is recorded symmetrically in `conflict_risk_with` (`0064` — now `done/` — did not touch these files). **`0064b` also edits `CreateBlogPost.php`** (it writes the new `created_by` column) and `BlogPost.php`/`blog_posts` (as does `0078`), so it is recorded symmetrically against `0063`, `0065` and `0078`; **`0064a` (now `done/`) deleted `AppServiceProvider::configureEventListeners()`, which `0065`'s Modify section still names** — no formal edge remains; `0065` reconciles it in its own Phase 2/3.
+- **`0065` and `0078` are now the only two pending tasks still writing `app/Actions/Blog/CreateBlogPost.php`/`UpdateBlogPost.php`.** `0063`, `0061a`, `0061b`, `0064` and `0064b` all also wrote one or both of these files and are now `done/`, so this pairing is resolved for all of them — `0064b` (it wrote the new `created_by` column onto `CreateBlogPost.php`, and `BlogPost.php`/`blog_posts`) drops out of `0065`'s and `0078`'s `conflict_risk_with` arrays in this same pass. **`0064a` (now `done/`) deleted `AppServiceProvider::configureEventListeners()`, which `0065`'s Modify section still names** — no formal edge remains; `0065` reconciles it in its own Phase 2/3.
 - **The Epic 5 retrofit stories (`0072`, `0074`, `0076`, `0078`) all depend on the same pair,
   `0068` (now `done/`) and `0070`**, and each also touches `config/modules.php` /
   `lang/{en,es}/*.php` for its own domain. They do not depend on each other and their tables are
