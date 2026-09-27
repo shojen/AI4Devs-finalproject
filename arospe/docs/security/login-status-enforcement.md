@@ -320,6 +320,19 @@ not weaken them:
   bound to `Login` by `handle(Login)` and to `Authenticated` by `handleAuthenticated(Authenticated)`,
   and by nothing else. `tests/Feature/Providers/EventListenerRegistrationTest.php` fails if either
   binding is lost (a rename of `handleAuthenticated` silently unregisters the safety net) or bound twice.
+  **Deployment consequence.** Once `bootstrap/cache/events.php` exists it is the *only* source of listener
+  registrations, so a stale manifest silently unregisters this safety net (the remember-me recall and the
+  two-factor mid-challenge race lose protection; the primary sign-in checks still apply). The deploy runs
+  `php artisan optimize`, which runs `event:cache` (clear, then rebuild from the deployed code; if the rebuild
+  fails the cache stays cleared and live discovery takes over), so a normal release cannot leave it stale. Any
+  path that swaps code **without** `optimize` — a manual server hotfix, a rollback that keeps a shared
+  `bootstrap/cache`, a deploy that stops early — must run `php artisan optimize` (or `event:clear`) and reload
+  PHP-FPM if opcache does not revalidate timestamps. `optimize` exits `0` even when a sub-task fails, so the
+  recommended guard is a post-deploy smoke check in the deploy script (outside this repository):
+  `php artisan event:list --event='Illuminate\Auth\Events\Authenticated'` must list
+  `RejectNonActiveUserLogin@handleAuthenticated`, and the `Login` event its `handle`. Locally, run
+  `php artisan event:clear` before trusting `EventListenerRegistrationTest`: it reads the cached manifest if a
+  stale `events.php` is left behind.
   > **Correction (story 0064a, 2026-09-26).** This bullet used to read: *"Single guard, no event
   > auto-discovery. `config/auth.php` defines only `web`, and `bootstrap/app.php` never calls
   > `withEvents()`, so the explicit `Event::listen()` registrations in `AppServiceProvider` are the
@@ -337,4 +350,4 @@ not weaken them:
   `ActivateVerifiedUser` ignores `Suspended` outright, and `ResetUserPassword` fires `Verified` only
   when `email_verified_at` was null. (Contrast the `Inactive` case at the top of this page.)
 
-_Last updated: 2026-09-26 — story 0064a: corrected the "no event auto-discovery" claim (the quoted correction in the *Single guard* bullet); the rest of this page is the task 0007 Phase 4 audit and re-audit, unchanged._
+_Last updated: 2026-09-27 — story 0064a: corrected the "no event auto-discovery" claim (the quoted correction in the *Single guard* bullet) and recorded the event-cache deployment consequence; the rest of this page is the task 0007 Phase 4 audit and re-audit, unchanged._
