@@ -261,10 +261,18 @@ still synchronous. No route, screen, schema or caller changes.
       closed — see D-8's "Open findings".
 - [ ] Code reviewed (code-reviewer). **Point the review at D-2 and D-3**: that the in-memory guards and the
       `getPrevious()` docblock are untouched, and that no path writes `status` except the guarded `UPDATE`.
-- [ ] No security findings (appsec-auditor). **Point the audit at** `ActivateVerifiedUser` /
-      `ActivateInactiveUser`: is there any caller path on which a suspended or previously-verified inactive
-      account can still become active; does the logged refusal leak anything; is the CAS safe given `User`
-      has no model hooks today (**R-3**).
+- [x] No security findings (appsec-auditor). **PASS (2026-09-27).** Re-verified against current code, not
+      the 2026-09-26 findings: the three `Verified` call sites (`grep -rn "new Verified(" app/`) are
+      unchanged and all reach the listener's byte-for-byte-unchanged guards; no path lets a suspended or
+      previously-verified-then-deactivated account reach `Active`. The logged refusal
+      (`LogRefusedPrivilegedAttempt`) writes only `actor_id`/`ability`/`target_type`/`target_id`, no PII or
+      status value, actor/target both come from the trusted `$user` instance (never raw request input). `User`
+      confirmed to still have no `saving`/`updated`/`booted` hook or Observer, so **R-3** holds as stated.
+      SQLi/mass-assignment/IDOR: clean (bound Eloquent queries throughout, `whereKey()` scoped to the
+      caller's own already-vetted instance). One Low/Informational, non-blocking note: between the 0-row
+      guarded `UPDATE` and the diagnostic `SELECT status`, the row could change again, affecting only
+      whether/how the refusal is logged, never the persisted account state (already decided atomically by
+      the guarded `UPDATE` itself) — no fix required, recorded for awareness.
 - [ ] Documentation updated (docs-keeper) — every entry in the *Docs* table, in one pass, with **one**
       `_Last updated_` line per touched doc and the base branch fetched first.
 - [ ] Task-coordination files regenerated when this file is created and again when it moves
