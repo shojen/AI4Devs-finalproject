@@ -26,7 +26,7 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | --- | --- |
 | [Overview](architecture/overview.md) | you need the request lifecycle, runtime dependencies or a "where things live" map. |
 | [Authentication](architecture/authentication.md) (hub, 3 parts) | you touch Fortify features, registration, account status, sign-in block, pending email change, 2FA or passkeys. |
-| [Authorization](architecture/authorization.md) (hub, 13 parts) | you touch roles, permissions, policies, the Super Admin bypass, step-up, refusal logging, or add a gated module. |
+| [Authorization](architecture/authorization.md) (hub, 14 parts) | you touch roles, permissions, policies, the Super Admin bypass, step-up, refusal logging, or add a gated module. |
 | [Shipping](architecture/shipping.md) | you touch shipping-rate resolution (ancestry-walk precedence, no-fallback rule). |
 
 ## Database
@@ -40,6 +40,7 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Payment Methods, Customers & Notifications](database/schema-other.md) (hub, 3 parts) | `payment_methods`, `customers`, `notifications`. |
 | [Orders](database/schema-orders.md) (hub, 3 parts) | `orders`, `order_items`, `refunds`, snapshots and derived totals. |
 | [Blog](database/schema-blog.md) | `blog_categories`, `blog_tags` (stored `normalized_name` uniqueness, folded-length bound), `blog_posts` (soft delete, derived slug, status-governed `published_at`) and the `blog_post_tag` pivot (cascade contract). |
+| [Internationalization](database/schema-localization.md) | `store_languages` (content-authoring language catalog, find-or-create reactivation) and `locale_settings` (this repo's first singleton table: fixed-literal PK, atomic upsert, no enum cast). |
 | [Migrations](database/migrations.md) (hub, 3 parts) | you write a migration (naming, UUID keys, FK indexes, delete behaviour). |
 
 ## API / routes
@@ -55,6 +56,7 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Customers](api/customers.md) | `customers.index`, `customers.show`. |
 | [Orders](api/orders.md) | `orders.index`, `orders.show`, `<x-money>`, `<x-confirm-dialog>`. |
 | [Blog](api/blog.md) | `blog-tags.index`, `blog-categories.index`, `blog-posts.index` / `.create` / `.edit`. |
+| [Store Languages](api/store-languages.md) | `store-languages.index` (backend-only, placeholder view; real screen is story 0069's). |
 
 ## Conventions
 
@@ -91,4 +93,4 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Errors log archive](errors-log-archive.md) | the topic index points at an entry dated before 2026-08-27. |
 | [Revision history](history/) | you need the old `_Previously:` revision notes of a doc (moved out of the doc itself; one file per doc, named after its path). |
 
-_Last updated: 2026-09-24 — Docs optimization pass: index rewritten as one *Read when* row per document (long docs are now hub + parts); the previous long-form entries and history moved unchanged to [index-details-and-history.md](index-details-and-history.md)._
+_Last updated: 2026-09-27 — Story 0068 (Store Languages catalog + the app's two default-locale settings). Added [Internationalization](database/schema-localization.md) and [Store Languages](api/store-languages.md) rows and bumped Authorization to 14 parts (a new [Policies: StoreLanguage and LocaleSetting](architecture/authorization/policies-store-languages-and-locale-settings.md) part)._

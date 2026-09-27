@@ -25,6 +25,17 @@ app/
                        action needs no gate", after SyncProductGallery/SyncProductSalesRegions/
                        SyncProductAttributeValues/EnforceGrantorPermissionScope)
   Actions/Fortify/    Fortify contract implementations (CreatesNewUsers, ResetsUserPasswords)
+  Actions/Localization/ Cross-cutting, not a module area (D24) -- the app's two default-locale
+                       settings (SetDefaultUiLocale, SetDefaultNotificationLocale -- story 0068),
+                       filed separately from Actions/StoreLanguages/ below even though both write
+                       through one settings screen (0069), because these two classes write
+                       dashboard/notification locale settings, not store-language catalog rows.
+                       Named `Localization`, not `Settings`, to avoid colliding with the unrelated
+                       per-user app/Livewire/Settings/ module, and matching the name story 0066
+                       already chose for its own tests/Feature/Localization/ folder. Each
+                       self-authorizes `update` on LocaleSetting::class as its own first statement,
+                       then writes with an atomic upsert() naming only its own column (Phase 4
+                       finding L1 -- see database/schema-localization.md#locale_settings)
   Actions/Media/       Domain actions for the Media Library area (StoreUploadedImage — the atomic
                        upload/convert/insert; GenerateImageConversions — the only class in the app
                        that imports the imaging library; UpdateMediaDetails — the inline
@@ -202,6 +213,16 @@ app/
                        its never-bare-null result object (see architecture/shipping.md);
                        ListShippingRatesByCarrier — the grouped-by-carrier query, deliberately
                        gating nothing of its own, 0037's gating consumer)
+  Actions/StoreLanguages/ Domain actions for the Store Languages catalog (AddStoreLanguage -- a
+                       find-or-create, never a plain insert: reactivates an inactive row matching
+                       the submitted code rather than duplicating it; RemoveStoreLanguage -- means
+                       `is_active = false`, never a delete of any kind; SetDefaultStoreLanguage --
+                       the single named writer of `store_languages.is_default` -- story 0068). Each
+                       self-authorizes its own operation as its own first statement, matching
+                       SalesRegions/'s shape; RemoveStoreLanguage and SetDefaultStoreLanguage each
+                       lock the target plus every other row their invariant depends on in ONE
+                       primary-key-ordered query, the same combined-lock shape SetDefaultSalesRegion
+                       established
   Actions/Users/       Domain actions for the Users area (RequestEmailChange, ConfirmEmailChange,
                        CreateUser, UpdateUser — the last two authorize their own operation)
   Actions/PaymentMethods/ Domain actions for the Payment Methods area (UpdatePaymentMethodIban —

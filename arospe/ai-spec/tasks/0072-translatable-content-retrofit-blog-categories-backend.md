@@ -9,7 +9,7 @@ as a taxonomy whose name must be authorable per store language). It creates the
 `blog_category_translations` child table, wires `App\Models\BlogCategory` to
 `App\Concerns\HasTranslations`, re-scopes name uniqueness from global to per-store-language, backfills
 every existing category into the store default language, and appends **one** entry to
-[0068](0068-store-languages-catalog-backend.md)'s `translation_relations` registry.
+[0068](done/0068-store-languages-catalog-backend.md)'s `translation_relations` registry.
 
 **This story consumes a recipe; it does not write one.** `HasTranslations`, `SetTranslation` and
 `StoreLanguage::defaultStoreLanguage()` are 0070's and are used **unmodified**. What this story owns is
@@ -794,7 +794,7 @@ is one no post uses, and its translations are exactly the data that has just bec
   hold a default-language translation?) and this story assumes its recommended answer **(a) yes** —
   `CreateBlogCategory` writes one and the backfill guarantees one. If 0070 resolves Q1 differently, this
   story's create-path acceptance criterion changes with it; it is not re-asked here.
-- **[Story 0068](0068-store-languages-catalog-backend.md)** — hard, and not yet implemented. Supplies
+- **[Story 0068](done/0068-store-languages-catalog-backend.md)** — hard, and not yet implemented. Supplies
   `store_languages`, the `is_default` row the fallback resolves through, and the registry.
 - **Story 0022** — supplies `App\Actions\NormalizeForSearch`, consumed unchanged at both write time (the
   hook) and read time (the validation rule), per [0032's **D-N1**](done/0032-shipping-geography-catalog-seed.md).

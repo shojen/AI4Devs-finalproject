@@ -139,8 +139,8 @@ Feature: Admin UI locale preference (Layer 1)
   default of `'en'` would falsely assert a choice nobody made. **No index** (**D-4**). Length `5`,
   not a bare `string()` (**D-2**). `down()` needs no `dropUnique()` first — nothing unique is added.
 
-**Enum**
-- `app/Enums/UiLocale.php` — new. The single source of truth for the offered pair:
+**Enum** — ⚠️ **ownership moved to story 0068 on 2026-09-27** (0068's Phase 2 rejection, finding B1)
+- ~~`app/Enums/UiLocale.php` — new.~~ **Not created by this story — imported from story 0068.** This story depends on 0068 (R-2a), and 0068's `LocaleSetting` accessors, validation trait and actions all need the enum, so listing it here made 0068 → 0066 → 0068 a circular dependency. 0068 now creates it in **exactly the shape below, unchanged**, which is kept here as the record of what this story consumes and why its shape is what it is. The single source of truth for the offered pair:
 
   ```php
   enum UiLocale: string
@@ -272,6 +272,9 @@ Feature: Admin UI locale preference (Layer 1)
   resolves with `tryFrom()` (line 75), so an unrecognized string fails validation rather than throwing.
 
 **Consumed, not created by this story**
+- `app/Enums/UiLocale.php` — **story 0068's deliverable since 2026-09-27** (see the *Enum* entry
+  above). Imported by the middleware, `preferredLocale()`, `SetUserUiLocale` and `uiLocaleRules()`;
+  this story adds no case, no `label()` and no `default()` to it.
 - `app/Models/LocaleSetting.php` — **story 0068's deliverable**, consumed here through exactly two
   static reads and nothing else:
 
@@ -305,13 +308,15 @@ Backend only — **no browser tests**, since this story ships no UI.
 > **must** be a literal `$this->post('/livewire/update', …)`. This resolves what would otherwise
 > have been a spike; see **D-8**.
 
-**Unit — `tests/Unit/Enums/UiLocaleTest.php`** (new; mirrors `tests/Unit/Enums/UserStatusTest.php`)
-- [ ] The backing values are exactly `en` and `es`, and `cases()` has exactly two entries.
+**Unit — `tests/Unit/Enums/UiLocaleTest.php`** — ⚠️ **moved to story 0068 on 2026-09-27, with the
+enum it tests** (0068 finding B1). The two cases below are now 0068's to write; they are kept struck
+through so the history reads straight, and this story writes no enum test.
+- [ ] ~~The backing values are exactly `en` and `es`, and `cases()` has exactly two entries.
       *Risk if missing:* a third case added later silently widens what validation accepts and what
       the switcher offers, contradicting the PRD's "only Spanish and English" scenario, with no test
-      objecting.
-- [ ] `UiLocale::tryFrom('fr')` returns `null` rather than throwing — pins the property the
-      resolution boundary depends on.
+      objecting.~~
+- [ ] ~~`UiLocale::tryFrom('fr')` returns `null` rather than throwing — pins the property the
+      resolution boundary depends on.~~
 
 **Feature — `tests/Feature/Localization/UiLocaleResolutionTest.php`** (new; the middleware's own
 coverage, named for a cross-cutting concern the way `tests/Feature/Authorization/` and
@@ -443,8 +448,10 @@ emails start arriving in the recipient's language as soon as this ships.
 ## Acceptance criteria
 - [ ] `users.ui_locale` exists as a nullable `VARCHAR(5)` after `status`, with no index, no default
       and no backfill.
-- [ ] `App\Enums\UiLocale` holds exactly `English = 'en'` and `Spanish = 'es'` and is the only place
-      the offered pair is written down.
+- [ ] ~~`App\Enums\UiLocale` holds exactly `English = 'en'` and `Spanish = 'es'` and is the only place
+      the offered pair is written down.~~ *Moved to story 0068's acceptance criteria on 2026-09-27,
+      with the enum (B1).* This story's criterion is narrower: every class it adds imports
+      `App\Enums\UiLocale` from 0068 and writes the `en`/`es` pair nowhere else.
 - [ ] The column is **not** cast to the enum on the model and is **not** in `#[Fillable]`;
       `App\Actions\Users\SetUserUiLocale` is its single writer.
 - [ ] A stored value outside the enum resolves to the configured default and **never** raises an
@@ -481,7 +488,8 @@ emails start arriving in the recipient's language as soon as this ships.
       `app/Http/Middleware/**` in "Where things live" (the directory does not exist today) and a
       lifecycle note that a locale step now runs in the `web` group;
       `docs/conventions/base-standards.md`'s directory listing gains `app/Http/Middleware/`;
-      `docs/conventions/naming.md` records `UiLocale` and the deliberate absence of `label()`; and
+      ~~`docs/conventions/naming.md` records `UiLocale` and the deliberate absence of `label()`;~~
+      (*moved to story 0068's DoD on 2026-09-27, with the enum*); and
       **`docs/architecture/authentication.md` records that notifications now render in the
       recipient's locale** — that page owns the notification lifecycle, and D-14 changes it.
 - [ ] **This story does NOT claim the UI renders translated.** Its outcome is *locale resolution*
@@ -673,7 +681,8 @@ would otherwise pass for the wrong reason:
   lands in the stock `app/Http/Middleware/` location.
 - **D-13 — Test paths, stated as the convention decision they are.** This repo records that
   [a story file naming a test path is making a convention decision](../../docs/testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure),
-  so: the enum test mirrors the model layer (`tests/Unit/Enums/`), the action test mirrors its own
+  so: the enum test mirrors the model layer (`tests/Unit/Enums/`; *that test is story 0068's since
+  2026-09-27, at the same path*), the action test mirrors its own
   namespace (`tests/Feature/Users/`), and the middleware tests go in a new
   **`tests/Feature/Localization/`** — a cross-cutting-concern folder in the shape of the existing
   `tests/Feature/Authorization/` and `tests/Feature/Navigation/`, rather than
@@ -758,9 +767,13 @@ that a screen-shaped exclusion cannot bind shared code:
 
   **What Phase 3 must do, regardless of the numbers:** implement **0068's `LocaleSetting` piece first**
   — the migration, the model with its two accessors, and its seeder — then 0066's middleware fallback
-  and `preferredLocale()`. Everything else in 0066 (the column, the enum, the action, the validation
+  and `preferredLocale()`. ~~Everything else in 0066 (the column, the enum, the action, the validation
   trait) has **no** dependency on 0068 and can be built first in any order; only the two fallback call
-  sites are blocked. A reviewer meeting this out of order should read it as a documented exception
+  sites are blocked.~~ ⚠️ *Corrected 2026-09-27:* `App\Enums\UiLocale` is now **0068's** file (0068
+  finding B1), so the action, the validation trait and both fallback call sites all import it from
+  0068. Only the `users.ui_locale` migration has no dependency on 0068; everything else here waits for
+  0068's enum, and the two fallback call sites additionally wait for its `LocaleSetting`. The
+  dependency is now strictly one-way (0066 → 0068), with no cycle. A reviewer meeting this out of order should read it as a documented exception
   rather than an oversight, which is why it is stated here instead of left to be inferred.
 - **R-3 — `vendor/` is not installed in this worktree.** Every vendor claim in this file was verified
   against the main checkout at `/home/shojen/dev/ia4devs-curso/AI4Devs-finalproject/arospe/vendor`
@@ -775,7 +788,8 @@ that a screen-shaped exclusion cannot bind shared code:
   — which is exactly the case D-5's `tryFrom()` boundary makes survivable, and which the stale-value
   test pins.
 - **Dependency — story 0067 (frontend) consumes this contract** and must not re-derive any of it:
-  the enum `App\Enums\UiLocale` (`English`/`Spanish`, `'en'`/`'es'`), the action
+  the enum `App\Enums\UiLocale` (`English`/`Spanish`, `'en'`/`'es'` — *created by story 0068 since
+  2026-09-27, not by this story*), the action
   `App\Actions\Users\SetUserUiLocale::__invoke(UiLocale $locale, ?User $user = null): User` — called
   as `app(SetUserUiLocale::class)(UiLocale::Spanish)` with no target for the common case — the column
   `users.ui_locale`, and the middleware `App\Http\Middleware\SetUiLocale`, which is already global so
@@ -783,7 +797,8 @@ that a screen-shaped exclusion cannot bind shared code:
   `label()` the enum needs, and its own lang keys.
 - **Dependency — story 0068 (Store Languages + locale settings) is consumed here, and the boundary is
   narrower than this bullet originally claimed.** It used to read *"0068 must not reuse any of this"*,
-  which is **too broad and now false**: 0068 legitimately imports `App\Enums\UiLocale` and validates
+  which is **too broad and now false**: 0068 legitimately ~~imports~~ **owns** (*since 2026-09-27 —
+  this story now imports it from 0068*) `App\Enums\UiLocale` and validates
   with `Rule::enum(UiLocale::class)`, because the offered ES/EN pair is genuinely the same value set
   for the dashboard default, the notification default and a user's own preference. What 0068 must
   **not** reuse is the *per-user* concept: `users.ui_locale`, `SetUserUiLocale`, and the idea that a
@@ -795,12 +810,14 @@ that a screen-shaped exclusion cannot bind shared code:
 ## 6. Technical tasks for later backlog creation
 
 0. **First, and out of numeric order — implement story 0068's `LocaleSetting` piece** (migration,
-   model with its two accessors, seeder). Tasks 3 and 6 below call it and cannot be completed until
-   it exists; everything else here is independent of it. See **R-2a** for why the numbers are
+   model with its two accessors, seeder) **and its `App\Enums\UiLocale`** (*added 2026-09-27 — the
+   enum moved to 0068, B1*). Tasks 3 and 6 below call `LocaleSetting`, and tasks 3–6 import the enum;
+   ~~everything else here is independent of it~~ only task 1 is independent of 0068. See **R-2a** for why the numbers are
    inverted and why the files are deliberately not renumbered.
 1. Create the migration adding `users.ui_locale` (nullable `VARCHAR(5)`, after `status`, no index, no
    backfill) and confirm the resulting index list with `php artisan db:table users`.
-2. Create `App\Enums\UiLocale` with exactly two cases and no `label()`/`default()`.
+2. ~~Create `App\Enums\UiLocale` with exactly two cases and no `label()`/`default()`.~~ *Moved to
+   story 0068 on 2026-09-27 (B1).* Import `App\Enums\UiLocale` from 0068 — no enum work here.
 3. Add the `@property` line to `App\Models\User`, plus the `HasLocalePreference` interface and
    `preferredLocale()` (**blocked on task 0 below**) — and deliberately nothing else.
 4. Add `uiLocaleRules()` to the existing `App\Concerns\UserValidationRules`.
@@ -810,8 +827,8 @@ that a screen-shaped exclusion cannot bind shared code:
 7. Register it with `$middleware->web(append: [...])` in `bootstrap/app.php`.
 8. Add a `uiLocale()` state to `UserFactory` for tests needing an explicit value; leave
    `definition()` untouched so every existing test keeps `null`.
-9. Write the five test files listed above, including the prove-it-can-fail step on the Livewire
-   round-trip test.
+9. Write the ~~five~~ new test files listed above (`UiLocaleTest.php` moved to 0068 on 2026-09-27)
+   and extend `UserTest.php`, including the prove-it-can-fail step on the Livewire round-trip test.
 10. Run all three quality gates unscoped and record each result, including any not run.
 11. Docs pass per the Definition of Done, including the gherkin-guidelines glossary rows separating
     "admin UI language" from "store language".
@@ -868,6 +885,11 @@ false (`config/app.php` as "the single source of truth", and the over-broad "006
 of this"), the affected Gherkin scenarios, and the two fallback tests 0068 warned would **keep
 passing for the wrong reason** if left as written. This story is also what gives `locale_settings`
 its first real consumer, closing the zero-consumer gap 0068's **R-16** records.
+
+**Enum ownership corrected on 2026-09-27**, from story 0068's Phase 2 rejection (finding B1: a
+circular dependency, since this story claimed to create `App\Enums\UiLocale` while depending on 0068,
+which needs the enum). `UiLocale` and its unit test moved to 0068 in the shape specified here,
+unchanged; this file now imports it. Nothing else in this story was redesigned.
 
 **Nothing here is open for a human any longer.** **R-2** is resolved (implement it); **R-2a** is a
 recorded, deliberate exception to the task-ordering rule rather than a question. Phase 2's remaining
