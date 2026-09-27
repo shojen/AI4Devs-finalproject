@@ -41,6 +41,12 @@ Phase-3 blocker (`0048`–`0054`) is now `done/` — so it moves from `blocked` 
 terminal node finally unblocked. `0057`'s own node is likewise dropped from the graph; it had no pending dependent of its own to
 re-derive against `done/`.
 
+Update (2026-09-27): `0064d-update-user-status-role-race-lock-and-recheck-backend.md` was added as a new
+pending file (Phase 1 Three Amigos debate complete) — raised while story `0064c` was still `in-progress/`,
+per its **OQ-5** (owner decision: raise now). No code dependency on `0064c` (the two actions share no file;
+0064c's own file records this as a provenance-only link, not a `depends_on` edge), so `depends_on: []` and
+`status: "ready"` from creation, with no incoming edge in the graph below.
+
 Update (2026-09-27): `0064c-activate-verified-user-status-race-compare-and-set-backend.md` passed Phase 2 (INVEST validation, `code-reviewer`: PASS, no rewrite needed) and moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0). It is still pending work, so it keeps its node and edges (it has none, `depends_on: []`); its node moves from the green `ready` class to the blue `claimed` class, and its `tasks-status.json` entry's `status` moved to `"claimed"` (`claimed_by: "0064c-activate-verified-user-status-race-compare-and-set-backend"`). `ai-spec/tasks/in-progress/` now holds exactly this one file.
 
 Update (2026-09-27): `0064a-activate-verified-user-listener-idempotent-and-single-registration.md` completed Phase 7 and moved from `in-progress/` to `done/`. Its node, its `0064a --> 0064c` edge and its `tasks-status.json` entry (the `claimed` one) are dropped. Its one dependent, `0064c`, drops `"0064a"` and moves from `blocked` to `ready`; `0065` drops `"0064a"` from its `conflict_risk_with` (0064a deleted the `AppServiceProvider` method 0065's file list still names — 0065 reconciles that in its own Phase 2/3). `ai-spec/tasks/in-progress/` is empty again.
@@ -126,7 +132,7 @@ infrastructure fix (not a PRD-derived user story) and is already marked `Status:
 documented` inside its own file, so it is listed for completeness but excluded from the dependency
 graph and from the parallelization analysis below.
 
-- **99 files total**: 98 numbered user stories (79 `done/`, 18 still in `ai-spec/tasks/`, one
+- **100 files total**: 99 numbered user stories (79 `done/`, 19 still in `ai-spec/tasks/`, one
   (`0064c`) checked out to `ai-spec/tasks/in-progress/`) + 1 non-numbered infrastructure doc (already resolved). The
   `done/` count jumps from 67 to 72 in this pass — one from this story's own closure (`0054`), four
   from the reconciliation of `0052`/`0053`/`0053a`/`0057` noted above.
@@ -139,7 +145,7 @@ graph and from the parallelization analysis below.
 
 - [Inventory](#inventory)
   - [Done (78) — shipped, out of scope for this graph](#done-78--shipped-out-of-scope-for-this-graph)
-  - [Pending — not started (17 numbered + 1 infra doc)](#pending--not-started-18-numbered--1-infra-doc)
+  - [Pending — not started (19 numbered + 1 infra doc)](#pending--not-started-19-numbered--1-infra-doc)
 - [Dependency graph (pending tasks only)](#dependency-graph-pending-tasks-only)
 - [Analysis](#analysis)
   - [Pending tasks that are independent of each other and safe to parallelize](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
@@ -227,10 +233,11 @@ appears as a node in the dependency graph below:
   command: its one hard dependent, 0065, drops it and moves to `ready`; two follow-ups it raised, 0064a and 0064b,
   are new pending files.
 
-### Pending — not started (18 numbered + 1 infra doc)
+### Pending — not started (19 numbered + 1 infra doc)
 
 | ID | Title | Epic area |
 | --- | --- | --- |
+| 0064d | UpdateUser — a concurrent status/role change must not be decided or overwritten on a stale read (backend) | Epic 1 — Users, Roles & Auth |
 | 0064c *(checked out to `in-progress/`, claimed)* | Activate-verified-user — a suspension that lands mid-request must not be overwritten by the activation (backend) | Epic 1 — Users, Roles & Auth |
 | 0064b | Scheduled post publish failure — notification and email to the post's creator (backend) | Epic 4 — Blog |
 | 0065 | Blog post published — notification (backend) | Epic 4 — Blog |
@@ -281,6 +288,7 @@ flowchart LR
     subgraph PEND_AUTH["Epic 1 — Users, Roles & Auth"]
         direction TB
         P0064c["0064c Activation CAS vs suspension race BE"]
+        P0064d["0064d UpdateUser stale-read lock+recheck BE"]
     end
 
     subgraph PEND_BLOG["Epic 4 — Blog"]
@@ -374,7 +382,7 @@ flowchart LR
     P0068 --> P0079
 
     class P0064b,P0066,P0067,P0069,P0070,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0065,P0068 ready;
+    class P0065,P0068,P0064d ready;
     class P0064c claimed;
 ```
 

@@ -229,38 +229,76 @@ nothing. `ActivateVerifiedUser`'s in-memory guards and its `getPrevious()` docbl
 still synchronous. No route, screen, schema or caller changes.
 
 ## Acceptance criteria
-- [ ] `App\Actions\Users\ActivateInactiveUser` exists, writes through one guarded `UPDATE … WHERE id AND
+- [x] `App\Actions\Users\ActivateInactiveUser` exists, writes through one guarded `UPDATE … WHERE id AND
       status = 'inactive'` via the Eloquent builder, syncs the caller's instance only on a win (targeted
-      sync, no `refresh()`, no second write) and never on a loss.
-- [ ] `ActivateVerifiedUser` keeps its in-memory guards and `getPrevious()` docblock, calls the action in
-      place of `save()`, stays synchronous, and `getOriginal()` is not used in it.
-- [ ] A stale `Inactive` instance for a since-suspended user is **never** activated, on the Fortify, password
-      reset and email-change paths, outside and inside a transaction.
-- [ ] A lost race against a suspension logs one refusal; a concurrent activation, an absent row and a
-      soft-deleted row log nothing and throw nothing.
-- [ ] The three callers, `UpdateUser`, `User`, `bootstrap/app.php`, `database/**` and `routes/**` are unchanged.
-- [ ] 0064a's idempotency and registry tests pass **unmodified**; the unit tests keep their names and rules.
+      sync, no `refresh()`, no second write) and never on a loss. **Verified (code-reviewer, 2026-09-27):**
+      confirmed by reading `app/Actions/Users/ActivateInactiveUser.php` directly against the win/loss branches.
+- [x] `ActivateVerifiedUser` keeps its in-memory guards and `getPrevious()` docblock, calls the action in
+      place of `save()`, stays synchronous, and `getOriginal()` is not used in it. **Verified (code-reviewer,
+      2026-09-27):** `git show 08a55d8 -- app/Listeners/ActivateVerifiedUser.php` shows the guards and the
+      existing docblock text are untouched (only one paragraph appended, the last two statements replaced);
+      `getOriginal()` does not appear anywhere in the file; no `ShouldQueue`.
+- [x] A stale `Inactive` instance for a since-suspended user is **never** activated, on the Fortify, password
+      reset and email-change paths, outside and inside a transaction. **Verified (code-reviewer, 2026-09-27):**
+      F1/F1b/F1c pass in the full suite; the three caller interleave tests
+      (`EmailVerificationTest`, `PasswordResetTest`, `EmailChangeTest`) pass in the full suite.
+- [x] A lost race against a suspension logs one refusal; a concurrent activation, an absent row and a
+      soft-deleted row log nothing and throw nothing. **Verified (code-reviewer, 2026-09-27):** all four cases
+      covered and green in `tests/Feature/Actions/Users/ActivateInactiveUserTest.php`.
+- [x] The three callers, `UpdateUser`, `User`, `bootstrap/app.php`, `database/**` and `routes/**` are unchanged.
+      **Verified (code-reviewer, 2026-09-27):** `git diff 4c49512..HEAD --stat` shows none of these paths in
+      the diff.
+- [x] 0064a's idempotency and registry tests pass **unmodified**; the unit tests keep their names and rules.
+      **Verified (code-reviewer, 2026-09-27):** `git log -- tests/Feature/Auth/ActivateVerifiedUserIdempotencyTest.php`
+      and `tests/Feature/Providers/EventListenerRegistrationTest.php` each show only their original 0064a
+      commit; `tests/Unit/Listeners/ActivateVerifiedUserTest.php`'s five pre-existing cases keep their original
+      names and assertions, now counting the injected fake instead of `saveCallCount`.
 - [x] Every mutation in **D-8** was seen red against a named test and recorded in this file; the tests that
       can be red first were. The 2026-09-27 verification run recorded in D-8 found two problems: A12 was
       not seen red by any test in the suite, and A9's F1b entry was factually wrong (F8 alone kills it).
       Both are now closed: A9's row is corrected, and A12 is killed by a new test,
       `ActivateInactiveUserTest`'s "activates via the targeted sync, not refresh(), leaving every other
       in-memory change alone" (confirmed red under the `refresh()` mutation, green against the real code).
-- [ ] No other task file is edited by this story beyond the link-integrity re-points and the 0064a DoD
-      pointer.
+- [x] No other task file is edited by this story beyond the link-integrity re-points and the 0064a DoD
+      pointer. **Verified (code-reviewer, 2026-09-27):** `git diff 4c49512..HEAD --stat -- ai-spec/tasks/`
+      touches only this file and 0064a's (two `../0064c-...md` → `../in-progress/0064c-...md` link updates).
 
 ## Definition of Done
-- [ ] Tests written and green, plus the **full** existing suite in a **single isolated run**, per
-      [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule.
-- [ ] All **three** quality gates run **unscoped**, each result recorded explicitly *including any that was
+- [x] Tests written and green, plus the **full** existing suite in a **single isolated run**, per
+      [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule. **Confirmed (code-reviewer,
+      2026-09-27):** `DB_DATABASE=testing_0064c php -d memory_limit=-1 vendor/bin/pest --compact`, run once,
+      foreground/isolated (checked `ps aux` first for concurrent writers of `testing_0064c`: none). Result:
+      `{"tool":"pest","result":"passed","tests":4406,"passed":4403,"assertions":15119,"skipped":3}`, exit code
+      0. The 3 skipped are pre-existing, unrelated (`tests/Browser/Media/GalleryTest.php`). 0 failures.
+- [x] All **three** quality gates run **unscoped**, each result recorded explicitly *including any that was
       not run*: `php artisan test` (or `vendor/bin/pest -d memory_limit=-1` where the artisan child cannot
       raise its limit), `vendor/bin/pint --format agent` (not `--dirty`), and **Larastan level 7**
-      (`vendor/bin/phpstan analyse`).
+      (`vendor/bin/phpstan analyse`). **Confirmed (code-reviewer, 2026-09-27):**
+      - Full suite: see the bullet above — 4406 tests, 4403 passed, 3 skipped (unrelated), 0 failed.
+      - `vendor/bin/pint --format agent`: `{"tool":"pint","result":"passed"}`.
+      - `vendor/bin/phpstan analyse --memory-limit=-1 --no-progress` (config confirms `level: 7` in
+        `phpstan.neon`): `{"tool":"phpstan","result":"passed","errors":0}`.
 - [x] The red-then-green sequence and every **D-8** mutation recorded in the task file. **Recording done**
       (2026-09-27, D-8) and now correct: the two open findings (A9's F1b entry, A12 fully uncovered) are
       closed — see D-8's "Open findings".
-- [ ] Code reviewed (code-reviewer). **Point the review at D-2 and D-3**: that the in-memory guards and the
-      `getPrevious()` docblock are untouched, and that no path writes `status` except the guarded `UPDATE`.
+- [x] Code reviewed (code-reviewer). **PASS (2026-09-27).** **D-2 confirmed:** `git show 08a55d8 --
+      app/Listeners/ActivateVerifiedUser.php` shows the `instanceof User`/`status !== Inactive` guard and the
+      full `getPrevious()`-not-`getOriginal()` docblock reasoning byte-for-byte unchanged — the diff only
+      appends one new paragraph and replaces the trailing `$user->status = Active; $user->save();` with
+      `($this->activateInactiveUser)($user);`. **D-3 confirmed:** `ActivateInactiveUser::__invoke()`'s win
+      branch is exactly `setAttribute('status', ...)`/`setAttribute('updated_at', ...)` then the public
+      `syncOriginalAttributes(['status', 'updated_at'])` — no `refresh()`, no second `save()`; the loss branch
+      leaves the instance untouched. Within the activation flow this story owns, `status` is now written only
+      by the one guarded `UPDATE` inside `ActivateInactiveUser`. **One scope note, not a defect:**
+      `app/Actions/Users/UpdateUser.php:122` (`$user->status = $status; ... $user->save();`) still writes
+      `status` directly through an administrator-initiated, unguarded `save()` — this is **R-2**, explicitly
+      recorded in this same file as an accepted, out-of-scope risk (acceptance criterion "the three callers,
+      `UpdateUser`, ... are unchanged"), not a gap introduced or missed by this story. See the DoD's own
+      unresolved OQ-5 bullet below. Reviewed `app/Actions/Users/ActivateInactiveUser.php` and
+      `app/Listeners/ActivateVerifiedUser.php` against `docs/conventions/base-standards.md` and this repo's
+      `App\Actions\*` shape (compared against `app/Actions/Users/UpdateUser.php`): constructor-promoted
+      readonly dependency, explicit return type, single-purpose class, PHPDoc-first — no convention violation
+      found. Full acceptance-criteria and DoD verification recorded inline above and below.
 - [x] No security findings (appsec-auditor). **PASS (2026-09-27).** Re-verified against current code, not
       the 2026-09-26 findings: the three `Verified` call sites (`grep -rn "new Verified(" app/`) are
       unchanged and all reach the listener's byte-for-byte-unchanged guards; no path lets a suspended or
@@ -279,9 +317,12 @@ still synchronous. No route, screen, schema or caller changes.
       (`ai-spec/tasks-map.md`, `ai-spec/tasks-status.json`), and the two-direction link-integrity check run at
       each stage move, per
       [task-files-links-and-ordering.md](../../../docs/workflow/task-files-links-and-ordering.md).
-- [ ] The `UpdateUser` stale-write hole (**R-2**) is recorded as a risk here and its owner decision (**OQ-5**)
-      answered.
-- [ ] Acceptance criteria met.
+- [x] The `UpdateUser` stale-write hole (**R-2**) is recorded as a risk here and its owner decision (**OQ-5**)
+      answered. **Owner decision (2026-09-27): (b), raise it now.** Raised as
+      [0064d](../0064d-update-user-status-role-race-lock-and-recheck-backend.md) (Phase 1, Three Amigos debate
+      complete; Phase 2 onward not yet run).
+- [x] Acceptance criteria met. **Verified (code-reviewer, 2026-09-27):** all eight bullets under
+      `## Acceptance criteria` above independently confirmed against the real code/tests and ticked.
 
 ## Documented functional decisions
 
@@ -529,8 +570,8 @@ decisions, not scenarios.
     `Active`, which is what the Gherkin needs.
   - (b) Sync it to the persisted status — needs the extra `SELECT`'s result and adds little.
 - **OQ-5 — `UpdateUser`'s stale write (R-2).**
-  - **(a) Record it here as a risk only; raise a story if you want it (recommended).**
-  - (b) Raise it now as its own Three Amigos story.
+  - (a) Record it here as a risk only; raise a story if you want it.
+  - **(b) Raise it now as its own Three Amigos story — owner decision, 2026-09-27.**
   - (c) Fold it into this story — mixes two actions and enlarges a security-adjacent change.
 - **OQ-6 — A soft-deleted user's late confirmation (D-5).**
   - **(a) Silent no-op, no error, no log (recommended).**
