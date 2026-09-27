@@ -67,9 +67,19 @@ describe('payload privacy (D-4)', function () {
         expect($row)->not->toBeNull()
             ->and($row->data)->not->toContain($marker);
 
+        // Not a blanket count: RolePermissionSeeder (seeded above) also sends a real password-reset
+        // email to the Super Admin whenever it freshly provisions that account on a clean database
+        // (RefreshDatabase gives every test one), so the transport legitimately holds 2 messages here.
+        // Narrow to the one addressed to $creator -- still a meaningful assertion, since it would
+        // still catch a real double-send bug for the notification under test.
         $messages = app('mailer')->getSymfonyTransport()->messages();
-        expect($messages)->toHaveCount(1);
-        $raw = $messages[0]->getOriginalMessage();
+        $messagesToCreator = collect($messages)->filter(function ($sentMessage) use ($creator): bool {
+            $to = $sentMessage->getOriginalMessage()->getTo();
+
+            return collect($to)->contains(fn ($address) => $address->getAddress() === $creator->email);
+        })->values();
+        expect($messagesToCreator)->toHaveCount(1);
+        $raw = $messagesToCreator[0]->getOriginalMessage();
         expect((string) $raw->getHtmlBody())->not->toContain($marker)
             ->and((string) $raw->getTextBody())->not->toContain($marker)
             ->and((string) $raw->getSubject())->not->toContain($marker);
