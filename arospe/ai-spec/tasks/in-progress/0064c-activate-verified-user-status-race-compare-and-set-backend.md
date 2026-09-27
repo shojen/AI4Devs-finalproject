@@ -311,8 +311,15 @@ still synchronous. No route, screen, schema or caller changes.
       guarded `UPDATE` and the diagnostic `SELECT status`, the row could change again, affecting only
       whether/how the refusal is logged, never the persisted account state (already decided atomically by
       the guarded `UPDATE` itself) — no fix required, recorded for awareness.
-- [ ] Documentation updated (docs-keeper) — every entry in the *Docs* table, in one pass, with **one**
-      `_Last updated_` line per touched doc and the base branch fetched first.
+- [x] Documentation updated (docs-keeper) — every entry in the *Docs* table, in one pass, with **one**
+      `_Last updated_` line per touched doc and the base branch fetched first. **Done (2026-09-27):**
+      `origin/finalproject-ARP` fetched first, no unrelated staleness found. Touched:
+      `docs/security/login-status-enforcement.md`, `docs/architecture/authentication/features-registration-and-status.md`,
+      `docs/architecture/authentication/two-factor-passkeys-logout-and-map.md`, `docs/security/model-instance-trust.md`
+      (new "single predicate on one row" section plus a forward-pointer to 0064d), and
+      `docs/architecture/authorization/step-up-and-refusal-logging.md` (new refusal reason). Skipped, with reason:
+      `docs/conventions/directory-structure/app-layers.md` and `docs/conventions/naming/classes.md` don't enumerate
+      actions; `docs/README.md`'s summaries didn't go stale.
 - [ ] Task-coordination files regenerated when this file is created and again when it moves
       (`ai-spec/tasks-map.md`, `ai-spec/tasks-status.json`), and the two-direction link-integrity check run at
       each stage move, per
