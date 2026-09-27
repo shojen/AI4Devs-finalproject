@@ -1,5 +1,8 @@
 # Infrastructure fix: no test suite can open a database connection (local fresh setup or CI)
 
+> **Lifecycle: done.** Keep this file as the implementation record; the permanent MySQL rule for
+> future worktrees is maintained in `AGENTS.md`, `CLAUDE.md`, and `launch-tasks.sh`.
+
 Not a PRD-derived user story — deliberately outside the `00XX-` task numbering. Found while
 debating an Epic 2 story in Three Amigos Phase 1; confirmed here by reading the actual config,
 not taken on the reporting agent's word.
