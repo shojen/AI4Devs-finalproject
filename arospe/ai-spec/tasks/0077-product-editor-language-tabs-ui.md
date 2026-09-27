@@ -633,7 +633,7 @@ The hook family, **keyed by `{id}` per C-3**, each present on **every** branch o
 - **[Story 0027](done/0027-products-list-and-editor-ui.md)** — hard, and **not implemented**. Supplies the `Editor` component and view this story modifies throughout. See **R-2**.
 - **[Story 0021](done/0021-wysiwyg-rich-text-editor-component.md)** — hard, and not implemented. Its **D9** is the constraint **D-1** is built around; consumed **unmodified**.
 - **[Story 0070](0070-translatable-content-mechanism-product-categories-backend.md)** — hard. `HasTranslations`, `SetTranslation`, `defaultStoreLanguage()`, consumed unmodified. Its **Q3** is answered in part here (**R-4**).
-- **[Story 0068](in-progress/0068-store-languages-catalog-backend.md)** — hard. `StoreLanguage`, `scopeActive()`, `is_default`, `code`, `name`.
+- **[Story 0068](done/0068-store-languages-catalog-backend.md)** — hard. `StoreLanguage`, `scopeActive()`, `is_default`, `code`, `name`.
 - **Stories 0020 and 0022** — the embedded `Gallery` and `SearchableMultiSelect`; consumed unchanged, but see **R-5** for the instance-count consequence.
 - **No new Composer package**, and **no new permission** — the catalog stays at 42.
 

@@ -66,10 +66,8 @@
       "id": "0066",
       "slug": "0066-admin-ui-locale-preference-backend",
       "title": "Admin UI locale preference & resolution — backend",
-      "depends_on": [
-        "0068"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -88,8 +86,7 @@
       "slug": "0067-admin-ui-language-switcher-ui",
       "title": "Admin UI language switcher — frontend",
       "depends_on": [
-        "0066",
-        "0068"
+        "0066"
       ],
       "status": "blocked",
       "claimed_by": null,
@@ -113,52 +110,11 @@
       ]
     },
     {
-      "id": "0068",
-      "slug": "0068-store-languages-catalog-backend",
-      "title": "Store Languages catalog + the app's two default-locale settings",
-      "depends_on": [],
-      "status": "claimed",
-      "claimed_by": "shojen/0068-store-languages-catalog-backend",
-      "claimed_at": "2026-09-27T00:00:00Z",
-      "touches": [
-        "database/migrations/*_create_store_languages_table.php",
-        "database/migrations/*_create_locale_settings_table.php",
-        "app/Models/StoreLanguage.php",
-        "app/Models/LocaleSetting.php",
-        "app/Enums/UiLocale.php",
-        "database/data/iso-639-languages.json",
-        "app/Policies/StoreLanguagePolicy.php",
-        "app/Policies/LocaleSettingPolicy.php",
-        "app/Concerns/StoreLanguageValidationRules.php",
-        "app/Concerns/LocaleSettingValidationRules.php",
-        "app/Actions/StoreLanguages/",
-        "app/Actions/Localization/",
-        "app/Livewire/StoreLanguages/Index.php",
-        "resources/views/livewire/store-languages.blade.php",
-        "routes/store-languages.php",
-        "routes/web.php",
-        "config/store-languages.php",
-        "database/seeders/StoreLanguageSeeder.php",
-        "database/seeders/LocaleSettingSeeder.php",
-        "database/seeders/DatabaseSeeder.php",
-        "database/seeders/ProductionSeeder.php",
-        "database/factories/StoreLanguageFactory.php",
-        "database/factories/LocaleSettingFactory.php",
-        "lang/en/store-languages.php",
-        "lang/es/store-languages.php",
-        "lang/en/localization.php",
-        "lang/es/localization.php",
-        "database/data/README.md"
-      ],
-      "conflict_risk_with": []
-    },
-    {
       "id": "0069",
       "slug": "0069-store-languages-settings-ui",
       "title": "Store Languages settings screen — frontend",
       "depends_on": [
-        "0066",
-        "0068"
+        "0066"
       ],
       "status": "blocked",
       "claimed_by": null,
@@ -178,10 +134,8 @@
       "id": "0070",
       "slug": "0070-translatable-content-mechanism-product-categories-backend",
       "title": "Translatable content mechanism — backend, piloted on Product Categories",
-      "depends_on": [
-        "0068"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -202,7 +156,6 @@
       "slug": "0071-product-categories-language-tabs-ui",
       "title": "Product Categories taxonomy screen — language tabs (frontend)",
       "depends_on": [
-        "0068",
         "0070"
       ],
       "status": "blocked",
@@ -220,7 +173,6 @@
       "slug": "0072-translatable-content-retrofit-blog-categories-backend",
       "title": "Translatable content retrofit — Blog Categories backend",
       "depends_on": [
-        "0068",
         "0070"
       ],
       "status": "blocked",
@@ -245,7 +197,6 @@
       "slug": "0073-blog-categories-language-tabs-ui",
       "title": "Blog Categories screen — language tabs",
       "depends_on": [
-        "0068",
         "0070",
         "0071",
         "0072"
@@ -264,7 +215,6 @@
       "slug": "0074-translatable-content-retrofit-blog-tags-backend",
       "title": "Translatable content retrofit — Blog Tags backend",
       "depends_on": [
-        "0068",
         "0070"
       ],
       "status": "blocked",
@@ -290,7 +240,6 @@
       "slug": "0075-blog-tags-language-tabs-ui",
       "title": "Blog Tags screen — language tabs",
       "depends_on": [
-        "0068",
         "0070",
         "0071",
         "0074"
@@ -309,7 +258,6 @@
       "slug": "0076-translatable-content-retrofit-products-backend",
       "title": "Translatable content retrofit — Products backend",
       "depends_on": [
-        "0068",
         "0070"
       ],
       "status": "blocked",
@@ -334,7 +282,6 @@
       "slug": "0077-product-editor-language-tabs-ui",
       "title": "Product editor — language tabs (UI)",
       "depends_on": [
-        "0068",
         "0070",
         "0076"
       ],
@@ -354,7 +301,6 @@
       "slug": "0078-translatable-content-retrofit-blog-posts-backend",
       "title": "Translatable content retrofit — Blog Posts backend",
       "depends_on": [
-        "0068",
         "0070"
       ],
       "status": "blocked",
@@ -380,7 +326,6 @@
       "slug": "0079-blog-post-editor-language-tabs-ui",
       "title": "Blog post editor — language tabs (frontend)",
       "depends_on": [
-        "0068",
         "0070",
         "0071",
         "0078"

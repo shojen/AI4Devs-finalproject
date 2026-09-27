@@ -894,7 +894,7 @@ load-bearing:** since `SetTranslation` authorizes nothing, each action's `Gate` 
   the drift guard, all consumed unmodified. **0070's Q1 is still open** (must every entity always hold a
   default-language translation?); this story assumes its recommended **(a) yes**, which is what makes a
   post never nameless. It is not re-asked here.
-- **[Story 0068](in-progress/0068-store-languages-catalog-backend.md)** — hard, and not implemented. Supplies
+- **[Story 0068](done/0068-store-languages-catalog-backend.md)** — hard, and not implemented. Supplies
   `store_languages`, the `is_default` row the fallback resolves through, and the registry.
 - **Story [0024a](done/0024a-product-description-html-sanitization.md)** (split out of 0024 on 2026-09-01) — soft, for the HTML sanitizer only, consumed exactly as 0061's **D-14** consumes it. Its
   ownership race with 0061 (0061's **OQ-4**) is inherited unresolved and is not this story's to settle.

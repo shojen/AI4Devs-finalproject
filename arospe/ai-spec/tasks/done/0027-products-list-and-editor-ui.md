@@ -2414,7 +2414,7 @@ nothing either way.
 > - **[0076](../0076-translatable-content-retrofit-products-backend.md)** (backend retrofit) — if it lands **first**, this story is written against the corrected [D-4](#d-4--the-list-query-explicit-columns-two-eager-loads-and-real-pagination) query from the outset and nothing is ever red. If it lands **second**, this story ships the original query and 0076's landing breaks `IndexQueryTest.php` until the correction is applied. **Either order works; the second costs a red suite in between**, and 0077's **R-1** requires that red to be recognised as 0076's hand-off rather than "fixed" by whoever meets it.
 > - **[0077](../0077-product-editor-language-tabs-ui.md)** (the language tabs) is strictly **after** this story — it modifies files this one creates — and strictly after 0076, whose widened signatures it consumes.
 >
-> ⚠️ **0076 also depends transitively on [0068](../in-progress/0068-store-languages-catalog-backend.md) (the store-language catalog) and [0070](../0070-translatable-content-mechanism-product-categories-backend.md) (the translation mechanism)**, so the real chain past 0026 is **0068 → 0070 → 0076 → 0027-as-amended → 0077**. 0070 is the story that also breaks this file's **category** eager load ([D-4](#d-4--the-list-query-explicit-columns-two-eager-loads-and-real-pagination) note 4) — a break this amendment deliberately does **not** cover.
+> ⚠️ **0076 also depends transitively on [0068](0068-store-languages-catalog-backend.md) (the store-language catalog) and [0070](../0070-translatable-content-mechanism-product-categories-backend.md) (the translation mechanism)**, so the real chain past 0026 is **0068 → 0070 → 0076 → 0027-as-amended → 0077**. 0070 is the story that also breaks this file's **category** eager load ([D-4](#d-4--the-list-query-explicit-columns-two-eager-loads-and-real-pagination) note 4) — a break this amendment deliberately does **not** cover.
 >
 > 🔴 **One resequencing option is cheaper than all of this and belongs to the coordinator, not here.** 0076's **R-4** records it: if 0076 is scheduled **before 0024 is implemented**, 0024 is amended so `name`/`description` are *never created* on `products` at all, the slug/SEO columns are born on the child table, and 0076's second migration and backfill disappear entirely. In that world this story is written once, correctly, and none of the corrections in this file are ever needed — *"cheaper to decide than to reverse."*
 
@@ -2564,7 +2564,7 @@ calls that can be answered any time before the markup is written.
   every entity always holds a default-language translation), so a list cell can never render blank,
   and it makes the list stable for every administrator regardless of who is looking at it.
   (b) The administrator's UI locale. Rejected as a recommendation by 0077 for a reason worth
-  repeating: it conflates the two i18n axes [0068](../in-progress/0068-store-languages-catalog-backend.md)'s own
+  repeating: it conflates the two i18n axes [0068](0068-store-languages-catalog-backend.md)'s own
   opening table draws apart deliberately — the **interface** language (ES/EN, an administrator
   preference) and the **store content** languages (open-ended, a catalog property). It would also make
   two administrators see different orderings of the same page.

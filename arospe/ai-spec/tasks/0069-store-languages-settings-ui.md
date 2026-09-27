@@ -2,7 +2,7 @@
 
 ## Description
 Build the screen behind `GET /settings/store-languages`, replacing the placeholder view story
-[0068](in-progress/0068-store-languages-catalog-backend.md) ships. **One Livewire component, two visually distinct
+[0068](done/0068-store-languages-catalog-backend.md) ships. **One Livewire component, two visually distinct
 sections** (confirmed by the human — not two components):
 
 1. **Content languages** — the [PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization)
@@ -143,7 +143,7 @@ Feature: The Store Languages settings screen — dashboard defaults
 > **Added 2026-09-27 — moved from story 0068 (its Phase 5 review, finding B2).** 0068 originally carried
 > this scenario as *"A language outside the offered pair is refused"*, but its two `Localization` actions
 > take a typed `UiLocale`, so no raw string can reach them and 0068 has no boundary at which a validation
-> error can occur (see [0068's struck scenario and test line](in-progress/0068-store-languages-catalog-backend.md#gherkin)).
+> error can occur (see [0068's struck scenario and test line](done/0068-store-languages-catalog-backend.md#gherkin)).
 > The first place a raw string exists is **this** story's form: `$defaultUiLocale` and
 > `$defaultNotificationLocale` are client-writable `string` properties (**D-16**), so a forged Livewire
 > payload can carry anything. The scenario is reworded only to add the non-persistence half of the
@@ -156,7 +156,7 @@ Feature: The Store Languages settings screen — dashboard defaults
 
 - **`app/Concerns/LocaleSettingValidationRules.php`** — ⚠️ *added 2026-09-27; originally drafted and
   shipped under story 0068, moved here because this story's settings form is its only real caller*
-  ([0068's struck *Files* bullet](in-progress/0068-store-languages-catalog-backend.md#create--the-locale-settings-half):
+  ([0068's struck *Files* bullet](done/0068-store-languages-catalog-backend.md#create--the-locale-settings-half):
   Larastan flagged it as dead code in 0068, whose actions take a typed `UiLocale` and never validate a
   raw string — 0068's **D15** "don't ship a validation method nothing calls" rule). Shape unchanged from
   0068's design: `defaultUiLocaleRules()` and `defaultNotificationLocaleRules()`, each
@@ -646,7 +646,7 @@ wrapper on the disabled branch rather than a conditionally-bound `:tooltip` prop
 
 ### Dependencies
 
-- **[Story 0068](in-progress/0068-store-languages-catalog-backend.md)** — the entire backend contract: both models,
+- **[Story 0068](done/0068-store-languages-catalog-backend.md)** — the entire backend contract: both models,
   both policies, all five actions, the route, the fixture reader and the placeholder view this story
   replaces. **Specified, not implemented** (see R-1).
 - **[Story 0066](0066-admin-ui-locale-preference-backend.md)** — ~~`App\Enums\UiLocale`, which this
