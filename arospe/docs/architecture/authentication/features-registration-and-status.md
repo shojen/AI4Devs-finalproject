@@ -109,15 +109,7 @@ An administrator-created account therefore starts with **a random unusable passw
 
 Every account carries a `users.status`, cast to the backed string enum [`App\Enums\UserStatus`](../../../app/Enums/UserStatus.php) (`Active` / `Inactive` / `Suspended`, whose `label()` resolves `__('users.statuses.*')` from `lang/en/users.php` and `lang/es/users.php`). The column defaults to `inactive` and is **not** mass-assignable — it is omitted from `User`'s `#[Fillable]`, so a profile form that posts a `status` field changes nothing.
 
-The governing invariant is **no self-activation**: no account reaches `active` *by its own action* without its email being proven. Self-registration therefore lands on the column default (`inactive`), and the only automatic transition to `active` happens in one place — [`App\Listeners\ActivateVerifiedUser`](../../../app/Listeners/ActivateVerifiedUser.php), wired to Laravel's `Illuminate\Auth\Events\Verified` event:
-
-```php
-// app/Providers/AppServiceProvider.php
-protected function configureEventListeners(): void
-{
-    Event::listen(Verified::class, ActivateVerifiedUser::class);
-}
-```
+The governing invariant is **no self-activation**: no account reaches `active` *by its own action* without its email being proven. Self-registration therefore lands on the column default (`inactive`), and the only automatic transition to `active` happens in one place — [`App\Listeners\ActivateVerifiedUser`](../../../app/Listeners/ActivateVerifiedUser.php), wired to Laravel's `Illuminate\Auth\Events\Verified` event by listener auto-discovery (its public `handle(Verified $event)`); it is not registered by hand, and delivering `Verified` to the same user twice leaves the account exactly as one delivery would.
 
 ```php
 // app/Listeners/ActivateVerifiedUser.php

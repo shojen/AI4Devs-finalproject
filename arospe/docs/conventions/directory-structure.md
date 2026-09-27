@@ -48,4 +48,4 @@ This document is split into parts so an agent reads only the one its task touche
 | [An app-owned config file is a registry](directory-structure/config-registry.md) | you edit `config/modules.php` or `config/html-sanitizer.php`, or add any app-owned config file (no closures, keys not copy). | An app-owned config file is a registry, and must survive `con... |
 | [Controllers in front of actions; authorization belongs to the action](directory-structure/controllers-and-authorization-rule.md) | you add a controller, or decide where an authorization check for an operation must live. | Controllers sit in front of actions, not instead of them; An authorization rule belongs to the action, not to one of it... |
 
-_Last updated: 2026-09-24 — split into the parts above (docs optimization pass); no content changed. The prior revision-history footer, if any, stays at the end of the last part._
+_Last updated: 2026-09-26 — `Listeners/` entry now states the discovery-only registration policy (story 0064a); the parts above are otherwise as split on 2026-09-24. The prior revision-history footer, if any, stays at the end of the last part._

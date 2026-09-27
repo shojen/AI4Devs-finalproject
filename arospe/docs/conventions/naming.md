@@ -13,4 +13,4 @@ This document is split into parts so an agent reads only the one its task touche
 | [Route and permission names](naming/routes-and-permissions.md) | you name a route or a permission, or need the validation-trait pointer. | Traits and their methods; Route names; Permission names |
 | [Translation keys and boolean properties](naming/translation-keys-and-booleans.md) | you add a lang key (including `trans_choice()` plurals and registry-mirroring files) or name a boolean property/predicate. | Translation keys; Boolean properties |
 
-_Last updated: 2026-09-24 — split into the parts above (docs optimization pass); no content changed. The prior revision-history footer, if any, stays at the end of the last part._
+_Last updated: 2026-09-26 — `classes.md` notes that listeners are auto-discovered (story 0064a); the parts above are otherwise as split on 2026-09-24. The prior revision-history footer, if any, stays at the end of the last part._

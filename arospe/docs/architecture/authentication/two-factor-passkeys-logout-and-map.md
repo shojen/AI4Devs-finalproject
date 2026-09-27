@@ -108,10 +108,10 @@ public function deleteUser(Logout $logout): void
 | Fortify config | `config/fortify.php` |
 | Register/reset actions | `app/Actions/Fortify/CreateNewUser.php`, `app/Actions/Fortify/ResetUserPassword.php` |
 | Account status enum | `app/Enums/UserStatus.php`, plus `User::isActive()` in `app/Models/User.php` |
-| Activation listener | `app/Listeners/ActivateVerifiedUser.php` (registered in `app/Providers/AppServiceProvider.php`) |
+| Activation listener | `app/Listeners/ActivateVerifiedUser.php` (auto-discovered from `app/Listeners`) |
 | Sign-in status check (password + 2FA) | `app/Actions/Fortify/AuthenticateUser.php` (registered in `app/Providers/FortifyServiceProvider.php::configureActions()`) |
 | Sign-in status check (passkey) | `app/Providers/FortifyServiceProvider.php::configurePasskeys()` |
-| Sign-in status check (remember-me, mid-challenge) | `app/Listeners/RejectNonActiveUserLogin.php` (registered on `Login` **and** `Authenticated` in `app/Providers/AppServiceProvider.php`) |
+| Sign-in status check (remember-me, mid-challenge) | `app/Listeners/RejectNonActiveUserLogin.php` (auto-discovered on `Login` **and** `Authenticated`) |
 | Email-change actions | `app/Actions/Users/RequestEmailChange.php`, `app/Actions/Users/ConfirmEmailChange.php` |
 | Email-change HTTP boundary | `app/Http/Controllers/ConfirmEmailChangeController.php`, route `email-change.confirm` in `routes/settings.php` |
 | Email-change notification | `app/Notifications/PendingEmailVerification.php` |
