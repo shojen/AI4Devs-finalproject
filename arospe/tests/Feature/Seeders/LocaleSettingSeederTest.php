@@ -45,7 +45,7 @@ test('seeding an empty table with app.locale set to en creates a row matching en
 test('seeding with an app.locale outside the offered pair throws and writes no row', function () {
     config(['app.locale' => 'fr']);
 
-    expect(fn () => (new LocaleSettingSeeder)->run())->toThrow(Throwable::class);
+    expect(fn () => (new LocaleSettingSeeder)->run())->toThrow(Exception::class);
 
     expect(LocaleSetting::count())->toBe(0);
 });

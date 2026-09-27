@@ -100,18 +100,18 @@ test('the raw fixture file carries code, name_endonym and name_en on every entry
 
 test('a missing fixture makes availableLanguages throw rather than returning an empty array', function () {
     withCorruptedStoreLanguageFixture(null, function (): void {
-        expect(fn () => StoreLanguage::availableLanguages())->toThrow(Throwable::class);
+        expect(fn () => StoreLanguage::availableLanguages())->toThrow(Exception::class);
     });
 });
 
 test('a malformed (non-JSON) fixture makes availableLanguages throw rather than returning an empty array', function () {
     withCorruptedStoreLanguageFixture('{not valid json at all', function (): void {
-        expect(fn () => StoreLanguage::availableLanguages())->toThrow(Throwable::class);
+        expect(fn () => StoreLanguage::availableLanguages())->toThrow(Exception::class);
     });
 });
 
 test('a fixture entry missing name_endonym makes availableLanguages throw', function () {
     withCorruptedStoreLanguageFixture(json_encode([['code' => 'zz', 'name_en' => 'Zeta']]), function (): void {
-        expect(fn () => StoreLanguage::availableLanguages())->toThrow(Throwable::class);
+        expect(fn () => StoreLanguage::availableLanguages())->toThrow(Exception::class);
     });
 });

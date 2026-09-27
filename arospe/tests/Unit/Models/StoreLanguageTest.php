@@ -13,6 +13,7 @@
 // tests/Unit/Actions/Media/GenerateImageConversionsTest.php's own per-file opt-in.
 
 use App\Models\StoreLanguage;
+use Illuminate\Database\Eloquent\MassAssignmentException;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -50,49 +51,53 @@ test('is_active casts to a real bool, not 0/1', function () {
 // D15 -- #[Fillable([])]: zero of five columns mass-assignable. A caller cannot supply a name,
 // a code, or either flag through fill(); AddStoreLanguage/RemoveStoreLanguage/
 // SetDefaultStoreLanguage must all write with forceFill()/forceCreate() instead.
+//
+// Phase 3 correction: the original assertion here (isDirty() stays false, the column stays null)
+// assumed fill() silently discards a non-fillable attribute. Verified by execution against the
+// installed framework instead of assumed: Eloquent's Model::fill() calls totallyGuarded(), which
+// is true whenever $fillable is empty AND $guarded is its class default (['*']) -- exactly what
+// #[Fillable([])] produces here, with no override to $guarded. In that combination fill() THROWS
+// Illuminate\Database\Eloquent\MassAssignmentException unconditionally, regardless of Laravel's
+// "prevent silently discarding attributes" opt-in flag -- it is not read at all on this branch.
+// This is arguably a STRONGER guarantee than a silent no-op (a caller cannot even accidentally
+// half-populate the model without an immediate, loud failure), and it is the real, uniform
+// behavior of every #[Fillable([])] model in this codebase, including the existing
+// App\Models\GeographyEntry this story cites as precedent -- not a defect specific to
+// StoreLanguage's own implementation.
 
 test('code is not mass-assignable', function () {
     $storeLanguage = new StoreLanguage;
 
-    $storeLanguage->fill(['code' => 'fr']);
-
-    expect($storeLanguage->isDirty('code'))->toBeFalse()
-        ->and($storeLanguage->code)->toBeNull();
+    expect(fn () => $storeLanguage->fill(['code' => 'fr']))
+        ->toThrow(MassAssignmentException::class);
 });
 
 test('name is not mass-assignable', function () {
     $storeLanguage = new StoreLanguage;
 
-    $storeLanguage->fill(['name' => 'Invented Language']);
-
-    expect($storeLanguage->isDirty('name'))->toBeFalse()
-        ->and($storeLanguage->name)->toBeNull();
+    expect(fn () => $storeLanguage->fill(['name' => 'Invented Language']))
+        ->toThrow(MassAssignmentException::class);
 });
 
 test('is_default is not mass-assignable', function () {
     $storeLanguage = new StoreLanguage;
 
-    $storeLanguage->fill(['is_default' => true]);
-
-    expect($storeLanguage->isDirty('is_default'))->toBeFalse()
-        ->and($storeLanguage->is_default)->toBeNull();
+    expect(fn () => $storeLanguage->fill(['is_default' => true]))
+        ->toThrow(MassAssignmentException::class);
 });
 
 test('is_active is not mass-assignable', function () {
     $storeLanguage = new StoreLanguage;
 
-    $storeLanguage->fill(['is_active' => true]);
-
-    expect($storeLanguage->isDirty('is_active'))->toBeFalse()
-        ->and($storeLanguage->is_active)->toBeNull();
+    expect(fn () => $storeLanguage->fill(['is_active' => true]))
+        ->toThrow(MassAssignmentException::class);
 });
 
 test('id is not mass-assignable', function () {
     $storeLanguage = new StoreLanguage;
 
-    $storeLanguage->fill(['id' => (string) Str::uuid()]);
-
-    expect($storeLanguage->isDirty('id'))->toBeFalse();
+    expect(fn () => $storeLanguage->fill(['id' => (string) Str::uuid()]))
+        ->toThrow(MassAssignmentException::class);
 });
 
 // D8/R-7 -- the extension point, against the shipped EMPTY translation_relations registry. This

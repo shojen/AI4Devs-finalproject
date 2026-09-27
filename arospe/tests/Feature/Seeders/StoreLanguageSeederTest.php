@@ -95,7 +95,7 @@ test('re-seeding after an administrator has added and promoted French leaves Fre
 
 test('seeding with a missing fixture aborts the seed loudly, writing no row', function () {
     withCorruptedIso639FixtureDuring(null, function (): void {
-        expect(fn () => (new StoreLanguageSeeder)->run())->toThrow(Throwable::class);
+        expect(fn () => (new StoreLanguageSeeder)->run())->toThrow(Exception::class);
     });
 
     expect(StoreLanguage::count())->toBe(0);
@@ -103,7 +103,7 @@ test('seeding with a missing fixture aborts the seed loudly, writing no row', fu
 
 test('seeding with a malformed fixture aborts the seed loudly, writing no row', function () {
     withCorruptedIso639FixtureDuring('{not valid json', function (): void {
-        expect(fn () => (new StoreLanguageSeeder)->run())->toThrow(Throwable::class);
+        expect(fn () => (new StoreLanguageSeeder)->run())->toThrow(Exception::class);
     });
 
     expect(StoreLanguage::count())->toBe(0);
