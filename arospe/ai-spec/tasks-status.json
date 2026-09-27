@@ -74,7 +74,6 @@
       "claimed_at": null,
       "touches": [
         "database/migrations/*_add_ui_locale_to_users_table.php",
-        "app/Enums/UiLocale.php",
         "app/Models/User.php",
         "app/Concerns/UserValidationRules.php",
         "app/Actions/Users/SetUserUiLocale.php",
@@ -148,7 +147,8 @@
         "lang/en/store-languages.php",
         "lang/es/store-languages.php",
         "lang/en/localization.php",
-        "lang/es/localization.php"
+        "lang/es/localization.php",
+        "database/data/README.md"
       ],
       "conflict_risk_with": []
     },
