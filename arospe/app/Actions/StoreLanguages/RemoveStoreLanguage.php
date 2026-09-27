@@ -45,6 +45,13 @@ class RemoveStoreLanguage
      * When a row is BOTH the current default AND the last active language, only ONE refusal
      * reason is logged -- the more specific one, `cannot_remove_default` -- never both: the
      * is_default check runs first and returns before the active-count check is ever reached.
+     *
+     * Phase 5 code review finding 2 (non-blocking): removing an ALREADY-inactive language was
+     * previously unspecified -- with exactly one other active row, the active-count check would
+     * have refused with the misleading `cannot_remove_last_active_language` (the real reason is
+     * "already removed"), and otherwise the call silently no-opped while still logging a success
+     * line. An explicit `already_inactive` check now runs FIRST, against the freshly-locked row,
+     * before either invariant is even considered.
      */
     public function __invoke(StoreLanguage $language): StoreLanguage
     {
@@ -61,6 +68,14 @@ class RemoveStoreLanguage
 
             $target = $rows->first(fn (StoreLanguage $row): bool => $row->is($language))
                 ?? throw (new ModelNotFoundException)->setModel(StoreLanguage::class, [$language->getKey()]);
+
+            if (! $target->is_active) {
+                $this->logRefusedPrivilegedAttempt->log(Auth::user(), 'already_inactive', 'store_language', $target->id);
+
+                throw ValidationException::withMessages([
+                    'languageId' => __('store-languages.errors.already_inactive'),
+                ]);
+            }
 
             if ($target->is_default) {
                 $this->logRefusedPrivilegedAttempt->log(Auth::user(), 'cannot_remove_default', 'store_language', $target->id);
@@ -81,7 +96,7 @@ class RemoveStoreLanguage
             }
 
             return tap($target->forceFill(['is_active' => false]))->save();
-        });
+        }, attempts: 3);
 
         Log::info('Store language removed', [
             'actor_id' => Auth::id(),

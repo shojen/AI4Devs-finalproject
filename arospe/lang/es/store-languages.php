@@ -17,6 +17,7 @@ return [
     'errors' => [
         'code_not_in_fixture' => 'El código de idioma seleccionado no forma parte de la lista de idiomas incluida.',
         'code_already_active' => 'Este idioma ya está activo en el catálogo.',
+        'already_inactive' => 'Este idioma ya se ha eliminado previamente.',
         'cannot_remove_default' => 'El idioma predeterminado de la tienda debe reasignarse a otro idioma activo antes de poder eliminarlo.',
         'cannot_remove_last_active_language' => 'La tienda debe tener siempre al menos un idioma activo.',
         'default_must_be_active' => 'Solo un idioma de la tienda activo puede marcarse como predeterminado.',

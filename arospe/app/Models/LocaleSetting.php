@@ -47,7 +47,11 @@ class LocaleSetting extends Model
 
     /**
      * Fetch the singleton settings row. The one sanctioned resolution path (D20) --
-     * `find(SINGLETON_ID)`, never an arbitrary lookup.
+     * `findOrFail(SINGLETON_ID)`, never an arbitrary lookup. Every approved caller only ever
+     * invokes this once the row is known to exist (after the seeder, or after either write action
+     * has firstOrCreate/upserted it), so the `OrFail` half is a fail-loud backstop rather than a
+     * reachable branch in normal operation -- `defaultUiLocale()` / `defaultNotificationLocale()`
+     * below use a plain `find()` instead precisely because THEY must tolerate a missing row.
      */
     public static function current(): self
     {
