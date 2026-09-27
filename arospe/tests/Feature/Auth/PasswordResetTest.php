@@ -3,6 +3,7 @@
 use App\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Fortify\Features;
 
@@ -135,4 +136,52 @@ test('completing a password reset for an already verified user leaves email_veri
 
     expect($user->email_verified_at)->toEqual($originalVerifiedAt)
         ->and($user->status)->toBe(UserStatus::Active);
+});
+
+// Story 0064c (D-6, technique 2) -- an interleave hook lands a suspension exactly between
+// App\Actions\Fortify\ResetUserPassword's own forceFill(password, email_verified_at)->save()
+// write and the Verified dispatch that follows it, through the real route (never Event::fake()
+// -- reading note (b)). ResetUserPassword takes no lock and opens no transaction of its own
+// (task file's Verified findings), so this is the exposed path R-2 names, not defence in depth.
+test('a suspension that lands mid-reset wins over the caller writing the new password', function () {
+    Notification::fake();
+
+    $user = User::factory()->unverified()->create();
+    $originalPassword = $user->password;
+
+    $fired = false;
+    DB::listen(function ($query) use (&$fired, $user): void {
+        if ($fired) {
+            return;
+        }
+
+        if (preg_match('/^update\s+[`"]?users[`"]?\s/i', $query->sql) !== 1) {
+            return;
+        }
+
+        if (! str_contains($query->sql, 'password') || ! str_contains($query->sql, 'email_verified_at')) {
+            return;
+        }
+
+        $fired = true;
+
+        DB::table('users')->where('id', $user->id)->update(['status' => UserStatus::Suspended->value]);
+    });
+
+    $this->post(route('password.request'), ['email' => $user->email]);
+
+    Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
+        $this->post(route('password.update'), [
+            'token' => $notification->token,
+            'email' => $user->email,
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])->assertSessionHasNoErrors();
+
+        return true;
+    });
+
+    expect($fired)->toBeTrue()
+        ->and($user->fresh()->password)->not->toBe($originalPassword)
+        ->and($user->fresh()->status)->toBe(UserStatus::Suspended);
 });
