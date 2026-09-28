@@ -40,6 +40,7 @@ value was decided by whoever hydrated the instance, at whatever time they did so
 - [One fix closes both](#one-fix-closes-both)
 - [Re-audit round 2: what the fix itself got subtly wrong](#re-audit-round-2-what-the-fix-itself-got-subtly-wrong)
 - [A single predicate on one row can collapse the guard into the write itself](#a-single-predicate-on-one-row-can-collapse-the-guard-into-the-write-itself)
+- [A multi-step, caller-hydrated decision compares against its OWN pre-refresh snapshot, never the refreshed value](#a-multi-step-caller-hydrated-decision-compares-against-its-own-pre-refresh-snapshot-never-the-refreshed-value)
 
 ## A guard must re-read its subject under lock, inside its own transaction
 
@@ -414,20 +415,85 @@ at the time this shape shipped, re-confirmed by the story's Phase 4 security aud
 `User` and must go back to a re-read-under-lock, `save()`-based write (the `SalesRegion` shape above) so
 the hook still fires.
 
-**A sibling story will add the mirror-image example on this same page.** `App\Actions\Users\UpdateUser`
-(the administrator-initiated status/role write this story deliberately left alone — see R-2 in the 0064c
-task file) decides `$statusChanged` from a **caller-hydrated instance's** `getRawOriginal('status')` and
-writes with no lock or re-read: a genuinely multi-step, caller-hydrated decision, not a single predicate on
-one row. [Story 0064d](../../ai-spec/tasks/0064d-update-user-status-role-race-lock-and-recheck-backend.md)
-will close that hole with the repo's usual re-read-under-`lockForUpdate()` shape once it ships (Phase 1 only
-as of this writing) — the direct counter-example to the collapsed shape above, kept on this same page when
-it lands rather than written up here ahead of the implementation.
+## A multi-step, caller-hydrated decision compares against its OWN pre-refresh snapshot, never the refreshed value
 
-_Last updated: 2026-09-27 — story 0064c: added "A single predicate on one row can collapse the guard into
-the write itself", contrasting `ActivateInactiveUser`'s guarded compare-and-set with the multi-step/locked
-`SalesRegion` shape above, and a forward-pointer to story 0064d for the mirror-image example. Folded the
-prior `_Previously:` entry into this line rather than adding another: Task 0017's Phase 4 fix (2026-08-25)
-and round-2 re-audit (2026-08-26) closed all three original sections — the two findings' code examples match
-the round-2 fix (the single ordered lock query, the `refresh()` call), and every claim in both was verified
-by execution against the real actions on the `testing` database, inside a rolled-back transaction, rather
-than by reading._
+`App\Actions\Users\UpdateUser` ([story 0064d](../../ai-spec/tasks/done/0064d-update-user-status-role-race-lock-and-recheck-backend.md))
+is the mirror-image example this page's own placeholder promised: the administrator-initiated status/role
+write 0064c deliberately left alone (its R-2). Unlike `ActivateInactiveUser`'s single predicate on one row
+above, this action makes **several separable decisions** off multiple fields (status, role set, email) —
+a Super-Admin-holder throw, a promote/downgrade Gate, the `updateSensitiveAttributes` Gate, and a step-up
+trigger — so a single guarded `UPDATE` does not fit it. It needed the repo's usual re-read-under-
+`lockForUpdate()` shape, and the shape that shipped has one property worth stating explicitly, because it
+is the one detail this page's own placeholder got backwards while the story was still in flight.
+
+❌ **The naive version — compare the locked row against the REFRESHED value.** This reads as the obvious
+implementation of "refresh, decide, then verify nothing moved between the refresh and the lock":
+
+```php
+// anti-pattern — do not write the compare-and-set this way
+$user->refresh();                                    // now reads whatever the row currently holds
+$this->authorizeRoleAndStatusChange($user, ...);      // the GATE decision, correctly made on fresh data
+
+DB::transaction(function () use ($user, ...): void {
+    $lockedUser = User::query()->whereKey($user->getKey())->lockForUpdate()->first();
+
+    // WRONG: comparing against the value refresh() JUST wrote onto $user
+    if ($lockedUser->getRawOriginal('status') !== $user->getRawOriginal('status')) {
+        throw ValidationException::withMessages([...]);
+    }
+    // ...
+});
+```
+
+Using only the stale-instance technique ([0064c's D-6](../../ai-spec/tasks/done/0064c-activate-verified-user-status-race-compare-and-set-backend.md)) — the only technique this action's single caller and non-nested transaction need — every race this story's tests reproduce lands **before** `refresh()` runs, never in the narrow gap between `refresh()` and the lock. So the moment `refresh()` executes, `$user`'s in-memory value **already equals** the locked row's value — this comparison can never fail in this codebase's own test suite, and worse, it means the write then proceeds to persist whatever the caller submitted **over** the concurrent administrator's already-committed change: exactly the silent clobber the story exists to close.
+
+✅ **The shape that shipped — compare the locked row against the snapshot captured BEFORE anything was refreshed:**
+
+```php
+// app/Actions/Users/UpdateUser.php
+$originalStatus = $user->getRawOriginal('status');   // captured from the CALLER's own hydration
+$originalRoleIds = $this->roleIds($user);
+
+if (! $isSelfEdit) {
+    $user->refresh();                                 // makes the GATE decision use current data
+    $user->load('roles');
+    $this->authorizeRoleAndStatusChange($user, ...);   // correctly step-up-gates a real transition
+}
+
+DB::transaction(function () use ($user, $originalStatus, $originalRoleIds, ...): void {
+    if (! $isSelfEdit) {
+        $lockedUser = User::query()->whereKey($user->getKey())->lockForUpdate()->first();
+
+        if ($lockedUser === null
+            || $lockedUser->getRawOriginal('status') !== $originalStatus   // <-- the PRE-refresh value
+            || $this->roleIds($lockedUser) !== $originalRoleIds) {
+            throw ValidationException::withMessages(['status' => __('users.update.conflict')]);
+        }
+
+        $user->setRawAttributes($lockedUser->getAttributes());
+        $user->syncOriginal();
+    }
+    // ... fill(name), status =, save(), syncRoles() unchanged
+});
+```
+
+**`refresh()` and the conflict check answer two different questions, and conflating them is the trap.**
+`refresh()` exists solely so the *authorization decision* — "is this a real status/role/email transition
+that needs a Gate check and step-up?" — is never skipped because the caller's copy of the row happened to
+already match what was submitted. The conflict check exists to answer a completely different question —
+"does the row still match what the administrator's own form last showed them?" — and that question can
+only be answered by keeping the **original**, pre-refresh value around as the comparison baseline. Because
+the two checks share one `lockForUpdate()` read, comparing against the wrong snapshot doesn't error or
+warn — it silently turns the whole compare-and-set into a no-op that still writes. Verified by execution
+(this story's own G2 test, [`tests/Feature/Users/UpdateUserStatusRaceTest.php`](../../tests/Feature/Users/UpdateUserStatusRaceTest.php)):
+using the post-refresh value as the CAS baseline let a resubmission matching a now-stale form silently
+revert a concurrent administrator's suspension back to `Active`, with no exception and no log line —
+switching the comparison to the pre-refresh snapshot is what turns that into a refused conflict instead.
+
+_Last updated: 2026-09-28 — story 0064d: replaced the prior placeholder ("a sibling story will add the
+mirror-image example") with the shipped section above — `UpdateUser`'s locked compare-and-set, and the
+❌/✅ pair on which snapshot the write-time conflict check must compare against (the pre-refresh original,
+never the value `refresh()` just wrote), since the two are easy to conflate and conflating them turns the
+whole guard into a silent no-op. Folded the prior `_Previously:` entry (story 0064c, 2026-09-27) into this
+line per the doc-growth-management rule: it added "A single predicate on one row can collapse the guard
+into the write itself" and is otherwise unchanged and still current._
