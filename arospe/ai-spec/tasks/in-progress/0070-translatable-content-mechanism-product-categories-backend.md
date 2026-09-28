@@ -923,6 +923,10 @@ Items **a** and **b** above were applied directly to this file (trivial, textual
 - The *"The same name in two different store languages is permitted"* scenario now arranges "Chaussures" in Spanish (the default) and checks it in French, matching `ProductCategoryNameRulesPerLanguageTest`'s "every case passes a NON-default id" convention.
 - The `tests/Pest.php` code block now includes `use App\Models\StoreLanguage;`.
 
+Item **c** is left as-is — it belongs to 0071's own Phase 2, not to this story.
+
+**Phase 2 is now closed: ✅ passed (round 3), non-blocking findings resolved. Proceeding to Phase 3.**
+
 ## Phase 3 — TDD, complete
 
 `database-expert` built the schema layer (migrations, `BackfillProductCategoryTranslations`, `ProductCategoryTranslation`, both factories). `backend-qa` wrote 8 failing test files (red). `backend-expert` implemented `HasTranslations`, `SetTranslation`, the `StoreLanguage`/`ProductCategory` model changes, the widened `ProductCategoryValidationRules`, `TranslateProductCategoryNameUniqueViolation`, the `Create`/`RenameProductCategory` migration onto the mechanism, `config/store-languages.php`, `tests/Pest.php`, and the four D-15 consumers — plus a new `app/Concerns/Translatable.php` interface, not in the original file list, needed because `HasMany`'s `TDeclaringModel` generic is invariant so no interface can declare `translations(): HasMany` compatibly across concrete models; it exposes only `firstTranslationOrNew()`. `backend-qa` confirmed green: the 8 new files, every adapted pre-existing file, both Browser tests, and the full unscoped suite (4720 tests, 4717 passed, 3 skipped, 0 failed).
@@ -942,10 +946,6 @@ Items **a** and **b** above were applied directly to this file (trivial, textual
 Non-blocking, for `docs-keeper` at Phase 6: the `app/Concerns/Translatable.php` interface is confirmed well-justified (`HasMany`'s invariant generic forces it; `updateOrCreate()` would silently drop `store_language_id` through the fillable guard, which is why `firstTranslationOrNew()`+`forceFill()` exists instead) and belongs in the recipe/public-contract sections; the natural-key unique index's real name is `product_category_translations_category_language_unique` (the default-generated name is 74 characters, over MySQL's 64-character identifier limit), not the name the story's own code sample shows at lines ~394/583 — docs should cite the real one. §6's seven backlog items are confirmed genuinely deferred to other stories; none blocks this one.
 
 Read-only review; no application code, test, migration or this file's prior sections were changed by `code-reviewer`. Returning to Phase 3 for findings 1 and 3 (`backend-qa`) and finding 2 (`backend-expert`), then re-running the full unscoped suite and Phase 5 again.
-
-Item **c** is left as-is — it belongs to 0071's own Phase 2, not to this story.
-
-**Phase 2 is now closed: ✅ passed (round 3), non-blocking findings resolved. Proceeding to Phase 3.**
 
 ## Phase 5 — Final code review, round 2: ✅ passed, ready for Phase 6 (2026-09-29)
 
