@@ -296,10 +296,10 @@ class Index extends Component
      * (Phase 5 round-1 finding 2) rather than a bare `$nameA <=> $nameB` byte comparison, so this
      * list keeps the case-/accent-insensitive ordering `orderBy('name')` gave it under the
      * column's `utf8mb4_unicode_ci` collation before the name moved off the table. Resolved here
-     * with `app()` rather than a per-method parameter, matching this file's own
-     * `openEditModal()`/`save()` precedent and `App\Livewire\Shipping\Index::loadRates()`'s
-     * identical `app(ListShippingRatesByCarrier::class)` call -- `loadProductCategories()` is a
-     * private helper Livewire's method-injection never reaches.
+     * with `app()` rather than a per-method parameter, matching
+     * `App\Livewire\Shipping\Index::loadRates()`'s identical `app(ListShippingRatesByCarrier::class)`
+     * call -- `loadProductCategories()` is a private helper Livewire's method-injection never
+     * reaches (unlike `openEditModal()`/`save()`, which Livewire dispatches directly).
      *
      * `canEdit`/`canDelete` mirror the same ProductCategoryPolicy methods
      * save()/deleteProductCategory() authorize against
