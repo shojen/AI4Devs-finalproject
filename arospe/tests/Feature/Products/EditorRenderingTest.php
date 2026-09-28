@@ -18,6 +18,7 @@
 
 use App\Livewire\Products\Editor;
 use App\Models\ProductCategory;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Livewire\Livewire;
@@ -163,4 +164,26 @@ test('the description field carries the static lossy-sanitization notice', funct
     $html = Livewire::test(Editor::class)->html();
 
     expect($html)->toContain('data-test="description-sanitization-notice"');
+});
+
+// =====================================================================
+// No default store language at all (story 0070, D-15)
+// =====================================================================
+
+// Phase 5 review round 1, finding 3(d): categoryOptions()'s own docblock promises this fallback
+// (translated()/withTranslationsFor() never throw with no default language) but it was only ever
+// proved at the model layer -- never through this screen's own Livewire component.
+// withoutTranslations() skips provisioning a default store language, so store_languages stays
+// genuinely empty (this file's beforeEach never creates one either).
+test('with no default store language at all, the editor still renders without throwing', function () {
+    $actor = productsEditorRenderingActor();
+    $this->actingAs($actor);
+
+    ProductCategory::factory()->withoutTranslations()->create();
+
+    expect(StoreLanguage::query()->count())->toBe(0);
+
+    Livewire::test(Editor::class)
+        ->assertOk()
+        ->assertSee('—');
 });

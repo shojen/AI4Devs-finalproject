@@ -17,8 +17,7 @@ use Illuminate\Support\Facades\Schema;
 //
 // Deliberately never overrides config() in this file: both tests read the REAL,
 // config/store-languages.php-shipped registry, so they keep working as genuine regression guards
-// once backend-expert appends the one-line entry, exactly as they run (and currently fail) before
-// it lands. config/store-languages.php is production config -- out of this agent's scope to edit.
+// as future sibling stories (0072/0074/0076/0078) append their own entries.
 
 test('StoreLanguage::translationUsageCount() returns the true count against the real, registered product_category_translations relation', function () {
     $french = StoreLanguage::factory()->create();
@@ -37,9 +36,12 @@ test('StoreLanguage::translationUsageCount() returns the true count against the 
 
 // D-14's HARD half: a translation table that exists but was never registered is the likelier real
 // failure. Derived from the LIVE schema rather than a hardcoded list, so no sibling story (0072,
-// 0074, 0076, 0078) ever has to edit this test to add its own entry. Fails today because
-// product_category_translations exists (both of this story's migrations already ran) while the
-// registry is still the shipped empty array -- exactly the mismatch this guard exists to catch.
+// 0074, 0076, 0078) ever has to edit this test to add its own entry.
+//
+// Scoped to the current connection's schema only: this repo runs one testing_<id> database per
+// worktree on a shared MySQL server (docs/testing/worktree-databases.md), so an unscoped
+// getTableListing() would list every *_translations table from every worktree's database at once,
+// not just this connection's -- a false positive under normal parallel development.
 test('every registered translation_relations pair resolves against the live schema, and every *_translations table is registered', function () {
     /** @var array<int, array{table: string, column: string}> $relations */
     $relations = config('store-languages.translation_relations', []);
@@ -51,7 +53,7 @@ test('every registered translation_relations pair resolves against the live sche
 
     $registeredTables = collect($relations)->pluck('table')->sort()->values()->all();
 
-    $translationTables = collect(Schema::getTableListing(schemaQualified: false))
+    $translationTables = collect(Schema::getTableListing(schema: Schema::getCurrentSchemaListing(), schemaQualified: false))
         ->filter(fn (string $table): bool => str_ends_with($table, '_translations'))
         ->sort()
         ->values()

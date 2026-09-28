@@ -67,3 +67,18 @@ test('the model does not use SoftDeletes', function () {
     expect(class_uses_recursive(ProductCategory::class))
         ->not->toHaveKey(SoftDeletes::class);
 });
+
+// Phase 5 review round 1, finding 3(c): ProductCategoryFactory::writeDefaultTranslation()
+// reuses an already-existing default store language rather than provisioning a fresh one every
+// time (its own docblock's promise) -- untested outside BackfillProductCategoryTranslationsTest's
+// unrelated "no store language exists" branch. Two factory-created categories against an EMPTY
+// store_languages table must provision exactly one default language, not two competing
+// `is_default = true` rows racing each other.
+test('two categories created via the factory in succession against an empty store_languages table share a single default language', function () {
+    expect(StoreLanguage::query()->count())->toBe(0);
+
+    ProductCategory::factory()->create();
+    ProductCategory::factory()->create();
+
+    expect(StoreLanguage::where('is_default', true)->count())->toBe(1);
+});

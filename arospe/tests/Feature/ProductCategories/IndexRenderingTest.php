@@ -157,3 +157,39 @@ test('closing the modal after a refused save clears the stale validation error',
         ->call('openCreateModal')
         ->assertHasNoErrors();
 });
+
+// Phase 5 review round 1, finding 3(a): Index::loadProductCategories()'s own docblock promises a
+// category with no default-language translation renders the em dash "—" and sorts last, rather
+// than throwing -- untested until now. withoutTranslations() skips writing any translation row
+// for the category (but this file's own beforeEach above already provisioned the default store
+// language, so `translated('name')` resolves against a real default id and legitimately finds
+// nothing, rather than hitting the separate "no default language at all" branch covered below).
+test('a category with no default-language translation renders an em dash instead of throwing', function () {
+    $actor = productCategoriesIndexRenderingActor();
+    $this->actingAs($actor);
+
+    ProductCategory::factory()->withoutTranslations()->create();
+
+    Livewire::test(Index::class)
+        ->assertOk()
+        ->assertSee('—');
+});
+
+// Phase 5 review round 1, finding 3(d): D-15's "no default store language at all" fallback
+// (App\Concerns\HasTranslations::translated()/scopeWithTranslationsFor(), which never throw) was
+// only ever proved at the model layer -- never through this screen's own Livewire component.
+// withoutTranslations() also skips provisioning a default store language, so deleting the one
+// this file's beforeEach created above leaves store_languages genuinely empty.
+test('with no default store language at all, the list still renders without throwing', function () {
+    $actor = productCategoriesIndexRenderingActor();
+    $this->actingAs($actor);
+
+    StoreLanguage::query()->delete();
+    ProductCategory::factory()->withoutTranslations()->create();
+
+    expect(StoreLanguage::query()->count())->toBe(0);
+
+    Livewire::test(Index::class)
+        ->assertOk()
+        ->assertSee('—');
+});

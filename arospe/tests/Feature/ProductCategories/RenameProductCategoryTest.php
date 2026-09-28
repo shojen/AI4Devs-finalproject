@@ -199,3 +199,25 @@ test('a duplicate that bypasses validation via a simulated race surfaces as a Va
 
     expect(ProductCategoryTranslation::where('name', $racedName)->count())->toBeLessThan(2);
 });
+
+// Phase 5 review round 1, finding 3(b): RenameProductCategory only ever writes the DEFAULT
+// language's row (D-12, D-15) -- untested was whether it leaves an existing NON-default
+// translation, seeded before the rename, byte-for-byte untouched rather than overwriting or
+// deleting it.
+test('renaming a category in the default language leaves an existing translation in another language byte-for-byte untouched', function () {
+    $french = StoreLanguage::factory()->create();
+    $category = app(CreateProductCategory::class)('Footwear');
+
+    $frenchTranslation = ProductCategoryTranslation::factory()
+        ->forLanguage($french)
+        ->create([
+            'product_category_id' => $category->id,
+            'name' => 'Chaussures',
+        ]);
+
+    app(RenameProductCategory::class)($category, 'Running shoes');
+
+    expect($frenchTranslation->fresh()->name)->toBe('Chaussures')
+        ->and($category->fresh()->translated('name', $french->id))->toBe('Chaussures')
+        ->and($category->fresh()->translated('name'))->toBe('Running shoes');
+});
