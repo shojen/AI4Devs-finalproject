@@ -7,6 +7,7 @@ use App\Actions\NormalizeForSearch;
 use App\Actions\ProductCategories\CreateProductCategory;
 use App\Actions\ProductCategories\DeleteProductCategory;
 use App\Actions\ProductCategories\RenameProductCategory;
+use App\Actions\Translations\CompareTranslatedNames;
 use App\Concerns\ProductCategoryValidationRules;
 use App\Models\ProductCategory;
 use App\Models\StoreLanguage;
@@ -291,6 +292,15 @@ class Index extends Component
      * impossible (D-10). No pagination -- a product-category catalog is a smaller lookup table
      * than `users`.
      *
+     * Ordering itself runs through the shared App\Actions\Translations\CompareTranslatedNames
+     * (Phase 5 round-1 finding 2) rather than a bare `$nameA <=> $nameB` byte comparison, so this
+     * list keeps the case-/accent-insensitive ordering `orderBy('name')` gave it under the
+     * column's `utf8mb4_unicode_ci` collation before the name moved off the table. Resolved here
+     * with `app()` rather than a per-method parameter, matching this file's own
+     * `openEditModal()`/`save()` precedent and `App\Livewire\Shipping\Index::loadRates()`'s
+     * identical `app(ListShippingRatesByCarrier::class)` call -- `loadProductCategories()` is a
+     * private helper Livewire's method-injection never reaches.
+     *
      * `canEdit`/`canDelete` mirror the same ProductCategoryPolicy methods
      * save()/deleteProductCategory() authorize against
      * (Gate::allows('update'|'delete', $category)), so the disabled state
@@ -302,28 +312,18 @@ class Index extends Component
      */
     private function loadProductCategories(): void
     {
+        $compareTranslatedNames = app(CompareTranslatedNames::class);
+
         $this->productCategories = ProductCategory::query()
             ->withCount('products')
             ->withTranslationsFor()
             ->get()
-            ->sort(function (ProductCategory $a, ProductCategory $b): int {
-                $nameA = $a->translated('name');
-                $nameB = $b->translated('name');
-
-                if ($nameA === null && $nameB === null) {
-                    return $a->id <=> $b->id;
-                }
-
-                if ($nameA === null) {
-                    return 1;
-                }
-
-                if ($nameB === null) {
-                    return -1;
-                }
-
-                return $nameA <=> $nameB ?: $a->id <=> $b->id;
-            })
+            ->sort(fn (ProductCategory $a, ProductCategory $b): int => $compareTranslatedNames(
+                $a->translated('name'),
+                $a->id,
+                $b->translated('name'),
+                $b->id,
+            ))
             ->values()
             ->map(fn (ProductCategory $category): array => [
                 'id' => $category->id,
