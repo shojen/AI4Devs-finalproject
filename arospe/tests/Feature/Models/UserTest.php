@@ -93,7 +93,10 @@ test('deleting a user does not cascade to delete their passkey rows', function (
 test('a factory-created user has a null ui_locale by default', function () {
     $user = User::factory()->create();
 
-    expect($user->ui_locale)->toBeNull();
+    // fresh() forces the read to come from the users row itself, proving the DATABASE COLUMN
+    // has no default -- the in-memory attribute would read null regardless, since the factory
+    // never sets ui_locale either way.
+    expect($user->fresh()->ui_locale)->toBeNull();
 });
 
 test('mass-assigning ui_locale via User::create is silently ignored, per the #[Fillable] omission guard', function () {

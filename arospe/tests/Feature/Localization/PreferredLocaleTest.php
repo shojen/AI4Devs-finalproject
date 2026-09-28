@@ -7,7 +7,7 @@
 // LocaleSetting::defaultNotificationLocale(), which is independent from defaultUiLocale() by
 // design (0068 D18/D21: two separate settings, two separate columns).
 //
-// The last two cases go through the REAL notification pipeline end to end (task file: "a unit
+// The remaining cases go through the REAL notification pipeline end to end (task file: "a unit
 // test of the method alone would pass with HasLocalePreference not implemented at all, since
 // nothing else in the story consumes it"). Deliberately does NOT use Notification::fake(): the fake
 // never calls toMail() at all, so a test built on it plus a manual toMail() call outside any
@@ -18,23 +18,16 @@
 // technique already used in tests/Feature/Blog/ScheduledBlogPostPublishFailedNotificationTest.php
 // (app('mailer')->getSymfonyTransport()->messages(), filtered to the exact recipient address).
 //
-// ⚠️ Finding for backend-expert/appsec-auditor, not fixed here (out of this agent's scope): the
-// REAL call site for PendingEmailVerification, App\Actions\Users\RequestEmailChange, sends it via
-// `Notification::route('mail', $newEmail)->notify(...)` -- an AnonymousNotifiable, not
-// `$user->notify(...)`. Illuminate\Notifications\AnonymousNotifiable does not implement
-// HasLocalePreference (verified against the installed NotificationSender::preferredLocale() /
-// AnonymousNotifiable sources), so THAT real call site never consults $user->preferredLocale() at
-// all -- it renders in whatever locale SetUiLocale left ambient for the current request, not
-// necessarily the target user's own preference (they can differ, e.g. an administrator changing
-// another user's email on that user's behalf). D14's claim that "PendingEmailVerification renders
-// in the recipient's language with zero edits to either file" therefore does not fully hold for
-// the real call path as written today -- only for a direct $user->notify(new
-// PendingEmailVerification(...)) call, which is what the test below exercises (the notification
-// class's own contract, per D14's literal wording). Whether RequestEmailChange's anonymous routing
-// should change is a product/security decision outside this agent's remit (it exists so the mail
-// goes to the NEW address, not $user->email -- routing through $user->notify() as-is would misroute
-// the delivery address, a separate concern from locale).
+// The last two cases below exercise the REAL call site, App\Actions\Users\RequestEmailChange,
+// rather than a direct $user->notify(...) call. That action sends PendingEmailVerification via
+// `Notification::route('mail', $newEmail)->notify(...)` -- an AnonymousNotifiable, which does not
+// implement HasLocalePreference on its own and so would never consult $user->preferredLocale().
+// RequestEmailChange now chains `->locale($user->preferredLocale())` onto the notification before
+// sending, which is what these two tests assert: the mail delivered to the NEW (unverified)
+// address renders in the target user's own preference (or the configured notification default
+// when they have none set), not whatever locale happens to be ambient for the current request.
 
+use App\Actions\Users\RequestEmailChange;
 use App\Enums\UiLocale;
 use App\Models\LocaleSetting;
 use App\Models\User;
@@ -117,4 +110,48 @@ test('an administrators own preference decides the language their invitation and
 
     expect($subjects)->toContain(trans('users.invitation.subject', [], 'es'))
         ->and($subjects)->toContain(trans('users.email_change.notification_subject', [], 'es'));
+});
+
+test('RequestEmailChange renders the pending-email-verification notification sent to the new address in the targets own stored locale preference, not the ambient request locale', function () {
+    // Ambient/default locale is deliberately English here while the target's own preference is
+    // Spanish -- a pass proves $user->preferredLocale() (via RequestEmailChange's ->locale() call)
+    // drove the render, not whatever locale happened to be ambient for this (unauthenticated) request.
+    config(['app.locale' => 'en']);
+    LocaleSetting::factory()->create([
+        'default_ui_locale' => 'en',
+        'default_notification_locale' => 'en',
+    ]);
+    $user = User::factory()->create(['ui_locale' => 'es']);
+    $newEmail = 'new-address@arospe.es';
+
+    app(RequestEmailChange::class)($user, $newEmail);
+
+    $messagesToNewAddress = collect(app('mailer')->getSymfonyTransport()->messages())
+        ->filter(fn ($message) => collect($message->getOriginalMessage()->getTo())
+            ->contains(fn ($address) => $address->getAddress() === $newEmail))
+        ->values();
+
+    expect($messagesToNewAddress)->toHaveCount(1)
+        ->and((string) $messagesToNewAddress->first()->getOriginalMessage()->getSubject())
+        ->toBe(trans('users.email_change.notification_subject', [], 'es'));
+});
+
+test('RequestEmailChange renders the pending-email-verification notification in the configured default notification language when the target has no stored preference', function () {
+    LocaleSetting::factory()->create([
+        'default_ui_locale' => 'en',
+        'default_notification_locale' => 'es',
+    ]);
+    $user = User::factory()->create(['ui_locale' => null]);
+    $newEmail = 'another-new-address@arospe.es';
+
+    app(RequestEmailChange::class)($user, $newEmail);
+
+    $messagesToNewAddress = collect(app('mailer')->getSymfonyTransport()->messages())
+        ->filter(fn ($message) => collect($message->getOriginalMessage()->getTo())
+            ->contains(fn ($address) => $address->getAddress() === $newEmail))
+        ->values();
+
+    expect($messagesToNewAddress)->toHaveCount(1)
+        ->and((string) $messagesToNewAddress->first()->getOriginalMessage()->getSubject())
+        ->toBe(trans('users.email_change.notification_subject', [], 'es'));
 });

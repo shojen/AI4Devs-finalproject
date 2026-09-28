@@ -28,16 +28,24 @@
 // Livewire\Drawer\Utils::extractAttributeDataFromHtml() -- the DOM's own wire:snapshot attribute,
 // not a hand-built payload.
 //
-// Manual "prove it can fail" verification for Phase 4/5 (cannot be done in this red phase --
-// SetUiLocale and its bootstrap/app.php `web`-group registration do not exist yet): temporarily
-// move `\App\Http\Middleware\SetUiLocale::class` out of bootstrap/app.php's
-// `$middleware->web(append: [...])` call and onto routes/users.php's
-// `Route::livewire('users', ...)->middleware([...])` list instead, re-run ONLY the test below, and
-// confirm it goes RED -- a route-level registration is never consulted for a /livewire/update
-// round-trip (Livewire 4's PersistentMiddleware allow-list governs only route-level middleware,
-// and a custom class could never join its eight hardcoded entries, D8). Then restore the original
-// registration. TODO(Phase 4/5): perform this and record the result in the task file.
+// Phase 5 code-review fix -- two independent reasons the original version of this test could never
+// go red were found: (1) the 'es' locale set by the preceding GET is never reset before the POST,
+// so the ambient value going into the POST is already 'es' regardless of what runs during it; (2)
+// even with that reset, Livewire's OWN SupportLocales::hydrate() (LivewireServiceProvider.php:200)
+// calls app()->setLocale($memo['locale']) on every round-trip, restoring 'es' from the initial
+// render's OWN snapshot memo -- independent of whether SetUiLocale ran at all. So the test below
+// resets the ambient locale to 'en' right before the POST AND binds a partial Mockery spy over the
+// real SetUiLocale instance, asserting handle() was actually invoked during the POST -- that
+// assertion is structurally incapable of passing if SetUiLocale is removed from the `web` group or
+// never invoked, regardless of what Livewire's own hydration does to App::getLocale() afterwards.
+//
+// Manual "prove it can fail" verification, performed 2026-09-28: temporarily commented out
+// bootstrap/app.php's `$middleware->web(append: [SetUiLocale::class]);` call, re-ran ONLY the test
+// below, and confirmed it went RED (the spy's `shouldHaveReceived('handle')->once()` assertion
+// failed -- 0 invocations recorded), then restored bootstrap/app.php exactly as it was (`git diff
+// bootstrap/app.php` showed no changes afterwards). Recorded in the task file's Provenance section.
 
+use App\Http\Middleware\SetUiLocale;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\App;
@@ -67,6 +75,15 @@ test('a literal POST to the real /livewire/update endpoint re-applies the authen
 
     $uri = app('livewire')->getUpdateUri();
 
+    // Prove the round-trip itself re-resolves the locale through SetUiLocale, not merely that
+    // App::getLocale() ends up 'es' again afterwards (see the file header). Poison the ambient
+    // locale so a leftover value from the GET above cannot be mistaken for genuine
+    // re-resolution, and bind a partial spy over the real middleware instance so its actual
+    // invocation during THIS request can be asserted.
+    App::setLocale('en');
+    $spy = Mockery::spy(SetUiLocale::class)->makePartial();
+    app()->instance(SetUiLocale::class, $spy);
+
     $response = $this->postJson($uri, [
         'components' => [[
             'snapshot' => json_encode($snapshot),
@@ -82,5 +99,6 @@ test('a literal POST to the real /livewire/update endpoint re-applies the authen
     // pass even if SetUiLocale were registered on the `users.index` route alone rather than
     // globally on `web` (D8) -- exactly the registration mistake the manual verification step
     // above exists to catch.
+    $spy->shouldHaveReceived('handle')->once();
     expect(App::getLocale())->toBe('es');
 });

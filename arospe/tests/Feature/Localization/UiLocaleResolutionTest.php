@@ -39,6 +39,20 @@ test('an authenticated user with a stored es preference gets es as the request l
 test('the stored preference outlives the session it was chosen in -- persists across sign-out and a fresh sign-in', function () {
     // PRD-stated persistence, not merely a same-session assertion: a session- or
     // cookie-backed implementation would pass a same-session test and fail this one.
+    //
+    // An explicitly populated locale_settings row is required here, for the same reason the
+    // leak-forward test below needs one (R-6): App::setLocale() overwrites config('app.locale')
+    // as a side effect, so with no row seeded, the first ('es') request would poison the config
+    // tier and a broken session- or cookie-backed implementation could still pass the second
+    // assertion by accident, falling through to that poisoned config value on the fresh sign-in
+    // instead of genuinely re-reading users.ui_locale. Seeding a default DIFFERENT from 'es'
+    // forces both requests through tier 1 (the real, persisted column) for this to pass.
+    config(['app.locale' => 'fr']);
+    LocaleSetting::factory()->create([
+        'default_ui_locale' => 'en',
+        'default_notification_locale' => 'en',
+    ]);
+
     $user = User::factory()->create(['ui_locale' => 'es']);
 
     $this->actingAs($user)->get(route('dashboard'));
