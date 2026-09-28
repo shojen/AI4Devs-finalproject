@@ -946,3 +946,28 @@ Read-only review; no application code, test, migration or this file's prior sect
 Item **c** is left as-is — it belongs to 0071's own Phase 2, not to this story.
 
 **Phase 2 is now closed: ✅ passed (round 3), non-blocking findings resolved. Proceeding to Phase 3.**
+
+## Phase 5 — Final code review, round 2: ✅ passed, ready for Phase 6 (2026-09-29)
+
+`code-reviewer` re-ran the whole review from scratch against `226b513` / `6f7b790` / `1850e97`, trusting no agent report. Gates, each run by `code-reviewer` in this round:
+
+- **Full suite, unscoped** (`DB_DATABASE=testing_0070 vendor/bin/pest -d memory_limit=-1 --compact`, after confirming with `ps` that no other live pest process was running): **4732 tests, 4729 passed, 3 skipped, 0 failed** (+11 over round 1: 6 unit + 5 feature).
+- **Pint, unscoped** (read-only `--test --format agent`): passed.
+- **Larastan level 7, unscoped** (`vendor/bin/phpstan analyse`): 0 errors.
+
+Round-1 findings, verified:
+
+1. **Drift guard — fixed.** `Schema::getCurrentSchemaListing()` exists in the installed `laravel/framework` v13.19.0 and, on MySQL (`MySqlBuilder`), returns `[$connection->getDatabaseName()]`; `getTableListing()` accepts `string|string[]|null` and filters `getTables()` by it, so the listing is now this connection's database only. The "unregistered `*_translations` table" half still derives from the live schema, now correctly scoped. The stale red-phase comments are gone.
+2. **Byte-order sort — fixed.** `App\Actions\Translations\CompareTranslatedNames` replaces both inline comparators; both call sites pass `translated('name')` + `id` identically. Parity with `utf8mb4_unicode_ci` checked empirically against MySQL itself (table-less `SELECT … COLLATE utf8mb4_unicode_ci ORDER BY` over 37 Spanish-catalogue-shaped names: case, accents, `Ñ`/`N`, `ß`/`ss`, spaces, hyphens, `&`, digits): identical order except `Æ`, which MySQL sorts as a distinct letter after `A` while `Str::ascii()` expands it to `ae` — irrelevant to this catalogue. The `app()` resolution is justified: `App\Livewire\Shipping\Index::loadRates()` does exactly this from a private helper.
+3. **Missing coverage — closed.** (a) em dash: `IndexRenderingTest` — the view emits `—` only through the `?? '—'` fallback, so the assertion is not structurally vacuous. (b) `RenameProductCategoryTest` seeds a French row first and asserts it byte-identical plus both resolutions. (c) `ProductCategoryTest` asserts one `is_default` row after two `create()`s on an empty table (the factory only ever creates via `default()`, so this covers the race). (d) no-default rendering through both Livewire components (`IndexRenderingTest`, `EditorRenderingTest`).
+
+Acceptance criteria re-checked; the grep for any read/write of `product_categories.name` in `app/`, `resources/`, `database/factories/`, `tests/` is empty.
+
+Non-blocking, none gates Phase 6:
+
+- `app/Livewire/ProductCategories/Index.php`'s `loadProductCategories()` docblock cites "this file's own `openEditModal()`/`save()` precedent" for `app()` — both methods use Livewire method injection, not `app()`. Only the Shipping precedent is accurate; drop the false half at the next touch (`backend-expert`).
+- `IndexRenderingTest`'s "no default store language at all" test empties `store_languages` with a bulk `StoreLanguage::query()->delete()` (no `saved` event) and no `StoreLanguage::flushDefaultStoreLanguage()`. It passes for the right reason today only because nothing resolves the memo between the factory's flush and the delete; line ~560's own recipe requires the explicit flush. Add it at the next touch (`backend-qa`).
+- The Phase 3–5 sections were inserted in the middle of the Phase 2 block: the two lines "Item **c** is left as-is…" and "**Phase 2 is now closed…**" now sit after Phase 5 round 1. Move them back under the Phase 2 non-blocking-fixes heading at Phase 6/7 (`docs-keeper`).
+- For `docs-keeper`: the drift-guard line under "Tests to perform" still names `Schema::getTableListing(schemaQualified: false)` unscoped — docs should cite the scoped call; `CompareTranslatedNames` (and its known `Æ` divergence) belongs in the recipe siblings 0072/0074/0076/0078 copy; round 1's notes on `Translatable.php` and the real unique-index name still stand.
+
+Read-only review; no application code or test was changed by `code-reviewer`. **Phase 5 closed: ✅. Proceed to Phase 6 (`docs-keeper`).**
