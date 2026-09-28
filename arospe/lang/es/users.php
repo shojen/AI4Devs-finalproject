@@ -53,6 +53,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Conflictos al actualizar un usuario
+    |--------------------------------------------------------------------------
+    |
+    | Texto del compare-and-set bloqueado de App\Actions\Users\UpdateUser
+    | (historia 0064d): un cambio de estado o rol decidido sobre una lectura
+    | obsoleta se rechaza como un conflicto en lugar de sobrescribir en
+    | silencio el cambio de otro administrador. Deliberadamente genérico --
+    | nunca debe revelar cuál fue el cambio concurrente.
+    |
+    */
+
+    'update' => [
+        'conflict' => 'Este usuario fue modificado por otra persona mientras lo editabas. Revisa los datos actuales e inténtalo de nuevo.',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Inicio de sesión
     |--------------------------------------------------------------------------
     |

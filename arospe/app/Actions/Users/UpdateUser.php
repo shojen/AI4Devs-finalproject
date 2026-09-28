@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class UpdateUser
 {
@@ -79,6 +80,16 @@ class UpdateUser
 
         $this->logRefusedPrivilegedAttempt->authorize('update', $user);
 
+        // Story 0064d -- the compare-and-set's baseline (D-1), captured from the caller's OWN
+        // hydration, before this action refreshes anything below. The locked re-read inside the
+        // transaction compares the row against THIS snapshot, never against whatever (A)'s refresh
+        // below finds -- refreshing exists only to make the sensitive-attribute/step-up decision
+        // consult current data, not to relocate what the write-time conflict check compares
+        // against. Read the same way authorizeRoleAndStatusChange() itself reads them
+        // (getRawOriginal() / the loaded roles relation).
+        $originalStatus = $user->getRawOriginal('status');
+        $originalRoleIds = $this->roleIds($user);
+
         // Defence in depth: the primary normalisation happens in the
         // component before validate() runs, so the uniqueness rule already
         // saw this lowercased value. Normalising again here keeps this
@@ -88,6 +99,17 @@ class UpdateUser
         $isSelfEdit = Auth::user()?->is($user) ?? false;
 
         if (! $isSelfEdit) {
+            // Story 0064d -- refresh the instance immediately before the sensitive-attribute/
+            // step-up decision consults it, so authorizeRoleAndStatusChange() below reasons about
+            // the row as it stands NOW rather than whenever the caller (always
+            // App\Livewire\Users\Index::save()) hydrated $user. Extends the identical staleness
+            // guard `$user->load('roles')` above already established -- see its own docblock --
+            // to the scalar attributes read by getRawOriginal('status')/('email'). Structurally
+            // scoped to a non-self-edit: a self-edit never reaches authorizeRoleAndStatusChange()
+            // at all, so refreshing here would cost a query for no decision it protects.
+            $user->refresh();
+            $user->load('roles');
+
             $this->authorizeRoleAndStatusChange($user, $roleId, $email, $status);
         }
 
@@ -113,7 +135,36 @@ class UpdateUser
             $requestEmailChange($user, $email);
         }
 
-        DB::transaction(function () use ($user, $name, $status, $roleId, $isSelfEdit): void {
+        DB::transaction(function () use ($user, $name, $status, $roleId, $isSelfEdit, $originalStatus, $originalRoleIds): void {
+            if (! $isSelfEdit) {
+                // Story 0064d (D-1) -- a locked, verified compare-and-set: re-read the row by
+                // primary key under lockForUpdate() and refuse as a conflict (never write
+                // through) unless it still matches the snapshot captured before this action ever
+                // touched $user. A missing row (the target deleted between form load and
+                // submission, D-4) is refused through the identical path, not resurrected or
+                // silently written through.
+                /** @var User|null $lockedUser */
+                $lockedUser = User::query()->whereKey($user->getKey())->lockForUpdate()->first();
+
+                if ($lockedUser === null
+                    || $lockedUser->getRawOriginal('status') !== $originalStatus
+                    || $this->roleIds($lockedUser) !== $originalRoleIds) {
+                    $this->logRefusedPrivilegedAttempt->log(Auth::user(), 'update_conflict', 'user', $user->id);
+
+                    throw ValidationException::withMessages([
+                        'status' => __('users.update.conflict'),
+                    ]);
+                }
+
+                // Sync $user's attributes from the LOCKED row -- the same primitive
+                // Model::refresh() uses (setRawAttributes()/syncOriginal()), but fed from the
+                // locked read and applied onto the same instance the caller passed in, never a
+                // new object: App\Livewire\Users\Index::updateExistingUser() mutates and re-reads
+                // this same $target reference after this call for its own audit-log line.
+                $user->setRawAttributes($lockedUser->getAttributes());
+                $user->syncOriginal();
+            }
+
             $user->fill(['name' => $name]);
 
             if (! $isSelfEdit) {
@@ -130,6 +181,18 @@ class UpdateUser
         });
 
         return $user;
+    }
+
+    /**
+     * The decision-relevant role-id set, canonicalised for a reliable equality comparison between
+     * two separate reads (the pre-refresh snapshot and the locked, at-write-time row) -- sorted,
+     * since two reads of the same set are not guaranteed to return rows in the same order.
+     *
+     * @return array<int, int>
+     */
+    private function roleIds(User $user): array
+    {
+        return $user->roles->pluck('id')->map(fn (mixed $id): int => (int) $id)->sort()->values()->all();
     }
 
     /**
