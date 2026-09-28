@@ -7,9 +7,9 @@
       "slug": "0066-admin-ui-locale-preference-backend",
       "title": "Admin UI locale preference & resolution — backend",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "shojen/0066-admin-ui-locale-preference-backend",
+      "claimed_at": "2026-09-28T00:00:00Z",
       "touches": [
         "database/migrations/*_add_ui_locale_to_users_table.php",
         "app/Models/User.php",

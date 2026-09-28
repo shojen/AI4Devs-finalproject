@@ -41,6 +41,8 @@ Phase-3 blocker (`0048`–`0054`) is now `done/` — so it moves from `blocked` 
 terminal node finally unblocked. `0057`'s own node is likewise dropped from the graph; it had no pending dependent of its own to
 re-derive against `done/`.
 
+Update (2026-09-28): `0066-admin-ui-locale-preference-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0), having passed Phase 2 (INVEST validation). It is still pending work, so it keeps its node and edges; its node moves from the green `ready` class to the blue `claimed` class, and its `tasks-status.json` entry's `status` moved to `"claimed"` (`claimed_by: "shojen/0066-admin-ui-locale-preference-backend"`, `claimed_at: "2026-09-28T00:00:00Z"`), with `depends_on` unchanged (still empty — its former sole dependency, `0068`, is already `done/`). `ai-spec/tasks/in-progress/` now holds exactly this one file. The same pass ran this move's mandatory link-integrity check: the moved file's own 23 `../../docs/…` links were repointed to `../../../docs/…` (one directory deeper, since the file is now three levels below the repo root instead of two), and the two files with inbound links to its old path were repointed to the new one — `ai-spec/tasks/0069-store-languages-settings-ui.md` (two `](0066-…md)` links → `](in-progress/0066-…md)`) and `ai-spec/tasks/done/0064b-scheduled-post-publish-failure-notification-backend.md` (two `](../0066-…md)` links → `](../in-progress/0066-…md)`).
+
 Update (2026-09-27): `0068-store-languages-catalog-backend.md` completed Phase 7 and moved from `in-progress/` to `done/` — the first Epic 5 story to close, and the root of the entire i18n chain. Its node and every edge touching it (all thirteen — every edge in the Epic 5 subgraph originated *from* `P0068`, none pointed at it) are dropped from the graph below, its `tasks-status.json` entry was deleted, and it joined the flat `done/` inventory as a new Epic 5 entry (Epic 5: 0 -> 1). Its dependents are re-derived against `done/`: `0066` and `0070` each had `0068` as their *only* pending dependency, so both move from `blocked` to `ready` (neither is `claimed`, so neither stays `claimed`); `0067` and `0069` drop `"0068"` from `depends_on` but stay `blocked` on `0066` alone; `0071`, `0072`, `0074` and `0076` drop `"0068"` but stay `blocked` on `0070` alone; `0073`, `0075`, `0077`, `0078` and `0079` drop `"0068"` but stay `blocked` on their other still-pending dependencies. `0066` and `0070` share no `conflict_risk_with` entry with each other, so both are safe to dispatch in parallel today. `ai-spec/tasks/in-progress/` is empty again. (Reconciled here from a concurrent session's branch, merged via PR #39.)
 
 Update (2026-09-27): `0064c-activate-verified-user-status-race-compare-and-set-backend.md` completed
@@ -418,7 +420,8 @@ flowchart LR
     P0070 --> P0079
 
     class P0067,P0069,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0066,P0070 ready;
+    class P0070 ready;
+    class P0066 claimed;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
