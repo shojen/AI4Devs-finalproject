@@ -65,11 +65,19 @@ app/
                        queued, dispatched by RecordRefund AFTER its transaction commits; and, in a `Blog/`
                        sub-namespace, App\Events\Blog\ScheduledBlogPostPublished — story 0064, dispatched
                        once per post by PublishScheduledBlogPost after its write succeeds, with no actor;
-                       carries the BlogPost model, not queued; story 0065 adds its listener). A stock
-                       Laravel location (`make:event`), no approval needed
-  Listeners/           Event listeners (ActivateVerifiedUser; CancelFullyRefundedOrder — story
-                       0052, a thin synchronous adapter to Actions/Orders/AutoCancelFullyRefunded
-                       Order). Listeners are registered by discovery only: Laravel 13
+                       carries the BlogPost model, not queued; story 0065 adds its listener,
+                       SendBlogPostPublishedNotification). A stock Laravel location (`make:event`), no
+                       approval needed
+  Listeners/           Event listeners (ActivateVerifiedUser; RejectNonActiveUserLogin — see
+                       architecture/authentication/sign-in-block-and-email-change.md, no constructor;
+                       CancelFullyRefundedOrder — story 0052, a thin synchronous adapter to
+                       Actions/Orders/AutoCancelFullyRefundedOrder; SendBlogPostPublishedNotification —
+                       story 0065, the fourth listener and not the first with a constructor
+                       (ActivateVerifiedUser and CancelFullyRefundedOrder already have one): a thin
+                       synchronous adapter from App\Events\Blog\ScheduledBlogPostPublished to
+                       Actions/Blog/NotifyBlogPostPublished, deliberately with no try/catch so an
+                       exception propagates to the scheduled sweep's own catch). Listeners are
+                       registered by discovery only: Laravel 13
                        auto-discovers every public `handle*` method of a class in app/Listeners whose
                        first parameter is a typed event, so no listener is registered by hand — an
                        explicit Event::listen() on top would fire it twice (story 0064a). The
