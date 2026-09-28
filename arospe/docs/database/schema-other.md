@@ -12,4 +12,4 @@ This document is split into parts so an agent reads only the one its task touche
 | [customers](schema-other/customers.md) | the task touches the `customers` table, its address columns or its soft delete. | `customers` |
 | [notifications](schema-other/notifications.md) | the task touches database notifications and the `notifiable` UUID morph. | `notifications` |
 
-_Last updated: 2026-09-24 — split into the parts above (docs optimization pass); no content changed. The prior revision-history footer, if any, stays at the end of the last part._
+_Last updated: 2026-09-29 — Story 0070 (Translatable content mechanism — backend, piloted on Product Categories). [customers](schema-other/customers.md) had two stale `product_categories.name` precedent citations repointed to `product_category_translations.name`, since story 0070 moved that column — no content beyond the citations changed._

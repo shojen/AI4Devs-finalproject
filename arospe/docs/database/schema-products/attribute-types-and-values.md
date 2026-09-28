@@ -43,7 +43,7 @@ Model: [`App\Models\ProductAttributeValue`](../../../app/Models/ProductAttribute
 
 #### Uniqueness is per-type, never global
 
-`unique(['product_attribute_type_id', 'value'])` — "Black" must be legal as both a Color value and a Material value, and nothing in the PRD asks for a global constraint. This is the opposite scoping from [`product_categories.name`](categories-and-products.md#product_categories)'s plain `unique(name)`, and the difference is the whole reason this domain needs two tables rather than one (see above).
+`unique(['product_attribute_type_id', 'value'])` — "Black" must be legal as both a Color value and a Material value, and nothing in the PRD asks for a global constraint. This is the opposite scoping from [`shipping_zones.name`](../schema-shipping/zones.md#shipping_zones)'s plain `unique(name)`, and the difference is the whole reason this domain needs two tables rather than one (see above). **`product_categories.name` was itself a plain global `unique(name)` until story 0070 moved it into [`product_category_translations`](categories-and-products.md#product_category_translations), where it is now scoped by `store_language_id` instead — a composite scoping closer in shape to this table's own than to a plain global one.**
 
 #### Ordering: `position ASC, value ASC`, always, and never derived by the database
 
