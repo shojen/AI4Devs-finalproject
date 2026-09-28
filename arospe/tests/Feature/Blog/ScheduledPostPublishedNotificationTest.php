@@ -37,19 +37,24 @@ afterEach(function () {
 });
 
 test('a due scheduled post swept by the scheduler stores a real notification for each blog.view holder', function () {
+    $secondRecipient = User::factory()->create();
+    $secondRecipient->givePermissionTo('blog.view');
+
     $post = ScheduledPosts::scheduled();
 
     app(PublishScheduledBlogPost::class)($post->id);
 
-    $row = DB::table('notifications')
-        ->where('notifiable_id', $this->recipient->id)
-        ->where('type', BlogPostPublished::class)
-        ->first();
+    foreach ([$this->recipient, $secondRecipient] as $recipient) {
+        $row = DB::table('notifications')
+            ->where('notifiable_id', $recipient->id)
+            ->where('type', BlogPostPublished::class)
+            ->first();
 
-    expect($row)->not->toBeNull();
+        expect($row)->not->toBeNull();
 
-    $data = json_decode($row->data, true);
-    expect($data['blog_post_id'])->toBe($post->id);
+        $data = json_decode($row->data, true);
+        expect($data['blog_post_id'])->toBe($post->id);
+    }
 });
 
 // The transitive half of 0064's D-5: catches a reflexive Auth/Gate call added to the listener or the
