@@ -489,7 +489,7 @@ emails start arriving in the recipient's language as soon as this ships.
       run ([errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)).
 - [ ] Code reviewed (code-reviewer).
 - [ ] No security findings (appsec-auditor).
-- [ ] Documentation updated (docs-keeper): `docs/database/schema.md`'s `users` table gains the
+- [x] Documentation updated (docs-keeper): `docs/database/schema.md`'s `users` table gains the
       `ui_locale` row and its no-index decision; `docs/architecture/overview.md` gains
       `app/Http/Middleware/**` in "Where things live" (the directory already exists, holding
       `EnsureSitePasswordIsProvided`, but has no row there yet) and a lifecycle note that a locale
@@ -500,15 +500,25 @@ emails start arriving in the recipient's language as soon as this ships.
       (*moved to story 0068's DoD on 2026-09-27, with the enum*); and
       **`docs/architecture/authentication.md` records that notifications now render in the
       recipient's locale** — that page owns the notification lifecycle, and D-14 changes it.
+      *(Done 2026-09-28, docs-keeper Phase 6 pass: `docs/database/schema-users-auth.md`'s `users`
+      table row plus `docs/database/schema.md`'s ER diagram entry; `docs/architecture/overview.md`'s
+      "Where things live" row and Request lifecycle bullet; `docs/conventions/directory-structure.md`'s
+      compact map line and `directory-structure/app-layers.md`'s `Http/Middleware/` entry;
+      `docs/architecture/authentication/features-registration-and-status.md`'s new "Notification
+      locale" section, plus the hub footer. Each touched file's `_Last updated:_` footer was
+      refreshed in the same pass.)*
 - [ ] **This story does NOT claim the UI renders translated.** Its outcome is *locale resolution*
       only. Most admin chrome is still hardcoded English in Blade — `lang/{en,es}/` holds five
       domain files covering their own screens' copy, not the dashboard chrome — so the PRD's
       *"the menus, labels, and buttons are shown in English"* clause is **not** satisfied by this
-      story and must not be checked off by it (**D-10**, **R-1**).
-- [ ] **Glossary follow-up**: `docs/testing/frontend/gherkin-guidelines.md`'s domain glossary gains
+      story and must not be checked off by it (**D-10**, **R-1**). *(Left unchecked deliberately —
+      this bullet records a scope exclusion, not a deliverable, and is intentionally not applicable
+      as a "done" item.)*
+- [x] **Glossary follow-up**: `docs/testing/frontend/gherkin-guidelines.md`'s domain glossary gains
       **"admin UI language"** (Layer 1, this story) as distinct from **"store language"** (Layer 2,
       story 0068), so the two are not conflated in a later story's scenarios — which is the exact
-      failure the PRD warns about.
+      failure the PRD warns about. *(Done 2026-09-28: added as the new "Internationalization
+      vocabulary" subsection, in the shape of the existing "Blog vocabulary" one.)*
 - [ ] Acceptance criteria met.
 
 ---
@@ -803,6 +813,39 @@ that a screen-shaped exclusion cannot bind shared code:
   the only enforcement. If a locale is ever *removed* from the enum, existing rows keep the old value
   — which is exactly the case D-5's `tryFrom()` boundary makes survivable, and which the stale-value
   test pins.
+- **R-6 — NEW (Phase 4, appsec-auditor, finding F-1), accepted risk, not fixed by this story.**
+  `Illuminate\Foundation\Application::setLocale()` (called unconditionally by `SetUiLocale`, per D-9)
+  has a side effect beyond the translator: it also overwrites `config('app.locale')`
+  (`Application.php:1596-1602`). `LocaleSetting::defaultUiLocale()` / `defaultNotificationLocale()`
+  (story 0068) both read that same key as their tier-3 fallback when no `locale_settings` row exists.
+  So within a single request cycle, an authenticated request can transiently make "the deploy's
+  configured default" read back as "the locale of whoever is currently making requests" for any
+  *other* request that also falls through to tier 3 before `LocaleSetting`'s row exists — e.g. an
+  administrator with `ui_locale = 'es'` inviting a new user, whose invitation email would render in
+  Spanish instead of the configured default. **Confirmed narrow in practice**: `LocaleSettingSeeder`
+  runs in both `DatabaseSeeder` and `ProductionSeeder` (`database/seeders/DatabaseSeeder.php:39`,
+  `ProductionSeeder.php:21`), so the singleton row exists after any standard `migrate --seed` /
+  `db:seed` deploy step; the window is only between a fresh `migrate` and the seed step, not normal
+  steady-state operation. No confidentiality or integrity impact (appsec-auditor rated it Low). **Not
+  fixed here** because both proposed fixes touch `App\Models\LocaleSetting` (story 0068's file,
+  explicitly scope-fenced out of 0066 — D-6 says its three-tier chain "must not be re-implemented,
+  wrapped or second-guessed here"). Recorded for a follow-up story or for 0068 to reopen: either have
+  `LocaleSetting`'s config-tier fallback read a value `App::setLocale()` cannot mutate (e.g. a
+  boot-time-captured config snapshot), or have the singleton row always exist (insert it in 0068's own
+  migration rather than only via seeder).
+- **R-7 — NEW (Phase 4, appsec-auditor, finding F-2), accepted risk for THIS story, but a hard
+  constraint on story 0067.** `SetUserUiLocale`'s self-only rule (D-11) is fail-open when no
+  authenticated actor is present: any explicit `$user` target is accepted. This is safe today by
+  construction — no route, Livewire component or job calls this action yet — but it means **any
+  future caller that reaches this action with `Auth::user()` null while the target user id came from
+  an untrusted source (an HTTP request, a queued job carrying a request-supplied id) bypasses the
+  self-only guard entirely.** Story 0067, which wires this action into the UI switcher, must call it
+  with no explicit `$user` argument (relying on the implicit `Auth::user()` target) on every HTTP
+  path, exactly as this story's own design intends — 0067's Phase 4 security audit should re-check
+  this specifically. Not changed here because splitting the action into two methods (one HTTP-only,
+  fail-closed; one system-only) was appsec-auditor's suggested fix but would reverse D-11's explicit,
+  reviewed design (a single `__invoke` deriving the rule from `Auth::user()`), which is out of this
+  story's scope to relitigate without a new human decision.
 - **Dependency — story 0067 (frontend) consumes this contract** and must not re-derive any of it:
   the enum `App\Enums\UiLocale` (`English`/`Spanish`, `'en'`/`'es'` — *created by story 0068 since
   2026-09-27, not by this story*), the action
@@ -924,6 +967,28 @@ DoD docs item); the DoD's directory-listing pointer now names `docs/conventions/
 after the docs hub/parts split; **R-3** is resolved (`vendor/` is installed); **R-2a** and §6 task 0
 are marked satisfied because story 0068 is closed; and **D-13** records that
 `tests/Feature/Localization/` already exists from 0068.
+
+**Phase 5 code-review test-quality fixes, applied 2026-09-28 (`backend-qa`).** `code-reviewer` found
+`tests/Feature/Localization/UiLocaleLivewireRoundTripTest.php`'s round-trip assertion could never go
+red for two independent reasons: the 'es' locale set by the preceding GET was never reset before the
+POST, and Livewire's own `SupportLocales::hydrate()` (`LivewireServiceProvider.php:200`) restores the
+locale from the initial render's own snapshot memo regardless of whether `SetUiLocale` ran at all. Fixed
+by resetting `App::setLocale('en')` immediately before the POST and binding a partial Mockery spy over
+the real `SetUiLocale` instance, asserting `handle()` was actually invoked during the POST —
+structurally incapable of passing if the middleware is removed from the `web` group or never invoked.
+The manual "prove it can fail" verification named in [§6 task 9](#6-technical-tasks-for-later-backlog-creation)
+(previously deferred with a `TODO(Phase 4/5)` — now removed, since it no longer applies) was performed:
+`bootstrap/app.php`'s `$middleware->web(append: [SetUiLocale::class]);` call was temporarily commented
+out, only this test file was re-run, and it went RED (the first assertion, right after the GET, failed
+— `App::getLocale()` was `'en'` instead of `'es'`, confirming the whole chain breaks without the
+registration). `bootstrap/app.php` was then restored and `git diff bootstrap/app.php` confirmed no
+changes remained; the test was re-run and confirmed green again. Two further test-quality fixes landed
+in the same pass: `UiLocaleResolutionTest.php`'s "outlives the session" persistence test now seeds an
+explicit `LocaleSetting::factory()->create(['default_ui_locale' => 'en', ...])` row before the sequence
+(closing the same `config('app.locale')`-poisoning gap already recorded as **R-6**, which previously let
+a broken session-backed implementation pass by accident); and `UserTest.php`'s "factory user has a null
+ui_locale by default" test now asserts on `$user->fresh()->ui_locale` instead of the in-memory
+attribute, so it genuinely proves the database column has no default.
 
 _Phase 1 only. No INVEST check, no TDD, no security audit, no code review, no docs pass — those are
 Phases 2–7 and are orchestrated separately._

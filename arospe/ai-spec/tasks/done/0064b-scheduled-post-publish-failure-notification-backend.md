@@ -963,7 +963,7 @@ inconsistency.
   the reason; the wording says **what failed** at the level an editor can act on, which is what the owner asked for.
 - **Buttons:** the primary action **"Edit post"**, and a plain **"All posts"** link (**D-10**).
 - **Locale:** the **app locale** (`config('app.locale')`). `User` has no locale preference and a queued notification runs
-  with no request; stories [0066](../in-progress/0066-admin-ui-locale-preference-backend.md) and
+  with no request; stories [0066](0066-admin-ui-locale-preference-backend.md) (shipped 2026-09-28) and
   [0067](../0067-admin-ui-language-switcher-ui.md) introduce one, and then this becomes the recipient's preference
   (future, not this story).
 - **The title is user content in the subject and the body — escape it (`backend-qa`).** Verified against the framework
@@ -1115,7 +1115,7 @@ Read against this worktree at `HEAD` = `d1e507f`; nothing here was run. **Re-ver
 | [0065](0065-blog-post-published-notification-backend.md) | **not a dependency for class 1; must be amended (H-1, H-2)** | Its listener must not swallow errors (**D-0**) |
 | [0057](0057-notification-bell-ui.md) — the bell | **not a dependency** | Renders this type generically until it gains an arm (**H-3**) |
 | [0078](../0078-translatable-content-retrofit-blog-posts-backend.md) | **later** | Changes the single title read; its migration must sort after this one |
-| [0066](../in-progress/0066-admin-ui-locale-preference-backend.md) / [0067](../0067-admin-ui-language-switcher-ui.md) | **later** | Replace the app locale with the recipient's preference |
+| [0066](0066-admin-ui-locale-preference-backend.md) (shipped) / [0067](../0067-admin-ui-language-switcher-ui.md) | **later** | Replace the app locale with the recipient's preference |
 
 ### Risks
 
