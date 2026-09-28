@@ -28,6 +28,8 @@ return [
     |
     */
 
-    'translation_relations' => [],
+    'translation_relations' => [
+        ['table' => 'product_category_translations', 'column' => 'store_language_id'],
+    ],
 
 ];

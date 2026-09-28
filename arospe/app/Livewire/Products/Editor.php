@@ -478,6 +478,13 @@ class Editor extends Component
     }
 
     /**
+     * Story 0070 (D-15): categories are offered by their DEFAULT-language name -- `name` no
+     * longer lives on `product_categories` itself, so the ordering happens in PHP after
+     * `withTranslationsFor()` eager-loads only the default language (R-4). A category with no
+     * default-language translation renders `—` and sorts last, matching
+     * ProductCategories\Index::loadProductCategories()'s identical convention, rather than
+     * throwing or being silently omitted from the dropdown.
+     *
      * @return list<array{id: string, name: string}>
      */
     #[Computed]
@@ -485,10 +492,27 @@ class Editor extends Component
     {
         return array_values(
             ProductCategory::query()
-                ->orderBy('name')
-                ->orderBy('id')
-                ->get(['id', 'name'])
-                ->map(fn (ProductCategory $category): array => ['id' => $category->id, 'name' => $category->name])
+                ->withTranslationsFor()
+                ->get()
+                ->sort(function (ProductCategory $a, ProductCategory $b): int {
+                    $nameA = $a->translated('name');
+                    $nameB = $b->translated('name');
+
+                    if ($nameA === null && $nameB === null) {
+                        return $a->id <=> $b->id;
+                    }
+
+                    if ($nameA === null) {
+                        return 1;
+                    }
+
+                    if ($nameB === null) {
+                        return -1;
+                    }
+
+                    return $nameA <=> $nameB ?: $a->id <=> $b->id;
+                })
+                ->map(fn (ProductCategory $category): array => ['id' => $category->id, 'name' => $category->translated('name') ?? '—'])
                 ->all()
         );
     }
