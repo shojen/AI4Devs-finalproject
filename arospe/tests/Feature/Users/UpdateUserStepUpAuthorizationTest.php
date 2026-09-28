@@ -561,3 +561,47 @@ test('signing out clears the confirmation, so a role change is refused again aft
 
     expect($target->fresh()->hasRole('Editor'))->toBeTrue();
 });
+
+// =====================================================================
+// Story 0064d -- N1/N2: the locked compare-and-set the story adds is structurally scoped to
+// ! $isSelfEdit and to an actual status/role change. Neither branch of that scoping is new
+// behaviour, but neither had its own dedicated test before this story either.
+// =====================================================================
+
+test('N1: a self-edit succeeds unaffected while a second administrator concurrently changes the acting administrator\'s own status', function () {
+    $actor = User::factory()->create(['name' => 'Original Name', 'status' => UserStatus::Active]);
+    $actor->givePermissionTo('users.edit');
+    $this->actingAs($actor);
+    markPasswordConfirmationStale();
+
+    // A second administrator's concurrent change to the ACTING administrator's own row, before
+    // this self-edit is submitted.
+    User::query()->whereKey($actor->getKey())->update(['status' => UserStatus::Suspended->value]);
+
+    $updateUser = app(UpdateUser::class);
+    // $actor's own in-memory instance never sees the concurrent write -- the stale-instance shape,
+    // applied to a self-edit this time. roleId is deliberately '' (self-edit never reads it).
+    $updateUser($actor, 'Renamed', $actor->email, '', $actor->status, app(RequestEmailChange::class));
+
+    expect($actor->fresh()->name)->toBe('Renamed')
+        ->and($actor->fresh()->status)->toBe(UserStatus::Suspended);
+});
+
+test('N2: a plain, no-race resubmission of the current status triggers no gate, no step-up and no write', function () {
+    $actor = User::factory()->create();
+    $actor->givePermissionTo(['users.edit', 'roles.manage-administrators']);
+    $this->actingAs($actor);
+    // Deliberately stale/never confirmed -- if step-up fired here at all, this would throw.
+    markPasswordConfirmationStale();
+
+    $editorRole = Role::create(['name' => 'Editor', 'guard_name' => 'web']);
+    $target = User::factory()->create(['status' => UserStatus::Active]);
+    $target->assignRole($editorRole);
+    $updatedAtBefore = $target->fresh()->updated_at;
+
+    $updateUser = app(UpdateUser::class);
+    $updateUser($target, $target->name, $target->email, (string) $editorRole->id, UserStatus::Active, app(RequestEmailChange::class));
+
+    expect($target->fresh()->status)->toBe(UserStatus::Active)
+        ->and($target->fresh()->updated_at->equalTo($updatedAtBefore))->toBeTrue();
+});
