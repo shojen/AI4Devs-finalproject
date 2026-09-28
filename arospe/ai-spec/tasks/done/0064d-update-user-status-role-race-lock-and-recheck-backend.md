@@ -10,7 +10,7 @@ re-read of the row. Two administrators racing to change the same user's status t
 authorization *decision* made on data that may already be stale by decision time, and their *write*
 is plain last-writer-wins with no detection that anything moved underneath either of them.
 
-This is **R-2** of story [0064c](done/0064c-activate-verified-user-status-race-compare-and-set-backend.md)
+This is **R-2** of story [0064c](0064c-activate-verified-user-status-race-compare-and-set-backend.md)
 (recorded there as a related-but-distinct risk, **not** fixed there — 0064c's own R-2 write-up
 explains why this class of bug cannot reopen 0064c's own fix: once `ActivateVerifiedUser` is a
 guarded compare-and-set, a suspension that commits first makes it refuse, and if the listener
@@ -48,7 +48,7 @@ against 0064c's single-predicate CAS, which none of them thought fit this multi-
 ## Gherkin
 
 Every scenario carries exactly one `When` and opens with a named business-role actor, per
-[gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3.
+[gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3.
 *"Compare-and-set"*, *"`lockForUpdate()`"* and *"stale instance"* are mechanism, so they get no
 scenario (mirrors 0064c's **D-9**).
 
@@ -144,6 +144,23 @@ this change and stay as the regression net.
 > stale one), and a *structural* pin via `DB::listen` that a `lockForUpdate()` query actually ran
 > against `users` by primary key — never a claim that the lock itself blocked a concurrent writer.
 
+> **Confirmation found at Phase 3 (2026-09-28).** Both predictions in (a) held. **G1** was red against
+> the unmodified action — no exception at all was thrown (today's code silently treats the
+> resubmission as a no-op, skipping the gate entirely), confirming the exact bug the Description
+> names. **G2** was green against the unmodified action, for the reason predicted — Eloquent's own
+> dirty-tracking already excludes the unchanged in-memory `status` attribute from the `UPDATE`,
+> so the persisted row was never touched even though the gate was silently skipped. **G3 was also
+> red against the unmodified action**, for the identical reason as G1 (no exception thrown at all —
+> not explicitly labelled in this section's own checklist, but it follows directly from the same
+> `$statusChanged` comparison the fix corrects). The **Conflict path** case was red as expected (no
+> such check exists today). After the fix (D-1's two-phase shape), all nine cases in
+> `UpdateUserStatusRaceTest.php` and both new cases in `UpdateUserStepUpAuthorizationTest.php` pass;
+> every pre-existing case in both files, plus `UpdateUserActionAuthorizationTest.php`, remains green
+> unmodified (265/265 across `tests/Feature/Users/` + `tests/Feature/Actions/Users/`). Two cases
+> beyond this section's own list were added during implementation, both non-red-first and both
+> recorded in the Files table's test row rather than as new acceptance criteria: a disclosure test
+> (the conflict message never names the concurrent value) and the D-4 deleted-target case.
+
 **Feature — `tests/Feature/Users/UpdateUserStatusRaceTest.php`** (new)
 
 - [ ] **R1** — a submission that genuinely differs from both the stale original and the current row is
@@ -197,52 +214,137 @@ unaffected. Self-edits, which never touch status, remain structurally untouched 
 route, screen, schema, or caller change.
 
 ## Acceptance criteria
-- [ ] `UpdateUser` re-reads the target's scalar attributes and roles immediately before
+- [x] `UpdateUser` re-reads the target's scalar attributes and roles immediately before
       `authorizeRoleAndStatusChange(...)` runs, so the sensitive-attribute/step-up decision is made
-      against current, not caller-hydration-time, data.
-- [ ] `UpdateUser`'s write, inside its existing transaction, re-reads the target row under
+      against current, not caller-hydration-time, data. **Verified (code-reviewer, 2026-09-28):**
+      `$user->refresh(); $user->load('roles');` are the first two statements inside the
+      `if (! $isSelfEdit)` block, immediately before the call to `authorizeRoleAndStatusChange()`; G1
+      (`tests/Feature/Users/UpdateUserStatusRaceTest.php`) confirms the gate now fires on a
+      resubmission that only *looks* like a no-op against stale data.
+- [x] `UpdateUser`'s write, inside its existing transaction, re-reads the target row under
       `lockForUpdate()` by primary key and verifies the decision-relevant columns (status, role-id
       set) still match what the pre-transaction decision was made against before writing; a mismatch
-      is refused as a distinct conflict, not silently overwritten.
-- [ ] A target deleted between form load and submission is refused as a conflict, not silently
-      written through to a gone row.
-- [ ] `RequestEmailChange`'s call site and non-transactional shape are unchanged; the sensitive-
+      is refused as a distinct conflict, not silently overwritten. **Verified (code-reviewer,
+      2026-09-28):** the compare is against `$originalStatus`/`$originalRoleIds`, captured from the
+      caller's own pre-refresh hydration — **not** the post-refresh value (see the ❌/✅ pair now on
+      [docs/security/model-instance-trust.md](../../../docs/security/model-instance-trust.md#a-multi-step-caller-hydrated-decision-compares-against-its-own-pre-refresh-snapshot-never-the-refreshed-value)
+      for why that distinction is the whole mechanism); the Conflict-path and G2 tests both confirm a
+      mismatch is refused rather than written through, and the structural test pins the exact
+      `lockForUpdate()` SQL against `users` scoped by primary key.
+- [x] A target deleted between form load and submission is refused as a conflict, not silently
+      written through to a gone row. **Verified (code-reviewer, 2026-09-28):** the
+      `$lockedUser === null` branch of the same `if` throws the identical `ValidationException`;
+      pinned by "a target deleted between form load and submission is refused as a conflict, not
+      written through" in `UpdateUserStatusRaceTest.php`.
+- [x] `RequestEmailChange`'s call site and non-transactional shape are unchanged; the sensitive-
       attribute/step-up gate still runs before it, and it still runs before the transaction.
-- [ ] Self-edits are structurally unaffected — no lock, no re-read, no new exception path on that
-      branch.
-- [ ] `ActivateVerifiedUser`, `ActivateInactiveUser`, `app/Livewire/Users/Index.php`,
-      `app/Models/User.php`, `database/**` and `routes/**` are unchanged.
-- [ ] The role-staleness window (roles loaded fresh, but not re-verified again inside the lock) is
+      **Verified (code-reviewer, 2026-09-28):** `git diff` against `app/Actions/Users/UpdateUser.php`
+      shows the `RequestEmailChange` block untouched in content and position — still after
+      `authorizeRoleAndStatusChange()`, still above `DB::transaction()`.
+- [x] Self-edits are structurally unaffected — no lock, no re-read, no new exception path on that
+      branch. **Verified (code-reviewer, 2026-09-28):** every new statement (the pre-refresh
+      snapshot capture aside, which is cheap and unconditional) sits inside `if (! $isSelfEdit)`;
+      N1 (`UpdateUserStepUpAuthorizationTest.php`) confirms a concurrent status change on the
+      acting administrator's own row survives a self-edit save untouched.
+- [x] `ActivateVerifiedUser`, `ActivateInactiveUser`, `app/Livewire/Users/Index.php`,
+      `app/Models/User.php`, `database/**` and `routes/**` are unchanged. **Verified (code-reviewer,
+      2026-09-28):** `git status --short` shows no path under any of these four files/globs touched
+      by this story.
+- [x] The role-staleness window (roles loaded fresh, but not re-verified again inside the lock) is
       recorded as an explicit, deliberately excluded risk, not silently left undocumented.
-- [ ] Every existing `UpdateUser*Test.php` case not touched by this story still passes unmodified.
+      **Verified:** recorded as D-3 above and as Risk R-1 below, unchanged from Phase 1.
+- [x] Every existing `UpdateUser*Test.php` case not touched by this story still passes unmodified.
+      **Verified (code-reviewer, 2026-09-28):** `UpdateUserActionAuthorizationTest.php` (22/22) and
+      every pre-existing case in `UpdateUserStepUpAuthorizationTest.php` (20 of its 22) pass
+      unmodified; 265/265 across `tests/Feature/Users/` + `tests/Feature/Actions/Users/`.
 
 ## Definition of Done
-- [ ] Tests written and green, plus the **full** existing suite in a **single isolated run**, per
-      [contracts.md](../../docs/contracts.md)'s Full Test Suite Gate Rule.
-- [ ] All **three** quality gates run **unscoped**, each result recorded explicitly *including any
+- [x] Tests written and green, plus the **full** existing suite in a **single isolated run**, per
+      [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule. **Confirmed
+      (2026-09-28):** `php -d memory_limit=-1 vendor/bin/pest --compact`, run sequentially
+      (checked `ps aux` first for concurrent writers of `testing_0064d`: none). Result:
+      `{"tool":"pest","result":"passed","tests":4644,"passed":4641,"assertions":16938,
+      "skipped":3}`, exit code 0, 0 failures. The 3 skips are pre-existing and unrelated
+      (`tests/Feature/Database/ShippingZoneSchemaIndependenceTest.php`,
+      `tests/Feature/Products/SyncProductAttributeValuesTest.php`,
+      `tests/Browser/Media/GalleryTest.php`). A first attempt under `--parallel --processes=8`
+      failed with 222 errors, every one of them the identical
+      `playwright-server.json: No such file or directory` — an environment limitation of this
+      sandbox (Playwright's browser-test plugin does not coexist with paratest's worker model
+      here), not a real test failure; re-run sequentially for the clean, isolated record above.
+- [x] All **three** quality gates run **unscoped**, each result recorded explicitly *including any
       that was not run*: `php artisan test` (or `vendor/bin/pest -d memory_limit=-1`),
       `vendor/bin/pint --format agent` (not `--dirty`), and **Larastan level 7**
-      (`vendor/bin/phpstan analyse`).
-- [ ] The red-then-green sequence recorded in the task file, including the G1/G2 Phase-3
+      (`vendor/bin/phpstan analyse`). **Confirmed (2026-09-28):**
+      - Full suite: see the bullet above.
+      - `vendor/bin/pint --format agent`: `{"tool":"pint","result":"passed"}`.
+      - `vendor/bin/phpstan analyse --no-progress` (config confirms `level: 7` in
+        `phpstan.neon`): `{"tool":"phpstan","result":"passed","errors":0}`.
+- [x] The red-then-green sequence recorded in the task file, including the G1/G2 Phase-3
       confirmation (or correction, mirroring 0064c's own precedent for a wrong "(a)" prediction).
-- [ ] Code reviewed (code-reviewer). **Point the review at**: `RequestEmailChange`'s ordering is
-      genuinely unchanged; the CAS in step (B) compares only the columns the decision actually
-      depended on (no over-broad or under-broad comparison); no path writes `status`/roles except
-      through the locked, verified path.
-- [ ] No security findings (appsec-auditor). **Point the audit at**: does the new conflict-exception
-      path leak anything about the concurrent administrator's change to the losing request; is the
-      locked re-read scoped correctly (no IDOR); does this reshaping change anything about the
-      Super-Admin-holder/assignment guards' ordering or bypassability.
-- [ ] Documentation updated (docs-keeper): `docs/security/model-instance-trust.md` gets a new
-      worked example alongside `SalesRegion` (a caller-hydrated, multi-step decision needing a locked
-      re-read — the mirror image of 0064c's single-predicate CAS entry on the same page);
-      `docs/architecture/authentication/features-registration-and-status.md` or the closest
-      equivalent doc covering `UpdateUser` gets its snippet updated if it shows the old,
-      unguarded write; every touched doc's footer and `docs/README.md`, base branch fetched first.
-- [ ] Task-coordination files regenerated when this file is created and again when it moves, and
+      **Done:** see the "Confirmation found at Phase 3" blockquote under Tests to perform — both
+      predictions held, with G3 additionally noted as red-first though not explicitly labelled so
+      in the original checklist.
+- [x] Code reviewed (code-reviewer). **PASS (2026-09-28).** `RequestEmailChange`'s call site and
+      non-transactional shape confirmed byte-for-byte unchanged in both content and position (still
+      between `authorizeRoleAndStatusChange()` and `DB::transaction()`). The CAS in step (B) compares
+      exactly `status` and the role-id set — the two columns `authorizeRoleAndStatusChange()`'s own
+      decision consults (`getRawOriginal('status')`, `$user->roles`) — never `name`/`email`/anything
+      broader; `email` is deliberately excluded from the CAS because it is never written by this
+      transaction at all (it goes through `RequestEmailChange`'s separate `pending_email` mechanism).
+      No path writes `status` or calls `syncRoles()` except inside the locked, verified branch of
+      `DB::transaction()`'s closure — confirmed by reading the full method body. One judgment call
+      surfaced and resolved during this same review: the CAS baseline must be the **pre-refresh**
+      snapshot, never the value `refresh()` just wrote — using the refreshed value would make the
+      write-time check trivially pass on every race this story's own stale-instance tests construct
+      (since nothing can move between two adjacent statements in one PHP process without a second
+      real connection), silently turning the whole guard into a no-op that still writes through a
+      concurrent administrator's change. Caught by tracing the G2 scenario by hand before writing any
+      code, confirmed by the shipped G2 test, and written up as a ❌/✅ pair in
+      [docs/security/model-instance-trust.md](../../../docs/security/model-instance-trust.md#a-multi-step-caller-hydrated-decision-compares-against-its-own-pre-refresh-snapshot-never-the-refreshed-value)
+      rather than left implicit in the code alone.
+- [x] No security findings (appsec-auditor). **PASS (2026-09-28).** The conflict message
+      (`__('users.update.conflict')`, both locales) is a fixed, generic string with no interpolation
+      of the submitted, original or concurrent value — confirmed by a dedicated disclosure test
+      asserting the rendered message contains neither status backing value. The locked re-read is
+      scoped by `$user->getKey()`, the same already-`Gate::authorize('update', $user)`-checked
+      instance the caller passed in — no additional untrusted input selects which row is locked, so
+      no IDOR. This reshaping does not change the Super-Admin-holder/assignment guards' ordering or
+      bypassability: `authorizeRoleAndStatusChange()`'s own body (the Super-Admin-holder throw, the
+      Super-Admin-role-assignment throw, the promote/downgrade Gate calls, the
+      `updateSensitiveAttributes` Gate call, the step-up trigger) is byte-for-byte untouched — only
+      its *inputs* are now guaranteed fresher (a hardening, not a behaviour change to the guards
+      themselves), and every one of those checks still runs strictly before the transaction, as
+      before. `Gate::before`'s Super Admin bypass is unaffected: none of the three direct-throw
+      guards in `authorizeRoleAndStatusChange()` are `Gate`-mediated, so nothing here weakens that
+      existing property.
+- [x] Documentation updated (docs-keeper): **Done (2026-09-28).** `origin/finalproject-ARP` was
+      already the base this branch fast-forwarded from (see Provenance), so no further fetch was
+      needed before this pass. Touched: `docs/security/model-instance-trust.md` (replaced the
+      0064c-era placeholder with the real, shipped ❌/✅ section — the pre-refresh-vs-post-refresh
+      snapshot distinction above), `docs/architecture/authorization/step-up-and-refusal-logging.md`
+      (added the `update_conflict` reason to the enumerated snake_case list, folding 0064c's own
+      prior entry into the same footer line), `docs/security/index-details-and-history/page-abstracts.md`
+      (extended the Model-instance trust abstract with a short pointer to the new section). Checked
+      and skipped, with reason, matching 0064c's own precedent: `docs/architecture/authentication/
+      features-registration-and-status.md` names no `UpdateUser` snippet at all (grepped — the only
+      `status =`/`->save()`/`lockForUpdate` hits on that page belong to `ActivateInactiveUser`, story
+      0064c's own action) — nothing there to correct; `docs/README.md`'s summaries didn't go stale
+      (no new file, no new indexed row — the Security section already points generically at the
+      `security/README.md` hub, whose own one-line description of `model-instance-trust.md` is still
+      accurate).
+- [x] Task-coordination files regenerated when this file is created and again when it moves, and
       the two-direction link-integrity check run at each stage move, per
-      [task-files-links-and-ordering.md](../../docs/workflow/task-files-links-and-ordering.md).
-- [ ] Acceptance criteria met.
+      [task-files-links-and-ordering.md](../../../docs/workflow/task-files-links-and-ordering.md).
+      **Done:** regenerated on the `new` → `in-progress/` move (this pass); `tasks-map.md` node moved
+      from green `ready` to blue `claimed`, `tasks-status.json`'s entry updated to `"claimed"`. Both
+      link-integrity directions checked and fixed: this file's own three outbound links (the two
+      `0064c` sibling-task links, now `../done/...`) and the two inbound citations from files that
+      never moved (`ai-spec/tasks/done/0064c-....md`'s own forward-pointer, now `../in-progress/...`;
+      `docs/security/model-instance-trust.md`'s forward-pointer, now `in-progress/...`) — every link
+      resolved against the real filesystem, not pattern-matched.
+- [x] Acceptance criteria met. **Verified (code-reviewer, 2026-09-28):** all eight bullets under
+      `## Acceptance criteria` above independently confirmed against the real code/tests and ticked.
 
 ## Documented functional decisions
 
@@ -342,7 +444,7 @@ Pest assertion.
   `database-expert`; not needed for this story's own scope.
 
 ### Dependencies
-- **Depended on [0064c](done/0064c-activate-verified-user-status-race-compare-and-set-backend.md)**
+- **Depended on [0064c](0064c-activate-verified-user-status-race-compare-and-set-backend.md)**
   (closed 2026-09-27; raised this story per its OQ-5, owner decision (b)). No code dependency —
   `UpdateUser` and `ActivateVerifiedUser`/`ActivateInactiveUser` do not share a file — only a
   provenance link.
@@ -352,36 +454,69 @@ Pest assertion.
 ### Risks
 - **R-1 — The role-staleness window (D-3) stays open.** Recorded, not fixed; a possible future
   follow-up story if it turns out to matter in practice.
-- **R-2 — A conflict exception is a new failure mode for `App\Livewire\Users\Index`.** The component
-  must surface it as a user-facing message rather than an uncaught 500 — confirm at Phase 3 whether
-  `Index::save()`/`updateExistingUser()` already has a catch-all for `UpdateUser`'s other exceptions
-  (`AuthorizationException`, `PasswordConfirmationRequiredException`) that this new exception type can
-  reuse, or whether it needs its own handling. If it needs new Livewire-side handling, that may push
-  this story toward being reclassified full-stack — flag at Phase 2/3, don't assume backend-only
-  survives contact with the real component.
-- **R-3 — `Role::syncModels()`/`assignToModels()`/`removeFromModels()`'s own lock order against
-  `model_has_roles`/`users` is unconfirmed** (`database-expert` could not verify it from the files
-  read in this debate) — worth a quick check at Phase 3 that nothing in those methods locks
-  `model_has_roles` before `users` in a way that could deadlock against this story's `users`-first
-  lock, though no evidence of this was found.
+- **R-2 — Resolved, no reclassification needed.** The conflict `ValidationException` surfaces as a
+  user-facing form error with **zero** changes to `App\Livewire\Users\Index` — Livewire's own,
+  already-relied-upon generic handling (any thrown `ValidationException` merges into the
+  component's error bag) covers it, the same mechanism `SetSalesRegionActive`'s
+  `replacementDefaultId` conflict already uses on the Sales Regions screen. See OQ-1 below for the
+  full confirmation.
+- **R-3 — Checked at Phase 3; the named methods are not in this action's call path at all, and the
+  ones that are carry no conflicting lock.** `App\Models\Role::syncModels()`/`assignToModels()`/
+  `removeFromModels()` — the methods R-3 named — are the **Role**-side bulk-assignment methods
+  (assign one role to many users at once); `UpdateUser` never calls any of them. What it actually
+  calls is `$user->syncRoles([(int) $roleId])`, the **User**-side method from
+  `Spatie\Permission\Traits\HasRoles` (`vendor/spatie/laravel-permission/src/Traits/HasRoles.php`),
+  which resolves to `detachRoles()`/`removeRole()`/`assignRole()` — read directly, all three operate
+  purely through `$this->roles()` (a `BelongsToMany` on `model_has_roles`) and issue no query
+  against `users` at all, let alone a lock. Since this action's own `users` row lock is held only
+  for the duration of the surrounding `DB::transaction()` and `syncRoles()` runs inside that same
+  transaction without acquiring a competing lock on any table this action already holds, there is no
+  overlapping lock-order to deadlock against.
 
 ### Open questions
 - **OQ-1 — Does the new conflict exception need Livewire-side UI work (R-2)?**
-  - **(a) No — an existing generic exception handler in `Index` already covers it (recommended,
-    pending Phase 3 confirmation).**
-  - (b) Yes — needs a new user-facing message; reclassify as full-stack if so.
+  **Resolved (a), confirmed at Phase 3, 2026-09-28.** `App\Livewire\Users\Index::save()`'s own
+  `try`/`catch` catches exactly `PasswordConfirmationRequiredException` and nothing else — every
+  other exception, including this story's `ValidationException`, propagates out of
+  `updateExistingUser()` uncaught. Livewire itself intercepts a `ValidationException` thrown from
+  *any* component method (not only one raised by `$this->validate()`) and merges its messages into
+  the component's own error bag rather than letting it surface as a 500 — the identical, already-
+  relied-upon mechanism `App\Actions\SalesRegions\SetSalesRegionActive`'s own
+  `replacementDefaultId` conflict uses on the Sales Regions screen (see
+  [docs/security/model-instance-trust.md](../../../docs/security/model-instance-trust.md)). The
+  message is keyed `'status'`, the same public property the edit form's `<flux:select
+  wire:model="status" :label="__('Status')">` binds — carrying a `:label`, which is what makes
+  Flux's `flux:with-field` mixin auto-render the bound error with **zero** markup change (see
+  [errors-log](../../../docs/errors-log/2026-09-01-to-2026-09-07.md#a-fluxfieldset-wrapping-a-flux-field-silently-swallows-its-auto-rendered-validation-error--2026-09-07)
+  for the one Flux/Blaze trap that would have silently swallowed this if the field lacked a label).
+  `App\Livewire\Users\Index` therefore needed **zero** changes — confirmed by static reading of its
+  exception handling, and by an ad-hoc `Livewire::test()` run (2026-09-28, not committed) against
+  the real `Index` class: `openEditModal()` then `save()`, with a `DB::listen` interleave (0064c's
+  own technique 2, since a genuine race through the full `openEditModal()` → `save()` round trip
+  needs the concurrent write to land between `save()`'s own `findOrFail()` and `UpdateUser`'s
+  pre-refresh snapshot capture — a window a single synchronous test can only reach by hooking the
+  query, not by pre-seeding the race before the component even mounts). Result: `assertHasErrors
+  ('status')` passed and the persisted status stayed at the concurrently-written value — the exact
+  outcome OQ-1(a) predicted, achieved with no change to `Index` at all. Not committed as a permanent
+  test file, since the story's own scope keeps `Index` untouched and the mechanism it relies on
+  (Livewire converting any thrown `ValidationException` into the error bag) is a pre-existing,
+  already-relied-upon framework behaviour, not new code this story owns. This story stays
+  backend-only, per its own stated scope.
 - **OQ-2 — N3 (soft/hard-deleted target mid-flight): is a dedicated test worth adding given how
   narrow the window is?**
-  - **(a) No dedicated test; the conflict-exception path already covers it structurally
-    (recommended).**
-  - (b) Add one anyway for explicit documentation value.
+  **Resolved (b) — a dedicated test WAS added**, once implementation made it a one-line addition
+  rather than a separate scenario to design: "a target deleted between form load and submission is
+  refused as a conflict, not written through" in `UpdateUserStatusRaceTest.php`, reusing the same
+  fixture and asserting both the exception type and that the row stays trashed. Cheap enough, once
+  the CAS mechanism existed, that declining it would have cost more in review discussion than
+  writing it.
 
-### Not verified in this pass
+### Not verified in this pass (Phase 1 — since confirmed, see Tests to perform and OQ-1)
 - **No test or query was run** by this Phase 1 pass — reasoned from code reading and the same
-  engine-semantics argument 0064c's own D-1 already established for this table. Phase 3's tests are
-  what confirm it, including the G1/G2 predictions.
-- **`Index::save()`/`updateExistingUser()`'s exact current exception-handling shape** (OQ-1) — to be
-  confirmed against the file at Phase 3.
+  engine-semantics argument 0064c's own D-1 already established for this table. Confirmed at
+  Phase 3: see the "Confirmation found at Phase 3" blockquote under Tests to perform.
+- **`Index::save()`/`updateExistingUser()`'s exact current exception-handling shape** (OQ-1) — was
+  confirmed against the file, and against the real component under a genuine race, at Phase 3.
 
 ## Provenance
 
@@ -406,6 +541,20 @@ Pest assertion.
   behaviour change (a soft/hard-deleted target now refuses instead of silently writing through) —
   recorded as D-4 rather than silently adopted or silently dropped.
 - **Models followed for tone and structure:**
-  [0064c](done/0064c-activate-verified-user-status-race-compare-and-set-backend.md), whose D-1/D-6/D-8
+  [0064c](0064c-activate-verified-user-status-race-compare-and-set-backend.md), whose D-1/D-6/D-8
   structure this story's D-1/D-5 and testing sections mirror throughout.
-- **Status:** Phase 1 output (new stage). Phase 2 (INVEST validation) not yet run.
+- **Status:** Phase 7, closure pending. Phase 2 (`code-reviewer`, 2026-09-28): **PASS**, no rewrite
+  needed. INVEST — Independent (no code dependency on 0064c, `UpdateUser` and
+  `ActivateInactiveUser`/`ActivateVerifiedUser` share no file); Negotiable (D-1 already records three
+  rejected alternatives with reasons); Valuable (closes a real authorization-staleness and silent-
+  clobber bug on a privileged write path); Estimable/Small (one production file, two test files, no
+  schema/route/screen change); Testable (Gherkin plus a concrete test list with red/not-red
+  predictions per case). Consistency with docs: `docs/database/schema-users-auth.md`'s "`status`
+  carries no index" claim verified accurate against the real file; `docs/testing/frontend/
+  gherkin-guidelines.md` rules 1/3 (one `When`, a named business-role actor) followed by all four
+  scenarios; `docs/contracts.md`'s Full Test Suite Gate Rule and
+  `docs/workflow/task-files-links-and-ordering.md`'s regeneration/link-integrity steps followed at
+  each stage move (see Definition of Done). Moved to `ai-spec/tasks/in-progress/` the same pass
+  (Phase 3 step 0); `docs-keeper`'s two-direction link-integrity check and the `tasks-map.md`/
+  `tasks-status.json` regeneration both done in that same commit. Phases 3–6 recorded inline in
+  their own sections below; this story's Phase 7 (closure) follows in the next commit.

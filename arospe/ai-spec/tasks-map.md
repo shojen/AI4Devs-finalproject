@@ -50,6 +50,19 @@ its own (`0064d`'s link to it is provenance-only, never a `depends_on` edge — 
 this closure re-derives no `status` change against the pending list. `ai-spec/tasks/in-progress/` is
 empty again.
 
+Update (2026-09-28): `0064d-update-user-status-role-race-lock-and-recheck-backend.md` completed
+Phase 7 and moved from `in-progress/` to `done/` — the twenty-third Epic 1 story to close. Its node
+(already blue/`claimed`) and its `tasks-status.json` entry are dropped. It had no pending dependent of
+its own (only the provenance link from 0064c, never a `depends_on` edge), so this closure re-derives
+no `status` change against the pending list. `ai-spec/tasks/in-progress/` is empty again.
+
+Update (2026-09-28): `0064d-update-user-status-role-race-lock-and-recheck-backend.md` moved from
+`ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0). It is still pending work, so it
+keeps its node and edges (it has none, `depends_on: []`); its node moves from the green `ready` class
+to the blue `claimed` class, and its `tasks-status.json` entry's `status` moved to `"claimed"`
+(`claimed_by: "shojen/0064d-update-user-status-role-race-lock-and-recheck-backend"`).
+`ai-spec/tasks/in-progress/` now holds exactly this one file.
+
 Update (2026-09-27): `0064d-update-user-status-role-race-lock-and-recheck-backend.md` was added as a new
 pending file (Phase 1 Three Amigos debate complete) — raised while story `0064c` was still `in-progress/`,
 per its **OQ-5** (owner decision: raise now). No code dependency on `0064c` (the two actions share no file;
@@ -178,20 +191,22 @@ graph and from the parallelization analysis below.
 
 ## Inventory
 
-### Done (87) — shipped, out of scope for this graph
+### Done (88) — shipped, out of scope for this graph
 
 Already merged into `main`/`finalproject-ARP` and closed via the workflow's Phase 7; see
 [`ai-spec/tasks/done/`](tasks/done/) for each story's full file. Listed here only as IDs, grouped
 by the epic area they belong to, since — per the note at the top of this file — none of them
 appears as a node in the dependency graph below:
 
-- **Epic 1 — Users, Roles & Auth (22):** 0001, 0002, 0003, 0004, 0005, 0006, 0006b, 0007, 0008,
-  0008a, 0009, 0010, 0011, 0012, 0013, 0014, 0015, 0015a, 0015b, 0040, 0064a, 0064c. 0064c —
+- **Epic 1 — Users, Roles & Auth (23):** 0001, 0002, 0003, 0004, 0005, 0006, 0006b, 0007, 0008,
+  0008a, 0009, 0010, 0011, 0012, 0013, 0014, 0015, 0015a, 0015b, 0040, 0064a, 0064c, 0064d. 0064c —
   activation status race, compare-and-set (backend), the twenty-second Epic 1 story to close: closed
   a suspended-account privilege-escalation race (R-2 from 0064a); its own Phase 1 hand-off raised
-  0064d (owner decision on OQ-5), which stays pending. Nothing pending named 0064c as a hard
-  `depends_on` dependent — only 0064d's provenance link, never a `depends_on` edge — so this closure
-  re-derives no `status` change against the pending list.
+  0064d (owner decision on OQ-5). 0064d — UpdateUser stale-read lock+recheck (backend), the
+  twenty-third Epic 1 story to close: a locked, verified compare-and-set on the decision-relevant
+  columns (status, role-id set), closing the sibling staleness hole 0064c's own R-2 deliberately left
+  open. Neither had a pending hard `depends_on` dependent (only the provenance link between them),
+  so this closure re-derives no `status` change against the pending list.
 - **Epic 2 — Products, Taxes, Media, Shipping (35):** 0016, 0017, 0018, 0019, 0019a, 0019b,
   0019c, 0019d, 0020, 0021, 0022, 0023, 0024, 0024a, 0024b, 0025, 0026, 0027, 0028, 0029, 0029a,
   0029b, 0030, 0030a, 0031, 0031a, 0032, 0033, 0034, 0035, 0036, 0037, 0038, 0039, 0080.
@@ -269,11 +284,10 @@ appears as a node in the dependency graph below:
   (0063 closed ninth, per the Update note above): it had no hard dependent of its own; `0065` and `0078` drop
   it from `conflict_risk_with`.
 
-### Pending — not started (15 numbered + 1 infra doc)
+### Pending — not started (14 numbered + 1 infra doc)
 
 | ID | Title | Epic area |
 | --- | --- | --- |
-| 0064d | UpdateUser — a concurrent status/role change must not be decided or overwritten on a stale read (backend) | Epic 1 — Users, Roles & Auth |
 | 0065 | Blog post published — notification (backend) | Epic 4 — Blog |
 | 0066 | Admin UI locale preference & resolution — backend | Epic 5 — i18n |
 | 0067 | Admin UI language switcher — frontend | Epic 5 — i18n |
@@ -317,11 +331,6 @@ flowchart LR
     classDef pending fill:#fef9c3,stroke:#ca8a04,color:#713f12,stroke-width:1px;
     classDef ready fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:1px;
     classDef claimed fill:#dbeafe,stroke:#2563eb,color:#1e3a8a,stroke-width:1px;
-
-    subgraph PEND_AUTH["Epic 1 — Users, Roles & Auth"]
-        direction TB
-        P0064d["0064d UpdateUser stale-read lock+recheck BE"]
-    end
 
     subgraph PEND_BLOG["Epic 4 — Blog"]
         direction TB
@@ -406,15 +415,15 @@ flowchart LR
     P0070 --> P0079
 
     class P0067,P0069,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0065,P0066,P0070,P0064d ready;
+    class P0065,P0066,P0070 ready;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(no node is `claimed` in this snapshot — `0064b`, `0064c` and `0068`, the prior `claimed` nodes, all
-closed to `done/` in this reconciled pass); yellow (`pending`) = still blocked on at least one open
-pending dependency.
+(no node is `claimed` in this snapshot — `0064d`, `0064b`, `0064c` and `0068`, the prior `claimed`
+nodes, all closed to `done/` in the reconciled pass
+before it); yellow (`pending`) = still blocked on at least one open pending dependency.
 
 ## Analysis
 
@@ -516,8 +525,8 @@ parallelization one. The major chains, in the order they must be executed:
    (`0058`, `0059`, `0060`, `0061`, `0061a`, `0061b`, `0062`, `0063`, `0064` and `0064b` are all `done/`); `0065`'s
    own dependencies (`0061`, `0064`) are both `done/`, so it is `ready` with no chain left to sequence. `0064a`
    (an Epic 1 listener fix raised by `0064`) is now `done/`, its own follow-up `0064c` is now `done/` too, and
-   `0064c`'s own follow-up, `0064d`, is a free-standing `ready` node (Epic 1, not Blog — noted here only because
-   it continues the same 0064-family chain); `0060` created the `content` sidebar group and its `blog` cluster
+   `0064c`'s own follow-up, `0064d`, is now `done/` too — the whole 0064-family chain (Epic 1's `0064a`/`0064c`/
+   `0064d` plus Epic 4's `0064`/`0064b`) is fully closed; `0060` created the `content` sidebar group and its `blog` cluster
    that `0062` and `0063` (both done) each appended one item to.
 4. **Internationalization (Epic 5).** This is the most heavily sequenced part of the backlog, and
    it is **cross-epic**: every retrofit story blocked on `0068` (Store Languages catalog, now
