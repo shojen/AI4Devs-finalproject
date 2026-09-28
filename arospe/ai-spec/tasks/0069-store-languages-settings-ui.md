@@ -467,7 +467,7 @@ in `lang/{en,es}/localization.php` under `settings.*`, never inline.
 both debate participants, and it is the correction most worth reading in this file.** Both
 `frontend-expert` and `frontend-qa` stated the notification default is inert and has no consumer,
 faithfully following 0068's **D26**/**R-16**. **That text is stale.** Verified by reading
-[`0066-admin-ui-locale-preference-backend.md`](0066-admin-ui-locale-preference-backend.md) at `HEAD`:
+[`0066-admin-ui-locale-preference-backend.md`](done/0066-admin-ui-locale-preference-backend.md) at `HEAD`:
 its **R-2** is marked *"✅ RESOLVED by the human: yes, an administrator's UI language also decides the
 language of their emails"*, and its **D-14** ships the consumer —
 
@@ -649,10 +649,10 @@ wrapper on the disabled branch rather than a conditionally-bound `:tooltip` prop
 - **[Story 0068](done/0068-store-languages-catalog-backend.md)** — the entire backend contract: both models,
   both policies, all five actions, the route, the fixture reader and the placeholder view this story
   replaces. **Specified, not implemented** (see R-1).
-- **[Story 0066](0066-admin-ui-locale-preference-backend.md)** — ~~`App\Enums\UiLocale`, which this
+- **[Story 0066](done/0066-admin-ui-locale-preference-backend.md)** — ~~`App\Enums\UiLocale`, which this
   screen's two selects render, and~~ `preferredLocale()` (*2026-09-27: `UiLocale` is now 0068's, per
   0068's Phase 2 finding B1*), which gives the notification default its meaning
-  (**D-5**). Also **specified, not implemented**.
+  (**D-5**). Now **shipped** (closed 2026-09-28).
 - **[Story 0067](0067-admin-ui-language-switcher-ui.md)** — not a code dependency, but it renders the
   personal switcher in the chrome of *this* page, which creates a real assertion collision (**R-3**).
 - **No new package.** No searchable-select dependency is added; story 0022 stays unbuilt.

@@ -168,11 +168,11 @@ its *Read the full text when* line applies to your task):
 | you need code-style examples | [`docs/conventions/code-style.md`](docs/conventions/code-style.md) |
 | you need the app's directory layout / where a new class or action belongs | [`docs/conventions/directory-structure.md`](docs/conventions/directory-structure.md) (hub → one part) |
 | you need naming conventions | [`docs/conventions/naming.md`](docs/conventions/naming.md) (hub → one part); validation traits: [`docs/conventions/naming-validation-traits.md`](docs/conventions/naming-validation-traits.md) |
+| locale-aware notifications, admin-dashboard strings, or storefront translation | [`docs/conventions/localization.md`](docs/conventions/localization.md) |
 | you write or review tests | [`docs/testing/README.md`](docs/testing/README.md) |
 | you need product requirements for a story | [`docs/PRD/PRD.md`](docs/PRD/PRD.md) (hub → only that epic's part) |
 | you need past architectural context | [`docs/decisions/`](docs/decisions/README.md) |
 | before repeating a past mistake | [`docs/errors-log.md`](docs/errors-log.md) (hub — its topic index names the exact entry file) |
 
-_Last updated: 2026-09-24 — Docs optimization pass: long docs were split into hubs plus parts, `docs/README.md`
-became a compact *Read when* index, and the pointer section was rewritten to match `CLAUDE.md` (which no longer
-`@`-imports conditional docs, so they stop loading into every session)._
+_Last updated: 2026-09-28 — Story 0066 docs follow-up: added the [`docs/conventions/localization.md`](docs/conventions/localization.md)
+row, mirroring the same addition made to `CLAUDE.md`'s conditional-reading list._

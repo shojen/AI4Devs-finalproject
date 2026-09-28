@@ -3,32 +3,11 @@
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
     {
-      "id": "0066",
-      "slug": "0066-admin-ui-locale-preference-backend",
-      "title": "Admin UI locale preference & resolution — backend",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "database/migrations/*_add_ui_locale_to_users_table.php",
-        "app/Models/User.php",
-        "app/Concerns/UserValidationRules.php",
-        "app/Actions/Users/SetUserUiLocale.php",
-        "app/Http/Middleware/SetUiLocale.php",
-        "bootstrap/app.php",
-        "database/factories/UserFactory.php"
-      ],
-      "conflict_risk_with": []
-    },
-    {
       "id": "0067",
       "slug": "0067-admin-ui-language-switcher-ui",
       "title": "Admin UI language switcher — frontend",
-      "depends_on": [
-        "0066"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -53,10 +32,8 @@
       "id": "0069",
       "slug": "0069-store-languages-settings-ui",
       "title": "Store Languages settings screen — frontend",
-      "depends_on": [
-        "0066"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [

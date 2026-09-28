@@ -3,8 +3,10 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\UiLocale;
 use App\Enums\UserStatus;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -28,6 +30,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $pending_email
  * @property Carbon|null $email_verified_at
  * @property UserStatus $status
+ * @property string|null $ui_locale
  * @property string $password
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
@@ -39,7 +42,7 @@ use Spatie\Permission\Traits\HasRoles;
  */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
-class User extends Authenticatable implements PasskeyUser
+class User extends Authenticatable implements HasLocalePreference, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, HasUuids, Notifiable, PasskeyAuthenticatable, SoftDeletes, TwoFactorAuthenticatable;
@@ -165,5 +168,18 @@ class User extends Authenticatable implements PasskeyUser
     public function isActive(): bool
     {
         return $this->status === UserStatus::Active;
+    }
+
+    /**
+     * The locale this user's notifications render in.
+     *
+     * Always a real locale string, never null: the fallback is the
+     * administrator-configured LocaleSetting default (story 0068), not
+     * ambient app config. See D-6 and D-14.
+     */
+    public function preferredLocale(): string
+    {
+        return UiLocale::tryFrom((string) $this->ui_locale)->value
+            ?? LocaleSetting::defaultNotificationLocale()->value;
     }
 }

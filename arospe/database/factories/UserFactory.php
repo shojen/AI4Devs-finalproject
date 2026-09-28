@@ -98,4 +98,17 @@ class UserFactory extends Factory
             'two_factor_confirmed_at' => now(),
         ]);
     }
+
+    /**
+     * Indicate that the model has an explicit admin UI locale preference set.
+     *
+     * `definition()` stays untouched, so every existing test keeps `null`
+     * (story 0066, D-3) — this state is for tests that need an explicit value.
+     */
+    public function uiLocale(string $locale = 'es'): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'ui_locale' => $locale,
+        ]);
+    }
 }

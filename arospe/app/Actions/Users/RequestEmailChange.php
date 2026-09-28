@@ -154,7 +154,14 @@ class RequestEmailChange
             throw $e;
         }
 
+        // AnonymousNotifiable (required here since the link must go to the
+        // new, unverified $newEmail, not $user->email) does not implement
+        // HasLocalePreference, so it never picks up $user's stored locale on
+        // its own -- chaining ->locale() is the only way this real call site
+        // renders in the target user's preference rather than whatever
+        // locale is ambient for the current request (e.g. an administrator's,
+        // when they are the one changing another user's email).
         Notification::route('mail', $newEmail)
-            ->notify(new PendingEmailVerification($user, $newEmail));
+            ->notify((new PendingEmailVerification($user, $newEmail))->locale($user->preferredLocale()));
     }
 }
