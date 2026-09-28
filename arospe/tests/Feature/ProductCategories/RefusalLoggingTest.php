@@ -16,6 +16,7 @@ use App\Actions\ProductCategories\CreateProductCategory;
 use App\Livewire\ProductCategories\Index;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -26,6 +27,10 @@ use Spatie\Permission\PermissionRegistrar;
 beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
+
+    // Story 0070: CreateProductCategory now writes the default-language translation, so every
+    // fixture category set up below needs a default store language to write into.
+    StoreLanguage::factory()->default()->create();
 });
 
 /**

@@ -28,6 +28,8 @@
 use App\Actions\ProductCategories\CreateProductCategory;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\ProductCategoryTranslation;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Spatie\Permission\PermissionRegistrar;
@@ -35,6 +37,10 @@ use Spatie\Permission\PermissionRegistrar;
 beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
+
+    // Story 0070: CreateProductCategory now writes the default-language translation, so every
+    // fixture category set up below needs a default store language to write into.
+    StoreLanguage::factory()->default()->create();
 });
 
 function productCategoriesBrowserActor(): User
@@ -80,7 +86,7 @@ test('creating a category through a real fill and save round-trip adds it to the
         ->assertNoJavaScriptErrors()
         ->assertSee('Outerwear');
 
-    expect(ProductCategory::where('name', 'Outerwear')->exists())->toBeTrue();
+    expect(ProductCategoryTranslation::where('name', 'Outerwear')->exists())->toBeTrue();
 });
 
 // Scenario: A catalog administrator renames a product category from the screen
@@ -98,7 +104,7 @@ test('editing prefills the name, and re-saving it unchanged preserves it', funct
         ->click('Save')
         ->assertNoJavaScriptErrors();
 
-    expect($category->fresh()->name)->toBe('Footwear');
+    expect($category->fresh()->translated('name'))->toBe('Footwear');
 });
 
 // Scenario: A catalog administrator cancels the create form without saving
@@ -181,7 +187,7 @@ test('creating a duplicate name through the real form shows the inline error', f
         ->assertNoJavaScriptErrors()
         ->assertSee(__('validation.unique', ['attribute' => 'name']));
 
-    expect(ProductCategory::where('name', 'Footwear')->count())->toBe(1);
+    expect(ProductCategoryTranslation::where('name', 'Footwear')->count())->toBe(1);
 });
 
 // Mandatory per test-quality-checklist.md: assertNoJavaScriptErrors() on every step of one

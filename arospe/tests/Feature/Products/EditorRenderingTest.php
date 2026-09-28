@@ -91,8 +91,10 @@ test('the category select is fed from real product_categories rows, ordered by n
     $actor = productsEditorRenderingActor();
     $this->actingAs($actor);
 
-    ProductCategory::factory()->create(['name' => 'Zapatos']);
-    ProductCategory::factory()->create(['name' => 'Abrigos']);
+    // Story 0070 (D-15): `name` no longer lives on `product_categories` -- the factory's
+    // `named()` state writes it into the default store language's translation row instead.
+    ProductCategory::factory()->named('Zapatos')->create();
+    ProductCategory::factory()->named('Abrigos')->create();
 
     $html = Livewire::test(Editor::class)->html();
 

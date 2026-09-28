@@ -11,9 +11,10 @@ use App\Concerns\ProductCategoryValidationRules;
 // folding table (ß, ç, CJK, double spaces, idempotence) is NOT re-asserted here -- that is
 // tests/Unit/Actions/NormalizeForSearchTest.php's job (story 0022, D-12). Duplicating it here would
 // create a second specification of the fold that can drift from the first. This file only proves
-// that category name validation THREADS the shared normaliser and the product category id through
-// correctly -- this is the story's only genuinely unit-testable surface, since everything else
-// (the actual uniqueness comparison) needs a real row in the database.
+// that category name validation THREADS the shared normaliser, the store language id and the
+// product category id through correctly -- this is the story's only genuinely unit-testable
+// surface, since everything else (the actual uniqueness comparison) needs a real row in the
+// database.
 //
 // An anonymous class exposes the trait's protected methods publicly, since there is no
 // tests/Unit/Concerns/ precedent to mirror in this repo yet -- every other <Noun>ValidationRules
@@ -21,6 +22,12 @@ use App\Concerns\ProductCategoryValidationRules;
 // tests. `app(NormalizeForSearch::class)`, never `new NormalizeForSearch`, per
 // docs/conventions/code-style.md's "an action must be resolved from the container, never `new`-ed"
 // rule.
+//
+// Story 0070 (D-7, D-17): productCategoryRules()/nameRules()/uniqueNormalisedName() are now
+// widened to take the store language the name is being written in, inserted second (before the
+// existing optional id, which cannot follow it). This file stays DB-free -- it never invokes the
+// uniqueness closure, only inspects its captured `use` variables -- so it needs no real
+// StoreLanguage row, just a plain id string threaded through.
 
 function productCategoryValidationRulesHarness(): object
 {
@@ -31,23 +38,23 @@ function productCategoryValidationRulesHarness(): object
         /**
          * @return array<int, mixed>
          */
-        public function exposedNameRules(NormalizeForSearch $normalizeForSearch, ?string $productCategoryId = null): array
+        public function exposedNameRules(NormalizeForSearch $normalizeForSearch, string $storeLanguageId, ?string $productCategoryId = null): array
         {
-            return $this->nameRules($normalizeForSearch, $productCategoryId);
+            return $this->nameRules($normalizeForSearch, $storeLanguageId, $productCategoryId);
         }
 
         /**
          * @return array<string, array<int, mixed>>
          */
-        public function exposedProductCategoryRules(NormalizeForSearch $normalizeForSearch, ?string $productCategoryId = null): array
+        public function exposedProductCategoryRules(NormalizeForSearch $normalizeForSearch, string $storeLanguageId, ?string $productCategoryId = null): array
         {
-            return $this->productCategoryRules($normalizeForSearch, $productCategoryId);
+            return $this->productCategoryRules($normalizeForSearch, $storeLanguageId, $productCategoryId);
         }
     };
 }
 
 it('nameRules(null) returns required/string/max:255 plus exactly one uniqueness rule', function () {
-    $rules = productCategoryValidationRulesHarness()->exposedNameRules(app(NormalizeForSearch::class), null);
+    $rules = productCategoryValidationRulesHarness()->exposedNameRules(app(NormalizeForSearch::class), 'a-store-language-id', null);
 
     expect($rules)->toHaveCount(4)
         ->and($rules[0])->toBe('required')
@@ -60,7 +67,7 @@ it('nameRules(null) returns required/string/max:255 plus exactly one uniqueness 
 });
 
 it('nameRules($id) still returns exactly 4 rules, with the ignore-branch uniqueness rule present', function () {
-    $rules = productCategoryValidationRulesHarness()->exposedNameRules(app(NormalizeForSearch::class), 'a-product-category-id');
+    $rules = productCategoryValidationRulesHarness()->exposedNameRules(app(NormalizeForSearch::class), 'a-store-language-id', 'a-product-category-id');
 
     expect($rules)->toHaveCount(4)
         ->and($rules[0])->toBe('required')
@@ -79,17 +86,17 @@ it('nameRules($id) still returns exactly 4 rules, with the ignore-branch uniquen
 //
 // Reflection over invoking the closure against a real ProductCategory row (the review's other
 // suggested approach) is deliberately preferred here: invoking it would hit the database via
-// ProductCategory::query(), and this file lives under tests/Unit/ -- which this repo's testing
-// conventions (docs/testing/README.md, tests/Pest.php) keep DB-free and un-refreshed on purpose.
-// The ignore-branch's actual DB behaviour (a no-op rename succeeding) is already pinned three
-// separate ways at the Feature level in RenameProductCategoryTest.php:44-68 (R-1); this test's
-// job is narrower -- prove the plumbing between nameRules($id) and the closure it returns.
+// ProductCategoryTranslation::query(), and this file lives under tests/Unit/ -- which this repo's
+// testing conventions (docs/testing/README.md, tests/Pest.php) keep DB-free and un-refreshed on
+// purpose. The ignore-branch's actual DB behaviour (a no-op rename succeeding) is already pinned
+// three separate ways at the Feature level in RenameProductCategoryTest.php:58-82 (R-1); this
+// test's job is narrower -- prove the plumbing between nameRules($id) and the closure it returns.
 it('nameRules($id) threads the id into the uniqueness closure\'s own captured state, distinct from nameRules(null)', function () {
     $normalizeForSearch = app(NormalizeForSearch::class);
     $harness = productCategoryValidationRulesHarness();
 
-    $closureWithoutId = $harness->exposedNameRules($normalizeForSearch, null)[3];
-    $closureWithId = $harness->exposedNameRules($normalizeForSearch, 'a-product-category-id')[3];
+    $closureWithoutId = $harness->exposedNameRules($normalizeForSearch, 'a-store-language-id', null)[3];
+    $closureWithId = $harness->exposedNameRules($normalizeForSearch, 'a-store-language-id', 'a-product-category-id')[3];
 
     expect($closureWithoutId)->toBeInstanceOf(Closure::class)
         ->and($closureWithId)->toBeInstanceOf(Closure::class);
@@ -106,12 +113,24 @@ it('nameRules($id) threads the id into the uniqueness closure\'s own captured st
         ->and($capturedWithId['productCategoryId'])->toBe('a-product-category-id');
 });
 
+it('nameRules() threads the store language id into the uniqueness closure\'s own captured state', function () {
+    $normalizeForSearch = app(NormalizeForSearch::class);
+    $harness = productCategoryValidationRulesHarness();
+
+    $closure = $harness->exposedNameRules($normalizeForSearch, 'a-store-language-id', null)[3];
+
+    $captured = (new ReflectionFunction($closure))->getStaticVariables();
+
+    expect($captured)->toHaveKey('storeLanguageId')
+        ->and($captured['storeLanguageId'])->toBe('a-store-language-id');
+});
+
 it('productCategoryRules() wraps nameRules() under the "name" key, for both the null and the id-carrying case', function () {
     $normalizeForSearch = app(NormalizeForSearch::class);
     $harness = productCategoryValidationRulesHarness();
 
-    $withoutId = $harness->exposedProductCategoryRules($normalizeForSearch, null);
-    $withId = $harness->exposedProductCategoryRules($normalizeForSearch, 'a-product-category-id');
+    $withoutId = $harness->exposedProductCategoryRules($normalizeForSearch, 'a-store-language-id', null);
+    $withId = $harness->exposedProductCategoryRules($normalizeForSearch, 'a-store-language-id', 'a-product-category-id');
 
     expect($withoutId)->toHaveKey('name')
         ->and($withoutId)->toHaveCount(1)

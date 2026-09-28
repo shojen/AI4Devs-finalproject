@@ -2,6 +2,8 @@
 
 use App\Actions\ProductCategories\CreateProductCategory;
 use App\Models\ProductCategory;
+use App\Models\ProductCategoryTranslation;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\DB;
@@ -22,22 +24,29 @@ use Illuminate\Validation\ValidationException;
 // first statement (the corrected D-B2 shape, matching DeleteProductCategoryTest.php's identical
 // fix). Every test below runs actingAs() an actor holding products.create, or the call throws
 // AuthorizationException before validation ever runs.
+//
+// Story 0070 (D-12, D-15): CreateProductCategory now writes the given name into the store
+// DEFAULT language's product_category_translations row rather than a product_categories.name
+// column -- every read below goes through ProductCategoryTranslation / ->translated('name')
+// instead, and every test needs a default store language to write into.
 beforeEach(function () {
     $this->seed(RolePermissionSeeder::class);
 
     $this->actor = User::factory()->create();
     $this->actor->givePermissionTo('products.create');
     $this->actingAs($this->actor);
+
+    $this->defaultLanguage = StoreLanguage::factory()->default()->create();
 });
 
 test('creating with a valid name persists exactly one row and populates timestamps', function () {
     $category = app(CreateProductCategory::class)('Footwear');
 
-    expect(ProductCategory::where('name', 'Footwear')->count())->toBe(1);
+    expect(ProductCategoryTranslation::where('name', 'Footwear')->count())->toBe(1);
 
     $fresh = $category->fresh();
 
-    expect($fresh->name)->toBe('Footwear')
+    expect($fresh->translated('name'))->toBe('Footwear')
         ->and($fresh->created_at)->not->toBeNull()
         ->and($fresh->updated_at)->not->toBeNull();
 });
@@ -78,7 +87,7 @@ test('creating with a whitespace-only name is refused', function () {
 test('a name with leading and trailing whitespace is stored trimmed', function () {
     $category = app(CreateProductCategory::class)('  Footwear  ');
 
-    expect($category->fresh()->name)->toBe('Footwear');
+    expect($category->fresh()->translated('name'))->toBe('Footwear');
 });
 
 // D-5 / R-4: the migration length and the validation max: must stay in lockstep at 255.
@@ -87,7 +96,7 @@ test('a name of exactly the maximum length (255) is accepted', function () {
 
     $category = app(CreateProductCategory::class)($name);
 
-    expect($category->fresh()->name)->toBe($name);
+    expect($category->fresh()->translated('name'))->toBe($name);
 });
 
 test('a name one character over the maximum length (256) is refused', function () {
@@ -119,15 +128,16 @@ test('creating a duplicate name is refused at the validation layer, never as a Q
     expect($caught)->toBeInstanceOf(ValidationException::class)
         ->and($caught->errors())->toHaveKey('name');
 
-    expect(ProductCategory::where('name', 'Footwear')->count())->toBe(1);
+    expect(ProductCategoryTranslation::where('name', 'Footwear')->count())->toBe(1);
 });
 
-// R-2/D-4: proves the 23000 catch, driving the collision through the REAL MySQL unique index
-// rather than a hand-written assertion about the catch block. A DB::listen() callback fires the
-// instant the action's OWN uniqueness check issues its first query touching `product_categories`
-// -- necessarily before the action's real INSERT -- and inserts the colliding row directly via the
-// query builder at that exact moment, bypassing the action's PHP-level validation entirely. This
-// reproduces two concurrent creates that both pass validation, which is exactly what the `23000`
+// R-2/D-4/D-7: proves the QueryException catch, driving the collision through the REAL MySQL
+// unique index rather than a hand-written assertion about the catch block. A DB::listen()
+// callback fires the instant the action's OWN uniqueness check issues its first query touching
+// `product_category_translations` -- necessarily before the action's real INSERT -- and inserts
+// the colliding row directly via the query builder at that exact moment, bypassing the action's
+// PHP-level validation entirely. This reproduces two concurrent creates that both pass
+// validation, which is exactly what TranslateProductCategoryNameUniqueViolation's QueryException
 // catch (not the pre-flight validation rule) exists to catch -- the same technique
 // docs/security/signed-link-verification.md's "a pre-flight check is not a race guard" section
 // documents for `users.pending_email`.
@@ -136,14 +146,24 @@ test('a duplicate that bypasses validation via a simulated race surfaces as a Va
     $raced = false;
 
     DB::listen(function ($query) use (&$raced, $name): void {
-        if ($raced || ! str_contains($query->sql, 'product_categories')) {
+        if ($raced || ! str_contains($query->sql, 'product_category_translations')) {
             return;
         }
 
         $raced = true;
 
+        $racerCategoryId = (string) Str::uuid7();
+
         DB::table('product_categories')->insert([
+            'id' => $racerCategoryId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_category_translations')->insert([
             'id' => (string) Str::uuid7(),
+            'product_category_id' => $racerCategoryId,
+            'store_language_id' => $this->defaultLanguage->id,
             'name' => $name,
             'created_at' => now(),
             'updated_at' => now(),
@@ -164,7 +184,7 @@ test('a duplicate that bypasses validation via a simulated race surfaces as a Va
     // Whatever happened to the racer row (it may or may not survive a wrapping transaction's
     // rollback, depending on implementation), the action's own create must never have produced a
     // second row -- exactly one or zero rows named "Race Condition" may exist, never two.
-    expect(ProductCategory::where('name', $name)->count())->toBeLessThan(2);
+    expect(ProductCategoryTranslation::where('name', $name)->count())->toBeLessThan(2);
 });
 
 // R-2/D-4: the exception CLASS is the whole point of this test. MySQL's utf8mb4_unicode_ci index

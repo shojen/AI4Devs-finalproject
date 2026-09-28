@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\ProductCategory;
+use App\Models\ProductCategoryTranslation;
+use App\Models\StoreLanguage;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -29,21 +31,30 @@ test('two product categories created in immediate succession sort lexicographica
         ->and(strcmp((string) $first->id, (string) $second->id))->toBeLessThan(0);
 });
 
-test('creating and re-fetching a category persists the name and populates both timestamps', function () {
-    $category = ProductCategory::create(['name' => 'Footwear']);
+// Story 0070 (D-1, D-4): `product_categories` no longer carries a `name` column -- a category's
+// name lives in App\Models\ProductCategoryTranslation, one row per store language, read through
+// App\Concerns\HasTranslations::translated('name').
+test('creating a category and its default-language translation persists the name and populates both timestamps', function () {
+    $language = StoreLanguage::factory()->default()->create();
+    $category = ProductCategory::create();
+
+    ProductCategoryTranslation::factory()->forLanguage($language)->create([
+        'product_category_id' => $category->id,
+        'name' => 'Footwear',
+    ]);
 
     $fresh = $category->fresh();
 
-    expect($fresh->name)->toBe('Footwear')
+    expect($fresh->translated('name'))->toBe('Footwear')
         ->and($fresh->created_at)->not->toBeNull()
         ->and($fresh->updated_at)->not->toBeNull();
 });
 
-// Guards against a future column being added to #[Fillable] by reflex -- `name` is this model's
-// only fillable attribute, per the story's "Files to create/modify" spec
-// (#[Fillable(['name'])]).
-test('name is the only mass-assignable attribute', function () {
-    expect((new ProductCategory)->getFillable())->toBe(['name']);
+// Guards against a future column being added to #[Fillable] by reflex -- the parent row now has
+// no mass-assignable column at all (story 0070, D-4): every write goes through
+// App\Actions\Translations\SetTranslation's explicit key list onto the translation row instead.
+test('no attribute is mass-assignable', function () {
+    expect((new ProductCategory)->getFillable())->toBe([]);
 });
 
 // D-3 regression guard: adding SoftDeletes later would silently change what Rule::unique() and

@@ -25,6 +25,8 @@ use App\Actions\ProductCategories\RenameProductCategory;
 use App\Livewire\ProductCategories\Index;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\ProductCategoryTranslation;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -37,6 +39,10 @@ use Spatie\Permission\PermissionRegistrar;
 beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
+
+    // Story 0070: CreateProductCategory now writes the default-language translation, so every
+    // fixture category set up below needs a default store language to write into.
+    StoreLanguage::factory()->default()->create();
 });
 
 /**
@@ -114,7 +120,7 @@ test('submitting a new product category persists exactly one row and closes the 
         ->assertSet('showModal', false);
 
     expect(ProductCategory::count())->toBe($countBefore + 1);
-    expect(ProductCategory::where('name', 'Outerwear')->exists())->toBeTrue();
+    expect(ProductCategoryTranslation::where('name', 'Outerwear')->exists())->toBeTrue();
 });
 
 test('blank and whitespace-only names are refused and add no row', function (string $invalidName) {
@@ -149,7 +155,7 @@ test('creating a product category with a name already in the catalog is refused 
         ->call('save')
         ->assertHasErrors(['name']);
 
-    expect(ProductCategory::where('name', 'Footwear')->count())->toBe(1);
+    expect(ProductCategoryTranslation::where('name', 'Footwear')->count())->toBe(1);
 });
 
 test('a case-only or accent-only duplicate name is refused on the name field', function (string $existingName, string $submittedDuplicate) {
@@ -185,7 +191,7 @@ test('a name at the accepted length boundary is accepted, one character over is 
         ->call('save')
         ->assertHasNoErrors();
 
-    expect(ProductCategory::where('name', str_repeat('A', 255))->exists())->toBeTrue();
+    expect(ProductCategoryTranslation::where('name', str_repeat('A', 255))->exists())->toBeTrue();
 
     $countBefore = ProductCategory::count();
 
@@ -214,7 +220,7 @@ test('renaming a category to a free name updates the row', function () {
         ->call('save')
         ->assertHasNoErrors();
 
-    expect($category->fresh()->name)->toBe('Running shoes');
+    expect($category->fresh()->translated('name'))->toBe('Running shoes');
 });
 
 test('saving a category under its own unchanged name is accepted', function () {
@@ -231,7 +237,7 @@ test('saving a category under its own unchanged name is accepted', function () {
         ->call('save')
         ->assertHasNoErrors();
 
-    expect($category->fresh()->name)->toBe('Footwear');
+    expect($category->fresh()->translated('name'))->toBe('Footwear');
 });
 
 test('the id fed to Rule::unique ignore is server-authoritative and cannot be retargeted from the client', function () {
@@ -471,7 +477,7 @@ test('opening the edit modal is forbidden for an actor lacking products.edit', f
     expect(fn () => Livewire::test(Index::class)->call('openEditModal', $target->id))
         ->toThrow(AuthorizationException::class);
 
-    expect($target->fresh()->name)->toBe('Footwear');
+    expect($target->fresh()->translated('name'))->toBe('Footwear');
 });
 
 test('renaming a category is re-checked inside save, not only at the opener', function () {
@@ -494,7 +500,7 @@ test('renaming a category is re-checked inside save, not only at the opener', fu
     expect(fn () => $component->set('name', 'Should Not Persist')->call('save'))
         ->toThrow(AuthorizationException::class);
 
-    expect($target->fresh()->name)->not->toBe('Should Not Persist');
+    expect($target->fresh()->translated('name'))->not->toBe('Should Not Persist');
 });
 
 test('confirming delete is forbidden for an actor lacking products.delete', function () {
@@ -556,7 +562,7 @@ test('a Super Admin holding zero permission rows passes viewAny, create and upda
         ->call('save')
         ->assertHasNoErrors();
 
-    expect($target->fresh()->name)->toBe('Super Admin Renamed');
+    expect($target->fresh()->translated('name'))->toBe('Super Admin Renamed');
 });
 
 test('an actor holding only products.view sees every row action disabled', function () {
@@ -599,7 +605,7 @@ test('creating a product category directly is forbidden for a denied actor', fun
     expect(fn () => app(CreateProductCategory::class)('Footwear'))
         ->toThrow(AuthorizationException::class);
 
-    expect(ProductCategory::where('name', 'Footwear')->exists())->toBeFalse();
+    expect(ProductCategoryTranslation::where('name', 'Footwear')->exists())->toBeFalse();
 });
 
 test('renaming a product category directly is forbidden for a denied actor', function () {
@@ -613,7 +619,7 @@ test('renaming a product category directly is forbidden for a denied actor', fun
     expect(fn () => app(RenameProductCategory::class)($category, 'Running shoes'))
         ->toThrow(AuthorizationException::class);
 
-    expect($category->fresh()->name)->toBe('Footwear');
+    expect($category->fresh()->translated('name'))->toBe('Footwear');
 });
 
 test('deleting a product category directly is forbidden for a denied actor', function () {
