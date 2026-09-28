@@ -90,8 +90,8 @@ test('a soft-deleted target reached with no authenticated actor still has its ro
 
 test('called with no authenticated actor and no explicit target, it throws a clean exception instead of a bare Error', function () {
     // appsec-auditor F-3 (Low, story 0066 Phase 4): the console/queue shape with nobody signed
-    // in AND no $user argument leaves $target null, so `$target->forceFill(...)` currently
-    // fatals with a bare Error ("Call to a member function forceFill() on null") -- a raw 500 /
+    // in AND no $user argument used to leave $target null, so `$target->forceFill(...)` would
+    // fatal with a bare Error ("Call to a member function forceFill() on null") -- a raw 500 /
     // ugly job failure, not an intentional guard. This pins that misuse throws SOME ordinary
     // \Exception-family failure instead, without pinning backend-expert's exact class choice.
     expect(Auth::user())->toBeNull();
