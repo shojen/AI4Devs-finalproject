@@ -41,7 +41,7 @@ decomposed** — see [D-0](#d-0--full-auto-publish-is-a-confirmed-product-decisi
 > **D-7**'s conditional `UPDATE` writes `status` alone, **D-13**'s log line carries `blog_post_id` and
 > nothing else, and **OQ-3** leaves console output copy unresolved with no title in either candidate
 > shape. **Nothing here needs to resolve a store language**, which is what separates this story from its
-> sibling [0065](../0065-blog-post-published-notification-backend.md), where the same retrofit forces a
+> sibling [0065](0065-blog-post-published-notification-backend.md), where the same retrofit forces a
 > real product choice.
 >
 > Sequencing: whichever of 0078 and this story reaches Phase 3 second inherits the other's shape. If
@@ -185,7 +185,7 @@ Schedule::command(PublishScheduledBlogPosts::class)
 
 | Path | What & why |
 | --- | --- |
-| `app/Events/Blog/ScheduledBlogPostPublished.php` | **New**, and **this creates `app/Events/`, a folder that does not exist in this repo today** (**V-3**) — a structural addition to [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure)'s directory listing, not a line edit. Carries the **`BlogPost` model**, not its id — settled by story [0065](../0065-blog-post-published-notification-backend.md)'s **D-9**, which resolves this story's OQ-2. Dispatched once per successfully-transitioned post. **This story defines and dispatches it; story 0065 defines the listener and the notification** (**D-12**, **OQ-1**). |
+| `app/Events/Blog/ScheduledBlogPostPublished.php` | **New**, and **this creates `app/Events/`, a folder that does not exist in this repo today** (**V-3**) — a structural addition to [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure)'s directory listing, not a line edit. Carries the **`BlogPost` model**, not its id — settled by story [0065](0065-blog-post-published-notification-backend.md)'s **D-9**, which resolves this story's OQ-2. Dispatched once per successfully-transitioned post. **This story defines and dispatches it; story 0065 defines the listener and the notification** (**D-12**, **OQ-1**). |
 
 ### Consumed, not created by this story
 
@@ -1099,7 +1099,7 @@ Read or executed against this worktree and the sibling checkout's `vendor/` duri
   tests assert are identical under both answers, so this does not block test design.
 - **~~OQ-2~~ — RESOLVED: the event carries the `BlogPost` model.** This was left open as *"genuinely
   0065's call, since only it knows whether its listener queues"*, and **story
-  [0065](../0065-blog-post-published-notification-backend.md)'s D-9 answered it** — a decision titled
+  [0065](0065-blog-post-published-notification-backend.md)'s D-9 answered it** — a decision titled
   *"`ScheduledBlogPostPublished` carries the `BlogPost` model, not its id (resolves 0064's OQ-2)"*, on
   two reasons quoted rather than re-derived: this story's action **already holds a model** (it must
   re-fetch one to satisfy its own `?BlogPost` return type, since **D-7**'s conditional `UPDATE` returns

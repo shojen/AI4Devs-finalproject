@@ -18,25 +18,6 @@
       "conflict_risk_with": []
     },
     {
-      "id": "0065",
-      "slug": "0065-blog-post-published-notification-backend",
-      "title": "Blog post published — notification (backend)",
-      "depends_on": [],
-      "status": "claimed",
-      "claimed_by": "0065-blog-post-published-notification-backend worktree",
-      "claimed_at": "2026-09-27T22:00:00Z",
-      "touches": [
-        "app/Notifications/BlogPostPublished.php",
-        "app/Actions/Blog/NotifyBlogPostPublished.php",
-        "app/Listeners/SendBlogPostPublishedNotification.php",
-        "tests/Feature/Blog/NotifyBlogPostPublishedTest.php",
-        "tests/Feature/Blog/ManualPostPublishedNotificationTest.php",
-        "tests/Feature/Blog/ScheduledPostPublishedNotificationTest.php",
-        "tests/Feature/Blog/RestoreBlogPostNotificationTest.php"
-      ],
-      "conflict_risk_with": []
-    },
-    {
       "id": "0066",
       "slug": "0066-admin-ui-locale-preference-backend",
       "title": "Admin UI locale preference & resolution — backend",

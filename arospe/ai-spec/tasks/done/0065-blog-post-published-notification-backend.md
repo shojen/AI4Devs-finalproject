@@ -10,13 +10,13 @@ in PRD [§ Cross-cutting: global search & notifications](../../../docs/PRD/secti
 
 This story owns the `BlogPostPublished` notification, the recipient-resolution rule, **one listener**
 and **one dispatch site inside a file it does not own**. It adds **no migration** (the `notifications`
-table is story [0043](../done/0043-customers-new-customer-notification-backend.md)'s), **no permission** (the
+table is story [0043](0043-customers-new-customer-notification-backend.md)'s), **no permission** (the
 `blog.*` tier is already seeded), **no policy**, **no route** and **no UI**.
 
 > ### This story has **three** triggers, and that is what makes it different from its two siblings
 >
-> Stories [0043](../done/0043-customers-new-customer-notification-backend.md) and
-> [0046](../done/0046-orders-new-order-notification-backend.md) each announce a **row creation** reached from
+> Stories [0043](0043-customers-new-customer-notification-backend.md) and
+> [0046](0046-orders-new-order-notification-backend.md) each announce a **row creation** reached from
 > exactly one call site. This one announces a **publication** reached from **three independent
 > paths** — two of them state transitions and one a creation:
 >
@@ -29,13 +29,13 @@ table is story [0043](../done/0043-customers-new-customer-notification-backend.m
 > **Triggers 1 and 2 reach this story's action by a direct call; trigger 3 reaches it through a
 > listener this story adds.** Concretely:
 >
-> - **The automatic trigger (3).** Story [0064](../done/0064-scheduled-post-auto-publish-backend.md) already
+> - **The automatic trigger (3).** Story [0064](0064-scheduled-post-auto-publish-backend.md) already
 >   defines and dispatches `ScheduledBlogPostPublished`, once per successfully transitioned post, after
 >   the write, never on a failed write and never on a restore. Per its **D-12** and hand-off fact 3:
 >   **0065 adds a *listener*; it does not add a second dispatch on this path.** 0064's **OQ-2** (does
 >   the event carry the model or its id?) is left open and marked *"this is genuinely 0065's call"* —
 >   it is resolved here as **D-9**.
-> - **The two manual triggers (1 and 2).** Story [0061](../done/0061-blog-posts-core-crud-backend.md) owns both
+> - **The two manual triggers (1 and 2).** Story [0061](0061-blog-posts-core-crud-backend.md) owns both
 >   dispatch sites and **has shipped them**, calling this story's
 >   `App\Actions\Blog\NotifyBlogPostPublished::__invoke(BlogPost): void` from each — see its revised
 >   **D-19**. This story owns *what the notification contains, who receives it, and through which
@@ -78,11 +78,11 @@ table is story [0043](../done/0043-customers-new-customer-notification-backend.m
 > ### ⛔ BLOCKED — read this before Phase 3
 >
 > Fully specified now, but Phase 3 cannot start until **all** of the following are `done`:
-> [0043](../done/0043-customers-new-customer-notification-backend.md) (owns the `notifications` table),
-> [0061](../done/0061-blog-posts-core-crud-backend.md) (owns `BlogPost`, `BlogPostStatus`, `UpdateBlogPost`,
-> `RestoreBlogPost`) and [0064](../done/0064-scheduled-post-auto-publish-backend.md) (owns
+> [0043](0043-customers-new-customer-notification-backend.md) (owns the `notifications` table),
+> [0061](0061-blog-posts-core-crud-backend.md) (owns `BlogPost`, `BlogPostStatus`, `UpdateBlogPost`,
+> `RestoreBlogPost`) and [0064](0064-scheduled-post-auto-publish-backend.md) (owns
 > `ScheduledBlogPostPublished` and the sweep that dispatches it). 0061 and 0064 transitively require
-> [0058](../done/0058-blog-categories-backend.md) and [0059](../done/0059-blog-tags-backend.md).
+> [0058](0058-blog-categories-backend.md) and [0059](0059-blog-tags-backend.md).
 >
 > ⚠️ *(added 2026-08-30)* **[0078](../0078-translatable-content-retrofit-blog-posts-backend.md) is a
 > conditional fourth**: it is not a blocker if it ships *after* this story, but it **is** one the moment
@@ -151,8 +151,8 @@ table is story [0043](../done/0043-customers-new-customer-notification-backend.m
 > ### Scope boundary — what "notified" means, and what it does not
 >
 > Unlike 0043's and 0046's era, the notification **viewer now exists in the backlog**:
-> [0056](../done/0056-notification-viewing-backend.md) (bell backend) and
-> [0057](../done/0057-notification-bell-ui.md) (bell UI). So this story is **not** re-raising 0043's OQ-3, and
+> [0056](0056-notification-viewing-backend.md) (bell backend) and
+> [0057](0057-notification-bell-ui.md) (bell UI). So this story is **not** re-raising 0043's OQ-3, and
 > a reviewer must not read the absence of a bell change here as a gap.
 >
 > What a reviewer **should** know, because it is a real and verified consequence: 0057's bell branches
@@ -424,7 +424,7 @@ class BlogPostPublished extends Notification
 `app/Actions/Blog/NotifyBlogPostPublished.php` — **new**, invokable, imperative verb-phrase name with
 no `Action`/`Service` suffix. It lands in `app/Actions/Blog/`, the **domain-area** folder 0058's
 **D-14**, 0059 and 0061 all commit to — never an `app/Actions/Notifications/`, which has no precedent
-in this repo and which [0056's **D-2**](../done/0056-notification-viewing-backend.md) argued against creating
+in this repo and which [0056's **D-2**](0056-notification-viewing-backend.md) argued against creating
 (*"a folder appears when a rule does"*). 0043 filed its notify action under `Actions/Customers/` and
 0046 under `Actions/Orders/`; the subject here is a `BlogPost` and the rule ("who may currently view
 the blog") is a blog-domain fact.
@@ -509,13 +509,13 @@ an otherwise uniform mechanism.
 > line and rely on discovery (0052's shape), or keep it and confirm with `event:list` that the listener
 > appears once** — and make the un-faked end-to-end test count notifications, not just assert presence.
 
-> ⚠️ **Amendment, 2026-09-26 (story [0064b](../done/0064b-scheduled-post-publish-failure-notification-backend.md), H-2) — the
+> ⚠️ **Amendment, 2026-09-26 (story [0064b](0064b-scheduled-post-publish-failure-notification-backend.md), H-2) — the
 > listener must not swallow its errors.** Story 0064 recommended that `SendBlogPostPublishedNotification::handle()`
 > catch and report its own failures; **the owner decided the opposite**: an exception from `NotifyBlogPostPublished`
 > propagates out of `ScheduledBlogPostPublished::dispatch()`, so the sweep's per-post catch can detect it and 0064b can
 > notify the post's creator (a notification and an email). This story's tests pin that propagation instead of a
 > swallow, and its end-to-end test is extended once both ship. Story
-> [0064a](../done/0064a-activate-verified-user-listener-idempotent-and-single-registration.md) also removes hand registration
+> [0064a](0064a-activate-verified-user-listener-idempotent-and-single-registration.md) also removes hand registration
 > of listeners: this story adds no `Event::listen` line, and its registry assertion is extended by
 > `ScheduledBlogPostPublished -> SendBlogPostPublishedNotification@handle`.
 
@@ -595,12 +595,12 @@ has no transition; the submitted status *is* the whole condition, which is what 
 ### Consumed, not created by this story
 
 - `App\Events\Blog\ScheduledBlogPostPublished` and its dispatch — story
-  [0064](../done/0064-scheduled-post-auto-publish-backend.md). **Consumed unchanged; this story adds no second
+  [0064](0064-scheduled-post-auto-publish-backend.md). **Consumed unchanged; this story adds no second
   dispatch on the automatic path and does not edit `PublishScheduledBlogPost`.**
 - `App\Models\BlogPost`, `App\Enums\BlogPostStatus`, `App\Actions\Blog\RestoreBlogPost` — story
-  [0061](../done/0061-blog-posts-core-crud-backend.md).
+  [0061](0061-blog-posts-core-crud-backend.md).
 - The `notifications` table and its `uuidMorphs('notifiable')` correction — story
-  [0043](../done/0043-customers-new-customer-notification-backend.md).
+  [0043](0043-customers-new-customer-notification-backend.md).
 - `App\Models\User`'s `Notifiable` + `SoftDeletes` — Epic 1, verified at `HEAD` (**V-3**).
 
 ### Explicitly NOT in this story
@@ -847,122 +847,129 @@ link (**R-8**).
 
 ## Acceptance criteria
 
-- [ ] `App\Notifications\BlogPostPublished` exists, uses the `database` channel **only** (no mail), is
+> ✅ **Closed 2026-09-28 (Phase 7).** Every box below is checked against what actually shipped. Boxes
+> whose original text assumed 0078 had shipped, or assumed the pre-2026-09-26 `AppServiceProvider`
+> registration mechanism, are checked with a note pointing back to the
+> [Phase 2 resolution block](#-phase-2-resolution--2026-09-27-code-reviewer-invest-validation--conditional-pass)
+> rather than left unchecked for a world this story was never asked to ship into.
+
+- [x] `App\Notifications\BlogPostPublished` exists, uses the `database` channel **only** (no mail), is
       **not** `ShouldQueue`, and its `toArray()` returns exactly `blog_post_id` and `title`.
-- [ ] `title` is stored as a **literal string snapshot** taken at publication, not an id the viewer
+- [x] `title` is stored as a **literal string snapshot** taken at publication, not an id the viewer
       joins on and not a relation read at render time (**D-4**).
-- [ ] ⚠️ *(added 2026-08-30, Epic 5)* **That snapshot resolves in the store default language**, via
-      `translated('title')` with **no** language argument, and the payload's declared type is
-      `title: ?string` (**D-4a**). `$notifiable` is **not** consulted: a recipient's admin UI locale is
-      Layer 1 and a post's title is Layer 2, and the two are unrelated by 0066's own text.
-- [ ] ⚠️ *(added 2026-08-30, Epic 5)* **R-11 is recorded as open, not silently accepted.** On the
-      `UpdateBlogPost` path a caller-supplied model with a pre-hydrated `translations` relation can
-      freeze a **pre-edit** title, because `SetTranslation` writes through the relation method and does
-      not refresh a loaded collection (0070's **R-5**). This story ships the failing test and escalates
-      to 0061 — exactly as it does for **R-1** — and must **not** add a compensating re-read of its own.
-- [ ] `App\Actions\Blog\NotifyBlogPostPublished` resolves recipients as
+- [x] *N/A — 0078 has not shipped.* The store-default-language/`translated('title')`/`?string` shape
+      (**D-4a**) does not apply; `title` is `BlogPost::$title` read directly, type `string`, per the
+      Phase 2 resolution block.
+- [x] *N/A — 0078 has not shipped.* R-11 (a stale `translations` relation) cannot occur: there is no
+      `translations` relation to be stale, since `BlogPost` has no `HasTranslations` trait yet.
+- [x] `App\Actions\Blog\NotifyBlogPostPublished` resolves recipients as
       `User::permission('blog.view')->get()` on the `web` guard, evaluated at dispatch time and never
       cached.
-- [ ] Soft-deleted users are excluded by the existing `SoftDeletingScope`, **not** by a hand-written
+- [x] Soft-deleted users are excluded by the existing `SoftDeletingScope`, **not** by a hand-written
       `whereNull`.
-- [ ] A **Super Admin holding no explicit `blog.view` grant receives no notification** — a deliberate,
+- [x] A **Super Admin holding no explicit `blog.view` grant receives no notification** — a deliberate,
       documented, reversible decision (**D-1**), pinned by a test.
-- [ ] `App\Listeners\SendBlogPostPublishedNotification` listens to
-      `App\Events\Blog\ScheduledBlogPostPublished`, **contains no logic beyond unwrapping the event and
-      calling the action**, and is registered explicitly in
-      `AppServiceProvider::configureEventListeners()` (**not** by auto-discovery).
-- [ ] **All three triggers call the same `NotifyBlogPostPublished` instance method with the same
+- [x] `App\Listeners\SendBlogPostPublishedNotification` listens to
+      `App\Events\Blog\ScheduledBlogPostPublished` and **contains no logic beyond unwrapping the event
+      and calling the action**. *Registered by Laravel's listener auto-discovery, not by an explicit
+      `AppServiceProvider::configureEventListeners()` call* — that method no longer exists at HEAD
+      (removed by story 0064a); the Phase 2 resolution block supersedes this line's original text.
+- [x] **All three triggers call the same `NotifyBlogPostPublished` instance method with the same
       argument shape** — there is exactly one implementation of "who gets notified and with what"
       (**D-5**). No path-specific branch exists inside the action.
-- [ ] **This story adds no dispatch on any path.** It does not edit
+- [x] **This story adds no dispatch on any path.** It does not edit
       `App\Actions\Blog\PublishScheduledBlogPost`, 0064's event class, `UpdateBlogPost` or
-      `CreateBlogPost` — all four are shipped by 0064 and 0061. This story's only production files are
-      the notification, the action, the listener and one `AppServiceProvider` line.
-- [ ] **A post created already `Published` notifies administrators exactly once** (**OQ-1**,
+      `CreateBlogPost` — all four are shipped by 0064 and 0061. *This story's only production files are
+      the notification, the action's body and the listener — no `AppServiceProvider` line, per the
+      Phase 2 resolution.*
+- [x] **A post created already `Published` notifies administrators exactly once** (**OQ-1**,
       confirmed), and creating a `Draft` or a `Scheduled` post notifies nobody — each pinned by its own
       test driven through `app(CreateBlogPost::class)`.
-- [ ] **Both manual dispatches** — 0061's, in `UpdateBlogPost` and `CreateBlogPost` — are verified to
+- [x] **Both manual dispatches** — 0061's, in `UpdateBlogPost` and `CreateBlogPost` — are verified to
       run via a constructor-injected `NotifyBlogPostPublished`, **after the transaction commits**, on
       the authorized and validated success path only. *Verified by this story's tests; implemented by
       0061* (**D-8**).
-- [ ] **The update condition is a transition *into* `Published`**, computed from the row's pre-save
+- [x] **The update condition is a transition *into* `Published`**, computed from the row's pre-save
       status read **before** any mutation. **`getOriginal('status')` is never read after `save()`** —
       the [2026-08-17 errors-log trap](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-listener-read-the-pre-save-value-with-getoriginal-which-save-had-already-overwritten--2026-08-17)
       (**D-7**). **The create condition is the submitted status alone**, with no dirty-state read —
       `performInsert()` populates neither `$changes` nor `$previous` (**V-5**).
-- [ ] A `Published`→`Published` re-save announces nothing, and each row of **both** matrices above has
-      its own test.
-- [ ] ⚠️ **R-1 is recorded as open, not silently accepted.** 0061's shipped condition reads
-      `getRawOriginal('status')` with no re-read, so a stale in-memory instance can produce a second
-      announcement of one transition. This story ships the failing test that proves it and escalates
-      to 0061; it must **not** add a compensating guard of its own.
-- [ ] **A restore never announces**, and the property holds **structurally** — no Eloquent observer,
-      model event or generic "status is Published" hook exists anywhere in this story (**D-11**).
-- [ ] Republication after an unpublish **does** announce again, and **no dedup column, flag or
-      `first_published_at` is added** (**D-12**, subject to **OQ-2**).
-- [ ] `App\Events\Blog\ScheduledBlogPostPublished` carries the **`BlogPost` model**, resolving 0064's
+- [x] A `Published`→`Published` re-save announces nothing, and each row of **both** matrices above has
+      its own test — including the six rows Phase 5 review found missing from every existing file, now
+      covered directly in `ManualPostPublishedNotificationTest.php`.
+- [x] **R-1 — CLOSED, not open.** 0061 ships `$blogPost->refresh()` as `UpdateBlogPost`'s first
+      statement (its own **D-19a**); the stale-instance test this story ships is green, not
+      expected-red. See the Phase 2 resolution block.
+- [x] **A restore never announces**, and the property holds **structurally** — no Eloquent observer,
+      model event or generic "status is Published" hook exists anywhere in this story (**D-11**). The
+      regression-proof step was performed (see `RestoreBlogPostNotificationTest.php`'s own comment).
+- [x] Republication after an unpublish **does** announce again, and **no dedup column, flag or
+      `first_published_at` is added** (**D-12**) — **OQ-2 approved by Phase 2, no escalation needed.**
+- [x] `App\Events\Blog\ScheduledBlogPostPublished` carries the **`BlogPost` model**, resolving 0064's
       **OQ-2** (**D-9**) — and the listener is correspondingly **not** `ShouldQueue` (**D-3**).
-- [ ] **No migration, column, index, model, enum, permission, policy, route, Livewire component, Blade
+- [x] **No migration, column, index, model, enum, permission, policy, route, Livewire component, Blade
       view, `lang/` key or `config/modules.php` entry is added.**
-- [ ] **No shared base class, interface or registry** is introduced across `CustomerCreated`,
+- [x] **No shared base class, interface or registry** is introduced across `CustomerCreated`,
       `OrderCreated` and `BlogPostPublished` or their three dispatch actions — 0046's **D-6** revisit
       condition is evaluated and **not met** (**D-13**).
-- [ ] **No notification-viewing UI is built**, and its absence is *not* an open question — 0056 and
+- [x] **No notification-viewing UI is built**, and its absence is *not* an open question — 0056 and
       0057 own it.
 
 ## Definition of Done
 
-- [ ] Tests written and green, plus the **full** existing suite in a single isolated run, per
-      [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule.
-- [ ] All **three** quality gates run **unscoped**, with each result recorded explicitly *including any
-      that was not run*: `php artisan test` (not `--filter`), `vendor/bin/pint --format agent` (not
-      `--dirty`), and **Larastan level 7** (`vendor/bin/phpstan analyse`). A record naming two of three
-      is a record of two gates — see
-      [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
-- [ ] **The restore test and the listener-registration test were each *proven able to fail*** by the
-      temporary-breakage step described in their entries, and both verifications are recorded.
-- [ ] **Every claim this file makes about 0061's and 0064's shipped code is re-verified against `HEAD`
-      before implementation** — `UpdateBlogPost::__invoke()`'s parameter list, its transaction
-      structure, `CreateBlogPost`'s signature, and `ScheduledBlogPostPublished`'s property name are all
-      taken from Phase-1 *text*, not from code that exists (**V-1**). Per
-      [the deferred-findings rule](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
-      a name in this file is a reading aid, never a locator.
-- [ ] **`grep -rn "UpdateBlogPost" app/` at Phase 3**, not an assumption that one screen calls it — the
-      shared-code lesson from
-      [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-scope-exclusion-named-screens-while-the-story-edited-a-class-those-screens-share--2026-08-24).
-      Adding a side effect to a shared action is a capability grant to its **least**-privileged caller.
-- [ ] Code reviewed (code-reviewer). **Point the review at D-7 and R-1 specifically**: that the pre-save
-      status is captured before mutation off a re-read instance, that `getOriginal()` is not read after
-      `save()`, and that nobody has "simplified" the branch to a bare post-save equality check.
-- [ ] No security findings (appsec-auditor) — specifically: that the recipient query cannot be widened
-      by caller-supplied input; that the payload leaks nothing beyond `blog_post_id` and `title`; that a
-      dispatch cannot be triggered by an actor who failed the `blog.edit` gate; that the listener
-      performs no `Auth`-dependent work a console process cannot satisfy (**D-3**, 0064's **D-5**); and
-      **that the stale-instance race in R-1 cannot produce a duplicate announcement of one transition.**
-- [ ] Documentation updated (docs-keeper):
-  - [`conventions/base-standards.md`](../../../docs/conventions/directory-structure.md#directory-structure) —
-    `app/Notifications/` gains a fifth class, `app/Actions/Blog/` gains another, and `app/Listeners/`
-    gains its **third** listener and its **first with a constructor**.
-  - [`conventions/code-style.md`](../../../docs/conventions/code-style.md#inject-single-purpose-actions-per-method) —
-    **the injection rule's third shape**: a listener constructor-injects because the framework calls
-    `handle()` with exactly one argument, so there is no signature to widen. Distinct from the
-    documented `SetSalesRegionActive`-style exception, and worth its own sentence.
-  - **No schema or migration doc change** — this story adds no column, table or migration, and
-    [database/schema.md](../../../docs/database/schema.md)'s `notifications` section is 0043's to write.
-- [ ] **Hand-off recorded for story [0057](../done/0057-notification-bell-ui.md)** (notifications bell UI),
-      stated as the three facts it needs and nothing more:
+- [x] Tests written and green, plus the **full** existing suite in a single isolated run, per
+      [contracts.md](../../../docs/contracts.md)'s Full Test Suite Gate Rule. 4658 tests: 4436
+      Feature/Unit green in one run; the 222 `tests/Browser/**` failures in that same run were a
+      Playwright-server infra flake from resource contention with a concurrent, unrelated session's
+      test run on the same machine (single shared error message across all 222) — confirmed transient
+      by re-running `tests/Browser` alone immediately after: 219 passed, 3 skipped, 0 failed, matching
+      the exact count that failed. One genuinely pre-existing, unrelated failure was found and fixed
+      along the way (`tests/Feature/Blog/ScheduledBlogPostPublishFailedNotificationTest.php`,
+      reproduced against commit `aacaa39` before this story touched anything) per the Full Test Suite
+      Gate Rule's "whoever's test it is" clause.
+- [x] All **three** quality gates run **unscoped**: `php artisan test` equivalent — see above (green);
+      `vendor/bin/pint --format agent` — clean, no changes needed; **Larastan level 7**
+      (`vendor/bin/phpstan analyse --memory-limit=1G`) — 0 errors.
+- [x] **The restore test and the listener-registration test were each *proven able to fail*** by the
+      temporary-breakage step described in their entries, and both verifications are recorded: the
+      restore test via a temporary `static::restored()` hook on `BlogPost` (reverted; see the test's own
+      comment), the listener-registration test via the TDD red step itself (the extended
+      `EventListenerRegistrationTest.php` dataset entries failed with "must be bound... exactly once
+      (found: [])" before `SendBlogPostPublishedNotification` existed).
+- [x] **Every claim this file makes about 0061's and 0064's shipped code is re-verified against `HEAD`
+      before implementation** (**V-1**) — done at Phase 2 (code-reviewer's INVEST validation) and again
+      at Phase 3/5; every stale V-1/V-3/V-4/V-6/V-9 claim is flagged in the Phase 2 resolution block
+      rather than acted on as if still true.
+- [x] **`grep -rn "UpdateBlogPost" app/` at Phase 3** — confirmed callers are `UpdateBlogPost.php` itself
+      and `app/Livewire/BlogPosts/Editor.php` only; no other shared caller was missed.
+- [x] Code reviewed (code-reviewer, Phase 5, two rounds). First round found two blocking test-only
+      findings (F-1: rollback tests could pass vacuously against a dispatch moved inside the
+      transaction; F-2: six transition-matrix rows had no test anywhere) plus one minor (F-3:
+      single-recipient tests overclaimed "each holder"). All three fixed and independently re-verified
+      PASS in a second Phase 5 round. D-7/R-1 specifically confirmed: pre-save status is read via
+      `getRawOriginal()` off a freshly `refresh()`-ed instance, before any mutation; `getOriginal()` is
+      never read after `save()`.
+- [x] No security findings (appsec-auditor, Phase 4). PASS, with one Low/already-accepted residual
+      (F-1: the R-18 sweep-vs-manual-publish race window, 0061's to close if ever) and one informational
+      note for 0057's future bell-arm work (I-1: escape the title with Blade's `{{ }}`) — neither
+      blocking.
+- [x] Documentation updated (docs-keeper, Phase 6): `directory-structure/livewire-models-policies.md`
+      (`BlogPostPublished`, sixth `Notifications/` class — not fifth, the count had drifted since this
+      file was first written), `directory-structure/app-layers.md` (`SendBlogPostPublishedNotification`,
+      fourth listener, not the first with a constructor — `ActivateVerifiedUser` and
+      `CancelFullyRefundedOrder` already have one), `directory-structure/actions.md`
+      (`NotifyBlogPostPublished`'s real behaviour, replacing the "no-op placeholder" text),
+      `code-style.md` (the injection rule's third shape), and
+      [database/schema-other/notifications.md](../../../docs/database/schema-other/notifications.md)
+      (`BlogPostPublished` as a producer; also corrected an already-stale "populated by exactly one
+      writer" claim that predated this story).
+- [x] **Hand-off recorded for story [0057](0057-notification-bell-ui.md)** (notifications bell UI)
+      in [docs/api/routes.md](../../../docs/api/routes.md)'s Bell component section, as two facts (not
+      three — fact 2's nullable-title clause doesn't apply, since 0078 hasn't shipped):
       1. A third notification `type` now exists: `App\Notifications\BlogPostPublished`.
-      2. Its payload is `{blog_post_id, title}`. A recognized arm would render the title and link to
-         the post editor; **read the keys defensively**, never with a bare array offset, per 0057's own
-         second constraint. ⚠️ *(amended 2026-08-30)* **`title` is the post's title in the store
-         default language, frozen at publication, and it is nullable** (**D-4a**) — so 0057 renders it
-         verbatim and must **not** re-resolve it against the viewer's admin UI locale or against the
-         post's current translations. The defensive read 0057 already specifies covers the `null`; no
-         0057 change is needed for this, and the story still needs none to be correct (fact 3 below).
-      3. **0057 needs no change to be correct** — the row already renders through its permanent
-         `default` arm. Adding a third arm is an *enhancement* (it gains a link), not a defect fix, and
-         0057's fallback test must keep passing either way.
-- [ ] Acceptance criteria met.
+      2. Its payload is `{blog_post_id, title}` (`title` a plain, non-nullable string here). 0057 needs
+         no change to be correct — the row already renders through its permanent `default` arm.
+- [x] Acceptance criteria met (see above).
 
 ## Documented functional decisions
 
@@ -1480,13 +1487,13 @@ none.
 
 | Depends on | State | Why |
 | --- | --- | --- |
-| [0043](../done/0043-customers-new-customer-notification-backend.md) — new-customer notification | **hard, `new`** | Owns the `notifications` table and its `uuidMorphs('notifiable')` correction. This story adds **no** migration and cannot run one Feature test without it |
-| [0061](../done/0061-blog-posts-core-crud-backend.md) — blog posts core CRUD | **hard, `new`** | Owns `BlogPost`, `BlogPostStatus`, `BlogPostFactory`, `RestoreBlogPost`, and — since **OQ-1** was confirmed — **both manual dispatch sites**, `UpdateBlogPost` and `CreateBlogPost` (its revised **D-19**, **V-9**). The coupling is now one-way: 0061 calls this story's action, and this story edits nothing of 0061's |
-| [0064](../done/0064-scheduled-post-auto-publish-backend.md) — scheduled auto-publish | **hard, `new`** | Owns `App\Events\Blog\ScheduledBlogPostPublished` and the only automatic transition. **D-9** resolves its **OQ-2** |
-| [0078](../0078-translatable-content-retrofit-blog-posts-backend.md) — translatable-content retrofit (Epic 5) | **hard once it lands, `new`** *(added 2026-08-30)* | Removes `blog_posts.title` and supplies `BlogPost::translated()`, which **D-4a**'s payload calls. Ordering is one-directional but **either order works**: if 0078 ships first this story is written against `translated()` from the outset; if this story ships first, 0078's retrofit changes one line here and the amendments above describe the end state. What must **not** happen is this story implementing `$post->title` after 0078 has landed — the property would be undefined and the payload would silently store `null` on a `?string` type. Transitively brings [0068](../done/0068-store-languages-catalog-backend.md) (`StoreLanguage`) and [0070](0070-translatable-content-mechanism-product-categories-backend.md) (`HasTranslations`) |
-| [0058](../done/0058-blog-categories-backend.md) / [0059](../done/0059-blog-tags-backend.md) | **transitive, via 0061** | No direct use |
-| [0046](../done/0046-orders-new-order-notification-backend.md) | **not a dependency** | This story copies its *shape*, not its code. Sequencing is free either way |
-| [0056](../done/0056-notification-viewing-backend.md) / [0057](../done/0057-notification-bell-ui.md) | **not a dependency, either direction** | 0056's **D-5** means the bell needs zero change for a new producer — verified for this payload (**R-8**) |
+| [0043](0043-customers-new-customer-notification-backend.md) — new-customer notification | **hard, `new`** | Owns the `notifications` table and its `uuidMorphs('notifiable')` correction. This story adds **no** migration and cannot run one Feature test without it |
+| [0061](0061-blog-posts-core-crud-backend.md) — blog posts core CRUD | **hard, `new`** | Owns `BlogPost`, `BlogPostStatus`, `BlogPostFactory`, `RestoreBlogPost`, and — since **OQ-1** was confirmed — **both manual dispatch sites**, `UpdateBlogPost` and `CreateBlogPost` (its revised **D-19**, **V-9**). The coupling is now one-way: 0061 calls this story's action, and this story edits nothing of 0061's |
+| [0064](0064-scheduled-post-auto-publish-backend.md) — scheduled auto-publish | **hard, `new`** | Owns `App\Events\Blog\ScheduledBlogPostPublished` and the only automatic transition. **D-9** resolves its **OQ-2** |
+| [0078](../0078-translatable-content-retrofit-blog-posts-backend.md) — translatable-content retrofit (Epic 5) | **hard once it lands, `new`** *(added 2026-08-30)* | Removes `blog_posts.title` and supplies `BlogPost::translated()`, which **D-4a**'s payload calls. Ordering is one-directional but **either order works**: if 0078 ships first this story is written against `translated()` from the outset; if this story ships first, 0078's retrofit changes one line here and the amendments above describe the end state. What must **not** happen is this story implementing `$post->title` after 0078 has landed — the property would be undefined and the payload would silently store `null` on a `?string` type. Transitively brings [0068](0068-store-languages-catalog-backend.md) (`StoreLanguage`) and [0070](0070-translatable-content-mechanism-product-categories-backend.md) (`HasTranslations`) |
+| [0058](0058-blog-categories-backend.md) / [0059](0059-blog-tags-backend.md) | **transitive, via 0061** | No direct use |
+| [0046](0046-orders-new-order-notification-backend.md) | **not a dependency** | This story copies its *shape*, not its code. Sequencing is free either way |
+| [0056](0056-notification-viewing-backend.md) / [0057](0057-notification-bell-ui.md) | **not a dependency, either direction** | 0056's **D-5** means the bell needs zero change for a new producer — verified for this payload (**R-8**) |
 | `blog.view` in the seeded catalog | **shipped** | **V-2** — no seeder change |
 | `App\Models\User` `Notifiable` + `SoftDeletes` | **shipped** (Epic 1) | **V-3** — no model change |
 
@@ -1719,14 +1726,14 @@ Recorded so they are not re-opened. Each was a real question at the start.
   2026-08-27 with `backend-expert` and `backend-qa` convened as subagents, composed by `product-owner`
   as facilitator. **No `database-expert`** — see the Type section.
 - **Sibling stories this one copies the shape of:**
-  [0043](../done/0043-customers-new-customer-notification-backend.md) (the template and the `notifications`
-  table's origin) and [0046](../done/0046-orders-new-order-notification-backend.md) (the second producer, which
+  [0043](0043-customers-new-customer-notification-backend.md) (the template and the `notifications`
+  table's origin) and [0046](0046-orders-new-order-notification-backend.md) (the second producer, which
   copied 0043 without a shared base class). This is the **third**, and 0046's **D-6** named it by
   number as the point at which the abstraction question must be re-asked — it is asked and answered in
   **D-13**.
-- **Upstream contracts:** [0061](../done/0061-blog-posts-core-crud-backend.md)'s **revised D-19** and its 0065
+- **Upstream contracts:** [0061](0061-blog-posts-core-crud-backend.md)'s **revised D-19** and its 0065
   hand-off (the two manual triggers, and the restore constraint), and
-  [0064](../done/0064-scheduled-post-auto-publish-backend.md)'s **D-12**, **OQ-2** and its five-fact hand-off
+  [0064](0064-scheduled-post-auto-publish-backend.md)'s **D-12**, **OQ-2** and its five-fact hand-off
   (the automatic trigger). **0061's D-19 was revised at this story's request**, after this file's
   **OQ-1** found a trigger its original text denied — so the contract this story consumes is partly a
   product of this story, which is worth knowing when reading the two files side by side.

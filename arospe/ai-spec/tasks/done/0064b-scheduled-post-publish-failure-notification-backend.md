@@ -852,7 +852,7 @@ restricts it is deployment access (as for 0064 **D-5**).
   branch without knowing the class. **No `type` discriminator** (Laravel writes the FQCN into `notifications.type`),
   **no message, no exception class, no SQL, no recipient echo.** The original exception is `report()`ed by the command
   as 0064 already does — that is the operator's log, not a second copy in a user-facing store.
-- **`title` is a frozen snapshot**, exactly the reasoning of [0065's D-4 and D-4a](../0065-blog-post-published-notification-backend.md):
+- **`title` is a frozen snapshot**, exactly the reasoning of [0065's D-4 and D-4a](0065-blog-post-published-notification-backend.md):
   a rename after the failure is a new fact. Read in **exactly one place** (the notifier), so 0078 changes one line to
   `translated('title')` in the store default language.
 - **No `SerializesModels`, no model in the constructor** (contrast `OrderCreated` and `CustomerCreated`, whose
@@ -1112,7 +1112,7 @@ Read against this worktree at `HEAD` = `d1e507f`; nothing here was run. **Re-ver
 | [0063](0063-blog-posts-list-editor-ui.md) — blog posts list and editor | **hard, `done`** | Owns `blog-posts.index` and `blog-posts.edit`. **OQ-1 resolved (a)** |
 | [0043](0043-customers-new-customer-notification-backend.md) — notifications table | **shipped** | Owns `notifications` (`uuidMorphs('notifiable')`) |
 | [0061](0061-blog-posts-core-crud-backend.md) — blog posts core CRUD | **shipped** | `BlogPost`, `CreateBlogPost`, the factory |
-| [0065](../0065-blog-post-published-notification-backend.md) | **not a dependency for class 1; must be amended (H-1, H-2)** | Its listener must not swallow errors (**D-0**) |
+| [0065](0065-blog-post-published-notification-backend.md) | **not a dependency for class 1; must be amended (H-1, H-2)** | Its listener must not swallow errors (**D-0**) |
 | [0057](0057-notification-bell-ui.md) — the bell | **not a dependency** | Renders this type generically until it gains an arm (**H-3**) |
 | [0078](../0078-translatable-content-retrofit-blog-posts-backend.md) | **later** | Changes the single title read; its migration must sort after this one |
 | [0066](../0066-admin-ui-locale-preference-backend.md) / [0067](../0067-admin-ui-language-switcher-ui.md) | **later** | Replace the app locale with the recipient's preference |
@@ -1234,7 +1234,7 @@ Recorded here, **not applied from this file**; the orchestrator or the owning ph
   involved). The agreed design was fixed by the facilitator's brief; this file records each part as a decision with its
   reason and the rejected alternative.
 - **Upstream contracts:** [0064](0064-scheduled-post-auto-publish-backend.md) (the command, the action, the event,
-  the Phase 5 at-most-once finding, hand-off item 7) and [0065](../0065-blog-post-published-notification-backend.md) (the
+  the Phase 5 at-most-once finding, hand-off item 7) and [0065](0065-blog-post-published-notification-backend.md) (the
   listener, D-1 recipients, D-4/D-4a the frozen-title reasoning, D-9 the event's payload).
 - **Sibling shapes:** `App\Notifications\OrderCreated` / `CustomerCreated` (the notification shape, no `lang` in `data`),
   `UserInvitation` / `PendingEmailVerification` (the mail shape and the queueing rule), `media.uploaded_by` and
