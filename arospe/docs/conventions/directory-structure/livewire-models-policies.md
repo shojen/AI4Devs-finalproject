@@ -112,7 +112,12 @@ app/
                        primitives in its constructor (no SerializesModels, no model), and its
                        shouldSend() independently re-checks the recipient predicate at delivery
                        time rather than trusting the dispatch-time selection alone; dispatched by
-                       Actions/Blog/NotifyScheduledBlogPostPublishFailed)
+                       Actions/Blog/NotifyScheduledBlogPostPublishFailed;
+                       BlogPostPublished — story 0065, the same shape as CustomerCreated/OrderCreated
+                       (`database` channel only, not ShouldQueue), dispatched by
+                       Actions/Blog/NotifyBlogPostPublished from all three of its triggers; `title` is
+                       a frozen literal snapshot of `BlogPost::$title` taken at construction, read
+                       directly since story 0078's translatable-content retrofit has not shipped)
   Policies/            Eloquent model policies (UserPolicy, RolePolicy, SalesRegionPolicy,
                        MediaPolicy, ProductCategoryPolicy, BlogCategoryPolicy — story 0058, four abilities on
                        the seeded `blog.*` permissions (D-8) with real call sites on all three

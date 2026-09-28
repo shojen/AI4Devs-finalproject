@@ -25,6 +25,12 @@ use Tests\Support\Blog\ScheduledPosts;
 // logs out before the sweep.
 beforeEach(function () {
     Carbon::setTestNow('2026-09-26 12:00:00');
+    // Story 0065: a successful sweep dispatches ScheduledBlogPostPublished for real, and that event now
+    // has a listener (SendBlogPostPublishedNotification) that queries User::permission('blog.view'). Spatie
+    // throws PermissionDoesNotExist when the permission row itself is missing, so every test here -- not
+    // just the ones about permissions -- needs the catalog seeded, or the sweep blows up before it can assert
+    // anything about publication.
+    $this->seed(RolePermissionSeeder::class);
 });
 
 afterEach(function () {

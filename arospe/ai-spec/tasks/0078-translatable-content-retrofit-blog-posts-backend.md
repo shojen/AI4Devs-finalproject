@@ -925,7 +925,7 @@ load-bearing:** since `SetTranslation` authorizes nothing, each action's `Gate` 
     note that the slug is safe *"because 0061's hook is guarded on `isDirty('title')`"* is superseded by
     something stronger — after the retrofit the sweep writes only parent columns, which no longer include
     any translatable field, so the hook cannot fire at all.
-  - **(c) [0065](0065-blog-post-published-notification-backend.md) forces a decision no sibling
+  - **(c) [0065](done/0065-blog-post-published-notification-backend.md) forces a decision no sibling
     retrofit did.** Its **D-4** payload is `['blog_post_id' => …, 'title' => $this->post->title]` — a
     deliberately **frozen literal snapshot** of the title taken at publication (its own D-4 argues at
     length for a snapshot over a live join). `$this->post->title` stops existing, so the snapshot must
@@ -1086,7 +1086,7 @@ meta title/description)"*, but story 0061 ships **no** meta columns — only `sl
 Derived from this debate; **none are in scope for 0078.**
 
 1. **Amend [0063](done/0063-blog-posts-list-editor-ui.md), [0064](done/0064-scheduled-post-auto-publish-backend.md)
-   and [0065](0065-blog-post-published-notification-backend.md)** per **R-1**. 0063 needs one coherent
+   and [0065](done/0065-blog-post-published-notification-backend.md)** per **R-1**. 0063 needs one coherent
    amendment covering all three Epic 5 taxonomy/content retrofits at once, not three separate ones. The
    coordinator's, not this story's. **Include Q-1's resolution explicitly** (added 2026-08-30, QA review
    finding): 0063's future per-language body-edit path must scope `bodyRules($status)` so it does **not**

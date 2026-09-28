@@ -3,23 +3,35 @@
 namespace App\Actions\Blog;
 
 use App\Models\BlogPost;
+use App\Models\User;
+use App\Notifications\BlogPostPublished;
+use Illuminate\Support\Facades\Notification;
 
 /**
- * PLACEHOLDER -- story 0065 owns this action and replaces its body (recipients, notification class,
- * channel, queuing).
+ * Story 0065 -- resolves the recipient set and dispatches BlogPostPublished. A shape copy of
+ * App\Actions\Customers\NotifyCustomerCreated (story 0043) and App\Actions\Orders\NotifyOrderCreated
+ * (story 0046), not an inheritance -- same collaborator shape, applied to a different model.
  *
- * Story 0061 must call `__invoke(BlogPost): void` from both of its manual publish paths (D-19), but
- * 0065 depends on 0061, so the class has to exist for the two actions to resolve it from the
- * container. It is a deliberate no-op here: this story defines no notification, channel or
- * recipient list. When 0065 lands it keeps this exact signature and fills the body in.
+ * Called from three independent triggers (D-5): App\Actions\Blog\CreateBlogPost and
+ * App\Actions\Blog\UpdateBlogPost call it directly (both already authorized, self-authorized flows --
+ * see NotifyOrderCreated's own reasoning for why a collaborator invoked only by an already-authorized
+ * action needs no gate of its own), and App\Listeners\SendBlogPostPublishedNotification calls it for
+ * the automatic (scheduled sweep) trigger. Deliberately authorizes NOTHING of its own.
+ *
+ * Recipients are resolved LIVE at dispatch time, never cached: `User::permission('blog.view')`
+ * (Spatie's own scope) matches a permission held via a role OR directly, against the `web` guard --
+ * "Gate on permissions, never role names" (architecture/authorization.md) applied to a recipient set.
+ * Soft-deleted administrators are excluded for free by the SoftDeletingScope already on
+ * `User::query()`. The Super Admin is deliberately excluded (D-1): their access comes from the
+ * Gate::before bypass, which grants no role_has_permissions/model_has_permissions row for this data
+ * query to match.
  */
 class NotifyBlogPostPublished
 {
-    /**
-     * Announce that a post has just been published.
-     */
     public function __invoke(BlogPost $blogPost): void
     {
-        //
+        $recipients = User::permission('blog.view')->get();
+
+        Notification::send($recipients, new BlogPostPublished($blogPost));
     }
 }

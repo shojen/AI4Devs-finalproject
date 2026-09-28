@@ -140,10 +140,16 @@ app/
                        gates categories, tags and posts alike, so the folder mirrors the gate and
                        posts actions join it rather than opening sibling folders. Story 0061
                        extended DeleteBlogCategory in place with the in-use hard block (a
-                       withTrashed() count). NotifyBlogPostPublished is a no-op PLACEHOLDER created by
-                       0061 because CreateBlogPost/UpdateBlogPost must call it and story 0065, which
-                       owns the real notification, depends on 0061; 0065 keeps its `__invoke(BlogPost): void`
-                       signature and fills the body in. PublishScheduledBlogPost (story 0064) is the area's ONE
+                       withTrashed() count). NotifyBlogPostPublished — created as a no-op placeholder
+                       by 0061 (CreateBlogPost/UpdateBlogPost call it directly, `DB::afterCommit(fn () =>
+                       …)`, before its real body existed) and filled in by story 0065, keeping the same
+                       `__invoke(BlogPost): void` signature every caller already matched: resolves
+                       `User::permission('blog.view')->get()` (live, never cached; Super Admin excluded
+                       per D-1, same reasoning as NotifyCustomerCreated/NotifyOrderCreated) and dispatches
+                       `App\Notifications\BlogPostPublished` to that set. Also called from
+                       App\Listeners\SendBlogPostPublishedNotification for the automatic (scheduled
+                       sweep) trigger. Authorizes nothing of its own — every caller is already
+                       authorized. PublishScheduledBlogPost (story 0064) is the area's ONE
                        action that does not self-authorize: system-triggered and deliberately ungated, one
                        conditional UPDATE per post, reached only from the scheduled command (see
                        architecture/authorization/domain-invariants.md#a-system-triggered-write-may-be-ungated--autocancelfullyrefundedorder-and-the-three-conditions-that-make-it-safe).

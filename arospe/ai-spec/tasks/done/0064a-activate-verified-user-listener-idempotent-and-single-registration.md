@@ -24,7 +24,7 @@ Why it matters beyond tidiness: today both duplicated listeners run their logic 
 `ActivateVerifiedUser` the second run returns early, so nothing visible happens. For
 `RejectNonActiveUserLogin` — the sign-in safety net of story 0007 — the duplicate runs a logout path
 twice; it is harmless today, but a listener that *sends* something (story
-[0065](../0065-blog-post-published-notification-backend.md)'s notification) would send twice. The same
+[0065](0065-blog-post-published-notification-backend.md)'s notification) would send twice. The same
 mechanism will bite the next listener unless one policy and one guard exist.
 
 Raised by the human owner while closing 0064 (2026-09-26); found by 0064's Phase 5 work, which already
@@ -400,12 +400,12 @@ Fortify's HTTP route never re-dispatches `Verified` for an already-verified user
 
 ### Dependencies
 - **No blocking dependency.** Independent of [0064](0064-scheduled-post-auto-publish-backend.md),
-  0063 and [0065](../0065-blog-post-published-notification-backend.md). Numbered **0064a** because it was
+  0063 and [0065](0065-blog-post-published-notification-backend.md). Numbered **0064a** because it was
   found closing 0064; the ordering rule (a dependency's number is lower than its dependents') is satisfied
   since nothing depended on it when this story was written. **Update (2026-09-26):** its R-2 follow-up,
   [0064c](0064c-activate-verified-user-status-race-compare-and-set-backend.md), now depends on it and stays
   `blocked` until this story lands.
-- **Conflict risk — [0065](../0065-blog-post-published-notification-backend.md):** its file list edits
+- **Conflict risk — [0065](0065-blog-post-published-notification-backend.md):** its file list edits
   `AppServiceProvider::configureEventListeners()`, the method this story deletes. Whichever lands second
   reconciles at merge; with the hand-off below, 0065 simply drops that edit.
 - Builds on [0052](0052-order-auto-cancel-full-refund-backend.md) (which shipped

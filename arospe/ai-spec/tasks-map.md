@@ -71,6 +71,10 @@ per its **OQ-5** (owner decision: raise now). No code dependency on `0064c` (the
 
 Update (2026-09-27): `0064b-scheduled-post-publish-failure-notification-backend.md` completed Phase 7 and moved from `in-progress/` to `done/` — the tenth Epic 4 story to close. Its node and its `tasks-status.json` entry (the `claimed` one) are dropped. It had no hard (`depends_on`) dependent of its own; `0065` and `0078` each drop it from `conflict_risk_with` (both were file-sharing siblings — `0065`/`0078` also edit `app/Actions/Blog/CreateBlogPost.php`, and `0078` also touches `BlogPost.php`/`blog_posts` — never a `depends_on` edge). `ai-spec/tasks/in-progress/` is empty again. (Reconciled here from a concurrent session's branch, merged via PR #38.)
 
+Update (2026-09-27): `0065-blog-post-published-notification-backend.md` claimed and moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` — Phase 3 starts. Its `tasks-status.json` entry moves from `ready` to `claimed` (no `status` field change on the move itself, per protocol) and its node turns blue (`claimed`) below. **Phase 2 (`code-reviewer` INVEST validation) found the `touches` list this file's earlier passes recorded for it was already stale**: `app/Actions/Blog/UpdateBlogPost.php`, `CreateBlogPost.php` and `app/Providers/AppServiceProvider.php` are **not** edited by this story after all — story `0061` shipped both manual dispatch sites against a `NotifyBlogPostPublished` placeholder ahead of time, and story `0064a` (already `done/`) put listener registration on auto-discovery, so 0065 adds no provider edit either. Its real `touches` are now the notification, the action's body, one new listener and four test files (see `tasks-status.json`). This resolves the note two paragraphs above about `0064a`'s deletion of `configureEventListeners()` colliding with 0065's file list — it does not collide, because 0065 never needed that method. The stale `0065`/`0078` `conflict_risk_with` pairing on `CreateBlogPost.php`/`UpdateBlogPost.php` (noted in the analysis further down this file) is likewise moot: `0065` no longer writes either file, so it drops out of `0078`'s risk surface too (neither file's `tasks-status.json` entry listed the other in `conflict_risk_with`, so no JSON edit was needed).
+
+Update (2026-09-28): `0065-blog-post-published-notification-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/` — the eleventh Epic 4 story to close, and Epic 4's last pending task, so the `PEND_BLOG` subgraph is removed entirely. Its node and its `tasks-status.json` entry (the `claimed` one) are dropped. It had no hard (`depends_on`) dependent of its own; `0078` held it only in `conflict_risk_with`, and that had already resolved to nothing by Phase 2/3 (0065 ended up touching neither `CreateBlogPost.php` nor `UpdateBlogPost.php` — see the update above). Both inbound links from `0078` and every sibling `done/` file that already referenced 0065 (`0061a`, `0061b`, `0064`, `0064a`, `0064b`) were re-resolved to the new `done/` path in the same pass. `ai-spec/tasks/in-progress/` is empty again.
+
 Update (2026-09-27): `0068-store-languages-catalog-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0), after a Phase 2 (INVEST) rejection-and-correction round on the same day (circular dependency on `App\Enums\UiLocale` fixed by moving the enum's ownership here from story 0066; three untestable Gherkin scenarios removed; Q8 resolved). It is still pending work, so it keeps its node and edges; its node moves from the green `ready` class to the blue `claimed` class (it was already `claimed` in `tasks-status.json` from its Phase 2 claim, `claimed_by: "shojen/0068-store-languages-catalog-backend"`), and its `depends_on` is unchanged (still empty). `ai-spec/tasks/in-progress/` now holds exactly this one file.
 
 Update (2026-09-27): `0064c-activate-verified-user-status-race-compare-and-set-backend.md` passed Phase 2 (INVEST validation, `code-reviewer`: PASS, no rewrite needed) and moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0). It is still pending work, so it keeps its node and edges (it has none, `depends_on: []`); its node moves from the green `ready` class to the blue `claimed` class, and its `tasks-status.json` entry's `status` moved to `"claimed"` (`claimed_by: "0064c-activate-verified-user-status-race-compare-and-set-backend"`). `ai-spec/tasks/in-progress/` now holds exactly this one file.
@@ -181,7 +185,7 @@ graph and from the parallelization analysis below.
 
 - [Inventory](#inventory)
   - [Done (87) — shipped, out of scope for this graph](#done-87--shipped-out-of-scope-for-this-graph)
-  - [Pending — not started (15 numbered + 1 infra doc)](#pending--not-started-15-numbered--1-infra-doc)
+  - [Pending — not started (13 numbered + 1 infra doc)](#pending--not-started-13-numbered--1-infra-doc)
 - [Dependency graph (pending tasks only)](#dependency-graph-pending-tasks-only)
 - [Analysis](#analysis)
   - [Pending tasks that are independent of each other and safe to parallelize](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
@@ -284,11 +288,10 @@ appears as a node in the dependency graph below:
   (0063 closed ninth, per the Update note above): it had no hard dependent of its own; `0065` and `0078` drop
   it from `conflict_risk_with`.
 
-### Pending — not started (14 numbered + 1 infra doc)
+### Pending — not started (13 numbered + 1 infra doc)
 
 | ID | Title | Epic area |
 | --- | --- | --- |
-| 0065 | Blog post published — notification (backend) | Epic 4 — Blog |
 | 0066 | Admin UI locale preference & resolution — backend | Epic 5 — i18n |
 | 0067 | Admin UI language switcher — frontend | Epic 5 — i18n |
 | 0069 | Store Languages settings screen — frontend | Epic 5 — i18n |
@@ -331,11 +334,6 @@ flowchart LR
     classDef pending fill:#fef9c3,stroke:#ca8a04,color:#713f12,stroke-width:1px;
     classDef ready fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:1px;
     classDef claimed fill:#dbeafe,stroke:#2563eb,color:#1e3a8a,stroke-width:1px;
-
-    subgraph PEND_BLOG["Epic 4 — Blog"]
-        direction TB
-        P0065["0065 Post published notif BE"]
-    end
 
     subgraph PEND_I18N["Epic 5 — Internationalization"]
         direction TB
@@ -387,6 +385,11 @@ flowchart LR
     %% (P0064b's own node dropped: 0064b closed to done/ this pass. It had no incoming edge of its
     %% own -- no pending task named it as a depends_on blocker -- so removing it re-derives nothing
     %% further; 0065/0078 only held it in conflict_risk_with, not depends_on.)
+    %% (P0065's own node dropped: 0065 closed to done/ 2026-09-28 -- the eleventh Epic 4 story to
+    %% close, and Epic 4's last pending task, so the PEND_BLOG subgraph itself is removed. It had no
+    %% incoming edge of its own; 0078 held it only in conflict_risk_with (never depends_on), and by
+    %% Phase 2/3 that risk had already resolved to nothing -- 0065 ended up touching neither
+    %% CreateBlogPost.php nor UpdateBlogPost.php, so 0078 needed no conflict_risk_with edit here.)
 
     %% i18n
     %% (P0068 --> P0066/P0067/P0069/P0070/P0071/P0072/P0073/P0074/P0075/P0076/P0077/P0078/P0079
@@ -415,7 +418,7 @@ flowchart LR
     P0070 --> P0079
 
     class P0067,P0069,P0071,P0072,P0073,P0074,P0075,P0076,P0077,P0078,P0079 pending;
-    class P0065,P0066,P0070 ready;
+    class P0066,P0070 ready;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
@@ -521,9 +524,9 @@ parallelization one. The major chains, in the order they must be executed:
    `0057`, closed too. `0046` was never a hard blocker of either — only a soft/informational,
    non-blocking sibling that made their "two distinct notification types" test meaningful — and it
    too is `done/` as of an earlier pass, so that soft reference is fully satisfied either way.
-3. **Blog (Epic 4) — this chain is now fully resolved too.** `{0065}` is the only Blog-area task still pending
-   (`0058`, `0059`, `0060`, `0061`, `0061a`, `0061b`, `0062`, `0063`, `0064` and `0064b` are all `done/`); `0065`'s
-   own dependencies (`0061`, `0064`) are both `done/`, so it is `ready` with no chain left to sequence. `0064a`
+3. **Blog (Epic 4) — this chain is now fully resolved, and closed.** `0065` closed to `done/` 2026-09-28,
+   the eleventh and, as of this pass, last Epic 4 story (`0058` through `0065` are all `done/`), so Epic 4
+   has zero pending tasks and no node in the graph below. `0064a`
    (an Epic 1 listener fix raised by `0064`) is now `done/`, its own follow-up `0064c` is now `done/` too, and
    `0064c`'s own follow-up, `0064d`, is now `done/` too — the whole 0064-family chain (Epic 1's `0064a`/`0064c`/
    `0064d` plus Epic 4's `0064`/`0064b`) is fully closed; `0060` created the `content` sidebar group and its `blog` cluster
@@ -579,7 +582,7 @@ in [`ai-spec/tasks-status.json`](tasks-status.json):
 - **`App\Concerns\ResolvesSalesRegionFromAddress` was a create-if-absent shared trait between
   `0053` and `0054` — both now `done/`, so this pairing is resolved.** `0053` reached Phase 3
   first and created the file; `0054` consumed it unchanged, as specified.
-- **`0065` and `0078` are now the only two pending tasks still writing `app/Actions/Blog/CreateBlogPost.php`/`UpdateBlogPost.php`.** `0063`, `0061a`, `0061b`, `0064` and `0064b` all also wrote one or both of these files and are now `done/`, so this pairing is resolved for all of them — `0064b` (it wrote the new `created_by` column onto `CreateBlogPost.php`, and `BlogPost.php`/`blog_posts`) drops out of `0065`'s and `0078`'s `conflict_risk_with` arrays in this same pass. **`0064a` (now `done/`) deleted `AppServiceProvider::configureEventListeners()`, which `0065`'s Modify section still names** — no formal edge remains; `0065` reconciles it in its own Phase 2/3.
+- **`0078` is now the only pending task still writing `app/Actions/Blog/CreateBlogPost.php`/`UpdateBlogPost.php`.** `0063`, `0061a`, `0061b`, `0064`, `0064b` and now `0065` (closed 2026-09-28, having ended up touching neither file at all — its Phase 2 review found both dispatch sites were already shipped by `0061`) are all `done/`, so this pairing is fully resolved.
 - **The Epic 5 retrofit stories (`0072`, `0074`, `0076`, `0078`) all depend on the same pair,
   `0068` (now `done/`) and `0070`**, and each also touches `config/modules.php` /
   `lang/{en,es}/*.php` for its own domain. They do not depend on each other and their tables are
