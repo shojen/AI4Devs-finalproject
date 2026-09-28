@@ -326,8 +326,9 @@ still synchronous. No route, screen, schema or caller changes.
       [task-files-links-and-ordering.md](../../../docs/workflow/task-files-links-and-ordering.md).
 - [x] The `UpdateUser` stale-write hole (**R-2**) is recorded as a risk here and its owner decision (**OQ-5**)
       answered. **Owner decision (2026-09-27): (b), raise it now.** Raised as
-      [0064d](../0064d-update-user-status-role-race-lock-and-recheck-backend.md) (Phase 1, Three Amigos debate
-      complete; Phase 2 onward not yet run).
+      [0064d](0064d-update-user-status-role-race-lock-and-recheck-backend.md) (closed 2026-09-28 —
+      a locked, verified compare-and-set on the decision-relevant columns, mirroring this story's
+      own D-1/D-6 shape for the multi-step case).
 - [x] Acceptance criteria met. **Verified (code-reviewer, 2026-09-27):** all eight bullets under
       `## Acceptance criteria` above independently confirmed against the real code/tests and ticked.
 
