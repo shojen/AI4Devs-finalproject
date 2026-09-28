@@ -185,6 +185,7 @@ test('with no default store language at all, the list still renders without thro
     $this->actingAs($actor);
 
     StoreLanguage::query()->delete();
+    StoreLanguage::flushDefaultStoreLanguage();
     ProductCategory::factory()->withoutTranslations()->create();
 
     expect(StoreLanguage::query()->count())->toBe(0);
