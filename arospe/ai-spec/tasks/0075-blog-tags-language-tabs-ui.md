@@ -44,13 +44,13 @@ switching the translatable fields in place"*, and *"**Category and tag names** �
 per-store-language field with the same tab-based editor UX."*
 
 It consumes story [0074](0074-translatable-content-retrofit-blog-tags-backend.md)'s
-`blog_tag_translations` retrofit and story [0070](0070-translatable-content-mechanism-product-categories-backend.md)'s
+`blog_tag_translations` retrofit and story [0070](in-progress/0070-translatable-content-mechanism-product-categories-backend.md)'s
 `HasTranslations` / `SetTranslation` mechanism, and story [0068](done/0068-store-languages-catalog-backend.md)'s
 `StoreLanguage::active()` scope. It adds **one** backend artifact — the authorizing, validating write
 path none of those three ships (**Q-1**, **D-3**).
 
 > **This story answers a question three backend stories left open, and it is the *second* to do so.**
-> [0070's **Q3**](0070-translatable-content-mechanism-product-categories-backend.md) — *"which story
+> [0070's **Q3**](in-progress/0070-translatable-content-mechanism-product-categories-backend.md) — *"which story
 > owns the language-tabs UI for the taxonomy screens?"* — was recorded with **no recommendation**,
 > explicitly because that debate could not see the 14-story plan. 0072, 0076 and 0078 each re-raise it
 > unresolved. This story closes it for Blog Tags with 0070's option **(a)**, a dedicated Epic 5 UI
@@ -874,7 +874,7 @@ renders. The mismatch is a property of the *edit* form's array binding, not of t
   `blog_tag_translations`, `BlogTagTranslation`, the re-signed `nameRules()`, per-language uniqueness.
 - **[0060](done/0060-blog-tags-ui.md)** — hard, **not implemented**. The screen, the route, the sidebar
   group, the lang files, the policy call site. This story modifies its component and view.
-- **[0070](0070-translatable-content-mechanism-product-categories-backend.md)** — hard, **not
+- **[0070](in-progress/0070-translatable-content-mechanism-product-categories-backend.md)** — hard, **not
   implemented**. `HasTranslations`, `SetTranslation`, `defaultStoreLanguage()` and its memo.
 - **[0068](done/0068-store-languages-catalog-backend.md)** — hard, **not implemented**. `StoreLanguage`,
   `scopeActive()`, and the factory states every fixture here uses.

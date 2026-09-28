@@ -75,9 +75,9 @@
       "slug": "0070-translatable-content-mechanism-product-categories-backend",
       "title": "Translatable content mechanism — backend, piloted on Product Categories",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "shojen/0070-translatable-content-mechanism-backend",
+      "claimed_at": "2026-09-28T00:00:00Z",
       "touches": [
         "app/Concerns/HasTranslations.php",
         "app/Actions/SetTranslation.php",

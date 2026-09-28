@@ -32,7 +32,7 @@ story by number.
 > Two of 0071's open questions (**Q-1**, **Q-2**) were resolved on 2026-08-30 and are consumed here
 > as settled rather than re-asked.
 >
-> **This story is also the answer to [0070's **Q3**](0070-translatable-content-mechanism-product-categories-backend.md)**
+> **This story is also the answer to [0070's **Q3**](in-progress/0070-translatable-content-mechanism-product-categories-backend.md)**
 > — *"which story owns the language-tabs UI for the taxonomy screens?"* — under its option **(a)**,
 > for the Blog Categories taxonomy. 0071 answers it for Product Categories; 0075 completes the set
 > for Blog Tags.
@@ -932,7 +932,7 @@ user meets it, 0058 **D-13**'s authorize-before-validate trap (absent from 0071 
   debate did not originally have**, and the reason 0071 must be sequenced first.
 - **[0062](done/0062-blog-categories-ui.md)** — hard, blocking. The component, view, route and sidebar
   entry this story widens. Itself blocked on 0058 → 0061.
-- **[0070](0070-translatable-content-mechanism-product-categories-backend.md)** — hard.
+- **[0070](in-progress/0070-translatable-content-mechanism-product-categories-backend.md)** — hard.
   `HasTranslations`, `SetTranslation`, `defaultStoreLanguage()`. **0070's Q1 is still open**; this
   story assumes its recommended **(a) yes**.
 - **[0068](done/0068-store-languages-catalog-backend.md)** — hard. `store_languages`, `scopeActive()`, and
@@ -1053,7 +1053,7 @@ Derived from this debate; **none are in scope for 0073.**
    the renamed `blog-category-name-input` hook (**R-1**). Not this story's to write.
 2. **Amend [0063](done/0063-blog-posts-list-editor-ui.md)**, whose `->with(['category:id,name'])` partial
    select names the dropped column explicitly (0072 **R-1**).
-3. **Mark [0070's Q3](0070-translatable-content-mechanism-product-categories-backend.md) answered** —
+3. **Mark [0070's Q3](in-progress/0070-translatable-content-mechanism-product-categories-backend.md) answered** —
    0071 for Product Categories, 0073 for Blog Categories, 0075 for Blog Tags.
 4. **Stories 0075 / 0079** reuse `<x-language-tab-strip>`, expose `setActiveLanguageTab()`, add their
    own `SetBlogTagTranslation` / `SetBlogPostTranslation` per 0071 **D-13**, and re-derive none of

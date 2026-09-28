@@ -21,7 +21,7 @@ is consumed from 0023 and 0024 as already-shipped code.
 `name` column.** Two later Epic 5 stories — both fully debated, both still unimplemented Phase 1
 files — changed that ground underneath it:
 
-- **[0070](../0070-translatable-content-mechanism-product-categories-backend.md)** (backend) **drops
+- **[0070](../in-progress/0070-translatable-content-mechanism-product-categories-backend.md)** (backend) **drops
   `product_categories.name` entirely** (its **D-4**) and moves the name into a
   `product_category_translations` child table, read per language through
   `ProductCategory::translated('name', ?string $storeLanguageId = null)`, which falls back to the
@@ -260,7 +260,7 @@ Route::livewire('product-categories', ProductCategoriesIndex::class)
 
 ### Interface contract consumed from 0023 and 0024
 
-> ⚠️ **Correction, 2026-08-30 — two lines of the block below are falsified by [0070](../0070-translatable-content-mechanism-product-categories-backend.md).**
+> ⚠️ **Correction, 2026-08-30 — two lines of the block below are falsified by [0070](../in-progress/0070-translatable-content-mechanism-product-categories-backend.md).**
 > It said `App\Models\ProductCategory` carries **`#[Fillable(['name'])]`**; 0070 changes it to
 > **`#[Fillable([])]`** — the parent row has no mass-assignable column at all once `name` moves to
 > the child table, and the model gains `use HasTranslations;` plus a `translationModel()` method.
@@ -410,7 +410,7 @@ class Index extends Component
 ```
 
 > ⚠️ **Correction, 2026-08-30 — the query quoted in the next paragraph does not run once
-> [0070](../0070-translatable-content-mechanism-product-categories-backend.md) lands. This is the exact
+> [0070](../in-progress/0070-translatable-content-mechanism-product-categories-backend.md) lands. This is the exact
 > break 0070's own R-1 names this file for.**
 >
 > It reads `ProductCategory::query()->withCount('products')->orderBy('name')->orderBy('id')`.
@@ -507,7 +507,7 @@ than reimplementing its own.
 
 > ⚠️ **Correction, 2026-08-30 — both listing tests still belong here, but what they assert changes.**
 > The ordering test's *outcome* is unchanged (create out of order, assert alphabetical) while its
-> *mechanism* is not: after [0070](../0070-translatable-content-mechanism-product-categories-backend.md)
+> *mechanism* is not: after [0070](../in-progress/0070-translatable-content-mechanism-product-categories-backend.md)
 > the order comes from a **PHP `sortBy()` over `translated('name')`**, not from `orderBy('name')` —
 > see the correction under the component surface above. Two cases the original bullet could not
 > have: a category resolving to `null` must sort without throwing, and the fixture must set its
@@ -814,7 +814,7 @@ component. Nothing on the screen references, links to, or shares anything with a
   though 0023 **D-4**'s normalised uniqueness makes exact name collisions structurally impossible.
   > ⚠️ **Correction, 2026-08-30 — the ordering half is superseded; the pagination half is what
   > survives, and it is load-bearing.** `name ASC, id ASC` is SQL ordering against a column
-  > [0070](../0070-translatable-content-mechanism-product-categories-backend.md) drops; the replacement
+  > [0070](../in-progress/0070-translatable-content-mechanism-product-categories-backend.md) drops; the replacement
   > is [0071](../0071-product-categories-language-tabs-ui.md)'s **D-12** PHP `sortBy()` over
   > `translated('name')`, quoted in full under the component surface above. **"No pagination" is
   > *why* that replacement is acceptable** — 0071 cites this decision by name for exactly that
