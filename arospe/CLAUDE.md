@@ -193,6 +193,6 @@ Also read `docs/architecture/overview.md` before any non-trivial change; every o
 Plain paths, read on demand (never `@`-import); the index above routes to everything else. Hubs (marked ⧉) list their parts — open one part only.
 - Auth, roles/permissions, seeders, secrets, uploads, sanitization → `docs/security/README.md`; authentication → `docs/architecture/authentication.md` ⧉; authorization → `docs/architecture/authorization.md` ⧉
 - Schema → `docs/database/schema.md`; migrations → `docs/database/migrations.md` ⧉; routes/Livewire contracts → `docs/api/routes.md`
-- Code style → `docs/conventions/code-style.md`; where a new class/action/config file goes → `docs/conventions/directory-structure.md` ⧉; naming → `docs/conventions/naming.md` ⧉ and `naming-validation-traits.md`
+- Code style → `docs/conventions/code-style.md`; where a new class/action/config file goes → `docs/conventions/directory-structure.md` ⧉; naming → `docs/conventions/naming.md` ⧉ and `naming-validation-traits.md`; locale-aware notifications, admin-dashboard strings or storefront translation → `docs/conventions/localization.md`
 - Tests → `docs/testing/README.md`; product requirements → `docs/PRD/PRD.md` ⧉ (only the epic's part)
 - Past decisions → `docs/decisions/README.md`; before repeating a mistake → `docs/errors-log.md` ⧉ (topic index names the entry file)

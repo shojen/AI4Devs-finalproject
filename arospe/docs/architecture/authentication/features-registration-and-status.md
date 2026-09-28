@@ -105,6 +105,31 @@ An administrator-created account therefore starts with **a random unusable passw
 
 > **Email addresses are canonically lowercase across the app**, now in three layers: `config/fortify.php` sets `'lowercase_usernames' => true` (registration, login, forgot-password); `App\Livewire\Settings\Profile` normalizes `$this->email` **before** `validate()` runs, so the uniqueness rule sees the value that will actually be stored; and `App\Actions\Users\RequestEmailChange` lowercases as its very first statement. `App\Models\User` additionally exposes a **read-only** lowercasing accessor on `email` — a consistency layer for rows that could already carry a mixed-case address, deliberately *not* a write mutator and no substitute for normalizing before validation (an accessor runs far too late for a uniqueness check). One consequence every test must respect: `$user->email` always returns lowercase, so an assertion about the *stored bytes* has to go through `$user->getRawOriginal('email')`.
 
+## Notification locale (story 0066)
+
+**Since story 0066, `App\Models\User` implements `Illuminate\Contracts\Translation\HasLocalePreference`**, via one method:
+
+```php
+// app/Models/User.php
+public function preferredLocale(): string
+{
+    return UiLocale::tryFrom((string) $this->ui_locale)->value
+        ?? LocaleSetting::defaultNotificationLocale()->value;
+}
+```
+
+Laravel's `Illuminate\Notifications\NotificationSender::preferredLocale()` consults this contract for **every** notification sent via `$user->notify(...)`, so `UserInvitation` (above) and `PendingEmailVerification` ([Pending email changes](sign-in-block-and-email-change.md#pending-email-changes)) now render in the recipient's own admin UI language, with **no edit to either notification class** — both already render their copy through `trans()`. The fallback is the administrator-configured `LocaleSetting::defaultNotificationLocale()` — a value distinct from the dashboard's own `defaultUiLocale()` — never `null`: `preferredLocale()` always returns a real locale string, since a `null` return would make `Illuminate\Notifications\Localizable::withLocale()` a silent no-op, leaving the notification rendered in whatever locale the current process happened to have set.
+
+**One real call site needed an explicit fix, and it is the one gap this story closed.** `App\Actions\Users\RequestEmailChange` sends `PendingEmailVerification` to an `Illuminate\Notifications\AnonymousNotifiable` routed to the **new, unverified** email address — not `$user->email` — because the link must reach the address being claimed, not the account's current one. `AnonymousNotifiable` does not implement `HasLocalePreference` on its own, so it never picks up the user's stored `ui_locale`. The action now chains the locale explicitly:
+
+```php
+// app/Actions/Users/RequestEmailChange.php
+Notification::route('mail', $newEmail)
+    ->notify((new PendingEmailVerification($user, $newEmail))->locale($user->preferredLocale()));
+```
+
+Without that `->locale(...)` call the email would have rendered in whichever locale happened to be ambient for the current request (e.g. an administrator's, on an admin-initiated change) rather than the target account's own preference — see [Pending email changes](sign-in-block-and-email-change.md#pending-email-changes) for the rest of that flow.
+
 ## Account status and activation
 
 Every account carries a `users.status`, cast to the backed string enum [`App\Enums\UserStatus`](../../../app/Enums/UserStatus.php) (`Active` / `Inactive` / `Suspended`, whose `label()` resolves `__('users.statuses.*')` from `lang/en/users.php` and `lang/es/users.php`). The column defaults to `inactive` and is **not** mass-assignable — it is omitted from `User`'s `#[Fillable]`, so a profile form that posts a `status` field changes nothing.
@@ -182,4 +207,4 @@ The pre-change value must come from **`getPrevious()`, never `getOriginal()`** �
 
 Since task 0005, deleting a user soft-deletes the row (see [database/schema.md](../../database/schema-users-auth.md#soft-deletes) for what that rewrites). Its effect on authentication is total and worth stating here, because **no code in `app/` refuses a deleted user's sign-in**: `Illuminate\Auth\EloquentUserProvider` resolves every credential lookup through `$model->newQuery()`, which applies the `SoftDeletingScope`. That one fact is why password login fails, an in-flight session stops authenticating on its next request, a remember-me cookie is inert, a password-reset or invitation link resolves no user, and the vendor passkey relation returns `null` for a trashed owner. Deletion is therefore an authentication control, not only a data state — treat any code that lifts the scope for a `User` accordingly. The rules that follow (including what must be added if a future login path stops going through the user provider) are in [security/soft-delete-patterns.md](../../security/soft-delete-patterns.md#the-global-scope-is-the-sign-in-refusal--there-is-no-second-check).
 
-_Last updated: 2026-09-27 — story 0064c: updated the `ActivateVerifiedUser` snippet and its surrounding prose to show the write delegated to `App\Actions\Users\ActivateInactiveUser` (a guarded compare-and-set) instead of a blind `save()`; the in-memory guards, `getPrevious()` reasoning and the rest of this page are otherwise unchanged._
+_Last updated: 2026-09-28 — story 0066 (Admin UI locale preference & resolution — backend): added the **Notification locale** section — `App\Models\User` now implements `HasLocalePreference` via `preferredLocale()`, so `UserInvitation` and `PendingEmailVerification` render in the recipient's own admin UI language, falling back to `LocaleSetting::defaultNotificationLocale()`; and documented the one real call site that needed a fix, `App\Actions\Users\RequestEmailChange` chaining `->locale($user->preferredLocale())` onto the `AnonymousNotifiable` send, since that notifiable doesn't implement the contract on its own._

@@ -75,6 +75,7 @@ erDiagram
         string pending_email UK
         timestamp email_verified_at
         string status
+        string ui_locale
         string password
         text two_factor_secret
         text two_factor_recovery_codes
@@ -418,6 +419,6 @@ Split by domain into separate files, per [contracts.md](../contracts/token-and-d
 - For migration authoring conventions (naming, `down()` requirements, real examples), see [database/migrations.md](migrations.md).
 - **UUID (v7) primary keys.** Each table's PK type (`uuid` vs `bigint`) is already visible directly in the ER diagram above, and each per-domain schema file states its own table's status against [ADR 0001](../decisions/0001-uuid-primary-keys.md) at the point that table is documented — so this section no longer restates a consolidated status list. The ADR is the single source of truth for the policy and its full history: which entities it covers, the one named `bigint` exception (`geography_entries`), and every amendment since. The model-side convention (`HasUuids`, `@property string $id`, no restated `$keyType`/`$incrementing`) is in [conventions/base-standards.md](../conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys); the migration-side pattern is in [database/migrations.md](migrations/uuid-primary-keys.md#uuid-primary-keys).
 
-_Last updated: 2026-09-29 — Story 0070 (Translatable content mechanism — backend, piloted on Product Categories). `PRODUCT_CATEGORIES` lost its `string name UK` line and gained `PRODUCT_CATEGORY_TRANSLATIONS` — this app's first per-language content table, one row per `(product_category_id, store_language_id)` — with its two relationship lines to `PRODUCT_CATEGORIES` and `STORE_LANGUAGES`; recounted the **Notes** model-class inventory to twenty-four, naming `ProductCategoryTranslation` as the new entry. Every application table is diagrammed, relationships or not — since story 0058._
+_Last updated: 2026-09-29 — Story 0070 (Translatable content mechanism — backend, piloted on Product Categories). `PRODUCT_CATEGORIES` lost its `string name UK` line and gained `PRODUCT_CATEGORY_TRANSLATIONS` — this app's first per-language content table, one row per `(product_category_id, store_language_id)` — with its two relationship lines to `PRODUCT_CATEGORIES` and `STORE_LANGUAGES`; recounted the **Notes** model-class inventory to twenty-four, naming `ProductCategoryTranslation` as the new entry. Every application table is diagrammed, relationships or not — since story 0058. Earlier: story 0066 added `string ui_locale` to the `USERS` entity block (nullable `VARCHAR(5)` after `status`, no index, no default, no backfill, no relationship line — see [`users`](schema-users-auth.md#users))._
 
 _Earlier revision notes: [database--schema.md](../history/database--schema.md)._

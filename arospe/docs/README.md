@@ -67,6 +67,7 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Code style](conventions/code-style.md) | you need types/braces/PHPDoc rules or the constructor-vs-method injection exception. |
 | [Naming](conventions/naming.md) (hub, 4 parts) | you name a class, Livewire view, route, permission, lang key or boolean. |
 | [Validation trait naming](conventions/naming-validation-traits.md) | you add or extend a `<Noun>ValidationRules` trait. |
+| [Localization](conventions/localization.md) | you touch a notification's recipient, add a new admin-dashboard string, or start any storefront/public-facing translation work — the Layer 1 (admin UI language) vs. Layer 2 (Store Languages) boundary. |
 
 ## Testing
 
@@ -93,4 +94,4 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Errors log archive](errors-log-archive.md) | the topic index points at an entry dated before 2026-08-27. |
 | [Revision history](history/) | you need the old `_Previously:` revision notes of a doc (moved out of the doc itself; one file per doc, named after its path). |
 
-_Last updated: 2026-09-27 — Story 0068 (Store Languages catalog + the app's two default-locale settings). Added [Internationalization](database/schema-localization.md) and [Store Languages](api/store-languages.md) rows and bumped Authorization to 14 parts (a new [Policies: StoreLanguage and LocaleSetting](architecture/authorization/policies-store-languages-and-locale-settings.md) part)._
+_Last updated: 2026-09-28 — Story 0066 docs follow-up. Added the [Localization](conventions/localization.md) row (forward-looking notification/admin-dashboard/storefront locale-awareness conventions)._
