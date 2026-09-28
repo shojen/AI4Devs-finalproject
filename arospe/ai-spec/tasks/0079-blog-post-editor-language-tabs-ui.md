@@ -1299,7 +1299,7 @@ a post's French title is neither identity-sensitive nor hard to reverse.
 - **[0077](0077-product-editor-language-tabs-ui.md)** — soft but load-bearing. Not a code dependency;
   it is where the multi-field, routed-page, WYSIWYG-in-tabs shape was worked out, and this story adopts
   its **C-2** reconciliation, **D-18** state triple and **D-19** parameter rule wholesale.
-- **[0070](in-progress/0070-translatable-content-mechanism-product-categories-backend.md)** — hard.
+- **[0070](done/0070-translatable-content-mechanism-product-categories-backend.md)** — hard.
   `HasTranslations`, `SetTranslation`, `defaultStoreLanguage()`. Consumed unmodified.
 - **[0068](done/0068-store-languages-catalog-backend.md)** — hard. `StoreLanguage`, `scopeActive()`,
   `is_default`.

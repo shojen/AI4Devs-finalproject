@@ -5,7 +5,7 @@ Retrofit story [0025](done/0025-product-categories-ui.md)'s Product Categories m
 category's name is authored **per active store language** through language tabs, satisfying
 [PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization)'s *"each active store
 language surfaces as a tab … in the taxonomy management screens"* and its `Taxonomy names are
-translatable per store language` scenario. Consumes story [0070](in-progress/0070-translatable-content-mechanism-product-categories-backend.md)'s
+translatable per store language` scenario. Consumes story [0070](done/0070-translatable-content-mechanism-product-categories-backend.md)'s
 mechanism (`HasTranslations`, `SetTranslation`, per-language uniqueness) unchanged.
 
 **This story establishes the repo's first tabbed UI**, and four siblings (0073 Blog Categories,
@@ -789,7 +789,7 @@ it whenever that layer is the action, and has **failed** it whenever that layer 
 
 ### Dependencies
 
-- **[0070](in-progress/0070-translatable-content-mechanism-product-categories-backend.md)** — hard, blocking. `HasTranslations`, `SetTranslation`, the widened validation trait, the dropped `name` column. **Specified, not implemented.**
+- **[0070](done/0070-translatable-content-mechanism-product-categories-backend.md)** — hard, blocking. `HasTranslations`, `SetTranslation`, the widened validation trait, the dropped `name` column. **Specified, not implemented.**
 - **[0025](done/0025-product-categories-ui.md)** — hard, blocking. The component, view, route and sidebar entry this story widens. **Specified, not implemented.**
 - **[0068](done/0068-store-languages-catalog-backend.md)** — hard. `StoreLanguage`, `scopeActive()`, `defaultStoreLanguage()`. **Specified, not implemented.**
 - **[0023](done/0023-product-categories-backend.md) / [0024](done/0024-products-core-crud-backend.md)** — hard, transitively via 0025.

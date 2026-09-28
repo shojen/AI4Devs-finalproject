@@ -71,34 +71,11 @@
       ]
     },
     {
-      "id": "0070",
-      "slug": "0070-translatable-content-mechanism-product-categories-backend",
-      "title": "Translatable content mechanism — backend, piloted on Product Categories",
-      "depends_on": [],
-      "status": "claimed",
-      "claimed_by": "shojen/0070-translatable-content-mechanism-backend",
-      "claimed_at": "2026-09-28T00:00:00Z",
-      "touches": [
-        "app/Concerns/HasTranslations.php",
-        "app/Actions/SetTranslation.php",
-        "database/migrations/*_create_product_category_translations_table.php",
-        "database/migrations/*_drop_name_from_product_categories_table.php",
-        "app/Models/ProductCategory.php",
-        "app/Models/StoreLanguage.php",
-        "app/Concerns/ProductCategoryValidationRules.php",
-        "app/Actions/ProductCategories/CreateProductCategory.php",
-        "app/Actions/ProductCategories/RenameProductCategory.php"
-      ],
-      "conflict_risk_with": []
-    },
-    {
       "id": "0071",
       "slug": "0071-product-categories-language-tabs-ui",
       "title": "Product Categories taxonomy screen — language tabs (frontend)",
-      "depends_on": [
-        "0070"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -112,10 +89,8 @@
       "id": "0072",
       "slug": "0072-translatable-content-retrofit-blog-categories-backend",
       "title": "Translatable content retrofit — Blog Categories backend",
-      "depends_on": [
-        "0070"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -137,7 +112,6 @@
       "slug": "0073-blog-categories-language-tabs-ui",
       "title": "Blog Categories screen — language tabs",
       "depends_on": [
-        "0070",
         "0071",
         "0072"
       ],
@@ -154,10 +128,8 @@
       "id": "0074",
       "slug": "0074-translatable-content-retrofit-blog-tags-backend",
       "title": "Translatable content retrofit — Blog Tags backend",
-      "depends_on": [
-        "0070"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -180,7 +152,6 @@
       "slug": "0075-blog-tags-language-tabs-ui",
       "title": "Blog Tags screen — language tabs",
       "depends_on": [
-        "0070",
         "0071",
         "0074"
       ],
@@ -197,10 +168,8 @@
       "id": "0076",
       "slug": "0076-translatable-content-retrofit-products-backend",
       "title": "Translatable content retrofit — Products backend",
-      "depends_on": [
-        "0070"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -222,7 +191,6 @@
       "slug": "0077-product-editor-language-tabs-ui",
       "title": "Product editor — language tabs (UI)",
       "depends_on": [
-        "0070",
         "0076"
       ],
       "status": "blocked",
@@ -240,10 +208,8 @@
       "id": "0078",
       "slug": "0078-translatable-content-retrofit-blog-posts-backend",
       "title": "Translatable content retrofit — Blog Posts backend",
-      "depends_on": [
-        "0070"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -265,7 +231,6 @@
       "slug": "0079-blog-post-editor-language-tabs-ui",
       "title": "Blog post editor — language tabs (frontend)",
       "depends_on": [
-        "0070",
         "0071",
         "0078"
       ],

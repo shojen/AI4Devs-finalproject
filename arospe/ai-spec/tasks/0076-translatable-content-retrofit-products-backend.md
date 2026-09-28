@@ -1,7 +1,7 @@
 # [0076] Translatable content retrofit — Products backend
 
 ## Description
-Applies story [0070](in-progress/0070-translatable-content-mechanism-product-categories-backend.md)'s per-store-language translatable-content mechanism to **Products** ([PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization); [assumption 14](../../docs/PRD/sections/foundations.md#assumptions--confirmed-decisions) names *"product title/description"* and *"slug/SEO fields … on products"* as translatable content). Story [0024](done/0024-products-core-crud-backend.md)'s `products.name` and `products.description` move to a `product_translations` child table, one row per `(product, store language)`, and the **slug/SEO fields arrive for the first time — created directly on that child table, never on the parent.**
+Applies story [0070](done/0070-translatable-content-mechanism-product-categories-backend.md)'s per-store-language translatable-content mechanism to **Products** ([PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization); [assumption 14](../../docs/PRD/sections/foundations.md#assumptions--confirmed-decisions) names *"product title/description"* and *"slug/SEO fields … on products"* as translatable content). Story [0024](done/0024-products-core-crud-backend.md)'s `products.name` and `products.description` move to a `product_translations` child table, one row per `(product, store language)`, and the **slug/SEO fields arrive for the first time — created directly on that child table, never on the parent.**
 
 **This story consumes a recipe; it does not write one.** `App\Concerns\HasTranslations`, `App\Actions\Translations\SetTranslation` and `StoreLanguage::defaultStoreLanguage()` are 0070's and are used **unmodified**.
 
@@ -622,7 +622,7 @@ Two instructions follow, and they pull in opposite directions on purpose. **(a) 
 ### Dependencies
 
 - **[Story 0024](done/0024-products-core-crud-backend.md)** — hard, and **not implemented**. This story retrofits its table, its model, its validation trait and two of its four actions, and adds a second call site to its sanitizer. See **R-4**.
-- **[Story 0070](in-progress/0070-translatable-content-mechanism-product-categories-backend.md)** — hard, and **not implemented**. Supplies `HasTranslations`, `SetTranslation`, `StoreLanguage::defaultStoreLanguage()` and the drift guard, all consumed unmodified. **0070's Q1 is still open** (must every entity always hold a default-language translation?) and this story assumes its recommended answer **(a) yes**.
+- **[Story 0070](done/0070-translatable-content-mechanism-product-categories-backend.md)** — hard, and **not implemented**. Supplies `HasTranslations`, `SetTranslation`, `StoreLanguage::defaultStoreLanguage()` and the drift guard, all consumed unmodified. **0070's Q1 is still open** (must every entity always hold a default-language translation?) and this story assumes its recommended answer **(a) yes**.
 - **[Story 0068](done/0068-store-languages-catalog-backend.md)** — hard, and not implemented. Supplies `store_languages`, the `is_default` row the fallback resolves through, and the registry.
 - **Story 0022** — supplies `App\Actions\NormalizeForSearch`, which this story **does not use** (**D-4**, **D-6**). Listed so its absence reads as a decision rather than an omission.
 - **Stories 0027, 0045 and 0048 depend on this story** and are broken by it — **R-1**, **R-3**.
@@ -676,7 +676,7 @@ Derived from this debate; **none are in scope for 0076**.
 
 1. **Amend story [0027](done/0027-products-list-and-editor-ui.md)** for all three breaks in **R-1** — the explicit-column select and `orderBy('name')` (consuming **D-14**'s scope rather than inventing a join), `$deletingProductName`, and the five-field language-tab editor, which is a scope decision rather than an amendment.
 2. **Answer Q-3 in stories [0045](done/0045-orders-core-crud-backend.md) and [0048](done/0048-order-line-item-editing-backend.md)** — which language an order line item's `product_name` snapshot freezes (**R-3**).
-3. **Retrofit D-13's split backfill and D-14's ordering scope into [0070](in-progress/0070-translatable-content-mechanism-product-categories-backend.md)'s recipe** so 0078 copies them rather than deriving a fifth answer (**R-6**). 0074's **R-3** has now been carried unresolved by three stories.
+3. **Retrofit D-13's split backfill and D-14's ordering scope into [0070](done/0070-translatable-content-mechanism-product-categories-backend.md)'s recipe** so 0078 copies them rather than deriving a fifth answer (**R-6**). 0074's **R-3** has now been carried unresolved by three stories.
 4. **Add an optional column list to `scopeWithTranslationsFor()` in 0070** so a list render does not eager-load a `MEDIUMTEXT` it never displays (**R-7**). The fix benefits four stories and must not be patched locally.
 5. **Verify `SetTranslation`'s `store_language_id` write path by execution, in 0070** — 0074's **R-2**, still open, still 0070's.
 6. **Reconcile the slug-uniqueness precedent between [0061](done/0061-blog-posts-core-crud-backend.md) and 0070's recipe** once **Q-2** is answered — 0061 ships a global unique and the recipe implies a per-language one, and story 0078 will meet the same fork on `blog_posts` itself.
