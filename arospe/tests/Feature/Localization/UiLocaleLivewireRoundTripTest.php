@@ -41,9 +41,13 @@
 //
 // Manual "prove it can fail" verification, performed 2026-09-28: temporarily commented out
 // bootstrap/app.php's `$middleware->web(append: [SetUiLocale::class]);` call, re-ran ONLY the test
-// below, and confirmed it went RED (the spy's `shouldHaveReceived('handle')->once()` assertion
-// failed -- 0 invocations recorded), then restored bootstrap/app.php exactly as it was (`git diff
-// bootstrap/app.php` showed no changes afterwards). Recorded in the task file's Provenance section.
+// below, and confirmed it went RED -- with SetUiLocale never registered, the earlier assertion
+// right after the real GET (App::getLocale() === 'es') already fails, since nothing ever resolves
+// the stored preference on that request either; the spy assertion below is what would additionally
+// catch a registration that runs on the initial GET but not on the POST (e.g. a route-only
+// registration on users.index instead of the `web` group) -- then restored bootstrap/app.php
+// exactly as it was (`git diff bootstrap/app.php` showed no changes afterwards). Recorded in the
+// task file's Provenance section.
 
 use App\Http\Middleware\SetUiLocale;
 use App\Models\User;
