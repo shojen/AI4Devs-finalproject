@@ -85,6 +85,29 @@ test('deleting a user does not cascade to delete their passkey rows', function (
     $this->assertDatabaseHas('passkeys', ['id' => $passkey->id]);
 });
 
+// Story 0066, D3/D7 -- users.ui_locale is nullable with no default (NULL means "never chose") and
+// deliberately omitted from #[Fillable] (a rule about WHO may write it binds this column --
+// App\Actions\Users\SetUserUiLocale is the single writer via forceFill(), D7/D11). Every fallback
+// test in tests/Feature/Localization/UiLocaleResolutionTest.php silently depends on the first case
+// below; nothing else pins it.
+test('a factory-created user has a null ui_locale by default', function () {
+    $user = User::factory()->create();
+
+    expect($user->ui_locale)->toBeNull();
+});
+
+test('mass-assigning ui_locale via User::create is silently ignored, per the #[Fillable] omission guard', function () {
+    $user = User::create([
+        'name' => 'Guarded Locale',
+        'email' => 'guarded-locale@arospe.es',
+        'password' => 'password',
+        'ui_locale' => 'es',
+    ]);
+
+    expect($user->ui_locale)->toBeNull();
+    $this->assertDatabaseHas('users', ['id' => $user->id, 'ui_locale' => null]);
+});
+
 test('signing in records the session user_id as the uuid string', function () {
     config(['session.driver' => 'database']);
 
