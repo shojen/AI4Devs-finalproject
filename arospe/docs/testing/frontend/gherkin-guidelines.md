@@ -240,6 +240,17 @@ Canonical terms for what exists in the code **today**, derived from [`app/Models
 | **blog editor** | The actor who manages the blog, as the PRD's Epic 4 scenarios name them. |
 | **publication scheduler** | The automated process that publishes a scheduled post once its time arrives; the acting subject of a `When`, never a person (story 0064; see [Scenarios whose actor is not a person](#scenarios-whose-actor-is-not-a-person-scheduled-and-system-triggered)). |
 
+### Internationalization vocabulary
+
+**Epic 5 has two deliberately separate locale concepts, and its own PRD text warns against conflating them** ([epic-5-internationalization.md](../../PRD/sections/epic-5-internationalization.md)). Story 0066 (Layer 1's backend) is the first to need either term in a scenario, so it fixes both here rather than leaving them to be coined ad hoc by a later story's Gherkin.
+
+| Term | Meaning | Where it lives |
+| --- | --- | --- |
+| **admin UI language** | Layer 1 — the language an individual administrator's account renders the dashboard chrome and its own notification emails in (`en`/`es`). A per-account preference on `users.ui_locale`, falling back to the store-wide `App\Models\LocaleSetting::defaultUiLocale()` / `defaultNotificationLocale()` for an account that never chose. | `users.ui_locale`, `App\Http\Middleware\SetUiLocale`, `App\Models\User::preferredLocale()` (story 0066) |
+| **store language** | Layer 2 — a language the store *offers its own content in* (e.g. a product description translated into a second language), catalogued in an admin-managed list. Has no per-account concept and no relationship to which language an administrator sees their own dashboard in. | `store_languages` table, `App\Models\StoreLanguage` (story 0068) |
+
+A scenario about a signed-in administrator's own interface or emails uses **admin UI language**; a scenario about content the store presents to its customers in more than one language uses **store language**. Never use one term when the other is meant, even though both ultimately resolve to the same `en`/`es` value set today.
+
 ### TODO — blog / ecommerce vocabulary (undefined)
 
 The blog domain is built (`BlogPost`, `BlogCategory`, `BlogTag` in `app/Models/`) and its vocabulary is settled in [Blog vocabulary](#blog-vocabulary) above; the ecommerce domain is built too (products, orders, customers), and what this file still leaves unanswered is the purchase vocabulary in (b) and (c) below. Do **not** invent terms for what is undecided. This section still needs canonical terms decided by the product owner:
@@ -265,4 +276,4 @@ Conventions for the translation:
 
 See [examples/](examples/) for three complete scenario → Pest translations built on this convention.
 
-_Last updated: 2026-09-26 — Story 0063 (blog posts list + editor): closed the blog half of the glossary `TODO` ("post" and "blog editor" are canonical; *artículo* is Spanish copy only) and corrected that section's stale "`app/Models/` contains only `User`" justification. Also: Story 0064 (scheduled post auto-publish): added the section for scenarios whose actor is not a person and the glossary term **publication scheduler**; earlier revision notes live in [history/testing--frontend--gherkin-guidelines.md](../../history/testing--frontend--gherkin-guidelines.md)._
+_Last updated: 2026-09-28 — Story 0066 (Admin UI locale preference & resolution — backend): added the **Internationalization vocabulary** subsection, distinguishing **admin UI language** (Layer 1, this story's `users.ui_locale`) from **store language** (Layer 2, story 0068's `store_languages` catalog), per the PRD's own warning against conflating the two Epic 5 layers. Earlier revision notes live in [history/testing--frontend--gherkin-guidelines.md](../../history/testing--frontend--gherkin-guidelines.md)._

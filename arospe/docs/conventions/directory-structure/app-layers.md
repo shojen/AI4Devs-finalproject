@@ -60,6 +60,10 @@ app/
                        render() at all, because it must never reach the HTTP layer as a status
                        code (see below)
   Http/Controllers/    Abstract base + domain controllers used as HTTP boundaries in front of actions
+  Http/Middleware/     Global web-group middleware classes, registered in bootstrap/app.php rather than
+                       auto-discovered (EnsureSitePasswordIsProvided, prepended to the web group; and,
+                       since story 0066, SetUiLocale, appended — see architecture/overview.md's Request
+                       lifecycle section and architecture/authentication.md for what it resolves)
   Events/              Domain events dispatched by actions (OrderFullyRefunded — story 0052, the
                        app's first: carries only `string $orderId`, never a hydrated Order, not
                        queued, dispatched by RecordRefund AFTER its transaction commits; and, in a `Blog/`

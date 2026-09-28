@@ -73,6 +73,7 @@ erDiagram
         string pending_email UK
         timestamp email_verified_at
         string status
+        string ui_locale
         string password
         text two_factor_secret
         text two_factor_recovery_codes
@@ -411,6 +412,6 @@ Split by domain into separate files, per [contracts.md](../contracts/token-and-d
 - For migration authoring conventions (naming, `down()` requirements, real examples), see [database/migrations.md](migrations.md).
 - **UUID (v7) primary keys.** Each table's PK type (`uuid` vs `bigint`) is already visible directly in the ER diagram above, and each per-domain schema file states its own table's status against [ADR 0001](../decisions/0001-uuid-primary-keys.md) at the point that table is documented — so this section no longer restates a consolidated status list. The ADR is the single source of truth for the policy and its full history: which entities it covers, the one named `bigint` exception (`geography_entries`), and every amendment since. The model-side convention (`HasUuids`, `@property string $id`, no restated `$keyType`/`$incrementing`) is in [conventions/base-standards.md](../conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys); the migration-side pattern is in [database/migrations.md](migrations/uuid-primary-keys.md#uuid-primary-keys).
 
-_Last updated: 2026-09-27 — Story 0068 (Store Languages catalog + the app's two default-locale settings). Added `STORE_LANGUAGES` and `LOCALE_SETTINGS` to the ER diagram as standalone entity blocks (no relationships yet), added the **Domain tables** [Internationalization](schema-localization.md) bullet, and recounted the **Notes** model-class inventory to twenty-three (`ls app/Models/*.php`), naming `LocaleSetting` as the only model with a fixed, non-incrementing key. Every application table is diagrammed, relationships or not — since story 0058. (Story 0064b landed the same day: a `uuid created_by FK` line on `BLOG_POSTS` and `USERS ||--o{ BLOG_POSTS : "created_by (nullable)"` — see [schema-blog.md](schema-blog.md#blog_posts) for the column itself, not restated here per this file's single-footer-line convention.)_
+_Last updated: 2026-09-28 — Story 0066 (Admin UI locale preference & resolution — backend). Added `string ui_locale` to the `USERS` entity block in the ER diagram (nullable `VARCHAR(5)` after `status`, no index, no default, no backfill — see [`users`](schema-users-auth.md#users) for the full column note). No relationship line: the column is read per-row via the authenticated user, never joined on._
 
 _Earlier revision notes: [database--schema.md](../history/database--schema.md)._
