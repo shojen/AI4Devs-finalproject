@@ -36,7 +36,7 @@ dividers (see the `common.js` note below), not a considered taxonomy. This story
 - **CONTENIDO (Content)** is reserved for **Blog** and, once it ships, its own
   categories/tags/posts sub-resources — the only genuinely editorial content this app has.
 
-This is **not** a conflict with queued story [`0060-blog-tags-ui.md`](../0060-blog-tags-ui.md) — it *resolves*
+This is **not** a conflict with queued story [`0060-blog-tags-ui.md`](0060-blog-tags-ui.md) — it *resolves*
 the ambiguity that story's own plan left open. See R-2, now recorded as a resolved dependency rather than
 an open conflict.
 
@@ -144,10 +144,10 @@ added — are kept and extended):
 
 Every existing registry constraint still binds and is **not** relaxed by this story: no closures anywhere
 (the file must survive `php artisan config:cache` —
-[base-standards.md](../../../docs/conventions/base-standards.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache)),
+[base-standards.md](../../../docs/conventions/directory-structure/config-registry.md#an-app-owned-config-file-is-a-registry-and-must-survive-configcache)),
 every `heading`/`label` a translation **key** rather than copy, every registry key `snake_case` on both
 sides while `route`/`current_when`/`permissions` values stay kebab-case
-([naming.md](../../../docs/conventions/naming.md#translation-keys)), and an entry's `permissions` **exactly**
+([naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)), and an entry's `permissions` **exactly**
 the ability its route's `can:` middleware enforces.
 
 **Roles is untouched.** The `settings` group and its `roles` item keep their current keys, heading, icon,
@@ -211,7 +211,7 @@ The registry's own convention — "a later epic appends data when its screen shi
 about items, but the same reasoning applies to a top-level group with zero members: an empty `content`
 group entry renders nothing today (per the vanish-when-empty rule) and serves no purpose until something
 references it. Declaring it now would be exactly the kind of premature scaffolding this codebase's
-registry conventions avoid elsewhere. **Story [`0060-blog-tags-ui.md`](../0060-blog-tags-ui.md) — or whichever
+registry conventions avoid elsewhere. **Story [`0060-blog-tags-ui.md`](0060-blog-tags-ui.md) — or whichever
 Blog story ships first — adds `groups.content` together with a `blog` cluster (`group: 'content'`) holding
 its own sub-resources (tags, categories, posts) as they ship**, following the placement rule this story's
 own D-6 already put in both documentation locations. This is what resolves R-2: there is no fourth
@@ -456,7 +456,7 @@ already in both `config/modules.php` and the authorization doc, instead of defau
 - [ ] No security findings (`appsec-auditor`).
 - [ ] Documentation updated (`docs-keeper`).
 - [ ] All three quality gates run **unscoped** and recorded, per
-      [base-standards.md](../../../docs/conventions/base-standards.md#quality-gates): `php artisan test`,
+      [base-standards.md](../../../docs/conventions/base-standards/workflow-and-quality-gates.md#quality-gates): `php artisan test`,
       `vendor/bin/pint --format agent`, `vendor/bin/phpstan analyse`.
 - [ ] Acceptance criteria met.
 
@@ -475,7 +475,7 @@ nested disclosures do not behave, the fallback is a non-expandable cluster (a pl
 heading), which still satisfies every grouping acceptance criterion and only loses the collapse
 affordance — decide that at Phase 3, do not force the expandable shape.
 
-**R-2 — RESOLVED: no conflict with queued story [`0060-blog-tags-ui.md`](../0060-blog-tags-ui.md).** That
+**R-2 — RESOLVED: no conflict with queued story [`0060-blog-tags-ui.md`](0060-blog-tags-ui.md).** That
 story currently plans a brand-new top-level `groups.blog` entry. This story's own design (D-4/D-5) removes
 the ambiguity that plan was written against: Products moves to Store, so Content is free to be exactly
 what Blog needs — `0060` (or whichever Blog story ships first) should add `groups.content` **and** a

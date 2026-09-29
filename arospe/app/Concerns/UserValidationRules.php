@@ -2,6 +2,7 @@
 
 namespace App\Concerns;
 
+use App\Enums\UiLocale;
 use App\Enums\UserStatus;
 use App\Models\Role;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -39,5 +40,18 @@ trait UserValidationRules
     protected function statusRules(): array
     {
         return ['required', Rule::enum(UserStatus::class)];
+    }
+
+    /**
+     * Get the validation rules used to validate a user's chosen admin UI locale.
+     *
+     * Rule::enum() resolves with tryFrom(), so a forged/unsupported value fails
+     * validation rather than throwing (story 0066, D-5).
+     *
+     * @return array<int, ValidationRule|array<mixed>|string>
+     */
+    protected function uiLocaleRules(): array
+    {
+        return ['required', 'string', Rule::enum(UiLocale::class)];
     }
 }

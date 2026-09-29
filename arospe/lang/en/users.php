@@ -53,6 +53,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | User Update Conflicts
+    |--------------------------------------------------------------------------
+    |
+    | Copy for App\Actions\Users\UpdateUser's locked compare-and-set (story
+    | 0064d): a status or role change decided against a stale read is
+    | refused as a conflict rather than silently overwriting a concurrent
+    | administrator's change. Deliberately generic -- it must never disclose
+    | what the concurrent change actually was.
+    |
+    */
+
+    'update' => [
+        'conflict' => 'This user was changed by someone else while you were editing it. Please review the current details and try again.',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Sign-in
     |--------------------------------------------------------------------------
     |

@@ -216,7 +216,7 @@ Rule — this is about dispatch rate, not about batching multiple stories togeth
   invoke `code-reviewer`, `backend-qa`/`frontend-qa` test-writing, `appsec-auditor`, or
   `docs-keeper` itself.
 - Before debating a story that extends an existing epic, check that epic's decision digest at
-  `./ai-spec/tasks/_digests/epic-<n>.md` (see `docs/workflow.md#decision-digest-per-epic`) —
+  `./ai-spec/tasks/_digests/epic-<n>.md` (see `docs/workflow/agents-and-epic-digests.md#decision-digest-per-epic`) —
   written by `docs-keeper` as each sibling story in the epic closes. It is the fast path to the
   facts a later story must not re-derive; open a prior sibling story file in full only when the
   digest doesn't already answer the question. This skill never writes the digest itself.

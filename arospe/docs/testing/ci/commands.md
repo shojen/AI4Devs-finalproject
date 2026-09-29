@@ -62,7 +62,7 @@ php artisan test --compact tests/Feature/DashboardTest.php --filter="authenticat
 
 ## Generate a coverage report
 
-Requires a coverage driver — CI already installs one (`shivammathur/setup-php` with `coverage: xdebug`, see [`.github/workflows/tests.yml`](../../../.github/workflows/tests.yml)); locally you need Xdebug or PCOV enabled.
+Requires a coverage driver — CI already installs one (`shivammathur/setup-php` with `coverage: xdebug`, see [`.github/workflows/tests.yml`](../../../../.github/workflows/tests.yml)); locally you need Xdebug or PCOV enabled.
 
 ```bash
 php artisan test --coverage
@@ -86,7 +86,7 @@ This **fails the command** (non-zero exit code) if total coverage drops below 80
 
 ## Run in parallel
 
-`brianium/paratest` is a declared `require-dev` dependency (since the test-performance review that added this section) and CI runs the full suite with `--parallel` (see [`.github/workflows/tests.yml`](../../../.github/workflows/tests.yml) and [pipeline-integration.md](pipeline-integration.md)):
+`brianium/paratest` is a declared `require-dev` dependency (since the test-performance review that added this section) and CI runs the full suite with `--parallel` (see [`.github/workflows/tests.yml`](../../../../.github/workflows/tests.yml) and [pipeline-integration.md](pipeline-integration.md)):
 
 ```bash
 php artisan test --parallel
@@ -100,7 +100,7 @@ Measured on this repo's own suite (950 tests across `Unit`/`Feature`/`Browser`),
 | `Browser` (29 tests, 4 files) | ~49s | ~35s (4 processes) — 8 processes gains almost nothing beyond this | ~1.4x |
 | Everything (950 tests) | ~5m 39s | ~2m 10s (8 processes) | ~2.6x |
 
-The browser suite parallelizes far worse than `Unit`/`Feature`: it drives a real Chromium instance per worker, so beyond roughly one process per test **file** (4 here — see [frontend/playwright-setup.md](../frontend/playwright-setup.md#test-tagging-naming-and-parallelization)) extra processes mostly add browser-launch overhead rather than throughput. `--processes=4` for a Browser-only run is the sensible default; `--processes` omitted (auto-detects the host's core count) is fine for the combined run, since `Unit`/`Feature` dominates the total.
+The browser suite parallelizes far worse than `Unit`/`Feature`: it drives a real Chromium instance per worker, so beyond roughly one process per test **file** (4 here — see [frontend/playwright-setup.md](../frontend/playwright-setup/selectors-tagging-and-ci.md#test-tagging-naming-and-parallelization)) extra processes mostly add browser-launch overhead rather than throughput. `--processes=4` for a Browser-only run is the sensible default; `--processes` omitted (auto-detects the host's core count) is fine for the combined run, since `Unit`/`Feature` dominates the total.
 
 ⚠️ **A `--parallel` run needs `storage/framework/views` (the compiled Blade cache) on a filesystem that tolerates concurrent writes from multiple processes.** On this project's Sail dev setup that directory sits inside the project's bind-mounted volume (`.:/var/www/html` in `compose.yaml`) by default, and concurrent `tempnam()`/`rename()` compiles into it through a WSL2 bind mount were **not reliable** — a batch of unrelated tests failed with `tempnam(): file created in the system's temporary directory`, deterministically, on some hosts. Fixed by giving `storage/framework/views` its own **named Docker volume** (`sail-views`, native to the container, not bind-mounted) in `compose.yaml`, plus a per-`ParallelTesting`-token subdirectory inside it (`app/Providers/AppServiceProvider.php::configureParallelTesting()`), mirroring how Laravel already isolates the test database and `Storage::fake()` per worker. See [errors-log.md](../../errors-log.md) for the full investigation — this is a **Sail/WSL2-specific** fix; CI's `ubuntu-latest` runner has no bind mount in the loop and was never exposed to it.
 
@@ -118,7 +118,7 @@ If you rebuild the Sail image after pulling this change, the named volume starts
 | Coverage report (HTML) | `php artisan test --coverage-html=coverage-report` |
 | Enforce a coverage floor (CI gate) | `php artisan test --coverage --min=80` |
 | Parallel run | `php artisan test --parallel` (~2.6x faster on the full suite; see caveats above) |
-| Static analysis (adjacent quality gate) | `composer types:check` (Larastan, see [conventions/base-standards.md](../../conventions/base-standards.md#quality-gates)) |
+| Static analysis (adjacent quality gate) | `composer types:check` (Larastan, see [conventions/base-standards.md](../../conventions/base-standards/workflow-and-quality-gates.md#quality-gates)) |
 | Formatting (adjacent quality gate) | `vendor/bin/pint --dirty --format agent` |
 
 ## Environment note: PHP memory limits (PHPStan and `php artisan test`)
@@ -135,7 +135,7 @@ This is an environment quirk, not a project requirement — CI runs the plain `c
 
 ### `php artisan test`, unscoped, on a host-native worktree
 
-Story 0021's Phase 5 code review (finding F5) hit the identical class of failure on the **other** long-running, memory-hungry command on this page: an **unscoped** `php artisan test` — the full, all-three-suites run the [quality gates](../../conventions/base-standards.md#quality-gates) require before a story is declared done — fatals with `Allowed memory size exhausted` at PHP CLI's default `memory_limit=128M`, on this same host-native (no Sail) worktree setup. Reproduced deterministically twice, byte-identical, including once with this story's own `tests/Feature/Components`/`tests/Browser/Components` excluded — so this is an environment ceiling, not a leak in any one story's tests, and a future reviewer following this page's own documented commands should not read it as a regression.
+Story 0021's Phase 5 code review (finding F5) hit the identical class of failure on the **other** long-running, memory-hungry command on this page: an **unscoped** `php artisan test` — the full, all-three-suites run the [quality gates](../../conventions/base-standards/workflow-and-quality-gates.md#quality-gates) require before a story is declared done — fatals with `Allowed memory size exhausted` at PHP CLI's default `memory_limit=128M`, on this same host-native (no Sail) worktree setup. Reproduced deterministically twice, byte-identical, including once with this story's own `tests/Feature/Components`/`tests/Browser/Components` excluded — so this is an environment ceiling, not a leak in any one story's tests, and a future reviewer following this page's own documented commands should not read it as a regression.
 
 Raise the limit the same way as PHPStan above, **with one difference that is not optional**: invoke `vendor/bin/pest` directly, never `php artisan test`.
 
@@ -147,12 +147,6 @@ DB_DATABASE=testing<N> php -d memory_limit=1G vendor/bin/pest --compact
 
 Same disclaimer as PHPStan's: this is an environment quirk of this specific host-native WSL2 setup, not a project requirement — CI's `services.mysql` job runs the plain unscoped `php artisan test` successfully at its default memory limit. If an unscoped run fatals with no test output and no list of failures, try this before assuming the suite itself is broken.
 
-_Last updated: 2026-08-31 — Story 0021 (Shared WYSIWYG rich-text editor component — frontend), Phase 6. Two additions to this page's "Database prerequisite" and memory-limit sections, both closing findings this story's Phase 5 code review left explicitly deferred to `docs-keeper`. **Database prerequisite**: nuanced the opening claim that "every `php artisan test` run, local or CI, always targets a MySQL database named `testing`" — true for CI (a job-level `env:`, verified against `.github/workflows/tests.yml`) and true for a host-native worktree with no explicit override, but not guaranteed for a Sail-based worktree, whose container environment plumbing may already carry a different `DB_DATABASE` before PHPUnit boots — reconciling this page's blanket claim with [worktree-databases.md](../worktree-databases.md)'s own Phase 3 correction (finding N7), which had come to read as contradicting it. **Memory limits**: renamed the PHPStan-only section and added the `php artisan test`/`vendor/bin/pest` sibling (finding F5) — an unscoped run fatals at PHP CLI's default 128M on this same host-native setup, reproduced deterministically and confirmed unrelated to any one story's tests, with the exact workaround command and why it must invoke `vendor/bin/pest` directly rather than `php artisan test` (a subprocess does not inherit its parent's `-d` flag). **Verified as unchanged rather than assumed:** every other section on this page (single-file/single-test commands, coverage, `--parallel` and its own Sail/WSL2 caveat) — this story adds no route, no migration, and changes no CI workflow file.
+_Last updated: 2026-09-29 — Fixed the two links to `.github/workflows/tests.yml`, which were one `../` short and resolved to a non-existent `arospe/.github/`; moved the accumulated revision notes to history._
 
-_Previously: 2026-08-28 — Test-suite parallelization: rewrote the "Run in parallel" section, which had said `brianium/paratest` was not installed and that `--parallel` would error — the package is now a declared `require-dev` dependency and CI runs `--parallel`. Added the measured sequential-vs-parallel timing table (Unit/Feature ~2.7x, Browser ~1.4x, everything ~2.6x) and the ⚠️ for the Sail/WSL2-specific fix this required (`storage/framework/views` moved to a named Docker volume, per-token subdirectory via `AppServiceProvider::configureParallelTesting()`) — see [errors-log.md](../../errors-log.md) for the full investigation, including why the fix is Sail-only and does not apply to CI's runner._
-
-_Previously, 2026-08-26 — CI database connection gap (`ai-spec/tasks/ci-database-connection-gap.md`): added the "Database prerequisite" section — every command on this page needs a live MySQL connection, `phpunit.xml` pins `DB_CONNECTION`/`DB_DATABASE` ahead of any `.env`/`.env.testing`, and a `DB_DATABASE` override for `php artisan test` must be a real shell environment variable, not a worktree's `.env.testing` entry, since PHPUnit's `<env>` block already wins by the time Laravel's dotenv loader runs. Closes the doc-pass item this task's checklist left open._
-
-_Previously, 2026-08-16 — Task 0006b: `php artisan test` now runs three suites, not two (the `Browser` suite launches a real browser and needs the Playwright binaries present); added the `--testsuite=` command and refreshed the stale "3 test files" parallelization note._
-
-_Previously, 2026-08-12 — Task 0003: recorded the `php -d memory_limit=3G` workaround for PHPStan's parallel workers crashing on this project's WSL2 dev setup._
+_Earlier revision notes: [testing--ci--commands.md](../../history/testing--ci--commands.md)._

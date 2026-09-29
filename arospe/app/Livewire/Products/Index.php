@@ -150,7 +150,12 @@ class Index extends Component
             ->select(['id', 'product_category_id', 'featured_media_id', 'name', 'sku',
                 'type', 'status', 'price', 'stock', 'created_at'])
             ->with([
-                'category:id,name',
+                // Story 0070 (D-15): `name` no longer lives on `product_categories`, and this
+                // row mapping below never reads `category` at all -- confirmed by grep before
+                // this edit -- so the column list narrows to `id` alone rather than being
+                // removed entirely (that would change this pinned query shape for no
+                // user-visible gain; see IndexQueryTest.php).
+                'category:id',
                 'featuredImage:id,title,path,webp_path,avif_path',
             ])
             ->orderBy('name')

@@ -32,8 +32,24 @@ class DatabaseSeeder extends Seeder
         // note on the same reasoning for RolePermissionSeeder.
         $this->call(SalesRegionSeeder::class);
 
+        // Story 0068: the Store Languages catalog's Spanish bootstrap, and the app's default-
+        // locale settings singleton. Required application data, independent of every seeder
+        // above -- no shared table, no FK.
+        $this->call(StoreLanguageSeeder::class);
+        $this->call(LocaleSettingSeeder::class);
+
         // Story 0032: the shipping geography catalog. Also required application data,
         // physically independent of SalesRegionSeeder above -- no shared table, no FK.
         $this->call(GeographyCatalogSeeder::class);
+
+        // Story 0035: the four prototype-integrated shipping carriers. Required
+        // application data, independent of GeographyCatalogSeeder above -- carriers and
+        // zones do not meet until a future rate-rules story.
+        $this->call(ShippingCarrierSeeder::class);
+
+        // Story 0038: the single bank-transfer payment method. Required application
+        // data -- Epic 3's orders will reference it -- independent of every seeder
+        // above.
+        $this->call(PaymentMethodSeeder::class);
     }
 }

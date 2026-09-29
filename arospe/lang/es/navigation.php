@@ -15,11 +15,13 @@ return [
     */
 
     'groups' => [
+        'content' => 'Contenido',
         'settings' => 'Ajustes',
         'store' => 'Tienda',
     ],
 
     'clusters' => [
+        'blog' => 'Blog',
         'products' => 'Productos',
         'store_settings' => 'Configuración de tienda',
     ],
@@ -33,6 +35,13 @@ return [
         'products' => 'Productos',
         'product_attribute_types' => 'Tipos de atributos',
         'shipping_zones' => 'Zonas de envío',
+        'shipping_carriers' => 'Transportistas y tarifas',
+        'payment_methods' => 'Métodos de pago',
+        'customers' => 'Clientes',
+        'orders' => 'Pedidos',
+        'blog_posts' => 'Entradas',
+        'blog_tags' => 'Etiquetas',
+        'blog_categories' => 'Categorías',
     ],
 
 ];

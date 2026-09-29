@@ -1,0 +1,695 @@
+# Task Map — `ai-spec/tasks/` Inventory and Dependency Graph
+
+**This file maps parallelization risk for pending work only.** `done/` tasks are intentionally
+left out of the dependency graph below — a merged, closed task can only ever be a *satisfied*
+dependency for something still pending, never a source of conflict for work still being
+implemented, so drawing it as a node would only add clutter with no decision value.
+
+Aggregated view of every task file under `ai-spec/tasks/` (the three-stage `ai-spec/tasks/` →
+`ai-spec/tasks/in-progress/` → `ai-spec/tasks/done/` convention documented in
+[`docs/workflow.md`](../docs/workflow.md)). **This file was originally a point-in-time,
+manually-regenerated snapshot; it no longer is.** Per
+[`docs/workflow.md`'s task-coordination-file regeneration step](../docs/workflow/task-files-links-and-ordering.md#regenerating-the-task-coordination-files),
+`docs-keeper` now updates the affected part of this file on the same pass as the mandatory
+link-integrity check, every time a task file is created, moves to `in-progress/`/`done/`, or has
+its own "Dependencies" section edited — so it should reflect the real backlog rather than
+needing a manual "is this stale" check. `docs/workflow.md`'s per-story `ai-spec/tasks/` files
+remain the source of truth for any individual story's dependencies; this file only aggregates
+and cross-references what those files already state — if the two ever disagree, the individual
+task file is correct and this one needs a refresh.
+
+**Update (2026-09-29, merge reconciliation):** `shojen/0070-translatable-content-mechanism-backend`
+(this branch, having just closed story 0070 per the update below) was merged with
+`origin/finalproject-ARP`, which had independently closed story 0066 (Admin UI locale preference
+backend) on a separate branch. Both closures are real and are reconciled together in this pass,
+following the same "closed on separate branches, merged via `git merge`" pattern this file has used
+for several prior multi-branch reconciliations (see e.g. the `0052`/`0053`/`0053a`/`0057` note
+below, or the `0064b`/`0068` note further down). `0066`'s node and every edge originating from it
+(`P0066 --> P0067`, `P0066 --> P0069`) are dropped from the graph alongside `0070`'s own removal
+(recorded in the update below); `0067` and `0069` each had `0066` as their only pending dependency,
+so both move from `blocked` to `ready` (they keep their mutual `conflict_risk_with` pairing on each
+other). Epic 5's `done/` count moves from 2 to 3 (`0068`, `0066`, `0070`); the overall `done/`
+inventory count is corrected below to the ground-truth recount (`ls ai-spec/tasks/done/ | wc -l`);
+the pending count drops from 12 to 11 numbered files (`0066` no longer pending). `tasks-status.json`
+needed no edit for this reconciliation — it had already converged to the correct
+`depends_on`/`status` value for every task independently of which branch's closure landed first.
+
+**This pass is story 0055's closure (Orders list + detail/editor UI, Epic 3's terminal node).** Its task
+file moved `ai-spec/tasks/in-progress/` -> `ai-spec/tasks/done/`, its `tasks-status.json` entry was deleted,
+its node and its `ready` class membership were removed from the graph, and it joined the flat `done/`
+inventory (Epic 3: 17 -> 18). It was nothing's hard dependent (`depends_on` edges pointing *at* 0055: none), so
+no other task's `status` changes. `0058`/`0059`/`0068` remain `ready`. The prose below this note describes the
+state as of the earlier 0054 pass and is otherwise unchanged.
+
+**The pass before it (story 0054's own closure) also reconciled four closures this file had not caught up
+to.** `0052-order-auto-cancel-full-refund-backend.md`, `0053-order-tax-region-resolution-physical-
+backend.md`, `0053a-order-totals-tax-rate-percentage-backend.md` and `0057-notification-bell-ui.md`
+were all already merged into `finalproject-ARP` on other branches/sessions — found in `done/` at
+the start of this pass rather than moved by it — exactly the "a task can turn dependency-ready and
+get claimed by another session before this snapshot is regenerated" gap this file's own **Scope
+and known limitations** section already names. Reconciled here: `0052`'s node and its edge
+(`0052 → 0055`) are dropped; `0053`'s node and its edges (`0053 -.-> 0054`, `0053 → 0055`) are
+dropped; `0053a` was never drawn as a node (an amendment to 0053 rather than an independent story
+gating anything of its own); and `0054`'s own node and its edge (`0054 → 0055`) are dropped as this
+same pass's own closure. Together, this leaves **0055 (Orders list + detail/editor UI) with zero
+pending dependencies left at all** — every one of the seven Orders stories its own file names as a
+Phase-3 blocker (`0048`–`0054`) is now `done/` — so it moves from `blocked` to `ready`, the epic's
+terminal node finally unblocked. `0057`'s own node is likewise dropped from the graph; it had no pending dependent of its own to
+re-derive against `done/`.
+
+Update (2026-09-29): `0070-translatable-content-mechanism-product-categories-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/` — the third Epic 5 story to close, and the second root of that chain (alongside `0068`). Its node and every edge originating from it (`P0070 --> P0071/P0072/P0074/P0076/P0078`, nine edges in total once `P0070 --> P0073/P0075/P0077/P0079` are counted too — see the graph's own removal comment) are dropped from the graph below, and its `tasks-status.json` entry (the `claimed` one) was deleted. Its dependents are re-derived against `done/`: `0071`, `0072`, `0074`, `0076` and `0078` each had `0070` as their only remaining pending dependency, so all five move from `blocked` to `ready`; `0073` drops `"0070"` and stays `blocked` on `0071`/`0072`; `0075` drops `"0070"` and stays `blocked` on `0071`/`0074`; `0077` drops `"0070"` and stays `blocked` on `0076`; `0079` drops `"0070"` and stays `blocked` on `0071`/`0078`. The mandatory link-integrity check ran both directions for this move: the file's own outbound links (every `../done/NNNN` sibling reference lost its `../done/` prefix, since `done/` is now this file's own directory; the bare `0071`/`0069` sibling-task links, which pointed at `ai-spec/tasks/` itself, needed no change — `done/` sits at the same depth under `tasks/` as `in-progress/` did; every `../../../docs/`, `../../../database/` and `../../../app/` reference needed no change either, for the same reason) and the inbound links from every file that cited `0070` by its `in-progress/` path and did not itself move — `0071` through `0079` (excluding `0070` itself) dropped the `in-progress/` segment, and `done/0025`, `done/0027`, `done/0063` and `done/0065` (all four already pointing at a sibling `in-progress/0070-…` path) dropped the `../in-progress/` prefix down to a bare same-directory filename. `ai-spec/tasks/in-progress/` is empty again.
+
+Update (2026-09-28): `0066-admin-ui-locale-preference-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/` — the second Epic 5 story to close. Its node and its `tasks-status.json` entry (the `claimed` one) are dropped. Its two dependents, `0067` and `0069`, each had `0066` as their *only* pending dependency, so both drop `"0066"` from `depends_on` and move from `blocked` to `ready` (neither is `claimed`, so neither stays anything else); they still share a `conflict_risk_with` pairing with each other (both render on the Store Languages settings screen — see the analysis section below), so "ready" does not mean "parallel-safe with each other." `ai-spec/tasks/in-progress/` is empty again. The same pass ran this move's mandatory link-integrity check: the moved file's own outbound `../../../docs/…` links needed no change (`in-progress/` and `done/` are the same depth below the repo root — three levels — so no re-pointing was required; verified by resolving a sample link), and the inbound links from files that never moved were repointed to the new `done/` path — `ai-spec/tasks/0069-store-languages-settings-ui.md` (two `](in-progress/0066-…md)` links → `](done/0066-…md)`), `ai-spec/tasks/done/0064b-scheduled-post-publish-failure-notification-backend.md` (two `](../in-progress/0066-…md)` links → same-directory `](0066-…md)`, since both files are now `done/` siblings), and `docs/database/schema-users-auth.md` (one `ui_locale` doc-entry link, `../../ai-spec/tasks/in-progress/0066-…md` → `../../ai-spec/tasks/done/0066-…md`).
+
+Update (2026-09-28, superseded by the closure above): `0066-admin-ui-locale-preference-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0), having passed Phase 2 (INVEST validation). It is still pending work, so it keeps its node and edges; its node moves from the green `ready` class to the blue `claimed` class, and its `tasks-status.json` entry's `status` moved to `"claimed"` (`claimed_by: "shojen/0066-admin-ui-locale-preference-backend"`, `claimed_at: "2026-09-28T00:00:00Z"`), with `depends_on` unchanged (still empty — its former sole dependency, `0068`, is already `done/`). `ai-spec/tasks/in-progress/` now holds exactly this one file. The same pass ran this move's mandatory link-integrity check: the moved file's own 23 `../../docs/…` links were repointed to `../../../docs/…` (one directory deeper, since the file is now three levels below the repo root instead of two), and the two files with inbound links to its old path were repointed to the new one — `ai-spec/tasks/0069-store-languages-settings-ui.md` (two `](0066-…md)` links → `](in-progress/0066-…md)`) and `ai-spec/tasks/done/0064b-scheduled-post-publish-failure-notification-backend.md` (two `](../0066-…md)` links → `](../in-progress/0066-…md)`).
+
+Update (2026-09-27): `0068-store-languages-catalog-backend.md` completed Phase 7 and moved from `in-progress/` to `done/` — the first Epic 5 story to close, and the root of the entire i18n chain. Its node and every edge touching it (all thirteen — every edge in the Epic 5 subgraph originated *from* `P0068`, none pointed at it) are dropped from the graph below, its `tasks-status.json` entry was deleted, and it joined the flat `done/` inventory as a new Epic 5 entry (Epic 5: 0 -> 1). Its dependents are re-derived against `done/`: `0066` and `0070` each had `0068` as their *only* pending dependency, so both move from `blocked` to `ready` (neither is `claimed`, so neither stays `claimed`); `0067` and `0069` drop `"0068"` from `depends_on` but stay `blocked` on `0066` alone; `0071`, `0072`, `0074` and `0076` drop `"0068"` but stay `blocked` on `0070` alone; `0073`, `0075`, `0077`, `0078` and `0079` drop `"0068"` but stay `blocked` on their other still-pending dependencies. `0066` and `0070` share no `conflict_risk_with` entry with each other, so both are safe to dispatch in parallel today. `ai-spec/tasks/in-progress/` is empty again. (Reconciled here from a concurrent session's branch, merged via PR #39.)
+
+Update (2026-09-27): `0064c-activate-verified-user-status-race-compare-and-set-backend.md` completed
+Phase 7 and moved from `in-progress/` to `done/` — the twenty-second Epic 1 story to close. Its node
+(already blue/`claimed`) and its `tasks-status.json` entry are dropped. It had no pending dependent of
+its own (`0064d`'s link to it is provenance-only, never a `depends_on` edge — see the update below), so
+this closure re-derives no `status` change against the pending list. `ai-spec/tasks/in-progress/` is
+empty again.
+
+Update (2026-09-28): `0064d-update-user-status-role-race-lock-and-recheck-backend.md` completed
+Phase 7 and moved from `in-progress/` to `done/` — the twenty-third Epic 1 story to close. Its node
+(already blue/`claimed`) and its `tasks-status.json` entry are dropped. It had no pending dependent of
+its own (only the provenance link from 0064c, never a `depends_on` edge), so this closure re-derives
+no `status` change against the pending list. `ai-spec/tasks/in-progress/` is empty again.
+
+Update (2026-09-28): `0064d-update-user-status-role-race-lock-and-recheck-backend.md` moved from
+`ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0). It is still pending work, so it
+keeps its node and edges (it has none, `depends_on: []`); its node moves from the green `ready` class
+to the blue `claimed` class, and its `tasks-status.json` entry's `status` moved to `"claimed"`
+(`claimed_by: "shojen/0064d-update-user-status-role-race-lock-and-recheck-backend"`).
+`ai-spec/tasks/in-progress/` now holds exactly this one file.
+
+Update (2026-09-27): `0064d-update-user-status-role-race-lock-and-recheck-backend.md` was added as a new
+pending file (Phase 1 Three Amigos debate complete) — raised while story `0064c` was still `in-progress/`,
+per its **OQ-5** (owner decision: raise now). No code dependency on `0064c` (the two actions share no file;
+0064c's own file records this as a provenance-only link, not a `depends_on` edge), so `depends_on: []` and
+`status: "ready"` from creation, with no incoming edge in the graph below.
+
+Update (2026-09-27): `0064b-scheduled-post-publish-failure-notification-backend.md` completed Phase 7 and moved from `in-progress/` to `done/` — the tenth Epic 4 story to close. Its node and its `tasks-status.json` entry (the `claimed` one) are dropped. It had no hard (`depends_on`) dependent of its own; `0065` and `0078` each drop it from `conflict_risk_with` (both were file-sharing siblings — `0065`/`0078` also edit `app/Actions/Blog/CreateBlogPost.php`, and `0078` also touches `BlogPost.php`/`blog_posts` — never a `depends_on` edge). `ai-spec/tasks/in-progress/` is empty again. (Reconciled here from a concurrent session's branch, merged via PR #38.)
+
+Update (2026-09-27): `0065-blog-post-published-notification-backend.md` claimed and moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` — Phase 3 starts. Its `tasks-status.json` entry moves from `ready` to `claimed` (no `status` field change on the move itself, per protocol) and its node turns blue (`claimed`) below. **Phase 2 (`code-reviewer` INVEST validation) found the `touches` list this file's earlier passes recorded for it was already stale**: `app/Actions/Blog/UpdateBlogPost.php`, `CreateBlogPost.php` and `app/Providers/AppServiceProvider.php` are **not** edited by this story after all — story `0061` shipped both manual dispatch sites against a `NotifyBlogPostPublished` placeholder ahead of time, and story `0064a` (already `done/`) put listener registration on auto-discovery, so 0065 adds no provider edit either. Its real `touches` are now the notification, the action's body, one new listener and four test files (see `tasks-status.json`). This resolves the note two paragraphs above about `0064a`'s deletion of `configureEventListeners()` colliding with 0065's file list — it does not collide, because 0065 never needed that method. The stale `0065`/`0078` `conflict_risk_with` pairing on `CreateBlogPost.php`/`UpdateBlogPost.php` (noted in the analysis further down this file) is likewise moot: `0065` no longer writes either file, so it drops out of `0078`'s risk surface too (neither file's `tasks-status.json` entry listed the other in `conflict_risk_with`, so no JSON edit was needed).
+
+Update (2026-09-28): `0065-blog-post-published-notification-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/` — the eleventh Epic 4 story to close, and Epic 4's last pending task, so the `PEND_BLOG` subgraph is removed entirely. Its node and its `tasks-status.json` entry (the `claimed` one) are dropped. It had no hard (`depends_on`) dependent of its own; `0078` held it only in `conflict_risk_with`, and that had already resolved to nothing by Phase 2/3 (0065 ended up touching neither `CreateBlogPost.php` nor `UpdateBlogPost.php` — see the update above). Both inbound links from `0078` and every sibling `done/` file that already referenced 0065 (`0061a`, `0061b`, `0064`, `0064a`, `0064b`) were re-resolved to the new `done/` path in the same pass. `ai-spec/tasks/in-progress/` is empty again.
+
+Update (2026-09-27): `0068-store-languages-catalog-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0), after a Phase 2 (INVEST) rejection-and-correction round on the same day (circular dependency on `App\Enums\UiLocale` fixed by moving the enum's ownership here from story 0066; three untestable Gherkin scenarios removed; Q8 resolved). It is still pending work, so it keeps its node and edges; its node moves from the green `ready` class to the blue `claimed` class (it was already `claimed` in `tasks-status.json` from its Phase 2 claim, `claimed_by: "shojen/0068-store-languages-catalog-backend"`), and its `depends_on` is unchanged (still empty). `ai-spec/tasks/in-progress/` now holds exactly this one file.
+
+Update (2026-09-27): `0064c-activate-verified-user-status-race-compare-and-set-backend.md` passed Phase 2 (INVEST validation, `code-reviewer`: PASS, no rewrite needed) and moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0). It is still pending work, so it keeps its node and edges (it has none, `depends_on: []`); its node moves from the green `ready` class to the blue `claimed` class, and its `tasks-status.json` entry's `status` moved to `"claimed"` (`claimed_by: "0064c-activate-verified-user-status-race-compare-and-set-backend"`). `ai-spec/tasks/in-progress/` now holds exactly this one file.
+
+Earlier update (2026-09-27, superseded): `0064b-scheduled-post-publish-failure-notification-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0) and is claimed in `tasks-status.json`. It is still pending work, so it keeps its node and edges; its node moves from the yellow `pending` class to the blue `claimed` class. Its `depends_on` stays `[]` (both `0064` and `0063` are `done/`) — the registry's `status` had been left stale at `blocked` since 0063 closed despite `depends_on` already being empty, and is corrected to `claimed` in this same pass rather than the `ready` a fresh derivation alone would give, since the task is being checked out right now. `ai-spec/tasks/in-progress/` now holds exactly this one file.
+
+Update (2026-09-27): `0064a-activate-verified-user-listener-idempotent-and-single-registration.md` completed Phase 7 and moved from `in-progress/` to `done/`. Its node, its `0064a --> 0064c` edge and its `tasks-status.json` entry (the `claimed` one) are dropped. Its one dependent, `0064c`, drops `"0064a"` and moves from `blocked` to `ready`; `0065` drops `"0064a"` from its `conflict_risk_with` (0064a deleted the `AppServiceProvider` method 0065's file list still names — 0065 reconciles that in its own Phase 2/3). `ai-spec/tasks/in-progress/` is empty again.
+
+Update (2026-09-26): a follow-up story raised by `0064a` (its R-2 / OQ-3) was added as a new pending file: `0064c-activate-verified-user-status-race-compare-and-set-backend.md` (`blocked` on `0064a` when created; `ready` once `0064a` closed, a hard dependency because it modifies the unit test file `0064a` extends and keeps `0064a`'s idempotency and registry tests as its regression net; no `conflict_risk_with`, since no other pending story modifies `ActivateVerifiedUser`, its callers or `LogRefusedPrivilegedAttempt`).
+
+Earlier update (2026-09-26, superseded): `0064a-activate-verified-user-listener-idempotent-and-single-registration.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0) and is claimed in `tasks-status.json`. It is still pending work, so it keeps its node and edges; its node moves from the green `ready` class to the blue `claimed` class, and its `depends_on` is unchanged. `ai-spec/tasks/in-progress/` now holds exactly this one file.
+
+Update (2026-09-26): `0063-blog-posts-list-editor-ui.md` completed Phase 7 and moved from `in-progress/` to `done/` — the ninth Epic 4 story to close, and the third Blog screen. Its node and every edge touching it are dropped from the graph below and its `tasks-status.json` entry (the `claimed` one) was deleted. Its one hard dependent, `0079`, drops `"0063"` and stays `blocked` on the Epic 5 retrofit stories it still needs; `0064b`, `0072`, `0074` and `0078` drop it from `conflict_risk_with`. `ai-spec/tasks/in-progress/` is empty again.
+
+Update (2026-09-26): `0064-scheduled-post-auto-publish-backend.md` completed Phase 7 and moved from `in-progress/` to `done/` — the eighth Epic 4 story to close. Its node and its `0064 --> 0065` edge are dropped and its `tasks-status.json` entry (the `claimed` one) was deleted; its one hard dependent, `0065`, drops `"0064"` and moves from `blocked` to `ready` (its other dependency, `0061`, was already `done/`). Two follow-up stories raised while closing it were added as new pending files: `0064a-activate-verified-user-listener-idempotent-and-single-registration.md` (`ready`, no dependency, `conflict_risk_with` `0065` on `app/Providers/AppServiceProvider.php`) and `0064b-scheduled-post-publish-failure-notification-backend.md` (`blocked` on `0063`, whose routes its email links to; `conflict_risk_with` `0063`, `0065` and `0078`). `ai-spec/tasks/in-progress/` is empty again.
+
+Update (2026-09-26): `0062-blog-categories-ui.md` completed Phase 7 and moved from `in-progress/` to `done/` — the seventh Epic 4 story to close, and the second Blog screen. Its node and every edge touching it are dropped from the graph below and its `tasks-status.json` entry (the `claimed` one) was deleted. Its one hard dependent, `0073`, drops `"0062"` and stays `blocked` on `0068`/`0070`/`0071`/`0072`; `0063` drops it from `conflict_risk_with`. `ai-spec/tasks/in-progress/` is empty again.
+
+Update (2026-09-25): `0061b-blog-post-body-must-have-visible-content.md` completed Phase 7 and moved from `in-progress/` to `done/` — the sixth Epic 4 story to close. Its node and its `tasks-status.json` entry (the `claimed` one) are dropped, and `"0061b"` is removed from the `conflict_risk_with` lists of `0063` and `0065`. It had no dependents, so its closure re-derives nothing. `ai-spec/tasks/in-progress/` is empty again.
+
+Update (2026-09-25): `0061a-blog-post-publish-with-future-date-schedules.md` completed Phase 7 and moved from `in-progress/` to `done/` — the fifth Epic 4 story to close. Its node and its `tasks-status.json` entry (the `claimed` one) are dropped, and `"0061a"` is removed from the `conflict_risk_with` of `0061b`, `0063` and `0065`; it had no dependents, so no `status` changes. `ai-spec/tasks/in-progress/` is empty again.
+
+Update (2026-09-24): `0061-blog-posts-core-crud-backend.md` completed Phase 7 and moved from `in-progress/` to `done/` — the fourth Epic 4 story to close. Its node and every edge touching it are dropped from the graph below and its `tasks-status.json` entry (the `claimed` one) was deleted. Its dependents are re-derived against `done/`: `0062`, `0063` and `0064` had `0061` as their only pending dependency, so all three move from `blocked` to `ready`; `0065` drops `"0061"` and stays `blocked` on `0064`; `0078` drops `"0061"` and stays `blocked` on `0068`/`0070`. `ai-spec/tasks/in-progress/` is empty again. (The earlier note that `0061` had moved into `in-progress/` and was `claimed` is superseded by this one.) The same day, two follow-up stories raised while closing `0061` were added as new pending files, `0061a-blog-post-publish-with-future-date-schedules.md` and `0061b-blog-post-body-must-have-visible-content.md`: both are `ready` (their only dependency, `0061`, is `done/`), have no incoming edge, and each records a symmetric `conflict_risk_with` on `0061b`/`0061a`, `0063` and `0065` (all touch `app/Actions/Blog/CreateBlogPost.php` / `UpdateBlogPost.php`).
+
+Earlier update (2026-09-24, superseded): `0061-blog-posts-core-crud-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0) and is claimed in `tasks-status.json`. It is still pending work, so it keeps its node and edges; its node moves from the green `ready` class to the blue `claimed` class, and its `depends_on` is unchanged. `ai-spec/tasks/in-progress/` now holds exactly this one file.
+
+Update (2026-09-24): `0060-blog-tags-ui.md` completed Phase 7 and moved from `in-progress/` to `done/` — the third Epic 4 story to close, and the first Blog screen. Its node and every edge touching it are dropped from the graph below and its `tasks-status.json` entry was deleted. Its one hard dependent, `0075`, drops `"0060"` and stays `blocked` on `0068`/`0070`/`0071`/`0074`; `0062` and `0063` had only a soft, non-blocking preference for it. `ai-spec/tasks/in-progress/` is empty again.
+
+Update (2026-09-23): `0058-blog-categories-backend.md` completed Phase 7 and moved from
+`in-progress/` to `done/` — the first Epic 4 story to close. Its node and every edge touching it are
+dropped from the graph below, its `tasks-status.json` entry was deleted, and its four dependents
+(`0061`, `0062`, `0063`, `0072`) are re-derived against `done/`: each drops `"0058"` from
+`depends_on` and stays `blocked` on its other still-pending dependencies.
+
+Update (2026-09-24): `0059-blog-tags-backend.md` completed Phase 7 and moved from
+`in-progress/` to `done/` — the second Epic 4 story to close. Its node and every edge touching it are
+dropped from the graph below and its `tasks-status.json` entry was deleted. Its four dependents are
+re-derived against `done/`: `0060` (Blog tags UI) and `0061` (Blog posts core CRUD) had `0059` as their
+only pending dependency, so both move from `blocked` to `ready`; `0063` and `0074` drop `"0059"` and stay
+`blocked` on `0061` and on `0068`/`0070` respectively.
+
+Reconciled into this same pass: three more stories closed on `finalproject-ARP` while `0056` was
+in progress — `0049-order-status-transition-backend.md` (PR #15), `0051-order-payment-refund-
+state-backend.md` (PR #17), and `0050-order-manual-cancellation-backend.md` (PR #18, which itself
+depended on `0051`) — all arriving here as a `git merge` of `origin/finalproject-ARP` into this
+branch, resolved in the same pass as `0056`'s own closure — the same reconciliation shape `0047`'s
+closure already used inside `0048`'s pass, two paragraphs below. `0049` had `depends_on: []` of
+its own (its only real prerequisite, `0045`, was already `done/`), and two stories named it as a
+hard blocker: `0050` dropped it (at that point still `blocked` on `0051`) and `0055` dropped it
+(still `blocked` on its other pending Orders dependencies). `0051` had `depends_on: []` of its
+own too, and three stories named it as a hard blocker: `0050` dropped it and moved to `ready`
+(its `0049` dependency already dropped); `0052` dropped it and moved to `ready` (no other pending
+dependency); `0055` dropped it and stayed `blocked` on its remaining Orders dependencies. `0050`
+then closed in the same window — nothing pending named it as a hard blocker of its own, so its
+closure re-derives nothing further against this pending list. Together, these three closures
+leave `0055` `blocked` on exactly `0052`/`0053`/`0054` (see its updated bullet under
+[Pending tasks that must be sequenced](#pending-tasks-that-must-be-sequenced)).
+
+Before that, `0048-order-line-item-editing-
+backend.md` completed Phase 7 and moved straight from `in-progress/` to `done/` in a prior
+regeneration pass. `0048` had `depends_on: []` of its own (its only real prerequisite, `0045`, was already
+`done/` when it was claimed), and only `0055` named it as a hard (`depends_on`) blocker — `0055`
+dropped `"0048"` from its own `depends_on` array in that pass, but stayed `blocked` on its six
+other still-pending Orders dependencies (`0049`/`0050`/`0051`/`0052`/`0053`/`0054`) at the time.
+Reconciled into
+this same pass: `0047-customer-order-history-view-ui.md` closed on its own branch and merged via
+PR #13 into `finalproject-ARP` while `0048` was in progress — its own dependency-graph and
+coordination-file changes (moving `in-progress/` → `done/`, deleting its `tasks-status.json` entry,
+dropping `0047` from `0055`'s `conflict_risk_with` array) arrive here as a `git merge` of
+`origin/finalproject-ARP` into this branch, resolved in the same pass as `0048`'s own closure —
+the same reconciliation shape `0044`'s and `0045`'s closures already used two paragraphs below.
+Before that, `0046-orders-new-order-notification-backend.md` completed Phase 7 and moved straight from
+`in-progress/` to `done/` in a prior regeneration pass — nothing pending named it as a hard
+blocker either, the only stories referencing it (`0056`, `0057`) held it as a soft/informational,
+non-blocking sibling. Before that, `0044-customers-list-create-edit-ui.md` and
+`0045-orders-core-crud-backend.md` both completed Phase 7 and moved to `done/` in the prior
+regeneration pass (0044 on its own branch, merged via PR #9; 0045 checked out into `in-progress/`
+for Phase 3, then closed in that same pass). Together their closure freed `0046`, `0047`, `0048`,
+`0049`, `0051`, `0053` and `0054` into `ready` with no pending dependency left for any of them (see
+the note under
+[Pending tasks that are independent](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
+for what else this closure unblocked) — `0045` was, before that pass, the single biggest hub in the
+backlog, so that remains the largest one-story unblock this map has recorded to date. Every other
+task is either `done/` (closed, merged) or still sitting directly in `ai-spec/tasks/` (not started).
+One additional file, `ci-database-connection-gap.md`, lives outside the `00XX-` numbering — it is an
+infrastructure fix (not a PRD-derived user story) and is already marked `Status: fixed and fully
+documented` inside its own file, so it is listed for completeness but excluded from the dependency
+graph and from the parallelization analysis below.
+
+- **103 files total** (ground truth recounted 2026-09-27, reconciling this branch's own closure of
+  `0064c` with two concurrent sessions' closures of `0064b` and `0068`, merged from
+  `origin/finalproject-ARP` across two backmerges): 102 numbered user stories (87 `done/`, 15 still in
+  `ai-spec/tasks/`, none checked out to `ai-spec/tasks/in-progress/`) + 1 non-numbered infrastructure
+  doc (already resolved). This pass moves `0064c` to `done/` and adds `0064d` as a new pending file
+  (raised by `0064c`'s own closure); the two backmerges bring in `0064b`'s and `0068`'s independent
+  closures to `done/` from the other sessions, freeing `0066` and `0070` into `ready`. Some of the
+  prose below this note carries earlier passes' running counts (e.g. "jumps from 67 to 72") that were
+  accurate at the time they were written but have since drifted from a simple recount — the bullet
+  above is the authoritative current count; the narrative below is kept for its *reasoning*, not its
+  totals (its own last worked example was the reconciliation of `0052`/`0053`/`0053a`/`0057` noted
+  above).
+- **Ground truth recounted again 2026-09-29** (this merge reconciliation, per the note above): **91
+  files in `ai-spec/tasks/done/`**, **11 numbered files still pending** in `ai-spec/tasks/` (none
+  checked out to `in-progress/`), **+ 1 non-numbered infrastructure doc** — 103 files total,
+  unchanged from the prior recount (only the done/pending split moved, by two: `0066` and `0070`
+  both left the pending list for `done/`). This is now the authoritative current count; the "103
+  files total" bullet above is kept for its own reasoning, not its totals.
+- For a machine-readable, per-task claim registry that two parallel Claude Code sessions can use
+  to coordinate against this same dependency data, see
+  [`ai-spec/tasks-status.json`](tasks-status.json) and its companion protocol,
+  [`ai-spec/tasks-coordination.md`](tasks-coordination.md).
+
+## Table of contents
+
+- [Inventory](#inventory)
+  - [Done (91) — shipped, out of scope for this graph](#done-91--shipped-out-of-scope-for-this-graph)
+  - [Pending — not started (11 numbered + 1 infra doc)](#pending--not-started-11-numbered--1-infra-doc)
+- [Dependency graph (pending tasks only)](#dependency-graph-pending-tasks-only)
+- [Analysis](#analysis)
+  - [Pending tasks that are independent of each other and safe to parallelize](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
+  - [Pending tasks that must be sequenced](#pending-tasks-that-must-be-sequenced)
+  - [File/merge-conflict risk even where no formal dependency exists](#filemerge-conflict-risk-even-where-no-formal-dependency-exists)
+  - [Scope and known limitations of this map](#scope-and-known-limitations-of-this-map)
+
+## Inventory
+
+### Done (91) — shipped, out of scope for this graph
+
+Already merged into `main`/`finalproject-ARP` and closed via the workflow's Phase 7; see
+[`ai-spec/tasks/done/`](tasks/done/) for each story's full file. Listed here only as IDs, grouped
+by the epic area they belong to, since — per the note at the top of this file — none of them
+appears as a node in the dependency graph below:
+
+- **Epic 1 — Users, Roles & Auth (23):** 0001, 0002, 0003, 0004, 0005, 0006, 0006b, 0007, 0008,
+  0008a, 0009, 0010, 0011, 0012, 0013, 0014, 0015, 0015a, 0015b, 0040, 0064a, 0064c, 0064d. 0064c —
+  activation status race, compare-and-set (backend), the twenty-second Epic 1 story to close: closed
+  a suspended-account privilege-escalation race (R-2 from 0064a); its own Phase 1 hand-off raised
+  0064d (owner decision on OQ-5). 0064d — UpdateUser stale-read lock+recheck (backend), the
+  twenty-third Epic 1 story to close: a locked, verified compare-and-set on the decision-relevant
+  columns (status, role-id set), closing the sibling staleness hole 0064c's own R-2 deliberately left
+  open. Neither had a pending hard `depends_on` dependent (only the provenance link between them),
+  so this closure re-derives no `status` change against the pending list.
+- **Epic 2 — Products, Taxes, Media, Shipping (35):** 0016, 0017, 0018, 0019, 0019a, 0019b,
+  0019c, 0019d, 0020, 0021, 0022, 0023, 0024, 0024a, 0024b, 0025, 0026, 0027, 0028, 0029, 0029a,
+  0029b, 0030, 0030a, 0031, 0031a, 0032, 0033, 0034, 0035, 0036, 0037, 0038, 0039, 0080.
+- **Epic 3 — Customers, Orders & Notifications (18):** 0041 — the epic's foundation story (the first to close in
+  this epic); its own three former dependents (0042, 0043, 0045) are re-derived against `done/`
+  rather than against this pending list from here on. 0042 — Customers soft delete (backend), the
+  second story to close in this epic; its own two former dependents (0044, 0047) are re-derived
+  against `done/` from here on. 0043 — the "new customer" notification backend, the third story to
+  close, and closed in parallel with 0042 on a separate branch, reconciled into a prior
+  regeneration pass; its own former dependents (0044, 0046, 0056, 0065) are likewise re-derived
+  against `done/` from here on. 0044 — Customers list + create/edit UI, the fourth story to close;
+  its own former dependent (0047) is re-derived against `done/` from here on. 0045 — Orders core
+  CRUD backend, the fifth story to close and the epic's biggest hub: its own seven former
+  dependents (0046, 0047, 0048, 0049, 0051, 0053, 0054) are all re-derived against `done/` from
+  here on. 0046 — Orders "new order" notification (backend), the sixth story to close; it had no
+  dependents of its own with a hard `depends_on` edge — `0056`/`0057` held it only as a soft,
+  non-blocking sibling — so its closure re-derives nothing further against this pending list.
+  0047 — Customer detail — order history view UI, the seventh story to close; `0055` held it only
+  as a `conflict_risk_with` sibling (both touch `resources/views/livewire/customers/show.blade.php`),
+  never a hard `depends_on` edge, so this closure removes `0047` from `0055`'s `conflict_risk_with`
+  list but re-derives no `depends_on`/`status` change against this pending list. 0048 — Order
+  line-item editing backend, the eighth story to close; its own only dependent, `0055`, is
+  re-derived against `done/` from here on (`0055` still had six other pending dependencies at the
+  time, so it stayed `blocked`). 0056 — Notification viewing (backend), the ninth story to close;
+  its own only dependent, `0057`, is re-derived against `done/` from here on — `0057` had no other
+  pending dependency, so it moves from `blocked` to `ready`. 0049 — Order status transition
+  backend, the tenth story to close; two stories named it as a hard dependent — `0050` (whose
+  `depends_on` then read `0051` alone) and `0055` (still had five other pending dependencies, so
+  it stayed `blocked`) — both re-derived against `done/` at the time. 0051 — Order payment/refund
+  state backend, the eleventh story to close; three stories named it as a hard dependent — `0050`
+  and `0052` both drop it from their own `depends_on` array and move to `ready` (neither has any
+  other pending dependency), and `0055` drops it too but stays `blocked` on its four other pending
+  Orders dependencies (`0050`/`0052`/`0053`/`0054`) — all three re-derived against `done/` from
+  here on. 0050 — Order manual cancellation backend, the twelfth story to close; one story named
+  it as a hard dependent — `0055`, which drops `"0050"` from its own `depends_on` array and stays
+  `blocked` on its three other pending Orders dependencies (`0052`/`0053`/`0054`) — and two named
+  it a soft `conflict_risk_with` sibling (`0052`, `0054`, both sharing `app/Policies/
+  OrderPolicy.php`/`lang/{en,es}/orders.php` with it), both now dropped since a done/ story is
+  never a conflict risk to anything still pending. **Reconciled into this pass** — found already
+  merged rather than closed by it, per the note at the top of this file: 0052 — Order auto-cancel
+  on full refund backend, the thirteenth story to close; only `0055` named it as a hard dependent,
+  dropped and re-derived. 0053 — Order tax Sales-Region resolution, physical products (backend),
+  the fourteenth; `0054` held it only as a soft/informational sibling (never a hard blocker), and
+  `0055` dropped it as a hard dependent. 0053a — Order totals `tax_rate`-as-percentage fix, an
+  amendment consumed by both 0053 and 0054 rather than an independent node with dependents of its
+  own. 0057 — Notification bell UI, its only dependency (`0056`) already `done/` at the time it
+  closed, and nothing pending names it as a dependent. **0054 — Order tax Sales-Region resolution,
+  virtual products (backend), the seventeenth story to close, and this pass's own closure** — its
+  only hard dependency, `0045`, was already `done/`; `0055` named it as its last remaining hard
+  blocker and drops it, leaving `0055` with `depends_on: []` and `status: ready` for the first time.
+  0055 — Orders list + detail/editor UI, the eighteenth story to close and the epic's terminal node:
+  nothing named it as a hard dependent, so its closure re-derives no `depends_on`/`status` change
+  against this pending list.
+- **Epic 5 — Internationalization (3):** 0068 — Store Languages catalog + the app's two
+  default-locale settings, the first Epic 5 story to close, and the root of the entire i18n chain.
+  Its two dependents that had it as their *only* pending dependency — 0066 (Admin UI locale
+  preference backend) and 0070 (translatable-content mechanism backend) — move from `blocked` to
+  `ready`; every other Epic 5 story drops `"0068"` from its own `depends_on` array but stays
+  `blocked` on `0066` or `0070` (or both). 0066 — Admin UI locale preference & resolution
+  (backend), the second Epic 5 story to close (2026-09-28). Its two dependents, 0067 (Admin UI
+  language switcher UI) and 0069 (Store Languages settings UI), each had `0066` as their only
+  pending dependency, so both drop `"0066"` and move from `blocked` to `ready` — though they still
+  carry a `conflict_risk_with` pairing on each other (see the analysis section below). 0070 —
+  Translatable content mechanism (backend, piloted on Product Categories), the third Epic 5 story
+  to close (2026-09-29), and the second root of the chain (alongside 0068): it shipped
+  `App\Concerns\HasTranslations`, `App\Actions\Translations\SetTranslation` and the
+  `<entity>_translations` convention, applied to `product_categories`. Every retrofit/UI story that
+  named it as a hard dependent had it as their **only remaining** pending dependency — 0071, 0072,
+  0074, 0076 and 0078 all move from `blocked` to `ready`; 0073, 0075, 0077 and 0079 drop `"0070"`
+  from their own `depends_on` array but stay `blocked` on their other still-pending dependencies
+  (0071/0072 for 0073; 0071/0074 for 0075; 0076 for 0077; 0071/0078 for 0079). 0066 and 0070 closed
+  on separate branches (this file's own two prior "Update" notes above) and are reconciled together
+  here by this merge — both closures apply; neither superseded the other.
+- **Epic 4 — Blog (9):** 0058 — Blog categories (backend), the first Epic 4 story to close; its four
+  dependents (0061, 0062, 0063, 0072) are re-derived against `done/` from here on and all stay
+  `blocked` on other pending dependencies. 0059 — Blog tags (backend), the second, which frees 0060 and
+  0061 into `ready` (its other two dependents, 0063 and 0074, stay `blocked`). The two were never a
+  dependency of each other in either direction. 0060 — Blog tags UI, the third and the first Blog screen: its
+  one hard dependent, 0075, drops it and stays `blocked`. 0061 — Blog posts core CRUD (backend), the
+  fourth: its dependents 0062, 0063 and 0064 (which had it as their only pending dependency) move to `ready`;
+  0065 and 0078 drop it and stay `blocked` on 0064 and on 0068/0070 respectively. 0061a — publishing with a
+  future date schedules the post (backend), the fifth: an amendment raised while closing 0061 with no dependents,
+  so its closure re-derives nothing; its sibling 0061b and the pending 0063/0065 drop it from `conflict_risk_with`.
+  0061b — a post body must actually show something (backend), the sixth: the other amendment raised while closing
+  0061, likewise with no dependents, so its closure re-derives nothing; the pending 0063/0065 drop it from
+  `conflict_risk_with`. 0064 — Scheduled post auto-publish (backend), the eighth and the app's first scheduled
+  command: its one hard dependent, 0065, drops it and moves to `ready`; two follow-ups it raised, 0064a and 0064b,
+  are new pending files. 0064b — Scheduled post publish failure notification (backend), the tenth to close
+  (0063 closed ninth, per the Update note above): it had no hard dependent of its own; `0065` and `0078` drop
+  it from `conflict_risk_with`.
+
+### Pending — not started (11 numbered + 1 infra doc)
+
+| ID | Title | Epic area |
+| --- | --- | --- |
+| 0067 | Admin UI language switcher — frontend | Epic 5 — i18n |
+| 0069 | Store Languages settings screen — frontend | Epic 5 — i18n |
+| 0071 | Product Categories taxonomy screen — language tabs (frontend) | Epic 5 — i18n |
+| 0072 | Translatable content retrofit — Blog Categories backend | Epic 5 — i18n |
+| 0073 | Blog Categories screen — language tabs | Epic 5 — i18n |
+| 0074 | Translatable content retrofit — Blog Tags backend | Epic 5 — i18n |
+| 0075 | Blog Tags screen — language tabs | Epic 5 — i18n |
+| 0076 | Translatable content retrofit — Products backend | Epic 5 — i18n |
+| 0077 | Product editor — language tabs (UI) | Epic 5 — i18n |
+| 0078 | Translatable content retrofit — Blog Posts backend | Epic 5 — i18n |
+| 0079 | Blog post editor — language tabs (frontend) | Epic 5 — i18n |
+| _(no number)_ | Infrastructure fix: no test suite can open a database connection (local fresh setup or CI) — **status: already fixed and documented**, kept out of the numbering and out of the dependency graph below | Infrastructure |
+
+## Dependency graph (pending tasks only)
+
+Edges were derived from each task file's own **"Dependencies"** (or, for Epic 5 files, **"5.
+Dependencies, risks, open technical questions"**) section — hard/blocking dependencies, explicit
+"depends on story NNNN" statements, and file-relative links to sibling task files. No dependency
+below is inferred purely from task numbering; every edge quotes or paraphrases language the
+source task file states about itself. A dependency on an already-`done` task (e.g. `0047`'s
+mention of `done/0045`) is **not** drawn — it is already satisfied and contributes nothing to a
+parallelization decision — which is why several nodes below have no incoming edge at all even
+though their own task file lists real prerequisites: those prerequisites are simply already
+shipped.
+
+Two edge styles:
+
+- **Solid arrow (`-->`)** — a hard/blocking dependency: the task file itself says Phase 3 cannot
+  start, or a specific class/table/contract is consumed, before the upstream task is `done`.
+- **Dashed arrow (`-.->`)** — a soft, informational, sibling, or "shares one file/artifact"
+  relationship: explicitly called out in the task file, but not stated as blocking.
+
+Nodes with **no incoming edge at all** (green, `ready` style) have every one of their real
+prerequisites already in `done/` — nothing pending stands between them and Phase 3.
+
+```mermaid
+flowchart LR
+    classDef pending fill:#fef9c3,stroke:#ca8a04,color:#713f12,stroke-width:1px;
+    classDef ready fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:1px;
+    classDef claimed fill:#dbeafe,stroke:#2563eb,color:#1e3a8a,stroke-width:1px;
+
+    subgraph PEND_I18N["Epic 5 — Internationalization"]
+        direction TB
+        P0067["0067 Admin UI language switcher"]
+        P0069["0069 Store Languages UI"]
+        P0071["0071 Product Categories i18n UI"]
+        P0072["0072 Blog Categories retrofit BE"]
+        P0073["0073 Blog Categories i18n UI"]
+        P0074["0074 Blog Tags retrofit BE"]
+        P0075["0075 Blog Tags i18n UI"]
+        P0076["0076 Products retrofit BE"]
+        P0077["0077 Product editor i18n UI"]
+        P0078["0078 Blog Posts retrofit BE"]
+        P0079["0079 Blog post editor i18n UI"]
+    end
+
+    %% Customers and Orders core
+    %% (0042/0043 -> 0044, and 0041/0024/0029/0035/0036/0038 -> 0045, are all satisfied now that
+    %% every one of those is done/; no edge drawn, per this file's own "a dependency on an
+    %% already-done task is not drawn" convention)
+
+    %% Orders siblings
+    %% (P0048 --> P0055 dropped: 0048 closed to done/ in a prior pass; P0049 --> P0050 and
+    %% P0049 --> P0055 dropped: 0049 closed to done/ in a prior pass; P0051 --> P0050,
+    %% P0051 --> P0052 and P0051 --> P0055 dropped: 0051 closed to done/ in a prior pass;
+    %% P0050 -.-> P0052 and P0050 --> P0055 dropped: 0050 closed to done/ in an earlier pass;
+    %% P0053 -.-> P0054, P0052 --> P0055 and P0053 --> P0055 dropped: 0052/0053 found already
+    %% done/ this pass (reconciliation, see the note at the top of this file); P0054 --> P0055
+    %% dropped: 0054 closed to done/ this pass -- per this file's own "done/ tasks are omitted
+    %% from the graph" rule each closed story's node and edges are removed rather than redrawn
+    %% against a done/ id. P0055 (the epic's terminal node, which had no incoming edge left) itself
+    %% closed to done/ in the following pass and its own node is removed too.)
+
+    %% Notifications
+    %% (0046 -.-> P0056/P0057 dropped in an earlier pass: 0046 closed to done/ then. P0056 --> P0057
+    %% dropped in an earlier pass: 0056 itself closed to done/. P0057 itself found already done/
+    %% this pass (reconciliation) -- its own node and PEND_NOTIF subgraph are removed entirely.
+    %% Per this file's own "done/ tasks are omitted from the graph" rule its node and every edge
+    %% touching it are removed rather than redrawn against a done/ id.)
+    %% (P0047 -.-> P0055 dropped the same way: 0047 closed to done/ this pass — it was only a
+    %% conflict_risk_with sibling of 0055, never a hard depends_on edge, so no dependent status
+    %% recomputation follows from this removal)
+
+    %% Blog
+    %% (P0061 --> P0062/P0063/P0064/P0065/P0078 dropped: 0061 closed to done/ this pass, so its node
+    %% and every edge touching it are removed; 0062/0063/0064 had no other incoming edge and are now ready)
+    %% (P0064b's own node dropped: 0064b closed to done/ this pass. It had no incoming edge of its
+    %% own -- no pending task named it as a depends_on blocker -- so removing it re-derives nothing
+    %% further; 0065/0078 only held it in conflict_risk_with, not depends_on.)
+    %% (P0065's own node dropped: 0065 closed to done/ 2026-09-28 -- the eleventh Epic 4 story to
+    %% close, and Epic 4's last pending task, so the PEND_BLOG subgraph itself is removed. It had no
+    %% incoming edge of its own; 0078 held it only in conflict_risk_with (never depends_on), and by
+    %% Phase 2/3 that risk had already resolved to nothing -- 0065 ended up touching neither
+    %% CreateBlogPost.php nor UpdateBlogPost.php, so 0078 needed no conflict_risk_with edit here.)
+
+    %% i18n
+    %% (P0068 --> P0066/P0067/P0069/P0070/P0071/P0072/P0073/P0074/P0075/P0076/P0077/P0078/P0079
+    %% dropped: 0068 closed to done/ in an earlier pass -- every edge in this subgraph originated
+    %% *from* P0068, so removing its node dropped all thirteen at once. 0066 and 0070 each had 0068
+    %% as their only pending dependency and became ready then.)
+    %% (P0066 --> P0067 and P0066 --> P0069 dropped: 0066 closed to done/ 2026-09-28, the second
+    %% Epic 5 story to close. Its node is removed; 0067 and 0069 each had 0066 as their only pending
+    %% dependency and are now ready -- though they keep their conflict_risk_with pairing on each
+    %% other, drawn dashed below.)
+    %% (P0070 --> P0071/P0072/P0073/P0074/P0075/P0076/P0077/P0078/P0079 dropped: 0070 closed to
+    %% done/ 2026-09-29, the third Epic 5 story to close. Its node and every edge originating from
+    %% it are removed. 0071, 0072, 0074, 0076 and 0078 each had 0070 as their only remaining pending
+    %% dependency and are now ready; 0073, 0075, 0077 and 0079 drop it but stay blocked on their
+    %% other pending deps. 0066 and 0070 closed on separate branches and are reconciled together by
+    %% this merge -- neither removal supersedes the other.)
+    P0067 -.-> P0069
+    P0072 --> P0073
+    P0071 --> P0073
+    P0074 --> P0075
+    P0071 --> P0075
+    P0076 --> P0077
+    P0078 --> P0079
+    P0071 --> P0079
+    P0077 -.-> P0079
+
+    class P0073,P0075,P0077,P0079 pending;
+    class P0067,P0069,P0071,P0072,P0074,P0076,P0078 ready;
+```
+
+Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
+(`claimed`) = unblocked but a session already has it (per
+[`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
+(no node is `claimed` in this snapshot — `0066` and `0070`, the prior `claimed` nodes, both closed
+to `done/` in this pass, on separate branches reconciled together here); yellow (`pending`) = still
+blocked on at least one open pending dependency.
+
+## Analysis
+
+### Pending tasks that are independent of each other and safe to parallelize
+
+These are the tasks whose **entire dependency chain is already `done/`** — nothing pending blocks
+them — the seven green `ready` nodes in the diagram above. (`0046`–`0054` and `0057` all had the
+identical property in their own turn — but none of them is listed anywhere in this section any
+more: each closed to `done/` in this or a prior regeneration pass, so per this file's own "`done/`
+tasks are omitted from the graph" rule none has a node at all any more. See the note at the top of
+this file.)
+
+- **0063 — Blog posts list + editor (UI) and 0064 — Scheduled post auto-publish (backend).** Each had `0061`
+  as its only pending dependency, and `0061` is `done/` now, so both are `ready`.
+- **0066 — Admin UI locale preference & resolution (backend) and 0070 — Translatable content
+  mechanism (backend).** Each had `0068` as its only pending dependency, and `0068` closed to
+  `done/` in an earlier pass, so both moved from `blocked` to `ready`. Neither shared a
+  `conflict_risk_with` entry with the other, so they were also safe to dispatch in parallel — and
+  both have since closed too (0066 on 2026-09-28, 0070 on 2026-09-29, on separate branches
+  reconciled together by this merge).
+- **0067 — Admin UI language switcher (frontend) and 0069 — Store Languages settings screen
+  (frontend).** Each had `0066` as its only pending dependency, and `0066` closed to `done/`
+  2026-09-28, so both move from `blocked` to `ready`. Unlike most pairs in this section, they **do**
+  share a `conflict_risk_with` entry with each other — both render on the Store Languages settings
+  screen (see [File/merge-conflict risk](#filemerge-conflict-risk-even-where-no-formal-dependency-exists)
+  below) — so "ready" does not mean parallel-safe here; sequence or coordinate them explicitly.
+- **0071, 0072, 0074, 0076 and 0078 — five stories that each had `0070` as their only pending
+  dependency.** `0070` (the translatable-content mechanism) closed to `done/` 2026-09-29, so all
+  five move from `blocked` to `ready` at once. `0072`, `0074`, `0076` and `0078` (the four
+  taxonomy/entity retrofit stories) share a mutual `conflict_risk_with` pairing with each other
+  (same registry/lang-file shape, disjoint tables — see
+  [File/merge-conflict risk](#filemerge-conflict-risk-even-where-no-formal-dependency-exists)
+  below) but none with `0071`, so `0071` is safe to dispatch alongside any one of them today;
+  dispatching more than one of `0072`/`0074`/`0076`/`0078` together still needs the ownership-boundary
+  care their own `conflict_risk_with` entries call for.
+
+**`0045` — Orders core CRUD backend — closed in this same regeneration pass, and is what freed the
+seven Orders nodes above (`0046`, `0047`, `0048`, `0049`, `0051`, `0053`, `0054`) into `ready` at
+once.** It was, before this pass, the single biggest hub in the backlog (see
+[Pending tasks that must be sequenced](#pending-tasks-that-must-be-sequenced) below for the chain
+it used to gate); its task file moved `ai-spec/tasks/in-progress/` → `ai-spec/tasks/done/`, and its
+`tasks-status.json` entry was removed, per
+[`docs/workflow.md`'s task-coordination-file regeneration step](../docs/workflow/task-files-links-and-ordering.md#regenerating-the-task-coordination-files).
+`0050`, `0052` and `0055` each also named `0045` as a hard blocker and each dropped it from their
+own `depends_on` array in the same pass, but stay `blocked` on their *other* still-pending
+dependencies (`0050` on `0049`/`0051`; `0052` on `0051`; `0055` on its six remaining Orders
+stories) — recomputing a status, not merely stripping a satisfied id, per the same rule this file
+applied when `0043` closed (see the note further below).
+
+**0068, 0066 and 0070 have all closed to `done/` now, so their former "independent of 0060 and
+0061" and "independent of each other" notes no longer apply to any pending task** — their
+dependents (`0066`/`0070` for `0068`; `0067`/`0069` for `0066`; `0071`/`0072`/`0074`/`0076`/`0078`
+for `0070`) are covered under
+[Pending tasks that are independent](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
+above. The
+`app/Policies/OrderPolicy.php` / `lang/{en,es}/orders.php` parallel-write
+hazard this section used to flag was among `0049`, `0051`, `0052` and `0054`, all `done/` now —
+with them closed, `0055` (the only still-pending writer of either file) has no live pairing left
+to coordinate against.
+
+**0037, 0038, 0039, 0041, 0042, 0043, 0044 and 0045 already closed** (each went dependency-ready
+the moment its own last blocker shipped — `0036` for `0037`, nothing pending at all for `0038`,
+`0038` for `0039`, nothing pending at all for `0041`, `0041` for `0042`, `0041` for `0043`, `0042`
++ `0043` for `0044`, and `0041`/`done/0024`/`done/0029`/`done/0035`/`done/0036`/`done/0038` for
+`0045` — was claimed via `tasks-status.json` by whichever session picked it up next, and is now in
+`done/` too) — a real, worked instance, eight times over, of why the JSON registry exists alongside
+this diagram: a task can turn dependency-ready and get claimed by another session before this
+snapshot is regenerated, so the JSON's live `status`/`claimed_by` is always the thing to check
+before dispatching a "ready" node from here, never this diagram alone. **0041's own closure is
+what freed 0042 and 0043 into `ready`; both closed too, in parallel on separate branches, in a
+prior regeneration pass.** Combined, closing both freed `0044` (both of its former dependencies,
+`0042` and `0043`, were `done/`) and `0056` (its only former dependency, `0043`, was `done/`) into
+fully `ready` — with no pending dependency left for either — while `0045` was already `ready` on
+its own at that point (`0041` was its last blocker, independent of 0042/0043). **This regeneration
+pass is what reconciles 0044's and 0045's own subsequent closures into one snapshot** — 0044 on its
+own branch (merged via PR #9), 0045 checked out into `in-progress/` for Phase 3 and closed at the
+end of the same session. `0046`, `0047`, `0048`, `0049`, `0051`, `0053` and `0054` each cited `0045`
+as a hard blocker (`0047` also cited `0044`), so each dropped it from its own `depends_on` array —
+all seven are now fully `ready`, per
+[workflow.md](../docs/workflow/task-files-links-and-ordering.md#regenerating-the-task-coordination-files)'s "recompute `status`
+for every remaining task that named it as a dependency" rule, which recomputes a status, not
+merely strips a satisfied id. `0050`, `0052` and `0055` also cited `0045` and dropped it the same
+way, but stay `blocked` on other still-pending dependencies (see the note two paragraphs above).
+
+**The Blog backend pair is fully `done/`.** `0058` and `0059` (the two taxonomies inside `app/Actions/Blog/`) have both closed; `0061`, which extended both, has closed too (`done/`), freeing `0062`, `0063` and `0064` into `ready`; `0062` has since closed as well.
+
+Once those land, the same "ready" property propagates outward in a few places — **0037**, **0038**,
+**0041**, **0042**, **0043**, **0044** and **0045** already did (per the note above), and that
+chain has since run all the way to its own end: **0046**–**0054** (all seven Orders siblings 0045
+gated) are now every one of them `done/`, which is what finally frees **0055** — the epic's
+terminal node — into `ready` too, with zero pending dependencies left; **0065** the moment **0064** closed (`0061`, its other dependency, was `done/`); **0061** did the same the moment **0059** closed, and
+**0066** and **0070** did the moment **0068** closed — both were fully `ready`, with no
+pending dependency of their own left, and safe to dispatch in parallel to each other. Both have
+since closed too, on separate branches reconciled together by this merge (**0066** on 2026-09-28,
+**0070** on 2026-09-29): **0066**'s closure freed its own two dependents, **0067** and **0069**,
+into `ready` (though not parallel-safe *with each other* — see the note above); **0070**'s closure
+freed **0071**, **0072**, **0074**, **0076** and **0078** into `ready`, all five with zero pending
+dependencies of their own left.
+
+### Pending tasks that must be sequenced
+
+The dependency graph above makes most of the backlog a strict sequencing problem rather than a
+parallelization one. The major chains, in the order they must be executed:
+
+1. **Customers → Orders (Epic 3) — this chain is now fully resolved.** `0041` (`done/`) unblocked
+   `{0042, 0043}`; both closed too (`done/`) in a prior regeneration pass — in parallel on separate
+   branches — which unblocked `0044`, now also `done/`. `0045` (Orders core CRUD backend) likewise
+   had its six former hard dependencies — `0041` plus `done/0024`/`done/0029`/`done/0035`/
+   `done/0036`/`done/0038` — all satisfied, and is now `done/` too: it was the single biggest hub
+   in the backlog, gating `0046`, `0047`, `0048`, `0049`, `0050`, `0051`, `0052`, `0053` and
+   `0054`. **All seven of those Orders siblings have since closed too**, in their own turns — see
+   [Pending tasks that are independent](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
+   above for what each closure freed.
+   **`0055` (the Orders UI) was the epic's terminal node** — its own task file states Phase 3
+   cannot begin until **all seven** of `0048`–`0054` are `done`. All seven now are, so `0055` is
+   `ready` with `depends_on: []` for the first time — no chain left to sequence in this epic.
+2. **Notifications (Epic 3) — this chain is also now fully resolved.** `0043` (`done/`) unblocked
+   `0056`, which closed to `done/` in an earlier regeneration pass — its own only dependent,
+   `0057`, closed too. `0046` was never a hard blocker of either — only a soft/informational,
+   non-blocking sibling that made their "two distinct notification types" test meaningful — and it
+   too is `done/` as of an earlier pass, so that soft reference is fully satisfied either way.
+3. **Blog (Epic 4) — this chain is now fully resolved, and closed.** `0065` closed to `done/` 2026-09-28,
+   the eleventh and, as of this pass, last Epic 4 story (`0058` through `0065` are all `done/`), so Epic 4
+   has zero pending tasks and no node in the graph below. `0064a`
+   (an Epic 1 listener fix raised by `0064`) is now `done/`, its own follow-up `0064c` is now `done/` too, and
+   `0064c`'s own follow-up, `0064d`, is now `done/` too — the whole 0064-family chain (Epic 1's `0064a`/`0064c`/
+   `0064d` plus Epic 4's `0064`/`0064b`) is fully closed; `0060` created the `content` sidebar group and its `blog` cluster
+   that `0062` and `0063` (both done) each appended one item to.
+4. **Internationalization (Epic 5).** This is the most heavily sequenced part of the backlog, and
+   it is **cross-epic**: every retrofit story blocked on `0068` (Store Languages catalog) and on
+   `0070` (the translatable-content mechanism), each Admin-UI i18n story blocked on `0066` (Admin
+   UI locale preference), and each UI-facing i18n story additionally blocks on the Epic 4 backend
+   story whose table it retrofits. `0068`, `0066` and `0070` have all closed, so none of them
+   appears as a link in the chains below any more — every one of them is satisfied at that end now.
+   The full strict order, as stated across several of these task files' own "Dependencies"
+   sections:
+
+   ```text
+   0067                         (admin UI language switcher; its only dependency, 0066, is `done/`)
+   0069                         (Store Languages settings UI; its only dependency, 0066, is `done/`)
+   0071                         (Product Categories i18n UI; its only former dependency, 0070, is `done/`)
+   0071 → 0072 → 0073          (Blog Categories retrofit + i18n UI; 0062 and 0070 are `done/`)
+   0063 → 0074 → 0075          (Blog Tags retrofit + i18n UI, 0075 also
+                                                              needs 0071's shared <x-language-tab-strip>)
+   0076 → 0077                                (Products retrofit + i18n UI — 0024, the
+                                                              table itself, is already done)
+   0063 → 0074 → 0078 → 0079   (Blog Posts retrofit + i18n UI)
+   ```
+
+   Two things worth calling out explicitly because they are easy to misread from the numbering
+   alone: **(a)** `0066` genuinely depended on `0068` despite being numbered lower — this was a
+   documented, deliberate exception to the project's usual "dependency is numbered below its
+   dependent" convention, not an error in this map; now that `0068` is `done/` the exception is
+   moot, but the note is kept for anyone reading `0066`'s own file, which still records it; **(b)**
+   `0063` is listed as a (dashed, soft) dependency *of* `0072`/`0074`/`0078` in those files' own
+   tables, but the direction that actually matters for scheduling is the reverse — `0063` must ship
+   **before** those retrofit stories, so they have something to retrofit, and then `0063`'s own
+   queries need a follow-up correction once each retrofit lands. It is drawn dashed in the graph to
+   reflect that it is a "will need revisiting" relationship, not a blocking prerequisite.
+
+### File/merge-conflict risk even where no formal dependency exists
+
+Flagged explicitly in the source task files, even though no hard dependency edge connects the two
+sides. Every pair below is also recorded, symmetrically, in each task's `conflict_risk_with` array
+in [`ai-spec/tasks-status.json`](tasks-status.json):
+
+- **`app/Policies/OrderPolicy.php` is written by five different Epic 3 stories** — `0045` (created
+  it), `0049` (added `transitionStatus`), `0050` (added `cancel`) and `0052` (auto-cancel on full
+  refund), all four now `done/`, leaving only `0055` still pending. `0050`'s own file states in an
+  explicit warning block, written before `0049`/`0051`/`0052` closed: *"This story is not
+  parallel-safe with 0049, 0051, 0052 or 0055 — they all write `app/Policies/OrderPolicy.php`."* —
+  every half of that warning except `0055` is now moot (a `done/` task can no longer collide with
+  anything). `0055` is the **only** pending writer of this file left, so there is no undeclared
+  residual risk in this cluster at all any more.
+- **`lang/{en,es}/orders.php` is written by `0045`, `0049`, `0050` and `0054` (all already
+  `done/`), leaving only `0055` still pending** — different key groups in the same file each time,
+  and with every other writer closed, no undeclared risk is left here either.
+- **`App\Concerns\ResolvesSalesRegionFromAddress` was a create-if-absent shared trait between
+  `0053` and `0054` — both now `done/`, so this pairing is resolved.** `0053` reached Phase 3
+  first and created the file; `0054` consumed it unchanged, as specified.
+- **`0078` is now the only pending task still writing `app/Actions/Blog/CreateBlogPost.php`/`UpdateBlogPost.php`.** `0063`, `0061a`, `0061b`, `0064`, `0064b` and now `0065` (closed 2026-09-28, having ended up touching neither file at all — its Phase 2 review found both dispatch sites were already shipped by `0061`) are all `done/`, so this pairing is fully resolved.
+- **The Epic 5 retrofit stories (`0072`, `0074`, `0076`, `0078`) all depended on the same pair,
+  `0068` and `0070` (both now `done/`)**, and each also touches `config/modules.php` /
+  `lang/{en,es}/*.php` for its own domain. They do not depend on each other and their tables are
+  disjoint (blog categories vs. blog tags vs. products vs. blog posts), so now that `0070` has
+  closed too, **these four retrofit stories are themselves a second, smaller "independent and
+  parallelizable" cluster, all four `ready`** —
+  with the same caveat as the Blog backend pair (`0058` and `0059`, both now `done/`) about shared registry/lang files, all six pairs among
+  them (`0072`~`0074`, `0072`~`0076`, `0072`~`0078`, `0074`~`0076`, `0074`~`0078`, `0076`~`0078`)
+  recorded in the JSON registry.
+- **`0067` and `0069` collide on the same rendered page** — the personal language switcher (0067)
+  renders in the chrome of the Store Languages settings screen (0069), which the source task file
+  calls out as *"a real assertion collision (R-3)"* even though 0069 does not depend on 0067's
+  code.
+- **`0077`/`0079`** carry one softer, non-file-overlap "informational" pairing already shown dashed
+  in the graph (a "worked out the UI shape first" precedent) — included in the JSON registry's
+  `conflict_risk_with` for completeness, even though the practical collision risk is lower than the
+  file-sharing cases above. (`0046`/`0056`/`0057` used to be listed here as the same shape of soft
+  pairing; `0046` is `done/` as of this pass, so its entry was dropped from `0056`'s and `0057`'s
+  own `conflict_risk_with` arrays in [`ai-spec/tasks-status.json`](tasks-status.json) rather than
+  left pointing at a task the registry no longer lists at all.)
+
+### Scope and known limitations of this map
+
+- **The `done/` tasks are omitted from the graph entirely, on purpose** (see the note at the top of
+  this file). They are still listed as flat IDs in the [inventory](#done-76--shipped-out-of-scope-for-this-graph)
+  above and are still referenced by ID in this analysis' prose where they explain *why* a pending
+  task has no incoming edge (i.e. all its real prerequisites already shipped) — but re-deriving a
+  full internal dependency graph for 63 already-merged stories would not change anything actionable
+  today, so it was not attempted.
+- **Several pending task files themselves warn that their own dependency sections may be stale.**
+  Many Epic 3/4/5 stories were composed before their prerequisites shipped, and each carries a
+  self-aware note along the lines of *"this document goes stale while it waits… every name in this
+  file is a reading aid, not a locator"* (a rule this project's own
+  [`docs/errors-log.md`](../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+  states explicitly). This map inherits that caveat: **before actually starting a pending story,
+  re-verify its own "Dependencies" section against `HEAD` rather than trusting this snapshot**,
+  especially for any story more than a few positions deep in a chain (0073 and 0079 in particular
+  chain through seven or more prerequisites each — 0055's own seven-story Orders chain, once the
+  deepest in this backlog, closed out entirely as of this pass).
+- **One dependency in this map is already stale as written and is called out here rather than
+  silently "corrected."** Story `0055`'s own file lists `done/0022` (the searchable multi-select
+  component) as an unresolved *"soft dependency, worked around rather than waited on"* — but
+  `0022` has since shipped and is in `done/`. No edge was ever drawn for it (it was never a hard
+  blocker), but a Phase 2 re-read of `0055` should drop the interim workaround its `D-1` describes
+  and use the real component instead.
+- **The infra fix `ci-database-connection-gap.md`** is intentionally excluded from the graph — its
+  own file's status banner confirms it was fixed and fully documented on 2026-08-26, so it blocks
+  nothing today.

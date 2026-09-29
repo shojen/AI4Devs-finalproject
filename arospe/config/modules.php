@@ -79,6 +79,18 @@ return [
             'expanded_when' => null,
             'class' => null,
         ],
+        // Story 0060 -- the first Blog screen (tags) creates the `content` group, per story 0080's
+        // D-4/D-5: Content is reserved for Blog and its sub-resources. Stories 0062 (categories) and
+        // 0063 (posts) append `items.*` entries with `cluster: 'blog'` and declare neither a new
+        // group nor a new cluster. Declared after `store` and before `settings` -- array order is
+        // render order.
+        'content' => [
+            'heading' => 'navigation.groups.content',
+            'icon' => 'newspaper',
+            'expandable' => false,
+            'expanded_when' => null,
+            'class' => null,
+        ],
         'settings' => [
             'heading' => 'navigation.groups.settings',
             'icon' => 'cog-6-tooth',
@@ -86,11 +98,6 @@ return [
             'expanded_when' => 'roles.*',   // route-name pattern passed to request()->routeIs()
             'class' => null,
         ],
-        // `groups.content` is deliberately NOT declared here -- it is story
-        // 0060 (or whichever Blog story ships first)'s to add, alongside its
-        // own `blog` cluster (D-5). An empty group with nothing referencing
-        // it yet is exactly the premature scaffolding this registry's own
-        // "append when the screen ships" convention avoids.
     ],
     'clusters' => [
         // Story 0080 -- Products, Product Categories and Product Attribute
@@ -107,6 +114,13 @@ return [
             'group' => 'store',
             'label' => 'navigation.clusters.store_settings',
             'icon' => 'adjustments-horizontal',
+        ],
+        // Story 0060 -- Blog tags today; categories (0062) and posts (0063) join here. Purely
+        // presentational, like every cluster: no route and no permissions of its own.
+        'blog' => [
+            'group' => 'content',
+            'label' => 'navigation.clusters.blog',
+            'icon' => 'document-text',
         ],
     ],
     'items' => [
@@ -206,6 +220,111 @@ return [
             'route' => 'shipping.zones.index',
             'current_when' => 'shipping.zones.*',
             'permissions' => ['shipping.view'],
+        ],
+        // Story 0037 -- the Shipping screen (carrier cards + grouped rate table),
+        // completing the hand-off routes.md's own `shipping.index` subsection
+        // names ("the paired frontend story adds items.shipping_carriers ...
+        // alongside items.shipping_zones in the same store_settings cluster").
+        // 'current_when' is the EXACT route name, never 'shipping.*' -- that
+        // wildcard would also match shipping.zones.index and wrongly highlight
+        // this item while on the zones screen (and vice versa).
+        'shipping_carriers' => [
+            'group' => null,
+            'cluster' => 'store_settings',
+            'label' => 'navigation.items.shipping_carriers',
+            'icon' => 'currency-euro',
+            'route' => 'shipping.index',
+            'current_when' => 'shipping.index',
+            'permissions' => ['shipping.view'],
+        ],
+        // Story 0039 -- Payment methods settings screen, nested in the same `store_settings`
+        // cluster as sales_regions/shipping_zones/shipping_carriers: all four are store-wide
+        // configuration screens in the same sense (D-1/D-4 of story 0080). 'permissions' is
+        // EXACTLY the ability routes/payment-methods.php's own `can:` middleware enforces on
+        // payment-methods.index -- never a broader set (see this file's header note).
+        'payment_methods' => [
+            'group' => null,
+            'cluster' => 'store_settings',
+            'label' => 'navigation.items.payment_methods',
+            'icon' => 'credit-card',
+            'route' => 'payment-methods.index',
+            'current_when' => 'payment-methods.*',
+            'permissions' => ['payment-methods.view'],
+        ],
+        // Story 0044 -- Customers is a top-level operational module like `users` (a bare item,
+        // group: null, cluster: null), not store configuration and not a sub-resource of an
+        // existing cluster. 'permissions' is EXACTLY the ability routes/customers.php's own
+        // `can:` middleware enforces on customers.index -- never a broader set (see this file's
+        // header note).
+        'customers' => [
+            'group' => null,
+            'cluster' => null,
+            'label' => 'navigation.items.customers',
+            'icon' => 'user-group',
+            'route' => 'customers.index',
+            'current_when' => 'customers.*',
+            'permissions' => ['customers.view'],
+        ],
+        // Story 0055 -- Orders is a top-level operational module like `users` and `customers` (a
+        // bare item: group null, cluster null; the `platform` group the task file first named was
+        // retired by story 0080). 'current_when' is 'orders.*' so ONE entry stays highlighted on
+        // both orders.index and orders.show. 'permissions' is EXACTLY the ability both routes'
+        // `can:` middleware enforces -- never a broader set (see this file's header note). The
+        // detail screen's other abilities (orders.edit, orders.refund) govern individual controls
+        // in the component, not access to the module.
+        'orders' => [
+            'group' => null,
+            'cluster' => null,
+            'label' => 'navigation.items.orders',
+            'icon' => 'shopping-bag',
+            'route' => 'orders.index',
+            'current_when' => 'orders.*',
+            'permissions' => ['orders.view'],
+        ],
+        // Story 0063 -- Blog posts, INSERTED before `blog_tags` rather than appended: declaration
+        // order is render order (sidebar-nav.blade.php's groupBy()/@foreach preserve it), and the
+        // posts screen is the Blog module's headline, so it renders first in the cluster. Joins the
+        // SAME `blog` cluster of the `content` group story 0060 created. 'current_when' is
+        // 'blog-posts.*' so the entry stays highlighted on blog-posts.create and blog-posts.edit
+        // too. 'permissions' is EXACTLY the ability routes/blog-posts.php's own `can:` middleware
+        // enforces on all three routes -- never a broader set and never a related blog.* ability.
+        // The icon differs from the cluster's `document-text`, from blog_tags' `hashtag` and from
+        // blog_categories' `rectangle-stack`, so no two entries read as duplicates at a glance.
+        'blog_posts' => [
+            'group' => null,
+            'cluster' => 'blog',
+            'label' => 'navigation.items.blog_posts',
+            'icon' => 'pencil-square',
+            'route' => 'blog-posts.index',
+            'current_when' => 'blog-posts.*',
+            'permissions' => ['blog.view'],
+        ],
+        // Story 0060 -- Blog tags, nested in the `blog` cluster of the `content` group (D-4).
+        // 'permissions' is EXACTLY the ability routes/blog-tags.php's own `can:` middleware
+        // enforces -- never a broader set, and never a related blog.* ability (see this file's
+        // header note).
+        'blog_tags' => [
+            'group' => null,
+            'cluster' => 'blog',
+            'label' => 'navigation.items.blog_tags',
+            'icon' => 'hashtag',
+            'route' => 'blog-tags.index',
+            'current_when' => 'blog-tags.*',
+            'permissions' => ['blog.view'],
+        ],
+        // Story 0062 -- Blog categories, appended to the SAME `blog` cluster of the `content` group
+        // story 0060 created: no group and no cluster is declared here. 'permissions' is EXACTLY
+        // the ability routes/blog-categories.php's own `can:` middleware enforces. The icon differs
+        // visibly from blog_tags' `hashtag`, so two siblings in one cluster do not read as
+        // duplicates at a glance.
+        'blog_categories' => [
+            'group' => null,
+            'cluster' => 'blog',
+            'label' => 'navigation.items.blog_categories',
+            'icon' => 'rectangle-stack',
+            'route' => 'blog-categories.index',
+            'current_when' => 'blog-categories.*',
+            'permissions' => ['blog.view'],
         ],
     ],
 ];

@@ -1,7 +1,8 @@
 <div class="w-full">
+    <x-slot:heading>{{ __('topbar.users.title') }}</x-slot:heading>
+    <x-slot:subheading>{{ __('topbar.users.subtitle') }}</x-slot:subheading>
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <flux:heading size="xl">{{ __('Users') }}</flux:heading>
             <flux:subheading>
                 {{ __('users.index.summary', ['total' => $this->usersSummary['total'], 'active' => $this->usersSummary['active']]) }}
             </flux:subheading>

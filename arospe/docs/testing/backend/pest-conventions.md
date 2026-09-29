@@ -22,7 +22,7 @@ Write the description as a plain statement of behavior, third person, no "should
 
 - One test file per class/component under test, suffixed `Test.php`: `DashboardTest.php`, not `dashboard_test.php` or `TestDashboard.php`.
 - Location mirrors what's being tested, under `tests/Feature/` or `tests/Unit/` — e.g. a future `Security` Livewire test belongs at `tests/Feature/Settings/SecurityTest.php`, mirroring `app/Livewire/Settings/Security.php`.
-- Scaffold with `php artisan make:test --pest <Name>` (or `--unit` for `tests/Unit/`) — never hand-create the file — per the artisan-first workflow in [conventions/base-standards.md](../../conventions/base-standards.md#artisan-first-workflow). Remember the `{name}` argument excludes the suite prefix: `php artisan make:test --pest Settings/SecurityTest` produces `tests/Feature/Settings/SecurityTest.php`.
+- Scaffold with `php artisan make:test --pest <Name>` (or `--unit` for `tests/Unit/`) — never hand-create the file — per the artisan-first workflow in [conventions/base-standards.md](../../conventions/base-standards/workflow-and-quality-gates.md#artisan-first-workflow). Remember the `{name}` argument excludes the suite prefix: `php artisan make:test --pest Settings/SecurityTest` produces `tests/Feature/Settings/SecurityTest.php`.
 
 ## Arrange-Act-Assert
 

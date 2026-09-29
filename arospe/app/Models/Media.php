@@ -63,7 +63,7 @@ class Media extends Model
     /**
      * The user who performed the upload, if the account still exists and is
      * not soft-deleted. `uploaded_by` is retained even after a soft delete
-     * (see docs/database/schema.md#soft-deletes) — a trashed uploader simply
+     * (see docs/database/schema-users-auth.md#soft-deletes) — a trashed uploader simply
      * resolves this relation to null rather than releasing the FK.
      *
      * @return BelongsTo<User, $this>

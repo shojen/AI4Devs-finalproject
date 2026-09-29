@@ -1,8 +1,6 @@
 <section class="w-full">
-    @include('partials.settings-heading')
-
-    <flux:heading class="sr-only">{{ __('Security settings') }}</flux:heading>
-
+    <x-slot:heading>{{ __('topbar.settings.security') }}</x-slot:heading>
+    <x-slot:subheading>{{ __('topbar.settings.security_subtitle') }}</x-slot:subheading>
     <x-settings.layout :heading="__('Update password')" :subheading="__('Ensure your account is using a long, random password to stay secure')">
         <form method="POST" wire:submit="updatePassword" class="mt-6 space-y-6">
             <flux:input

@@ -23,15 +23,15 @@ underwrites exactly two acceptance criteria, one per consumer:
 
 > - [ ] Products are assignable to one or more Sales Regions via a searchable multi-select where
 >       selecting Spain surfaces its fiscal sub-entries.
-> — [§2.2 Products](../../../docs/PRD/PRD.md#22-products)
+> — [§2.2 Products](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#22-products)
 
 > - [ ] The zone's geography picker is a **searchable, server-side-filtered multi-select** with a
 >       "no results" empty state — the same shared component the product editor's Sales Region picker
 >       uses. A client-side filter is explicitly insufficient at this dataset's size.
-> — [§2.4 Shipping](../../../docs/PRD/PRD.md#24-shipping) (rewritten 2026-08-17)
+> — [§2.4 Shipping](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#24-shipping) (rewritten 2026-08-17)
 
 **Why server-side filtering is the requirement, not an implementation preference.** The shared media
-gallery ([§2.3](../../../docs/PRD/PRD.md#23-shared-media-gallery)) has a superficially similar
+gallery ([§2.3](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#23-shared-media-gallery)) has a superficially similar
 search-with-empty-state, and it is the wrong precedent to copy: its dataset is an uploaded image
 library, and §2.4 states outright that "a client-side filter like the media gallery's does not scale"
 to ~8,100 rows. The distinguishing constraint of this story is that **the option list is never fully
@@ -208,7 +208,7 @@ and `assertSelectionResolvable()` (D12, the helper a consumer calls from its own
   disclosure primitive, not a cosmetic bug. It is set once, server-side, from the consumer's own Blade
   attribute, so locking costs nothing.
 - **`$selectedOptions`** and **`$results`** — server-derived display state, per
-  [livewire-authorization.md](../../../docs/security/livewire-authorization.md#every-server-derived-property-is-locked-not-just-the-ids)'s
+  [livewire-authorization.md](../../../docs/security/livewire-authorization/locked-properties.md#every-server-derived-property-is-locked-not-just-the-ids)'s
   rule that the test is "is this value ever legitimate request input", not "is it an id".
 - **`$unresolvableSelected`** (added 2026-08-18) — same rule: it is a server-derived *verdict*. If the
   client could write it, it could clear its own error state, and the in-field warning D12 relies on
@@ -229,7 +229,7 @@ and the screen it is embedded in is already gated. Reviewers should expect its a
 
 What the shell *does* owe: `selectOption()`, `removeOption()` and `updatedSearch()` must each refuse
 when `$disabled` is true, server-side — hiding the input is not a control, per
-[livewire-authorization.md](../../../docs/security/livewire-authorization.md#gate-at-the-top-of-every-method-that-mutates-or-discloses).
+[livewire-authorization.md](../../../docs/security/livewire-authorization/entry-point-and-method-gates.md#gate-at-the-top-of-every-method-that-mutates-or-discloses).
 
 ### D8 — Four known traps this component must be built around
 
@@ -249,7 +249,7 @@ when `$disabled` is true, server-side — hiding the input is not a control, per
    property must hold a real empty value in the type the DOM expects.
 4. **A conditional `disabled` on a `<flux:*>` tag is a full `@if`/`@else` tag pair, never a bare
    `@disabled(...)` / `:disabled="..."` attribute.** Added 2026-08-31, from the newest
-   [errors-log.md](../../../docs/errors-log.md#a-bare-disableddisabled-inside-a-fluxbutton-tags-attribute-list-corrupts-the-whole-compiled-view--2026-08-31)
+   [errors-log.md](../../../docs/errors-log/2026-08-28-to-2026-08-31.md#a-bare-disableddisabled-inside-a-fluxbutton-tags-attribute-list-corrupts-the-whole-compiled-view--2026-08-31)
    entry (story 0021's Phase 5 finding N4, reproduced via `Blade::render()`). Written inside a
    `<flux:*>` tag's attribute list, that directive does **not** resolve to a conditional `disabled=""`
    the way it would on a plain HTML `<button>` — `livewire/blaze`'s compile-time folding corrupts the
@@ -275,9 +275,9 @@ when `$disabled` is true, server-side — hiding the input is not a control, per
 > {{ $debounceMs }})"` — the same mechanism `wysiwyg-editor.blade.php` already established for its own
 > debounce, still driving the identical `updatedSearch()` `updated<Property>()` lifecycle hook once the
 > timeout fires. See
-> [errors-log.md](../../../docs/errors-log.md#a-livewire-directive-modifiers-duration-cannot-be-interpolated-as-part-of-a-component-tags-attribute-name--2026-08-31)
+> [errors-log.md](../../../docs/errors-log/2026-08-28-to-2026-08-31.md#a-livewire-directive-modifiers-duration-cannot-be-interpolated-as-part-of-a-component-tags-attribute-name--2026-08-31)
 > for the full mechanism and
-> [conventions/base-standards.md](../../../docs/conventions/base-standards.md#flux-frees-ui-dropdown-requires-a-real-button-trigger-descendant--confirmed-twice-not-a-one-off)
+> [conventions/base-standards.md](../../../docs/conventions/base-standards/livewire-and-flux-conventions.md#flux-frees-ui-dropdown-requires-a-real-button-trigger-descendant--confirmed-twice-not-a-one-off)
 > for D10's own parallel correction, below. The paragraph immediately below is left standing as the
 > record of what Phase 1 specified, not as a description of the shipped view.
 
@@ -358,7 +358,7 @@ Verified: `vendor/livewire/flux/stubs/resources/views/flux/select/variants/` con
 > presentational components, no `ui-menu` custom element among them), and only the outer
 > `<flux:dropdown>`/`ui-dropdown` wrapper is replaced with a hand-assembled
 > `x-show`/`x-cloak`/`x-on:click.outside`/`x-on:keydown.escape.window` popover. See
-> [conventions/base-standards.md](../../../docs/conventions/base-standards.md#flux-frees-ui-dropdown-requires-a-real-button-trigger-descendant--confirmed-twice-not-a-one-off)
+> [conventions/base-standards.md](../../../docs/conventions/base-standards/livewire-and-flux-conventions.md#flux-frees-ui-dropdown-requires-a-real-button-trigger-descendant--confirmed-twice-not-a-one-off)
 > for the now-generalised rule and
 > [the searchable-multi-select view's own file-banner comment](../../../resources/views/livewire/components/searchable-multi-select.blade.php)
 > for the exact reproduction. Everything else in this decision — the "no combobox in Flux Free" finding,
@@ -468,7 +468,7 @@ default-on-neglect outcome is also invisible partial success cannot be the fix.
    mandatory, not belt-and-braces**: the shell's flag is UI state and `/livewire/update` is an
    independent entry point, so a save must never trust it. This is the same "a rule enforced only in
    a component is bypassed by every other call site" rule as
-   [livewire-authorization.md](../../../docs/security/livewire-authorization.md#gate-at-the-top-of-every-method-that-mutates-or-discloses).
+   [livewire-authorization.md](../../../docs/security/livewire-authorization/entry-point-and-method-gates.md#gate-at-the-top-of-every-method-that-mutates-or-discloses).
 
 **The unavailable chip shows a generic localized label, never the raw id.** D4's reasoning extends
 here: ids in `$selected` are client-writable, so echoing one into the chip row hands an attacker a
@@ -494,7 +494,7 @@ as "the same search works on one screen and not another".
 `__invoke(string $value): string`.
 
 Directly under `app/Actions/`, not in a subfolder, because
-[base-standards.md](../../../docs/conventions/base-standards.md#directory-structure) says exactly that:
+[base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure) says exactly that:
 "A new action goes in the subfolder for its domain (**or directly under `app/Actions/` if it belongs
 to none**)". Normalization belongs to no domain — products, geography and Sales Regions all call it.
 The naming follows the same file's convention for single-purpose invokables: imperative verb phrase,
@@ -508,7 +508,7 @@ it** — the needle a user typed *and* the haystack value a resolver matches aga
 > **new base folder** requiring approval under base-standards — the identical reason OQ-3 already
 > rejects `app/Contracts/` for the D1 interface. `app/Concerns/` was also rejected: it holds
 > validation-rule *traits* whose every method is suffixed `Rules`
-> ([naming.md](../../../docs/conventions/naming.md#traits-and-their-methods)), which this is not. If
+> ([naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)), which this is not. If
 > `app/Support/` is ever approved for other reasons, moving this class is a mechanical rename with a
 > single call-site sweep — see OQ-8.
 
@@ -787,7 +787,7 @@ Feature: Searchable multi-select field
   unavailable-option explanation, plus the two D12 keys `unresolvable_selection` — the field error —
   and `unavailable_option` — the generic chip label that stands in for the raw id, and the
   chip-area `aria-label` from D14. English source strings; both files stay key-for-key identical per
-  [naming.md](../../../docs/conventions/naming.md#translation-keys).
+  [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys).
 - `tests/Support/Livewire/ArrayMultiSelectOptionsResolver.php` — **new.** The test-only resolver
   (see "Test double" below).
 - `tests/Feature/Components/SearchableMultiSelectTest.php` — **new.** Component-level tests.
@@ -802,16 +802,16 @@ Feature: Searchable multi-select field
 **Directory justification.** `app/Livewire/Components/` is a **subfolder of the existing
 `app/Livewire/` base directory**, exactly as `Actions/`, `Settings/` and `Users/` already are — the
 "don't create new base folders without approval" rule in
-[base-standards.md](../../../docs/conventions/base-standards.md#directory-structure) governs new
+[base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure) governs new
 top-level directories under `app/`, which this is not. `Components` was chosen over `Shared`/`UI` to
 mirror `resources/views/components/`, giving `app/Livewire/Components/` = reusable Livewire-backed UI
 against `resources/views/components/` = reusable plain Blade. **This was raised as OQ-3 and is now
 resolved** — not by this story, but by story 0021 shipping `App\Livewire\Components\WysiwygEditor`
 there first; the folder is an established convention in
-[base-standards.md](../../../docs/conventions/base-standards.md#directory-structure), so this story
+[base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure), so this story
 follows it rather than setting it. See the Resolved-questions section.
 
-**View resolution.** The [`Index`-in-a-subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
+**View resolution.** The [`Index`-in-a-subfolder exception](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
 does **not** apply — it keys off the class literally being named `Index`. `SearchableMultiSelect`
 follows the ordinary kebab-case mirror rule:
 `App\Livewire\Components\SearchableMultiSelect` → `resources/views/livewire/components/searchable-multi-select.blade.php`.
@@ -1080,7 +1080,7 @@ should be sequenced before both per [workflow.md](../../../docs/workflow.md)'s t
   2026-08-31, and not by this story.** It was raised here because it would set the precedent for every
   future shared component; **story 0021 got there first** and shipped `App\Livewire\Components\WysiwygEditor`
   into exactly that folder, which is now documented in
-  [base-standards.md](../../../docs/conventions/base-standards.md#directory-structure) as an established
+  [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure) as an established
   subfolder ("not a module area like the others — it holds reusable, content-agnostic components a
   screen embeds"). So this story **follows** the convention rather than establishing it, and the
   "Directory justification" paragraph above is retained as background, not as an open decision. The
@@ -1152,8 +1152,8 @@ should be sequenced before both per [workflow.md](../../../docs/workflow.md)'s t
 
 ## Provenance
 Written in Phase 1 (Three Amigos) on 2026-08-17 for Epic 2, from
-[§2.2](../../../docs/PRD/PRD.md#22-products), [§2.3](../../../docs/PRD/PRD.md#23-shared-media-gallery) (read
-for contrast) and the [§2.4 Shipping](../../../docs/PRD/PRD.md#24-shipping) section rewritten the same
+[§2.2](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#22-products), [§2.3](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#23-shared-media-gallery) (read
+for contrast) and the [§2.4 Shipping](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#24-shipping) section rewritten the same
 day. Participants: `product-owner`, `frontend-expert`, `frontend-qa` — classified **frontend** per
 [workflow.md](../../../docs/workflow.md)'s task-classification rule, with `database-expert` deliberately
 **not** convened since the story creates no table, migration or query. No application code was written
@@ -1198,7 +1198,7 @@ so the shipped debounce is the same hand-rolled Alpine `setTimeout()` + `$wire.s
 every page load against a `flux:input` trigger (`ui-dropdown`'s `querySelector("button")` requirement
 is unmet), so the shipped popover is the identical `x-show`/`x-cloak`/`click.outside` shape D10's own
 sibling decision already used once before, in `wysiwyg-editor.blade.php`'s link popover. Both are now
-durable rules in [conventions/base-standards.md](../../../docs/conventions/base-standards.md#directory-structure)
+durable rules in [conventions/base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure)
 and (for the debounce case) [errors-log.md](../../../docs/errors-log.md). **OQ-7's ARIA scope is also
 corrected from an intent statement to a shipped-state record**: real `flux:label` association and
 per-chip `aria-label`s (including D14's chip-area `role="group"`) shipped as specified, but keyboard

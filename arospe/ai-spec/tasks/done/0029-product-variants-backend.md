@@ -36,7 +36,7 @@ combination on a product**, and **a SKU namespace that spans both `products.sku`
 >    types' values, created in one call. This **reverses** the scope fence that previously deferred
 >    it, and it partially answers **[OQ-5](#open-questions)** (the generator: yes; the
 >    `product_product_attribute_type` declaration table: still no). Specified as
->    **[D-18](#d-18----moved-to-0029b0029b-product-variant-combination-generator-backendmd-2026-09-04)**, now **[0029b](0029b-product-variant-combination-generator-backend.md)**.
+>    **[D-18](#d-18)**, now **[0029b](0029b-product-variant-combination-generator-backend.md)**.
 >
 > The classification does **not** change — see [Type](#type) for the reasoning, which is stated rather
 > than asserted because "creates hundreds of rows" reads like a database question and is not one here.
@@ -74,7 +74,7 @@ paired story **0031**. Defining the attribute types and values themselves is alr
 **0028**. The bulk combination generator is **0029b**; the two attribute in-use delete guards are
 **0029a**.
 
-Covers [PRD](../../../docs/PRD/PRD.md#22-products) §2.2's *"Create a variant as an attribute
+Covers [PRD](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#22-products) §2.2's *"Create a variant as an attribute
 combination"*, *"A variant without its own image inherits the parent's featured image"*, *"A variant
 with its own image uses that image"*, *"A duplicate attribute combination is rejected"*, and the
 **"a variant"** example of *"Scenario Outline: A duplicate SKU is rejected"* — i.e. Products
@@ -390,7 +390,7 @@ public function __invoke(array $productAttributeValueIds): string
 >
 > - **Directly under `app/Actions/`**, beside [`App\Actions\NormalizeForSearch`](../../../app/Actions/NormalizeForSearch.php) —
 >   the repo's one real precedent for a pure function belonging to no single domain. **Rejected**,
->   because [base-standards.md](../../../docs/conventions/base-standards.md#directory-structure) states
+>   because [base-standards.md](../../../docs/conventions/directory-structure.md#directory-structure) states
 >   that branch as *"or directly under `app/Actions/` **if it belongs to none**"*, and this one
 >   belongs squarely to the Products domain. `NormalizeForSearch` is shared by four different areas;
 >   this class has exactly one.
@@ -404,7 +404,7 @@ public function __invoke(array $productAttributeValueIds): string
 > tests, per [code-style.md](../../../docs/conventions/code-style.md#inject-single-purpose-actions-per-method)'s
 > rule that *"a zero-argument constructor is not a contract"*; and **it is named as an imperative
 > verb phrase** (`HashVariantCombination`, not `VariantCombination`), per
-> [naming.md](../../../docs/conventions/naming.md#classes). Its unit test mirrors the app path:
+> [naming.md](../../../docs/conventions/naming/classes.md#classes). Its unit test mirrors the app path:
 > `tests/Unit/Actions/Products/HashVariantCombinationTest.php`.
 
 > 🔴 **The single highest-risk line in this story, and it is invisible on inspection (V-10).** The
@@ -772,7 +772,7 @@ Both re-derivation paths are **all-or-nothing inside one transaction**: a produc
 would make any one of its variants collide is refused whole, with the message naming the variant.
 Partially re-deriving would leave a product whose variants disagree about their own parent.
 
-#### D-4.6.1 🔴 — The rename branch is a query-builder mass update, so the cascade cannot be hooked
+#### D-4.6.1 🔴 — The rename branch is a query-builder mass update, so the cascade cannot be hooked <a id="d-4-6-1"></a>
 
 **Added 2026-09-04 (Phase 2 defect 6), from reading the shipped file rather than the spec.**
 `SyncProductAttributeValues`' update branch is:
@@ -787,7 +787,7 @@ $this->writeRow(fn () => ProductAttributeValue::where('id', $id)->update([
 
 That is `Builder::update()`, **not** `Model::save()`. It instantiates no model, so it fires **no**
 `updating`/`updated`/`saved` Eloquent event — the identical trap
-[base-standards.md](../../../docs/conventions/base-standards.md#deleting-a-user-goes-through-the-model-not-the-query-builder)
+[base-standards.md](../../../docs/conventions/base-standards/stack-and-model-conventions.md#deleting-a-user-goes-through-the-model-not-the-query-builder)
 records for `User::delete()`, one class over. **A model observer, a `static::updated()` hook, or
 anything else event-driven is therefore not available to carry D-4.6's value-rename cascade**, and a
 Phase 3 implementer reaching for one would ship a cascade that silently never runs while every
@@ -867,7 +867,7 @@ Three consequences, all of them constraints on how the cascade is written:
 > ```
 >
 > Three things this changes about the retrofit, none of them cosmetic. **(a) The entity-prefixed name
-> is mandatory, not optional** — 0024's own naming trap ([naming.md](../../../docs/conventions/naming.md#traits-and-their-methods))
+> is mandatory, not optional** — 0024's own naming trap ([naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods))
 > is why every method in that trait carries the `product` prefix, and a `skuRules()` added beside them
 > would break the blanket rule the trait is reviewed against in one glance. **(b) The shipped form is
 > `Rule::unique(Product::class, 'sku')` — the model-class form — under a ternary, not
@@ -953,7 +953,7 @@ Schema::create('skus', function (Blueprint $table): void {
 **Three sub-decisions inside that file.** A **surrogate UUID `id` rather than `sku` as the primary
 key**: `string('sku')->primary()` works, but forces `$primaryKey`/`$keyType`/`$incrementing` onto the
 model — precisely the three properties
-[base-standards.md](../../../docs/conventions/base-standards.md#uuid-primary-keys) says not to write —
+[base-standards.md](../../../docs/conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys) says not to write —
 and it makes `Rule::unique(Sku::class, 'sku')->ignore($id)` natural. **No `timestamps()`** (nothing
 reads them). **No `CHECK`** that exactly one owner is set — see agreed point 6; enforce structurally
 by exposing only `Sku::registerFor(Product|ProductVariant $owner, string $sku)`.
@@ -993,7 +993,7 @@ answer is that a registry row is **a reservation, not a second answer to a quest
 nothing ever *reads* `skus.sku` to learn a SKU; it is written to claim the name and deleted by
 cascade to release it. There is exactly one readable column. The precedent for a claim-row shadowing
 an identifier is already in this schema: `users.pending_email`'s unique index, which
-[schema.md](../../../docs/database/schema.md#users) calls "the last-word guard behind the application
+[schema.md](../../../docs/database/schema-users-auth.md#users) calls "the last-word guard behind the application
 checks".
 
 **The residual this option accepts.** `Product::where(...)->update(['sku' => 'X'])` through the
@@ -1259,7 +1259,7 @@ explicit `'media'`. `down()` in both files is the exact `Schema::dropIfExists(..
 | `featured_media_id` | `foreignUuid()->nullable()->constrained('media')->restrictOnDelete()` | 0024 **D-9** confirmed. **Nullable *is* the inheritance mechanism** — see **D-7** |
 | `position` | `unsignedInteger`, NOT NULL, `default(0)` | See **D-8** |
 | `timestamps()` | present | Universal in this repo |
-| — | **no `SoftDeletes`** | 0024 **D-12** reason #1 with double force: `Rule::unique()` does not apply the soft-delete scope ([schema.md](../../../docs/database/schema.md#soft-deletes)), so a trashed variant would permanently squat **both** its SKU *and* its `combination_hash` — "re-create the Size 40 / Black variant" would be refused with nothing in the UI able to explain why |
+| — | **no `SoftDeletes`** | 0024 **D-12** reason #1 with double force: `Rule::unique()` does not apply the soft-delete scope ([schema.md](../../../docs/database/schema-users-auth.md#soft-deletes)), so a trashed variant would permanently squat **both** its SKU *and* its `combination_hash` — "re-create the Size 40 / Black variant" would be refused with nothing in the UI able to explain why |
 
 **On `price` being NOT NULL rather than nullable-and-inheriting.** Read the two PRD sentences against
 each other: the Gherkin says *"that variant has its own SKU, price, and stock"*, and the acceptance
@@ -1399,12 +1399,12 @@ risk; this is that risk, made explicit and made sequential rather than concurren
 level (`$table->uuid('id')->primary()`, `foreignUuid(...)->constrained()`) and the Eloquent level.
 
 Unlike 0019 (`media`) and 0028 (the attribute tables), **this story needs no policy-extension
-argument.** PRD [assumption 19](../../../docs/PRD/PRD.md#assumptions--confirmed-decisions) names
+argument.** PRD [assumption 19](../../../docs/PRD/sections/foundations.md#assumptions--confirmed-decisions) names
 *"Product Variants"* explicitly as one of the seven originally-enumerated UUID entities, and
 [ADR 0001](../../../docs/decisions/0001-uuid-primary-keys.md) records it as still-future and greenfield.
 Cite that directly; do **not** cite the general Epic-2 policy, which exists for entities the original
 seven did not cover. `@property string $id`; **no** `$keyType` / `$incrementing` properties
-([base-standards.md](../../../docs/conventions/base-standards.md#uuid-primary-keys)).
+([base-standards.md](../../../docs/conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys)).
 
 This story is therefore one of the ones that lets `docs-keeper` shorten ADR 0001's "still future"
 list rather than extend its scope.
@@ -1424,7 +1424,7 @@ identically") while staying consistent with 0024, because the ability object 003
 need already exists on `ProductPolicy` and takes the **parent product** as its target. Gate variant
 operations against the parent: `Gate::authorize('update', $variant->product)`.
 
-#### D-12.1 — ✅ **Every variant action self-authorizes** *(decided 2026-09-04 at Phase 2; this was the deferral the review refused)*
+#### D-12.1 — ✅ **Every variant action self-authorizes** *(decided 2026-09-04 at Phase 2; this was the deferral the review refused)* <a id="d-12-1"></a>
 
 > 🟠 **This subsection replaces a deferral, not a decision.** What stood here said *"the actions do not
 > self-authorize, per 0024's **D-15**/**RQ-10**"* under a ⚠️ recording that the parenthetical
@@ -1451,7 +1451,7 @@ $this->logRefusedPrivilegedAttempt->authorize(
 Six points, each of which a reviewer would otherwise ask:
 
 1. **Why this and not the deferral.** The convention is documented and unambiguous —
-   [base-standards.md](../../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers):
+   [base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers):
    *"if an operation must not happen without a permission, the check lives in the class that performs
    the operation."* Every counter-precedent this document used to cite has since gone the other way:
    0024 reversed its own D-15/RQ-10 at its split (its **C-1**), 0025 discharged 0023's hand-off so all
@@ -1614,7 +1614,7 @@ Four rules that make the table total rather than merely descriptive:
 The [Files table](#creates) named three methods and specified none of them; 0031 OQ-3(b) additionally
 needs a fourth that was never listed. The trait is written out here so there is one definition and no
 call site has to guess. It stays flat and single-concern and `use`s no other trait
-([naming.md](../../../docs/conventions/naming.md#traits-and-their-methods)), and **every leaf method is
+([naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods)), and **every leaf method is
 entity-prefixed** per 0024's naming trap — a variant editor composing this alongside
 `ProductValidationRules` would otherwise fatal on `priceRules()` / `stockRules()` /
 `featuredMediaIdRules()`, which is exactly the composition 0031 performs.
@@ -1633,7 +1633,7 @@ generator calls. **This trait ships five methods here**; 0029b appends the other
 trait (an append, never a second trait — the same "extend, never recreate" rule the `lang/` files
 follow).
 
-#### D-16.1 🔴 — The two id arrays MUST be validated in two passes, never one combined rule array
+#### D-16.1 🔴 — The two id arrays MUST be validated in two passes, never one combined rule array <a id="d-16-1"></a>
 
 **Added 2026-09-04 (Phase 2 defect 5).** This story was debated on 2026-08-18/19, before story
 0028's Phase 4 finding wrote the mechanism onto
@@ -1732,7 +1732,7 @@ Four notes, each of which a reviewer will otherwise raise:
 never declares them, so two stories would each invent a signature and only discover the mismatch in
 Phase 3.
 
-#### D-17.1 — The action signatures 🟠 *(three, since the generator's moved to 0029b)*
+#### D-17.1 — The action signatures 🟠 *(three, since the generator's moved to 0029b)* <a id="d-17-1"></a>
 
 ```php
 // app/Actions/Products/CreateProductVariant.php
@@ -1850,7 +1850,7 @@ Do not add a public `syncValues()` / `attachValue()` / `detachValue()` surface, 
 reasoning `base-standards.md` gives for keeping the behaviour on `User::delete()` and every call site
 on instances.
 
-### D-18 — 🟠 MOVED to [0029b](0029b-product-variant-combination-generator-backend.md) (2026-09-04)
+### D-18 — 🟠 MOVED to [0029b](0029b-product-variant-combination-generator-backend.md) (2026-09-04) <a id="d-18"></a>
 
 The cartesian combination generator — `GenerateProductVariantCombinations`, its summary-array return
 shape, its skip/refuse outcome semantics, the savepoint transaction shape, the `MAX_COMBINATIONS`
@@ -1927,7 +1927,7 @@ roll back only its own savepoint. 0029b runs strictly after this story reaches P
 | `app/Actions/Products/UpdateProductVariant.php` | `price`/`stock`/`featured_media_id`/`position` only — **never** the pivot, the hash, **or the SKU** (**D-13**, **D-4.3**). The SKU changes only through **D-4.6**'s cascades, which this action is not one of |
 | `app/Actions/Products/DeleteProductVariant.php` | Thin today; exists as the single seam Epic 3's "a variant referenced by orders cannot be deleted" guard bolts onto — 0023 **D-10** / 0024's `DeleteProduct` reasoning |
 | ~~`app/Actions/Products/GenerateProductVariantCombinations.php`~~ 🟠 **MOVED to [0029b](0029b-product-variant-combination-generator-backend.md), 2026-09-04.** *(row retained struck through so the cut is visible in the diff rather than silent)* | **Was, 2026-08-19 (D-18).** The cartesian generator: one outer transaction, one pre-read of the product's existing `combination_hash` values, then one `CreateProductVariant` call per new combination (its transaction becomes a savepoint, so a per-row refusal does not destroy the batch). Owns `MAX_COMBINATIONS = 200` (**D-18.5**), the empty-type refusal, the iteration order (**D-18.6**) and the summary array shape (**D-18.1**). **It re-implements nothing** — not the derivation, not the hash, not the collision check; a second copy of any of those is the defect **R-L** names |
-| `app/Concerns/ProductVariantValidationRules.php` | `<Noun>ValidationRules` per [naming.md](../../../docs/conventions/naming.md#traits-and-their-methods). Flat, single-concern, `use`s no other trait. **Entity-prefixed leaf methods** where a name would collide — 0024's naming trap is live here, because a variant editor composing this alongside `ProductValidationRules` fatals on a duplicate method. **No `skuRules()`/`productSkuRules()` and no variant SKU rule at all** — the variant SKU is derived, so there is no input to validate (**D-4.3**); the product-side `productSkuRules()` stays in 0024's trait. **Written out in full in [D-16](#d-16--productvariantvalidationrules-written-out-in-full): five methods** — `variantCombinationRules()`, `variantCombinationValueRules()`, `variantPriceRules()`, `variantStockRules()`, `variantFeaturedMediaIdRules()`. 🟠 The two `attributeTypeIds` methods **appended to this same trait by [0029b](0029b-product-variant-combination-generator-backend.md)**, never a second trait. 🔴 **Every consumer validates the id array in TWO passes** — [D-16.1](#d-161----the-two-id-arrays-must-be-validated-in-two-passes-never-one-combined-rule-array) |
+| `app/Concerns/ProductVariantValidationRules.php` | `<Noun>ValidationRules` per [naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods). Flat, single-concern, `use`s no other trait. **Entity-prefixed leaf methods** where a name would collide — 0024's naming trap is live here, because a variant editor composing this alongside `ProductValidationRules` fatals on a duplicate method. **No `skuRules()`/`productSkuRules()` and no variant SKU rule at all** — the variant SKU is derived, so there is no input to validate (**D-4.3**); the product-side `productSkuRules()` stays in 0024's trait. **Written out in full in [D-16](#d-16--productvariantvalidationrules-written-out-in-full): five methods** — `variantCombinationRules()`, `variantCombinationValueRules()`, `variantPriceRules()`, `variantStockRules()`, `variantFeaturedMediaIdRules()`. 🟠 The two `attributeTypeIds` methods **appended to this same trait by [0029b](0029b-product-variant-combination-generator-backend.md)**, never a second trait. 🔴 **Every consumer validates the id array in TWO passes** — [D-16.1](#d-16-1) |
 | `database/factories/ProductVariantFactory.php` | `product_id => Product::factory()` so a bare `->create()` stands alone. **The SKU must be derived, not faked**: default to `app(DeriveVariantSku::class)($product->sku, [$segment])` with a short unique `bothify()` segment, **never** `fake()->unique()->word()` (~1000-row `OverflowException`) and never a free-text SKU — a factory that writes an underived SKU makes **D-4.3**'s global consistency test unusable (**FP13**). States: `withCombination(array $valueIds)` (derives from the real values, in **D-4.2** order), `withOwnImage()`, `inheritingImage()`, `outOfStock()` |
 | `tests/**` | Phase 3, `backend-qa` — see [Tests to perform](#tests-to-perform) |
 
@@ -1940,7 +1940,7 @@ roll back only its own savepoint. 0029b runs strictly after this story reaches P
 | `app/Concerns/ProductValidationRules.php` **(0024's SHIPPED file)** | 🟠 **Method name corrected 2026-09-04 (Phase 2 defect 1): it is `productSkuRules(?string $productId = null)`, not `skuRules()`.** It gains a second uniqueness rule, `Rule::unique(ProductVariant::class, 'sku')` — the **model-class** form, matching the shipped body's own `Rule::unique(Product::class, 'sku')`, and placed **outside** the existing `$productId === null` ternary with **no** `->ignore()` on either branch. **No `?string $productVariantId` parameter is added**; the signature is unchanged. Still required after the derived-SKU amendment: an admin-typed **product** SKU is the only remaining way a human can claim a string in this namespace (collision case **(a)**). See the correction box at the end of **D-4.7** for the shipped body |
 | `app/Actions/Products/CreateProduct.php` **(0024's file)** | Gains the locking pre-check across both tables, in the fixed lock order (**D-4.5**). Without it, "a product claiming a variant's derived SKU" is unguarded |
 | `app/Actions/Products/UpdateProduct.php` **(0024's file)** | The same pre-check, **plus the re-derivation cascade** (**D-4.6**): a change to `products.sku` re-derives every one of that product's variants in the same transaction, re-checks each new value, and aborts the whole update on any collision. This is the single largest retrofit this story makes to another story's code |
-| `app/Actions/Products/SyncProductAttributeValues.php` **(0028's SHIPPED file)** | Its **rename branch** must re-derive the SKU of every variant built on a renamed value (**D-4.6**), same transaction, all-or-nothing. 🔴 **This is now the ONLY edit this story makes to that file** — the delete-branch in-use guard moved to [0029a](0029a-attribute-in-use-delete-guards-backend.md). 🔴 **And the branch does not fire model events, which changes how the cascade must be written** — see [D-4.6.1](#d-461----the-rename-branch-is-a-query-builder-mass-update-so-the-cascade-cannot-be-hooked) |
+| `app/Actions/Products/SyncProductAttributeValues.php` **(0028's SHIPPED file)** | Its **rename branch** must re-derive the SKU of every variant built on a renamed value (**D-4.6**), same transaction, all-or-nothing. 🔴 **This is now the ONLY edit this story makes to that file** — the delete-branch in-use guard moved to [0029a](0029a-attribute-in-use-delete-guards-backend.md). 🔴 **And the branch does not fire model events, which changes how the cascade must be written** — see [D-4.6.1](#d-4-6-1) |
 | `app/Models/Product.php` **(0024's file)** | Gains one method: `variants(): HasMany`, ordered `position ASC, sku ASC` (**D-8**) |
 | ~~`app/Actions/Products/DeleteProductAttributeType.php`~~ · ~~`SyncProductAttributeValues.php` (delete branch)~~ · ~~`app/Models/ProductAttributeType.php`~~ | 🟠 **All three MOVED to [0029a](0029a-attribute-in-use-delete-guards-backend.md), 2026-09-04** — the type-level in-use guard, the per-value in-use guard in the delete branch, and `variantUsageCount()`. Rows retained struck through so the cut is visible |
 | `app/Models/ProductAttributeValue.php` **(0028's SHIPPED file)** | Gains **exactly one** method: `variants(): BelongsToMany` through the pivot. 🟠 **Corrected 2026-09-04 (Phase 2 defect 3):** this row also claimed the story would *"name 0028's unnamed value→type relation `type(): BelongsTo`"*. `type()` **already exists**, named, typed and PHPDoc'd, with its foreign key passed explicitly. Nothing to add — verify only |
@@ -2432,12 +2432,12 @@ Nothing is user-visible yet: the builder that consumes all of this is story **00
       entity-prefixed, `use`ing no other trait, and **without any SKU rule** — the two
       `attributeTypeIds` methods are appended to the same trait by **0029b**, not shipped here.
 - [ ] 🔴 **Both id arrays are validated in two sequential `Validator::make(...)->validate()`
-      calls, never one combined rule array** ([D-16.1](#d-161----the-two-id-arrays-must-be-validated-in-two-passes-never-one-combined-rule-array)),
+      calls, never one combined rule array** ([D-16.1](#d-16-1)),
       proven by a test asserting **zero** `product_attribute_values` existence queries for an
       oversized submission and by a **binding-count** assertion on the D-3 read-back — never a
       query-count one (**FP21**).
 - [ ] 🟠 **The three actions carry the exact signatures
-      [D-17.1](#d-171--the-four-action-signatures) fixes** — named scalars rather than an array bag,
+      [D-17.1](#d-17-1) fixes** — named scalars rather than an array bag,
       `string $price`, a `ProductVariant` returned from both write actions, and
       `LogRefusedPrivilegedAttempt` **constructor**-injected rather than widening `__invoke()` — and
       every relation [D-17.2](#d-172--every-relation-named-with-its-return-type) names exists with its
@@ -2445,7 +2445,7 @@ Nothing is user-visible yet: the builder that consumes all of this is story **00
       `ProductAttributeValue::type()` is **verified as already shipped**, not re-created.
 - [ ] 🟠 **Each of `CreateProductVariant`, `UpdateProductVariant` and `DeleteProductVariant`
       authorizes `update` on the parent product as its own first statement**
-      ([D-12.1](#d-121----every-variant-action-self-authorizes-decided-2026-09-04-at-phase-2-this-was-the-deferral-the-review-refused)),
+      ([D-12.1](#d-12-1)),
       through `LogRefusedPrivilegedAttempt` with `targetType: 'product'`, **before** validation and
       **before** any transaction — with an allow test, a deny test asserting the absent side effect
       (**FP20**), a `Super Admin` bypass test and a refusal-logging assertion for each. No new
@@ -2570,7 +2570,7 @@ Nothing is user-visible yet: the builder that consumes all of this is story **00
       in-use guards in [0031](0031-product-variants-editor-ui.md) points at **0029b** / **0029a**
       rather than at this file, and both new siblings' own relative links resolve from
       `ai-spec/tasks/` — verified by resolving each path against the filesystem, per
-      [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move), not by
+      [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move), not by
       pattern-matching.
 - [ ] **Constraint recorded for Epic 3**: a variant delete is a hard delete, and any story needing a
       variant to survive deletion must **snapshot**, not soft-delete (0024 **D-12**'s settled
@@ -2634,7 +2634,7 @@ Several decisions would be wrong without them.
   the `$deletingTypeUsageCount` placeholder its D7 designed.
 - **0019 (media library)** — the own-image FK points into `media`.
 - **0023 (product categories)** — transitively, via `products.product_category_id`.
-- Per [workflow.md](../../../docs/workflow.md#task-ordering-rule) the numbering is correct, and the
+- Per [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule) the numbering is correct, and the
   sequencing requirement is **already met**: 0019, 0023, 0024 and 0028 are all in
   `ai-spec/tasks/done/`. What that changes in practice is that every retrofit above is a change to
   **shipped** code rather than an amendment to a sibling spec — the reason this file's own Modifies
@@ -2902,7 +2902,7 @@ declaration table: still no.**
 > The PO split this question, which had always bundled two separable things. **The cartesian generator
 > ships** — 🟠 **in [0029b](0029b-product-variant-combination-generator-backend.md) since the
 > 2026-09-04 split, not in this story** — as `GenerateProductVariantCombinations`
-> (**[D-18](#d-18--the-cartesian-combination-generator)**), reversing the scope fence that deferred
+> (**[D-18](#d-18)**), reversing the scope fence that deferred
 > it. **The `product_product_attribute_type` declaration table does not** — OQ-5a's other half stands
 > unchanged, and the generator holds its axes transiently as parameters, which is exactly what 0031's
 > **D-3** point 2 observed was sufficient (*"the declaration table is not what is missing"*).
@@ -3059,8 +3059,8 @@ first**, and it is this story's.
 ## Provenance
 
 Phase 1 (Three Amigos) debate run on 2026-08-18 per
-[workflow.md](../../../docs/workflow.md#phase-1--three-amigos-debate), derived from
-[PRD](../../../docs/PRD/PRD.md#22-products) §2.2's "Product variants" Gherkin block and the "a variant"
+[workflow.md](../../../docs/workflow/phases.md#phase-1--three-amigos-debate), derived from
+[PRD](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#22-products) §2.2's "Product variants" Gherkin block and the "a variant"
 example of its duplicate-SKU Scenario Outline, plus assumptions 9, 10 and 19, and grounded in **full
 readings** of [0024](../done/0024-products-core-crud-backend.md),
 [0028](../done/0028-product-attribute-types-and-values-backend.md) and
@@ -3185,7 +3185,7 @@ batch cap's computation. Two non-blocking reservations were also closed: **V-15*
 0028 are specs, not code" framing is retired (both are in `done/`), and the missing story-0028 entry
 in [`_digests/epic-2.md`](../_digests/epic-2.md) is **flagged rather than written** — that file is
 `docs-keeper`'s, appended at each story's Phase 6/7 per
-[workflow.md](../../../docs/workflow.md#decision-digest-per-epic), not `product-owner`'s to author.
+[workflow.md](../../../docs/workflow/agents-and-epic-digests.md#decision-digest-per-epic), not `product-owner`'s to author.
 
 ### Amendment — 2026-08-19: four contract gap-fills, and the cartesian generator
 
@@ -3260,5 +3260,5 @@ action.
 > puts it **three** levels down and silently breaks all of them — `../../docs/...` must become
 > `../../../docs/...`, and the sibling-task links (`0024-...md`) must become `../0024-...md`. This is
 > a mandatory step, not a nicety: see
-> [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move) and the
+> [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move) and the
 > [errors-log entry](../../../docs/errors-log.md) recording the six `done/` files this already broke.

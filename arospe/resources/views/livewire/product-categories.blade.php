@@ -1,9 +1,7 @@
 <div class="w-full">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-            <flux:heading size="xl">{{ __('Product categories') }}</flux:heading>
-        </div>
-
+    <x-slot:heading>{{ __('topbar.product_categories.title') }}</x-slot:heading>
+    <x-slot:subheading>{{ __('topbar.product_categories.subtitle') }}</x-slot:subheading>
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
         <flux:button variant="primary" icon="plus" wire:click="openCreateModal">
             {{ __('New category') }}
         </flux:button>
@@ -22,7 +20,7 @@
                     @foreach ($productCategories as $category)
                         <flux:table.row :key="$category['id']">
                             <flux:table.cell>
-                                <div class="font-medium text-zinc-800 dark:text-white">{{ $category['name'] }}</div>
+                                <div class="font-medium text-zinc-800 dark:text-white">{{ ($category['name'] ?? '—') }}</div>
                             </flux:table.cell>
 
                             <flux:table.cell>
@@ -44,7 +42,7 @@
                                             variant="ghost"
                                             size="sm"
                                             icon="pencil-square"
-                                            aria-label="{{ __('Edit :name', ['name' => $category['name']]) }}"
+                                            aria-label="{{ __('Edit :name', ['name' => ($category['name'] ?? '—')]) }}"
                                             data-test="edit-product-category-{{ $category['id'] }}"
                                             wire:click="openEditModal(@js($category['id']))"
                                             class="cursor-pointer!"
@@ -61,7 +59,7 @@
                                                 variant="ghost"
                                                 size="sm"
                                                 icon="pencil-square"
-                                                aria-label="{{ __('Edit :name', ['name' => $category['name']]) }}"
+                                                aria-label="{{ __('Edit :name', ['name' => ($category['name'] ?? '—')]) }}"
                                                 data-test="edit-product-category-{{ $category['id'] }}"
                                                 disabled
                                             />
@@ -73,7 +71,7 @@
                                             variant="ghost"
                                             size="sm"
                                             icon="trash"
-                                            aria-label="{{ __('Delete :name', ['name' => $category['name']]) }}"
+                                            aria-label="{{ __('Delete :name', ['name' => ($category['name'] ?? '—')]) }}"
                                             data-test="delete-product-category-{{ $category['id'] }}"
                                             wire:click="confirmDelete(@js($category['id']))"
                                             class="cursor-pointer! text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"
@@ -84,7 +82,7 @@
                                                 variant="ghost"
                                                 size="sm"
                                                 icon="trash"
-                                                aria-label="{{ __('Delete :name', ['name' => $category['name']]) }}"
+                                                aria-label="{{ __('Delete :name', ['name' => ($category['name'] ?? '—')]) }}"
                                                 data-test="delete-product-category-{{ $category['id'] }}"
                                                 disabled
                                                 class="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"

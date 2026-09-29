@@ -287,7 +287,7 @@ grouping by rendering location.
 
 ## Definition of Done
 - [ ] Tests written and green, plus the **full** existing suite in a single isolated run, per the
-      [Full Test Suite Gate Rule](../../../docs/contracts.md#full-test-suite-gate-rule).
+      [Full Test Suite Gate Rule](../../../docs/contracts/testing-and-parallel-agents.md#full-test-suite-gate-rule).
 - [ ] `vendor/bin/pint --format agent` (unscoped, **not** `--dirty`) and `vendor/bin/phpstan analyse`
       (level 7) both clean, **and both recorded** — a gate absent from the record is a gate that did
       not run ([errors-log.md](../../../docs/errors-log.md)).
@@ -305,7 +305,7 @@ grouping by rendering location.
       existing entries so the three per-value/per-type query shapes in this domain stay
       cross-referenced rather than silently parallel).
 - [ ] Digest entry appended to [`ai-spec/tasks/_digests/epic-2.md`](../_digests/epic-2.md) at Phase
-      6/7, per [workflow.md](../../../docs/workflow.md#decision-digest-per-epic), naming the new
+      6/7, per [workflow.md](../../../docs/workflow/agents-and-epic-digests.md#decision-digest-per-epic), naming the new
       `ProductAttributeValue::variantUsageCounts()` method and the `sku`-keyed generic error outlet
       convention, so a later Epic 2 story does not re-derive either.
 - [ ] Acceptance criteria met.

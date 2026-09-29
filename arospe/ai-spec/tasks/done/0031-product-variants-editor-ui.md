@@ -154,7 +154,7 @@ the sibling screens.
 **Hard dependency chain, longer than `related_task_id` suggests.** This story cannot start until
 🟠 **0019 → 0020 → 0021 → 0022 → 0023 → 0024 → 0026 → 0027 → 0028 → 0029 → 0029a → 0030** are
 all closed, stated as a permutation rather than a range on purpose, per
-[workflow.md](../../../docs/workflow.md#task-ordering-rule)'s range-notation warning.
+[workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule)'s range-notation warning.
 `related_task_id` correctly names the FE/BE pair (0029); 0027 and 0020 are hard blockers from other
 pairs, and 0028/0030 supply the taxonomy this screen reads.
 **[0029a](../done/0029a-attribute-in-use-delete-guards-backend.md)** blocks nothing here directly; it is in
@@ -167,8 +167,8 @@ builder; 0031a, sequenced immediately after it, is the true last link.
 ## Three Amigos participants
 
 `product-owner` (lead) + `frontend-expert` (files and approach) + `frontend-qa` (test design), per
-[workflow.md](../../../docs/workflow.md#phase-1--three-amigos-debate)'s
-[task classification rule](../../../docs/workflow.md#task-classification-rule).
+[workflow.md](../../../docs/workflow/phases.md#phase-1--three-amigos-debate)'s
+[task classification rule](../../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule).
 
 Both specialists were convened as subagents and **both delivered in full**, each executing its claims
 against this repository rather than reasoning about them — every **V-** finding below is a command
@@ -179,8 +179,8 @@ what.
 
 ## PRD coverage
 
-Derived from [PRD §2.2 Products](../../../docs/PRD/PRD.md#22-products)' *"Product variants (extends the
-prototype)"* Gherkin block and [§2.3](../../../docs/PRD/PRD.md#23-shared-media-gallery). This story is the
+Derived from [PRD §2.2 Products](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#22-products)' *"Product variants (extends the
+prototype)"* Gherkin block and [§2.3](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#23-shared-media-gallery). This story is the
 **screen half** of scenarios whose data half [0029](../done/0029-product-variants-backend.md) already owns:
 
 | PRD scenario / criterion | Owned here |
@@ -408,7 +408,7 @@ Feature: Permission to manage a product's variants
 >
 > | What changed | Where it landed here |
 > | --- | --- |
-> | **[OQ-3](#open-questions) — the four contract gaps — is RESOLVED**, all four answered exactly as this story recommended: the error-bag keys ([0029 **D-15**](../done/0029-product-variants-backend.md#d-15--error-bag-keys-the-exact-key-every-refusal-throws-on)), the missing `variantFeaturedMediaIdRules()` and the trait written out in full ([0029 **D-16**](../done/0029-product-variants-backend.md#d-16--productvariantvalidationrules-written-out-in-full)), the four action signatures ([0029 **D-17.1**](../done/0029-product-variants-backend.md#d-171--the-action-signatures--three-since-the-generators-moved-to-0029b)), and every relation named including `ProductAttributeValue::type()` ([0029 **D-17.2**](../done/0029-product-variants-backend.md#d-172--every-relation-named-with-its-return-type)) | **[D-8](#d-8--where-every-refusal-renders-and-why-none-of-them-renders-on-its-own)** now carries 0029's complete **six**-key table (and the three keys this story had not noticed were also unbound), **[D-6](#d-6--inheritance-is-rendered-and-labelled-null-is-the-flag-and-it-stays-null)** cites the confirmed relation names, **[D-13](#d-13--price-and-stock-strings-pre-filled-and-identical-in-shape-to-0027s)** the confirmed trait, and **[D-13a](#d-13a--the-confirmed-action-surface-this-component-calls-single-variant-actions)** the confirmed signatures |
+> | **[OQ-3](#open-questions) — the four contract gaps — is RESOLVED**, all four answered exactly as this story recommended: the error-bag keys ([0029 **D-15**](../done/0029-product-variants-backend.md#d-15--error-bag-keys-the-exact-key-every-refusal-throws-on)), the missing `variantFeaturedMediaIdRules()` and the trait written out in full ([0029 **D-16**](../done/0029-product-variants-backend.md#d-16--productvariantvalidationrules-written-out-in-full)), the four action signatures ([0029 **D-17.1**](../done/0029-product-variants-backend.md#d-17-1)), and every relation named including `ProductAttributeValue::type()` ([0029 **D-17.2**](../done/0029-product-variants-backend.md#d-172--every-relation-named-with-its-return-type)) | **[D-8](#d-8--where-every-refusal-renders-and-why-none-of-them-renders-on-its-own)** now carries 0029's complete **six**-key table (and the three keys this story had not noticed were also unbound), **[D-6](#d-6--inheritance-is-rendered-and-labelled-null-is-the-flag-and-it-stays-null)** cites the confirmed relation names, **[D-13](#d-13--price-and-stock-strings-pre-filled-and-identical-in-shape-to-0027s)** the confirmed trait, and **[D-13a](#d-13a--the-confirmed-action-surface-this-component-calls-single-variant-actions)** the confirmed signatures |
 > | **[OQ-2](#open-questions) — the cartesian generator — is RESOLVED: IN SCOPE**, by the PO's explicit 2026-08-19 decision. 0029 ships [**D-18**](../done/0029b-product-variant-combination-generator-backend.md)'s `GenerateProductVariantCombinations`, and 0031 owns its UI | **[D-3](#d-3--single-variant-creation-only-the-cartesian-generator-is-a-named-scope-fence-with-a-named-backend-cost)** was **superseded**, then restored 2026-09-06 and superseded a second time — its UI is now [**0031a's D-17**](0031a-product-variant-generator-ui.md#d-17--the-cartesian-generator-ui) |
 > | **[OQ-6](#open-questions) — `position` not writable — is RESOLVED**, in two halves: variant **images** are single-image-only so there is no image order to express at all, and variant **row order** is now written by 0029 in a deliberately useful order with **no manual reorder control in v1** | **[D-16a](#d-16a--oq-6-resolved-variant-row-order-and-images-need-no-reorder-control-in-v1)** |
 > | **The story's own classification is unaffected.** 0029 is `includes database-expert: yes`; 0031 stays **no** | stated point by point in **[Type](#type)** |
@@ -1019,7 +1019,7 @@ Five notes:
    identical calls. Compute **once** into `#[Locked] public bool $canManageVariants` from
    `Gate::allows('update', $this->product())` — the *same* policy method the mutating paths authorize
    against, satisfying
-   [authorization.md](../../../docs/architecture/authorization.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)'s
+   [authorization.md](../../../docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)'s
    cannot-drift rule — and render every disabled branch from it. This is 0027 **R-9**'s "do not model
    this too literally on Users" applied concretely.
 5. **No `->ignore()` anywhere on the variant side.** 0029 **D-4.7** removed it: the SKU is derived, so
@@ -1029,7 +1029,7 @@ Five notes:
 
 **Route:** none added. The builder inherits `products.edit`'s `can:products.view` — **never**
 `permission:products.view`, since Livewire 4's `PersistentMiddleware` allow-list carries Laravel's
-`Authorize` but not Spatie's `PermissionMiddleware` ([api/routes.md](../../../docs/api/routes.md#usersindex--the-first-permission-gated-route)).
+`Authorize` but not Spatie's `PermissionMiddleware` ([api/routes.md](../../../docs/api/users-and-roles.md#usersindex--the-first-permission-gated-route)).
 
 ### D-11 — Editing a variant: the combination is shown **fixed**, not disabled
 
@@ -1140,7 +1140,7 @@ public string $stock = '0';
 > derivation, which is the same fact **D-4**.1 builds the preview on); and there is still **no
 > `skuRules()` and no variant SKU rule of any kind**, so a reviewer who cannot find one has found the
 > design rather than a gap. This component **composes the whole trait** (it is flat and single-concern
-> per [naming.md](../../../docs/conventions/naming.md#traits-and-their-methods) — there is no narrower
+> per [naming.md](../../../docs/conventions/naming-validation-traits.md#traits-and-their-methods) — there is no narrower
 > import), but only exercises five of its seven methods; the last two back
 > **[0031a](0031a-product-variant-generator-ui.md)**'s axis picker.
 
@@ -1151,7 +1151,7 @@ public string $stock = '0';
 > [0031a](0031a-product-variant-generator-ui.md#d-172--the-confirmed-action-surface-this-component-calls)
 > with the rest of the generator UI.** The three signatures below are not generator-specific — they are
 > what `saveVariant()`, `openEditForm()` and `deleteVariant()` call — and stay this story's own contract.
-> [0029 **D-17.1**](../done/0029-product-variants-backend.md#d-171--the-action-signatures--three-since-the-generators-moved-to-0029b)
+> [0029 **D-17.1**](../done/0029-product-variants-backend.md#d-17-1)
 > is where 0029 confirms all three, closing [OQ-3](#open-questions)(c).
 
 ```php
@@ -1185,7 +1185,7 @@ Four binding details, each of which changes a line this story had already writte
 4. 🔴 **`UpdateProductVariant`'s `?string $featuredMediaId` carries NO default** — corrected 2026-09-06
    (a `code-reviewer` finding on this file's earlier draft, verified against the real shipped file at
    `app/Actions/Products/UpdateProductVariant.php:57`). It is **not** the same-looking
-   `?string $featuredMediaId = null` `CreateProductVariant` carries. [errors-log.md](../../../docs/errors-log.md#an-actions-own-parameter-default-reintroduced-the-omission-ambiguity-its-stricter-collaborator-was-built-to-close--2026-09-01)'s
+   `?string $featuredMediaId = null` `CreateProductVariant` carries. [errors-log.md](../../../docs/errors-log/2026-09-01-to-2026-09-07.md#an-actions-own-parameter-default-reintroduced-the-omission-ambiguity-its-stricter-collaborator-was-built-to-close--2026-09-01)'s
    own rule is why: on **create**, omitting the image and "no image yet" denote the same real state, so
    a default is safe; on **update**, omission does not mean "clear the image" — it usually means the
    caller never touched that field — so a default would silently null out a variant's own image on every
@@ -1239,7 +1239,7 @@ and `:refused`. These live in 0029's key space *"because the **action** owns the
 regardless of which story's panel renders them.
 
 **New here** (nested sub-groups so nothing collides with 0029's flat leaves; every segment `snake_case`
-per [naming.md](../../../docs/conventions/naming.md#translation-keys)):
+per [naming.md](../../../docs/conventions/naming/translation-keys-and-booleans.md#translation-keys)):
 
 ```
 products.variants.builder.heading | .summary (:count) | .add | .empty
@@ -1486,8 +1486,8 @@ the top of this file and D-3's own restored history. -->
 
 | Path | What & why |
 | --- | --- |
-| `app/Livewire/Products/VariantBuilder.php` | The child component (**D-1**). Class-based per [base-standards.md](../../../docs/conventions/base-standards.md#livewire-component-convention-class-based-not-single-file). Composes **`ProductVariantValidationRules` only** (**D-13**), all seven methods (0029 **D-16**), of which this component uses five — the other two back 0031a's generator. **No `#[Title]`** — it is a nested child, not a page; the title stays 0027's `#[Title('Product editor')]`. Uses `WithPagination` for the variants list (**D-17**). 🔴 **Does not host the generator** — `attributeTypeIds`, `generationSummary`, `showGenerateModal` and `generateCombinations()` moved to 0031a's own copy of this class in the 2026-09-06 split (see below). |
-| `resources/views/livewire/products/variant-builder.blade.php` | The **ordinary kebab-case mirror** — `VariantBuilder` is not an `Index`, so the [`Index`-in-a-subfolder exception](../../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name) does **not** apply. Same depth as 0027's `products/editor.blade.php`. |
+| `app/Livewire/Products/VariantBuilder.php` | The child component (**D-1**). Class-based per [base-standards.md](../../../docs/conventions/base-standards/livewire-and-flux-conventions.md#livewire-component-convention-class-based-not-single-file). Composes **`ProductVariantValidationRules` only** (**D-13**), all seven methods (0029 **D-16**), of which this component uses five — the other two back 0031a's generator. **No `#[Title]`** — it is a nested child, not a page; the title stays 0027's `#[Title('Product editor')]`. Uses `WithPagination` for the variants list (**D-17**). 🔴 **Does not host the generator** — `attributeTypeIds`, `generationSummary`, `showGenerateModal` and `generateCombinations()` moved to 0031a's own copy of this class in the 2026-09-06 split (see below). |
+| `resources/views/livewire/products/variant-builder.blade.php` | The **ordinary kebab-case mirror** — `VariantBuilder` is not an `Index`, so the [`Index`-in-a-subfolder exception](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name) does **not** apply. Same depth as 0027's `products/editor.blade.php`. |
 | `tests/Feature/Products/VariantBuilderTest.php` | Create/update/delete orchestration, the one-unsaved-variant invariant, error-key routing. |
 | `tests/Feature/Products/VariantBuilderSkuPreviewTest.php` | The derivation as rendered: literal-string assertions, the three-way ordering fixture, submission-order irrelevance, the no-SKU-control guard. |
 | `tests/Feature/Products/VariantBuilderRenderingTest.php` | Own/inherited/none badges, the four refusal surfaces, the three Flux/Blaze regression guards, `data-test` hooks on both branches, the `@can('viewAny', Media::class)` branch, both empty states. |
@@ -1527,7 +1527,7 @@ it is 0031a's; its cap, its transaction shape and its summary contract stay 0029
 `app/Livewire/Components/*` (**0020**/**0021**/**0022**) · `routes/web.php` ·
 `database/seeders/RolePermissionSeeder.php` · `docs/**` (Phase 6).
 
-> ⚠️ **[Parallel Agent File-Ownership Rule](../../../docs/contracts.md#parallel-agent-file-ownership-rule).**
+> ⚠️ **[Parallel Agent File-Ownership Rule](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule).**
 > This story writes `lang/en|es/products.php` (shared with **six** other stories) and
 > `resources/views/livewire/products/editor.blade.php` (0027's file). Its Phase 3 must **never** be
 > dispatched in the same batch as 0024, 0025, 0026, 0027, 0028 or 0029 — **including their verification
@@ -2265,9 +2265,9 @@ Neither reopens a design question — both were already the story's own stated d
 
 Phase 1 (Three Amigos) debate for Epic 2, run on **2026-08-18** with `frontend-expert` (files and
 approach) and `frontend-qa` (test design), per
-[workflow.md](../../../docs/workflow.md#phase-1--three-amigos-debate). Derived from
-[PRD §2.2](../../../docs/PRD/PRD.md#22-products)'s *"Product variants (extends the prototype)"* Gherkin block
-and [§2.3](../../../docs/PRD/PRD.md#23-shared-media-gallery), and grounded in **full readings** of
+[workflow.md](../../../docs/workflow/phases.md#phase-1--three-amigos-debate). Derived from
+[PRD §2.2](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#22-products)'s *"Product variants (extends the prototype)"* Gherkin block
+and [§2.3](../../../docs/PRD/sections/epic-2-products-taxes-shipping.md#23-shared-media-gallery), and grounded in **full readings** of
 [0029](../done/0029-product-variants-backend.md) (2,306 lines, read in full — it was substantially redesigned on
 the same day) and [0027](../done/0027-products-list-and-editor-ui.md) (1,512 lines, read in full), plus
 [0028](../done/0028-product-attribute-types-and-values-backend.md),
@@ -2422,5 +2422,5 @@ rather than a first, with both supersessions recorded in place.
 > it **three** levels down and silently breaks all of them — `../../docs/...` must become
 > `../../../docs/...`, and the sibling-task links (`0029-...md`) must become `../0029-...md`. This is a
 > mandatory step, not a nicety: see
-> [workflow.md](../../../docs/workflow.md#link-integrity-check-on-every-stage-move) and the
+> [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move) and the
 > [errors-log entry](../../../docs/errors-log.md) recording the six `done/` files this already broke.

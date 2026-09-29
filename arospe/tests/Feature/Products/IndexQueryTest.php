@@ -3,8 +3,10 @@
 // The list query's own shape -- a named risk per the story's D-4, split into its own file. WRITTEN
 // AGAINST THE ORIGINAL (pre-0076) query shape, which is still what runs today: an explicit-column
 // select() naming `products.name` directly, `orderBy('name')->orderBy('id')`, and two eager loads
-// (`category:id,name`, `featuredImage:id,title,path,webp_path,avif_path`). The 0076 correction that
-// replaces `orderBy('name')` with `orderByTranslatedName()` does not apply -- 0076 is not built.
+// (`category:id` -- narrowed from `category:id,name` by story 0070's D-15, since
+// `product_categories` no longer carries a `name` column -- and
+// `featuredImage:id,title,path,webp_path,avif_path`). The 0076 correction that replaces
+// `orderBy('name')` with `orderByTranslatedName()` does not apply -- 0076 is not built.
 //
 // Written at TDD Phase 3 step 1 (red), before App\Livewire\Products\Index exists.
 

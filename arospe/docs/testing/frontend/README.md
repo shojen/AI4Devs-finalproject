@@ -75,7 +75,7 @@ These already cover the general reasoning and apply as-is to frontend/browser te
 - [../ci/commands.md](../ci/commands.md) / [../ci/pipeline-integration.md](../ci/pipeline-integration.md) — the existing backend coverage commands and the proposed (not-yet-enforced) CI gate.
 - [`.claude/skills/pest-testing/SKILL.md`](../../../.claude/skills/pest-testing/SKILL.md) — Pest 4 browser syntax reference (`visit()`, `click()`, `fill()`, smoke testing, `assertNoJavaScriptErrors()`).
 
-_Last updated: 2026-08-26 — Task 0018 (Sales Regions & Taxes screen — UI): one clause added to the status line, pointing at [playwright-setup.md](playwright-setup.md#waiting-one-call-is-banned-in-this-repo-and-one-is-bounded)'s new waiting rules. Nothing else here changed — the tooling decision, the story→Gherkin→Pest workflow and the links out are all unaffected by a story that added a third browser-test file following them._
+_Last updated: 2026-08-26 — Task 0018 (Sales Regions & Taxes screen — UI): one clause added to the status line, pointing at [playwright-setup.md](playwright-setup/waiting-rules.md#waiting-one-call-is-banned-in-this-repo-and-one-is-bounded)'s new waiting rules. Nothing else here changed — the tooling decision, the story→Gherkin→Pest workflow and the links out are all unaffected by a story that added a third browser-test file following them._
 
 _Previously: 2026-08-16 — Task 0006b: updated the tooling-decision status line — the `tests/Browser/` suite and its CI wiring are no longer pending; CI runs it Chromium-only._
 

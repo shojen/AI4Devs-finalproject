@@ -38,7 +38,7 @@ if (! $user instanceof User || $user->status !== UserStatus::Inactive) {
 }
 ```
 
-[architecture/authentication.md](../architecture/authentication.md#account-status-and-activation)
+[architecture/authentication.md](../architecture/authentication/features-registration-and-status.md#account-status-and-activation)
 describes this condition as what "stops a verification from silently undoing an administrator's
 suspension" — true for `Suspended`, and *only* for `Suspended`. `Inactive` is equally a state an
 administrator can set from the Users editor (`statusRules()` is `Rule::enum(UserStatus::class)`,
@@ -104,6 +104,18 @@ AFTER : status=active  isActive=true
 
 When you add a new state to this enum, or a new event that writes it, ask what the state *denies*
 first and who can undo it second — not what it is called.
+
+> **The suspended-to-active race is closed (story 0064c).** Everything above described the listener's
+> in-memory guards, which decide *whether* to activate. They said nothing about *how* the write itself
+> landed, and until 0064c it was a blind `$user->status = Active; $user->save()` on whatever instance the
+> caller handed the listener — so an administrator suspending the account between that instance being
+> loaded and the listener's `save()` running was silently overwritten back to `Active`. The write is now a
+> guarded compare-and-set in `App\Actions\Users\ActivateInactiveUser`
+> (`UPDATE users SET status = 'active', updated_at = ? WHERE id = ? AND status = 'inactive'`), so a
+> suspension that commits first makes the guard match zero rows and the listener refuses instead of
+> overwriting it. See [architecture/authentication/features-registration-and-status.md](../architecture/authentication/features-registration-and-status.md#account-status-and-activation)
+> for the updated listener code and [model-instance-trust.md](model-instance-trust.md#a-single-predicate-on-one-row-can-collapse-the-guard-into-the-write-itself)
+> for why this shape is safe here.
 
 ## Three login paths, three enforcement points — the map any new path must be checked against
 
@@ -313,9 +325,31 @@ not weaken them:
   Stock Fortify does the same (`validateCredentials()` then `$guard->attempt()`), so this is not new
   cost — but a future "optimisation" that caches the result across pipes would be caching an
   authorization decision.
-- **Single guard, no event auto-discovery.** `config/auth.php` defines only `web`, and
-  `bootstrap/app.php` never calls `withEvents()`, so the explicit `Event::listen()` registrations in
-  `AppServiceProvider` are the only ones — the listener is not double-fired.
+- **Single guard; listeners are discovered, never hand-registered.** `config/auth.php` defines only
+  `web`. `Application::configure()` calls `->withEvents()` itself
+  (`vendor/laravel/framework/src/Illuminate/Foundation/Application.php:243`), so Laravel auto-discovers
+  every public `handle*` method with a typed event in `app/Listeners`: `RejectNonActiveUserLogin` is
+  bound to `Login` by `handle(Login)` and to `Authenticated` by `handleAuthenticated(Authenticated)`,
+  and by nothing else. `tests/Feature/Providers/EventListenerRegistrationTest.php` fails if either
+  binding is lost (a rename of `handleAuthenticated` silently unregisters the safety net) or bound twice.
+  **Deployment consequence.** Once `bootstrap/cache/events.php` exists it is the *only* source of listener
+  registrations, so a stale manifest silently unregisters this safety net (the remember-me recall and the
+  two-factor mid-challenge race lose protection; the primary sign-in checks still apply). The deploy runs
+  `php artisan optimize`, which runs `event:cache` (clear, then rebuild from the deployed code; if the rebuild
+  fails the cache stays cleared and live discovery takes over), so a normal release cannot leave it stale. Any
+  path that swaps code **without** `optimize` — a manual server hotfix, a rollback that keeps a shared
+  `bootstrap/cache`, a deploy that stops early — must run `php artisan optimize` (or `event:clear`) and reload
+  PHP-FPM if opcache does not revalidate timestamps. `optimize` exits `0` even when a sub-task fails, so the
+  recommended guard is a post-deploy smoke check in the deploy script (outside this repository):
+  `php artisan event:list --event='Illuminate\Auth\Events\Authenticated'` must list
+  `RejectNonActiveUserLogin@handleAuthenticated`, and the `Login` event its `handle`. Locally, run
+  `php artisan event:clear` before trusting `EventListenerRegistrationTest`: it reads the cached manifest if a
+  stale `events.php` is left behind.
+  > **Correction (story 0064a, 2026-09-26).** This bullet used to read: *"Single guard, no event
+  > auto-discovery. `config/auth.php` defines only `web`, and `bootstrap/app.php` never calls
+  > `withEvents()`, so the explicit `Event::listen()` registrations in `AppServiceProvider` are the
+  > only ones — the listener is not double-fired."* The single-guard half is true; the rest was not:
+  > discovery is on by construction, so until 0064a both handlers ran twice per event.
 - **The `authorizeLoginUsing` callback's user parameter must be nullable.**
   `Passkeys::allowsLogin()` calls it as `(self::$authorizeLoginUsing)($request, $passkey->user, $passkey)`
   — `$passkey->user` unchecked. That `BelongsTo` is scoped by `SoftDeletingScope`, so it resolves
@@ -328,13 +362,4 @@ not weaken them:
   `ActivateVerifiedUser` ignores `Suspended` outright, and `ResetUserPassword` fires `Verified` only
   when `email_verified_at` was null. (Contrast the `Inactive` case at the top of this page.)
 
-_Last updated: 2026-08-17 — Phase 4 **re-audit** of task 0007, after the four findings were fixed.
-Replaced this page's own disproven `getOriginal('email_verified_at')` recommendation with the
-`getPrevious()` rule and its four constraints (fail closed on an absent key; `syncChanges()` replaces
-`previous` wholesale; `performInsert()` never calls it; a queued listener loses it), recorded the
-nullable-`?User` rule for `Passkeys::authorizeLoginUsing()`, and marked the two
-`RejectNonActiveUserLogin` constraints applied — including why `hasSession()` guards rather than
-weakens the invalidation, and why strict `!==` on `getAuthIdentifier()` is safe only while the
-primary key is a UUID string._
-
-_Previously: 2026-08-17 — Created by the Phase 4 audit of task 0007 (non-active status blocks sign-in)._
+_Last updated: 2026-09-27 — story 0064c: noted that the suspended-to-active race is now closed (guarded compare-and-set in `App\Actions\Users\ActivateInactiveUser`, replacing the listener's blind `save()`); the rest of this page (the task 0007 Phase 4 audit/re-audit and story 0064a's correction) is unchanged._

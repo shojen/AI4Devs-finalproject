@@ -104,6 +104,8 @@ This is a Laravel application. Abide by these specific packages and versions:
 
 ## Testing
 
+- MySQL is the only supported database engine. Before running migrations or tests in a new worktree, ensure its `.env` has been created from `.env.example` and points to the available MySQL service; never switch the project to SQLite as a fallback. `phpunit.xml` pins test runs to MySQL and the `testing` database, so use a separate database name when parallel worktrees need isolation. Never commit `.env` or credentials.
+
 - Every change must be programmatically tested. Write a new test or update an existing one, then run
   the affected tests and make sure they pass.
 - Run the minimum number of tests needed: `php artisan test --compact` with a specific filename or
@@ -127,40 +129,50 @@ This is a Laravel application. Abide by these specific packages and versions:
 - Laravel can be deployed with [Laravel Cloud](https://cloud.laravel.com/).
 - `php artisan db:seed --class=RolePermissionSeeder` is a **required** deploy step: that seeder is the
   only source of the app's roles and permission catalog. See
-  [`docs/architecture/authorization.md`](docs/architecture/authorization.md#seeding).
+  [`docs/architecture/authorization.md`](docs/architecture/authorization/overview-catalog-seeding.md#seeding).
 
 ## Project documentation
 
 The `docs/` directory is the source of truth for this repository's architecture, conventions, and
 process. Read it before writing code; keep it accurate when behavior changes.
 
-Full index: [`docs/README.md`](docs/README.md).
+The docs are large, so they are split into **hubs plus parts**: read only what your task needs. Start
+from the compact index [`docs/README.md`](docs/README.md), open the one document (or split part) whose
+*Read when* matches your task — at an exact heading when possible — and never open a whole doc "just in
+case". A hub file lists its parts with a *Read when* column: open the matching part only.
 
-**Read regardless of the task:**
+**Read regardless of the task** (small hubs holding the binding core of the rules; open a part only when
+its *Read the full text when* line applies to your task):
 
 - [`docs/contracts.md`](docs/contracts.md) — behavioral contracts governing what an AI agent may and
-  may not do here (notably: ask instead of assuming, and never run `git commit` without a human
-  reviewing the staged diff first).
+  may not do here (notably: ask instead of assuming, and never approve, close, or merge a pull
+  request — that action is reserved for the project owner alone).
 - [`docs/workflow.md`](docs/workflow.md) — the multi-agent Three Amigos + TDD + security + review +
   docs process, phase by phase.
-- [`docs/architecture/`](docs/architecture/) — overview, authentication, authorization.
-- [`docs/conventions/base-standards.md`](docs/conventions/base-standards.md) — stack versions,
-  directory layout, model and Livewire component conventions, quality gates.
+- [`docs/conventions/base-standards.md`](docs/conventions/base-standards.md) — stack versions, model
+  and Livewire component conventions, quality gates.
+- [`docs/architecture/overview.md`](docs/architecture/overview.md) — before any non-trivial change;
+  every other architecture doc is conditional.
 
 **Read when relevant to the task:**
 
 | When | Read |
 | --- | --- |
-| gating access, or touching auth, roles/permissions, seeders, secrets | [`docs/security/`](docs/security/README.md) |
-| you need the database schema | [`docs/database/schema.md`](docs/database/schema.md) |
-| you need migration conventions | [`docs/database/migrations.md`](docs/database/migrations.md) |
-| you need route/Livewire contracts | [`docs/api/routes.md`](docs/api/routes.md) |
+| gating access, or touching auth, roles/permissions, seeders, secrets, uploads, sanitization | [`docs/security/`](docs/security/README.md) (index — open the page whose row matches) |
+| touching authentication (Fortify, 2FA, passkeys, account status, email change) | [`docs/architecture/authentication.md`](docs/architecture/authentication.md) (hub → one part) |
+| touching authorization (roles, permissions, policies, gating a module, step-up) | [`docs/architecture/authorization.md`](docs/architecture/authorization.md) (hub → one part) |
+| touching shipping-rate resolution | [`docs/architecture/shipping.md`](docs/architecture/shipping.md) |
+| you need the database schema | [`docs/database/schema.md`](docs/database/schema.md) (ER diagram + which file owns a table) → that domain's file |
+| writing a migration | [`docs/database/migrations.md`](docs/database/migrations.md) (hub → one part) |
+| you need route/Livewire contracts | [`docs/api/routes.md`](docs/api/routes.md) (index) → the per-area file |
 | you need code-style examples | [`docs/conventions/code-style.md`](docs/conventions/code-style.md) |
-| you need naming conventions | [`docs/conventions/naming.md`](docs/conventions/naming.md) |
+| you need the app's directory layout / where a new class or action belongs | [`docs/conventions/directory-structure.md`](docs/conventions/directory-structure.md) (hub → one part) |
+| you need naming conventions | [`docs/conventions/naming.md`](docs/conventions/naming.md) (hub → one part); validation traits: [`docs/conventions/naming-validation-traits.md`](docs/conventions/naming-validation-traits.md) |
+| locale-aware notifications, admin-dashboard strings, or storefront translation | [`docs/conventions/localization.md`](docs/conventions/localization.md) |
 | you write or review tests | [`docs/testing/README.md`](docs/testing/README.md) |
+| you need product requirements for a story | [`docs/PRD/PRD.md`](docs/PRD/PRD.md) (hub → only that epic's part) |
 | you need past architectural context | [`docs/decisions/`](docs/decisions/README.md) |
-| before repeating a past mistake | [`docs/errors-log.md`](docs/errors-log.md) |
+| before repeating a past mistake | [`docs/errors-log.md`](docs/errors-log.md) (hub — its topic index names the exact entry file) |
 
-_Last updated: 2026-08-10 — Created as the tool-agnostic mirror of `CLAUDE.md`, matching its pointer
-section after task 0002 (roles & permissions foundation) added `docs/security/` and made
-`db:seed --class=RolePermissionSeeder` a required deploy step._
+_Last updated: 2026-09-28 — Story 0066 docs follow-up: added the [`docs/conventions/localization.md`](docs/conventions/localization.md)
+row, mirroring the same addition made to `CLAUDE.md`'s conditional-reading list._

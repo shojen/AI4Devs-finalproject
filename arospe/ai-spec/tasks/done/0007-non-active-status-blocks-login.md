@@ -412,7 +412,7 @@ Two operational notes worth carrying forward, both observed during this closure 
 
 ### Link-integrity check on the stage move
 
-Per [`docs/workflow.md`](../../../docs/workflow.md#link-integrity-check-on-every-stage-move).
+Per [`docs/workflow.md`](../../../docs/workflow/task-files-links-and-ordering.md#link-integrity-check-on-every-stage-move).
 `in-progress/` and `done/` sit at the **same** directory depth (both three levels below the repo
 root), so unlike the `new` → `in-progress/` move this one changes no relative-path resolution.
 Verified rather than assumed: before this closure note was added the file contained **no**

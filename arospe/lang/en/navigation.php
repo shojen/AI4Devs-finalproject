@@ -14,11 +14,13 @@ return [
     */
 
     'groups' => [
+        'content' => 'Content',
         'settings' => 'Settings',
         'store' => 'Store',
     ],
 
     'clusters' => [
+        'blog' => 'Blog',
         'products' => 'Products',
         'store_settings' => 'Store settings',
     ],
@@ -32,6 +34,13 @@ return [
         'products' => 'Products',
         'product_attribute_types' => 'Attribute types',
         'shipping_zones' => 'Shipping zones',
+        'shipping_carriers' => 'Carriers & rates',
+        'payment_methods' => 'Payment methods',
+        'customers' => 'Customers',
+        'orders' => 'Orders',
+        'blog_posts' => 'Posts',
+        'blog_tags' => 'Tags',
+        'blog_categories' => 'Categories',
     ],
 
 ];

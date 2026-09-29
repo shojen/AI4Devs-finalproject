@@ -11,7 +11,7 @@ contain markup reaches a database column that a later screen will render **unesc
 [`App\Livewire\Components\WysiwygEditor`](../../app/Livewire/Components/WysiwygEditor.php) —
 story 0021 — seeds its editable region with `{!! $value !!}`, an unescaped Blade echo, because the
 region is `wire:ignore`d and the seeded value must render as real, formatted HTML rather than as
-escaped text. [conventions/base-standards.md](../conventions/base-standards.md#a-wireignored-client-owned-region--the-apps-first-instance)
+escaped text. [conventions/base-standards.md](../conventions/base-standards/livewire-and-flux-conventions.md#a-wireignored-client-owned-region--the-apps-first-instance)
 already names the consequence directly: *"an unescaped `{!! !!}` echo inside such a region is safe
 only because of what the seeded value already is — sanitized elsewhere, on write — never because the
 region is client-owned"* — stated there as **a hard, load-bearing dependency** on whichever persisted
@@ -49,7 +49,7 @@ sanitized it.
 
 `App\Actions\Products\SanitizeProductDescription` is the **only** class in `app/` that imports
 `symfony/html-sanitizer` (mirroring how `App\Actions\Media\GenerateImageConversions` confines the
-imaging library to one class — see [conventions/base-standards.md](../conventions/base-standards.md#directory-structure)),
+imaging library to one class — see [conventions/base-standards.md](../conventions/directory-structure.md#directory-structure)),
 and it is constructor-injected into both actions as their **third** collaborator, matching the
 `code-style.md`-documented exception for an action whose `__invoke()` signature is a public contract
 (see [code-style.md](../conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)).
@@ -172,19 +172,33 @@ guarantees.
    `dropped_elements` rather than the `block` default, does it need a scheme restriction) is a new
    sink, indistinguishable in review from any other one-line config change.
 
+## A sanitized body must still show something (blog posts, story 0061b)
+
+Sanitizing decides what markup is *safe*; it does not decide whether what is left is *visible*. A WYSIWYG
+editor that empties its field emits `<p><br></p>`, `<p>&nbsp;</p>`, an empty list or an empty link, all of which
+survive the allow-list yet render as an empty page. `CreateBlogPost` and `UpdateBlogPost` therefore run
+[`BlogBodyHasVisibleContent`](../../app/Actions/Blog/BlogBodyHasVisibleContent.php) on the **sanitized** value,
+never on raw input, and store `null` when it answers false, so a `Published`/`Scheduled` post is refused by the
+existing `required` rule and a `Draft` simply carries no body. Judging after the sanitizer is what keeps the rule
+small: `style`, `hidden`, `<script>` and comments are already gone, so it only asks whether any visible character
+or any `<img>` with a non-empty `src` remains (whitespace, separators and format characters such as `&nbsp;` and
+zero-width spaces do not count). The check parses offline (`LIBXML_NONET`, no `LIBXML_NOENT`), so it can never
+load an external entity, and it is linear in the input. It depends on the allow-list *not* keeping `style` or
+`hidden`; a test pins that, so widening the list fails loudly and forces this rule to be revisited.
+
 ## Consumers unblocked
 
 This story's closure lifts [0024](../../ai-spec/tasks/done/0024-products-core-crud-backend.md)'s
 own scope fence forbidding any code from rendering, echoing or returning `products.description`.
 0027 (products list/editor UI), 0061 (blog posts, reusing this exact config for the `body` column),
 0076 (products i18n retrofit), 0077 and 0079 (language-tab editors) each depend on this closure; see
-[api/routes.md](../api/routes.md#applivewirecomponentswysiwygeditor--the-gallerys-first-real-consumer-and-the-second-routeless-gated-component)
+[api/routes.md](../api/products/routeless-components.md#applivewirecomponentswysiwygeditor--the-gallerys-first-real-consumer-and-the-second-routeless-gated-component)
 for the correction to that page's own prior, speculative attribution of this class to stories other
 than the one that actually created it.
 
-_Last updated: 2026-09-02 — Story 0024a (Product description — HTML sanitization on write). First
-version of this page, written after Phase 4's audit and re-audit closed both findings it documents
+_Last updated: 2026-09-25 — Story 0061b (blog post body must show something): added the visibility rule that runs after the sanitizer. The rest of the page is Story 0024a's (Product
+description — HTML sanitization on write), written after Phase 4's audit and re-audit closed both findings it documents
 (F-1, the `block`-vs-`drop` distinction; F-2, the idempotence-to-convergence correction), so both are
 recorded here as ❌/✅ pairs describing the shipped, closed state from the outset rather than the
-vulnerable state the audit found — per [errors-log.md](../errors-log.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
+vulnerable state the audit found — per [errors-log.md](../errors-log/archive-2026-08-17-to-2026-08-21.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
 rule for an audit-authored page._

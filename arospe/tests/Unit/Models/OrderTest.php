@@ -1,0 +1,105 @@
+<?php
+
+use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
+use App\Models\Order;
+
+// Story 0050, Phase 3 (TDD "red" step): App\Models\Order::isManuallyCancellable() does not exist
+// yet -- every test below is expected to fail with a BadMethodCallException until backend-expert
+// implements it. Pure in-memory predicate over two already-cast enum properties, so this is a
+// genuine Unit test with no database round trip and no Laravel app boot: `tests/Pest.php` binds
+// `RefreshDatabase` only to the Feature/Browser suites, so a plain `new Order` plus direct
+// property assignment (never `Order::factory()`, which needs a booted container) is what keeps
+// this file a real Unit test, matching `tests/Unit/Models/SalesRegionTest.php`'s own `new
+// SalesRegion` pattern.
+
+function makeOrder(OrderStatus $status, PaymentStatus $paymentStatus): Order
+{
+    $order = new Order;
+    $order->status = $status;
+    $order->payment_status = $paymentStatus;
+
+    return $order;
+}
+
+test('isManuallyCancellable is true for Pending/Processing crossed with Paid/PendingPayment', function (OrderStatus $status, PaymentStatus $paymentStatus) {
+    expect(makeOrder($status, $paymentStatus)->isManuallyCancellable())->toBeTrue();
+})->with([
+    'Pending, Paid' => [OrderStatus::Pending, PaymentStatus::Paid],
+    'Pending, PendingPayment' => [OrderStatus::Pending, PaymentStatus::PendingPayment],
+    'Processing, Paid' => [OrderStatus::Processing, PaymentStatus::Paid],
+    'Processing, PendingPayment' => [OrderStatus::Processing, PaymentStatus::PendingPayment],
+]);
+
+test('isManuallyCancellable is false for Shipped, Delivered and Cancelled regardless of payment state', function (OrderStatus $status) {
+    expect(makeOrder($status, PaymentStatus::Paid)->isManuallyCancellable())->toBeFalse();
+})->with([
+    'Shipped' => [OrderStatus::Shipped],
+    'Delivered' => [OrderStatus::Delivered],
+    'Cancelled' => [OrderStatus::Cancelled],
+]);
+
+// The cross-dimension case, asserted on the predicate directly as well as through the action
+// (see CancelOrderTest.php) -- these are two different layers, per this story's own R-1: a guard
+// copy-adapted from TransitionOrderStatus (which reads `status` and nothing else) would pass every
+// other test in this file and silently miss this one.
+test('isManuallyCancellable is false for Pending/Processing when payment_status is PartiallyRefunded', function (OrderStatus $status) {
+    expect(makeOrder($status, PaymentStatus::PartiallyRefunded)->isManuallyCancellable())->toBeFalse();
+})->with([
+    'Pending' => [OrderStatus::Pending],
+    'Processing' => [OrderStatus::Processing],
+]);
+
+test('isManuallyCancellable never throws for any OrderStatus case, Cancelled included', function (OrderStatus $status) {
+    $order = makeOrder($status, PaymentStatus::Paid);
+
+    expect(fn () => $order->isManuallyCancellable())->not->toThrow(Throwable::class);
+})->with([
+    'Pending' => [OrderStatus::Pending],
+    'Processing' => [OrderStatus::Processing],
+    'Shipped' => [OrderStatus::Shipped],
+    'Delivered' => [OrderStatus::Delivered],
+    'Cancelled' => [OrderStatus::Cancelled],
+]);
+
+// Story 0055, Phase 3 (TDD "red" step): Order::isLineItemEditable() does not exist yet. It is the
+// single predicate AddOrderItem / RemoveOrderItem / UpdateOrderItemQuantity read in place of their
+// three private in_array(Shipped, Delivered) copies (D-4, shape (b)), and that the Show screen's
+// canEditLineItems() reads too -- so the rule has one implementation. It reproduces the CURRENT
+// guard exactly (PRD §3.2 blocks Shipped/Delivered only): Cancelled is deliberately not blocked.
+
+test('isLineItemEditable is true for Pending, Processing and Cancelled', function (OrderStatus $status) {
+    expect(makeOrder($status, PaymentStatus::Paid)->isLineItemEditable())->toBeTrue();
+})->with([
+    'Pending' => [OrderStatus::Pending],
+    'Processing' => [OrderStatus::Processing],
+    'Cancelled' => [OrderStatus::Cancelled],
+]);
+
+test('isLineItemEditable is false for Shipped and Delivered regardless of payment state', function (OrderStatus $status, PaymentStatus $paymentStatus) {
+    expect(makeOrder($status, $paymentStatus)->isLineItemEditable())->toBeFalse();
+})->with([
+    'Shipped' => [OrderStatus::Shipped],
+    'Delivered' => [OrderStatus::Delivered],
+])->with([
+    'PendingPayment' => [PaymentStatus::PendingPayment],
+    'Paid' => [PaymentStatus::Paid],
+    'PartiallyRefunded' => [PaymentStatus::PartiallyRefunded],
+    'Refunded' => [PaymentStatus::Refunded],
+]);
+
+// Story 0055 (D-10): the refund control's STATE half. Order::isRefundable() is the single payment-
+// state predicate RecordRefund's guard reads and the detail screen's refund control reads, so the
+// screen never writes the {Paid, PartiallyRefunded} set a second time.
+
+test('isRefundable is true only for Paid and PartiallyRefunded, whatever the fulfilment status', function (OrderStatus $status, PaymentStatus $paymentStatus, bool $expected) {
+    expect(makeOrder($status, $paymentStatus)->isRefundable())->toBe($expected);
+})->with([
+    'Pending / PendingPayment' => [OrderStatus::Pending, PaymentStatus::PendingPayment, false],
+    'Pending / Paid' => [OrderStatus::Pending, PaymentStatus::Paid, true],
+    'Processing / PartiallyRefunded' => [OrderStatus::Processing, PaymentStatus::PartiallyRefunded, true],
+    'Shipped / Paid' => [OrderStatus::Shipped, PaymentStatus::Paid, true],
+    'Cancelled / Paid' => [OrderStatus::Cancelled, PaymentStatus::Paid, true],
+    'Processing / Refunded' => [OrderStatus::Processing, PaymentStatus::Refunded, false],
+    'Cancelled / Refunded' => [OrderStatus::Cancelled, PaymentStatus::Refunded, false],
+]);

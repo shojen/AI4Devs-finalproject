@@ -2,10 +2,10 @@
 
 ## Description
 Build the screen behind `GET /settings/store-languages`, replacing the placeholder view story
-[0068](0068-store-languages-catalog-backend.md) ships. **One Livewire component, two visually distinct
+[0068](done/0068-store-languages-catalog-backend.md) ships. **One Livewire component, two visually distinct
 sections** (confirmed by the human — not two components):
 
-1. **Content languages** — the [PRD Epic 5, Layer 2](../../docs/PRD/PRD.md#epic-5--internationalization)
+1. **Content languages** — the [PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization)
    store-language catalog: add a language by **picking from the bundled ~184-entry ISO 639-1 list**
    (never free-typed), mark one as the store's default content language, and remove one.
 2. **Dashboard defaults** — two admin-configurable system settings constrained to the **two-value**
@@ -22,7 +22,7 @@ model, migration, action, policy or permission — all of those are 0068's, cons
 > visual separation and **D-4** for the copy that keeps them apart.
 
 ## Type
-frontend | includes database-expert: **no** | consumes backend stories **0068** (catalog + `LocaleSetting`) and **0066** (`UiLocale`, `preferredLocale()`)
+frontend | includes database-expert: **no** | consumes backend stories **0068** (catalog + `LocaleSetting`) and **0066** (~~`UiLocale`,~~ `preferredLocale()`) — *`App\Enums\UiLocale` moved from 0066 to 0068 on 2026-09-27 (0068's Phase 2 finding B1)*
 
 ## Gherkin
 
@@ -132,9 +132,41 @@ Feature: The Store Languages settings screen — dashboard defaults
     Given a store administrator viewing the dashboard defaults section
     When they read the section's description
     Then it states that these defaults apply to every visitor who has not chosen their own language
+
+  # Moved here from story 0068 on 2026-09-27 -- see the note below this block.
+  Scenario: A dashboard default outside the offered pair is refused with a validation error
+    Given a store administrator holding permission to edit store languages
+    When they submit a default dashboard language that is not one of the two offered
+    Then the change is refused with a validation error and the stored default is unchanged
 ```
 
+> **Added 2026-09-27 — moved from story 0068 (its Phase 5 review, finding B2).** 0068 originally carried
+> this scenario as *"A language outside the offered pair is refused"*, but its two `Localization` actions
+> take a typed `UiLocale`, so no raw string can reach them and 0068 has no boundary at which a validation
+> error can occur (see [0068's struck scenario and test line](done/0068-store-languages-catalog-backend.md#gherkin)).
+> The first place a raw string exists is **this** story's form: `$defaultUiLocale` and
+> `$defaultNotificationLocale` are client-writable `string` properties (**D-16**), so a forged Livewire
+> payload can carry anything. The scenario is reworded only to add the non-persistence half of the
+> outcome, which is what makes it testable at this layer; it moved together with the
+> `LocaleSettingValidationRules` trait that enforces it (see [Create](#create)).
+
 ## Files to create/modify
+
+### Create
+
+- **`app/Concerns/LocaleSettingValidationRules.php`** — ⚠️ *added 2026-09-27; originally drafted and
+  shipped under story 0068, moved here because this story's settings form is its only real caller*
+  ([0068's struck *Files* bullet](done/0068-store-languages-catalog-backend.md#create--the-locale-settings-half):
+  Larastan flagged it as dead code in 0068, whose actions take a typed `UiLocale` and never validate a
+  raw string — 0068's **D15** "don't ship a validation method nothing calls" rule). Shape unchanged from
+  0068's design: `defaultUiLocaleRules()` and `defaultNotificationLocaleRules()`, each
+  `['required', 'string', Rule::enum(UiLocale::class)]`; a **new** trait rather than a method on
+  `UserValidationRules`, for the reason 0068's **R-18** records (that trait is named for the `User`
+  model, and naming.md forbids one trait `use`-ing another). Composed into
+  `App\Livewire\StoreLanguages\Index` and called from `saveDefaultUiLocale()` /
+  `saveDefaultNotificationLocale()` before the string is converted to `UiLocale` — see the **D-15**
+  correction. **Phase 3 must check whether 0068 has already deleted the file** (it is being removed
+  from 0068's branch in the same correction round) and recreate it here rather than assume it exists.
 
 ### Modify
 
@@ -175,6 +207,12 @@ Feature: The Store Languages settings screen — dashboard defaults
   public function saveDefaultNotificationLocale(SetDefaultNotificationLocale $a): void;
   ```
 
+  *Added 2026-09-27:* the class also `use`s `App\Concerns\LocaleSettingValidationRules` (see
+  [Create](#create)), and each `save*Locale()` method validates its own property with the matching
+  trait method **before** converting it with `UiLocale::from()` — so `from()` only ever sees a value
+  `Rule::enum()` has already accepted, and a forged value becomes a `ValidationException` keyed on the
+  property name rather than a `\ValueError` 500.
+
   **There is no edit modal**, deliberately: a `StoreLanguage` has nothing editable but `is_default` and
   `is_active`, both act-now. This is a smaller surface than Users, Roles or Sales Regions.
 
@@ -193,16 +231,30 @@ Feature: The Store Languages settings screen — dashboard defaults
   what its *actions* reference (`errors.*`). This story adds the `index.*` UI copy group: section
   heading and description, button labels, the two distinct disabled tooltips, the empty state, and the
   removal-confirmation copy including its `trans_choice` usage line (**D-11**).
-- **`lang/en/localization.php`** / **`lang/es/localization.php`** — 0068 ships the `attributes` block;
-  this story adds a `settings.*` group for the two selects' labels, their save buttons, and the
-  section description that keeps these apart from a personal preference (**D-4**).
+- **`lang/en/localization.php`** / **`lang/es/localization.php`** — *corrected 2026-09-27, Phase 5:* 0068's
+  Phase 5 correction round resolved the open item this bullet used to flag — 0068 deleted
+  `LocaleSettingValidationRules` and shipped both files **empty** (`return [ // ];`, with a comment
+  explaining why), since the `attributes` block had no consumer left there. **This story creates the
+  `attributes` block fresh here**, alongside recreating the trait itself (see [Create](#create)), naming
+  the same two properties (`defaultUiLocale`, `defaultNotificationLocale`) the trait validates. It also
+  adds a `settings.*` group for the two selects' labels, their save buttons, and the section description
+  that keeps these apart from a personal preference (**D-4**).
+- **`tests/Feature/Layout/TopbarTest.php`** — *added 2026-09-27, Phase 5:* 0068 added `store-languages.index`
+  to this test's placeholder-screen exclusion list (`$placeholderScreens`) rather than to `topbarScreens()`,
+  since the placeholder view has no real title/subtitle key yet. **This story must move it into
+  `topbarScreens()` with its real title key** once the actual screen exists, and remove it from the
+  exclusion list — leaving it excluded alongside a real, titled screen would be wrong, not just stale.
 
 ### Deliberately not created
 
-- **No validation trait, and no `$this->validate()` in the component** (**D-15**). Every user-reachable
+- ~~**No validation trait, and no `$this->validate()` in the component** (**D-15**). Every user-reachable
   refusal is a `ValidationException` thrown by 0068's actions and keyed `code` / `languageId`; the
   component declares those as real public properties so the error survives Livewire's
-  `SupportValidation::dehydrate()` filter, and re-derives no rule of its own.
+  `SupportValidation::dehydrate()` filter, and re-derives no rule of its own.~~ ⚠️ *Corrected
+  2026-09-27:* true for the **content-languages** half only — no `StoreLanguageValidationRules` and no
+  `$this->validate()` on `code` / `languageId`. The **dashboard-defaults** half now composes
+  `LocaleSettingValidationRules` (moved here from 0068, see [Create](#create)), because 0068's locale
+  actions take a typed `UiLocale` and throw no `ValidationException` of their own. See **D-15**.
 - **No new Livewire component.** One component, two sections — confirmed.
 
 ### Deliberately not touched
@@ -241,6 +293,7 @@ Feature: The Store Languages settings screen — dashboard defaults
 - [ ] An actor holding `store-languages.view` but not `.edit`: both locale selects and every catalog control render disabled, **and** a forced write is refused server-side with **no partial persistence**. *Risk if missing:* a half-applied write on a refused request — a correctness bug, not a cosmetic one.
 - [ ] A target deleted between render and click raises `ModelNotFoundException` and is surfaced as a recoverable error rather than an unhandled 500.
 - [ ] A Super Admin holding **zero** `store-languages.*` rows sees every control enabled — proving the `Gate::before` bypass reaches the UI hint, not only the action.
+- [ ] *Added 2026-09-27 (moved from 0068 with its scenario).* A **forged locale value** set directly on `defaultUiLocale` / `defaultNotificationLocale` (dataset: `'fr'`, `'EN'`, `'en-GB'`, `''`, a 40-character string) and saved is refused with a validation error **keyed on that property name**, neither `Localization` action is called, and the stored `locale_settings` row is unchanged — asserted for **both** properties. *Risk if missing:* the save method's `UiLocale::from()` sees an unvalidated string and raises `\ValueError` (a 500) instead of a keyed error, and the only rule standing between a forged payload and that conversion — `LocaleSettingValidationRules` — is itself untested, the dead-code shape it was moved out of 0068 to escape.
 
 **Two-section separation** — `CatalogRenderingTest.php` and `LocaleSettingsRenderingTest.php`
 > Two files rather than one `IndexRenderingTest.php`, so the separation is structural in the suite and
@@ -300,6 +353,7 @@ reason, and every refusal the backend raises lands against the language it conce
 - [ ] The removal confirmation never states a "0 usages" safety claim; the usage line appears only when a translation relation is registered and reports a real count.
 - [ ] The dashboard defaults section offers exactly the two `UiLocale` cases for each setting, and no content language ever appears among them.
 - [ ] The two dashboard defaults are saved independently, through two separate actions, and neither disturbs the other or the content default.
+- [ ] A submitted dashboard default outside the two offered values is refused with a validation error keyed on the submitted property, no action is called, and nothing is persisted (*added 2026-09-27 — moved from story 0068*).
 - [ ] The dashboard defaults section's copy states that the defaults apply application-wide, including to visitors who have not chosen their own language, and does not read as a personal preference.
 - [ ] Every control gated by a policy renders disabled for an actor lacking the ability, with the `data-test` hook present on both branches.
 - [ ] A control disabled for a **domain-state** reason (already default; only active language) carries a *different, specific* tooltip from the permission refusal's generic one.
@@ -311,7 +365,7 @@ reason, and every refusal the backend raises lands against the language it conce
 ## Definition of Done
 - [ ] Tests written and green (full suite **unscoped**, not `--filter`)
 - [ ] `vendor/bin/pint --format agent` run **unscoped**, not `--dirty`
-- [ ] **Larastan level 7 run and recorded** — named explicitly because [errors-log.md](../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26) records three consecutive stories whose verification notes listed two of three gates and were read as records of all three
+- [ ] **Larastan level 7 run and recorded** — named explicitly because [errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26) records three consecutive stories whose verification notes listed two of three gates and were read as records of all three
 - [ ] Code reviewed (code-reviewer)
 - [ ] No security findings (appsec-auditor)
 - [ ] Documentation updated (docs-keeper) — at minimum `docs/api/routes.md` (the fourth gated route's screen, and the second half of its module gate), `docs/architecture/authorization.md` (the sidebar registry's **fifth** entry and **second** group addition), and `docs/conventions/naming.md` if the registry key raises anything new
@@ -335,8 +389,8 @@ to make them administrable *and* to make them visibly distinct.
 
 ## 2. Detailed acceptance criteria (Given/When/Then)
 
-The Given/When/Then criteria are the two `Feature:` blocks in [Gherkin](#gherkin) above — twenty
-scenarios, each opening with a named business-role actor and carrying exactly one `When`, per
+The Given/When/Then criteria are the two `Feature:` blocks in [Gherkin](#gherkin) above — ~~twenty~~
+twenty-one (*2026-09-27: one scenario moved in from story 0068*) scenarios, each opening with a named business-role actor and carrying exactly one `When`, per
 [gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3. The
 checkbox-form criteria they must satisfy are in [Acceptance criteria](#acceptance-criteria). They are
 indexed here rather than restated, so there is one authoritative copy of each.
@@ -378,7 +432,7 @@ concerns on one screen. *Rejected:* renaming to a settings-shaped class now — 
 across a file this story does not need to touch, for a naming nicety.
 
 **D-2 — The view is the flat `resources/views/livewire/store-languages.blade.php`.** The
-[`Index`-in-a-subfolder exception](../../docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
+[`Index`-in-a-subfolder exception](../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
 keys on the **class name** being `Index`, not on living in a subfolder — `App\Livewire\Media\Gallery`
 resolving to the *nested* `livewire/media/gallery.blade.php` is the counter-example `naming.md` records
 for exactly this over-application. `StoreLanguages\Index` **is** named `Index`, so the folder name is
@@ -413,7 +467,7 @@ in `lang/{en,es}/localization.php` under `settings.*`, never inline.
 both debate participants, and it is the correction most worth reading in this file.** Both
 `frontend-expert` and `frontend-qa` stated the notification default is inert and has no consumer,
 faithfully following 0068's **D26**/**R-16**. **That text is stale.** Verified by reading
-[`0066-admin-ui-locale-preference-backend.md`](0066-admin-ui-locale-preference-backend.md) at `HEAD`:
+[`0066-admin-ui-locale-preference-backend.md`](done/0066-admin-ui-locale-preference-backend.md) at `HEAD`:
 its **R-2** is marked *"✅ RESOLVED by the human: yes, an administrator's UI language also decides the
 language of their emails"*, and its **D-14** ships the consumer —
 
@@ -547,10 +601,21 @@ component does not declare, which story 0017 learned the hard way. Composing
 `StoreLanguageValidationRules` into the component would duplicate a rule the action already owns and
 enforces.
 
+⚠️ **Corrected 2026-09-27 — "the component runs no validation of its own" was true of the catalog half
+only.** The premise above ("every user-reachable refusal is a `ValidationException` thrown by 0068's
+actions") does not hold for the dashboard defaults: `SetDefaultUiLocale` / `SetDefaultNotificationLocale`
+take a typed `UiLocale` and throw only `AuthorizationException`, so the component is the **only** layer
+that ever holds the raw, client-writable `string` a forged payload can carry. It therefore validates
+`defaultUiLocale` / `defaultNotificationLocale` with `LocaleSettingValidationRules` — moved here from
+0068 on 2026-09-27, where it had no caller (0068's Phase 5 review; its **D15** rule) — before converting
+with `UiLocale::from()`. This is not duplication in the sense rejected above: no action owns a rule for
+these strings, so the trait is the rule's one home rather than a second copy. The catalog half is
+unchanged — `code` and `languageId` are still validated by 0068's actions alone.
+
 **D-16 — No `wire:model`-bound property is ever `null`, and `#[Locked]` covers exactly two.** `$code`,
 `$languageId`, `$replacementLanguageId`, `$defaultUiLocale` and `$defaultNotificationLocale` are plain
 `string`s with `''` as the "nothing chosen" sentinel matching a placeholder `<option value="">` — the
-[errors-log rule](../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
+[errors-log rule](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
 applied to every control up front rather than case by case. The two locale properties are assigned real
 values in `mount()` before first render. `#[Locked]` goes on `$languages` (a client-writable array of
 rendered rows is a disclosure risk — the `$regions`/`$users` precedent) and `$languageId` (server-only
@@ -581,12 +646,13 @@ wrapper on the disabled branch rather than a conditionally-bound `:tooltip` prop
 
 ### Dependencies
 
-- **[Story 0068](0068-store-languages-catalog-backend.md)** — the entire backend contract: both models,
+- **[Story 0068](done/0068-store-languages-catalog-backend.md)** — the entire backend contract: both models,
   both policies, all five actions, the route, the fixture reader and the placeholder view this story
   replaces. **Specified, not implemented** (see R-1).
-- **[Story 0066](0066-admin-ui-locale-preference-backend.md)** — `App\Enums\UiLocale`, which this
-  screen's two selects render, and `preferredLocale()`, which gives the notification default its meaning
-  (**D-5**). Also **specified, not implemented**.
+- **[Story 0066](done/0066-admin-ui-locale-preference-backend.md)** — ~~`App\Enums\UiLocale`, which this
+  screen's two selects render, and~~ `preferredLocale()` (*2026-09-27: `UiLocale` is now 0068's, per
+  0068's Phase 2 finding B1*), which gives the notification default its meaning
+  (**D-5**). Now **shipped** (closed 2026-09-28).
 - **[Story 0067](0067-admin-ui-language-switcher-ui.md)** — not a code dependency, but it renders the
   personal switcher in the chrome of *this* page, which creates a real assertion collision (**R-3**).
 - **No new package.** No searchable-select dependency is added; story 0022 stays unbuilt.
@@ -678,7 +744,7 @@ Derived from this debate; **none are in scope for 0069**.
 
 1. **Mark 0068's D26/R-16 superseded** once **Q-2** is confirmed, so no later story inherits the "the
    notification locale has no consumer" claim that 0066's D-14 has already falsified. This is the
-   [stale-claim failure mode](../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
+   [stale-claim failure mode](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
    caught before it propagates a third time.
 2. **Swap the picker's hand-rolled Alpine filter for the searchable multi-select component** if story
    0022 ever ships — this modal is its natural first consumer (**D-6**).
@@ -734,6 +800,16 @@ never the discriminator for the `@js()` compilation trap.
 **One claim in 0068 was checked and found already satisfied:** its **R-10** asks Phase 3 to check for a
 missing `roles.modules.store_languages` translation leaf. Both `lang/en/roles.php` and
 `lang/es/roles.php` already carry it.
+
+**Scope amendment from story 0068's Phase 5 review, 2026-09-27.** `product-owner` (owner of this file)
+moved two things here from 0068, recorded symmetrically in 0068's own Provenance: the
+`App\Concerns\LocaleSettingValidationRules` trait (Larastan dead code in 0068 — zero callers, since
+0068's locale actions take a typed `UiLocale`), now under [Create](#create), and 0068's Feature-2
+scenario *"A language outside the offered pair is refused"*, now the last dashboard-defaults scenario
+together with its forged-locale negative test and a matching acceptance criterion. **D-15** and
+*Deliberately not created* are corrected in place (validation is absent from the catalog half only).
+This story is still at the **new** stage; no phase beyond Phase 1 has run on it, so the amendment is
+subject to its own Phase 2 INVEST check like the rest of the file.
 
 **Not run by this phase**, per [workflow.md](../../docs/workflow.md): the INVEST check (Phase 2), TDD
 implementation (Phase 3), security audit (Phase 4), code review (Phase 5), or the docs pass (Phase 6).

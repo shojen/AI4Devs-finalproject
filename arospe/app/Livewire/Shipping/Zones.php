@@ -86,6 +86,21 @@ class Zones extends Component
     public string $deletingZoneName = '';
 
     /**
+     * Story 0036, Phase 4 security-audit findings F-2/F-3: exists solely
+     * so DeleteShippingZone's `ValidationException::withMessages(['shippingZoneId' => ...])`
+     * (the in-use-by-a-rate-rule guard) survives past the request that
+     * throws it. Livewire's SupportValidation::dehydrate() filters the
+     * persisted error bag through Utils::hasProperty(), so an error keyed
+     * on a name this class does not declare as a real property renders
+     * once and silently vanishes on the next round trip -- exactly the gap
+     * story 0034's own Phase 4 audit (its finding F-4) flagged and handed
+     * off here. Never written to directly; it exists only to give the
+     * error bag a property to survive against.
+     */
+    #[Locked]
+    public ?string $shippingZoneId = null;
+
+    /**
      * `viewAny` is authorized here in addition to the route's `can:`
      * middleware because Livewire's `/livewire/update` endpoint never runs
      * route middleware -- mounting the component directly (as every
@@ -276,6 +291,19 @@ class Zones extends Component
 
     /**
      * Open the delete-confirmation modal for the target zone.
+     *
+     * Story 0036 Phase 4 RE-audit finding R-1: resetErrorBag('shippingZoneId')
+     * as this method's own last statement -- without it, a stale
+     * "used by N shipping rates" error left over from a PREVIOUSLY blocked
+     * delete attempt (on a DIFFERENT zone) survives Livewire's error-bag
+     * persistence and renders in THIS zone's own delete-confirmation modal,
+     * even when this zone has zero referencing rates. openCreateModal()/
+     * openEditModal()/closeModal() already call resetValidation() (Phase 5
+     * finding H-1) and closeDeleteModal() already resets this same key, but
+     * this method -- the one that actually SHOWS the modal a stale error
+     * could leak into -- was never one of those callers, because nothing
+     * could reach 'shippingZoneId' before this story made it reachable at
+     * all (see the property's own docblock above).
      */
     public function confirmDelete(string $zoneId, LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt): void
     {
@@ -291,17 +319,20 @@ class Zones extends Component
         $this->deletingZoneId = $target->id;
         $this->deletingZoneName = $target->name;
         $this->showDeleteModal = true;
+        $this->resetErrorBag('shippingZoneId');
     }
 
     /**
      * Delete the confirmed zone.
      *
-     * D-6: any `ValidationException` `DeleteShippingZone` raises (today:
-     * none -- the in-use-by-a-rate-rule guard is story 0036's, not yet
-     * implementable since `shipping_rates` does not exist) is left to
-     * surface into this component's error bag and render inside the
-     * still-open delete modal, message-agnostic -- this screen adds no
-     * `zones.delete_blocked` key of its own.
+     * D-6: the `ValidationException` `DeleteShippingZone` raises when rate
+     * rules still reference the zone (story 0036's D-5 in-use count guard,
+     * keyed 'shippingZoneId') is left to surface into this component's
+     * error bag and render inside the still-open delete modal,
+     * message-agnostic -- this screen adds no `zones.delete_blocked` key
+     * of its own; the copy is the action's. It survives past the throwing
+     * request because $shippingZoneId is a real declared property (see
+     * its docblock above).
      *
      * Phase 4 security-audit finding F-3: re-authorizes here too, even
      * though `DeleteShippingZone` already self-authorizes (0033 Phase 4

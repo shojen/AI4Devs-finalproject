@@ -61,11 +61,11 @@ return [
     |
     | Here you may specify the default timezone for your application, which
     | will be used by the PHP date and date-time functions. The timezone
-    | is set to "UTC" by default as it is suitable for most use cases.
+    | is set to "Europe/Madrid" by default as it is suitable for most use cases.
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => 'Europe/Madrid',
 
     /*
     |--------------------------------------------------------------------------
@@ -121,6 +121,26 @@ return [
     'maintenance' => [
         'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Site-wide Password Protection
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, App\Http\Middleware\EnsureSitePasswordIsProvided gates
+    | every "web" route (the coming-soon page and the whole dashboard alike)
+    | behind one shared HTTP Basic Auth credential. Off by default; toggle
+    | per environment with SITE_PASSWORD_PROTECTED, independently of
+    | APP_ENV, so it can be turned on for a staging deploy without it
+    | following the environment name around.
+    |
+    */
+
+    'site_password_protection' => [
+        'enabled' => (bool) env('SITE_PASSWORD_PROTECTED', false),
+        'username' => env('SITE_AUTH_USER'),
+        'password' => env('SITE_AUTH_PASSWORD'),
     ],
 
 ];

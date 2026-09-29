@@ -4,7 +4,7 @@
  * roles/index.blade.php -- Livewire's Finder strips a trailing ".index"
  * segment for an Index component in a subfolder, the same exception
  * App\Livewire\Users\Index already relies on; see
- * docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name.
+ * docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name.
  *
  * This story owns markup and UI state only. Every query, mutation,
  * validation rule and authorization decision belongs to sibling story 0010's
@@ -20,9 +20,10 @@
  */
 ?>
 <div class="w-full">
+    <x-slot:heading>{{ __('topbar.roles.title') }}</x-slot:heading>
+    <x-slot:subheading>{{ __('topbar.roles.subtitle') }}</x-slot:subheading>
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <flux:heading size="xl">{{ __('Roles & permissions') }}</flux:heading>
             <flux:subheading>
                 {{ trans_choice('roles.index.summary', $this->roles->count(), ['count' => $this->roles->count()]) }}
             </flux:subheading>
@@ -191,7 +192,7 @@
 
                     {{-- The permission catalog is rendered in FULL for every actor, with exactly
                     one deliberate exception -- see
-                    docs/security/authorization-patterns.md#two-guards-on-one-payload-must-agree-on-what-an-omission-means
+                    docs/security/authorization-patterns/payload-omission-and-registries.md#two-guards-on-one-payload-must-agree-on-what-an-omission-means
                     and #a-control-omitted-from-the-dom-is-safe-only-for-the-one-value-whose-guard-preserves-an-omission.
                     Nothing else is ever filtered to what the acting user may themselves grant;
                     the administrator-level permission is absent from the DOM entirely (not

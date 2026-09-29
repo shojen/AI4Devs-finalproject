@@ -3,9 +3,9 @@
 ## Description
 Retrofit story [0025](done/0025-product-categories-ui.md)'s Product Categories management screen so a
 category's name is authored **per active store language** through language tabs, satisfying
-[PRD Epic 5, Layer 2](../../docs/PRD/PRD.md#epic-5--internationalization)'s *"each active store
+[PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization)'s *"each active store
 language surfaces as a tab … in the taxonomy management screens"* and its `Taxonomy names are
-translatable per store language` scenario. Consumes story [0070](0070-translatable-content-mechanism-product-categories-backend.md)'s
+translatable per store language` scenario. Consumes story [0070](done/0070-translatable-content-mechanism-product-categories-backend.md)'s
 mechanism (`HasTranslations`, `SetTranslation`, per-language uniqueness) unchanged.
 
 **This story establishes the repo's first tabbed UI**, and four siblings (0073 Blog Categories,
@@ -39,7 +39,7 @@ kind exists in this repo today.
 > 0023, 0024, 0025, 0068 and 0070 are all unimplemented Phase 1 files.** This story is therefore
 > designed against *four* written contracts simultaneously and must be re-derived rather than
 > silently trusted if any of their Phase 2/3 work changes shape — the
-> [deferred-findings failure mode](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+> [deferred-findings failure mode](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
 > this project records, at its widest exposure yet.
 
 ## Type
@@ -47,14 +47,14 @@ frontend | includes database-expert: **no** | consumes **0070** (mechanism), **0
 
 > ⚠️ **Classification note, raised rather than silently resolved.** The 2026-08-30 defence-in-depth
 > decision adds one `app/Actions/` class to a story classified **frontend**, which
-> [workflow.md](../../docs/workflow.md#task-classification-rule) would ordinarily read as
+> [workflow.md](../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule) would ordinarily read as
 > *fullstack* and therefore **split into two tasks**. This file deliberately does **not** split,
 > for two reasons: the action is a thin, self-authorizing wrapper over a primitive 0070 already
 > ships (no model, migration, schema, route or permission change — `includes database-expert`
 > stays **no**), and splitting would put the screen and the guard it depends on in different
 > stories, reproducing exactly the broken-window sequencing **R-2** already flags. **The
 > coordinator owns this call**; if Phase 2 prefers a split, the action half is numbered *below*
-> this story per the [task ordering rule](../../docs/workflow.md#task-ordering-rule), and
+> this story per the [task ordering rule](../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule), and
 > `backend-expert` / `backend-qa` join its debate.
 
 ---
@@ -233,12 +233,12 @@ Feature: Product category names authored per store language
 
 | Path | Change |
 | --- | --- |
-| `app/Livewire/ProductCategories/Index.php` | **0025's.** `public string $name` → `public array $names`; adds `$activeLanguageId`, `$originalTranslatedLanguageIds`, `setActiveLanguageTab()`; `save()` gains `SetProductCategoryTranslation`. See **D-3**. |
+| `app/Livewire/ProductCategories/Index.php` | **0025's, as already migrated by 0070 D-15** (list query = this story's **D-12**, default-language reads via `translated('name')`, `—` for a missing name). This story builds on that version: `public string $name` → `public array $names`; adds `$activeLanguageId`, `$originalTranslatedLanguageIds`, `setActiveLanguageTab()`; `save()` gains `SetProductCategoryTranslation`. See **D-3**. |
 | `resources/views/livewire/product-categories.blade.php` | **0025's.** The single-field modal becomes a tab strip plus one panel per active language. The list's name cell gains a `data-test` hook and an em-dash branch. |
 | `lang/en/products.php` + `lang/es/products.php` | **0024 creates, 0025 extends, this story extends again.** One `categories.index.tabs.*` group. Key-for-key identical. See **D-10** and the ⚠️ below. |
 
 > ⚠️ **Three stories now write `lang/*/products.php`** (0024 creates it, 0025 appends `categories.index`, 0071 appends `categories.index.tabs`). Verified absent from the tree today. Their Phase 3 work must **never** be dispatched in the same batch, per the
-> [Parallel Agent File-Ownership Rule](../../docs/contracts.md#parallel-agent-file-ownership-rule) —
+> [Parallel Agent File-Ownership Rule](../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule) —
 > 0024, then 0025, then 0071, each fully closed before the next starts. 0025 already carries the
 > two-story form of this fence; this story makes it three.
 
@@ -252,7 +252,7 @@ Feature: Product category names authored per store language
 | `app/Actions/ProductCategories/{Create,Rename,Delete}ProductCategory.php`, `app/Policies/ProductCategoryPolicy.php` | 0023 / 0024 / 0070 — **note this row no longer covers the whole folder**: this story *adds* `SetProductCategoryTranslation.php` beside them (see above), and changes none of the three existing actions |
 | `routes/web.php`, `config/modules.php`, `lang/*/navigation.php` | 0025 — no route and no sidebar entry is added or changed |
 | `config/store-languages.php` | 0070 already appends `product_category_translations` |
-| `database/seeders/RolePermissionSeeder.php` | nobody — catalog stays at **42**; translating adds no permission (0070 **D-13**) |
+| `database/seeders/RolePermissionSeeder.php` | nobody — catalog stays at **43** (`orders.refund`, story 0051; corrected 2026-09-28 with 0070's Phase 2 rewrite); translating adds no permission (0070 **D-13**) |
 | The delete-confirmation modal and its in-use hard block | [0024b](done/0024b-product-category-in-use-delete-guard.md) / 0025 — untouched by tabs |
 
 ### The new backend action — the layer that does not depend on a caller
@@ -297,11 +297,11 @@ final class SetProductCategoryTranslation
 
 Five things in that block, each following an existing convention rather than inventing one:
 
-- **`Gate::authorize('update', $productCategory)` is the first statement**, outside any transaction, per [the action-owns-the-rule convention](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers). Verified against 0023: `ProductCategoryPolicy`'s four abilities map to the already-seeded `products.view/create/edit/delete`, so `update` **is** `products.edit`. No new permission, no new ability, catalog unchanged at **42** (0070 **D-13**).
+- **`Gate::authorize('update', $productCategory)` is the first statement**, outside any transaction, per [the action-owns-the-rule convention](../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers). Verified against 0023: `ProductCategoryPolicy`'s four abilities map to the already-seeded `products.view/create/edit/delete`, so `update` **is** `products.edit`. No new permission, no new ability, catalog unchanged at **43** (0070 **D-13**).
 - **It authorizes `update` on the parent category, not on the translation row.** Translating is editing the category; there is deliberately no `TranslationPolicy` (0070 **D-13**), and inventing one would restate `ProductCategoryPolicy::update` under a new name.
 - **Both dependencies are constructor-injected**, per [code-style.md's documented exception](../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract) — `__invoke()`'s parameter list is a public contract every direct caller matches verbatim, so an internal collaborator must not widen it. This mirrors `SetSalesRegionActive` constructor-injecting `SetDefaultSalesRegion`, and 0023's own actions constructor-injecting `NormalizeForSearch`. **Resolve it from the container, never `new` it, including in tests.**
-- **It reuses 0070's widened `nameRules()` unchanged** and adds no method to `ProductCategoryValidationRules` — the trait stays reusable by the four siblings. The `23000` catch 0023 established still applies as the last-word race guard, with 0070's caveat that the translations table has **three** constraints, so a blanket `23000` → "name taken" is newly unsafe and must discriminate.
-- **The error key is *derived*, never accepted as a parameter.** `"names.{$language->id}"` is computed from the language the action was handed, so no caller can tell it what to key on — the [errors-log rule](../../docs/errors-log.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20) against a guard accepting its own state. An Artisan or queued caller simply receives a `ValidationException` carrying that key, which is harmless; a Livewire caller gets one that lands on the right tab's field for free. **The `names.` prefix is therefore a deliberate shared contract across all five taxonomy screens, not a leak** — every consuming component declares `public array $names` (**D-3**).
+- **It reuses 0070's widened `nameRules()` unchanged** and adds no method to `ProductCategoryValidationRules` — the trait stays reusable by the four siblings. The `23000` catch 0023 established still applies as the last-word race guard, with 0070's caveat that the translations table has **three** constraints, so a blanket `23000` → "name taken" is newly unsafe and must discriminate. *(Aligned with 0070's round-2 rewrite, 2026-09-28:)* 0070 extracts that discrimination into `App\Actions\ProductCategories\TranslateProductCategoryNameUniqueViolation` (0070 **D-7 (ii)**). This action reuses it rather than writing a third copy, passing its own derived `"names.{$language->id}"` as the error key.
+- **The error key is *derived*, never accepted as a parameter.** `"names.{$language->id}"` is computed from the language the action was handed, so no caller can tell it what to key on — the [errors-log rule](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20) against a guard accepting its own state. An Artisan or queued caller simply receives a `ValidationException` carrying that key, which is harmless; a Livewire caller gets one that lands on the right tab's field for free. **The `names.` prefix is therefore a deliberate shared contract across all five taxonomy screens, not a leak** — every consuming component declares `public array $names` (**D-3**).
 
 ### The component surface, diffed against 0025's
 
@@ -311,7 +311,7 @@ namespace App\Livewire\ProductCategories;
 #[Title('Product categories')]
 class Index extends Component
 {
-    use ProductCategoryValidationRules;   // 0070-widened: nameRules(string $storeLanguageId, ?string $categoryId = null)
+    use ProductCategoryValidationRules;   // 0070-widened: nameRules(NormalizeForSearch $normalizeForSearch, string $storeLanguageId, ?string $productCategoryId = null)
 
     /** @var array<int, array{id: string, name: ?string, productCount: int, canEdit: bool, canDelete: bool}> */
     public array $productCategories = [];        // `name` is now ?string — the fallback can resolve to null (D-6)
@@ -376,7 +376,7 @@ the new one.
 - [ ] An actor holding `products.edit` sets a French name → the translation is stored and returned.
 - [ ] An actor **lacking** `products.edit` → `AuthorizationException`, and **no row is written**. *Risk if missing:* the defence-in-depth decision is unverified — the whole point is that this holds with no component in the picture.
 - [ ] A **Super Admin holding zero permission rows** succeeds, via `Gate::before`.
-- [ ] A blank and a whitespace-only name → `ValidationException`, no row written. *Risk if missing:* 0070's "a blank translation is refused" scenario has no enforcement point at all, since `SetTranslation` validates nothing.
+- [ ] A blank and a whitespace-only name → `ValidationException`, no row written. *Risk if missing:* non-default-language blank refusal has no enforcement point at all, since `SetTranslation` validates nothing. 0070 proves the rule only at the rule layer and explicitly hands this write-path claim to this story (0070 **D-17**).
 - [ ] An over-length name → `ValidationException`. One canary, not 0070's boundary matrix.
 - [ ] A duplicate name **within one language** → `ValidationException`; the **same name in another language** → accepted. The one pairing that proves the uniqueness scope is per-language at *this* layer, not just in the component.
 - [ ] Re-setting the same category's own name in the same language → accepted, not refused as a duplicate (the `->ignore()` branch).
@@ -470,7 +470,7 @@ application.
 - [ ] **`SetProductCategoryTranslation` authorizes `update` on the category and validates the name itself**, so a direct caller with no component — an Artisan command, queued job or importer — is refused identically; proven by direct-call tests that mount no component.
 - [ ] **The component authorizes and validates too, before calling it**, and both layers are covered by their own tests. Neither layer may be removed as "duplication" (**D-4**, **D-13**).
 - [ ] A refusal from either layer lands on `names.{languageId}` and renders on that language's tab, including a default-language refusal re-keyed from the `name` key 0023's actions throw (**D-4** ⚠️).
-- [ ] The permission catalog is unchanged at **42** and no new ability, policy or `TranslationPolicy` is added (0070 **D-13**).
+- [ ] The permission catalog is unchanged at **43** and no new ability, policy or `TranslationPolicy` is added (0070 **D-13**).
 - [ ] The default language's name is required; a previously-translated language's name may not be blanked; a previously-untranslated one may be left blank and is not written (**D-7**).
 - [ ] A validation refusal keyed to a hidden tab **switches the active tab to that language** and marks it in the strip; the marker persists while the administrator navigates away.
 - [ ] Name uniqueness renders per language — the same name accepted across two languages, refused twice within one.
@@ -483,7 +483,7 @@ application.
 ## Definition of Done
 - [ ] Tests written and green (**full suite unscoped**, not `--filter`)
 - [ ] `vendor/bin/pint --format agent` run **unscoped**, not `--dirty`
-- [ ] **Larastan level 7 run and recorded** — named explicitly because [errors-log.md](../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26) records three consecutive stories whose verification notes listed two of three gates and were read as records of all three
+- [ ] **Larastan level 7 run and recorded** — named explicitly because [errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26) records three consecutive stories whose verification notes listed two of three gates and were read as records of all three
 - [ ] Code reviewed (code-reviewer)
 - [ ] No security findings (appsec-auditor) — point the audit at: **both layers of the per-tab write path** (a `products.view` actor must be refused by the component *and* by `SetProductCategoryTranslation` called directly), that `SetTranslation` is reachable from nowhere but the new action (grep `app/Livewire/` for the import), that the action's error key is derived from `$language->id` and never accepted as a parameter, `$originalTranslatedLanguageIds` being `#[Locked]`, and `$names` being unlocked (**D-3**)
 - [ ] **Compiled output of the tab strip verified by rendering, not by absence of an error** (**D-8**)
@@ -564,7 +564,7 @@ consumer.** Three reasons, in order of weight:
 > `frontend-expert` stated that Livewire always sends every dirty deferred `wire:model` property on
 > any action call, so text typed into a hidden tab survives a switch. That is standard Livewire
 > behaviour and very likely true — but `vendor/` is absent, it could not be confirmed by reading
-> source, and this project's [hedge rule](../../docs/errors-log.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
+> source, and this project's [hedge rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
 > says an unverified mechanism written up confidently is worse than an open question written up
 > plainly. **Under `x-show` the inputs are never removed from the DOM at all**, so the
 > "unsaved input lost on tab switch" failure mode is closed structurally rather than by relying on
@@ -584,7 +584,7 @@ genuinely existing translation without tripping the blank-is-refused rule, silen
 content. That is a data-integrity concern rather than a privilege one, and it is locked for the
 same reason `$editingCategoryId` is locked for `Rule::unique()->ignore()`. `$activeLanguageId`
 stays unlocked and never binds a `<select>` — it drives an `x-show` comparison, so the
-[null-bound-`<select>` trap](../../docs/errors-log-archive.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
+[null-bound-`<select>` trap](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
 is **structurally inapplicable** here, recorded so nobody "defensively" applies it.
 
 **D-4 — Writing a translation is authorized and validated at TWO independent layers: the component
@@ -606,7 +606,7 @@ but it means the primitive is only as safe as its caller, and a component is the
 | **2 — action** | `App\Actions\ProductCategories\SetProductCategoryTranslation` | `Gate::authorize('update', $category)` then its own `Validator::make(...)->validate()` | binds **every** caller — a future importer, command or job inherits the whole rule by calling the action, with no component in sight |
 
 **Why both, stated so it survives a "simplify this" review.** This repo has already ruled on the
-identical question twice, in the same direction. [base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+identical question twice, in the same direction. [base-standards.md](../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 establishes that *"if an operation must not happen without a permission, the check lives in the
 class that performs the operation"* — layer 2 — and task 0017's Sales Regions precedent adds the
 converse in as many words: ***"a component that authorizes as well is a layer, not a redundancy…
@@ -675,7 +675,7 @@ Three branches: the **default** language is always `required` (0070 **Q1(a)** �
 must hold a default-language name); a **non-default, previously untranslated** language is
 `nullable`, so leaving it blank is a no-op rather than a refusal; a **non-default, previously
 translated** language is `required`, so blanking it out is refused. That third branch is what makes
-0070's *"A blank translation is refused"* scenario hold at the UI layer, since `SetTranslation`
+the non-default blank-translation refusal (handed to this story by 0070 **D-17**) hold at the UI layer, since `SetTranslation`
 performs no validation of its own. The condition is expressed in the component, **not** pushed into
 `ProductCategoryValidationRules` — "was this language translated when the modal opened" is a
 property of the session, not of the field, and the trait must stay reusable by 0073/0075/0077/0079.
@@ -733,6 +733,7 @@ name colliding with an active language's endonym, or a passing assertion passes 
 reason.
 
 **D-12 — The list resolves and sorts in PHP through `translated()`, not through a SQL join.**
+*(2026-09-28: this query is now **applied by 0070** as part of its D-15 consumer migration, verbatim; this story inherits it and does not re-apply it. The reasoning below stands.)*
 
 ```php
 ProductCategory::query()->withCount('products')->withTranslationsFor()->get()
@@ -767,9 +768,9 @@ component imports `SetTranslation`, or the `x-show` panel-rendering mode (**D-2*
 0075, already written against this component, **inherit with no change on their end**.
 
 **The case that looks like an exception and is not.** 0060's Blog Tags screen consumes actions that
-[0059](0059-blog-tags-backend.md) already made responsible for their own validation, so its
+[0059](done/0059-blog-tags-backend.md) already made responsible for their own validation, so its
 component does **not** validate — there is no layer 1 to add, and adding one would duplicate a rule
-the action owns and invite the two to drift, which is exactly what [base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+the action owns and invite the two to drift, which is exactly what [base-standards.md](../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
 *"move the rule, never copy it"* forbids. **Defence in depth still holds there, because layer 2 is
 self-sufficient by construction**: the action authorizes and validates regardless of what any
 caller did or did not do. The principle is *"the operation is protected without relying on its
@@ -788,9 +789,9 @@ it whenever that layer is the action, and has **failed** it whenever that layer 
 
 ### Dependencies
 
-- **[0070](0070-translatable-content-mechanism-product-categories-backend.md)** — hard, blocking. `HasTranslations`, `SetTranslation`, the widened validation trait, the dropped `name` column. **Specified, not implemented.**
+- **[0070](done/0070-translatable-content-mechanism-product-categories-backend.md)** — hard, blocking. `HasTranslations`, `SetTranslation`, the widened validation trait, the dropped `name` column. **Specified, not implemented.**
 - **[0025](done/0025-product-categories-ui.md)** — hard, blocking. The component, view, route and sidebar entry this story widens. **Specified, not implemented.**
-- **[0068](0068-store-languages-catalog-backend.md)** — hard. `StoreLanguage`, `scopeActive()`, `defaultStoreLanguage()`. **Specified, not implemented.**
+- **[0068](done/0068-store-languages-catalog-backend.md)** — hard. `StoreLanguage`, `scopeActive()`, `defaultStoreLanguage()`. **Specified, not implemented.**
 - **[0023](done/0023-product-categories-backend.md) / [0024](done/0024-products-core-crud-backend.md)** — hard, transitively via 0025.
 - Sequencing, strictly: **0023 → 0024 → 0025 → 0068 → 0070 → 0071**, each fully closed before the next starts.
 - **No new package.** No tabs library, no searchable-select; story 0022 stays unbuilt.
@@ -798,12 +799,12 @@ it whenever that layer is the action, and has **failed** it whenever that layer 
 ### Risks
 
 - **R-1 — This story supersedes part of 0025's committed contract, and 0025 cannot be edited from here.** `public string $name = ''`, the "modal contains exactly one input" rendering test, the `orderBy('name')` list query and the `{id, name, …}` row shape are all falsified by 0070 **D-4**. All are amendments to 0025 that **this story must not write** (it edits no other story's file) but that Phase 2 must accept explicitly, not discover at implementation.
-- **R-2 — 0070's R-1 has no owner, and the gap is a broken screen.** 0070 records that 0025/0027/0060/0062 all `orderBy('name')` against a column it deletes, and assigns the amendment to *"the coordinator, not this story"*. If 0025 ships before 0070, the Product Categories list **throws a SQL error** until 0071 lands — a window in which a shipped screen is broken. **D-12** supplies the replacement query; **Q-3** asks who owns applying it.
+- **R-2 — Resolved 2026-09-28: 0070 now owns it (0070 D-15), so no broken-screen window exists.** Original text kept for the record: *0070's R-1 has no owner, and the gap is a broken screen.* 0070 records that 0025/0027/0060/0062 all `orderBy('name')` against a column it deletes, and assigns the amendment to *"the coordinator, not this story"*. If 0025 ships before 0070, the Product Categories list **throws a SQL error** until 0071 lands — a window in which a shipped screen is broken. **D-12** supplies the replacement query; **Q-3** asks who owns applying it.
 - **R-3 — Designed against four unimplemented specs at once.** 0023, 0024, 0025, 0068 and 0070 are all Phase 1 files. Any Phase 2/3 change to `HasTranslations`'s signature, the widened `nameRules()` shape, or 0025's component surface invalidates part of this story. Re-derive rather than trust.
 - **R-4 — A stale relation after a per-tab write renders the pre-save value** (0070 **R-5**). `SetProductCategoryTranslation` returns the *translation row* it wrote, not the parent — it inherits that return shape from `SetTranslation` — so `save()` must `$category->load('translations')` before reloading the list. Invisible to `Livewire::test()`, which never renders.
-- **R-5 — Two sibling-story claims are already stale and were corrected here rather than inherited.** 0069 **D-3** states `flux:separator` is *"used nowhere in `resources/views/`"* — it is used at `resources/views/components/settings/layout.blade.php:10` (`flux:card` genuinely appears nowhere, so that half stands). 0069 **D-17** states there are *"two existing flat"* browser files — there are **three**. Both verified by grep at authoring time. Neither changes a decision here; recorded because this project's [stale-claim failure mode](../../docs/errors-log-archive.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13) is exactly how a false premise reaches a third story.
+- **R-5 — Two sibling-story claims are already stale and were corrected here rather than inherited.** 0069 **D-3** states `flux:separator` is *"used nowhere in `resources/views/`"* — it is used at `resources/views/components/settings/layout.blade.php:10` (`flux:card` genuinely appears nowhere, so that half stands). 0069 **D-17** states there are *"two existing flat"* browser files — there are **three**. Both verified by grep at authoring time. Neither changes a decision here; recorded because this project's [stale-claim failure mode](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13) is exactly how a false premise reaches a third story.
 - **R-6 — `vendor/` is absent, so no Flux component's availability is verified.** **D-1** works around it by building the strip from `flux:button` variants already proven in `sales-regions.blade.php`. A Phase 3 author with dependencies installed should confirm whether Flux Free ships a `flux:tabs` before permanently rejecting it — and if it does, adopting it is a legitimate simplification, but it must be **run**, not reasoned.
-- **R-7 — Neither layer logs its refusals, and the new action makes that a live question rather than an inherited one.** Verified: `App\Livewire\SalesRegions\Index` method-injects `LogRefusedPrivilegedAttempt` into every mutating method per [the recipe](../../docs/architecture/authorization.md#recording-a-refusal--what-every-gate-owes-the-audit-trail), and 0025's specified surface does not. The component half is **0025's gap, inherited not created here**. The *action* half is new: `SetProductCategoryTranslation` is a fresh `Gate::authorize()` site, and the recipe's own argument applies to it directly — its refusals are otherwise indistinguishable from successes in any log. **Deliberately not adopted here**, because doing so unilaterally would make this the only Product Categories write path that logs while its three siblings (`Create`/`Rename`/`Delete`) stay silent, which is worse than consistent silence. Raised as backlog item 5 and flagged for Phase 2, so it is met as a decision rather than a silence — the same gap story 0019 left on the Media gallery and that `docs/architecture/authorization.md` records as a ⚠️.
+- **R-7 — Neither layer logs its refusals, and the new action makes that a live question rather than an inherited one.** Verified: `App\Livewire\SalesRegions\Index` method-injects `LogRefusedPrivilegedAttempt` into every mutating method per [the recipe](../../docs/architecture/authorization/step-up-and-refusal-logging.md#recording-a-refusal--what-every-gate-owes-the-audit-trail), and 0025's specified surface does not. The component half is **0025's gap, inherited not created here**. The *action* half is new: `SetProductCategoryTranslation` is a fresh `Gate::authorize()` site, and the recipe's own argument applies to it directly — its refusals are otherwise indistinguishable from successes in any log. **Deliberately not adopted here**, because doing so unilaterally would make this the only Product Categories write path that logs while its three siblings (`Create`/`Rename`/`Delete`) stay silent, which is worse than consistent silence. Raised as backlog item 5 and flagged for Phase 2, so it is met as a decision rather than a silence — the same gap story 0019 left on the Media gallery and that `docs/architecture/authorization.md` records as a ⚠️.
 - **R-8 — The pattern this story sets is copied four times.** Any weakness in the strip's contract, the error-key shape or the requiredness rule is reproduced by 0073/0075/0077/0079 before anyone re-examines it. That is the argument for extracting the strip (**D-1**) and for pinning the hook set at Phase 2 rather than discovering it mid-implementation.
 
 ### Open questions for the product owner
@@ -825,7 +826,12 @@ save path offers all tabs on create and calls `SetProductCategoryTranslation` fo
 - **(a) Offer every tab on create — _(recommended)_.** PRD Epic 5 says an administrator *"can provide its name per active store language via language tabs"* without distinguishing create from edit, and forcing a save-then-reopen round trip to add a French name is friction with no stated reason. It changes no 0070 signature — the extra languages go through `SetProductCategoryTranslation`, exactly as they do on edit, and that action is fully authorized and validated on both paths.
 - **(b) Default language only on create; other languages via a subsequent edit.** Strictly closer to 0070's Gherkin, and a slightly smaller create path — at the cost of a two-step workflow for the ordinary case of adding a category the store already knows the name of in two languages.
 
-**Q-3 — Who applies 0070's R-1 fix to this screen's list query? ✅ RESOLVED 2026-08-30 — option (a).** **D-12** specifies the
+**Q-3 — Who applies 0070's R-1 fix to this screen's list query? ✅ RESOLVED 2026-08-30 — option (a). ⚠️ SUPERSEDED 2026-09-28 by 0070 D-15.**
+With 0025 and 0027 shipped, 0070 drops a column that live code reads, so 0070 must migrate every consumer
+to pass its own full-suite gate; it now applies **D-12**'s query verbatim (plus the product editor
+dropdown, the Products list eager load and the factory, which this story never covered). This story
+inherits that list query and adds only the tabs. The original analysis is kept below for the record.
+**D-12** specifies the
 replacement, but 0070 explicitly scopes the amendment to the coordinator.
 - **(a) 0071 owns it for *this* screen — _(recommended)_.** This is the story that makes the Product Categories screen translation-aware; the list cannot render at all without it, and splitting "the modal gets tabs" from "the list stops throwing" across two stories leaves a broken screen between them. The other three screens (0027/0060/0062) stay the coordinator's.
 - **(b) A separate amendment story covering all four screens at once.** Tidier as a unit of work, but it blocks 0071 on a story that does not exist, and 0071 cannot ship a screen whose list query throws.
@@ -883,7 +889,7 @@ reason the pattern is centralised in one component at all.
 **One participant claim was verified and corrected rather than propagated.**
 `frontend-expert` flagged that `@js()` is broken inside an anonymous Blade component and
 recommended `@include` over `<x-…>` on that basis. Checked against
-[errors-log.md](../../docs/errors-log.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26):
+[errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26):
 what is verified by execution is that `@js()` fails in the **attribute of an `<x-…>` tag at the
 call site**, and the entry's own dated correction states the real mechanism is **not established
 and must not be guessed at**. The recommendation is therefore narrowed to the two rules that
@@ -909,7 +915,7 @@ security."* **D-4** was rewritten around the two-layer table, **D-13** was added
 master pattern for 0073/0075/0077/0079 (including the action-only shape for a component that cannot
 validate), and `App\Actions\ProductCategories\SetProductCategoryTranslation` was added with its own
 direct-call test file. The decision aligns with this repo's own existing rulings rather than
-overriding them — [base-standards.md](../../docs/conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+overriding them — [base-standards.md](../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
 action-owns-the-rule convention and task 0017's *"a component that authorizes as well is a layer,
 not a redundancy"* — which is why it is recorded as an amendment with its reasoning rather than
 folded silently into the original text.

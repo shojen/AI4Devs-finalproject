@@ -35,7 +35,7 @@ If you were dispatched with a facilitator's brief (e.g. from a Three Amigos deba
 | Check real `visit()`/`click()`/`fill()` syntax, selector strategy, or install/CI status | `docs/testing/frontend/playwright-setup.md` |
 | Decide whether a frontend/journey coverage target is being met | `docs/testing/frontend/coverage-policy.md` — the backend 80% line-coverage floor does **not** apply here; judge by critical-journey risk coverage instead |
 | Need a worked scenario/test pair as a real example | `docs/testing/frontend/examples/` (login, two-factor challenge, passkey deletion) |
-| Run or filter tests, check CI status | `docs/testing/ci/commands.md`; note CI does not yet run browser tests — see `docs/testing/frontend/playwright-setup.md#ci-integration` |
+| Run or filter tests, check CI status | `docs/testing/ci/commands.md`; note CI does not yet run browser tests — see `docs/testing/frontend/playwright-setup/selectors-tagging-and-ci.md#ci-integration` |
 | Asked for a backend Feature/Unit test instead of a browser one | out of scope — point to `docs/testing/backend/README.md` / the `backend-qa` agent instead |
 
 ## Skills

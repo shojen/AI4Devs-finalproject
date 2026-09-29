@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\EnsureSitePasswordIsProvided;
+use App\Http\Middleware\SetUiLocale;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -21,6 +23,26 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
+        ]);
+
+        // Site-wide Basic Auth gate (config('app.site_password_protection'),
+        // off unless SITE_PASSWORD_PROTECTED=true). Prepended to the whole
+        // "web" group so it runs before session/CSRF and covers every page,
+        // the coming-soon route included — there is no routes/api.php group
+        // to also cover.
+        $middleware->web(prepend: [
+            EnsureSitePasswordIsProvided::class,
+        ]);
+
+        // Story 0066: resolves App::setLocale() on every web request, including
+        // Livewire's /livewire/update round-trips (D-8). Appended, not prepended,
+        // so it runs after StartSession — otherwise $request->user() would always
+        // resolve null and every request would silently fall through to the
+        // configured default (D-8, D-9). Kept as a separate statement from the
+        // `prepend:` call above rather than merged into it, since the two calls
+        // need opposite positions in the group.
+        $middleware->web(append: [
+            SetUiLocale::class,
         ]);
 
         // `signed` must validate before route-model binding resolves, or a

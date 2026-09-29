@@ -14,6 +14,7 @@ Every rule below is grounded in this app's **real, existing flows** (login, regi
   5. [Consistent language / shared glossary](#5-consistent-language--shared-domain-glossary)
   6. [No ghost scenarios](#6-no-ghost-scenarios)
   7. [No loss of ubiquitous language](#7-no-loss-of-ubiquitous-language)
+- [Scenarios whose actor is not a person](#scenarios-whose-actor-is-not-a-person-scheduled-and-system-triggered)
 - [Domain glossary](#domain-glossary)
 - [Given/When/Then → Pest it() translation convention](#givenwhenthen--pest-it-translation-convention)
 
@@ -198,6 +199,15 @@ Scenario: Remove a passkey
   Then the passkey can no longer be used to sign in
 ```
 
+## Scenarios whose actor is not a person (scheduled and system-triggered)
+
+Rule 1 requires a named business-role actor and forbids a bare `I`. It had no precedent for a scenario whose acting subject is not a person — a scheduled sweep, an automatic cancellation — and story 0064 (a scheduled command that publishes due posts) set the convention every later scheduled or queued feature inherits:
+
+- **The `When` names the acting subject in business language** — *"the publication scheduler runs"*. Not `Given I`, and not *"the system"*: "system" is exactly the technical leakage rule 2 warns against and says nothing about what the process is for.
+- **The `Given` still carries a named business-role actor wherever a human decision created the state** — *"a post scheduled by a blog editor for a time that has now arrived"*. This keeps rule 1's intent (business framing, real domain roles), not only its letter.
+- **Never attribute the automatic transition to the human who did not perform it.** *"When the blog editor's scheduled time arrives"* reads as though a person acted, which is the specific confusion this kind of feature causes when it goes wrong.
+- **Rule 3 is unaffected**: one `When` per scenario. Idempotency is its own scenario with its own `When` — *"a post the publication scheduler has already published … when the publication scheduler runs again"*.
+
 ## Domain glossary
 
 Canonical terms for what exists in the code **today**, derived from [`app/Models/User.php`](../../../app/Models/User.php), [../../database/schema.md](../../database/schema.md), and [../../architecture/authentication.md](../../architecture/authentication.md). Use these exact terms in scenarios; don't substitute synonyms.
@@ -220,11 +230,32 @@ Canonical terms for what exists in the code **today**, derived from [`app/Models
 | **Dashboard** | The authenticated landing page after sign-in. | `dashboard` route |
 | **Security settings** | The page to manage password, 2FA, and passkeys. | `security.edit` route, `Security` component |
 
+### Blog vocabulary
+
+**Ratified by story 0063 (its D-22).** Stories 0058 to 0061 adopted these two terms **verbatim from the PRD's own Epic 4 scenarios** rather than coining any, and story 0063, whose three screens needed the whole Blog vocabulary at once, made them canonical. The Spanish UI copy renders a post as *artículo* (the PRD's caption reads "Nuevo artículo"); that is a translation choice living in `lang/es/blog-posts.php`, **not** a second domain term, so an English scenario never says "article". If the product owner disagrees, change the terms here and, since it is contested, record an ADR in `docs/decisions/`.
+
+| Term | Meaning |
+| --- | --- |
+| **post** | A single blog entry (the PRD's word — not "article"). |
+| **blog editor** | The actor who manages the blog, as the PRD's Epic 4 scenarios name them. |
+| **publication scheduler** | The automated process that publishes a scheduled post once its time arrives; the acting subject of a `When`, never a person (story 0064; see [Scenarios whose actor is not a person](#scenarios-whose-actor-is-not-a-person-scheduled-and-system-triggered)). |
+
+### Internationalization vocabulary
+
+**Epic 5 has two deliberately separate locale concepts, and its own PRD text warns against conflating them** ([epic-5-internationalization.md](../../PRD/sections/epic-5-internationalization.md)). Story 0066 (Layer 1's backend) is the first to need either term in a scenario, so it fixes both here rather than leaving them to be coined ad hoc by a later story's Gherkin.
+
+| Term | Meaning | Where it lives |
+| --- | --- | --- |
+| **admin UI language** | Layer 1 — the language an individual administrator's account renders the dashboard chrome and its own notification emails in (`en`/`es`). A per-account preference on `users.ui_locale`, falling back to the store-wide `App\Models\LocaleSetting::defaultUiLocale()` / `defaultNotificationLocale()` for an account that never chose. | `users.ui_locale`, `App\Http\Middleware\SetUiLocale`, `App\Models\User::preferredLocale()` (story 0066) |
+| **store language** | Layer 2 — a language the store *offers its own content in* (e.g. a product description translated into a second language), catalogued in an admin-managed list. Has no per-account concept and no relationship to which language an administrator sees their own dashboard in. | `store_languages` table, `App\Models\StoreLanguage` (story 0068) |
+
+A scenario about a signed-in administrator's own interface or emails uses **admin UI language**; a scenario about content the store presents to its customers in more than one language uses **store language**. Never use one term when the other is meant, even though both ultimately resolve to the same `en`/`es` value set today.
+
 ### TODO — blog / ecommerce vocabulary (undefined)
 
-No blog or ecommerce domain exists in the code yet (`app/Models/` contains only `User`). Do **not** invent terms for it. When that domain is built, this section needs canonical terms decided by the product owner:
+The blog domain is built (`BlogPost`, `BlogCategory`, `BlogTag` in `app/Models/`) and its vocabulary is settled in [Blog vocabulary](#blog-vocabulary) above; the ecommerce domain is built too (products, orders, customers), and what this file still leaves unanswered is the purchase vocabulary in (b) and (c) below. Do **not** invent terms for what is undecided. This section still needs canonical terms decided by the product owner:
 
-> `TODO (product owner): define the canonical vocabulary for the future content/commerce domain. Concretely: (a) for a blog entry, is the term "post" or "article"? (b) for a purchase, what is the canonical term for the whole purchase ("order" vs. "sale") and for a single purchased item within it ("order line" vs. "line item" vs. "order item")? (c) is a buyer a "customer", "client", or "user"? Record the answers as a new row set here and, if the choice is contested, as an ADR in docs/decisions/.`
+> `TODO (product owner): define the canonical vocabulary for the commerce domain. Concretely: (a) *[answered — "post", see "Blog vocabulary" above]* (b) for a purchase, what is the canonical term for the whole purchase ("order" vs. "sale") and for a single purchased item within it ("order line" vs. "line item" vs. "order item")? (c) is a buyer a "customer", "client", or "user"? Record the answers as a new row set here and, if the choice is contested, as an ADR in docs/decisions/.`
 
 ## Given/When/Then → Pest it() translation convention
 
@@ -245,8 +276,4 @@ Conventions for the translation:
 
 See [examples/](examples/) for three complete scenario → Pest translations built on this convention.
 
-_Last updated: 2026-08-24 — Task 0015a (step-up authentication for privileged Users actions): one glossary term added, **Step-up authentication**, with its "not re-login / not 2FA" disambiguation — the story's own Gherkin needed a settled word for "requiring a *recently* confirmed password from an actor who already holds the permission", and the existing **Password confirmation** entry pointed only at `security.edit`'s middleware, which is now one of two places the app requires one. Nothing else on this page changed._
-
-_Previously: 2026-08-21 — Task 0012, Phase 6 link sweep: fixed this file's own table-of-contents anchor for rule 5, which read `#5-consistent-language--shared-glossary` while the heading is "Consistent language / **shared domain** glossary". Content unchanged._
-
-_Previously: 2026-07-19 — New frontend/browser testing guide added by the docs-maintainer skill._
+_Last updated: 2026-09-28 — Story 0066 (Admin UI locale preference & resolution — backend): added the **Internationalization vocabulary** subsection, distinguishing **admin UI language** (Layer 1, this story's `users.ui_locale`) from **store language** (Layer 2, story 0068's `store_languages` catalog), per the PRD's own warning against conflating the two Epic 5 layers. Earlier revision notes live in [history/testing--frontend--gherkin-guidelines.md](../../history/testing--frontend--gherkin-guidelines.md)._

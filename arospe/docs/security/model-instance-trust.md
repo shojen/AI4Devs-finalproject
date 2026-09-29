@@ -17,7 +17,7 @@ value was decided by whoever hydrated the instance, at whatever time they did so
 > reading. The ✅ block in each section is the shipped fix, not a recommendation — `SetDefaultSalesRegion`,
 > `SetSalesRegionActive` and `UpdateSalesRegion` all now write through an instance re-fetched inside their
 > own transaction/call, never through the caller-supplied one, per
-> [errors-log.md](../errors-log.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
+> [errors-log.md](../errors-log/archive-2026-08-17-to-2026-08-21.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
 > rule against a page that outlives its own fix. **F-2 was not reachable through the shipped dashboard** —
 > `App\Livewire\SalesRegions\Index` re-fetches every row with `findOrFail()` immediately before each call, so
 > the component itself never hands an action a dirtied instance. **F-1 was reachable through the dashboard**
@@ -26,7 +26,7 @@ value was decided by whoever hydrated the instance, at whatever time they did so
 > already-committed write landing in that window reproduces the exact stale read F-1 describes — the "two
 > administrators clicking within the same second" row in the exploit table below is that path, not a
 > hypothetical non-dashboard one. Both findings still had to be closed at the action layer regardless: under
-> the [action-owns-the-rule convention](../conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+> the [action-owns-the-rule convention](../conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 > these actions exist to be called from somewhere other than that component, dashboard-reachable or not.
 > Eight regression tests (four per
 > finding, two per action, split `SetDefaultSalesRegionTest.php` / `SetSalesRegionActiveTest.php` /
@@ -39,6 +39,8 @@ value was decided by whoever hydrated the instance, at whatever time they did so
 - [`save()` writes the whole dirty set, so "the single named writer" is a convention, not an enforcement](#save-writes-the-whole-dirty-set-so-the-single-named-writer-is-a-convention-not-an-enforcement)
 - [One fix closes both](#one-fix-closes-both)
 - [Re-audit round 2: what the fix itself got subtly wrong](#re-audit-round-2-what-the-fix-itself-got-subtly-wrong)
+- [A single predicate on one row can collapse the guard into the write itself](#a-single-predicate-on-one-row-can-collapse-the-guard-into-the-write-itself)
+- [A multi-step, caller-hydrated decision compares against its OWN pre-refresh snapshot, never the refreshed value](#a-multi-step-caller-hydrated-decision-compares-against-its-own-pre-refresh-snapshot-never-the-refreshed-value)
 
 ## A guard must re-read its subject under lock, inside its own transaction
 
@@ -75,7 +77,7 @@ each worth internalising because each defeats a different plausible "fix":
 1. **It locks the wrong rows.** The lock covers `where('is_default', true)` — the rows being *cleared*. The
    row being *promoted* is not in that set; `whereKeyNot()` explicitly removes it even when it is.
 2. **On MySQL it happens to lock every row anyway — and that still does not help.** `sales_regions.is_default`
-   carries no index ([0016 omitted it deliberately](../database/schema.md#indexes--one-present-by-choice-one-by-requirement-four-omitted)),
+   carries no index ([0016 omitted it deliberately](../database/schema-products/sales-regions-and-media.md#indexes--one-present-by-choice-one-by-requirement-four-omitted)),
    so under REPEATABLE READ this locking scan examines and locks the whole table. The replacement row *is*
    locked. It makes no difference, because the guard has already read its stale copy.
 3. **A lock protects a row from changing; it cannot retroactively refresh a value already in a PHP variable.**
@@ -251,7 +253,7 @@ signal, not merely proof they exist.
 ## Re-audit round 2: what the fix itself got subtly wrong
 
 The rule this repo already has for a security fix — [re-audit it as new code, not merely as a diff against the
-finding](../errors-log-archive.md#two-of-the-three-security-audit-rounds-found-the-flaw-in-the-previous-rounds-fix--2026-08-19) —
+finding](../errors-log/archive-2026-08-17-to-2026-08-21.md#two-of-the-three-security-audit-rounds-found-the-flaw-in-the-previous-rounds-fix--2026-08-19) —
 applied to the fix above, the same day. Verdict: **PASS**, four Low findings, none reopening F-1 or F-2. All
 five are closed or recorded below; **R-1's documentation half is the one worth reading closely**, because it
 is a false guarantee that had been written into this very page.
@@ -310,7 +312,7 @@ it — so this was unreachable in practice, and it inverts [this page's own open
 the fix stopped the action *trusting* a stale instance and left it *emitting* one.
 
 ✅ **The fix.** `SetSalesRegionActive` now calls `$target->refresh()` immediately before returning it, so a
-future non-dashboard caller — the kind [the action-owns-the-rule convention](../conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+future non-dashboard caller — the kind [the action-owns-the-rule convention](../conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 exists to support — gets an accurate row. A regression test asserts the return value directly
 (`tests/Feature/SalesRegions/SetSalesRegionActiveTest.php`, "the returned instance reflects is_default being
 cleared…"), confirmed to redden without the `refresh()` call before being trusted.
@@ -334,7 +336,7 @@ read by whoever adds the next branch, not rediscovered.
 
 Pre-existing, outside the original fix's diff, but touching the same two actions. `save()` called
 `$updateSalesRegion($target, ...)` — committing rate/description/code immediately — and only *then*
-authorized `$replacementDefault`, violating [this repo's "authorize before the first write" rule](../conventions/base-standards.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+authorized `$replacementDefault`, violating [this repo's "authorize before the first write" rule](../conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
 for that second row specifically. Inert today for the same reason as R-3.
 
 ✅ **The fix — narrower than first proposed.** The re-audit's own suggestion (wrap both action calls in one
@@ -366,12 +368,132 @@ the pre-fix code (or, for `refresh()`, against the code with that one line remov
 Full suite re-run unscoped: **869/869 passed, 2434 assertions**. `vendor/bin/pint --test --format agent`
 (unscoped): **passed**.
 
-_Last updated: 2026-08-26 — Task 0017 (Sales Region tax configuration — backend), Phase 4 re-audit (round 2)
-and same-day fix. All three sections **closed**. The two original findings' code examples were updated in
-place to match the round-2 fix (the single ordered lock query, the `refresh()` call) rather than left
-describing the round-1 shape a second round found wrong._
+## A single predicate on one row can collapse the guard into the write itself
 
-_Previously: 2026-08-25 — Task 0017, Phase 4 fix, same day as the original audit. Both sections **closed**:
-every ❌ block is the code as it shipped from Phase 3, every ✅ block is the real shipped fix (not a
-recommendation), and every claim in both was verified by execution against the real actions on the `testing`
-database, inside a rolled-back transaction, rather than by reading._
+Every example above — `SalesRegion`'s `SetDefaultSalesRegion`/`SetSalesRegionActive`/`UpdateSalesRegion` —
+shares a shape: a **multi-step** read-decide-write, sometimes across **more than one row** (an invariant
+like "exactly one default"), where the guard's own read has to happen *through* a lock inside the action's
+own transaction, or a caller's stale instance defeats it exactly as [the opening section](#a-guard-must-re-read-its-subject-under-lock-inside-its-own-transaction)
+describes.
+
+Story 0064c (`App\Listeners\ActivateVerifiedUser` / `App\Actions\Users\ActivateInactiveUser`) is a
+narrower case this page had not yet stated a rule for: the decision is **one predicate on one row**
+(`status = 'inactive'`), with no cross-row invariant to protect. When that is true, the read-then-write
+sequence collapses into a **single guarded `UPDATE`**, and the guard and the write become the same
+statement instead of two:
+
+```php
+// app/Actions/Users/ActivateInactiveUser.php
+$affectedRows = User::query()
+    ->whereKey($user->getKey())
+    ->where('status', UserStatus::Inactive->value)
+    ->update([
+        'status' => UserStatus::Active->value,
+        'updated_at' => $now,
+    ]);
+```
+
+MySQL/InnoDB evaluates that `WHERE` as a current read, so a concurrent write that already committed
+`status = 'suspended'` makes the guard match **zero rows**, even under REPEATABLE READ — there is no
+window between "read the row" and "decide" for a stale instance to exploit, because there is no separate
+read. On a win, the caller's own instance is synced without a second write (`setAttribute()` for `status`
+and `updated_at`, then the public `syncOriginalAttributes()` — never `refresh()`, which would also wipe
+`getPrevious()`); on a loss, the instance is left untouched and a single follow-up `SELECT status` (not a
+`findOrFail()`) tells a suspension, a concurrent double-activation and an absent/soft-deleted row apart for
+logging purposes only — the persisted state was already decided atomically by the guarded `UPDATE` itself.
+See the task file's **D-1** ([0064c](../../ai-spec/tasks/done/0064c-activate-verified-user-status-race-compare-and-set-backend.md))
+for the full InnoDB reasoning and why the repo's usual `lockForUpdate()` shape was considered and rejected
+here specifically (it is correct but strictly more expensive, and unlike the `SalesRegion` cases, a missing
+lock in a re-read shape would be invisible to a single-process behavioural test — the guarded `UPDATE`'s
+outcome is behaviourally visible instead).
+
+**This shape is safe only while `User` has no `saving`/`updated` model hooks (R-3).** A guarded `UPDATE`
+through the Eloquent builder bypasses model events the same way any query-builder write does — no
+`saving`/`updated`/`booted` hook or Observer fires. `App\Models\User` was confirmed to have none of these
+at the time this shape shipped, re-confirmed by the story's Phase 4 security audit against the current code
+(not merely the original finding). If a future story adds one, this collapsed shape stops being safe for
+`User` and must go back to a re-read-under-lock, `save()`-based write (the `SalesRegion` shape above) so
+the hook still fires.
+
+## A multi-step, caller-hydrated decision compares against its OWN pre-refresh snapshot, never the refreshed value
+
+`App\Actions\Users\UpdateUser` ([story 0064d](../../ai-spec/tasks/done/0064d-update-user-status-role-race-lock-and-recheck-backend.md))
+is the mirror-image example this page's own placeholder promised: the administrator-initiated status/role
+write 0064c deliberately left alone (its R-2). Unlike `ActivateInactiveUser`'s single predicate on one row
+above, this action makes **several separable decisions** off multiple fields (status, role set, email) —
+a Super-Admin-holder throw, a promote/downgrade Gate, the `updateSensitiveAttributes` Gate, and a step-up
+trigger — so a single guarded `UPDATE` does not fit it. It needed the repo's usual re-read-under-
+`lockForUpdate()` shape, and the shape that shipped has one property worth stating explicitly, because it
+is the one detail this page's own placeholder got backwards while the story was still in flight.
+
+❌ **The naive version — compare the locked row against the REFRESHED value.** This reads as the obvious
+implementation of "refresh, decide, then verify nothing moved between the refresh and the lock":
+
+```php
+// anti-pattern — do not write the compare-and-set this way
+$user->refresh();                                    // now reads whatever the row currently holds
+$this->authorizeRoleAndStatusChange($user, ...);      // the GATE decision, correctly made on fresh data
+
+DB::transaction(function () use ($user, ...): void {
+    $lockedUser = User::query()->whereKey($user->getKey())->lockForUpdate()->first();
+
+    // WRONG: comparing against the value refresh() JUST wrote onto $user
+    if ($lockedUser->getRawOriginal('status') !== $user->getRawOriginal('status')) {
+        throw ValidationException::withMessages([...]);
+    }
+    // ...
+});
+```
+
+Using only the stale-instance technique ([0064c's D-6](../../ai-spec/tasks/done/0064c-activate-verified-user-status-race-compare-and-set-backend.md)) — the only technique this action's single caller and non-nested transaction need — every race this story's tests reproduce lands **before** `refresh()` runs, never in the narrow gap between `refresh()` and the lock. So the moment `refresh()` executes, `$user`'s in-memory value **already equals** the locked row's value — this comparison can never fail in this codebase's own test suite, and worse, it means the write then proceeds to persist whatever the caller submitted **over** the concurrent administrator's already-committed change: exactly the silent clobber the story exists to close.
+
+✅ **The shape that shipped — compare the locked row against the snapshot captured BEFORE anything was refreshed:**
+
+```php
+// app/Actions/Users/UpdateUser.php
+$originalStatus = $user->getRawOriginal('status');   // captured from the CALLER's own hydration
+$originalRoleIds = $this->roleIds($user);
+
+if (! $isSelfEdit) {
+    $user->refresh();                                 // makes the GATE decision use current data
+    $user->load('roles');
+    $this->authorizeRoleAndStatusChange($user, ...);   // correctly step-up-gates a real transition
+}
+
+DB::transaction(function () use ($user, $originalStatus, $originalRoleIds, ...): void {
+    if (! $isSelfEdit) {
+        $lockedUser = User::query()->whereKey($user->getKey())->lockForUpdate()->first();
+
+        if ($lockedUser === null
+            || $lockedUser->getRawOriginal('status') !== $originalStatus   // <-- the PRE-refresh value
+            || $this->roleIds($lockedUser) !== $originalRoleIds) {
+            throw ValidationException::withMessages(['status' => __('users.update.conflict')]);
+        }
+
+        $user->setRawAttributes($lockedUser->getAttributes());
+        $user->syncOriginal();
+    }
+    // ... fill(name), status =, save(), syncRoles() unchanged
+});
+```
+
+**`refresh()` and the conflict check answer two different questions, and conflating them is the trap.**
+`refresh()` exists solely so the *authorization decision* — "is this a real status/role/email transition
+that needs a Gate check and step-up?" — is never skipped because the caller's copy of the row happened to
+already match what was submitted. The conflict check exists to answer a completely different question —
+"does the row still match what the administrator's own form last showed them?" — and that question can
+only be answered by keeping the **original**, pre-refresh value around as the comparison baseline. Because
+the two checks share one `lockForUpdate()` read, comparing against the wrong snapshot doesn't error or
+warn — it silently turns the whole compare-and-set into a no-op that still writes. Verified by execution
+(this story's own G2 test, [`tests/Feature/Users/UpdateUserStatusRaceTest.php`](../../tests/Feature/Users/UpdateUserStatusRaceTest.php)):
+using the post-refresh value as the CAS baseline let a resubmission matching a now-stale form silently
+revert a concurrent administrator's suspension back to `Active`, with no exception and no log line —
+switching the comparison to the pre-refresh snapshot is what turns that into a refused conflict instead.
+
+_Last updated: 2026-09-28 — story 0064d: replaced the prior placeholder ("a sibling story will add the
+mirror-image example") with the shipped section above — `UpdateUser`'s locked compare-and-set, and the
+❌/✅ pair on which snapshot the write-time conflict check must compare against (the pre-refresh original,
+never the value `refresh()` just wrote), since the two are easy to conflate and conflating them turns the
+whole guard into a silent no-op. Folded the prior `_Previously:` entry (story 0064c, 2026-09-27) into this
+line per the doc-growth-management rule: it added "A single predicate on one row can collapse the guard
+into the write itself" and is otherwise unchanged and still current._

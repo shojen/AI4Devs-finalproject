@@ -1,6 +1,7 @@
 <div class="w-full">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <flux:heading size="xl">{{ __('shipping.zones.index.heading') }}</flux:heading>
+    <x-slot:heading>{{ __('shipping.zones.index.heading') }}</x-slot:heading>
+    <x-slot:subheading>{{ __('topbar.shipping_zones.subtitle') }}</x-slot:subheading>
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
 
         @if ($this->canCreate)
             <flux:button variant="primary" icon="plus" wire:click="openCreateModal" data-test="new-zone-button">
@@ -192,21 +193,20 @@
                     </flux:text>
                 </div>
 
-                {{-- D-6: message-agnostic on purpose -- no zones.delete_blocked key exists
-                yet (that is story 0036's, once shipping_rates exists). 'shippingZoneId'
-                matches this codebase's own <model>Id validation-key convention
-                (see App\Actions\ProductCategories\DeleteProductCategory's 'productCategoryId'
-                and App\Actions\Products\DeleteProductAttributeType's 'productAttributeTypeId'),
-                which DeleteShippingZone::__invoke(ShippingZone $shippingZone) is expected to
-                follow the day it gains an in-use guard.
+                {{-- D-6: message-agnostic on purpose -- the zones.delete_blocked key (story
+                0036, once shipping_rates existed) is DeleteShippingZone's own copy, not this
+                view's. 'shippingZoneId' matches this codebase's own <model>Id validation-key
+                convention (see App\Actions\ProductCategories\DeleteProductCategory's
+                'productCategoryId' and App\Actions\Products\DeleteProductAttributeType's
+                'productAttributeTypeId').
 
-                Phase 4 security-audit finding F-4 (Low, hand-off note, no fix needed today):
-                Livewire's SupportValidation::dehydrate() filters the persisted error bag through
-                Utils::hasProperty(), so this outlet renders correctly on the throwing request but
-                would silently drop the message on the NEXT round trip unless story 0036 either
-                declares a real #[Locked] public ?string $shippingZoneId property on
-                App\Livewire\Shipping\Zones, or keys its guard on `deletingZoneId` (an existing
-                declared property) instead. --}}
+                Story 0036 Phase 4 security-audit findings F-2/F-3 (fixed): the hand-off note
+                story 0034's own Phase 4 audit left here (its finding F-4) is discharged --
+                App\Livewire\Shipping\Zones now declares a real #[Locked]
+                public ?string $shippingZoneId property, so this outlet's error survives past
+                the throwing request instead of Livewire's SupportValidation::dehydrate()
+                silently dropping it (it filters the persisted error bag through
+                Utils::hasProperty(), which only a genuinely declared property satisfies). --}}
                 @error('shippingZoneId')
                     <flux:callout variant="danger" icon="x-circle" heading="{{ $message }}" data-test="shipping-zone-delete-blocked" />
                 @enderror

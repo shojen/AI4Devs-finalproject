@@ -1,7 +1,7 @@
 # [0006] Users list + create/edit modal — UI
 
 ## Description
-Build the Livewire **view layer** for the Users screen of [PRD Epic 1](../../../docs/PRD/PRD.md#epic-1--users-roles--permissions):
+Build the Livewire **view layer** for the Users screen of [PRD Epic 1](../../../docs/PRD/sections/epic-1-users-roles-permissions.md#epic-1--users-roles--permissions):
 a list of users (avatar, name/email, assigned role, status badge, per-row edit/delete actions, a
 live count and a primary "New user" button) plus a create/edit modal (full name, email, a **Role**
 select fed by the dynamic roles list, and a **Status** select), and a delete-confirmation modal.
@@ -152,7 +152,7 @@ Feature: Users screen — list and create/edit modal
 
 **Owned by this story:**
 
-- `resources/views/livewire/users.blade.php` — **modify.** This is 0004's placeholder view (it currently renders only the `usersSummary` line, with its own comment handing the rest to this story) — this story replaces its content entirely: section header (live count + primary "New user" button), the users table, the create/edit modal, the delete-confirmation modal, and the empty state. **Do not create `resources/views/livewire/users/index.blade.php`** — that nested path is not what Livewire resolves for `App\Livewire\Users\Index` (the `Index`-in-a-subfolder exception, [naming.md](../../../docs/conventions/naming.md#livewire-components-and-views)) and would be a silently unused duplicate.
+- `resources/views/livewire/users.blade.php` — **modify.** This is 0004's placeholder view (it currently renders only the `usersSummary` line, with its own comment handing the rest to this story) — this story replaces its content entirely: section header (live count + primary "New user" button), the users table, the create/edit modal, the delete-confirmation modal, and the empty state. **Do not create `resources/views/livewire/users/index.blade.php`** — that nested path is not what Livewire resolves for `App\Livewire\Users\Index` (the `Index`-in-a-subfolder exception, [naming.md](../../../docs/conventions/naming/livewire-components-and-views.md#livewire-components-and-views)) and would be a silently unused duplicate.
 - `resources/views/layouts/app/sidebar.blade.php` — **modify.** Add one `<flux:sidebar.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.*')" wire:navigate>` inside the existing `flux:sidebar.group :heading="__('Platform')"` group. Static and always visible for now; permission gating and the final nav grouping are deferred ([PRD](../../../docs/PRD/PRD.md) states the prototype sidebar is not the final navigation).
 - `tests/Feature/Users/IndexRenderingTest.php` — **new.** Livewire component-level tests for what this story owns: rendering, badges, the pending-email marker, the empty state, and inline validation display (mirrors `tests/Feature/Settings/SecurityTest.php`'s structure).
 - `tests/Browser/UsersIndexTest.php` — **new.** Pest 4 browser tests for the JS-driven behavior. Gated on the browser-suite infra task (decision 5).

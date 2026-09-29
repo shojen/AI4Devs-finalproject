@@ -1,7 +1,7 @@
 # `database/data/`
 
 Bundled, version-controlled fixture data — not a `database/seeders/` class, but a
-data source one or more seeders read. Per [PRD §2.4](../../docs/PRD/PRD.md#24-shipping),
+data source one or more seeders read. Per [PRD §2.4](../../docs/PRD/sections/epic-2-products-taxes-shipping.md#24-shipping),
 this app ships country fixtures as JSON files under this directory rather than pulling
 them from a Composer package (`league/iso3166`, `symfony/intl`), so the exact list is
 reviewable in a diff and needs no dependency approval.
@@ -34,7 +34,7 @@ default flag, fiscal, or shipping data:
 
 **Ownership.** Story 0016 owns this file; story 0032 (shipping geography catalog)
 consumes it **read-only** as a shared identity source, per
-[`contracts.md`](../../docs/contracts.md#parallel-agent-file-ownership-rule).
+[`contracts.md`](../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule).
 
 **Refreshing the list.** This is a committed snapshot, not a live lookup — a country
 that changes its name or is removed from the standard is not autodetected. To refresh:
@@ -43,6 +43,64 @@ reviewable), verify it against `tests/Feature/Seeders/SalesRegionSeederTest.php`
 shape/blacklist/anchor assertions, then re-run the seeder — `SalesRegionSeeder` always
 overwrites `name` on re-seed, so a corrected name reaches an already-deployed install
 on the next deploy with no extra migration.
+
+## `iso-639-languages.json`
+
+**Provenance.** A snapshot of the ISO 639-1 alpha-2 language code list, hand-compiled
+against the current published standard on 2026-09-27 for story 0068. 184 entries, one
+JSON object per line for reviewable diffs, mirroring `iso-3166-countries.json`'s own
+shape and provenance treatment. Each entry carries only identity — no active/default
+flag, since this fixture is a validation/reference source and is **not** pre-seeded as
+candidate rows (D14):
+
+```json
+{"code": "es", "name_endonym": "Español", "name_en": "Spanish"}
+```
+
+- `code` — the ISO 639-1 alpha-2 code, **lowercase**, two letters — unlike
+  `iso-3166-countries.json`'s uppercase `alpha2`, because ISO 639-1 codes are
+  conventionally lowercase and this removes any fixture-to-column case transform.
+- `name_endonym` — the language's own name in itself, written into `store_languages.name`
+  by [`App\Actions\StoreLanguages\AddStoreLanguage`](../../app/Actions/StoreLanguages/AddStoreLanguage.php)
+  and [`database/seeders/StoreLanguageSeeder.php`](../seeders/StoreLanguageSeeder.php)
+  (the latter for the install-default Spanish entry — see D2 in the story).
+- `name_en` — the English common name, carried as forward insurance for a future
+  locale-aware display and search-assist, exactly as `iso-3166-countries.json` carries
+  its own `name_en`; no seeder or action writes it into any column today.
+
+**Deliberately excluded:** regional variants (`pt-BR` vs `pt-PT`, `zh-Hans` vs
+`zh-Hant`…) and retired/superseded codes. The fixture is the complete, unedited ISO
+639-1 alpha-2 enumeration and nothing else — there is no defensible, reviewable
+selection principle for "these languages get regional splits and the others do not"
+that would not be a product decision wearing an engineering costume (D16). The first
+genuine need for a regional split is its own small fixture-amendment story, two lines
+of reviewable JSON.
+
+**A second reader outside `database/seeders/`.** Unlike every other file in this
+directory, this fixture is read by `App\Models\StoreLanguage::availableLanguages()`
+**at admin request time** — the single named reader (D17), shared by
+`StoreLanguageSeeder` (the Spanish endonym) and
+`App\Concerns\StoreLanguageValidationRules::codeRules()` (the add-language membership
+check). This widens this directory's own admission test above ("bundled, reviewable in
+a diff, and read by something in `database/seeders/`") to admit a non-seeder reader —
+recorded here rather than left to go quietly stale; see story 0068's R-11. The read
+path is deploy-immutable and takes no request input, so this does not weaken the
+"reviewable in a diff" property: a request can select *which* code to look up, never
+*what* the fixture contains.
+
+**Ownership.** Story 0068 owns this file exclusively.
+
+**Refreshing the list.** This is a committed snapshot, not a live lookup — a code that
+is retired from the standard, or a language that changes its endonym, is not
+autodetected. A `store_languages` row referencing a code later removed from this file
+keeps working (validation only runs on add) but becomes un-re-addable if ever
+deactivated — the right trade, since silently deleting an administrator's configured
+language would be far worse. To refresh: regenerate the file (keeping the
+one-object-per-line format so the diff stays reviewable), verify it against
+`tests/Unit/Models/StoreLanguageFixtureTest.php`'s shape/uniqueness assertions, then
+re-run the seeder — `AddStoreLanguage`'s reactivation path always overwrites `name` on
+an existing row, so a corrected endonym reaches an already-deployed install the next
+time an administrator re-picks that language, with no extra migration.
 
 ## `es-municipalities.csv`
 

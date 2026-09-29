@@ -3,7 +3,7 @@
  * View for App\Livewire\SalesRegions\Index (story 0018). Flat path, not
  * sales-regions/index.blade.php -- the same Index-in-a-subfolder exception
  * App\Livewire\Users\Index and App\Livewire\Roles\Index already rely on; see
- * docs/conventions/naming.md#exception-a-component-named-index-resolves-to-its-parent-folders-name.
+ * docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name.
  *
  * This story owns markup and UI state only. Every query, mutation,
  * validation rule and authorization decision belongs to sibling story
@@ -86,9 +86,10 @@
 @endphp
 
 <div class="w-full">
+    <x-slot:heading>{{ __('sales-regions.index.title') }}</x-slot:heading>
+    <x-slot:subheading>{{ __('topbar.sales_regions.subtitle') }}</x-slot:subheading>
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <flux:heading size="xl">{{ __('sales-regions.index.title') }}</flux:heading>
             <flux:subheading>
                 {{-- F-2: counted from real isActive state across every row, never from which
                 table a row happens to render in -- $activeTopLevelRegions now deliberately

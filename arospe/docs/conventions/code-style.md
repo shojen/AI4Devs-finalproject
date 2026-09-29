@@ -293,6 +293,8 @@ The Blade template's own call site is what fixes the parameter list here — a v
 
 Story 0029 confirms task 0017's "one action depending on another" case a second time, with a genuine wrinkle: two of the constructor-injected collaborators are pure, dependency-free classes rather than self-authorizing actions. `App\Actions\Products\CreateProductVariant` constructor-injects **four** collaborators — `LogRefusedPrivilegedAttempt`, `TranslateProductVariantUniqueViolation`, `DeriveVariantSku`, `HashVariantCombination` — because `__invoke(Product $product, array $productAttributeValueIds, string $price, int $stock, ?string $featuredMediaId = null)` is, per the 0008a rule, an independently-callable public contract every direct-call test matches verbatim, so none of the four may be added to that signature. `App\Actions\Products\UpdateProduct` constructor-injects `DeriveVariantSku` for the identical reason, as its own `reDeriveVariantSkus()` private method's collaborator — the class's own docblock states explicitly that resolving it via `app()` there would be the anti-pattern this section documents rather than the carve-out, since nothing about that method's parameter list is fixed by anything other than the class itself. A zero-dependency pure function (`HashVariantCombination`, `DeriveVariantSku`) is still container-resolved and constructor-injected like any other collaborator, never `new`-ed — the rule above binds regardless of whether the injected class has dependencies of its own.
 
+Story 0065 adds the exception's **third** constructor-injection shape: `App\Listeners\SendBlogPostPublishedNotification::handle(ScheduledBlogPostPublished $event): void` is a Laravel event listener, whose one parameter the framework itself fixes, so its `NotifyBlogPostPublished` collaborator has no signature to widen at all and is forced into the constructor — not by the "public contract" choice the cases above describe, but because there is no alternative slot.
+
 ✅ Good — how a direct-call test reaches an action, per the 0008a rule that these are independently callable:
 
 ```php
@@ -307,55 +309,6 @@ app(RequestEmailChange::class)($user, 'new-address@example.com');
 (new RequestEmailChange)($user, 'new-address@example.com');
 ```
 
-_Last updated: 2026-09-04 — Story 0029 (Product variants — core backend). Extended the constructor-injection exception's "one action depending on another" confirming instances (task 0017's `SetSalesRegionActive`/`SetDefaultSalesRegion`) with a genuine wrinkle: `CreateProductVariant` constructor-injects four collaborators including two pure, dependency-free classes (`HashVariantCombination`, `DeriveVariantSku`), and `UpdateProduct` constructor-injects `DeriveVariantSku` as its own private re-derivation method's collaborator — its docblock states in writing that `app()` there would be the documented anti-pattern, not the carve-out. The rule is unchanged: a zero-dependency pure function is still container-resolved and constructor-injected like any other collaborator, never `new`-ed. **Verified as unchanged rather than assumed:** every other section on this page — this story adds no new type, brace or PHPDoc-shape convention, and its `ProductVariantValidationRules` trait is the existing validation-trait convention applied, not extended._
+_Last updated: 2026-09-28 — Story 0065 (Blog post published — notification, backend). Added the constructor-injection exception's **third** shape: an event listener's `handle(EventClass $event)` method has exactly one framework-fixed parameter, so a collaborator like `NotifyBlogPostPublished` has no signature to widen and goes into the constructor because there is no alternative slot, not by the "public contract" choice the earlier shapes describe. Earlier history: Story 0029 (Product variants — core backend) extended the "one action depending on another" confirming instances (task 0017's `SetSalesRegionActive`/`SetDefaultSalesRegion`) with `CreateProductVariant` (four collaborators, two pure/dependency-free) and `UpdateProduct` (`DeriveVariantSku` as its private re-derivation method's collaborator)._
 
-_Previously: 2026-08-31 — Story 0022 (Shared searchable, server-side-filtered multi-select component). Extended the `app()` carve-out's list of confirmed instances with a **third shape**, not a rewritten rule: `App\Livewire\Components\SearchableMultiSelect::hasSearchedEnough()`, a plain public method (neither `#[Computed]` nor a Livewire lifecycle hook) invoked directly from its Blade view as `$this->hasSearchedEnough()` with a fixed, zero-argument call site — the rule's existing wording already covered it, since the Blade template rather than this class is what fixes the parameter list. `updatedSearch()` in the same component reuses the already-established lifecycle-hook shape (`app(NormalizeForSearch::class)`, matching `Gallery::updatedPendingUploads()`) rather than adding a fourth. **Verified as unchanged rather than assumed:** every other section on this page (explicit types, braces, validation traits, PHPDoc array shapes, per-method action injection) — this story adds no new action, no new validation trait, and its one `array<int, array{...}>` PHPDoc shape on `MultiSelectOptionsResolver::search()`/`resolveSelected()` is the existing array-shape convention applied, not extended._
-
-_Previously: 2026-08-29 — Story 0020 (Shared media gallery modal — frontend), Phase 6: extended the
-`app()` carve-out with its **second** shape and, more usefully, restated the rule behind it. It had read
-as "a `#[Computed]` method may use `app()`", which is a description of the one instance that existed;
-story 0020's `Gallery::updatedPendingUploads()` is a Livewire lifecycle hook — invoked through
-`wrap($component)->__call($name, $params)` with fixed parameters rather than a container `call()`, so a
-type-hint there is never resolved — and it fails the same test for the same reason. The rule is now
-stated once: **a method whose parameter list is fixed by something other than this class may use
-`app()`, and nothing else may.** Note the hook delegates to `upload()`, which keeps its ordinary
-method-injected signature because it is also called directly (and container-resolved) by every Feature
-test — the hook is a caller, not a replacement for the signature. Nothing else on this page changed: the
-story's new action (`App\Actions\Media\UpdateMediaDetails`) constructor-injects
-`LogRefusedPrivilegedAttempt` for the reason the documented exception already gives — its `__invoke()`
-parameter list is a public contract — and its `array<int, array{...}>` payload shapes and explicit
-return types are the existing type/PHPDoc rules applied, not new ones._
-
-_Previously: 2026-08-26 — Task 0017 (Sales Region tax configuration — backend), Phase 6: extended the
-constructor-injection exception with **the clearest case it has** — one action constructor-injecting
-another (`SetSalesRegionActive` ← `SetDefaultSalesRegion`), with the ❌ pair against `app()`, which this
-story's own Phase 1 draft proposed before Phase 2 corrected it. The distinction is not stylistic: `app()`
-earns its single exception because a zero-parameter `#[Computed]` method *cannot* accept an injected
-dependency, whereas an action's constructor always can — and a constructor dependency is swappable in a
-test where an `app()` call in a method body is not. Also refreshed the two counts in the 0015b paragraph
-above it, which had become under-counts (`LogRefusedPrivilegedAttempt` is now constructor-injected into
-**eight** actions and method-injected into **three** components); the 0015b sentence itself is left as the
-historical statement it is. Nothing else on this page changed: no new type, brace, validation-trait or
-PHPDoc convention, and the story's own `@return array<int, ValidationRule|array<mixed>|string>` trait
-docblocks and `array<int, array{...}>` shapes on `$regions` / `replacementCandidates()` are the existing
-rules applied, not new ones._
-
-_Previously: 2026-08-24 — Task 0015b (log refused privileged attempts), Phase 6: extended the
-constructor-injection exception with the constraint that falls out of it — **an action must be resolved
-from the container, never `new`-ed, including in tests**. This story gave three actions their *first*
-constructor dependency, and every `new RequestEmailChange` call site broke at once (ten in
-`tests/Feature/Settings/EmailChangeTest.php`, all rewritten to `app(RequestEmailChange::class)` with no
-assertion changed), which is the proof that a zero-argument constructor is not a contract. The story's
-own seven injection sites are the existing rule and its exception applied unchanged — five actions
-constructor-inject `LogRefusedPrivilegedAttempt`, both Livewire components method-inject it — not a
-third case, so the rule above is unmodified. Nothing else on this page changed: no new type, brace,
-validation-trait or PHPDoc convention._
-
-_Previously: 2026-08-24 — Task 0015a (step-up authentication for privileged Users actions), Phase 6:
-added the constructor-injection exception, with the real ✅/❌ pair from
-`App\Actions\Auth\EnsureRecentPasswordConfirmation`'s three call sites (two constructor-injected, one
-method-injected, one `app()`-resolved out of necessity) — found during Phase 6 review rather than named
-by the change→doc mapping, since this page's "Inject single-purpose actions per-method" rule reads as
-contradicted by two of the three until the reason is stated._
-
-_Previously: 2026-07-12 — Initial scaffold of the documentation set by the docs-maintainer skill._
+_Earlier revision notes: [conventions--code-style.md](../history/conventions--code-style.md)._

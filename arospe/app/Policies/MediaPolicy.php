@@ -12,7 +12,7 @@ use App\Models\User;
  * exercises; `update` (media.edit, story 0020) and `delete` (media.delete,
  * unused -- D11) are seeded ahead of their consumers and are correct from
  * the start rather than skipped, matching this catalog's normal state (see
- * docs/architecture/authorization.md#permission-catalog). Neither `update`
+ * docs/architecture/authorization/overview-catalog-seeding.md#permission-catalog). Neither `update`
  * nor `delete` branches on its `$target` -- there is no target-dependent
  * rule in this domain today, the same shape SalesRegionPolicy::update()
  * already established.

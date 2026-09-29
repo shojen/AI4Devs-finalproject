@@ -1,0 +1,92 @@
+# Directory Structure — Concerns, Enums, Exceptions, Events, Listeners
+
+> Part of [Directory Structure](../directory-structure.md). **Read this part when:** you add a validation trait, backed enum, domain exception, event or listener and need to know where it goes. The other parts are listed in the [hub](../directory-structure.md#table-of-contents).
+
+### `app/Concerns/`, `Enums/`, `Exceptions/`, `Events/` and `Listeners/`
+
+```
+app/
+  Concerns/            Shared traits (validation rule sets, incl. BlogCategoryValidationRules — story 0058; BlogTagValidationRules — story 0059 (two name-rule methods, `nameFormatRules()` and `nameRules()`, because create and find-or-create disagree about what an existing name means); BlogPostValidationRules — story 0061 (field-named methods, two of them status-parameterised: `bodyRules()` and `publishedAtRules()`); ResolvesSalesRegionFromAddress — the country/Spain-postal-prefix → Sales Region mapping shared by the physical and virtual tax-region resolvers; ResolvesFlagReasonLabel — story 0055, the `flag_reason` → copy resolution shared by the orders list marker and the detail callout, so the two never word one flag differently; HasTranslations — story 0070, the FIRST behavioural (non-validation-rules) trait in this folder: per-field fallback resolution and bounded eager loading for any `<Entity>` with an `<entity>_translations` child table, mixed into ProductCategory alongside its companion interface Translatable — see conventions/base-standards.md#behavioural-traits-in-appconcerns and database/schema.md's product_category_translations entry)
+  Console/Commands/    Artisan commands (PublishScheduledBlogPosts, `blog:publish-scheduled-posts` — story 0064,
+                       the app's first: run every minute by the schedule entry in routes/console.php. The
+                       command owns the selection and the per-post loop, Actions/Blog/PublishScheduledBlogPost
+                       owns the transition). Auto-discovered from this folder, so it needs no registration —
+                       which also means `php artisan list` showing it proves nothing about the schedule entry;
+                       see ../../testing/backend/scheduled-commands.md
+  Enums/               Backed enums for domain value sets (UserStatus, RoleName, SalesRegionKind,
+                       BlogPostStatus — story 0061, draft/published/scheduled, with label() since story 0063
+                       (the posts list badge and the editor's status select), ProductType, ProductStatus — exactly two persisted cases — and
+                       ProductDisplayStatus, a badge-only third enum never persisted, never
+                       validated and carrying no column or cast of its own; GeographyLevel, story
+                       0032 — deliberately no label(), since this story ships no rendering site at
+                       all, per naming.md's "add label() when a second consumer appears" rule;
+                       OrderStatus / PaymentStatus, story 0045 — two SEPARATE value sets rather
+                       than one enum or one lang group, since PRD §3.2 treats fulfilment status
+                       and payment status as independently-evolving dimensions; NEITHER declared
+                       label() at story 0045 (corrected here rather than left stale --
+                       OrderStatus gained label() at story 0047, its order-history screen being
+                       the first real rendering consumer, ahead of the originally-planned story
+                       0055; PaymentStatus still has none, deferred, for the identical
+                       GeographyLevel/naming.md "add label() when a second consumer appears"
+                       reason) -- both already shipped their lang/{en,es}/orders.php leaves from
+                       story 0045, pinned by a test, since a translation file is only ever correct
+                       relative to the value set it covers; OrderStatus gained two more methods at
+                       story 0049, rank()/isBackwardFrom(), covering only the four linear statuses
+                       -- Cancelled deliberately has no rank, see architecture/authorization.md;
+                       BlogPostPublishFailureStage, story 0064b -- two cases, Publish/Announce,
+                       which of the scheduled sweep's two failure classes a due post's re-read
+                       matches; no label(), no rendering site yet -- see
+                       architecture/authorization/domain-invariants.md)
+  Exceptions/          Domain exceptions that render their own response (ImmutableRoleException → 403,
+                       RoleInUseException → 409, PasswordConfirmationRequiredException → 423,
+                       OrderNotEditableException → 409 since story 0048 -- the state-based hard
+                       block on order line-item editing, a direct throw from each of
+                       AddOrderItem/RemoveOrderItem/UpdateOrderItemQuantity rather than a Gate
+                       ability, see architecture/authorization.md; OrderStatusRegressionRequires
+                       ConfirmationException → 409 since story 0049 -- thrown by
+                       TransitionOrderStatus when a backward status move is not confirmed,
+                       following RoleInUseException's shape exactly; deliberately not 423 (not a
+                       credential-freshness problem) and not 403 (not an authorization failure) --
+                       see architecture/authorization.md's "Order status regression confirmation"
+                       section; OrderCancellationBlockedException → 409 since story 0050 -- a
+                       DIRECT THROW from CancelOrder when Order::isManuallyCancellable() is
+                       false, never a Gate check, so it binds a Super Admin actor too; a
+                       DIFFERENT class from OrderStatusRegressionRequiresConfirmationException
+                       despite both rendering 409 -- that one is retryable (confirmed: true),
+                       this one is terminal, since CancelOrder takes no confirmation parameter
+                       at all -- see architecture/authorization.md's "Manual order cancellation"
+                       section) — plus, since story 0022, one
+                       that deliberately does NOT: UnresolvedSelectionException carries no
+                       render() at all, because it must never reach the HTTP layer as a status
+                       code (see below)
+  Http/Controllers/    Abstract base + domain controllers used as HTTP boundaries in front of actions
+  Http/Middleware/     Global web-group middleware classes, registered in bootstrap/app.php rather than
+                       auto-discovered (EnsureSitePasswordIsProvided, prepended to the web group; and,
+                       since story 0066, SetUiLocale, appended — see architecture/overview.md's Request
+                       lifecycle section and architecture/authentication.md for what it resolves)
+  Events/              Domain events dispatched by actions (OrderFullyRefunded — story 0052, the
+                       app's first: carries only `string $orderId`, never a hydrated Order, not
+                       queued, dispatched by RecordRefund AFTER its transaction commits; and, in a `Blog/`
+                       sub-namespace, App\Events\Blog\ScheduledBlogPostPublished — story 0064, dispatched
+                       once per post by PublishScheduledBlogPost after its write succeeds, with no actor;
+                       carries the BlogPost model, not queued; story 0065 adds its listener,
+                       SendBlogPostPublishedNotification). A stock Laravel location (`make:event`), no
+                       approval needed
+  Listeners/           Event listeners (ActivateVerifiedUser; RejectNonActiveUserLogin — see
+                       architecture/authentication/sign-in-block-and-email-change.md, no constructor;
+                       CancelFullyRefundedOrder — story 0052, a thin synchronous adapter to
+                       Actions/Orders/AutoCancelFullyRefundedOrder; SendBlogPostPublishedNotification —
+                       story 0065, the fourth listener and not the first with a constructor
+                       (ActivateVerifiedUser and CancelFullyRefundedOrder already have one): a thin
+                       synchronous adapter from App\Events\Blog\ScheduledBlogPostPublished to
+                       Actions/Blog/NotifyBlogPostPublished, deliberately with no try/catch so an
+                       exception propagates to the scheduled sweep's own catch). Listeners are
+                       registered by discovery only: Laravel 13
+                       auto-discovers every public `handle*` method of a class in app/Listeners whose
+                       first parameter is a typed event, so no listener is registered by hand — an
+                       explicit Event::listen() on top would fire it twice (story 0064a). The
+                       `handle*` method name is load-bearing: renaming `handleAuthenticated` silently
+                       unregisters the sign-in safety net, and a stray typed `handleX(Event $e)` becomes
+                       a live listener. tests/Feature/Providers/EventListenerRegistrationTest.php fails
+                       on a duplicate binding or a lost known one
+```

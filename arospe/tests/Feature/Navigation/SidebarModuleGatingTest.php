@@ -124,6 +124,75 @@ test('a role holding roles.manage sees the Roles & Permissions entry', function 
 });
 
 // =====================================================================
+// Story 0044 — the customers entry: `group: null, cluster: null`, the SAME bare top-level shape
+// `users` already uses (Customers is a top-level operational module, not store configuration and
+// not a sub-resource of an existing cluster). Only these two tests are added by this story — the
+// mechanical set-equality guards below (config:cache, permissions-match-route:can:, the Super
+// Admin exact-key-match test) already iterate config('modules.items') generically and pick this
+// entry up with no code change, per the task file's own instruction to verify that rather than
+// re-write it.
+// =====================================================================
+
+test('a role holding exactly customers.view sees the Customers entry', function () {
+    $this->actingAs(sidebarNavUserWith(['customers.view']));
+
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('data-test="sidebar-link-customers"', false);
+});
+
+test('a role without customers.view never sees the Customers entry — asserted on the data-test hook, never the word "Customers"', function () {
+    // Never assertDontSee('Customers') -- that word can collide with other copy on the page
+    // (task file, Tests to perform). Anchored with an assertSee() on the always-visible Dashboard
+    // hook so this exercises the real sidebar-nav component rather than passing vacuously.
+    $this->actingAs(sidebarNavUserWith(['blog.view']));
+
+    $response = $this->get(route('dashboard'));
+
+    $response->assertOk();
+    $response->assertSee('data-test="sidebar-link-dashboard"', false);
+    $response->assertDontSee('data-test="sidebar-link-customers"', false);
+});
+
+// =====================================================================
+// Story 0055 -- the orders entry: `group: null, cluster: null`, the same bare top-level shape
+// `customers` uses. `current_when: 'orders.*'` covers BOTH orders.index and orders.show. The
+// mechanical set-equality guards below iterate config('modules.items') and resolve each entry's
+// OWN `route` key -- they never enumerate routes -- so the second route under `orders.*` is
+// outside their scope (verified against the shipped test, not assumed).
+// =====================================================================
+
+test('a role holding exactly orders.view sees the Orders entry', function () {
+    $this->actingAs(sidebarNavUserWith(['orders.view']));
+
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('data-test="sidebar-link-orders"', false);
+});
+
+test('a role without orders.view never sees the Orders entry -- asserted on the data-test hook', function () {
+    $this->actingAs(sidebarNavUserWith(['blog.view']));
+
+    $response = $this->get(route('dashboard'));
+
+    $response->assertOk();
+    $response->assertSee('data-test="sidebar-link-dashboard"', false);
+    $response->assertDontSee('data-test="sidebar-link-orders"', false);
+});
+
+test('the orders registry entry is bare top-level and covers both orders routes', function () {
+    $entry = config('modules.items.orders');
+
+    expect($entry)->not->toBeNull()
+        ->and($entry['group'])->toBeNull()
+        ->and($entry['cluster'])->toBeNull()
+        ->and($entry['route'])->toBe('orders.index')
+        ->and($entry['current_when'])->toBe('orders.*')
+        ->and($entry['permissions'])->toBe(['orders.view'])
+        ->and($entry['label'])->toBe('navigation.items.orders');
+});
+
+// =====================================================================
 // Story 0018 — the sales_regions entry, RE-TARGETED by story 0080 (see the
 // story 0080 sections further below for the full rationale). `groups.taxes`
 // is retired by 0080 D-4 and `sales_regions` moves into the `store_settings`
@@ -414,6 +483,171 @@ test('the Settings group renders no heading at all when its only entry is hidden
 });
 
 // =====================================================================
+// Story 0060 — the blog_tags entry, and the `content` group + nested `blog` cluster this story
+// creates for Blog stories 0062/0063 to append to (0080's D-4/D-5). The two generic drift guards
+// below pick the new entry up for free -- no hand-written registry↔route cross-check here.
+// =====================================================================
+
+test('a role holding exactly blog.view sees the Content group, the Blog cluster and the Tags entry', function () {
+    $this->actingAs(sidebarNavUserWith(['blog.view']));
+
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('data-test="sidebar-group-content"', false)
+        ->assertSee('data-test="sidebar-cluster-blog"', false)
+        ->assertSee('data-test="sidebar-link-blog_tags"', false);
+});
+
+test('a role holding the related-but-different blog.edit permission sees none of the Content group, the Blog cluster or the Tags entry', function () {
+    // routes/blog-tags.php gates blog-tags.index on exactly can:blog.view, so the registry entry
+    // must gate on that exact ability -- not on any blog.*.
+    $this->actingAs(sidebarNavUserWith(['blog.edit']));
+
+    $response = $this->get(route('dashboard'));
+
+    $response->assertOk();
+    $response->assertSee('data-test="sidebar-link-dashboard"', false);
+    $response->assertDontSee('data-test="sidebar-group-content"', false);
+    $response->assertDontSee('data-test="sidebar-cluster-blog"', false);
+    $response->assertDontSee('data-test="sidebar-link-blog_tags"', false);
+});
+
+test('the Content group renders no heading at all for a role that can see none of its entries', function () {
+    // Same two-level vanish rule the Store group exercises: a group with zero visible clusters
+    // and zero visible direct items renders nothing, heading included.
+    $this->actingAs(sidebarNavUserWith(['products.view']));
+
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('data-test="sidebar-group-store"', false)
+        ->assertDontSee('data-test="sidebar-group-content"', false)
+        ->assertDontSee('data-test="sidebar-cluster-blog"', false);
+});
+
+test('the blog_tags registry entry nests in the blog cluster of the content group and gates on exactly its route\'s ability', function () {
+    $entry = config('modules.items.blog_tags');
+
+    expect($entry['group'])->toBeNull()
+        ->and($entry['cluster'])->toBe('blog')
+        ->and($entry['route'])->toBe('blog-tags.index')
+        ->and($entry['permissions'])->toBe(['blog.view'])
+        ->and(config('modules.clusters.blog.group'))->toBe('content')
+        ->and(config('modules.groups'))->toHaveKey('content');
+});
+
+// =====================================================================
+// Story 0062 — the blog_categories entry, appended to the `blog` cluster of the `content` group
+// story 0060 created. Entry-specific assertions only: the two generic drift guards already cover a
+// new entry for free, so no hand-written registry↔route cross-check is added here.
+// =====================================================================
+
+test('a role holding exactly blog.view sees the Categories entry inside the Blog cluster', function () {
+    $this->actingAs(sidebarNavUserWith(['blog.view']));
+
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('data-test="sidebar-cluster-blog"', false)
+        ->assertSee('data-test="sidebar-link-blog_categories"', false);
+});
+
+test('a role holding the related-but-different blog.edit permission does not see the Categories entry', function () {
+    // routes/blog-categories.php gates blog-categories.index on exactly can:blog.view, so the
+    // registry entry must gate on that exact ability -- not on any blog.*.
+    $this->actingAs(sidebarNavUserWith(['blog.edit']));
+
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertDontSee('data-test="sidebar-cluster-blog"', false)
+        ->assertDontSee('data-test="sidebar-link-blog_categories"', false);
+});
+
+test('the blog_categories registry entry nests in the existing blog cluster, declares no group or cluster of its own and gates on exactly its route\'s ability', function () {
+    $entry = config('modules.items.blog_categories');
+
+    expect($entry['group'])->toBeNull()
+        ->and($entry['cluster'])->toBe('blog')
+        ->and($entry['route'])->toBe('blog-categories.index')
+        ->and($entry['permissions'])->toBe(['blog.view'])
+        ->and($entry['icon'])->not->toBe(config('modules.items.blog_tags.icon'))
+        ->and(config('modules.clusters.blog.group'))->toBe('content')
+        ->and(config('modules.groups'))->not->toHaveKey('blog');
+});
+
+// =====================================================================
+// Story 0063 — the blog_posts entry, INSERTED before `blog_tags` in the same `blog` cluster of the
+// `content` group (declaration order is render order, so posts -- the module's headline screen --
+// renders first). Entry-specific assertions only: the two generic drift guards already cover a new
+// entry for free, so no hand-written registry↔route cross-check is added here.
+// =====================================================================
+
+test('a role holding exactly blog.view sees the Posts entry inside the Blog cluster', function () {
+    $this->actingAs(sidebarNavUserWith(['blog.view']));
+
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('data-test="sidebar-group-content"', false)
+        ->assertSee('data-test="sidebar-cluster-blog"', false)
+        ->assertSee('data-test="sidebar-link-blog_posts"', false);
+});
+
+test('a role holding the related-but-different blog.edit permission does not see the Posts entry', function () {
+    // routes/blog-posts.php gates all three post routes on exactly can:blog.view, so the registry
+    // entry must gate on that exact ability -- not on any blog.*.
+    $this->actingAs(sidebarNavUserWith(['blog.edit']));
+
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertDontSee('data-test="sidebar-cluster-blog"', false)
+        ->assertDontSee('data-test="sidebar-link-blog_posts"', false);
+});
+
+test('the blog_posts registry entry nests in the existing blog cluster, declares no group of its own and gates on exactly its route\'s ability', function () {
+    $entry = config('modules.items.blog_posts');
+
+    expect($entry['group'])->toBeNull()
+        ->and($entry['cluster'])->toBe('blog')
+        ->and($entry['label'])->toBe('navigation.items.blog_posts')
+        ->and($entry['route'])->toBe('blog-posts.index')
+        ->and($entry['current_when'])->toBe('blog-posts.*')
+        ->and($entry['permissions'])->toBe(['blog.view'])
+        ->and(config('modules.clusters.blog.group'))->toBe('content')
+        ->and(config('modules.groups'))->not->toHaveKey('blog');
+});
+
+test('the blog_posts icon differs from its cluster and both blog siblings, so no two read as duplicates', function () {
+    $icon = config('modules.items.blog_posts.icon');
+
+    expect($icon)->not->toBe(config('modules.clusters.blog.icon'))
+        ->and($icon)->not->toBe(config('modules.items.blog_tags.icon'))
+        ->and($icon)->not->toBe(config('modules.items.blog_categories.icon'));
+});
+
+test('the blog_posts entry is declared before blog_tags, so Posts renders first in the Blog cluster', function () {
+    $blogItems = collect(config('modules.items'))->filter(fn (array $item) => $item['cluster'] === 'blog')->keys()->all();
+
+    expect(array_search('blog_posts', $blogItems, true))->toBeLessThan(array_search('blog_tags', $blogItems, true))
+        ->and($blogItems[0])->toBe('blog_posts');
+
+    $this->actingAs(sidebarNavSuperAdmin());
+
+    $html = $this->get(route('dashboard'))->assertOk()->getContent();
+
+    expect(strpos($html, 'data-test="sidebar-cluster-blog"'))->toBeLessThan(strpos($html, 'data-test="sidebar-link-blog_posts"'))
+        ->and(strpos($html, 'data-test="sidebar-link-blog_posts"'))->toBeLessThan(strpos($html, 'data-test="sidebar-link-blog_tags"'));
+});
+
+test('the Posts link is marked current on the list, the create screen and the edit screen', function () {
+    $entry = config('modules.items.blog_posts');
+
+    foreach (['blog-posts.index', 'blog-posts.create', 'blog-posts.edit'] as $routeName) {
+        expect(Str::is($entry['current_when'], $routeName))->toBeTrue();
+    }
+
+    expect(Str::is($entry['current_when'], 'blog-tags.index'))->toBeFalse()
+        ->and(Str::is($entry['current_when'], 'blog-categories.index'))->toBeFalse();
+});
+
+// =====================================================================
 // Edge — the Super Admin bypass, exercised through the real Gate::before
 // closure (task 0002/0008) with zero permission rows of its own.
 // =====================================================================
@@ -441,6 +675,11 @@ test('a Super Admin holding zero permission rows sees every registered module en
     $response->assertSee('data-test="sidebar-link-product_attribute_types"', false);
     $response->assertSee('data-test="sidebar-cluster-store_settings"', false);
     $response->assertSee('data-test="sidebar-link-sales_regions"', false);
+    // Story 0060 — the Content group and its nested Blog cluster.
+    $response->assertSee('data-test="sidebar-group-content"', false);
+    $response->assertSee('data-test="sidebar-cluster-blog"', false);
+    $response->assertSee('data-test="sidebar-link-blog_posts"', false);
+    $response->assertSee('data-test="sidebar-link-blog_tags"', false);
 });
 
 // =====================================================================
@@ -462,6 +701,9 @@ test('a user with zero module permissions still sees the Dashboard entry', funct
     $response->assertDontSee('data-test="sidebar-group-store"', false);
     $response->assertDontSee('data-test="sidebar-cluster-products"', false);
     $response->assertDontSee('data-test="sidebar-cluster-store_settings"', false);
+    $response->assertDontSee('data-test="sidebar-group-content"', false);
+    $response->assertDontSee('data-test="sidebar-link-blog_posts"', false);
+    $response->assertDontSee('data-test="sidebar-link-blog_tags"', false);
 });
 
 // =====================================================================
@@ -783,13 +1025,27 @@ test('group and cluster order is stable — ungrouped, then Store (Products befo
         ->and($storeSettingsClusterPos)->toBeLessThan($settingsGroupPos);
 });
 
-test('no content group or blog cluster exists in the registry yet', function () {
-    // D-5 -- Content is deliberately not declared by this story; it is
-    // story 0060 (or whichever Blog story ships first)'s to add, alongside
-    // its own `blog` cluster. This guards against 0080 accidentally
-    // pre-declaring what D-5 explicitly defers.
-    expect(config('modules.groups'))->not->toHaveKey('content');
-    expect(config('modules.clusters', []))->not->toHaveKey('blog');
+test('the Content group renders between the Store and Settings groups, with its Blog cluster and the Tags link inside it', function () {
+    // Story 0060 flips story 0080's D-5 guard ("no content group exists yet"): the first Blog
+    // screen is the one that declares `content` and its nested `blog` cluster, after `store` and
+    // before `settings` (array order is render order).
+    $this->actingAs(sidebarNavSuperAdmin());
+
+    $html = $this->get(route('dashboard'))->assertOk()->getContent();
+
+    $positions = collect([
+        'store' => 'data-test="sidebar-group-store"',
+        'content' => 'data-test="sidebar-group-content"',
+        'blog' => 'data-test="sidebar-cluster-blog"',
+        'tags' => 'data-test="sidebar-link-blog_tags"',
+        'settings' => 'data-test="sidebar-group-settings"',
+    ])->map(fn (string $hook) => strpos($html, $hook));
+
+    expect($positions->contains(false))->toBeFalse()
+        ->and($positions['store'])->toBeLessThan($positions['content'])
+        ->and($positions['content'])->toBeLessThan($positions['blog'])
+        ->and($positions['blog'])->toBeLessThan($positions['tags'])
+        ->and($positions['tags'])->toBeLessThan($positions['settings']);
 });
 
 // =====================================================================

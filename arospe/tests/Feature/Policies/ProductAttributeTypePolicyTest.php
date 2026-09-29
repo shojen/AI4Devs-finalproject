@@ -119,9 +119,11 @@ test('the four permission strings ProductAttributeTypePolicy gates on are all in
 
     expect($actor->getAllPermissions())->toHaveCount(4);
 
-    // D6's own explicit constraint: adding a tenth module slug would break the hardcoded 42/41
+    // D6's own explicit constraint: adding a tenth module slug would break the hardcoded 43/42
     // assertions in tests/Feature/Seeders/RolePermissionSeederTest.php -- verified here rather
     // than assumed, so a future accidental new-module addition alongside this policy is caught
-    // in the same file that names the constraint.
-    expect(Permission::count())->toBe(42);
+    // in the same file that names the constraint. (Story 0051 grew the catalog from 42 to 43 via
+    // a new non-CRUD ORDER_PERMISSIONS entry, not a new module slug, so MODULES' own count of 10
+    // above is unaffected.)
+    expect(Permission::count())->toBe(43);
 });

@@ -2,14 +2,14 @@
 
 ## Description
 Applies the per-store-language translatable-content mechanism built by story
-[0070](0070-translatable-content-mechanism-product-categories-backend.md) to the **Blog Categories**
-taxonomy ([PRD Epic 5, Layer 2](../../docs/PRD/PRD.md#epic-5--internationalization); assumption 14
+[0070](done/0070-translatable-content-mechanism-product-categories-backend.md) to the **Blog Categories**
+taxonomy ([PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization); assumption 14
 names "category/tag names" as translatable content, and Epic 5's own Gherkin lists **Blog category**
 as a taxonomy whose name must be authorable per store language). It creates the
 `blog_category_translations` child table, wires `App\Models\BlogCategory` to
 `App\Concerns\HasTranslations`, re-scopes name uniqueness from global to per-store-language, backfills
 every existing category into the store default language, and appends **one** entry to
-[0068](0068-store-languages-catalog-backend.md)'s `translation_relations` registry.
+[0068](done/0068-store-languages-catalog-backend.md)'s `translation_relations` registry.
 
 **This story consumes a recipe; it does not write one.** `HasTranslations`, `SetTranslation` and
 `StoreLanguage::defaultStoreLanguage()` are 0070's and are used **unmodified**. What this story owns is
@@ -20,7 +20,7 @@ the one place the recipe does not fit as written — see the box below.
 >
 > 0070 retrofits `product_categories`, whose story [0023](done/0023-product-categories-backend.md)
 > enforces name uniqueness with a plain `unique('name')` index plus a PHP-only comparison. **Blog
-> categories do not work that way.** Story [0058](0058-blog-categories-backend.md) specifies
+> categories do not work that way.** Story [0058](done/0058-blog-categories-backend.md) specifies
 > `blog_categories` with a stored, derived **`normalized_name`** column carrying the sole `UNIQUE`
 > index, written by a `static::saving()` hook calling the shared `App\Actions\NormalizeForSearch` —
 > the project-wide convention [0032's **D-N1**](done/0032-shipping-geography-catalog-seed.md) confirmed on
@@ -44,7 +44,7 @@ the one place the recipe does not fit as written — see the box below.
 > **Stories 0058 (`blog_categories`), 0068 (`store_languages`) and 0070 (the mechanism) are all Phase 1
 > files, not shipped code.** Everything below is designed against their *specified* shape. Phase 3
 > must re-verify every signature named here against `HEAD` before writing a line of code — the
-> [deferred-findings failure mode](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+> [deferred-findings failure mode](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
 > this project already records once, and which applies **twice over** here (**R-12**).
 
 ## Type
@@ -479,7 +479,7 @@ Feature and Unit only. **No browser tests** — this story ships no screen.
       each, in the default store language, with `name` **byte-identical** to the original — asserted
       **per row, never as a count**. *Why:* a count assertion passes even if every row got the wrong
       name or all rows collapsed to one value — the
-      [count-assertion failure mode](../../docs/errors-log.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21)
+      [count-assertion failure mode](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21)
       this project records.
 - [ ] Feature: the backfilled `normalized_name` equals a **fresh** `NormalizeForSearch` call on the
       name — not merely equal to the parent's old column value (**D-5**).
@@ -607,7 +607,7 @@ too, and 0070's drift guard covers a second registered entry with no change to t
       construction
 - [ ] `vendor/bin/pint --format agent` run **unscoped**, not `--dirty`
 - [ ] **Larastan level 7 run and recorded** — named explicitly because
-      [errors-log.md](../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
+      [errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
       records three consecutive stories whose verification notes listed two of three gates and were read
       as records of all three. A record naming two gates is a record of two gates.
 - [ ] Code reviewed (code-reviewer)
@@ -786,15 +786,15 @@ is one no post uses, and its translations are exactly the data that has just bec
 
 ### Dependencies
 
-- **[Story 0058](0058-blog-categories-backend.md)** — hard, and **not yet implemented**. This story
+- **[Story 0058](done/0058-blog-categories-backend.md)** — hard, and **not yet implemented**. This story
   retrofits its table, its model, its validation trait and two of its three actions. See **R-2**, **R-3**.
-- **[Story 0070](0070-translatable-content-mechanism-product-categories-backend.md)** — hard, and **not
+- **[Story 0070](done/0070-translatable-content-mechanism-product-categories-backend.md)** — hard, and **not
   yet implemented**. Supplies `HasTranslations`, `SetTranslation`, `StoreLanguage::defaultStoreLanguage()`
   and the drift guard, all consumed unmodified. **0070's own Q1 is still open** (must every entity always
   hold a default-language translation?) and this story assumes its recommended answer **(a) yes** —
   `CreateBlogCategory` writes one and the backfill guarantees one. If 0070 resolves Q1 differently, this
   story's create-path acceptance criterion changes with it; it is not re-asked here.
-- **[Story 0068](0068-store-languages-catalog-backend.md)** — hard, and not yet implemented. Supplies
+- **[Story 0068](done/0068-store-languages-catalog-backend.md)** — hard, and not yet implemented. Supplies
   `store_languages`, the `is_default` row the fallback resolves through, and the registry.
 - **Story 0022** — supplies `App\Actions\NormalizeForSearch`, consumed unchanged at both write time (the
   hook) and read time (the validation rule), per [0032's **D-N1**](done/0032-shipping-geography-catalog-seed.md).
@@ -806,11 +806,11 @@ is one no post uses, and its translations are exactly the data that has just bec
 
 - **R-1 — Dropping the parent's `name` (D-2) breaks two already-written sibling stories, and this story
   cannot fix them.** Verified by grep against `ai-spec/tasks/`:
-  [`0062-blog-categories-ui.md`](0062-blog-categories-ui.md) line 370 specifies
+  [`0062-blog-categories-ui.md`](done/0062-blog-categories-ui.md) line 370 specifies
   `BlogCategory::query()->withCount(...)->orderBy('name')->orderBy('id')`, and its component surface
   (line ~329) declares a row shape `array{id: string, name: string, postCount: int, canEdit: bool,
   canDelete: bool}` plus a `$deletingCategoryName` property, all fed from `$category->name`;
-  [`0063-blog-posts-list-editor-ui.md`](0063-blog-posts-list-editor-ui.md) lines 792 and 978 specify
+  [`0063-blog-posts-list-editor-ui.md`](done/0063-blog-posts-list-editor-ui.md) lines 792 and 978 specify
   `->with(['category:id,name', ...])` — a **partial column select**, which is a sharper break than an
   `orderBy` because it names the dropped column explicitly in the eager load. All are **unimplemented
   Phase 1 files**, so the cost is an amendment rather than a code break — but the amendment is real and
@@ -830,7 +830,7 @@ is one no post uses, and its translations are exactly the data that has just bec
   *moves* that column and so doubles the surface. **Whatever widths 0058's Phase 2 settles must be applied
   identically to `blog_category_translations`.** The expansion factor **could not be verified here**: this
   worktree has no `vendor/`, and per
-  [this project's hedge rule](../../docs/errors-log.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
+  [this project's hedge rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
   an unverified mechanism must not be written up as fact. What *is* verified is that `composer.lock` pins
   `voku/portable-ascii` 2.1.1 as the real library behind `Str::ascii()`, so the hazard is concrete rather
   than hypothetical. The command that settles it, at Phase 2/3:
@@ -906,16 +906,16 @@ close:
 
 Derived from this debate; **none are in scope for 0072**.
 
-1. **Amend stories [0062](0062-blog-categories-ui.md) and [0063](0063-blog-posts-list-editor-ui.md)** so
+1. **Amend stories [0062](done/0062-blog-categories-ui.md) and [0063](done/0063-blog-posts-list-editor-ui.md)** so
    their queries no longer reference a `blog_categories.name` column — an ordered join over the
    translation for the requested language, and a replacement for the `category:id,name` partial select
    (**R-1**). The coordinator's, not this story's. Note this is the blog half of the same amendment 0070's
    own backlog item 1 raises for 0025/0027/0060/0062.
-2. **Carry the index-count finding back to [0070](0070-translatable-content-mechanism-product-categories-backend.md)**
+2. **Carry the index-count finding back to [0070](done/0070-translatable-content-mechanism-product-categories-backend.md)**
    — its line 243 asserts a fourth auto-created FK index on a column its own migration makes leftmost in a
    composite `UNIQUE` (**D-10**, **R-4**). Verify with `db:table` on both tables and correct whichever is
    wrong.
-3. **Close 0058's OQ-1 jointly with [0059](0059-blog-tags-backend.md)** before either Epic 5 taxonomy
+3. **Close 0058's OQ-1 jointly with [0059](done/0059-blog-tags-backend.md)** before either Epic 5 taxonomy
    retrofit implements — the length trio is now a length *quintet* once the translation tables exist
    (**R-3**).
 4. **Story 0074 (Blog Tags) inherits this story's D-1 verbatim, not 0070's.** `blog_tags` carries the same

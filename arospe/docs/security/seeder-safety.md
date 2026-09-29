@@ -204,7 +204,7 @@ opaquely deep inside the transaction.
 **Rule.** In a seeder, a value that other rows are structurally keyed to must be resolved with a
 `throw_if(... === null, RuntimeException::class, ...)` — the same loud-failure convention this repo
 already applies to the fixture file itself and to
-[the vendored permission migration](../database/migrations.md#package-vendored-migrations) — and a
+[the vendored permission migration](../database/migrations/delete-behaviour-and-vendored.md#package-vendored-migrations) — and a
 repair-only write must assert it affected the row it names. Failing the whole seed is correct here:
 the transaction rolls back, nothing partial is committed, and the operator gets an actionable message
 instead of a catalog nobody will notice is wrong.
@@ -223,7 +223,7 @@ $spain = ... ?? SalesRegion::query()->where('slug', self::SPAIN_SLUG)->first(); 
 ```
 
 This is the same collation-versus-`===` mismatch task 0008 found on `roles.name` (see
-[database/schema.md](../database/schema.md#roles-permissions-model_has_roles-model_has_permissions-role_has_permissions)),
+[database/schema.md](../database/schema-users-auth.md#roles-permissions-model_has_roles-model_has_permissions-role_has_permissions)),
 now on a *seeder idempotency key*, and it splits into two behaviours worth knowing before writing the
 next catalog seeder:
 

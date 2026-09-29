@@ -350,7 +350,7 @@ application changes; no user-visible behavior is added, removed, or altered.
 > `Install Node Dependencies` and before the Flux/Composer steps, on all three PHP matrix legs. This
 > keeps decision 3 (no *other* CI scope change — trigger policy, cross-browser, coverage gating —
 > stays out of scope) while making the pipeline honest about the suite it now runs. `--with-deps`
-> installs the OS-level libraries the [Known caveat](../../../docs/testing/frontend/playwright-setup.md#known-caveat-missing-system-libraries-on-this-host)
+> installs the OS-level libraries the [Known caveat](../../../docs/testing/frontend/playwright-setup/status-structure-and-syntax.md#known-caveat-missing-system-libraries-on-this-host)
 > flags as missing on the local dev host — safe here because a GitHub-hosted runner is a fresh,
 > disposable VM each run, not a persistent machine needing separate approval for a system change.
 > **Not yet verified by an actual CI run** — that verification happens naturally the next time this

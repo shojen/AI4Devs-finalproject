@@ -1,0 +1,7 @@
+# Revision history — `docs/conventions/naming-validation-traits.md`
+
+> Moved here **unchanged** from the end of [naming-validation-traits.md](../conventions/naming-validation-traits.md) in the story 0059 docs pass (a doc keeps one `_Last updated_` line; the accumulated `_Previously:` chain lives here). Read it only to trace when or why that document changed.
+
+_Previously: 2026-09-16 — Story 0048 (Order line-item editing backend). Extended `App\Concerns\OrderValidationRules` with three more methods (`orderItemQuantityRules()` — extracted out of story 0045's `orderItemRules()` per the task file's own "Phase 3 must extract rather than duplicate" instruction, `orderItemProductRules(string $productId)`, `orderItemOwnershipRules(string $orderId)`), none entity-prefixed. Trait **count is unchanged** at fifteen — this story extends an existing trait, it does not add one.
+
+_Previously: 2026-09-14 — Story 0045 (Orders core CRUD backend). Added `App\Concerns\OrderValidationRules` to the roster: no entity-prefixing needed, and this section's first `public const` array-shape bounds used purely for input-size defence (`MAX_ITEMS`, `MAX_ITEM_QUANTITY`). Recounted the trait total from thirteen to fifteen (`ls app/Concerns/*ValidationRules.php`) — the prior count was already one short at story 0041, missing `PaymentMethodValidationRules` (story 0038). This file had no footer of its own since its split out of `naming.md` on 2026-09-11 — this is its first.

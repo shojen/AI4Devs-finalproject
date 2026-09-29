@@ -1,11 +1,11 @@
 # [0078] Translatable content retrofit — Blog Posts backend
 
 ## Description
-Applies story [0070](0070-translatable-content-mechanism-product-categories-backend.md)'s
+Applies story [0070](done/0070-translatable-content-mechanism-product-categories-backend.md)'s
 per-store-language translatable-content mechanism to **Blog Posts**
-([PRD Epic 5, Layer 2](../../docs/PRD/PRD.md#epic-5--internationalization), whose translatable-content
+([PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization), whose translatable-content
 list names *"Blog post **title** and **body**"* and *"**Slug / SEO fields** … on products and posts"*).
-Story [0061](0061-blog-posts-core-crud-backend.md)'s `title`, `body` and `slug` columns move to a
+Story [0061](done/0061-blog-posts-core-crud-backend.md)'s `title`, `body` and `slug` columns move to a
 `blog_post_translations` child table, one row per `(post, store language)`, with slug uniqueness
 re-scoped from global to **per store language**. `status`, `published_at`, `blog_category_id` and tag
 attachments stay on the parent — the PRD puts *"status, dates"* explicitly outside the language tabs.
@@ -42,7 +42,7 @@ used **unmodified**.
 > **Stories 0061, 0068 and 0070 are all Phase 1 files, not shipped code.** Everything below is designed
 > against their *specified* shape. **Phase 3 must re-verify every signature named here against `HEAD`
 > before writing a line of code** — the
-> [deferred-findings failure mode](../../docs/errors-log.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
+> [deferred-findings failure mode](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
 > which applies **three times over** here (**R-12**).
 
 ## Type
@@ -531,7 +531,7 @@ Feature and Unit only. **No browser tests** — this story ships no screen.
       post, and `translated()` never throws, so nothing detects it until someone restores one.
 - [ ] N arranged posts each get **exactly one** translation row, in the default store language, with
       `title`, `body` and `slug` **byte-identical** to the originals — asserted **per row, never as a
-      count** (the [count-assertion failure mode](../../docs/errors-log.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21)).
+      count** (the [count-assertion failure mode](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21)).
 - [ ] A **null** body survives as null, and a title at the length boundary survives unchanged.
 - [ ] The backfill with **no default store language** throws and writes nothing.
 - [ ] **One reassuring assertion, not a suite:** N pre-existing, already-globally-unique posts backfill
@@ -643,7 +643,7 @@ covers a fourth registered entry with no change to the guard.
       construction.
 - [ ] `vendor/bin/pint --format agent` run **unscoped**, not `--dirty`
 - [ ] **Larastan level 7 run and recorded** — named explicitly because
-      [errors-log.md](../../docs/errors-log.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
+      [errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
       records three consecutive stories whose verification notes listed two of three gates and were read
       as records of all three. **A record naming two gates is a record of two gates.**
 - [ ] Index reality verified with `php artisan db:table blog_post_translations` after migrating — not by
@@ -864,7 +864,7 @@ before the call is re-read too — which is the correct direction and incidental
 stale-relation hazard on this one path. And the transaction that **D-15** already established simply
 widens to cover the translation write, so unlike 0074's **D-5** this story does not have to *add* one —
 but the errors-log's
-[transaction-wrapper rule](../../docs/errors-log.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
+[transaction-wrapper rule](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21)
 still binds: widening what sits inside a transaction is a change to every side effect inside it, and the
 notification dispatch must stay **outside**.
 
@@ -885,16 +885,16 @@ load-bearing:** since `SetTranslation` authorizes nothing, each action's `Gate` 
 
 ### Dependencies
 
-- **[Story 0061](0061-blog-posts-core-crud-backend.md)** — hard, and **not implemented**. This story
+- **[Story 0061](done/0061-blog-posts-core-crud-backend.md)** — hard, and **not implemented**. This story
   retrofits its table, its model, its validation trait and two of its six actions. **Its OQ-2 is now
   closed** (✅ resolved 2026-08-30, option (b) — see **R-4**), which was this dependency's one remaining
   gate.
-- **[Story 0070](0070-translatable-content-mechanism-product-categories-backend.md)** — hard, and not
+- **[Story 0070](done/0070-translatable-content-mechanism-product-categories-backend.md)** — hard, and not
   implemented. Supplies `HasTranslations`, `SetTranslation`, `StoreLanguage::defaultStoreLanguage()` and
   the drift guard, all consumed unmodified. **0070's Q1 is still open** (must every entity always hold a
   default-language translation?); this story assumes its recommended **(a) yes**, which is what makes a
   post never nameless. It is not re-asked here.
-- **[Story 0068](0068-store-languages-catalog-backend.md)** — hard, and not implemented. Supplies
+- **[Story 0068](done/0068-store-languages-catalog-backend.md)** — hard, and not implemented. Supplies
   `store_languages`, the `is_default` row the fallback resolves through, and the registry.
 - **Story [0024a](done/0024a-product-description-html-sanitization.md)** (split out of 0024 on 2026-09-01) — soft, for the HTML sanitizer only, consumed exactly as 0061's **D-14** consumes it. Its
   ownership race with 0061 (0061's **OQ-4**) is inherited unresolved and is not this story's to settle.
@@ -907,7 +907,7 @@ load-bearing:** since `SetTranslation` authorizes nothing, each action's `Gate` 
 
 - **R-1 — Dropping `blog_posts.title` breaks three already-written sibling stories, and this story cannot
   fix them.** Verified by grep against `ai-spec/tasks/`:
-  - **(a) [0063](0063-blog-posts-list-editor-ui.md) is the worst-hit file in the whole Epic 5 plan.** Its
+  - **(a) [0063](done/0063-blog-posts-list-editor-ui.md) is the worst-hit file in the whole Epic 5 plan.** Its
     **D-4** list query (line ~789) is
     `->select(['id', 'blog_category_id', 'title', 'status', 'published_at', 'created_at'])
     ->with(['category:id,name', 'tags:id,name'])` — a **partial column select naming `title`**, which is
@@ -919,13 +919,13 @@ load-bearing:** since `SetTranslation` authorizes nothing, each action's `Gate` 
     deliberately orders by `created_at`, **not** `title` (its own note, line ~806), precisely because
     0061's **D-10** says posts carry no title uniqueness — so unlike 0062/0025 there is no `orderBy`
     break. Its line ~298 quote of `#[Fillable]` also goes stale (**D-9**).
-  - **(b) [0064](0064-scheduled-post-auto-publish-backend.md)** asserts at line ~212 that *"only `status`
+  - **(b) [0064](done/0064-scheduled-post-auto-publish-backend.md)** asserts at line ~212 that *"only `status`
     and `updated_at` change"* by checking `title`, `slug` and `body` are untouched — those assertions must
     retarget the translation table. Its underlying reasoning gets **simpler**, not harder: its line ~709
     note that the slug is safe *"because 0061's hook is guarded on `isDirty('title')`"* is superseded by
     something stronger — after the retrofit the sweep writes only parent columns, which no longer include
     any translatable field, so the hook cannot fire at all.
-  - **(c) [0065](0065-blog-post-published-notification-backend.md) forces a decision no sibling
+  - **(c) [0065](done/0065-blog-post-published-notification-backend.md) forces a decision no sibling
     retrofit did.** Its **D-4** payload is `['blog_post_id' => …, 'title' => $this->post->title]` — a
     deliberately **frozen literal snapshot** of the title taken at publication (its own D-4 argues at
     length for a snapshot over a live join). `$this->post->title` stops existing, so the snapshot must
@@ -1085,8 +1085,8 @@ meta title/description)"*, but story 0061 ships **no** meta columns — only `sl
 
 Derived from this debate; **none are in scope for 0078.**
 
-1. **Amend [0063](0063-blog-posts-list-editor-ui.md), [0064](0064-scheduled-post-auto-publish-backend.md)
-   and [0065](0065-blog-post-published-notification-backend.md)** per **R-1**. 0063 needs one coherent
+1. **Amend [0063](done/0063-blog-posts-list-editor-ui.md), [0064](done/0064-scheduled-post-auto-publish-backend.md)
+   and [0065](done/0065-blog-post-published-notification-backend.md)** per **R-1**. 0063 needs one coherent
    amendment covering all three Epic 5 taxonomy/content retrofits at once, not three separate ones. The
    coordinator's, not this story's. **Include Q-1's resolution explicitly** (added 2026-08-30, QA review
    finding): 0063's future per-language body-edit path must scope `bodyRules($status)` so it does **not**

@@ -12,5 +12,6 @@ Technical, Pest-specific implementation guidance for this Laravel 13 + Livewire 
 | Write near-identical tests for several inputs (validation rules, boundary values) | [datasets-and-factories.md](datasets-and-factories.md) |
 | Decide whether to fake `Mail`/`Notification`/`Queue`/HTTP, or use the real thing | [mocking-and-fakes.md](mocking-and-fakes.md) |
 | Wonder why my test sees stale data, or whether to use `RefreshDatabase` | [database-strategy.md](database-strategy.md) |
+| Test a scheduled command, its schedule entry, or a write with no authenticated actor | [scheduled-commands.md](scheduled-commands.md) |
 
 For *what* to test rather than *how*, back up to [../qa/risk-based-testing.md](../qa/risk-based-testing.md).

@@ -1,0 +1,228 @@
+{
+  "generated_at": "2026-09-28T00:00:00Z",
+  "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
+  "tasks": [
+    {
+      "id": "0067",
+      "slug": "0067-admin-ui-language-switcher-ui",
+      "title": "Admin UI language switcher — frontend",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Enums/UiLocale.php",
+        "app/Concerns/InteractsWithUiLocale.php",
+        "lang/en/localization.php",
+        "lang/es/localization.php",
+        "app/Livewire/Settings/LanguageSwitcher.php",
+        "resources/views/livewire/settings/language-switcher.blade.php",
+        "app/Livewire/Settings/Language.php",
+        "resources/views/livewire/settings/language.blade.php",
+        "resources/views/components/desktop-user-menu.blade.php",
+        "resources/views/layouts/app/sidebar.blade.php",
+        "routes/settings.php",
+        "resources/views/components/settings/layout.blade.php"
+      ],
+      "conflict_risk_with": [
+        "0069"
+      ]
+    },
+    {
+      "id": "0069",
+      "slug": "0069-store-languages-settings-ui",
+      "title": "Store Languages settings screen — frontend",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/Settings/StoreLanguages.php",
+        "resources/views/livewire/settings/store-languages.blade.php",
+        "routes/settings.php",
+        "lang/en/store-languages.php",
+        "lang/es/store-languages.php"
+      ],
+      "conflict_risk_with": [
+        "0067"
+      ]
+    },
+    {
+      "id": "0071",
+      "slug": "0071-product-categories-language-tabs-ui",
+      "title": "Product Categories taxonomy screen — language tabs (frontend)",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "resources/views/components/language-tab-strip.blade.php",
+        "app/Livewire/ProductCategories/Index.php",
+        "resources/views/livewire/product-categories.blade.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0072",
+      "slug": "0072-translatable-content-retrofit-blog-categories-backend",
+      "title": "Translatable content retrofit — Blog Categories backend",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/migrations/*_create_blog_category_translations_table.php",
+        "database/migrations/*_drop_name_from_blog_categories_table.php",
+        "app/Models/BlogCategory.php",
+        "app/Concerns/BlogCategoryValidationRules.php",
+        "app/Actions/Blog/CreateBlogCategory.php",
+        "app/Actions/Blog/RenameBlogCategory.php"
+      ],
+      "conflict_risk_with": [
+        "0074",
+        "0076",
+        "0078"
+      ]
+    },
+    {
+      "id": "0073",
+      "slug": "0073-blog-categories-language-tabs-ui",
+      "title": "Blog Categories screen — language tabs",
+      "depends_on": [
+        "0071",
+        "0072"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/BlogCategories/Index.php",
+        "resources/views/livewire/blog-categories.blade.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0074",
+      "slug": "0074-translatable-content-retrofit-blog-tags-backend",
+      "title": "Translatable content retrofit — Blog Tags backend",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/migrations/*_create_blog_tag_translations_table.php",
+        "database/migrations/*_drop_name_from_blog_tags_table.php",
+        "app/Models/BlogTag.php",
+        "app/Concerns/BlogTagValidationRules.php",
+        "app/Actions/Blog/CreateBlogTag.php",
+        "app/Actions/Blog/RenameBlogTag.php",
+        "app/Actions/Blog/FindOrCreateBlogTag.php"
+      ],
+      "conflict_risk_with": [
+        "0072",
+        "0076",
+        "0078"
+      ]
+    },
+    {
+      "id": "0075",
+      "slug": "0075-blog-tags-language-tabs-ui",
+      "title": "Blog Tags screen — language tabs",
+      "depends_on": [
+        "0071",
+        "0074"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/BlogTags/Index.php",
+        "resources/views/livewire/blog-tags.blade.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0076",
+      "slug": "0076-translatable-content-retrofit-products-backend",
+      "title": "Translatable content retrofit — Products backend",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/migrations/*_create_product_translations_table.php",
+        "database/migrations/*_drop_name_from_products_table.php",
+        "app/Models/Product.php",
+        "app/Concerns/ProductValidationRules.php",
+        "app/Actions/Products/CreateProduct.php",
+        "app/Actions/Products/UpdateProduct.php"
+      ],
+      "conflict_risk_with": [
+        "0072",
+        "0074",
+        "0078"
+      ]
+    },
+    {
+      "id": "0077",
+      "slug": "0077-product-editor-language-tabs-ui",
+      "title": "Product editor — language tabs (UI)",
+      "depends_on": [
+        "0076"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/Products/Editor.php",
+        "resources/views/livewire/products/editor.blade.php"
+      ],
+      "conflict_risk_with": [
+        "0079"
+      ]
+    },
+    {
+      "id": "0078",
+      "slug": "0078-translatable-content-retrofit-blog-posts-backend",
+      "title": "Translatable content retrofit — Blog Posts backend",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/migrations/*_create_blog_post_translations_table.php",
+        "database/migrations/*_drop_title_body_slug_from_blog_posts_table.php",
+        "app/Models/BlogPost.php",
+        "app/Concerns/BlogPostValidationRules.php",
+        "app/Actions/Blog/CreateBlogPost.php",
+        "app/Actions/Blog/UpdateBlogPost.php"
+      ],
+      "conflict_risk_with": [
+        "0072",
+        "0074",
+        "0076"
+      ]
+    },
+    {
+      "id": "0079",
+      "slug": "0079-blog-post-editor-language-tabs-ui",
+      "title": "Blog post editor — language tabs (frontend)",
+      "depends_on": [
+        "0071",
+        "0078"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/BlogPosts/Editor.php",
+        "resources/views/livewire/blog-posts/editor.blade.php",
+        "lang/en/blog.php",
+        "lang/es/blog.php"
+      ],
+      "conflict_risk_with": [
+        "0077"
+      ]
+    }
+  ]
+}

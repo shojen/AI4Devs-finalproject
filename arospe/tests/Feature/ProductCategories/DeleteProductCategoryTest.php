@@ -4,6 +4,8 @@ use App\Actions\ProductCategories\CreateProductCategory;
 use App\Actions\ProductCategories\DeleteProductCategory;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\ProductCategoryTranslation;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -53,6 +55,10 @@ beforeEach(function () {
     // app(CreateProductCategory::class)(...), which now self-authorizes as well.
     $this->actor->givePermissionTo(['products.delete', 'products.create']);
     $this->actingAs($this->actor);
+
+    // Story 0070: CreateProductCategory now writes the default-language translation, so every
+    // fixture category set up below needs a default store language to write into.
+    StoreLanguage::factory()->default()->create();
 });
 
 // =====================================================================
@@ -79,8 +85,8 @@ test('the freed name can immediately be reused by a new category', function () {
 
     $recreated = app(CreateProductCategory::class)('Footwear');
 
-    expect($recreated->fresh()->name)->toBe('Footwear')
-        ->and(ProductCategory::where('name', 'Footwear')->count())->toBe(1);
+    expect($recreated->fresh()->translated('name'))->toBe('Footwear')
+        ->and(ProductCategoryTranslation::where('name', 'Footwear')->count())->toBe(1);
 });
 
 // Resolving an unknown category id (the shape a future route/Livewire caller would use before

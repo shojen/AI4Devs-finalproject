@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\ProductCategory;
+use App\Models\ProductCategoryTranslation;
+use App\Models\StoreLanguage;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -29,21 +31,30 @@ test('two product categories created in immediate succession sort lexicographica
         ->and(strcmp((string) $first->id, (string) $second->id))->toBeLessThan(0);
 });
 
-test('creating and re-fetching a category persists the name and populates both timestamps', function () {
-    $category = ProductCategory::create(['name' => 'Footwear']);
+// Story 0070 (D-1, D-4): `product_categories` no longer carries a `name` column -- a category's
+// name lives in App\Models\ProductCategoryTranslation, one row per store language, read through
+// App\Concerns\HasTranslations::translated('name').
+test('creating a category and its default-language translation persists the name and populates both timestamps', function () {
+    $language = StoreLanguage::factory()->default()->create();
+    $category = ProductCategory::create();
+
+    ProductCategoryTranslation::factory()->forLanguage($language)->create([
+        'product_category_id' => $category->id,
+        'name' => 'Footwear',
+    ]);
 
     $fresh = $category->fresh();
 
-    expect($fresh->name)->toBe('Footwear')
+    expect($fresh->translated('name'))->toBe('Footwear')
         ->and($fresh->created_at)->not->toBeNull()
         ->and($fresh->updated_at)->not->toBeNull();
 });
 
-// Guards against a future column being added to #[Fillable] by reflex -- `name` is this model's
-// only fillable attribute, per the story's "Files to create/modify" spec
-// (#[Fillable(['name'])]).
-test('name is the only mass-assignable attribute', function () {
-    expect((new ProductCategory)->getFillable())->toBe(['name']);
+// Guards against a future column being added to #[Fillable] by reflex -- the parent row now has
+// no mass-assignable column at all (story 0070, D-4): every write goes through
+// App\Actions\Translations\SetTranslation's explicit key list onto the translation row instead.
+test('no attribute is mass-assignable', function () {
+    expect((new ProductCategory)->getFillable())->toBe([]);
 });
 
 // D-3 regression guard: adding SoftDeletes later would silently change what Rule::unique() and
@@ -55,4 +66,19 @@ test('name is the only mass-assignable attribute', function () {
 test('the model does not use SoftDeletes', function () {
     expect(class_uses_recursive(ProductCategory::class))
         ->not->toHaveKey(SoftDeletes::class);
+});
+
+// Phase 5 review round 1, finding 3(c): ProductCategoryFactory::writeDefaultTranslation()
+// reuses an already-existing default store language rather than provisioning a fresh one every
+// time (its own docblock's promise) -- untested outside BackfillProductCategoryTranslationsTest's
+// unrelated "no store language exists" branch. Two factory-created categories against an EMPTY
+// store_languages table must provision exactly one default language, not two competing
+// `is_default = true` rows racing each other.
+test('two categories created via the factory in succession against an empty store_languages table share a single default language', function () {
+    expect(StoreLanguage::query()->count())->toBe(0);
+
+    ProductCategory::factory()->create();
+    ProductCategory::factory()->create();
+
+    expect(StoreLanguage::where('is_default', true)->count())->toBe(1);
 });

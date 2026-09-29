@@ -1,5 +1,8 @@
 <?php
 
+use App\Actions\Blog\FindOrCreateBlogTag;
+use App\Actions\Blog\SyncBlogPostTags;
+use App\Actions\Shipping\ResolveApplicableShippingRate;
 use Spatie\Permission\Models\Role;
 
 // Story 0008 (re-audit F1): App\Models\Role is the only role model class application code may
@@ -79,6 +82,19 @@ arch('App\Livewire\ProductCategories does not reference any blog taxonomy namesp
     ->expect('App\Livewire\ProductCategories')
     ->not->toUse('App\Models\Blog');
 
+// Story 0060 (OQ-5): App\Livewire\BlogTags\* must remain structurally independent from the product
+// taxonomy -- the mirror of the fences above, pointed the other way. Blog tags are a standalone
+// taxonomy (0059) and this screen must never borrow the product categories model or actions,
+// whose delete semantics are the exact opposite (0060 D-2). One `expect()` per namespace, never
+// `expect([...])`, which evaluates disjunctively (docs/errors-log.md's vacuous-arch()-rule entry).
+arch('App\Livewire\BlogTags does not reference the product category model')
+    ->expect('App\Livewire\BlogTags')
+    ->not->toUse('App\Models\ProductCategory');
+
+arch('App\Livewire\BlogTags does not reference the product category actions')
+    ->expect('App\Livewire\BlogTags')
+    ->not->toUse('App\Actions\ProductCategories');
+
 // Story 0027 (Tests to perform, "tests/Unit/ArchitectureTest.php -- Modify -- extend the existing
 // scope fence to cover App\Livewire\Products\*, matching 0025 D-9"): App\Livewire\Products\* must
 // remain structurally independent from any future blog taxonomy, matching App\Models\ProductCategory's,
@@ -113,3 +129,62 @@ arch('App\Livewire\Products does not reference any blog taxonomy namespace')
 arch('App\Models\ProductVariant does not reference any blog taxonomy namespace')
     ->expect('App\Models\ProductVariant')
     ->not->toUse('App\Models\Blog');
+
+// Story 0037 (D-9): App\Livewire\Shipping\Index must never reference the rate-precedence
+// resolver -- 0036 built it for PRD Epic 3's checkout consumption, and nothing on this admin
+// screen quotes a rate for a destination. Normally this project rejects "assert the absence of a
+// thing nobody proposed" tests (0034 D-1 rejects exactly that shape for its own screen); this one
+// is the narrow, named exception, because ResolveApplicableShippingRate is a real,
+// directly-importable class in the same namespace as every action this screen DOES call, and
+// 0036's own D-13 invites "a future admin screen [to] surface coverage gaps from the same shape"
+// -- a concrete, named temptation this line fences off.
+arch('App\Livewire\Shipping\Index does not use the rate-precedence resolver')
+    ->expect('App\Livewire\Shipping\Index')
+    ->not->toUse(ResolveApplicableShippingRate::class);
+
+// Story 0058 (D-11, OQ-2): the blog category taxonomy must stay structurally independent from the
+// product category taxonomy -- own table, own model, own action namespace, own policy, no shared
+// storage or identity, no polymorphic taxonomy. App\Models\ProductCategory exists in this tree, so
+// the literal rule resolves and can genuinely go red (verified by temporarily importing it).
+//
+// A single-namespace `expect()` target, per this file's one-rule-per-namespace convention: Pest's
+// expect(array $targets) evaluates DISJUNCTIVELY, so a combined array would pass as soon as one
+// target satisfied it.
+arch('App\Models\BlogCategory does not reference the product category taxonomy')
+    ->expect('App\Models\BlogCategory')
+    ->not->toUse('App\Models\ProductCategory');
+
+// The other direction of the same fence. The product-taxonomy rules above name the namespace
+// `App\Models\Blog`, but Pest matches a string target exactly, not by prefix, and the blog taxonomy
+// lives in the flat class App\Models\BlogCategory -- so those rules cannot see it (verified by
+// temporarily importing BlogCategory into ProductCategory: they stayed green). This one names the
+// real class.
+arch('App\Models\ProductCategory does not reference the blog category taxonomy')
+    ->expect('App\Models\ProductCategory')
+    ->not->toUse('App\Models\BlogCategory');
+
+// Story 0062 (OQ-3): App\Livewire\BlogCategories\* must remain structurally independent from the
+// product taxonomy. Unlike the fences above, this one asserts an absence that CAN be violated:
+// `ProductCategory` and `BlogCategory` are four characters apart and both exist, so an IDE
+// autocomplete accident is a real mechanism. One `expect()` per namespace, never `expect([...])`,
+// which evaluates disjunctively (docs/errors-log.md's vacuous-arch()-rule entry).
+arch('App\Livewire\BlogCategories does not reference the product category model')
+    ->expect('App\Livewire\BlogCategories')
+    ->not->toUse('App\Models\ProductCategory');
+
+// Story 0063 (OQ-7): App\Livewire\BlogPosts\* reaches tags ONLY through the post actions.
+// SyncBlogPostTags is a FULL-REPLACE sync() (0061 D-17) and FindOrCreateBlogTag asks a different
+// ability per branch (0059 D-11); 0061's hand-off forbids any caller other than CreateBlogPost /
+// UpdateBlogPost, because a component that called either directly would bypass the transaction
+// that makes a refused new-tag name roll the whole save back. Unlike a scope fence, this asserts an
+// absence that CAN be violated: both classes are one import away from the editor, and a "helpful"
+// direct call is the exact temptation this line fences off. One `expect()` per rule and per
+// namespace, never `expect([...])`, which evaluates disjunctively (docs/errors-log.md's
+// vacuous-arch()-rule entry).
+arch('App\Livewire\BlogPosts does not sync post tags directly')
+    ->expect('App\Livewire\BlogPosts')
+    ->not->toUse(SyncBlogPostTags::class);
+
+arch('App\Livewire\BlogPosts does not resolve or mint tags directly')
+    ->expect('App\Livewire\BlogPosts')
+    ->not->toUse(FindOrCreateBlogTag::class);

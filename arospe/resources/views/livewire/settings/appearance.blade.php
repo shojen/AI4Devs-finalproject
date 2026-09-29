@@ -1,9 +1,7 @@
 <section class="w-full">
-    @include('partials.settings-heading')
-
-    <flux:heading class="sr-only">{{ __('Appearance settings') }}</flux:heading>
-
-    <x-settings.layout :heading="__('Appearance')" :subheading=" __('Update the appearance settings for your account')">
+    <x-slot:heading>{{ __('topbar.settings.appearance') }}</x-slot:heading>
+    <x-slot:subheading>{{ __('topbar.settings.appearance_subtitle') }}</x-slot:subheading>
+    <x-settings.layout>
         <flux:radio.group x-data variant="segmented" x-model="$flux.appearance">
             <flux:radio value="light" icon="sun">{{ __('Light') }}</flux:radio>
             <flux:radio value="dark" icon="moon">{{ __('Dark') }}</flux:radio>

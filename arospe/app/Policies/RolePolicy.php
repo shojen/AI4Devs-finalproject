@@ -114,7 +114,7 @@ class RolePolicy
      * behaviour is correct, but a story-0011 per-row Gate::allows() UI hint
      * will render enabled for that one actor/target pair -- the same
      * accepted drift shape already documented for the Users screen (see
-     * docs/api/routes.md#usersindex--the-first-permission-gated-route).
+     * docs/api/users-and-roles.md#usersindex--the-first-permission-gated-route).
      */
     public function delete(User $user, Role $role): bool
     {

@@ -2,62 +2,96 @@
 
 Technical documentation for this Laravel 13 + Livewire 4 application, kept in sync with the real code by the [`docs-maintainer`](../.claude/skills/docs-maintainer/SKILL.md) skill. If something here contradicts the code, the code is right — flag it or fix the doc.
 
-## Contracts
+**How to read it (token-efficient).** This index is the entry point: open only the document whose *Read when* matches your task. Long documents are a **hub plus parts** — the hub lists each part with a *Read when* line (or, for `contracts.md`, `workflow.md` and `conventions/base-standards.md`, the binding core of its rules); open the matching part only, at an exact heading when you can. Never open a whole doc "just in case" — see [contracts/token-and-doc-rules.md](contracts/token-and-doc-rules.md#token-efficient-reading-and-dispatch-rule). The long per-entry summaries this index used to carry are kept unchanged in [index-details-and-history.md](index-details-and-history.md).
 
-- [Contracts](contracts.md) — behavioral contracts governing what the AI agent may or may not do, and how it should make decisions, while working in this repository: uncertainty handling, commit approval, **commit granularity** (split commits by layer — code, tests, docs — per this repo's own `git log` convention), destructive database commands, the full-test-suite gate, parallel agent file ownership, **doc growth management** (no accumulating footer changelogs, write for current state, split out a section that's outgrown its file), the **CI / GitHub Actions Review Protocol** (list recent runs for the current branch, view only the failed step's log, reproduce a failure locally with this project's real test/Pint/Larastan commands before touching any code, fix the real cause rather than the test unless the test is wrong, never push or re-trigger a workflow without being asked first), and the **Token-Efficient Reading and Dispatch Rule** (read this index before any full doc, scope reads to the task's actual domain, use a Three Amigos facilitator brief instead of independent re-reads, consult per-epic decision digests, batch heavy dispatches, diagnose a failed dispatch before retrying, and route mechanical work to a lighter model only when it has room for the task).
+## Agent rules
 
-## Workflow
+| Doc | Read when |
+| --- | --- |
+| [Contracts](contracts.md) (hub, 5 parts) | always (binding core is in the hub): uncertainty handling, commit practice, destructive DB commands, full-suite gate, parallel agents, doc growth, CI protocol, commit granularity, PR closure. |
+| [Workflow](workflow.md) (hub, 4 parts) | you carry a task through the Three Amigos → TDD → security → review → docs → closure phases, or move/create a task file. |
+| [Workflow token efficiency](workflow-token-efficiency.md) | you want the measured reasons behind the reading/dispatch rules. |
+| [`three-amigos-debate` skill](../.claude/skills/three-amigos-debate/SKILL.md) | you decompose a PRD epic or debate one story (Phase 1 only). |
 
-- [Workflow](workflow.md) — the required multi-agent orchestration process (Three Amigos + TDD + security audit + code review + continuous docs) the project's Claude Code agents follow to carry a task from definition to closure, phase by phase. Covers the agent roster, the three-stage task-storage convention (`ai-spec/tasks/` → `in-progress/` → `done/`), the mandatory **two-direction** link-integrity check on every stage move (a moved file's own outbound links, and inbound links to it from files that never moved), the **decision digest per epic** (`./ai-spec/tasks/_digests/epic-<n>.md`) a later story checks before opening a prior sibling story in full, and the User Story template used across every phase.
-- [`.claude/skills/three-amigos-debate/SKILL.md`](../.claude/skills/three-amigos-debate/SKILL.md) — the skill that automates [Phase 1](workflow.md#phase-1--three-amigos-debate) of that workflow: `/three-amigos-debate epic <n>` decomposes a [PRD](PRD/PRD.md) epic into candidate stories (pausing for confirmation), `/three-amigos-debate story <description>` debates a single ad-hoc story, and either way it convenes the expert/QA/database agents and writes one User Story file per story to `./ai-spec/tasks/`. It stops at Phase 1 — no code, no INVEST check, no TDD. Its facilitator (`product-owner`) builds one shared brief per story instead of letting each participant independently re-read the same docs, and dispatches participants in twos-or-threes.
-- [Token-efficiency in the multi-agent workflow](workflow-token-efficiency.md) — the measured root causes of this workflow's token cost (verbose reference docs, every specialist independently re-reading the same large files, resumed agents carrying full history forward, maximal parallel dispatch multiplying the rate hit) and the recommended fixes; records which are now binding rules ([contracts.md](contracts.md#token-efficient-reading-and-dispatch-rule), [workflow.md](workflow.md#decision-digest-per-epic)) versus which stay a judgment call, and why.
+## Product
 
-## Product Requirements
-
-- [PRD](PRD/PRD.md) — product-level requirements for the Arospe backoffice (Users/Roles, Products/Taxes/Shipping, Blog, Internationalization): per-epic Gherkin scenarios, acceptance criteria, roadmap, and scope boundaries; feeds the Three Amigos process for individual tasks.
+| Doc | Read when |
+| --- | --- |
+| [PRD](PRD/PRD.md) (hub, 7 parts: foundations, Epics 1–5, roadmap) | you need product requirements, Gherkin scenarios or scope for a story — open only its epic's part. |
+| [Design reference](arospe-handoff/README.md) | you implement a screen from the exported HTML prototype (`arospe-handoff/project/`). |
 
 ## Architecture
 
-- [Overview](architecture/overview.md) — what this app is today: the real request lifecycle (routes → Livewire/controllers → Gate & policies → step-up guard → actions → models → DB), runtime dependencies (MySQL, database-backed session/cache/queue), and a "Where things live" layer table naming every app-owned layer, including the declarative UI registry (`config/modules.php`) and the `app/Actions/Auth/**` / `app/Exceptions/**` cross-cutting folders.
-- [Authentication](architecture/authentication.md) — the single source of truth for how auth works: Fortify-based registration, login, password reset, two-factor authentication, and passkeys; the account lifecycle (`users.status` / `App\Enums\UserStatus`, the no-self-activation invariant, the `ActivateVerifiedUser` listener every verification path converges on); the pending-email change mechanism; the **sign-in block** enforcing `users.status` across all three authentication entry points; and **step-up authentication** — the password-confirmation flow the Users screen reuses as a privileged-action guard, including its own rate limiting and session-scoping rules.
-- [Authorization](architecture/authorization.md) — `spatie/laravel-permission` roles & permissions in real use: the two seeded roles (`Super Admin`, `Administrator`), the 42-permission `<module-slug>.<action>` catalog, the `Gate::before` Super Admin bypass and its coverage gap, the Super Admin role's structural invariants, and the Administrator tier's identity and immutability rules. Documents eight policies (`User`, `Role`, `SalesRegion`, `Media`, `ProductCategory`, `Product`, `ProductAttributeType`, `ShippingZone`) and why product variants gate against the parent `Product` instead of a policy of their own. Owns this project's three copyable authorization patterns — the module-gate route pattern, the sidebar-registry pattern, and refusal-logging for the audit trail — plus **step-up authentication** as the third authorization layer (alongside route middleware and policies) and the domain-invariant-vs-authorization-rule distinction. The single source of truth for how authorization works; see the doc itself for the full policy roster, pattern catalog, and per-module history.
+| Doc | Read when |
+| --- | --- |
+| [Overview](architecture/overview.md) | you need the request lifecycle, runtime dependencies or a "where things live" map. |
+| [Authentication](architecture/authentication.md) (hub, 3 parts) | you touch Fortify features, registration, account status, sign-in block, pending email change, 2FA or passkeys. |
+| [Authorization](architecture/authorization.md) (hub, 14 parts) | you touch roles, permissions, policies, the Super Admin bypass, step-up, refusal logging, or add a gated module. |
+| [Shipping](architecture/shipping.md) | you touch shipping-rate resolution (ancestry-walk precedence, no-fallback rule). |
 
 ## Database
 
-- [Schema](database/schema.md) — ER diagram and column-level description of every table: `users` (including `status`, `pending_email`, `deleted_at`), `passkeys`, `sessions`, the permission tables, `sales_regions`, `media`, `product_categories`, `products`, `product_media`, `product_sales_region`, `product_attribute_types`/`product_attribute_values`, `product_variants`/`product_variant_values`, `geography_entries` — the shipping geography catalog, physically independent of `sales_regions` — and `shipping_zones`/`shipping_zone_geography_entry` — the admin-editable shipping zone catalog and its zone↔geography membership pivot, this schema's first pivot crossing a UUID-keyed and a `bigint`-keyed parent. Covers soft-delete behavior (what a user delete rewrites vs. what survives it), UUIDv7 primary keys across the domain tables (and the one deliberate `bigint` exception, `geography_entries`), seeder-owned vs. administrator-configurable column splits, and the derived, write-once `product_variants` columns (`combination_hash`, `sku`) with their exact re-derivation triggers.
-- [Migrations](database/migrations.md) — this repo's real migration conventions (naming, `down()` symmetry, adding columns, backfilling when a new column's default is wrong for existing rows, dropping a unique index before its column) with examples pulled from `database/migrations/`. Its **UUID primary keys** section documents the greenfield `create_*` pattern established with `sales_regions` and confirmed across every later domain table: `foreignUuid` over `foreignId`, explicit table names on ambiguous `constrained()` calls, `restrictOnDelete()` where a cascade would destroy administrator-configured data, length-capped strings, and the rule that an FK column does not also get an explicit `index()`.
+| Doc | Read when |
+| --- | --- |
+| [Schema index](database/schema.md) | you need the full ER diagram or to find which schema file owns a table. |
+| [Users & Auth](database/schema-users-auth.md) | `users`, `passkeys`, permission tables, infrastructure tables. |
+| [Products & Taxes](database/schema-products.md) (hub, 5 parts) | `sales_regions`, `media`, categories, `products`, gallery/region pivots, attributes, variants. |
+| [Shipping](database/schema-shipping.md) (hub, 3 parts) | `geography_entries`, zones, carriers, rates. |
+| [Payment Methods, Customers & Notifications](database/schema-other.md) (hub, 3 parts) | `payment_methods`, `customers`, `notifications`. |
+| [Orders](database/schema-orders.md) (hub, 3 parts) | `orders`, `order_items`, `refunds`, snapshots and derived totals. |
+| [Blog](database/schema-blog.md) | `blog_categories`, `blog_tags` (stored `normalized_name` uniqueness, folded-length bound), `blog_posts` (soft delete, derived slug, status-governed `published_at`) and the `blog_post_tag` pivot (cascade contract). |
+| [Internationalization](database/schema-localization.md) | `store_languages` (content-authoring language catalog, find-or-create reactivation) and `locale_settings` (this repo's first singleton table: fixed-literal PK, atomic upsert, no enum cast). |
+| [Migrations](database/migrations.md) (hub, 3 parts) | you write a migration (naming, UUID keys, FK indexes, delete behaviour). |
 
-## API
+## API / routes
 
-- [Routes](api/routes.md) — the real contract surface today: app-owned web/Livewire routes across `web.php` and its per-area files, covering `users.index`, `roles.index`, `sales-regions.index`, `product-categories.index`, the `products.index`/`.create`/`.edit` family, `product-attribute-types.index`, and `shipping.zones.index` — each documented with its authorization layers, rendered screen, and `data-test` hooks. Also covers the app's gated **routeless** Livewire components (`App\Livewire\Media\Gallery` and `App\Livewire\Components\WysiwygEditor`) and how a consumer embeds them, the `email-change.confirm` controller route (deliberately outside the `auth` group), and the Fortify- and Passkeys-vendored auth routes. There is no REST API yet; this file explains what replaces it once one exists.
+| Doc | Read when |
+| --- | --- |
+| [Routes index](api/routes.md) | you need the full route table, Fortify/passkey routes, or the layout-mounted components. |
+| [Users & Roles](api/users-and-roles.md) | `users.index`, `roles.index`. |
+| [Sales Regions](api/sales-regions.md) | `sales-regions.index`. |
+| [Products & Media](api/products.md) (hub, 4 parts) | product categories, products list/editor, attribute types, the routeless Media Gallery and WYSIWYG editor. |
+| [Shipping](api/shipping.md) | `shipping.zones.index`, `shipping.index`. |
+| [Payment Methods](api/payment-methods.md) | `payment-methods.index`. |
+| [Customers](api/customers.md) | `customers.index`, `customers.show`. |
+| [Orders](api/orders.md) | `orders.index`, `orders.show`, `<x-money>`, `<x-confirm-dialog>`. |
+| [Blog](api/blog.md) | `blog-tags.index`, `blog-categories.index`, `blog-posts.index` / `.create` / `.edit`. |
+| [Store Languages](api/store-languages.md) | `store-languages.index` (backend-only, placeholder view; real screen is story 0069's). |
 
 ## Conventions
 
-- [Base standards](conventions/base-standards.md) — stack versions, directory layout (`app/Actions/<Area>/`, `app/Enums/`, `app/Listeners/`, `app/Notifications/`, `app/Policies/`, `lang/`, and the cross-cutting `app/Actions/Auth/`), model conventions (attribute-based `#[Fillable]`/`#[Hidden]`, `casts()`, mass-assignment via `#[Fillable]` omission, deleting through the model instance), the class-based Livewire component convention, when a controller belongs in front of an action, **why an authorization rule belongs to the action rather than to one of its callers**, **when an app-owned config file is a registry** (`config/modules.php`, `config/html-sanitizer.php`, and what each must never contain), and the artisan-first/test-first quality gates — including why the iteration-form gates must each be re-run **unscoped** before work is declared done.
-- [Code style](conventions/code-style.md) — line-level conventions with real ✅/❌ pairs: explicit types, braces, shared validation traits, PHPDoc array shapes, per-method action injection, and the constructor-injection exception for an action whose `__invoke()` signature is a public contract — including the rule that an action is always resolved from the container, never `new`-ed, even in tests.
-- [Naming](conventions/naming.md) — class/file naming (including `<Model>Policy` ability methods and a model's shared identity predicates), Livewire component ↔ view naming and the `Index`-in-a-subfolder exception, validation-trait naming (including entity-prefixed traits where a plain field name would collide across composed traits), route naming, permission naming, translation keys (including the registry-mirroring rule for `config/modules.php`), boolean property naming, and the `trans_choice()` plural convention.
+| Doc | Read when |
+| --- | --- |
+| [Base standards](conventions/base-standards.md) (hub, 3 parts) | always (binding core is in the hub): stack, models, UUID keys, Livewire/Flux conventions, quality gates. |
+| [Directory structure](conventions/directory-structure.md) (hub, 7 parts) | you place a new class, action, config file, route file, view or test. |
+| [Code style](conventions/code-style.md) | you need types/braces/PHPDoc rules or the constructor-vs-method injection exception. |
+| [Naming](conventions/naming.md) (hub, 4 parts) | you name a class, Livewire view, route, permission, lang key or boolean. |
+| [Validation trait naming](conventions/naming-validation-traits.md) | you add or extend a `<Noun>ValidationRules` trait. |
+| [Localization](conventions/localization.md) | you touch a notification's recipient, add a new admin-dashboard string, or start any storefront/public-facing translation work — the Layer 1 (admin UI language) vs. Layer 2 (Store Languages) boundary. |
 
 ## Testing
 
-- [Testing index](testing/README.md) — how to write, review, and run tests in this repo: testing philosophy and anti-patterns, a QA risk-based thinking guide, Pest 4 backend conventions (including how to test all four real authorization layers — route middleware, permissions, policies, and step-up authentication), and CI commands/coverage. Start there; it links out to `.claude/skills/pest-testing/SKILL.md` for basic Pest syntax rather than duplicating it.
-- [Frontend / browser testing guide](testing/frontend/README.md) — QA-oriented guide for browser-level tests: the tooling decision (Pest 4 browser testing, not a separate Playwright/BDD runner), the user-story → Gherkin → Pest workflow, the `tests/Browser/` suite wired up and running in CI on Chromium, Gherkin guidelines and domain glossary, a browser-specific quality checklist, and worked scenario/test examples. [playwright-setup.md](testing/frontend/playwright-setup.md) owns this repo's hard-won browser-testing mechanics — banned/accepted waiting patterns, selector traps on icon-only controls, file-upload limitations, DOM-occlusion diagnostics, and process-cleanup requirements for the local Playwright driver.
-- [Worktree databases](testing/worktree-databases.md) — why `.env.testing` is required per checkout (a missing one lets `--env=testing` silently fall back to the real `.env` and hit the dev database) and why each `git worktree` needs its own testing database name (`testing1`, `testing2`, …) rather than sharing one, plus setup/cleanup steps.
+| Doc | Read when |
+| --- | --- |
+| [Testing index](testing/README.md) | you write, review or run tests — start here; it links the QA, backend, frontend and CI pages. |
+| [Backend](testing/backend/README.md), [philosophy](testing/philosophy.md), [QA guides](testing/qa/risk-based-testing.md) | you design or review Pest 4 backend tests. |
+| [Frontend / browser](testing/frontend/README.md) | you write browser tests; [Browser test setup](testing/frontend/playwright-setup.md) (hub, 3 parts) is the tooling/waiting-rules reference. |
+| [CI commands](testing/ci/commands.md), [pipeline](testing/ci/pipeline-integration.md) | you run the suite (parallel, coverage) or edit CI. |
+| [Worktree databases](testing/worktree-databases.md) | you open a `git worktree` (own `.env.testing` and testing DB). |
 
 ## Security
 
-- [Security knowledge base](security/README.md) — durable security rules established by `appsec-auditor` during Phase 4 audits, each with a real code example from this repo. Fourteen pages, indexed inside the file itself: [authorization patterns](security/authorization-patterns.md), [seeder safety](security/seeder-safety.md), [signed-link verification](security/signed-link-verification.md), [Livewire component authorization](security/livewire-authorization.md), [soft-delete patterns](security/soft-delete-patterns.md), [CI workflow hardening](security/ci-workflow-hardening.md), [Blade/Livewire output encoding](security/blade-livewire-output-encoding.md), [login-time account-status enforcement](security/login-status-enforcement.md), [step-up authentication](security/step-up-authentication.md), [model-instance trust](security/model-instance-trust.md), [image upload & processing](security/image-upload-processing.md), [HTML sanitization](security/html-sanitization.md), [array-validation bounds](security/array-validation-bounds.md), and [derived-column invariants](security/derived-column-invariants.md). Only durable, project-wide rules or patterns live here — per-review finding lists live in the audit response, not this file.
+| Doc | Read when |
+| --- | --- |
+| [Security knowledge base](security/README.md) | you gate access, touch auth, roles, seeders, secrets, uploads or sanitization — the index lists 16 pages, one row each with a *Read when*. |
 
-## Decisions
+## Decisions and errors
 
-- [Decision records](decisions/README.md) — ADR format and folder purpose. One ADR recorded so far: [0001 — UUID primary keys](decisions/0001-uuid-primary-keys.md) (UUIDv7 via `HasUuids` for `users` and PRD Epic 2/4 domain entities), amended five times as the ADR's originally-scoped entities shipped or new exceptions surfaced (`media` and non-surrogate pivot tables falling outside the entity count, `product_categories`/`products`/`product_variants` landing as already-scoped rather than novel, and `geography_entries` filling in the one named `bigint` exception the policy always carried). See the ADR itself for the current policy and live-example count.
+| Doc | Read when |
+| --- | --- |
+| [Decision records](decisions/README.md), [ADR 0001 — UUID keys](decisions/0001-uuid-primary-keys.md) | you need past architectural context or add an ADR. |
+| [Errors log](errors-log.md) (hub + entries by date) | before repeating a past mistake: the hub's topic index points at the exact entry file. |
+| [Errors log archive](errors-log-archive.md) | the topic index points at an entry dated before 2026-08-27. |
+| [Revision history](history/) | you need the old `_Previously:` revision notes of a doc (moved out of the doc itself; one file per doc, named after its path). |
 
-## Errors log
-
-- [Errors log](errors-log.md) — structured record of real mistakes and the rule adopted to avoid repeating each one, newest first. Entries span transaction/retry pitfalls (mutating a model outside a retried closure), Blade/Flux compile traps (conditional attributes, dynamic component-tag attribute names, a wrapping `flux:fieldset` silently swallowing a field's auto-rendered validation error), factory/fixture pitfalls (overriding a faked field without recomputing the derived column a factory state computed from the original value), browser-test methodology (a Playwright helper that fires the very DOM event whose absence is the bug it's meant to detect), docs-sync failure modes (an audit-authored page left unsynced after its own fix landed, a reported-and-fixed gap that shipped anyway), quality-gate scoping (`pint --dirty` and `test --filter` both silently under-covering a change), environment-setup gotchas (an incomplete `.env.testing` producing a wide spray of unrelated-looking test failures), and recurring authorization/validation hazards. Covers entries dated 2026-08-20 onward; opens with a "Browse by topic" index spanning all 41 entries across both this file and the archive. See the file for the full log and its fixed entry format.
-- [Errors log archive](errors-log-archive.md) — the oldest entries (2026-07-21 through 2026-08-19), moved out byte-for-byte once `errors-log.md` grew past its size budget. Same entry format, conventions, and topic index as the main log; no content was rewritten or summarized in the move.
-
-_Last updated: 2026-09-08 — Story 0080 (sidebar navigation grouping and nesting), Phase 6 docs sync. Corrected stale `groups.platform`/`groups.taxes` registry-shape references left over from this story's Phase 5 review in [architecture/authorization.md](architecture/authorization.md#the-second-half-of-a-module-gate-the-sidebar-registry), [api/routes.md](api/routes.md#why-this-file-exists) and [conventions/naming.md](conventions/naming.md#translation-keys) — both flat groups are retired, and the sidebar registry now nests `sales_regions`/`product_categories`/`products`/`product_attribute_types` inside a new `store` group's two clusters (`products`, `store_settings`). None of this index's own summary lines needed changing (the Authorization/Routes/Naming entries above already describe the sidebar-registry pattern and the `Index`-in-a-subfolder/translation-key conventions at a level general enough to stay accurate through the restructuring). Story 0080 has since closed (Phase 7) and moved to `ai-spec/tasks/done/`. Merging in story 0034 (Shipping zones — UI) re-targeted its own `shipping_zones` sidebar entry into this same new `store_settings` cluster, since 0034's branch predates 0080's restructuring.
-
-_Previously: 2026-09-07 — Story 0034 (Shipping zones — UI). Updated the Routes entry to name `shipping.zones.index`, now that the UI story 0033's Definition-of-Done hand-off named has shipped — closing the "no Routes entry yet" gap the previous pass recorded for this same module. Updated the Errors log entry to name the new factory/fixture-pitfalls topic and the count (40 → 41). No change to the Authorization entry's policy count (still eight — this story adds no new policy) or the Schema entry (this story adds no migration)._
-
-_Previously: 2026-09-07 — Added the CI / GitHub Actions Review Protocol to [contracts.md](contracts.md#ci--github-actions-review-protocol) (a new agent-behavior contract for CI triage — no application or schema change) and widened this file's own Contracts entry to name it. No other index entry changed this pass. Earlier the same day, story 0033 (Shipping zones — backend) updated the Authorization entry's policy count (seven → eight, `ShippingZonePolicy` added) and the Schema entry to name the two new tables (`shipping_zones`, `shipping_zone_geography_entry`); no Errors log entry that pass (the passkeys duplicate-FK-index suspicion investigated was disproven, so the count stayed 40) and no Routes entry (this story ships no route or Livewire component, matching this index's established pattern of not listing a backend-only story until its UI lands)._
+_Last updated: 2026-09-28 — Story 0066 docs follow-up. Added the [Localization](conventions/localization.md) row (forward-looking notification/admin-dashboard/storefront locale-awareness conventions)._

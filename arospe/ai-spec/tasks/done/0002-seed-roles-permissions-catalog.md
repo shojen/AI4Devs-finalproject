@@ -55,7 +55,7 @@ permission gate in Epics 2–5 — build on.
 
 - **Permission naming**: `<module-slug>.<action>` dot notation, matching this repo's documented
   `<resource>.<action>` route-naming convention in
-  [`docs/conventions/naming.md`](../../../docs/conventions/naming.md#route-names).
+  [`docs/conventions/naming.md`](../../../docs/conventions/naming/routes-and-permissions.md#route-names).
 - **`users.*` and `roles.*` are separate namespaces**, because the PRD gates them separately with
   different default holders.
 - **Coarse per-module granularity**: `products.*` covers categories & variants, `blog.*` covers
@@ -694,7 +694,7 @@ Points that are load-bearing, not stylistic:
   credential into shell history and CI logs, which is the whole class of problem F1 also addresses.
 - **The reset link uses the app's already-implemented Fortify flow** — `Password::broker()
   ->sendResetLink(...)`, the same broker behind the `password.request` route documented in
-  [`docs/architecture/authentication.md`](../../../docs/architecture/authentication.md#registration--password-reset).
+  [`docs/architecture/authentication.md`](../../../docs/architecture/authentication/features-registration-and-status.md#registration--password-reset).
   No bespoke invite token, no new route, no new notification class.
 - **The send happens after `COMMIT`, never inside the transaction.** Mail dispatched inside a
   transaction that later rolls back produces a live reset email whose token no longer exists.

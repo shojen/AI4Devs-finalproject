@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserStatus;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -38,6 +39,16 @@ class RolePermissionSeeder extends Seeder
      * @var array<int, string>
      */
     public const ROLE_PERMISSIONS = ['roles.manage', 'roles.manage-administrators'];
+
+    /**
+     * Non-CRUD permissions on the orders module that sit outside the
+     * module x action grid (story 0051, D-3). `orders.refund` gates
+     * App\Actions\Orders\RecordRefund via a bare Gate::authorize() call --
+     * DR-2 -- rather than an OrderPolicy ability.
+     *
+     * @var array<int, string>
+     */
+    public const ORDER_PERMISSIONS = ['orders.refund'];
 
     /**
      * Run the database seeds.
@@ -121,7 +132,7 @@ class RolePermissionSeeder extends Seeder
             }
         }
 
-        return [...$modulePermissions, ...self::ROLE_PERMISSIONS];
+        return [...$modulePermissions, ...self::ROLE_PERMISSIONS, ...self::ORDER_PERMISSIONS];
     }
 
     /**
@@ -208,9 +219,15 @@ class RolePermissionSeeder extends Seeder
             'password' => Str::password(32),
         ]);
 
-        // email_verified_at is not in User's #[Fillable] attribute, so force it. The address
-        // came from server configuration, not from user input, so it is trusted.
-        $user->forceFill(['email_verified_at' => now()])->save();
+        // email_verified_at and status are not in User's #[Fillable] attribute, so force them.
+        // The address came from server configuration, not from user input, so it is trusted.
+        // status must be Active explicitly: the column defaults to Inactive, and neither the
+        // password reset nor ActivateVerifiedUser can activate an already-verified account,
+        // which would leave the provisioned Super Admin unable to sign in.
+        $user->forceFill([
+            'email_verified_at' => now(),
+            'status' => UserStatus::Active,
+        ])->save();
 
         $user->assignRole($superAdminRole);
 

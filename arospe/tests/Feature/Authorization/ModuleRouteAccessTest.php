@@ -124,7 +124,7 @@ test('the users-screen refusal names no permission, so the permission catalog is
     // calls below vacuously. AuthorizationException -> AccessDeniedHttpException
     // IS an HttpException, so Handler::prepareResponse() always renders the
     // stock errors::403 view and never the debug page regardless of
-    // APP_DEBUG -- see docs/security/authorization-patterns.md#confirmed-safe-a-can-gated-routes-403-names-no-permission--and-app_debug-is-not-what-makes-that-true.
+    // APP_DEBUG -- see docs/security/authorization-patterns/confirmed-safe.md#confirmed-safe-a-can-gated-routes-403-names-no-permission--and-app_debug-is-not-what-makes-that-true.
     $response->assertSee('This action is unauthorized.');
     $response->assertDontSee('users.view', false);
     $response->assertDontSee('users.create', false);
