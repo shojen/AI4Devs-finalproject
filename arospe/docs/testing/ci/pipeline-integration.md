@@ -2,7 +2,7 @@
 
 ## Current state (real, as of this writing)
 
-[`.github/workflows/tests.yml`](../../../.github/workflows/tests.yml) runs on every push/PR to `develop`/`main`/`master`/`workos`/`feature-entrega2-ARP`, pinned to a single PHP version, **`8.5`** (2026-09-06) — matching the version this project actually develops and deploys with. There is deliberately no `strategy.matrix` any more: an earlier `['8.4', '8.5']` two-version matrix was dropped rather than narrowed to one entry, since a matrix with a single leg is pure indirection over a literal value. The relevant steps today:
+[`.github/workflows/tests.yml`](../../../../.github/workflows/tests.yml) runs on every push/PR to `develop`/`main`/`master`/`workos`/`feature-entrega2-ARP`/`finalproject-ARP`, but only when the change touches `arospe/**` or the workflow file itself (a `paths:` filter — a docs-only change outside `arospe/` triggers no run). It is pinned to a single PHP version, **`8.5`** (2026-09-06) — matching the version this project actually develops and deploys with. There is deliberately no `strategy.matrix` any more: an earlier `['8.4', '8.5']` two-version matrix was dropped rather than narrowed to one entry, since a matrix with a single leg is pure indirection over a literal value. The relevant steps today:
 
 ```yaml
 - name: Setup PHP
@@ -37,6 +37,19 @@ A coverage driver (`xdebug`) is already installed by the `setup-php` step, but *
 
 > Note that since task 0006b, that plain `php artisan test` also runs the `Browser` testsuite, which is why the workflow carries an `Install Playwright Browser (Chromium)` step (elided from the excerpt above) between `Install Node Dependencies` and the Composer steps. Coverage gating is unaffected by it either way — see [frontend/playwright-setup.md](../frontend/playwright-setup/selectors-tagging-and-ci.md#ci-integration) for what CI does and does not cover on the browser side, and [security/ci-workflow-hardening.md](../../security/ci-workflow-hardening.md) for that step's supply-chain constraints.
 
+## Other workflows: style check and production deploy
+
+**[`lint.yml`](../../../../.github/workflows/lint.yml)** (workflow name `linter`) shares `tests.yml`'s exact trigger — the same branch list and the same `arospe/**` path filter — and runs `composer lint` (Pint) on PHP `8.4`. Its auto-commit step is commented out, so it only reports; style is fixed locally. It still declares `permissions: contents: write`, which nothing uses any more — a known gap recorded in [security/ci-workflow-hardening.md](../../security/ci-workflow-hardening.md).
+
+**[`prod.yml`](../../../../.github/workflows/prod.yml)** (workflow name `PROD`) is the production deploy, and it consumes the two workflows above as a gate rather than re-running them:
+
+1. It runs only on a manual `workflow_dispatch`, and its first job is guarded by `if: github.ref == 'refs/heads/main'`. GitHub only lists a `workflow_dispatch` workflow once the file exists on the repository's default branch.
+2. **`verificar-ci`** reads every run for the exact commit being deployed (`gh run list --commit "$SHA"`) and fails unless the latest run of each workflow named in `REQUIRED_WORKFLOWS` exists, has `completed`, and concluded `success`.
+3. **`deploy`** writes the SSH key and a pinned `known_hosts` from secrets, then runs `deploy <sha>` on the VPS with that verified SHA — never "the branch tip".
+4. `concurrency: prod-deploy` with `cancel-in-progress: false` serializes deploys without aborting one already in flight; `timeout-minutes: 30` bounds a hung one.
+
+`REQUIRED_WORKFLOWS` is matched **case-sensitively against each workflow's `name:` field**, not its file name — today `"tests,linter"`. It originally read `"Tests,Lint"`, which matched neither workflow, so `verificar-ci` reported "not run" on every commit and no deploy could ever pass the gate. **Renaming either workflow's `name:` silently breaks the deploy gate**; update `REQUIRED_WORKFLOWS` in the same change.
+
 ## Proposed: adding a coverage gate
 
 To make the [`--min=80` floor](commands.md#enforce-a-minimum-coverage-threshold) actually block merges, the `Run Tests` step would change to:
@@ -58,6 +71,6 @@ Nothing else in the workflow needs to change — `coverage: xdebug` is already c
 
 Since this repo's PR contract ([`docs/contracts.md`](../../contracts.md)) calls for asking before taking non-obvious actions rather than assuming: adding `--min=80` to the real workflow is a deliberate decision for whoever owns CI to make (it will start failing PRs the moment coverage is under 80%, which may or may not be true today — nobody has measured it yet with `php artisan test --coverage` locally). Run that locally first to see where this repo actually stands before wiring the gate into `tests.yml`.
 
-_Last updated: 2026-09-06 (second pass, same day) — dropped the `strategy.matrix` (`['8.4', '8.5']`) entirely in favor of a single pinned `php-version: '8.5'`, matching the version this project actually develops with, at the maintainer's explicit request. Rewrote the **Current state** intro and the `extensions: imagick` blockquote's now-stale "3-version matrix"/"every matrix leg" phrasing accordingly — the install cost described there is paid once per run now, not per leg. No other section changed; the coverage-gate proposal is unaffected._
+_Last updated: 2026-09-29 — Added `finalproject-ARP` and the `arospe/**` path filter to the trigger description, fixed the relative link depth to `.github/`, and added **Other workflows** documenting `lint.yml` and the `prod.yml` deploy gate, including the `REQUIRED_WORKFLOWS` fix (`"Tests,Lint"` → `"tests,linter"`)._
 
 _Earlier revision notes: [testing--ci--pipeline-integration.md](../../history/testing--ci--pipeline-integration.md)._
