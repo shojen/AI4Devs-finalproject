@@ -272,38 +272,38 @@ the run cannot fail on a missing relationship. Elsewhere it refuses with a clear
 nothing, unless `--force` is passed.
 
 ## Acceptance criteria
-- [ ] `demo:generate-data` is registered and listed by `php artisan list` with the description above.
-- [ ] In `local`/`testing` it exits `0` and adds exactly 10 each of customers, products, product
+- [x] `demo:generate-data` is registered and listed by `php artisan list` with the description above.
+- [x] In `local`/`testing` it exits `0` and adds exactly 10 each of customers, products, product
       categories, blog posts, blog categories and blog tags, plus at least 10 orders.
-- [ ] No extra product categories, customers, products or blog tags are created as a side effect of
+- [x] No extra product categories, customers, products or blog tags are created as a side effect of
       nested factory defaults.
-- [ ] Every product belongs to a seeded category, every category has exactly one product, every
+- [x] Every product belongs to a seeded category, every category has exactly one product, every
       product is active.
-- [ ] Every one of the 10 seeded customers has between 1 and 3 orders — no customer is left without
+- [x] Every one of the 10 seeded customers has between 1 and 3 orders — no customer is left without
       one.
-- [ ] Every order has 1–4 items that reference seeded products, and has `subtotal`/`total`
+- [x] Every order has 1–4 items that reference seeded products, and has `subtotal`/`total`
       recomputed from its items (non-zero).
-- [ ] Every blog post is published, belongs to a seeded blog category, has a non-empty slug, and is
+- [x] Every blog post is published, belongs to a seeded blog category, has a non-empty slug, and is
       authored by a real, already-existing `User` (reused from the database, or the single
       fallback user created when none existed).
-- [ ] The first seeded blog post is always tagged from the shared pool (deterministic); no post has
+- [x] The first seeded blog post is always tagged from the shared pool (deterministic); no post has
       the same tag twice.
-- [ ] Outside `local`/`testing` without `--force`: non-zero exit, clear refusal message, zero writes.
-- [ ] With `--force` in any environment: runs as in `local`.
-- [ ] A second run adds another batch (additive, per D-2) and every customer old and new still has
+- [x] Outside `local`/`testing` without `--force`: non-zero exit, clear refusal message, zero writes.
+- [x] With `--force` in any environment: runs as in `local`.
+- [x] A second run adds another batch (additive, per D-2) and every customer old and new still has
       at least one order; a Faker-uniqueness collision across separate runs is a known, accepted
       limitation (see Dependencies/risks), not something this story's tests assert against.
-- [ ] `DemoDataSeeder` does not use `WithoutModelEvents`; the command holds the environment guard,
+- [x] `DemoDataSeeder` does not use `WithoutModelEvents`; the command holds the environment guard,
       the seeder holds no guard of its own.
 
 ## Definition of Done
-- [ ] Tests written and green
-- [ ] Code reviewed (code-reviewer)
-- [ ] No security findings (appsec-auditor)
+- [x] Tests written and green
+- [x] Code reviewed (code-reviewer)
+- [x] No security findings (appsec-auditor)
 - [ ] Documentation updated (docs-keeper)
-- [ ] Acceptance criteria met
-- [ ] Pint run unscoped (`vendor/bin/pint --format agent`), Larastan level 7 clean
-- [ ] Full test suite green, unscoped (`php artisan test`)
+- [x] Acceptance criteria met
+- [x] Pint run unscoped (`vendor/bin/pint --format agent`), Larastan level 7 clean
+- [x] Full test suite green, unscoped (`php artisan test`)
 
 ## Dependencies, risks, open technical questions
 - **Dependencies:** none on other open stories. Relies on the existing factories and their
@@ -354,3 +354,115 @@ nothing, unless `--force` is passed.
   fallback user created when none exist (D-5) is the sole, minimal exception, needed only because
   `blog_posts.created_by` must reference a real user.
 - Any UI (admin button) to trigger demo data generation.
+
+## Phase 2 — INVEST validation
+
+**2026-09-29 — `code-reviewer`: ❌ REJECTED, returned to `product-owner` for rewrite.** The design
+held up. Seven text inconsistencies were left over from the D-4/D-5 revision:
+
+1. A seeding-order cross-reference pointed at the wrong step number.
+2. D-2 still claimed "exactly 10 orders", which contradicts D-4's ≥10, customer-driven order count.
+3. D-3 was cited twice where "Out of scope" was meant.
+4. The acceptance criterion "a second run does not fail" was not guaranteed, because Faker-uniqueness
+   collisions across separate runs are possible.
+5. A tag assertion depended on the ~70% tagging probability, so it was flaky.
+6. Three acceptance criteria had no planned test.
+7. Rows written by existing factory fallbacks outside the seven named tables were not documented.
+
+### Rewrite by `product-owner` — 2026-09-29, ready for Phase 2 re-evaluation
+
+All seven findings were fixed as text-only edits, with no design change (commit `625dc0b`). The
+fixes produced the current wording of:
+
+- D-2 and its cross-run uniqueness limitation.
+- The deterministic "first post is always tagged" rule (D-4, step 8).
+- The additive-run acceptance criterion, which records the collision as a known, accepted
+  limitation.
+- The added tests.
+- The "Expected side rows outside the seven named tables" risk entry.
+
+**Phase 2 was not self-approved; the story returned to `code-reviewer`.**
+
+## Phase 2 — INVEST validation (re-evaluation)
+
+**2026-09-29 — `code-reviewer`: ✅ APPROVED — passes to Phase 3.**
+
+## Phase 3 — TDD: ✅ complete, ready for Phase 4 (2026-09-29)
+
+Task file moved to `in-progress/` (commit `54a1fc4`), claimed for this worktree.
+
+- **Red:** `backend-qa` wrote `tests/Feature/Seeders/DemoDataSeederTest.php` (15 tests) and
+  `tests/Feature/Console/Commands/GenerateDemoDataTest.php` (6 tests). Both confirmed red for the
+  expected reason — `Database\Seeders\DemoDataSeeder` and `demo:generate-data` did not exist yet, no
+  syntax/typo failures.
+- **Green:** `backend-expert` implemented `database/seeders/DemoDataSeeder.php` and
+  `app/Console/Commands/GenerateDemoData.php` (commit `e606ddb`; tests committed separately in
+  `9065416`, per this project's one-commit-per-layer rule). Both files green: 15/15 + 6/6, 21/21
+  together, no interference. `vendor/bin/pint --dirty --format agent` clean.
+- **Independent verification:** `backend-qa` re-ran both files (stable across repeated runs; assertion
+  counts vary run to run because the seeder's own random ranges feed `->each()` assertions — pass/fail
+  does not) and reviewed the implementation for gaming. **Verdict: the green is genuine** — pool sizes,
+  randomized-but-bounded counts, the deterministic first-tagged-post branch, and the D-5 reuse/fallback
+  logic all match the story's actual intent, not a specific assertion reverse-engineered.
+- **Judgment call — `expectsOutputToContain()` per-line matching:** `backend-expert` found that a
+  single refusal line containing all three required substrings ("local", "testing", "--force") only
+  satisfies one Mockery expectation per `doWrite()` call, so the command's refusal path was split into
+  four separate output lines to satisfy the test mechanic. `backend-qa` independently verified the
+  Mockery mechanic by reading `Illuminate\Testing\PendingCommand` and confirmed the fix is correct and
+  consistent with this repo's existing `PublishScheduledBlogPostsTest.php` convention (one assertion
+  per output line) — **kept as-is**, not re-litigated at Phase 5 (see below). Flagged as a
+  project-wide, reusable finding worth an `errors-log.md` entry during Phase 6.
+
+**Phase 3 closed: ✅. Proceed to Phase 4 (`appsec-auditor`).**
+
+## Phase 4 — Security audit, round 1: ❌ returns to Phase 3 (2026-09-29)
+
+`appsec-auditor` found one **Medium** finding.
+
+- **F-1:** when the `users` table starts empty, the D-5 fallback user is created with `UserFactory`'s
+  default password (`"password"`). That is a well-known credential, and `--force` can put it into a
+  real environment.
+- **Fix:** `DemoDataSeeder::resolveCreatorPool()` now gives the fallback user `Str::password(32)`
+  (commit `878bc01`). A regression test asserts that `Hash::check('password', …)` is false for that
+  user (commit `0b78ccd`).
+
+The following were checked separately in this round and found clean:
+
+- The environment guard.
+- Mass-assignment and guard bypass.
+- Data exposure.
+- The DoS surface.
+- The injection surface.
+
+## Phase 4 — Security audit, round 2: ✅ passed, ready for Phase 5 (2026-09-29)
+
+`appsec-auditor` confirmed that F-1 is resolved. The fix does not affect any of the areas found clean
+in round 1. **No findings are pending.**
+
+## Phase 5 — Final code review: ✅ passed, ready for Phase 6 (2026-09-30)
+
+`code-reviewer` ran each of these gates:
+
+- **Full suite, unscoped:** 4784 tests, 4781 passed, 3 skipped, 0 failed, 17463 assertions. No
+  unrelated failures were already present.
+- **Pint, unscoped** (read-only `--test`): clean.
+- **Larastan level 7:** 0 errors.
+
+Every acceptance criterion was verified against the real code, so all of them are ticked above.
+
+Non-blocking suggestions:
+
+- **F-A: the refusal message spans four lines.** It is **kept as-is on purpose.** The four-line shape
+  exists because `expectsOutputToContain()` matches one line at a time. `backend-qa` already
+  verified this tradeoff during Phase 3:
+  - The Mockery mechanic is real.
+  - Splitting the message follows this repo's existing `PublishScheduledBlogPostsTest.php`
+    convention.
+  - The D-3 risk note in this story requires the refusal message to state the consequence clearly.
+
+  It was not re-litigated.
+- **F-B: the command discarded `db:seed`'s exit code.** **Applied** in commit `6f1754e`. The command
+  now returns `$this->call('db:seed', [...])` instead of always returning `self::SUCCESS`. After the
+  fix, 22/22 of the story's tests still pass.
+
+**Phase 5 closed: ✅. Proceed to Phase 6 (`docs-keeper`).**
