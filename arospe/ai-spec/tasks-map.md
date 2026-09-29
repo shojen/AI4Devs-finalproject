@@ -18,6 +18,17 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-09-29): `0081-demo-data-seeder-command.md` added as a new pending file** (Phase 1
+Three Amigos debate complete). Standalone story, not part of any PRD epic — requested directly by
+the project owner. Classified Backend, no `database-expert` (every model/factory it needs already
+exists). It depends on no other pending or in-progress task (`depends_on: []`) and touches only
+brand-new files (`database/seeders/DemoDataSeeder.php`, `app/Console/Commands/
+GenerateDemoData.php`, and two new test files), none shared with any other pending task's
+`touches` list, so it carries no `conflict_risk_with` entries either. It is `ready` from creation,
+drawn as an isolated node in the graph below with no incoming edge. This adds one file to the
+overall total and moves the pending count from 11 to 12 numbered files (see the recount bullet
+further down).
+
 **Update (2026-09-29, merge reconciliation):** `shojen/0070-translatable-content-mechanism-backend`
 (this branch, having just closed story 0070 per the update below) was merged with
 `origin/finalproject-ARP`, which had independently closed story 0066 (Admin UI locale preference
@@ -202,8 +213,13 @@ graph and from the parallelization analysis below.
   files in `ai-spec/tasks/done/`**, **11 numbered files still pending** in `ai-spec/tasks/` (none
   checked out to `in-progress/`), **+ 1 non-numbered infrastructure doc** — 103 files total,
   unchanged from the prior recount (only the done/pending split moved, by two: `0066` and `0070`
-  both left the pending list for `done/`). This is now the authoritative current count; the "103
-  files total" bullet above is kept for its own reasoning, not its totals.
+  both left the pending list for `done/`).
+- **Recounted once more 2026-09-29** (`0081-demo-data-seeder-command.md` added as a new pending
+  file, per the note at the top of this file): **91 files in `ai-spec/tasks/done/`**, **12
+  numbered files still pending** in `ai-spec/tasks/` (none checked out to `in-progress/`), **+ 1
+  non-numbered infrastructure doc** — 104 files total, up by one (a brand-new file, not a moved
+  one). This is now the authoritative current count; the bullets above are kept for their own
+  reasoning, not their totals.
 - For a machine-readable, per-task claim registry that two parallel Claude Code sessions can use
   to coordinate against this same dependency data, see
   [`ai-spec/tasks-status.json`](tasks-status.json) and its companion protocol,
@@ -213,7 +229,7 @@ graph and from the parallelization analysis below.
 
 - [Inventory](#inventory)
   - [Done (91) — shipped, out of scope for this graph](#done-91--shipped-out-of-scope-for-this-graph)
-  - [Pending — not started (11 numbered + 1 infra doc)](#pending--not-started-11-numbered--1-infra-doc)
+  - [Pending — not started (12 numbered + 1 infra doc)](#pending--not-started-12-numbered--1-infra-doc)
 - [Dependency graph (pending tasks only)](#dependency-graph-pending-tasks-only)
 - [Analysis](#analysis)
   - [Pending tasks that are independent of each other and safe to parallelize](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
@@ -330,7 +346,7 @@ appears as a node in the dependency graph below:
   (0063 closed ninth, per the Update note above): it had no hard dependent of its own; `0065` and `0078` drop
   it from `conflict_risk_with`.
 
-### Pending — not started (11 numbered + 1 infra doc)
+### Pending — not started (12 numbered + 1 infra doc)
 
 | ID | Title | Epic area |
 | --- | --- | --- |
@@ -345,6 +361,7 @@ appears as a node in the dependency graph below:
 | 0077 | Product editor — language tabs (UI) | Epic 5 — i18n |
 | 0078 | Translatable content retrofit — Blog Posts backend | Epic 5 — i18n |
 | 0079 | Blog post editor — language tabs (frontend) | Epic 5 — i18n |
+| 0081 | Demo data seeder command | Standalone (no PRD epic) |
 | _(no number)_ | Infrastructure fix: no test suite can open a database connection (local fresh setup or CI) — **status: already fixed and documented**, kept out of the numbering and out of the dependency graph below | Infrastructure |
 
 ## Dependency graph (pending tasks only)
@@ -389,6 +406,9 @@ flowchart LR
         P0078["0078 Blog Posts retrofit BE"]
         P0079["0079 Blog post editor i18n UI"]
     end
+
+    %% Standalone (no PRD epic)
+    P0081["0081 Demo data seeder command"]
 
     %% Customers and Orders core
     %% (0042/0043 -> 0044, and 0041/0024/0029/0035/0036/0038 -> 0045, are all satisfied now that
@@ -455,7 +475,7 @@ flowchart LR
     P0077 -.-> P0079
 
     class P0073,P0075,P0077,P0079 pending;
-    class P0067,P0069,P0071,P0072,P0074,P0076,P0078 ready;
+    class P0067,P0069,P0071,P0072,P0074,P0076,P0078,P0081 ready;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue

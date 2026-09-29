@@ -223,6 +223,22 @@
       "conflict_risk_with": [
         "0077"
       ]
+    },
+    {
+      "id": "0081",
+      "slug": "0081-demo-data-seeder-command",
+      "title": "Demo data seeder command",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/seeders/DemoDataSeeder.php",
+        "app/Console/Commands/GenerateDemoData.php",
+        "tests/Feature/Seeders/DemoDataSeederTest.php",
+        "tests/Feature/Console/Commands/GenerateDemoDataTest.php"
+      ],
+      "conflict_risk_with": []
     }
   ]
 }
