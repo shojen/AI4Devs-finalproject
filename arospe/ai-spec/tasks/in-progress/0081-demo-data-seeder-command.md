@@ -300,7 +300,7 @@ nothing, unless `--force` is passed.
 - [x] Tests written and green
 - [x] Code reviewed (code-reviewer)
 - [x] No security findings (appsec-auditor)
-- [ ] Documentation updated (docs-keeper)
+- [x] Documentation updated (docs-keeper)
 - [x] Acceptance criteria met
 - [x] Pint run unscoped (`vendor/bin/pint --format agent`), Larastan level 7 clean
 - [x] Full test suite green, unscoped (`php artisan test`)
@@ -466,3 +466,16 @@ Non-blocking suggestions:
   fix, 22/22 of the story's tests still pass.
 
 **Phase 5 closed: ✅. Proceed to Phase 6 (`docs-keeper`).**
+
+## Phase 6 — Documentation: ✅ complete, ready for Phase 7 (2026-09-30)
+
+`docs-keeper` synced docs (commit `6bfe64a`): added `GenerateDemoData` to the `Console/Commands/`
+inventory in `docs/conventions/directory-structure/app-layers.md`; recorded the
+`expectsOutputToContain()` per-line-substring-matching quirk as a reusable, project-wide lesson in
+`docs/errors-log.md`; generalized appsec's F-1 finding in `docs/security/seeder-safety.md` (a
+seeder's fallback-created row must never carry a factory's default/predictable credential, even
+when the seeder itself carries no environment guard). Judged `docs/conventions/base-standards.md`
+and the epic decision digest as not needing changes (no new reusable architectural pattern;
+standalone story, no epic).
+
+**Phase 6 closed: ✅. Proceed to Phase 7 (closure).**
