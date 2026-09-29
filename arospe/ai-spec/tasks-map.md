@@ -29,6 +29,20 @@ drawn as an isolated node in the graph below with no incoming edge. This adds on
 overall total and moves the pending count from 11 to 12 numbered files (see the recount bullet
 further down).
 
+**Update (2026-09-29): `0081-demo-data-seeder-command.md` moved from `ai-spec/tasks/` to
+`ai-spec/tasks/in-progress/` (Phase 3 step 0), having passed Phase 2 (INVEST validation, per the
+story's own "Phase 2 INVEST review findings" revision).** It is still pending work, so it keeps its
+node and edges (it has none, `depends_on: []`); its node moves from the green `ready` class to the
+blue `claimed` class below, and its `tasks-status.json` entry's `status` moved to `"claimed"`
+(`claimed_by: "shojen/0081-demo-data-seeder"`, `claimed_at: "2026-09-29T19:32:09Z"`), with
+`depends_on` unchanged (still empty). The mandatory link-integrity check ran both directions for
+this move: the story file itself has no relative Markdown links to check (it is standalone, with
+no cross-references to other task files or docs), so its own outbound links needed no change; a
+repo-wide search for inbound references to the old `ai-spec/tasks/0081-demo-data-seeder-command.md`
+path found none outside this file's own prose mentions above, which name the file by its bare
+filename (no path) and therefore needed no edit either. `ai-spec/tasks/in-progress/` now holds
+exactly this one file.
+
 **Update (2026-09-29, merge reconciliation):** `shojen/0070-translatable-content-mechanism-backend`
 (this branch, having just closed story 0070 per the update below) was merged with
 `origin/finalproject-ARP`, which had independently closed story 0066 (Admin UI locale preference
@@ -475,15 +489,17 @@ flowchart LR
     P0077 -.-> P0079
 
     class P0073,P0075,P0077,P0079 pending;
-    class P0067,P0069,P0071,P0072,P0074,P0076,P0078,P0081 ready;
+    class P0067,P0069,P0071,P0072,P0074,P0076,P0078 ready;
+    class P0081 claimed;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(no node is `claimed` in this snapshot — `0066` and `0070`, the prior `claimed` nodes, both closed
-to `done/` in this pass, on separate branches reconciled together here); yellow (`pending`) = still
-blocked on at least one open pending dependency.
+(`0081` is the sole `claimed` node in this snapshot, `claimed_by: "shojen/0081-demo-data-seeder"`;
+`0066` and `0070`, the prior `claimed` nodes, both closed to `done/` in an earlier pass, on separate
+branches reconciled together here); yellow (`pending`) = still blocked on at least one open pending
+dependency.
 
 ## Analysis
 

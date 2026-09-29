@@ -229,9 +229,9 @@
       "slug": "0081-demo-data-seeder-command",
       "title": "Demo data seeder command",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "shojen/0081-demo-data-seeder",
+      "claimed_at": "2026-09-29T19:32:09Z",
       "touches": [
         "database/seeders/DemoDataSeeder.php",
         "app/Console/Commands/GenerateDemoData.php",
