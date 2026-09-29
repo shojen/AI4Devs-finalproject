@@ -13,6 +13,7 @@ use App\Models\ProductCategory;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 /**
  * Fills a local or demo environment with realistic-looking data (story 0081): customers, orders,
@@ -64,7 +65,11 @@ class DemoDataSeeder extends Seeder
         $creators = User::query()->get();
 
         if ($creators->isEmpty()) {
-            $creators = new Collection([User::factory()->create()]);
+            $creators = new Collection([
+                User::factory()->create([
+                    'password' => Str::password(32),
+                ]),
+            ]);
         }
 
         return $creators;
