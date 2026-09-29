@@ -2,7 +2,7 @@
 
 ## Current state (real, as of this writing)
 
-[`.github/workflows/tests.yml`](../../../../.github/workflows/tests.yml) runs on every push/PR to `develop`/`main`/`master`/`workos`/`feature-entrega2-ARP`/`finalproject-ARP`, but only when the change touches `arospe/**` or the workflow file itself (a `paths:` filter — a docs-only change outside `arospe/` triggers no run). It is pinned to a single PHP version, **`8.5`** (2026-09-06) — matching the version this project actually develops and deploys with. There is deliberately no `strategy.matrix` any more: an earlier `['8.4', '8.5']` two-version matrix was dropped rather than narrowed to one entry, since a matrix with a single leg is pure indirection over a literal value. The relevant steps today:
+[`.github/workflows/tests.yml`](../../../../.github/workflows/tests.yml) runs on every push to `develop`/`main`/`master` and on every PR targeting `develop`/`main`/`master`/`workos`/`feature-entrega2-ARP`/`finalproject-ARP` (a work branch is validated through its PR only — listing it under `push` as well ran every workflow twice on the same commit, once per event), but only when the change touches `arospe/**` or the workflow file itself (a `paths:` filter — a docs-only change outside `arospe/` triggers no run). It is pinned to a single PHP version, **`8.5`** (2026-09-06) — matching the version this project actually develops and deploys with. There is deliberately no `strategy.matrix` any more: an earlier `['8.4', '8.5']` two-version matrix was dropped rather than narrowed to one entry, since a matrix with a single leg is pure indirection over a literal value. The relevant steps today:
 
 ```yaml
 - name: Setup PHP
@@ -39,7 +39,7 @@ A coverage driver (`xdebug`) is already installed by the `setup-php` step, but *
 
 ## Other workflows: style check and production deploy
 
-**[`lint.yml`](../../../../.github/workflows/lint.yml)** (workflow name `linter`) shares `tests.yml`'s exact trigger — the same branch list and the same `arospe/**` path filter — and runs `composer lint` (Pint) on PHP `8.4`. Its auto-commit step is commented out, so it only reports; style is fixed locally. It still declares `permissions: contents: write`, which nothing uses any more — a known gap recorded in [security/ci-workflow-hardening.md](../../security/ci-workflow-hardening.md).
+**[`lint.yml`](../../../../.github/workflows/lint.yml)** (workflow name `linter`) shares `tests.yml`'s exact trigger — the same `push` and `pull_request` branch lists and the same `arospe/**` path filter — and runs `composer lint` (Pint) on PHP `8.4`. Its auto-commit step is commented out, so it only reports; style is fixed locally. It still declares `permissions: contents: write`, which nothing uses any more — a known gap recorded in [security/ci-workflow-hardening.md](../../security/ci-workflow-hardening.md).
 
 **[`prod.yml`](../../../../.github/workflows/prod.yml)** (workflow name `PROD`) is the production deploy, and it consumes the two workflows above as a gate rather than re-running them:
 
@@ -71,6 +71,6 @@ Nothing else in the workflow needs to change — `coverage: xdebug` is already c
 
 Since this repo's PR contract ([`docs/contracts.md`](../../contracts.md)) calls for asking before taking non-obvious actions rather than assuming: adding `--min=80` to the real workflow is a deliberate decision for whoever owns CI to make (it will start failing PRs the moment coverage is under 80%, which may or may not be true today — nobody has measured it yet with `php artisan test --coverage` locally). Run that locally first to see where this repo actually stands before wiring the gate into `tests.yml`.
 
-_Last updated: 2026-09-29 — Added `finalproject-ARP` and the `arospe/**` path filter to the trigger description, fixed the relative link depth to `.github/`, and added **Other workflows** documenting `lint.yml` and the `prod.yml` deploy gate, including the `REQUIRED_WORKFLOWS` fix (`"Tests,Lint"` → `"tests,linter"`)._
+_Last updated: 2026-09-29 — Added `finalproject-ARP` and the `arospe/**` path filter to the trigger description, fixed the relative link depth to `.github/`, and added **Other workflows** documenting `lint.yml` and the `prod.yml` deploy gate, including the `REQUIRED_WORKFLOWS` fix (`"Tests,Lint"` → `"tests,linter"`). Later the same day: dropped `workos`/`feature-entrega2-ARP`/`finalproject-ARP` from the `push` branch list of `tests.yml` and `lint.yml`, so a PR shows one run per workflow instead of two._
 
 _Earlier revision notes: [testing--ci--pipeline-integration.md](../../history/testing--ci--pipeline-integration.md)._

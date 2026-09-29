@@ -6,9 +6,6 @@ on:
       - develop
       - main
       - master
-      - workos
-      - feature-entrega2-ARP
-      - finalproject-ARP
     paths:
       - 'arospe/**'
       - '.github/workflows/tests.yml'

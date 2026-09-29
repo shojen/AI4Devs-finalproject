@@ -399,7 +399,7 @@ flowchart LR
 | Entorno | Dónde | Qué ejecuta |
 | --- | --- | --- |
 | Local | Docker vía Laravel Sail (`arospe/compose.yaml`) | Contenedores `laravel.test` (PHP 8.5 + Vite), `mysql` (8.4) y `redis`. Sesión, caché y colas usan el driver `database`. Ver [1.4](#14-instrucciones-de-instalación). |
-| CI | GitHub Actions, runner `ubuntu-latest` efímero | Workflows `tests` y `linter`, disparados en `push` y `pull_request` a `main`, `develop`, `master`, `workos`, `feature-entrega2-ARP` y `finalproject-ARP`, **solo si cambian `arospe/**`** o el propio workflow. |
+| CI | GitHub Actions, runner `ubuntu-latest` efímero | Workflows `tests` y `linter`, disparados en `push` a `main`, `develop` y `master`, y en `pull_request` hacia `main`, `develop`, `master`, `workos`, `feature-entrega2-ARP` y `finalproject-ARP` (una rama de trabajo se valida solo a través de su PR, sin duplicar el run por `push`), **solo si cambian `arospe/**`** o el propio workflow. |
 | Producción | VPS accesible por SSH | Un comando `deploy <sha>` en el servidor que despliega exactamente el commit validado por CI. |
 
 **Pipeline de tests (`.github/workflows/tests.yml`).** Levanta un contenedor de servicio `mysql:8.4` (el mismo que Sail) con *healthcheck* `mysqladmin ping` y apunta la aplicación a la base `testing` mediante variables de entorno del job, que prevalecen sobre el `.env` copiado de `.env.example`; así CI y un `php artisan test` local siempre atacan la misma base. Los pasos, en orden:
