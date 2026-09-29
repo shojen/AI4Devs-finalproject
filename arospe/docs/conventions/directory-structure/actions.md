@@ -123,9 +123,23 @@ app/
                        reasoning as ResolveOrderTaxRegion
   Actions/ProductCategories/ Domain actions for the Product Categories area (CreateProductCategory,
                        RenameProductCategory, DeleteProductCategory) — one action per operation
-                       (story 0023). Unlike every other area's actions, none of the three authorize
-                       their own operation; that is a deliberate, recorded hand-off to the not-yet-
-                       built UI story (0025), not an oversight — see ProductCategoryPolicy below
+                       (story 0023). **Corrected — story 0025 closed the self-authorization gap this
+                       line used to describe**: all three now self-authorize their own operation as
+                       their own first statement through LogRefusedPrivilegedAttempt, matching every
+                       other area's actions; see ProductCategoryPolicy below and
+                       database/schema-products/categories-and-products.md#product_categories.
+                       Story 0070 (the translatable-content mechanism, piloted here) adds two more:
+                       BackfillProductCategoryTranslations — the extracted, container-resolved
+                       backfill the create_product_category_translations_table migration calls,
+                       split into a DB-touching `assertCanBackfill()`/`__invoke()` and a pure
+                       `translationRowsFor()` transform so the part that can actually be wrong is
+                       directly unit-testable; TranslateProductCategoryNameUniqueViolation — the
+                       extracted MySQL-1062-vs-everything-else discriminator for the child table's
+                       two UNIQUEs and two FKs, following the shipped
+                       Actions/Products/TranslateProductVariantUniqueViolation precedent.
+                       CreateProductCategory/RenameProductCategory now write only the category's
+                       DEFAULT store-language translation through the shared
+                       Actions/Translations/SetTranslation primitive (below), never a scalar column
   Actions/Blog/        Domain actions for the Blog area (CreateBlogCategory, RenameBlogCategory,
                        DeleteBlogCategory — story 0058; CreateBlogTag, RenameBlogTag,
                        DeleteBlogTag, FindOrCreateBlogTag — story 0059; CreateBlogPost, UpdateBlogPost,
@@ -229,6 +243,22 @@ app/
                        lock the target plus every other row their invariant depends on in ONE
                        primary-key-ordered query, the same combined-lock shape SetDefaultSalesRegion
                        established
+  Actions/Translations/ Cross-cutting, not a module area (story 0070, third folder in this bucket
+                       alongside Actions/Auth/ and Actions/Localization/) -- the per-store-language
+                       content mechanism every translatable entity's actions reuse:
+                       SetTranslation -- the single write primitive, an updateOrCreate-shaped write
+                       on the (entity, language) natural key via the consuming model's
+                       firstTranslationOrNew() (App\Concerns\Translatable), so re-translating
+                       replaces rather than duplicates a row. Deliberately authorizes and validates
+                       NOTHING: the correct ability is a property of the CALLING action
+                       (CreateProductCategory needs products.create, RenameProductCategory needs
+                       products.edit; both call this same primitive, so a self-authorizing check
+                       here would wrongly force create behind the edit permission);
+                       CompareTranslatedNames -- the shared collation-aware sort comparator every
+                       screen that lists a translatable entity's resolved name reuses, replacing a
+                       naive `<=>` byte comparison that stopped matching the old orderBy('name')
+                       column's utf8mb4_unicode_ci collation. Reuses the already-shared
+                       NormalizeForSearch fold rather than introducing PHP's intl Collator
   Actions/Users/       Domain actions for the Users area (RequestEmailChange, ConfirmEmailChange,
                        CreateUser, UpdateUser — the last two authorize their own operation)
   Actions/PaymentMethods/ Domain actions for the Payment Methods area (UpdatePaymentMethodIban —

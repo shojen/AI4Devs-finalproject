@@ -7,6 +7,7 @@ use App\Actions\Products\CreateProduct;
 use App\Actions\Products\SearchSalesRegions;
 use App\Actions\Products\SyncProductSalesRegions;
 use App\Actions\Products\UpdateProduct;
+use App\Actions\Translations\CompareTranslatedNames;
 use App\Concerns\ProductValidationRules;
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
@@ -478,17 +479,39 @@ class Editor extends Component
     }
 
     /**
+     * Story 0070 (D-15): categories are offered by their DEFAULT-language name -- `name` no
+     * longer lives on `product_categories` itself, so the ordering happens in PHP after
+     * `withTranslationsFor()` eager-loads only the default language (R-4). A category with no
+     * default-language translation renders `—` and sorts last, matching
+     * ProductCategories\Index::loadProductCategories()'s identical convention, rather than
+     * throwing or being silently omitted from the dropdown.
+     *
+     * Ordering runs through the shared App\Actions\Translations\CompareTranslatedNames (Phase 5
+     * round-1 finding 2) instead of a bare `$nameA <=> $nameB` byte comparison, so this dropdown
+     * keeps the case-/accent-insensitive ordering `orderBy('name')` gave it under the column's
+     * `utf8mb4_unicode_ci` collation before the name moved off the table -- see that class and
+     * ProductCategories\Index::loadProductCategories() for the shared reasoning. Resolved with
+     * `app()` since no `#[Computed]` method in this codebase takes a typed, Livewire-injected
+     * parameter.
+     *
      * @return list<array{id: string, name: string}>
      */
     #[Computed]
     public function categoryOptions(): array
     {
+        $compareTranslatedNames = app(CompareTranslatedNames::class);
+
         return array_values(
             ProductCategory::query()
-                ->orderBy('name')
-                ->orderBy('id')
-                ->get(['id', 'name'])
-                ->map(fn (ProductCategory $category): array => ['id' => $category->id, 'name' => $category->name])
+                ->withTranslationsFor()
+                ->get()
+                ->sort(fn (ProductCategory $a, ProductCategory $b): int => $compareTranslatedNames(
+                    $a->translated('name'),
+                    $a->id,
+                    $b->translated('name'),
+                    $b->id,
+                ))
+                ->map(fn (ProductCategory $category): array => ['id' => $category->id, 'name' => $category->translated('name') ?? '—'])
                 ->all()
         );
     }

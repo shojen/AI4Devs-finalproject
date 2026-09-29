@@ -7,8 +7,10 @@ use App\Actions\NormalizeForSearch;
 use App\Actions\ProductCategories\CreateProductCategory;
 use App\Actions\ProductCategories\DeleteProductCategory;
 use App\Actions\ProductCategories\RenameProductCategory;
+use App\Actions\Translations\CompareTranslatedNames;
 use App\Concerns\ProductCategoryValidationRules;
 use App\Models\ProductCategory;
+use App\Models\StoreLanguage;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
@@ -38,7 +40,7 @@ class Index extends Component
     use ProductCategoryValidationRules;
 
     /**
-     * @var array<int, array{id: string, name: string, productCount: int, canEdit: bool, canDelete: bool}>
+     * @var array<int, array{id: string, name: ?string, productCount: int, canEdit: bool, canDelete: bool}>
      *
      * Deliberately unlocked, unlike every id-carrying property below (D-4):
      * every method that mutates re-reads its target with findOrFail() and
@@ -129,15 +131,19 @@ class Index extends Component
      * $editingCategoryId is assigned from $target->id, never the raw
      * $categoryId argument (R-3) -- the server-authoritative id the
      * ->ignore() uniqueness rule relies on.
+     *
+     * Prefills from $target->translated('name') -- with NO language argument, so it resolves the
+     * DEFAULT store language only (story 0070, D-15). No cross-language fallback can leak into
+     * the edit field: a single default-language field has nothing to fall back FROM.
      */
     public function openEditModal(string $categoryId, LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt): void
     {
-        $target = ProductCategory::findOrFail($categoryId);
+        $target = ProductCategory::query()->withTranslationsFor()->findOrFail($categoryId);
 
         $logRefusedPrivilegedAttempt->authorize('update', $target, targetType: 'product_category', targetId: $target->id);
 
         $this->editingCategoryId = $target->id;
-        $this->name = $target->name;
+        $this->name = $target->translated('name') ?? '';
         $this->showModal = true;
     }
 
@@ -150,6 +156,11 @@ class Index extends Component
      * openEditModal() already authorized the same operation, since a
      * permission can be revoked between opening the modal and submitting
      * it.
+     *
+     * The default store language's id is resolved for validation, but a missing default is NOT
+     * pre-empted here (story 0070, D-15): when none exists, an empty string is passed to the
+     * rules (against which no existing translation can ever match, so uniqueness trivially
+     * passes) and CreateProductCategory/RenameProductCategory refuse legibly on their own.
      */
     public function save(
         CreateProductCategory $createProductCategory,
@@ -166,7 +177,9 @@ class Index extends Component
             $logRefusedPrivilegedAttempt->authorize('update', $target, targetType: 'product_category', targetId: $target->id);
         }
 
-        $validated = $this->validate($this->productCategoryRules($normalizeForSearch, $this->editingCategoryId));
+        $storeLanguageId = StoreLanguage::defaultStoreLanguage()->id ?? '';
+
+        $validated = $this->validate($this->productCategoryRules($normalizeForSearch, $storeLanguageId, $this->editingCategoryId));
 
         if ($target === null) {
             $createProductCategory((string) $validated['name']);
@@ -202,12 +215,12 @@ class Index extends Component
      */
     public function confirmDelete(string $categoryId, LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt): void
     {
-        $target = ProductCategory::findOrFail($categoryId);
+        $target = ProductCategory::query()->withTranslationsFor()->findOrFail($categoryId);
 
         $logRefusedPrivilegedAttempt->authorize('delete', $target, targetType: 'product_category', targetId: $target->id);
 
         $this->deletingCategoryId = $target->id;
-        $this->deletingCategoryName = $target->name;
+        $this->deletingCategoryName = $target->translated('name') ?? '—';
         $this->showDeleteModal = true;
     }
 
@@ -268,11 +281,25 @@ class Index extends Component
     /**
      * Reload the product categories list from the database.
      *
-     * Ordered `name ASC, id ASC` -- the `id` tiebreak costs nothing and is
-     * a meaningful creation-order tiebreak given UUIDv7, even though the
-     * normalised-uniqueness rule makes exact name collisions structurally
-     * impossible (D-10). No pagination -- a product-category catalog is a
-     * smaller lookup table than `users`.
+     * Story 0070 (D-15): ordered by default-language name, then `id` -- sorted in PHP rather than
+     * `orderBy('name')`, since the name no longer lives on `product_categories` itself.
+     * `withTranslationsFor()` eager-loads only the default language (no argument = the default),
+     * so `translated('name')` below reads the hydrated relation rather than re-querying per row
+     * (R-4). A category with no default-language translation sorts last and renders `—`
+     * (0025's/0071's em-dash convention), rather than throwing. The `id` tiebreak costs nothing
+     * and is a meaningful creation-order tiebreak given UUIDv7, even though the
+     * normalised-uniqueness rule makes exact name collisions within one language structurally
+     * impossible (D-10). No pagination -- a product-category catalog is a smaller lookup table
+     * than `users`.
+     *
+     * Ordering itself runs through the shared App\Actions\Translations\CompareTranslatedNames
+     * (Phase 5 round-1 finding 2) rather than a bare `$nameA <=> $nameB` byte comparison, so this
+     * list keeps the case-/accent-insensitive ordering `orderBy('name')` gave it under the
+     * column's `utf8mb4_unicode_ci` collation before the name moved off the table. Resolved here
+     * with `app()` rather than a per-method parameter, matching
+     * `App\Livewire\Shipping\Index::loadRates()`'s identical `app(ListShippingRatesByCarrier::class)`
+     * call -- `loadProductCategories()` is a private helper Livewire's method-injection never
+     * reaches (unlike `openEditModal()`/`save()`, which Livewire dispatches directly).
      *
      * `canEdit`/`canDelete` mirror the same ProductCategoryPolicy methods
      * save()/deleteProductCategory() authorize against
@@ -285,14 +312,22 @@ class Index extends Component
      */
     private function loadProductCategories(): void
     {
+        $compareTranslatedNames = app(CompareTranslatedNames::class);
+
         $this->productCategories = ProductCategory::query()
             ->withCount('products')
-            ->orderBy('name')
-            ->orderBy('id')
+            ->withTranslationsFor()
             ->get()
+            ->sort(fn (ProductCategory $a, ProductCategory $b): int => $compareTranslatedNames(
+                $a->translated('name'),
+                $a->id,
+                $b->translated('name'),
+                $b->id,
+            ))
+            ->values()
             ->map(fn (ProductCategory $category): array => [
                 'id' => $category->id,
-                'name' => $category->name,
+                'name' => $category->translated('name'),
                 'productCount' => (int) $category->products_count,
                 'canEdit' => Gate::allows('update', $category),
                 'canDelete' => Gate::allows('delete', $category),

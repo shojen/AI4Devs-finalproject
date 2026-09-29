@@ -72,7 +72,9 @@ test('filling every field, choosing imagery and regions, saving, and reopening p
     $actor = editorJourneyActor();
     $this->actingAs($actor);
 
-    $category = ProductCategory::factory()->create(['name' => 'Calzado']);
+    // Story 0070 (D-15): `name` no longer lives on `product_categories` -- the factory's
+    // `named()` state writes it into the default store language's translation row instead.
+    $category = ProductCategory::factory()->named('Calzado')->create();
     $featured = Media::factory()->create(['title' => 'Featured Widget']);
     $stripA = Media::factory()->create(['title' => 'Strip Widget A']);
     $stripB = Media::factory()->create(['title' => 'Strip Widget B']);
@@ -265,7 +267,7 @@ test('choosing a category via a genuine click sequence persists that value', fun
     $actor = editorJourneyActor();
     $this->actingAs($actor);
 
-    $category = ProductCategory::factory()->create(['name' => 'Accesorios']);
+    $category = ProductCategory::factory()->named('Accesorios')->create();
 
     $page = visit(route('products.create'))->assertNoJavaScriptErrors();
 

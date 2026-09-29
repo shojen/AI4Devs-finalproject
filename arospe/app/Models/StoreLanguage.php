@@ -56,6 +56,54 @@ class StoreLanguage extends Model
     }
 
     /**
+     * Story 0070 (D-10): memoised for the duration of the request/test, so a whole list render
+     * costs one `store_languages` query rather than one per row. Lives here, on StoreLanguage --
+     * never inside App\Concerns\HasTranslations -- because PHP gives each class consuming a
+     * trait its OWN copy of that trait's static properties; a trait-resident memo would become
+     * one independent cache per translatable model, each querying for the same global row.
+     *
+     * Nullable, not firstOrFail(): the read side must render an empty catalog on an unseeded
+     * database (D-6c) -- the write side (App\Actions\ProductCategories\CreateProductCategory /
+     * RenameProductCategory) fails loud instead.
+     */
+    private static ?self $defaultCache = null;
+
+    /** Separate from the cache itself, so a "no default exists" answer is memoised too (D-10). */
+    private static bool $defaultResolved = false;
+
+    /**
+     * Null-safe: returns null when no default row exists (a not-yet-seeded install) -- D-6.
+     */
+    public static function defaultStoreLanguage(): ?self
+    {
+        if (! self::$defaultResolved) {
+            self::$defaultCache = static::query()->where('is_default', true)->first();
+            self::$defaultResolved = true;
+        }
+
+        return self::$defaultCache;
+    }
+
+    /**
+     * Flushed by this model's own `saved` hook (below) so a default change re-points the
+     * fallback within the same request, and by `tests/Pest.php`'s `beforeEach` for every
+     * Feature/Browser test, since RefreshDatabase's rollback fires no model event (R-6).
+     */
+    public static function flushDefaultStoreLanguage(): void
+    {
+        self::$defaultCache = null;
+        self::$defaultResolved = false;
+    }
+
+    protected static function booted(): void
+    {
+        // App\Actions\StoreLanguages\{SetDefaultStoreLanguage,AddStoreLanguage,RemoveStoreLanguage}
+        // all write through $model->save() (verified), so this re-points the fallback within the
+        // same request without editing any 0068 action.
+        static::saved(fn () => self::flushDefaultStoreLanguage());
+    }
+
+    /**
      * The bundled ISO 639-1 reference list, mapped `code => name_endonym` -- the single named
      * reader (D17) of `database/data/iso-639-languages.json`, shared by StoreLanguageSeeder and
      * StoreLanguageValidationRules::codeRules(). A shape guard throws on a missing or malformed

@@ -1,7 +1,7 @@
 # [0078] Translatable content retrofit — Blog Posts backend
 
 ## Description
-Applies story [0070](0070-translatable-content-mechanism-product-categories-backend.md)'s
+Applies story [0070](done/0070-translatable-content-mechanism-product-categories-backend.md)'s
 per-store-language translatable-content mechanism to **Blog Posts**
 ([PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization), whose translatable-content
 list names *"Blog post **title** and **body**"* and *"**Slug / SEO fields** … on products and posts"*).
@@ -889,7 +889,7 @@ load-bearing:** since `SetTranslation` authorizes nothing, each action's `Gate` 
   retrofits its table, its model, its validation trait and two of its six actions. **Its OQ-2 is now
   closed** (✅ resolved 2026-08-30, option (b) — see **R-4**), which was this dependency's one remaining
   gate.
-- **[Story 0070](0070-translatable-content-mechanism-product-categories-backend.md)** — hard, and not
+- **[Story 0070](done/0070-translatable-content-mechanism-product-categories-backend.md)** — hard, and not
   implemented. Supplies `HasTranslations`, `SetTranslation`, `StoreLanguage::defaultStoreLanguage()` and
   the drift guard, all consumed unmodified. **0070's Q1 is still open** (must every entity always hold a
   default-language translation?); this story assumes its recommended **(a) yes**, which is what makes a

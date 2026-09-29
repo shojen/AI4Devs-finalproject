@@ -50,7 +50,7 @@ return new class extends Migration
 
 ✅ Good — matches this pattern:
 - `foreignId(...)->constrained()->cascadeOnDelete()` for FKs that should disappear with their parent (passkeys belong to a user; no orphaned passkeys).
-- `down()` always exists and is the exact inverse of `up()`.
+- `down()` always exists and is the exact inverse of `up()` — with one narrow, stated exception: see [Removing a source-of-truth column after backfilling it elsewhere](#removing-a-source-of-truth-column-after-backfilling-it-elsewhere) below.
 
 ⚠️ **The explicit `$table->index('user_id')` on the last line is not the shape to copy for a *new* table — but it is not a duplicate index either, and the reason matters.** **Corrected 2026-09-07 (story 0033) — this line previously read *"it duplicates the index `constrained()` already causes InnoDB to create"*, and that claim is false; quoted in full rather than silently rewritten, per this project's audit-authored-page convention.** Story 0033 measured it directly (`php artisan db:table passkeys` against a live, migrated MySQL instance) rather than assuming: InnoDB auto-creates a supporting index for a foreign key **only when no suitable index already exists** on that column — the same rule stated correctly two paragraphs into [An FK column does not also get an explicit index here](uuid-primary-keys.md#an-fk-column-does-not-also-get-an-explicit-index-here) below, which this line simply failed to agree with. `user_id`'s hand-written `$table->index('user_id')` runs **before** InnoDB would otherwise auto-create one for `constrained()`'s FK, so it satisfies the requirement itself — there is exactly **one** index on `user_id`, not two, and the only visible effect of writing it by hand is that the resulting index is named `passkeys_user_id_index` rather than the auto-generated `passkeys_user_id_foreign`. The underlying design guidance is unaffected by this correction: don't hand-write an FK index in a *new* table unless you have a specific reason to, since `constrained()` alone already leaves the column indexed and a redundant *second* index (the real `users_uuid_unique` mistake in [errors-log.md](../../errors-log.md)) is a genuine, different hazard from this one. See [An FK column does not also get an explicit index here](uuid-primary-keys.md#an-fk-column-does-not-also-get-an-explicit-index-here) for the rule and its now-tenth confirming instance.
 
@@ -163,3 +163,50 @@ public function down(): void
 ```
 
 ✅ Good — dropping the column first leaves the engine to infer the index drop, which is version-dependent; being explicit keeps `migrate:rollback` deterministic. This is the same "be explicit about indexes" instinct as the manual `$table->index('user_id')` in `create_passkeys_table` above.
+
+### Removing a source-of-truth column after backfilling it elsewhere
+
+Story 0070 is the **first migration pair in this repo that removes a shipped, populated column after moving its data into a different table**, rather than adding or reshaping a column in place. The shape is **two separate migrations**, ordered strictly one after the other — never a single migration that both creates the new home and drops the old column, so a failure partway through never leaves data reachable from neither place:
+
+```php
+// database/migrations/2026_09_28_114929_create_product_category_translations_table.php
+public function up(): void
+{
+    // Runs BEFORE any DDL — MySQL auto-commits CREATE TABLE, so a throw after it would
+    // leave an orphan table blocking the operator's re-run.
+    app(BackfillProductCategoryTranslations::class)->assertCanBackfill();
+
+    Schema::create('product_category_translations', function (Blueprint $table): void {
+        // ...columns, FKs, both UNIQUEs...
+    });
+
+    app(BackfillProductCategoryTranslations::class)();
+}
+```
+
+```php
+// database/migrations/2026_09_28_114930_drop_name_from_product_categories_table.php
+public function up(): void
+{
+    Schema::table('product_categories', function (Blueprint $table): void {
+        $table->dropUnique(['name']);   // explicit, before the column — the rule above
+        $table->dropColumn('name');
+    });
+}
+
+public function down(): void
+{
+    Schema::table('product_categories', function (Blueprint $table): void {
+        $table->string('name')->nullable();
+        $table->unique('name');
+    });
+}
+```
+
+Two things worth naming explicitly:
+
+- **The backfill runs inside the *creating* migration, as an extracted, container-resolved class (`App\Actions\ProductCategories\BackfillProductCategoryTranslations`), never inline in the closure and never in the *dropping* migration.** By the time the second migration's `up()` runs, the data has already been copied; the drop migration's only job is to remove what is now redundant. The precondition (`assertCanBackfill()`) refuses only when there is data that would be silently lost — rows exist and no destination for them does — and it is checked **before** the `CREATE TABLE`, for the reason in the comment above. See [database/schema.md](../schema-products/categories-and-products.md#product_category_translations) for the full backfill contract and why it is a testable, extracted class rather than migration-closure logic.
+- **This repo's second migration has the first *knowingly non-inverse* `down()`.** It restores the column and its unique index — so `migrate:rollback` leaves the schema shape usable again — but **not** the values, which now live in `product_category_translations`. It is `nullable()` for exactly that reason: a non-nullable restore would fail the moment it ran against any existing row. This is a deliberate, stated exception to the "down() is the exact inverse of up()" rule above, in the same spirit as [ADR 0001's own `users` UUID conversion](../../decisions/0001-uuid-primary-keys.md#consequences) — a rollback across this pair is data-lossy by design, not by omission.
+
+✅ Good — two migrations, the precondition before any DDL, the backfill extracted and testable, and a `down()` that says in a comment exactly what it does not restore.
+❌ Bad — a single migration that creates the child table, backfills, and drops the parent column all at once: a mid-migration failure (a bad backfill row, a lock timeout) then leaves the schema in a state neither `up()` nor `down()` was written to handle.

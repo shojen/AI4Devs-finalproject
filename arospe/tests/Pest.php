@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\StoreLanguage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -16,6 +17,12 @@ use Tests\TestCase;
 
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
+    // Story 0070 (D-10, R-6): App\Models\StoreLanguage's default-language memo is a static
+    // property, so it outlives RefreshDatabase's rollback (which fires no model event). Without
+    // this flush, test N+1 would resolve test N's default-language id -- a row that no longer
+    // exists. Not chained onto Unit: tests/Unit has no TestCase/RefreshDatabase binding and no
+    // database, so no Unit test may call defaultStoreLanguage()/translated().
+    ->beforeEach(fn () => StoreLanguage::flushDefaultStoreLanguage())
     ->in('Feature', 'Browser');
 
 /*

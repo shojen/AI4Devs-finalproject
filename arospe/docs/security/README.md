@@ -31,5 +31,6 @@ One row per page — open the page whose *Read when* matches your task. The long
 | [Derived-column invariants](derived-column-invariants.md) | you write a derived column (hash, SKU, totals) or add `attempts:` to a transaction. |
 | [Livewire error-bag persistence](livewire-error-bag-persistence.md) | you call `addError()` on a Livewire component or make a validation message persist. |
 | [Resolving a related pair of ids](related-id-pair-resolution.md) | a payload names two ids that must belong together (a product and one of its variants). |
+| [Constraint-violation discrimination](constraint-violation-discrimination.md) | you catch a `QueryException` and decide which unique index/FK fired: match `errorInfo`, never `getMessage()` (it interpolates the bindings). |
 
-_Last updated: 2026-09-24 — Docs optimization pass: index compacted to one row per page; the detailed abstracts and the accumulated `_Previously:` history moved unchanged to [index-details-and-history.md](index-details-and-history.md). Add a new page as one row here._
+_Last updated: 2026-09-28 — Story 0070 Phase 4: added the constraint-violation discrimination page (finding F-1). Detailed abstracts and older history live in [index-details-and-history.md](index-details-and-history.md). Add a new page as one row here._

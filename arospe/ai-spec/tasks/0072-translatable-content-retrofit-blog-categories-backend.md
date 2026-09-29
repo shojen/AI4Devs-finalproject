@@ -2,7 +2,7 @@
 
 ## Description
 Applies the per-store-language translatable-content mechanism built by story
-[0070](0070-translatable-content-mechanism-product-categories-backend.md) to the **Blog Categories**
+[0070](done/0070-translatable-content-mechanism-product-categories-backend.md) to the **Blog Categories**
 taxonomy ([PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization); assumption 14
 names "category/tag names" as translatable content, and Epic 5's own Gherkin lists **Blog category**
 as a taxonomy whose name must be authorable per store language). It creates the
@@ -788,7 +788,7 @@ is one no post uses, and its translations are exactly the data that has just bec
 
 - **[Story 0058](done/0058-blog-categories-backend.md)** — hard, and **not yet implemented**. This story
   retrofits its table, its model, its validation trait and two of its three actions. See **R-2**, **R-3**.
-- **[Story 0070](0070-translatable-content-mechanism-product-categories-backend.md)** — hard, and **not
+- **[Story 0070](done/0070-translatable-content-mechanism-product-categories-backend.md)** — hard, and **not
   yet implemented**. Supplies `HasTranslations`, `SetTranslation`, `StoreLanguage::defaultStoreLanguage()`
   and the drift guard, all consumed unmodified. **0070's own Q1 is still open** (must every entity always
   hold a default-language translation?) and this story assumes its recommended answer **(a) yes** —
@@ -911,7 +911,7 @@ Derived from this debate; **none are in scope for 0072**.
    translation for the requested language, and a replacement for the `category:id,name` partial select
    (**R-1**). The coordinator's, not this story's. Note this is the blog half of the same amendment 0070's
    own backlog item 1 raises for 0025/0027/0060/0062.
-2. **Carry the index-count finding back to [0070](0070-translatable-content-mechanism-product-categories-backend.md)**
+2. **Carry the index-count finding back to [0070](done/0070-translatable-content-mechanism-product-categories-backend.md)**
    — its line 243 asserts a fourth auto-created FK index on a column its own migration makes leftmost in a
    composite `UNIQUE` (**D-10**, **R-4**). Verify with `db:table` on both tables and correct whichever is
    wrong.
