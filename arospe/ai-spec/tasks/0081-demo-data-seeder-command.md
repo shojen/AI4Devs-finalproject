@@ -39,8 +39,10 @@ flag, not a blocked path, and mirrors Laravel's own `db:seed --force` idiom (a d
 can still be seeded on purpose).
 
 ### D-2 — Runs are additive, not idempotent
-Each run adds another batch of exactly 10 of every entity on top of whatever already exists. No
-truncation, no reset, no "demo data" marker.
+Each run adds another batch — exactly 10 more of every entity except orders (which add ≥10 more,
+per D-4) — on top of whatever already exists. No truncation, no reset, no "demo data" marker.
+A Faker-uniqueness collision across separate runs (separate processes) is a known, accepted
+limitation of this decision, not something the command defends against — see Dependencies/risks.
 **Reasoning:** there is no "seed twice safely" precedent anywhere in this codebase (even
 `DatabaseSeeder`'s single demo user would collide with itself on its unique email if re-run). A
 reset/truncate step would be materially riskier scope — it would have to tell demo rows from real
@@ -60,7 +62,8 @@ assert). **Orders are not fixed at 10**: per the project owner's follow-up feedb
 customer must have one or more orders, so each of the 10 customers gets a random 1–3 orders
 instead — the total order count therefore varies (10 at minimum, ~20 on average) but is always
 ≥10, still satisfying the original "at least 10" request while guaranteeing no order-less
-customer. Order items per order (1–4) and tags per post (0–3, roughly 70% of posts tagged) vary,
+customer. Order items per order (1–4) and tags per post (0–3; the first post always tagged, every
+other post tagged ~70% of the time) vary,
 since those are realism details of relationships, not entities the request named a fixed count
 for. No `--count` option.
 
@@ -72,7 +75,7 @@ database has none at all (a genuinely empty install), it creates exactly **one**
 `User::factory()->create()` so the command never fails for lack of an author. Each blog post picks
 its author randomly from that pool.
 **Reasoning:** per the project owner's follow-up feedback ("los posts deben de pertenecer a un
-usuario existente"). This does not reopen D-3's "no seeding users" scope in bulk — it is the
+usuario existente"). This does not reopen "Out of scope"'s "no bulk-seeding users" rule — it is the
 minimal amount of user data needed to satisfy `blog_posts.created_by`'s real-world meaning (a post
 is always written by somebody), mirroring the existing precedent in `ProductCategoryFactory`,
 which reuses an existing default `StoreLanguage` row and only creates one when none exists.
@@ -108,7 +111,7 @@ Feature: Generate demo data from the command line
     When the developer inspects the seeded blog posts
     Then every blog post is published and belongs to one of the 10 seeded blog categories
     And every blog post's author is a real, already-existing user
-    And at least one blog post has tags attached from the 10 seeded blog tags
+    And the first seeded blog post has tags attached from the 10 seeded blog tags
     And no blog tag exists beyond the 10 seeded ones
 
   Scenario: Seeding falls back to one new user only when the database has none
@@ -156,7 +159,7 @@ Feature: Generate demo data from the command line
   — nothing ever references a row that does not exist yet, so the run cannot fail on a missing
   foreign key:
   1. **Creator user pool:** reuse every existing `User` row in the database; if none exist, create
-     exactly one fallback user via `User::factory()->create()`. Needed before blog posts (step 7),
+     exactly one fallback user via `User::factory()->create()`. Needed before blog posts (step 8),
      resolved first since it depends on nothing.
   2. **Product categories (10):** `ProductCategory::factory()->count(10)->create()`.
   3. **Products (10):** one per category, round-robin so every category gets exactly one product
@@ -176,9 +179,11 @@ Feature: Generate demo data from the command line
      `BlogPostFactory::withTags()` as-is — it always mints new tags).
   8. **Blog posts (10):** one blog category per post, round-robin; `->published()` state;
      `created_by` set to a randomly picked user from the pool resolved in step 1 (via
-     `BlogPostFactory::createdBy($user)`). Per post, a ~70% chance of being tagged; when tagged,
-     1–3 distinct random existing tag ids from the pool (step 7) attached via
-     `$post->tags()->attach($ids)`. Depends on steps 1, 6 and 7.
+     `BlogPostFactory::createdBy($user)`). The **first** seeded post is always tagged
+     (deterministic, so at least one tagged post is guaranteed rather than probabilistic); every
+     other post has a ~70% chance of being tagged. When tagged, 1–3 distinct random existing tag
+     ids from the pool (step 7) are attached via `$post->tags()->attach($ids)`. Depends on steps
+     1, 6 and 7.
 - `app/Console/Commands/GenerateDemoData.php` — new, thin wrapper. Gates the environment, then
   calls the seeder:
   ```php
@@ -228,12 +233,17 @@ Seeder — `tests/Feature/Seeders/DemoDataSeederTest.php` (`RefreshDatabase`):
 - [ ] Integration test: when the database has **no** users before the seeder runs, exactly one
       fallback user is created and every seeded blog post is authored by that same user.
 - [ ] Integration test: `BlogTag::count()` stays exactly 10 after the run.
-- [ ] Integration test: at least one blog post has ≥1 tag attached from the shared pool (asserted
-      via the pivot, not a fresh count).
+- [ ] Integration test: the first seeded blog post always has 1–3 tags attached from the shared
+      pool (deterministic, asserted via the pivot, not a fresh count).
+- [ ] Integration test: no blog post has the same tag twice — no duplicate
+      `(blog_post_id, blog_tag_id)` pivot rows.
+- [ ] Integration test: every seeded product has `status` `ProductStatus::Active`.
 - [ ] Regression test: every seeded blog post has a non-empty slug (guards against a future
       `WithoutModelEvents` being added to the seeder).
 
 Command — `tests/Feature/Console/Commands/GenerateDemoDataTest.php`:
+- [ ] Integration test: `demo:generate-data` is registered (e.g. present in `Artisan::all()`) with
+      the description stated under "Files to create/modify".
 - [ ] Integration test: happy path in `testing` — exits `0` and the database gained the expected
       rows (one coarse count assertion; the seeder test owns the detail).
 - [ ] Negative test (dataset `production`, `staging`): without `--force` the command exits
@@ -245,7 +255,10 @@ Command — `tests/Feature/Console/Commands/GenerateDemoDataTest.php`:
 - [ ] Edge case test: running the command twice in `testing` leaves exactly 20 customers, 20
       products, 20 product categories, 20 blog posts, 20 blog categories and 20 blog tags, at
       least 20 orders, and every one of the 20 customers still has one or more orders (documents
-      D-2's additive behaviour together with D-4's per-customer order guarantee).
+      D-2's additive behaviour together with D-4's per-customer order guarantee). Both runs happen
+      in one PHP process, where `fake()->unique()` state is shared, so this test is **not** a
+      guarantee against Faker-uniqueness collisions across separate command invocations (see
+      Dependencies/risks).
 
 ## Expected outcome
 `php artisan demo:generate-data` in a `local`/`testing` environment resolves an author pool (every
@@ -273,11 +286,13 @@ nothing, unless `--force` is passed.
 - [ ] Every blog post is published, belongs to a seeded blog category, has a non-empty slug, and is
       authored by a real, already-existing `User` (reused from the database, or the single
       fallback user created when none existed).
-- [ ] At least one blog post is tagged from the shared pool; no post has the same tag twice.
+- [ ] The first seeded blog post is always tagged from the shared pool (deterministic); no post has
+      the same tag twice.
 - [ ] Outside `local`/`testing` without `--force`: non-zero exit, clear refusal message, zero writes.
 - [ ] With `--force` in any environment: runs as in `local`.
-- [ ] A second run adds another batch (additive, per D-2), every customer old and new still has at
-      least one order, and the run does not fail.
+- [ ] A second run adds another batch (additive, per D-2) and every customer old and new still has
+      at least one order; a Faker-uniqueness collision across separate runs is a known, accepted
+      limitation (see Dependencies/risks), not something this story's tests assert against.
 - [ ] `DemoDataSeeder` does not use `WithoutModelEvents`; the command holds the environment guard,
       the seeder holds no guard of its own.
 
@@ -295,6 +310,19 @@ nothing, unless `--force` is passed.
   `ProductFactory::active()` / `BlogPostFactory::published()` states.
 - **Known limitation — additive runs (D-2):** re-running the command keeps adding batches; there is
   no reset. A future "reset demo data" feature would need schema support (see D-3).
+- **Known, accepted limitation — cross-run Faker uniqueness (D-2):** several Faker-generated
+  columns sit under real unique DB indexes (`blog_tags.normalized_name`,
+  `product_category_translations (store_language_id, name)`, `customers.email`, blog post `slug`).
+  `fake()->unique()` only guards one PHP process, so a separate `php artisan demo:generate-data`
+  invocation can theoretically collide with a row an earlier run created. This is accepted, not
+  defended against (no retry/uniqueness-recovery logic), matching `BlogTagFactory`'s own R-5
+  docblock note ("Faker's unique() only guards one Faker instance, never the database"). The
+  "running twice" test exercises one process only and does not cover this case.
+- **Expected side rows outside the seven named tables:** on an empty database the reused factories
+  also write one `payment_methods` row (`OrderFactory`'s existing fallback when none exists), one
+  default `store_languages` row and 10 `product_category_translations` rows
+  (`ProductCategoryFactory`'s existing translation-writing behavior). Tests must not assert "no
+  extra rows" against those tables.
 - **Known limitation — no demo marker (D-3):** demo rows cannot be told apart from real rows.
   `--force` against an environment holding real data mixes the two irreversibly; the refusal message
   should make that consequence clear.
@@ -311,7 +339,7 @@ nothing, unless `--force` is passed.
 - **Minor scope addition (post-review, D-5):** the fallback-user creation is new since the initial
   Phase 1 draft — the project owner asked that blog posts belong to an existing user. It is scoped
   to the minimum needed (reuse if any user exists, otherwise exactly one), not a bulk user seed, so
-  it does not conflict with D-3/"Out of scope"'s original stance on not seeding users in general.
+  it does not conflict with "Out of scope"'s original stance on not bulk-seeding users.
 - **Testability note (QA):** the command tests must force the application environment (e.g.
   override `$this->app['env']` before `$this->artisan(...)`). There is **no existing precedent** for
   this pattern in the suite — `DatabaseSeeder`'s own allow-list has never been exercised by a test.
