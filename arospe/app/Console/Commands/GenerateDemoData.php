@@ -33,11 +33,9 @@ class GenerateDemoData extends Command
             return self::FAILURE;
         }
 
-        $this->call('db:seed', [
+        return $this->call('db:seed', [
             '--class' => DemoDataSeeder::class,
             '--force' => true,
         ]);
-
-        return self::SUCCESS;
     }
 }
