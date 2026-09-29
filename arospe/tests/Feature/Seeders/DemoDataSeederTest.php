@@ -12,6 +12,7 @@ use App\Models\ProductCategory;
 use App\Models\User;
 use Database\Seeders\DemoDataSeeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 // Story 0081: DemoDataSeeder fills a local/demo environment with realistic, fully-wired data --
 // customers, orders, products, product categories, blog posts, blog categories and blog tags --
@@ -138,6 +139,20 @@ test('when no user exists, the seeder creates exactly one fallback user and auth
     $fallbackUserId = User::query()->value('id');
 
     expect(BlogPost::query()->where('created_by', '!=', $fallbackUserId)->exists())->toBeFalse();
+});
+
+// Security regression (appsec-auditor finding F-1): `resolveCreatorPool()` used to fall back to a
+// bare `User::factory()->create()` when the users table was empty, which leaves that environment's
+// only account on `UserFactory`'s well-known default password ("password"). Guard against that
+// credential ever being reachable through the seeder again.
+test('when no user exists, the fallback user is not created with the factory default password', function () {
+    expect(User::count())->toBe(0);
+
+    (new DemoDataSeeder)();
+
+    $fallbackUser = User::query()->sole();
+
+    expect(Hash::check('password', $fallbackUser->password))->toBeFalse();
 });
 
 test('running the seeder creates exactly 10 blog tags', function () {
