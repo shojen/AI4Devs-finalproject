@@ -14,7 +14,7 @@ permissions:
 jobs:
   verificar-ci:
     name: Verificar pipelines
-    if: github.ref == 'refs/heads/finalproject-ARP'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     outputs:
       sha: ${{ steps.check.outputs.sha }}
@@ -23,7 +23,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ github.sha }}
-          REQUIRED_WORKFLOWS: "Tests,Lint"
+          REQUIRED_WORKFLOWS: "tests,linter"
         run: |
           gh run list --repo "$GITHUB_REPOSITORY" --commit "$SHA" --limit 100 \
             --json workflowName,status,conclusion,createdAt > runs.json
