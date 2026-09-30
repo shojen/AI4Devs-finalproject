@@ -237,6 +237,8 @@
       "touches": [
         "app/Actions/Dashboard/",
         "app/Enums/SalesGranularity.php",
+        "app/Enums/OrderStatus.php",
+        "database/seeders/DemoDataSeeder.php",
         "tests/Feature/Dashboard/"
       ],
       "conflict_risk_with": [
