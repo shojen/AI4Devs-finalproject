@@ -25,6 +25,26 @@ enum OrderStatus: string
     case Cancelled = 'cancelled';
 
     /**
+     * The statuses the dashboard's sales overview counts when the caller picks none (story 0082,
+     * D-6/D-8): every case except `Cancelled`, in declaration order. The single place that
+     * default lives.
+     *
+     * @return list<self>
+     */
+    public static function defaultDashboardSet(): array
+    {
+        $statuses = [];
+
+        foreach (self::cases() as $status) {
+            if ($status !== self::Cancelled) {
+                $statuses[] = $status;
+            }
+        }
+
+        return $statuses;
+    }
+
+    /**
      * Get the translated, human-readable label for the status.
      */
     public function label(): string

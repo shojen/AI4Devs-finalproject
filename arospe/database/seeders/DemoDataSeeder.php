@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\OrderStatus;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Models\BlogTag;
@@ -82,16 +83,34 @@ class DemoDataSeeder extends Seeder
      * `OrderFactory::withItems()`'s own recompute, without that state's nested `Product::factory()`
      * fan-out.
      *
+     * Story 0082: so the dashboard's Real income and cancelled-orders views have something to show,
+     * the FIRST seeded order is paid (`OrderFactory::paid()`, not cancelled) and the SECOND is
+     * cancelled -- deterministic, like the always-tagged first blog post, so a test cannot flake.
+     * No order is ever refunded or partially refunded: a refund needs the line-level `RecordRefund`
+     * data this seeder does not build.
+     *
      * @param  Collection<int, Customer>  $customers
      * @param  Collection<int, Product>  $products
      */
     private function seedOrders(Collection $customers, Collection $products): void
     {
+        $seededOrders = 0;
+
         foreach ($customers as $customer) {
             $orderCount = fake()->numberBetween(1, 3);
 
             for ($i = 0; $i < $orderCount; $i++) {
-                $order = Order::factory()->forCustomer($customer)->create();
+                $seededOrders++;
+
+                $factory = Order::factory()->forCustomer($customer);
+
+                if ($seededOrders === 1) {
+                    $factory = $factory->paid();
+                } elseif ($seededOrders === 2) {
+                    $factory = $factory->state(['status' => OrderStatus::Cancelled]);
+                }
+
+                $order = $factory->create();
 
                 $itemCount = fake()->numberBetween(1, 4);
 
