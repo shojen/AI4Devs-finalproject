@@ -30,8 +30,8 @@ Data required:
 
 ## Type
 
-`backend | includes database-expert: no` — no migration, no model, no seeder, no route, no permission-catalog change, no new
-dependency. The one schema observation (no index on `orders.created_at`) is recorded as a follow-up trigger, not scope.
+`backend | includes database-expert: no` — no migration, no model, no route, no permission-catalog change, no new dependency;
+the only non-action code change is to the demo **seeder** (and a new enum method). The one schema observation (no index on `orders.created_at`) is recorded as a follow-up trigger, not scope.
 
 ## Verified facts that shaped the story
 
@@ -54,16 +54,28 @@ dependency. The one schema observation (no index on `orders.created_at`) is reco
 
 `GetDashboardCounters`, `GetLatestBlogPosts`, `GetLowStockProducts`, `GetLatestOrders`, `GetSalesSeries`, `GetOrdersSeries`
 (the last two gated by `orders.view`; they share the non-action helper `ResolveSalesBuckets`), all `__invoke`,
-read-only, in `app/Actions/Dashboard/`. The four list/series actions authorize with the project wrapper
-`LogRefusedPrivilegedAttempt::authorize('viewAny', <Model>::class, targetType: ...)` as their **first statement** (never a
-bare `Gate::authorize()`, per story 0015b), so a refusal is logged and throws `AuthorizationException` **before validation
-and before any query**. Super Admin passes via `Gate::before`. The dashboard **route stays ungated**; each widget is
+read-only, in `app/Actions/Dashboard/`. The **five** list/series actions (posts, low stock, orders, sales series, orders series)
+authorize with the project wrapper, **constructor-injected** (`private readonly LogRefusedPrivilegedAttempt
+$logRefusedPrivilegedAttempt`, per `docs/conventions/code-style.md`'s injected-dependency exception), calling
+`->authorize('viewAny', <Model>::class, targetType: '<type>')` as their **first statement** — `targetType` is **`'blog_post'`**
+(`BlogPost`), **`'product'`** (`Product`) and **`'order'`** (`Order`, both order actions) — never a bare `Gate::authorize()`
+(story 0015b). The wrapper only auto-resolves `User`/`Role` targets, so the type is always passed explicitly (and `targetId` is
+`null` for a `viewAny`). A refusal is logged and throws `AuthorizationException` **before validation and before any query**. Super Admin passes via `Gate::before`. The dashboard **route stays ungated**; each widget is
 independently gated.
 
 **`GetDashboardCounters` is the deliberate exception**: it spans three modules, so it never throws. Each counter is guarded
 by its own `Gate::allows` (`users.view`, `products.view`, `media.view`) and is `null` when the actor lacks it; **no count query
 runs for a null counter and nothing is logged** (a hidden counter is not an attempt). Return
 `array{users: ?int, products: ?int, images: ?int}`.
+
+**Query-count convention (binding on every "N queries" statement in this story):** counts are **queries against domain tables**
+(`users`, `products`, `product_variants`, `media`, `blog_posts`, `orders`, `customers`), measured with `DB::listen` filtered by table name
+(a helper in the tests). Permission, role and session queries are **excluded** — a Gate check on a fresh actor loads roles and
+permissions through spatie, and the logging wrapper evaluates the Gate twice — so "zero queries" means **zero domain-table queries**.
+
+**Validation messages** are translation keys in a new `lang/en/dashboard.php` / `lang/es/dashboard.php` with an `errors` group
+(`range_invalid`, `range_too_long` with `:max`, `statuses_required`), **created by this story** (0083 later extends the same file with its
+UI strings); parity is pinned by a test.
 
 **Caller contract (binding on 0083):** a caller must check the ability itself (`Gate::allows`/`@can`) and call an action only
 when it is already permitted, otherwise every unprivileged dashboard load would write a "Privileged action refused" warning.
@@ -116,8 +128,9 @@ Product::query()->leftJoinSub($variantMin, 'v', 'v.product_id', '=', 'products.i
 - `isOutOfStock` = `effectiveStock <= 0`, computed here, **not** via `Product::isOutOfStock()`.
 - **`lowVariantCount` — ⚑ owner to confirm.** The cut-off is the `effectiveStock` of the last returned row; a product's
   `lowVariantCount` is the number of its variants with `stock <= cut-off` (0 for a simple product), obtained in **one extra
-  grouped query** for all returned parents. Variants 40/1/2 among products with effective stocks 1, 7, 9 give cut-off 9 →
-  count 3; the Gherkin below fixes concrete numbers. Total: **2 queries** regardless of catalog size.
+  grouped query** for all returned parents. Worked example: returned rows with effective stocks 1, 5 and 6 give cut-off 6; the
+  variable product whose variants hold 40, 1 and 2 units has `lowVariantCount` **2** (1 and 2 are ≤ 6; 40 is not). Total:
+  **2 domain-table queries** regardless of catalog size.
 
 ### D-5 — Latest orders
 
@@ -130,12 +143,24 @@ null and crash the widget. Select only the needed order columns. **2 queries** t
 Two actions sharing one internal collaborator, **`ResolveSalesBuckets`** (range normalization, cap validation, bucket list and
 zero-fill), so both charts always show identical buckets:
 
-- `GetSalesSeries::__invoke(SalesGranularity $granularity, CarbonInterface $from, CarbonInterface $to, array $statuses = OrderStatus::defaultDashboardSet()): array`
+- `GetSalesSeries::__invoke(SalesGranularity $granularity, CarbonInterface $from, CarbonInterface $to, ?array $statuses = null): array`
+  with PHPDoc `@param list<OrderStatus>|null $statuses` (a method call cannot be a PHP parameter default — verified on PHP 8.5:
+  "Constant expression contains invalid operations"). **`null` means `OrderStatus::defaultDashboardSet()`; `[]` is refused.**
 - `GetOrdersSeries::__invoke(…same arguments…): array`
+- `OrderStatus::defaultDashboardSet(): array` — `public static`, `@return list<self>`, every case **except `Cancelled`**, in
+  case-declaration order.
+- **`ResolveSalesBuckets`** (a collaborator in `app/Actions/Dashboard/`, **not** an authorized action, following the
+  `Actions/Orders/ToNumericString`/`CalculateTaxAmount` precedent in `docs/conventions/directory-structure/actions.md`): its docblock states
+  it **authorizes nothing because only the two already-authorized series actions call it**, and a test pins that no other class does.
+  API: `__invoke(SalesGranularity $granularity, CarbonInterface $from, CarbonInterface $to, ?array $statuses): array{start: CarbonImmutable, endExclusive: CarbonImmutable, statuses: list<OrderStatus>, buckets: list<array{bucket: string, label: CarbonImmutable}>}`.
+  It normalizes the range, resolves the status set, validates, and builds the zero-filled bucket list; **`label` is the first day of
+  the bucket** (the day itself, the 1st of the month, 1 January). **If both the range and the statuses are invalid, one
+  `ValidationException` carries both keys (`range` and `statuses`)**; `SalesGranularity` exposes `sqlFormat()`, `keyFormat()`,
+  `step()`, `maxBuckets()` and `startOf(CarbonInterface)`.
 
 **Shared status filter (replaces the old `includeCancelled` boolean — ⚑ owner to confirm):** `$statuses` is a non-empty list of
-`OrderStatus`; the default is **every status except `cancelled`**, so "Include cancelled orders" (the owner's earlier checkbox,
-unchecked by default) is simply the `cancelled` entry of this list. An empty list is refused with a `ValidationException` on
+`OrderStatus` (or `null` = the default set), which excludes `cancelled`, so "Include cancelled orders" (the owner's earlier checkbox,
+unchecked by default) is simply the `cancelled` entry of the list. An empty list is refused with a `ValidationException` on
 `statuses`. The filter applies to **Sales and Orders**; **Real income ignores the cancelled status by definition** (see below).
 
 **Definitions (single source of truth, shown in the UI):**
@@ -149,7 +174,8 @@ unchecked by default) is simply the `cancelled` entry of this list. An empty lis
 All three are bucketed by **`orders.created_at`** (there is no `paid_at`/`placed_at` column; adding one is a schema change this
 story bans — follow-up below). Because income is attributed to the order's creation day, an order created on 30 April and paid on
 2 May counts as April income. **Known limitations, accepted and to be documented in the tooltip/docblock:** (a) `refunded_amount` is
-merchandise-only, so a *partially* refunded order overstates income by the tax/shipping share of the refund; (b) **no code path in
+merchandise-only, so a *partially* refunded order overstates income by the tax/shipping share of the refund (this cannot occur with today's data, where
+tax and shipping are 0.00 on every order — `docs/database/schema-orders/orders.md:26` — but the docblock must say so); (b) **no code path in
 the application sets `payment_status = paid` yet** — only `OrderFactory::paid()` does, and the refund action derives
 `partially_refunded`/`refunded` from it — so in a real store Real income reads 0 until a payment-capture story exists; the
 dashboard must show a neutral empty state for it rather than an error.
@@ -157,11 +183,11 @@ dashboard must show a neutral empty state for it rather than an error.
 `GetSalesSeries` implementation notes (the rest of this decision applies to both actions):
 
 - **Order of operations:** authorize → validate → query.
-- **Range normalization:** `from` → `setTimezone('Europe/Madrid')->startOfDay()`, `to` → end of day, inclusive; predicate is
+- **Range normalization:** `from` → `setTimezone(config('app.timezone'))->startOfDay()` (Europe/Madrid today), `to` → end of day, inclusive; predicate is
   half-open and sargable: `created_at >= from-start` and `created_at < day-after-to-start` (never `whereDate`).
 - **Bucket caps, on bucket count, not span:** `SalesGranularity` carries them — **Day 366, Month 120, Year 50**. `from > to` or
-  too many buckets → `ValidationException::withMessages(['range' => ...])` (single key `range`, which 0083 renders and
-  translates). Cap is computed in PHP before touching the database.
+  too many buckets → `ValidationException::withMessages(['range' => __('dashboard.errors.range_invalid' | 'range_too_long', ['max' => …])])`
+  (single key `range`, already translated). Cap is computed in PHP before touching the database.
 - **Timezone:** `created_at` is already Madrid wall time, so bucket in SQL **without `CONVERT_TZ`**. DST days
   (2026-03-29, 2026-10-25) group correctly for that reason.
 - **Bucketing SQL:** `DATE_FORMAT(created_at, '<fmt>') AS bucket` with the format string **interpolated from the enum** (a
@@ -180,7 +206,7 @@ dashboard must show a neutral empty state for it rather than an error.
 ### D-7 — Counters
 
 `Media::query()->count()`, `Product::query()->count()`, `User::query()->where('status', Active)->count()` (soft-deleted
-excluded). **At most three `COUNT` queries; zero for an actor with none of the three abilities.** No caching (revisit only if
+excluded). **At most three `COUNT` domain-table queries; zero domain-table queries for an actor with none of the three abilities.** No caching (revisit only if
 measured slow).
 
 ### D-8 — Cancelled orders and the status filter (owner decisions, amended 2026-09-30)
@@ -241,8 +267,9 @@ Scenario: Counters the actor may not see are never read
 
 Scenario: An empty shop shows zeros
   Given Laura, an administrator, and a shop with no products, images or orders
-  When Laura opens the dashboard
+  When Laura opens the dashboard and views the daily sales overview from 1 May to 3 May
   Then the products and images counters show 0 and every list is empty
+  And the sales overview shows 3 days, each with no sales, no income and no orders
   And the sales chart shows every day at zero
 
 Scenario: The latest posts exclude drafts
@@ -389,18 +416,18 @@ Scenario: The orders chart breaks each period down by status
   Given Olga, an order manager, and on 1 May 2 pending orders and 1 shipped order
   When Olga views the daily orders for 1 May
   Then 1 May shows 3 orders: 2 pending and 1 shipped
-  And every other status shows 0
+  And every other selected status shows 0
 
 Scenario Outline: The status filter narrows sales, income and orders alike
-  Given Olga, an order manager, and on 1 May a paid delivered order of 100, a paid shipped order of 50 and a pending order of 20
+  Given Olga, an order manager, and on 1 May a paid delivered order of 100, a paid shipped order of 50 and an unpaid pending order of 20
   When Olga views the daily overview for 1 May filtered to <statuses>
   Then sales are <sales>, real income is <income> and orders are <orders>
   Examples:
-    | statuses           | sales | income | orders |
-    | delivered          | 100   | 100    | 1      |
-    | delivered, shipped | 150   | 150    | 2      |
-    | pending            | 20    | 0      | 1      |
-    | all except cancelled | 170 | 150    | 3      |
+    | statuses             | sales | income | orders |
+    | delivered            | 100   | 100    | 1      |
+    | delivered, shipped   | 150   | 150    | 2      |
+    | pending              | 20    | 0      | 1      |
+    | all except cancelled | 170   | 150    | 3      |
 
 Scenario: The default status filter leaves cancelled orders out
   Given Olga, an order manager, and a delivered order of 100 and a cancelled order of 40 on the same day
@@ -423,14 +450,14 @@ Scenario: Days without orders show zero
   Then three days are shown and 2 May shows no sales
 
 Scenario Outline: Sales are grouped by the chosen period
-  Given Olga, an order manager, and orders of 10 on 30 April 2026, 20 on 1 May 2026 and 40 on 1 May 2027
-  When Olga views sales <period> from 30 April 2026 to 1 May 2027
+  Given Olga, an order manager, and orders of 10 on 30 April 2026, 20 on 1 May 2026 and 40 on 30 April 2027
+  When Olga views sales <period> from 30 April 2026 to 30 April 2027
   Then the sales shown are <shown>
   Examples:
-    | period    | shown                                                                  |
-    | per day   | 10 on 30 April, 20 on 1 May, 40 on 1 May 2027, zero on every other day |
-    | per month | 10 in April 2026, 20 in May 2026, 40 in May 2027, zero in other months |
-    | per year  | 30 in 2026, 40 in 2027                                                 |
+    | period    | shown                                                                        |
+    | per day   | 366 days: 10 on 30 April 2026, 20 on 1 May 2026, 40 on 30 April 2027, zero on every other day |
+    | per month | 13 months: 10 in April 2026, 20 in May 2026, 40 in April 2027, zero in the other months |
+    | per year  | 2 years: 30 in 2026, 40 in 2027                                              |
 
 Scenario: An order just after midnight belongs to the new day
   Given Olga, an order manager, and an order placed at 00:30 on 1 May in the shop's local time
@@ -469,12 +496,13 @@ Scenario Outline: A range with too many periods is refused
     | per year  | 51 years        |
 
 Scenario Outline: A user without access to a module reads none of its data
-  Given a user who may not view <module>
-  When the user opens the dashboard
-  Then the user is refused the <widget> widget
+  Given Pau, a customer manager who may not view <module>
+  When Pau opens the dashboard
+  Then Pau is refused the <widget> widget
   And no <module> information is read
   Examples:
     | module   | widget        |
+    | orders   | orders chart  |
     | orders   | latest orders |
     | orders   | sales chart   |
     | products | low stock     |
@@ -492,12 +520,16 @@ Create:
 - `app/Actions/Dashboard/GetDashboardCounters.php`, `GetLatestBlogPosts.php`, `GetLowStockProducts.php`, `GetLatestOrders.php`,
   `GetSalesSeries.php` (Sales + Real income), `GetOrdersSeries.php` (count by status), `ResolveSalesBuckets.php` (shared range/cap/zero-fill)
 - `OrderStatus::defaultDashboardSet()` (every case except `Cancelled`) in `app/Enums/OrderStatus.php`
-- `app/Enums/SalesGranularity.php` — string-backed `Day|Month|Year`; carries SQL format, PHP key format, `CarbonPeriod` step and bucket cap (no `switch` in the action)
+- `app/Enums/SalesGranularity.php` — string-backed `Day|Month|Year`; methods `sqlFormat()`, `keyFormat()`, `step()`, `maxBuckets()`,
+  `startOf(CarbonInterface)` (no `switch` in the actions)
+- `lang/en/dashboard.php`, `lang/es/dashboard.php` — the `errors` group of D-1 only (0083 extends the file)
 - `tests/Feature/Dashboard/` (see Tests)
 
-Modify: `database/seeders/DemoDataSeeder.php` (seed a share of orders as **paid** via `OrderFactory::paid()` and a few as
-cancelled, so Real income and the status chips show data; update the existing demo-seeder test's expectations, and keep the
-seeder's idempotence and its query budget intact) — no other application code. Docs (Phase 6, `docs-keeper`): `docs/api/routes.md`, `docs/architecture/overview.md`
+Modify: `database/seeders/DemoDataSeeder.php` — **measurable expectations** (keeping 0081's invariants: 1–3 orders per customer, order
+totals equal to their items, additive non-idempotent runs — `0081` D-2): after one seeding run **at least 1 order has `payment_status = paid`**
+(via `OrderFactory::paid()`) **and at least 1 has `status = cancelled`**, and **no order is `refunded`/`partially_refunded`** (refunds need
+line-level `RecordRefund` data the seeder does not build); extend the existing `tests/Feature/Console/Commands/GenerateDemoDataTest.php`
+with those three assertions. No other application code. Docs (Phase 6, `docs-keeper`): `docs/api/routes.md`, `docs/architecture/overview.md`
 (new `Actions/Dashboard` folder), `docs/architecture/authorization.md` (widgets gated per action, route stays ungated),
 `docs/testing/frontend/gherkin-guidelines.md` glossary (two roles). Coordination: `ai-spec/tasks-status.json`,
 `ai-spec/tasks-map.md`, plus a "consumers to migrate" line in 0076 and 0078 (Phase 6).
@@ -508,14 +540,17 @@ Pest 4 feature tests on MySQL, factories, `seed(RolePermissionSeeder)`, explicit
 timestamps), `Carbon::setTestNow` in `Europe/Madrid`.
 
 Files under `tests/Feature/Dashboard/`: `GetDashboardCountersTest`, `GetLatestBlogPostsTest`, `GetLowStockProductsTest`,
-`GetLatestOrdersTest`, `GetSalesSeriesTest` (split `…GranularityTest`/`…TimezoneTest` past ~400 lines),
-`DashboardActionsAuthorizationTest`, `DashboardActionsQueryCountTest`; plus a pure unit test for the description derivation
-in `tests/Unit/Actions/Dashboard/` if it is extracted to its own class.
+`GetLatestOrdersTest`, `GetSalesSeriesTest` (split `…GranularityTest`/`…TimezoneTest` past ~400 lines), **`GetOrdersSeriesTest`**,
+**`ResolveSalesBucketsTest`** (range normalization, caps, both-keys-invalid, label = bucket start, and that only the two series
+actions call it), `DashboardActionsAuthorizationTest`, `DashboardActionsQueryCountTest`, `DashboardLangParityTest` (the `errors`
+keys, identical placeholders); plus a pure unit test for the description derivation in `tests/Unit/Actions/Dashboard/` if it is
+extracted to its own class, and the extended `tests/Feature/Console/Commands/GenerateDemoDataTest.php`. A small test helper counts
+queries **per domain table** (see the convention in D-1).
 
 Required cases (matrix agreed with backend-qa):
 
 - **Counters:** active-only users; soft-deleted user; products incl. draft/virtual; media count incl. an unattached row; empty DB;
-  partial abilities → the others are `null` **and absent from the query log**; none → all `null`, zero queries; Super Admin; ≤ 3 queries.
+  partial abilities → the others are `null` **and no query touches their table**; none → all `null`, zero domain-table queries; Super Admin; ≤ 3 domain-table queries.
 - **Posts:** drafts/soft-deleted/stale-`published_at` draft excluded; fewer than 3; ties by `id desc` and identical on repeat;
   scheduled `publishAt` vs published `null`; past-dated scheduled still listed; description: `null`/empty/`<p></p>`/tags-only,
   HTML + entities (`&amp; &lt;b&gt;` stays literal), `<script>` text, multibyte (`ñ`, `日本語`, emoji — valid UTF-8, ≤ 80), 79/80/81/300
@@ -536,23 +571,27 @@ Required cases (matrix agreed with backend-qa):
   month across a year boundary; leap day 2028-02-29; midnight boundaries in Madrid (`00:00:00`, `23:59:59`), `00:30` Madrid
   lands on the same day, **DST days** each one bucket; orders outside the range excluded; ascending unique keys; 1 aggregate
   query; authorization refusal wins over an invalid range.
-- **Authorization matrix (dataset):** five actions × {no ability, only its ability, the other abilities, Super Admin}; refusals
+- **Authorization matrix (dataset):** the **five gated actions** (posts, low stock, orders, sales series, orders series; the counters action
+  is covered by its own partial-visibility cases above) × {no ability, only its ability, the other abilities, Super Admin}; refusals
   assert a logged warning and no query on the target table; the counters partial-visibility case asserts **no** warning.
   An arch/read-only guard: only `SELECT`s run.
-- **D-9 seam tests:** one per action asserting title/name/description resolve through the seam; **`->todo()` placeholders**
+- **D-9 seam tests:** one each for **`GetLatestBlogPosts`** (title/body) and **`GetLowStockProducts`** (name) — the only actions that read
+  moving columns — asserting they resolve through the seam; **`->todo()` placeholders**
   for the locale cases (Spanish translation, default-language fallback, description from the translated body) until 0076/0078 land.
 - Keep `tests/Feature/DashboardTest.php` green (a user with no permissions still gets HTTP 200 at `/dashboard`).
 
 ## Expected outcome
 
-Five tested, permission-aware, read-only actions returning scalar shapes that give the dashboard everything it displays,
+Six tested, permission-aware, read-only actions returning scalar shapes that give the dashboard everything it displays,
 with a documented seam so the pending translatable-content retrofits do not break them.
 
 ## Acceptance criteria
 
 - Each action returns exactly the shape, filtering, ordering and tie-breaks above; the list/series actions refuse an actor
   lacking their ability with a **logged** `AuthorizationException` before any query; the counters action never throws.
-- No query runs for a module the actor cannot see; query counts: counters ≤ 3, posts 1, low stock 2, orders 2, series 1.
+- No **domain-table** query runs for a module the actor cannot see; domain-table query counts (D-1 convention): counters ≤ 3, posts 1, low
+  stock 2, latest orders 2, each series action 1.
+- `DemoDataSeeder` yields at least one paid and at least one cancelled order and no refunded ones, with 0081's invariants intact.
 - The description never exceeds 80 characters including the ellipsis, is multibyte-safe and plain text.
 - The money and orders series are zero-filled, Madrid-day-consistent, **bucket-identical to each other**, bounded by the
   per-granularity caps, and raise `ValidationException` on `range` (and `statuses` for an empty filter).

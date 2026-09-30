@@ -239,7 +239,11 @@
         "app/Enums/SalesGranularity.php",
         "app/Enums/OrderStatus.php",
         "database/seeders/DemoDataSeeder.php",
-        "tests/Feature/Dashboard/"
+        "lang/en/dashboard.php",
+        "lang/es/dashboard.php",
+        "tests/Feature/Dashboard/",
+        "tests/Unit/Actions/Dashboard/",
+        "tests/Feature/Console/Commands/GenerateDemoDataTest.php"
       ],
       "conflict_risk_with": [
         "0076",

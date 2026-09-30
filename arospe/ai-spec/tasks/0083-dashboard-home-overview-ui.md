@@ -129,7 +129,7 @@ Add `chart.js` to `package.json`/`package-lock.json`; **record the bundle-size d
   `wire:ignore`, fed by the same computed series, so Livewire updates it natively; the canvas is `aria-hidden` and the table is the
   alternative (an `aria-live="polite"` line summarizes the total). This table is also the assertion surface for Livewire tests.
 - **Empty state:** when every point is zero, show the empty message and hide the canvas wrapper (chart instance survives).
-- **Loading:** `wire:loading` overlay on a sibling of the wrapper, `wire:target="granularity,from,to,includeCancelled,applyPreset"`.
+- **Loading:** `wire:loading` overlay on a sibling of the wrapper, `wire:target="granularity,from,to,statuses,applyPreset"`.
 - **Security:** Blade `{{ }}` for every title/description/name (all plain text); never `x-html`, never `{!! !!}`, never interpolate
   labels into JS strings.
 
