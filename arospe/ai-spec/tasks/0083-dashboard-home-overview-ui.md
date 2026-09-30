@@ -339,6 +339,12 @@ Scenario: The latest orders widget lists five orders
   When Olga opens the dashboard
   Then 5 orders are listed, newest first, each linking to its detail page
 
+Scenario: The latest-orders widget is read-only
+  Given Olga, an order administrator, and an order whose payment state is Pending payment
+  When Olga opens the dashboard home
+  Then the latest-orders widget lists the order with a link to its page
+  And the widget offers no "Mark as paid" button
+
 Scenario: An order from a deleted customer still appears
   Given Olga, an order manager, and an order whose customer has been deleted
   When Olga opens the dashboard
@@ -524,7 +530,9 @@ Per-concern files (the draft's single `OverviewTest.php` is dropped so a red tes
 
 Feature (`Livewire::test`, MySQL; actors built with `OrdersUi::actor()`-style helpers — **never** a Super Admin for a "hidden" assertion, `Gate::before` makes it a false negative; `seed(RolePermissionSeeder)` and `forgetCachedPermissions()` in `beforeEach`):
 
-- `OverviewRenderingTest` — every widget's exact text/badges/dates/links, escaping (`<img onerror>`, `"><script>`, `{{`/`@` in titles, names, customer names — in the widgets **and** the sr-only table), null tolerance, trashed customer, empty states, first-name greeting, greeting boundaries with `setTestNow` (04:59/05:00/11:59/12:00/19:59/20:00).
+- `OverviewRenderingTest` — **the latest-orders widget renders no element whose `data-test` starts with `mark-as-paid`** for an
+  actor who holds `orders.edit`, with a pending-payment order present (the cross-story guard for [0085](0085-order-mark-as-paid-ui.md),
+  which owns the control on the orders list and detail; that `data-test` prefix is a frozen contract); every widget's exact text/badges/dates/links, escaping (`<img onerror>`, `"><script>`, `{{`/`@` in titles, names, customer names — in the widgets **and** the sr-only table), null tolerance, trashed customer, empty states, first-name greeting, greeting boundaries with `setTestNow` (04:59/05:00/11:59/12:00/19:59/20:00).
 - `OverviewPermissionTest` — profile dataset (none, only `users.view`, only `orders.view`, only `products.view`, only `media.view`, only `blog.view`, three counters, all, Super Admin, Administrator role) asserting rendered `data-test` hooks; **`DB::listen`: zero queries on tables of hidden modules; `Log::spy()`: no "Privileged action refused" warning**; direct-call bypass of filter actions; permission revoked between load and action; lazy chart handshake.
 - `OverviewFiltersTest` — default state; granularity switch (Outline) resets to that granularity's default range; presets with `travelTo(2026-09-30)`; custom range boundaries (15 May 23:59:59 counted, 16 May 00:00:00 not); `from > to`; cap boundaries (366 ok / 367 refused, 120/121, 50/51) with the **translated** message and previous series retained; status chips (default set, *Cancelled* on/off, single status, all, **empty selection refused** with the translated message and both charts keeping their data, unknown statuses in the URL dropped); KPI tiles (Sales, Real income, Orders) for paid / pending / partially refunded / cancelled orders, the income hint when income is 0 and sales > 0, the "collected %" hint; `assertDispatched('sales-overview-updated')` with the scalar `{money, orders}` payload after a valid change (status datasets present for every selected status, money and orders labels identical) and `assertNotDispatched` after an invalid one; `#[Url]` round trip and defaults absent from the URL; garbage params via `Livewire::withQueryParams` **and** `$this->get('/dashboard?g=garbage')`; rapid consecutive changes equal a fresh load; a refunded order reduces its bucket (locks the definition on the UI side); Madrid 23:30 order lands on its own day.
 - `OverviewSnapshotSecurityTest` — for restricted actors, decode the `wire:snapshot` and assert **sentinel strings** of hidden modules (post title, product SKU, order number, customer name/email, totals) appear neither in the snapshot nor in the HTML, including the chart wrapper's `x-data`/`data-*`; reflection: no public property is a model/Collection/enum/Carbon; tampering with `set('orders', …)`/`set('counters', …)` is refused or renders nothing.
@@ -547,6 +555,7 @@ leakage and no log noise, and the Chart.js sales chart updates live from its fil
 
 ## Acceptance criteria
 
+- The latest-orders widget has **no** "Mark as paid" action (owner decision 2026-10-01; asserted by `OverviewRenderingTest`).
 - No placeholder pattern remains; the four shortcut cards are gone; `dashboard.blade.php` is deleted; the route keeps its name and stays ungated.
 - Each widget matches its Gherkin and renders only for an actor allowed to see it; **hidden widgets run no query and write no refusal log**, including through direct calls to the filter actions.
 - Only scalar filter properties are public; no other-module data appears in the snapshot or the HTML.

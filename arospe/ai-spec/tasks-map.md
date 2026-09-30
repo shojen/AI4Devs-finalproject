@@ -44,6 +44,12 @@ was never implemented — nothing in `app/` writes `PaymentStatus::Paid`, so no 
 (0083 edits the orders *list* view; 0085 the *detail* view), so no `conflict_risk_with` entries. Pending count moves from 13 to 15
 numbered files; `done/` unchanged at 92.
 
+**Update (2026-10-01, later): the Three Amigos debate ran for `0084` and `0085`** (backend-expert, backend-qa, database-expert;
+frontend-expert, frontend-qa) and both are now Phase 1 complete, awaiting Phase 2. Dependency facts unchanged (`0085` blocked on `0084`;
+`0083` ↔ `0085` conflict on `orders.blade.php`). New cross-story coordination: `0083` now owns the "latest-orders widget has no
+`mark-as-paid` element" guard (scenario, test and acceptance line added), since a guard in `0085` would be a false green; `0085` also edits
+`tests/Feature/Orders/IndexTest.php` (its public-methods reflection test) and two "read-only" docblocks on `Orders\Index`.
+
 **Update (2026-10-01): `0085` amended on the owner's answer** — the "Mark as paid" control lives in the **orders list table** and the
 **order detail page**, not in the dashboard home's latest-orders widget (read-only). `0085` therefore also touches
 `app/Livewire/Orders/Index.php` and `resources/views/livewire/orders.blade.php`, which `0083` edits too (badge extraction), so
