@@ -1,5 +1,9 @@
 # [0083] Dashboard home overview — page redesign and sales chart (frontend)
 
+> **Amended 2026-09-30 (owner request): the sales chart became a "Sales overview"** — shared filters with an order-status filter,
+> a KPI strip (Sales · Real income · Orders) and two charts (D-9). Written by the facilitator without a second debate round;
+> Phase 2 should look at D-9 and the ⚑ flags first.
+>
 > **Status: Phase 1 complete (Three Amigos debate held 2026-09-30).** Ready for Phase 2 (INVEST check, not run yet).
 > Backend companion: [0082](0082-dashboard-home-overview-backend.md), which this story is blocked on — its return shapes,
 > caller contract (D-1) and caps (D-6) are the contract this story consumes.
@@ -18,8 +22,11 @@ four shortcut cards** with live widgets:
 3. **Low-stock widget** — the 3 products closest to running out, with stock and an out-of-stock / low-stock badge. A variable
    product appears as its **parent**, with its lowest variant stock and an "N variants low" hint, linking to the product editor.
 4. **Latest orders widget** — the 5 most recent orders (number, customer, total, status), each linking to the order detail.
-5. **Sales chart (Chart.js)** — "Sales" over time with filters **Day / Month / Year**, presets, a **custom date range**
-   and an **"Include cancelled orders"** checkbox (unchecked by default); it updates without a page reload.
+5. **Sales overview (Chart.js)** (amended 2026-09-30, owner request) — one card with **shared filters** (**Day / Month / Year**,
+   presets, a **custom date range** and an **order-status filter**, the old "Include cancelled orders" checkbox now being the
+   *Cancelled* chip, off by default), a **KPI strip** (Sales · Real income · Orders for the period) and **two charts**:
+   **"Sales vs real income"** (line, two series) and **"Orders by status"** (stacked bars, one segment per status). Everything
+   updates without a page reload. See D-9.
 
 ## Type
 
@@ -50,10 +57,10 @@ extraction of two shared badge components.
 `App\Livewire\Dashboard\Overview` (full page, replaces `Route::view('dashboard', 'dashboard')` at `routes/web.php:8`, **same
 route name and middleware, still ungated**) renders the layout heading/subheading (`topbar.dashboard.*`), the hero with counters
 (eager — three cheap counts, avoids layout jump) and four children, each wrapped in `@can`:
-`Dashboard\BlogWidget`, `Dashboard\LowStockWidget`, `Dashboard\LatestOrdersWidget`, `Dashboard\SalesChart`.
+`Dashboard\BlogWidget`, `Dashboard\LowStockWidget`, `Dashboard\LatestOrdersWidget`, `Dashboard\SalesOverview` (filters + KPI strip + both charts; renamed from `SalesChart`).
 
-- **Why children:** a filter change is a request to `SalesChart` only; it must not re-run the four other queries or re-morph the widgets.
-- **`#[Lazy]` on `SalesChart` only** (skeleton placeholder with `flux:skeleton`); the three list widgets are eager (3–5 rows).
+- **Why children:** a filter change is a request to `SalesOverview` only; it must not re-run the four other queries or re-morph the widgets.
+- **`#[Lazy]` on `SalesOverview` only** (skeleton placeholder with `flux:skeleton`); the three list widgets are eager (3–5 rows).
   It is the repo's first `#[Lazy]`, so it gets its own test.
 - **Two permission layers per child:** the parent `@can` only avoids rendering; **each child re-checks with `Gate::allows`
   inside its own computed/actions before calling a 0082 action** (backend D-1 caller contract — otherwise every unprivileged
@@ -68,10 +75,13 @@ route name and middleware, still ungated**) renders the layout heading/subheadin
 
 Public properties are client-visible and writable: only **scalars** (`string`/`bool`/`int`) are public. Result arrays live in
 `#[Computed]` (never `persist: true`), and **no model, Collection, enum or `CarbonImmutable` is a public property**.
-`SalesChart` public state:
+`SalesOverview` public state:
 
 - `#[Url(as: 'g')] public string $granularity = 'day'`, `#[Url(as: 'from')] public string $from`, `#[Url(as: 'to')] public string $to`,
-  `#[Url(as: 'cancelled')] public bool $includeCancelled = false`. Defaults are omitted from the URL.
+  `#[Url(as: 's')] public array $statuses` — **a list of `OrderStatus` value strings** (scalars), default = every status except
+  `cancelled` (`OrderStatus::defaultDashboardSet()` values). Defaults are omitted from the URL. Unknown status strings in the URL are
+  dropped; if none survive, the default set is used. An **empty selection made in the UI** is refused with a translated message
+  (`statuses` error key), the previous data stays.
 - `$granularity` is validated with `Rule::enum(SalesGranularity::class)` and converted with `SalesGranularity::tryFrom()` /
   `CarbonImmutable::createFromFormat('!Y-m-d', …)` inside a private method — **never `::from()`** (a garbage URL must not 500).
 - `rules()`: `from` `required|date_format:Y-m-d`, `to` `required|date_format:Y-m-d|after_or_equal:from`.
@@ -79,7 +89,7 @@ Public properties are client-visible and writable: only **scalars** (`string`/`b
   `cancelled=maybe`) is validated in `mount()` and falls back to the defaults: HTTP 200, no exception.
 - **Keeping the previous chart on an invalid range:** validation and the action's `ValidationException` (key `range`) are caught,
   the message is added to the `range` error bag (**translated**, with the cap as `:max`, never the backend's English text), and
-  **no `sales-series-updated` event is dispatched**, so the chart is not blanked. `resetValidation()` runs at the start of each
+  **no `sales-overview-updated` event is dispatched**, so neither chart is blanked. `resetValidation()` runs at the start of each
   successful update.
 - **Presets** (`wire:click="applyPreset('…')"`, computed server-side in the app timezone, so testable): *Last 7 days*,
   *Last 30 days* (inclusive of today, 30 points), *This month*, *This year*; the active preset is highlighted by comparing from/to.
@@ -91,14 +101,14 @@ Public properties are client-visible and writable: only **scalars** (`string`/`b
 
 Add `chart.js` to `package.json`/`package-lock.json`; **record the bundle-size delta in the PR** (`npm run build`).
 
-- **Markup:** single root `<div x-data="salesChart(@js($this->chartPayload))" x-on:sales-series-updated="update($event.detail)">`
-  (component-scoped listener, **no `.window`**, matching `WysiwygEditor.php:205`). **`wire:ignore` only on the canvas wrapper**;
+- **Markup (superseded for the two-chart layout by D-9; the rules below apply to each chart):** a root `<div x-data="moneyChart(@js($this->moneyPayload))" x-on:sales-overview-updated="update($event.detail.money)">`
+  and its sibling for the orders chart (component-scoped listener, **no `.window`**, matching `WysiwygEditor.php:205`). **`wire:ignore` only on the canvas wrapper**;
   the empty state and the loading overlay are **siblings** of it and toggle with `x-show`/`hidden` — never a Blade `@if` around
   the canvas (that would destroy the chart instance).
 - **Initial data:** passed through `x-data`, not through an event (a dispatch during a lazy mount request is lost because Alpine
   is not yet listening). Update events carry a **scalar payload**: `labels` (server-formatted per locale), `revenue` (floats — display
   only, for plotting; the money total shown in Blade stays a string via `<x-money>`), `ordersCount`, `granularity`, `locale`.
-- **`resources/js/sales-chart.js`** registers `Alpine.data('salesChart', …)` inside `alpine:init` and is imported from `app.js` with a
+- **`resources/js/sales-chart.js`** registers `Alpine.data('moneyChart', …)` and `Alpine.data('ordersChart', …)` inside `alpine:init` and is imported from `app.js` with a
   single line (no new Vite entry). **Load Chart.js with a dynamic `import('chart.js')` inside `init()`** so it is code-split and
   loaded on the dashboard only; guard `destroy()` being called before the import resolves. Register only: `BarController`,
   `BarElement`, `CategoryScale`, `LinearScale`, `Tooltip` (no `chart.js/auto`, no legend for a single series).
@@ -127,8 +137,9 @@ Add `chart.js` to `package.json`/`package-lock.json`; **record the bundle-size d
 
 Segmented Day/Month/Year using the `flux:radio.group variant="segmented"` pattern of `appearance.blade.php:5`; two native
 `<flux:input type="date" wire:model.live.blur>` inside a `flux:field` with `flux:error name="range"`; preset buttons; a
-`flux:checkbox` "Include cancelled orders". The chart title is **"Sales"** with a tooltip/subtitle "orders placed, net of refunds" —
-never "Revenue" or "cash received". Date inputs: `max` = today on `to` (cosmetic).
+status chips (D-9) in place of the old single checkbox. Measures are named **"Sales"** (total sold, refunds not netted), **"Real
+income"** (money collected, net of refunds) and **"Orders"**, each with a one-line definition in a tooltip; never "Revenue" or
+"cash received". Date inputs: `max` = today on `to` (cosmetic).
 
 ### D-5 — Shared badge components (small extraction)
 
@@ -165,6 +176,44 @@ New `lang/en/dashboard.php` and `lang/es/dashboard.php`, snake_case leaves, `tra
 `no_widgets`. Reuse `OrderStatus`/`PaymentStatus`/`BlogPostStatus::label()`; `topbar.dashboard.*` stays. The admin locale is per request
 (`SetUiLocale`), so JS formatting takes it from the server payload.
 
+### D-9 — Sales overview: shared filters, KPI strip and two charts (amended 2026-09-30, ⚑ owner to confirm)
+
+**Why two charts rather than one with a toggle:** money and counts have different units and scales; putting orders (tens) on the
+same axis as sales (thousands of euros) flattens one of them, and a metric toggle hides the comparison the owner asked for (sales
+vs what was actually collected). Two charts of different shapes are also easier to read at a glance.
+
+**Layout (top to bottom inside one widget card "Sales overview"):**
+
+1. **Filter bar (shared, applies to everything below):** granularity segmented control · presets · from/to dates · **status chips**
+   (*Pending, Processing, Shipped, Delivered, Cancelled* — multi-select toggle chips using the same colors as the status badges;
+   *Cancelled* off by default; an "All" / "Reset" affordance). One filter, one URL, one Livewire request.
+2. **KPI strip — three tiles** for the selected period: **Sales** (total), **Real income**, **Orders** (count). Sales and income use
+   `<x-money>`. Income tile hint: "Collected: N% of sales" when sales > 0. If income is 0 while sales > 0 the tile shows a neutral
+   hint "Income is counted once orders are paid" (payment capture does not exist yet — see backend risks).
+3. **Chart A — "Sales vs real income"** (Chart.js **line**, two series with distinct colors *and* distinct line styles/markers so
+   it does not rely on color alone): *Sales* = muted/dashed, *Real income* = accent/solid; the gap between them is the money not
+   yet collected or refunded. Y axis in EUR via `Intl.NumberFormat`; tooltip shows both values and the difference.
+4. **Chart B — "Orders by status"** (Chart.js **stacked bar**, one dataset per *selected* status, colors from the status tokens,
+   integer y axis starting at 0; tooltip shows the status breakdown and the bucket total). The legend is shown; toggling a legend
+   entry only hides that series **locally** (client-side) and does **not** change the server filter — the chips do. The tooltip
+   and the help text say so.
+5. **Responsive:** charts sit side by side from `xl`, stacked below it; KPI tiles wrap to one column on phones; chips scroll
+   horizontally instead of wrapping into a wall.
+
+**Mechanics:** `SalesOverview` calls `GetSalesSeries` and `GetOrdersSeries` (0082) with the same arguments (both gated
+`orders.view`, checked with `Gate::allows` first) and dispatches **one** event `sales-overview-updated` with a scalar payload
+`{money: {labels, sales, income, locale, granularity}, orders: {labels, datasets: [{status, label, data}], locale}}`.
+Two Alpine components, `moneyChart` and `ordersChart`, each create their Chart.js instance **once**, update **in place** and
+keep it outside Alpine's reactivity (D-3 rules apply to **each**), so the page holds **exactly two** Chart instances. Adding or
+removing a status changes the orders chart's **datasets** inside `update()` (no re-creation). Each chart has its own `wire:ignore`
+canvas wrapper, empty state and sr-only data table (two tables, server-rendered, same buckets). Chart.js is still imported
+dynamically once; the extra controllers needed are `LineController`, `LineElement`, `PointElement` (chart A) on top of the bar set.
+A single invalid-range / empty-status response dispatches nothing, so **both** charts keep their previous data.
+
+**Empty and edge states:** all-zero period → both charts show their empty message; income-only-zero → chart A still draws the
+sales line and the income line at 0 with the hint above; a status selected with no orders still appears in the orders legend with
+zeros.
+
 ## Open questions closed by the debate
 
 | Q | Resolution |
@@ -174,7 +223,8 @@ New `lang/en/dashboard.php` and `lang/es/dashboard.php`, snake_case leaves, `tra
 | Date picker | native date inputs (Flux free has none) |
 | Blog image / cancelled toggle / variable products | owner decisions, see backend 0082 |
 
-Still **⚑ owner to confirm**: granularity change resets the range; extracting the two badge components; "Untitled" /
+Still **⚑ owner to confirm**: D-9's two-chart layout and definitions (Sales gross, Real income = paid net of refunds, one shared
+status filter whose *Cancelled* chip replaces the old checkbox); granularity change resets the range; extracting the two badge components; "Untitled" /
 "deleted customer" placeholders; `d/m/Y H:i` date format.
 
 ## Gherkin
@@ -299,16 +349,72 @@ Scenario: A store with nothing to show
   When Laura opens the dashboard
   Then each widget shows its empty state and the counters read 0
 
-Scenario: The chart starts on the last 30 days per day without cancelled orders
+Scenario: The sales overview starts on the last 30 days per day without cancelled orders
   Given Olga, an order manager
   When Olga opens the dashboard
-  Then the chart covers the last 30 days per day
-  And the "Include cancelled orders" checkbox is unchecked
+  Then both charts cover the last 30 days per day
+  And every status chip except "Cancelled" is selected
 
-Scenario: Cancelled orders are counted when the checkbox is checked
+Scenario: Cancelled orders are counted when the Cancelled chip is selected
   Given Olga, an order manager on the dashboard, with a delivered order of 100 and a cancelled order of 40 on the same day
-  When Olga checks "Include cancelled orders"
+  When Olga selects the "Cancelled" chip
   Then the sales for that day read 140
+  And the orders for that day read 2
+
+Scenario: The KPI strip summarizes the period
+  Given Olga, an order manager, and in the period a paid order of 100, a paid order of 50 partly refunded by 20 and a pending order of 30
+  When Olga opens the dashboard
+  Then the Sales tile reads 180
+  And the Real income tile reads 130
+  And the Orders tile reads 3
+
+Scenario: Sales and real income are two lines of one chart
+  Given Olga, an order manager, and a paid order of 100 and a pending order of 60 on the same day
+  When Olga opens the dashboard
+  Then the "Sales vs real income" chart shows 160 of sales and 100 of real income for that day
+
+Scenario: Real income explains itself when nothing has been paid
+  Given Olga, an order manager, and only pending orders in the period
+  When Olga opens the dashboard
+  Then the Real income tile reads 0
+  And a hint explains that income is counted once orders are paid
+
+Scenario: The orders chart breaks each day down by status
+  Given Olga, an order manager, and on 1 May 2 pending orders and 1 shipped order
+  When Olga opens the dashboard for the period containing 1 May
+  Then the "Orders by status" chart shows 3 orders for 1 May: 2 pending and 1 shipped
+
+Scenario Outline: The status chips narrow every figure
+  Given Olga, an order manager on the dashboard, with a delivered order of 100, a shipped order of 50 and a pending order of 20
+  When Olga keeps only the <chips> chips selected
+  Then sales read <sales>, real income reads <income> and orders read <orders>
+  Examples:
+    | chips              | sales | income | orders |
+    | Delivered          | 100   | 100    | 1      |
+    | Delivered, Shipped | 150   | 150    | 2      |
+    | Pending            | 20    | 0      | 1      |
+
+Scenario: At least one status must stay selected
+  Given Olga, an order manager on the dashboard with only the "Delivered" chip selected
+  When Olga deselects the "Delivered" chip
+  Then Olga is told to pick at least one status
+  And both charts keep their previous data
+
+Scenario: The legend hides a series without changing the filter
+  Given Olga, an order manager on the dashboard
+  When Olga hides the "Pending" entry in the orders chart legend
+  Then the pending segments disappear from the orders chart
+  And the KPI tiles and the money chart do not change
+
+Scenario: The two charts are redrawn together in place
+  Given Olga, an order manager on the dashboard
+  When Olga changes the granularity
+  Then both charts are redrawn in place from the same periods and the page shows no error
+
+Scenario: A shared link restores the status filter
+  Given Olga, an order manager who filtered the overview to Delivered and Shipped for May per day
+  When Olga opens the same dashboard link again
+  Then both charts and the KPI tiles show that filter
 
 Scenario Outline: The chart regroups the sales by period
   Given Olga, an order manager on the dashboard showing sales per day
@@ -378,10 +484,11 @@ Scenario: The chart follows the light and dark themes
   When Olga switches to the dark theme
   Then the chart is redrawn with dark colors and keeps its data
 
-Scenario: Unpaid orders are part of the sales
+Scenario: Unpaid orders are part of the sales but not of the real income
   Given Olga, an order manager, and a pending order of 60 awaiting a bank transfer
   When Olga opens the dashboard
   Then that day's sales include the 60
+  And that day's real income does not
 
 Scenario: The dashboard speaks the administrator's language
   Given Laura, an administrator whose admin UI language is Spanish
@@ -392,9 +499,9 @@ Scenario: The dashboard speaks the administrator's language
 ## Files to create/modify
 
 Create:
-- `app/Livewire/Dashboard/Overview.php`, `BlogWidget.php`, `LowStockWidget.php`, `LatestOrdersWidget.php`, `SalesChart.php`
+- `app/Livewire/Dashboard/Overview.php`, `BlogWidget.php`, `LowStockWidget.php`, `LatestOrdersWidget.php`, `SalesOverview.php`
 - `resources/views/livewire/dashboard/overview.blade.php`, `blog-widget.blade.php`, `low-stock-widget.blade.php`,
-  `latest-orders-widget.blade.php`, `sales-chart.blade.php`
+  `latest-orders-widget.blade.php`, `sales-overview.blade.php`
 - `resources/js/sales-chart.js`
 - `resources/views/components/order-status-badge.blade.php`, `blog-status-badge.blade.php` (D-5),
   optional `resources/views/components/dashboard/widget.blade.php`
@@ -419,13 +526,13 @@ Feature (`Livewire::test`, MySQL; actors built with `OrdersUi::actor()`-style he
 
 - `OverviewRenderingTest` — every widget's exact text/badges/dates/links, escaping (`<img onerror>`, `"><script>`, `{{`/`@` in titles, names, customer names — in the widgets **and** the sr-only table), null tolerance, trashed customer, empty states, first-name greeting, greeting boundaries with `setTestNow` (04:59/05:00/11:59/12:00/19:59/20:00).
 - `OverviewPermissionTest` — profile dataset (none, only `users.view`, only `orders.view`, only `products.view`, only `media.view`, only `blog.view`, three counters, all, Super Admin, Administrator role) asserting rendered `data-test` hooks; **`DB::listen`: zero queries on tables of hidden modules; `Log::spy()`: no "Privileged action refused" warning**; direct-call bypass of filter actions; permission revoked between load and action; lazy chart handshake.
-- `OverviewFiltersTest` — default state; granularity switch (Outline) resets to that granularity's default range; presets with `travelTo(2026-09-30)`; custom range boundaries (15 May 23:59:59 counted, 16 May 00:00:00 not); `from > to`; cap boundaries (366 ok / 367 refused, 120/121, 50/51) with the **translated** message and previous series retained; include-cancelled on/off/on; pending orders counted; `assertDispatched('sales-series-updated')` with the scalar payload after a valid change and `assertNotDispatched` after an invalid one; `#[Url]` round trip and defaults absent from the URL; garbage params via `Livewire::withQueryParams` **and** `$this->get('/dashboard?g=garbage')`; rapid consecutive changes equal a fresh load; a refunded order reduces its bucket (locks the definition on the UI side); Madrid 23:30 order lands on its own day.
+- `OverviewFiltersTest` — default state; granularity switch (Outline) resets to that granularity's default range; presets with `travelTo(2026-09-30)`; custom range boundaries (15 May 23:59:59 counted, 16 May 00:00:00 not); `from > to`; cap boundaries (366 ok / 367 refused, 120/121, 50/51) with the **translated** message and previous series retained; status chips (default set, *Cancelled* on/off, single status, all, **empty selection refused** with the translated message and both charts keeping their data, unknown statuses in the URL dropped); KPI tiles (Sales, Real income, Orders) for paid / pending / partially refunded / cancelled orders, the income hint when income is 0 and sales > 0, the "collected %" hint; `assertDispatched('sales-overview-updated')` with the scalar `{money, orders}` payload after a valid change (status datasets present for every selected status, money and orders labels identical) and `assertNotDispatched` after an invalid one; `#[Url]` round trip and defaults absent from the URL; garbage params via `Livewire::withQueryParams` **and** `$this->get('/dashboard?g=garbage')`; rapid consecutive changes equal a fresh load; a refunded order reduces its bucket (locks the definition on the UI side); Madrid 23:30 order lands on its own day.
 - `OverviewSnapshotSecurityTest` — for restricted actors, decode the `wire:snapshot` and assert **sentinel strings** of hidden modules (post title, product SKU, order number, customer name/email, totals) appear neither in the snapshot nor in the HTML, including the chart wrapper's `x-data`/`data-*`; reflection: no public property is a model/Collection/enum/Carbon; tampering with `set('orders', …)`/`set('counters', …)` is refused or renders nothing.
 - `OverviewLocaleTest` + `DashboardLangParityTest` — actor with `ui_locale = 'es'` (not `app()->setLocale`, `SetUiLocale` re-applies it every round trip): every label, badge, hint plural/singular, date; `array_keys` parity of `lang/en|es/dashboard.php`; no raw `dashboard.` key in the render (precedent `OrdersLangParityTest`).
 
 Browser (`tests/Browser/Dashboard/`; `data-test` selectors, `assertNoJavaScriptErrors()` in every test, **never** `networkidle`, `retry(3, …, 250)` on multi-step tests with a stated reason, output to a file, `pkill -9 -f "playwright run-server"` afterwards; **not** multiplied by permission profile):
 
-- `SalesChartTest` — (1) **one Chart instance survives** filter changes, the checkbox, a custom range and an unrelated re-render (same instance id, `Chart.instances` length 1, via the exposed instance); (2) no JS errors through load, filter change, validation error, theme toggle and `wire:navigate` away and back; (3) canvas non-empty (animation disabled under test, or polled); (4) `chart.data.labels`/`datasets[0].data` equal the seeded series, also on first load from a non-default URL range (no interaction needed — guards the `wire:ignore` first-render race); (5) the sr-only table equals the series before and after a filter change, is not `display:none`, canvas is `aria-hidden`; (6) rapid Day/Month/Year/Day clicks end on the last click's state (compare with the `wire:snapshot`), same instance, no error.
+- `SalesChartTest` (covers **both** charts) — (1) **exactly two Chart instances exist and both survive** filter changes, status-chip toggles, a custom range and an unrelated re-render (same instance ids, `Chart.instances` length 2, via the exposed instances); toggling a chip adds/removes an orders **dataset** without re-creating the chart; legend toggling hides a series client-side only and leaves the KPI tiles and the money chart untouched; (2) no JS errors through load, filter change, validation error, theme toggle and `wire:navigate` away and back; (3) canvas non-empty (animation disabled under test, or polled); (4) `chart.data.labels`/`datasets[0].data` equal the seeded series, also on first load from a non-default URL range (no interaction needed — guards the `wire:ignore` first-render race); (5) the sr-only table equals the series before and after a filter change, is not `display:none`, canvas is `aria-hidden`; (6) rapid Day/Month/Year/Day clicks end on the last click's state (compare with the `wire:snapshot`), same instance, no error.
 - `SalesChartThemeTest` — dark-mode toggle changes the chart colors without a new instance (no existing precedent — new ground, least certain); 375 px viewport has no horizontal scroll.
 - `DashboardJourneyTest` — blog row → post editor path, low-stock parent row → `/products/{id}/edit`, order row → `/orders/{id}` (`assertPathIs`); smoke `visit(['/dashboard', '/dashboard?g=garbage'])`.
 - Tooltip (Chart.js config assertion, or `chart.tooltip.setActiveElements`, kept as its **own test** so its flake is isolated); dates are seeded relative to `now()` and expected labels computed in PHP (never assert "today" in JS).
@@ -443,10 +550,15 @@ leakage and no log noise, and the Chart.js sales chart updates live from its fil
 - No placeholder pattern remains; the four shortcut cards are gone; `dashboard.blade.php` is deleted; the route keeps its name and stays ungated.
 - Each widget matches its Gherkin and renders only for an actor allowed to see it; **hidden widgets run no query and write no refusal log**, including through direct calls to the filter actions.
 - Only scalar filter properties are public; no other-module data appears in the snapshot or the HTML.
-- The chart supports Day/Month/Year, presets, a custom range and the include-cancelled checkbox; invalid or oversized ranges show a
-  translated message and keep the previous data; broken URL params never produce a 500.
-- One Chart.js instance per page view, created once, updated in place, destroyed on navigation; Chart.js is loaded lazily and tree-shaken; light/dark both work.
-- A text alternative table with the same figures exists; no `x-html`/`{!! !!}` on any title, name or label.
+- The sales overview offers one shared filter bar (Day/Month/Year, presets, custom range, order-status chips with *Cancelled* off by
+  default), a KPI strip (Sales, Real income, Orders) and **two charts**: "Sales vs real income" (line) and "Orders by status"
+  (stacked bar); invalid or oversized ranges and an empty status selection show a translated message and keep the previous data on
+  both charts; broken URL params never produce a 500.
+- Sales, Real income and Orders are named and defined exactly as in backend D-6, with their definitions in tooltips; Real income
+  shows the "counted once paid" hint when it is 0 while sales are not.
+- Exactly two Chart.js instances per page view, each created once, updated in place, destroyed on navigation; Chart.js is loaded
+  lazily and tree-shaken; light/dark both work; the two charts never rely on color alone (line styles/markers, legend).
+- **Two** sr-only text-alternative tables carry the same figures as the charts; no `x-html`/`{!! !!}` on any title, name or label.
 - Every string exists in `en` and `es` with identical key sets; layout works at phone width.
 
 ## Definition of Done

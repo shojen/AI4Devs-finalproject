@@ -3,6 +3,9 @@
 > **Status: Phase 1 complete (Three Amigos debate held 2026-09-30).** Ready for Phase 2 (INVEST check by
 > `code-reviewer`, not run yet). Frontend companion: [0083](0083-dashboard-home-overview-ui.md), blocked on this story.
 > Items marked **⚑ owner to confirm** are facilitator decisions the project owner has not explicitly ratified.
+> **Amended 2026-09-30 (owner request):** Sales and Real income became two measures, an orders-by-status series was added, and
+> the include-cancelled boolean became one entry of a shared status filter (D-6, D-8). The amendment was written by the facilitator
+> without a second debate round; the new definitions carry ⚑ flags and Phase 2 should look at them first.
 
 ## Description
 
@@ -20,7 +23,10 @@ Data required:
 3. **Low-stock products** — the 3 products with the lowest effective stock; a variable product counts by its lowest variant
    and is listed once, as the parent.
 4. **Latest orders** — the 5 most recent orders.
-5. **Sales series** — sales bucketed by day, month or year over an arbitrary date range, with an include-cancelled toggle.
+5. **Sales overview series** (amended 2026-09-30, owner request) — over a day/month/year range, three measures that the
+   UI shows as a KPI strip and **two charts**: **Sales** (total sold, gross) and **Real income** (money actually collected,
+   net of refunds) in one money chart, and the **number of orders** (broken down by status) in a second chart. All three
+   obey one shared **order-status filter**.
 
 ## Type
 
@@ -44,9 +50,10 @@ dependency. The one schema observation (no index on `orders.created_at`) is reco
 
 ## Decisions
 
-### D-1 — Five actions, authorized per module through `LogRefusedPrivilegedAttempt`
+### D-1 — Six actions, authorized per module through `LogRefusedPrivilegedAttempt`
 
-`GetDashboardCounters`, `GetLatestBlogPosts`, `GetLowStockProducts`, `GetLatestOrders`, `GetSalesSeries`, all `__invoke`,
+`GetDashboardCounters`, `GetLatestBlogPosts`, `GetLowStockProducts`, `GetLatestOrders`, `GetSalesSeries`, `GetOrdersSeries`
+(the last two gated by `orders.view`; they share the non-action helper `ResolveSalesBuckets`), all `__invoke`,
 read-only, in `app/Actions/Dashboard/`. The four list/series actions authorize with the project wrapper
 `LogRefusedPrivilegedAttempt::authorize('viewAny', <Model>::class, targetType: ...)` as their **first statement** (never a
 bare `Gate::authorize()`, per story 0015b), so a refusal is logged and throws `AuthorizationException` **before validation
@@ -70,7 +77,8 @@ into public state. `name`/`title` are **nullable** in every shape (see D-9).
 - Posts: `list<array{id: string, title: ?string, description: string, status: BlogPostStatus, publishAt: ?CarbonImmutable}>`
 - Low stock: `list<array{id: string, name: ?string, sku: string, effectiveStock: int, isOutOfStock: bool, hasVariants: bool, lowVariantCount: int}>`
 - Orders: `list<array{id: string, orderNumber: string, customerName: ?string, total: string, status: OrderStatus, paymentStatus: PaymentStatus, createdAt: CarbonImmutable}>`
-- Series: `array{granularity: SalesGranularity, from: CarbonImmutable, to: CarbonImmutable, includeCancelled: bool, totalRevenue: string, points: list<array{bucket: string, label: CarbonImmutable, revenue: string, ordersCount: int}>}`
+- Money series (`GetSalesSeries`): `array{granularity: SalesGranularity, from: CarbonImmutable, to: CarbonImmutable, statuses: list<OrderStatus>, totalSales: string, totalIncome: string, points: list<array{bucket: string, label: CarbonImmutable, sales: string, income: string}>}`
+- Orders series (`GetOrdersSeries`): `array{granularity: SalesGranularity, from: CarbonImmutable, to: CarbonImmutable, statuses: list<OrderStatus>, totalOrders: int, points: list<array{bucket: string, label: CarbonImmutable, total: int, byStatus: array<string, int>}>}` — `byStatus` has a key for **every** selected status (zero-filled), keyed by the `OrderStatus` value.
   — `bucket` is the machine key (`2026-05-01` / `2026-05` / `2026`); the UI localizes `label`.
 
 ### D-3 — Latest blog posts
@@ -117,9 +125,36 @@ Product::query()->leftJoinSub($variantMin, 'v', 'v.product_id', '=', 'products.i
 **`with(['customer' => fn ($q) => $q->withTrashed()->select('id', 'name')])`** — a soft-deleted customer must not produce a
 null and crash the widget. Select only the needed order columns. **2 queries** total. `total` stays the decimal string.
 
-### D-6 — Sales series
+### D-6 — Sales overview: money series and orders series (amended 2026-09-30)
 
-Signature: `__invoke(SalesGranularity $granularity, CarbonInterface $from, CarbonInterface $to, bool $includeCancelled = false): array`.
+Two actions sharing one internal collaborator, **`ResolveSalesBuckets`** (range normalization, cap validation, bucket list and
+zero-fill), so both charts always show identical buckets:
+
+- `GetSalesSeries::__invoke(SalesGranularity $granularity, CarbonInterface $from, CarbonInterface $to, array $statuses = OrderStatus::defaultDashboardSet()): array`
+- `GetOrdersSeries::__invoke(…same arguments…): array`
+
+**Shared status filter (replaces the old `includeCancelled` boolean — ⚑ owner to confirm):** `$statuses` is a non-empty list of
+`OrderStatus`; the default is **every status except `cancelled`**, so "Include cancelled orders" (the owner's earlier checkbox,
+unchecked by default) is simply the `cancelled` entry of this list. An empty list is refused with a `ValidationException` on
+`statuses`. The filter applies to **Sales and Orders**; **Real income ignores the cancelled status by definition** (see below).
+
+**Definitions (single source of truth, shown in the UI):**
+
+| Measure | Formula | Notes |
+| --- | --- | --- |
+| **Sales** ("ventas totales") | `SUM(total)` of orders whose `status ∈ $statuses` | gross: tax and shipping included, **refunds not netted**; counts unpaid orders (bank transfers) |
+| **Real income** ("ingresos reales") | `SUM(total − refunded_amount)` of orders with `payment_status ∈ {paid, partially_refunded}` **and** `status ≠ cancelled` **and** `status ∈ $statuses` | money actually collected, net of refunds; fully refunded orders (`payment_status = refunded`) and unpaid orders are excluded |
+| **Orders** | `COUNT(*)` of orders whose `status ∈ $statuses`, plus a per-status breakdown | one row per order, never per line |
+
+All three are bucketed by **`orders.created_at`** (there is no `paid_at`/`placed_at` column; adding one is a schema change this
+story bans — follow-up below). Because income is attributed to the order's creation day, an order created on 30 April and paid on
+2 May counts as April income. **Known limitations, accepted and to be documented in the tooltip/docblock:** (a) `refunded_amount` is
+merchandise-only, so a *partially* refunded order overstates income by the tax/shipping share of the refund; (b) **no code path in
+the application sets `payment_status = paid` yet** — only `OrderFactory::paid()` does, and the refund action derives
+`partially_refunded`/`refunded` from it — so in a real store Real income reads 0 until a payment-capture story exists; the
+dashboard must show a neutral empty state for it rather than an error.
+
+`GetSalesSeries` implementation notes (the rest of this decision applies to both actions):
 
 - **Order of operations:** authorize → validate → query.
 - **Range normalization:** `from` → `setTimezone('Europe/Madrid')->startOfDay()`, `to` → end of day, inclusive; predicate is
@@ -132,15 +167,15 @@ Signature: `__invoke(SalesGranularity $granularity, CarbonInterface $from, Carbo
 - **Bucketing SQL:** `DATE_FORMAT(created_at, '<fmt>') AS bucket` with the format string **interpolated from the enum** (a
   closed constant, never input) and `GROUP BY bucket` — bound parameters would differ between SELECT and GROUP BY and fail
   under `ONLY_FULL_GROUP_BY`.
-- **Measure:** `SUM(total - refunded_amount)` by `orders.created_at`, kept as a decimal string; **no clamp** (a negative bucket
-  exposes bad data). Refunds are attributed to the **order's** creation day, not the refund day — deliberate simplification.
-  **Known limitation, accepted:** `refunded_amount` is merchandise-only, so a fully refunded taxed order that is included
-  via the cancelled toggle leaves its tax and shipping as a positive residual.
-- **Filter:** `includeCancelled = false` excludes `status = cancelled`; `true` includes them. Pending and unpaid orders
-  **count** (no `payment_status` filter): bank-transfer orders are paid late and a paid-only chart would sit near zero.
-- **Zero-fill in PHP** with `CarbonPeriod` over the normalized range, merged over the SQL result, default `'0.00'`, ascending,
-  no duplicates, length = bucket count. One aggregate query.
-- The chart is labelled **"Sales"** (orders placed, net of refunds), never "Revenue"/"cash received" (copy lives in 0083).
+- **Money series query:** one aggregate query per action, using conditional aggregation —
+  `SUM(total) AS sales` and `SUM(CASE WHEN payment_status IN ('paid','partially_refunded') AND status <> 'cancelled' THEN total - refunded_amount ELSE 0 END) AS income`
+  (enum values interpolated from the enums, never bound input), `WHERE status IN (<statuses>)`, grouped by `bucket`. Decimal
+  strings throughout, **no clamp** (a negative bucket exposes bad data). Refunds are attributed to the **order's** creation day.
+- **Orders series query:** one query, `GROUP BY bucket, status` with `COUNT(*)`, pivoted in PHP into `byStatus`.
+- **Zero-fill in PHP** with `CarbonPeriod` over the normalized range, merged over the SQL result: money default `'0.00'`,
+  counts default `0`, every selected status present in `byStatus`; ascending, no duplicates, length = bucket count.
+- **Naming in the UI (copy lives in 0083):** "Sales" = orders placed (gross), "Real income" = money collected net of refunds,
+  "Orders" = count. Never label Sales as "Revenue" or "cash received".
 
 ### D-7 — Counters
 
@@ -148,9 +183,12 @@ Signature: `__invoke(SalesGranularity $granularity, CarbonInterface $from, Carbo
 excluded). **At most three `COUNT` queries; zero for an actor with none of the three abilities.** No caching (revisit only if
 measured slow).
 
-### D-8 — Cancelled-orders toggle (owner decision)
+### D-8 — Cancelled orders and the status filter (owner decisions, amended 2026-09-30)
 
-Boolean `includeCancelled`, default `false`, surfaced by 0083 as a checkbox.
+The owner's "include cancelled orders" checkbox (default off) stays a UI control, now one entry of the shared status filter of
+D-6 (`cancelled ∈ $statuses`). The owner's 2026-09-30 request adds filtering the order count **by status** and separating
+**total sales** from **real income**; both are covered by D-6. `OrderStatus::defaultDashboardSet()` (every case except
+`Cancelled`) is the single place that default lives.
 
 ### D-9 — Translatable-content seam (risk: pending 0076 / 0078)
 
@@ -172,7 +210,7 @@ confirm**): **no hard dependency** on them (they are large and would stall the d
 | Q | Resolution |
 | --- | --- |
 | Q-2 images counter | all `media` rows (there is no kind column; "used" would need joins over three tables) |
-| Q-4 pending/unpaid in sales | included; date basis `created_at`; refunds netted at the order's day; labelled "Sales" |
+| Q-4 pending/unpaid in sales | superseded by the 2026-09-30 amendment: **Sales** (gross, unpaid included) and **Real income** (paid, net of refunds) are now two measures; date basis `created_at` for both |
 | Q-5 low-stock threshold | none; exactly the 3 lowest effective stocks |
 
 Still **⚑ owner to confirm** (defaults applied): post ordering by `created_at`; `lowVariantCount` cut-off semantics;
@@ -310,19 +348,74 @@ Scenario Outline: Cancelled orders count in sales only when included
     | without including cancelled orders | 100   |
     | including cancelled orders         | 140   |
 
-Scenario: Unpaid orders count in sales
+Scenario: Unpaid orders count in sales but not in real income
   Given Olga, an order manager, and a pending order of 60 awaiting a bank transfer
-  When Olga views daily sales
+  When Olga views the daily sales overview
   Then that day's sales are 60
+  And that day's real income is 0
 
-Scenario Outline: A refund reduces the sales of the order's day
-  Given Olga, an order manager, and a delivered order of <total> of which <refunded> was refunded
-  When Olga views daily sales for the day of the order
-  Then that day's sales are <sales>
+Scenario: A paid order counts in both sales and real income
+  Given Olga, an order manager, and a paid order of 100
+  When Olga views the daily sales overview
+  Then that day's sales are 100
+  And that day's real income is 100
+
+Scenario Outline: A refund reduces real income but not sales
+  Given Olga, an order manager, and a paid order of <total> of which <refunded> was refunded
+  When Olga views the daily sales overview for the day of the order
+  Then that day's sales are <total>
+  And that day's real income is <income>
   Examples:
-    | total | refunded | sales |
-    | 100   | 30       | 70    |
-    | 100   | 100      | 0     |
+    | total | refunded | income |
+    | 100   | 30       | 70     |
+
+Scenario: A fully refunded order yields no real income
+  Given Olga, an order manager, and a paid order of 100 that was fully refunded and therefore cancelled
+  When Olga views the daily sales overview including cancelled orders
+  Then that day's sales are 100
+  And that day's real income is 0
+
+Scenario: Cancelled orders never count as real income
+  Given Olga, an order manager, and a paid order of 80 that was cancelled
+  When Olga views the daily sales overview including cancelled orders
+  Then that day's real income is 0
+
+Scenario: The orders chart counts orders per day
+  Given Olga, an order manager, and 3 orders on 1 May and 1 order on 3 May
+  When Olga views the daily orders from 1 May to 3 May
+  Then 1 May shows 3 orders, 2 May shows 0 and 3 May shows 1
+
+Scenario: The orders chart breaks each period down by status
+  Given Olga, an order manager, and on 1 May 2 pending orders and 1 shipped order
+  When Olga views the daily orders for 1 May
+  Then 1 May shows 3 orders: 2 pending and 1 shipped
+  And every other status shows 0
+
+Scenario Outline: The status filter narrows sales, income and orders alike
+  Given Olga, an order manager, and on 1 May a paid delivered order of 100, a paid shipped order of 50 and a pending order of 20
+  When Olga views the daily overview for 1 May filtered to <statuses>
+  Then sales are <sales>, real income is <income> and orders are <orders>
+  Examples:
+    | statuses           | sales | income | orders |
+    | delivered          | 100   | 100    | 1      |
+    | delivered, shipped | 150   | 150    | 2      |
+    | pending            | 20    | 0      | 1      |
+    | all except cancelled | 170 | 150    | 3      |
+
+Scenario: The default status filter leaves cancelled orders out
+  Given Olga, an order manager, and a delivered order of 100 and a cancelled order of 40 on the same day
+  When Olga views the daily overview without choosing statuses
+  Then sales are 100 and orders are 1
+
+Scenario: An empty status filter is refused
+  Given Olga, an order manager
+  When Olga views the daily overview with no status selected
+  Then Olga is told to pick at least one status
+
+Scenario: The orders chart and the money chart always share the same periods
+  Given Olga, an order manager, and orders on 1 May and 3 May
+  When Olga views the daily overview from 1 May to 3 May
+  Then both the money series and the orders series show the same three days
 
 Scenario: Days without orders show zero
   Given Olga, an order manager, and orders on 1 May and 3 May but none on 2 May
@@ -396,7 +489,9 @@ Scenario: A super administrator sees every widget
 ## Files to create/modify
 
 Create:
-- `app/Actions/Dashboard/GetDashboardCounters.php`, `GetLatestBlogPosts.php`, `GetLowStockProducts.php`, `GetLatestOrders.php`, `GetSalesSeries.php`
+- `app/Actions/Dashboard/GetDashboardCounters.php`, `GetLatestBlogPosts.php`, `GetLowStockProducts.php`, `GetLatestOrders.php`,
+  `GetSalesSeries.php` (Sales + Real income), `GetOrdersSeries.php` (count by status), `ResolveSalesBuckets.php` (shared range/cap/zero-fill)
+- `OrderStatus::defaultDashboardSet()` (every case except `Cancelled`) in `app/Enums/OrderStatus.php`
 - `app/Enums/SalesGranularity.php` — string-backed `Day|Month|Year`; carries SQL format, PHP key format, `CarbonPeriod` step and bucket cap (no `switch` in the action)
 - `tests/Feature/Dashboard/` (see Tests)
 
@@ -428,8 +523,13 @@ Required cases (matrix agreed with backend-qa):
   parent with all variants deleted falls back to its own stock; 60 variants → still one row; `lowVariantCount` per D-4;
   **query count constant (2)** for 3 vs 30 products.
 - **Orders:** 5 of 7; ties; cancelled included; trashed customer; exactly 2 queries with `Model::preventLazyLoading()` on.
-- **Series:** default vs include-cancelled over all five statuses; payment status ignored; refund netting incl. full refund
-  (auto-cancelled → excluded by default); anomaly `refunded > total` not clamped; exact decimal sums (0.10 + 0.20 = `0.30`);
+- **Series (money + orders, amended 2026-09-30):** status-filter dataset over all five statuses (default set excludes cancelled;
+  explicit `cancelled` includes it; empty list refused on `statuses`); **Sales = gross `SUM(total)`**, unaffected by refunds;
+  **Real income** dataset over {payment status × order status × refunded amount}: pending → 0, paid → total, partially refunded →
+  `total − refunded`, refunded → 0, cancelled → always 0 even with `cancelled` selected; income ignores the fully-refunded
+  residual (documented limitation); orders count per status with every selected status present and zero-filled, totals equal the
+  sum of `byStatus`; money and orders series share identical bucket keys for the same input; the orders query is 1 statement and the
+  money query is 1 statement; anomaly `refunded > total` not clamped; exact decimal sums (0.10 + 0.20 = `0.30`);
   zero-fill; single-day range for every granularity; `from > to`; exactly-cap accepted / cap + 1 refused for each granularity;
   month across a year boundary; leap day 2028-02-29; midnight boundaries in Madrid (`00:00:00`, `23:59:59`), `00:30` Madrid
   lands on the same day, **DST days** each one bucket; orders outside the range excluded; ascending unique keys; 1 aggregate
@@ -452,7 +552,10 @@ with a documented seam so the pending translatable-content retrofits do not brea
   lacking their ability with a **logged** `AuthorizationException` before any query; the counters action never throws.
 - No query runs for a module the actor cannot see; query counts: counters ≤ 3, posts 1, low stock 2, orders 2, series 1.
 - The description never exceeds 80 characters including the ellipsis, is multibyte-safe and plain text.
-- The series is zero-filled, Madrid-day-consistent, bounded by the per-granularity caps, and raises `ValidationException` on `range`.
+- The money and orders series are zero-filled, Madrid-day-consistent, **bucket-identical to each other**, bounded by the
+  per-granularity caps, and raise `ValidationException` on `range` (and `statuses` for an empty filter).
+- Sales is gross `SUM(total)`; Real income is `SUM(total − refunded_amount)` over paid/partially-refunded, non-cancelled orders;
+  Orders is a count with a per-status breakdown; all three obey the one status filter (income never counts cancelled orders).
 - No model is returned; money is a decimal string; `name`/`title` are nullable in every shape.
 - name/title/body are read only through the seam; no moving column is selected by name, ordered on or filtered on.
 - No schema change and no new dependency.
@@ -473,6 +576,10 @@ with a documented seam so the pending translatable-content retrofits do not brea
 - **Retrofit collision (0076/0078)** — mitigated by D-9; whichever lands last converts the seam.
 - **No index on `orders.created_at` / `blog_posts.created_at`** — filesort/scan at backoffice scale; not in scope.
 - **Refund/tax residual and refund-day attribution** (D-6) — documented, accepted.
+- **Real income depends on payment data that nothing writes yet** — no action marks an order `paid`, and there is no `paid_at`.
+  Follow-ups (separate stories, not this one): a payment-capture action (and `paid_at`, so income can be dated by payment rather
+  than creation) — until then the demo seeder (0081) / factory `paid()` state is the only source of `paid` orders, and the UI shows
+  a neutral "no income recorded" state.
 - **Refusal-log noise** if a caller skips its own permission check — binding caller contract in D-1, enforced by 0083's tests.
 
 ## Dependencies
