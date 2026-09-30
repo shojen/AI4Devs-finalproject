@@ -253,6 +253,10 @@
         "app/Livewire/Dashboard/Overview.php",
         "resources/views/livewire/dashboard/overview.blade.php",
         "resources/views/dashboard.blade.php",
+        "resources/js/sales-chart.js",
+        "resources/js/app.js",
+        "package.json",
+        "package-lock.json",
         "routes/web.php",
         "lang/en/dashboard.php",
         "lang/es/dashboard.php"
