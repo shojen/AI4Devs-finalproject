@@ -160,7 +160,8 @@
       "conflict_risk_with": [
         "0072",
         "0074",
-        "0078"
+        "0078",
+        "0082"
       ]
     },
     {
@@ -200,7 +201,8 @@
       "conflict_risk_with": [
         "0072",
         "0074",
-        "0076"
+        "0076",
+        "0082"
       ]
     },
     {
@@ -237,7 +239,10 @@
         "app/Enums/SalesGranularity.php",
         "tests/Feature/Dashboard/"
       ],
-      "conflict_risk_with": []
+      "conflict_risk_with": [
+        "0076",
+        "0078"
+      ]
     },
     {
       "id": "0083",
@@ -253,6 +258,11 @@
         "app/Livewire/Dashboard/Overview.php",
         "resources/views/livewire/dashboard/overview.blade.php",
         "resources/views/dashboard.blade.php",
+        "resources/views/components/order-status-badge.blade.php",
+        "resources/views/components/blog-status-badge.blade.php",
+        "resources/views/livewire/orders.blade.php",
+        "resources/views/livewire/blog-posts.blade.php",
+        "resources/css/app.css",
         "resources/js/sales-chart.js",
         "resources/js/app.js",
         "package.json",

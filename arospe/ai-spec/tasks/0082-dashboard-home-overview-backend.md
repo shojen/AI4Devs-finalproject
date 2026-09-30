@@ -1,193 +1,489 @@
 # [0082] Dashboard home overview — read-side actions (backend)
 
-> **Status: Phase 1 draft.** Written from the project owner's request; the Three Amigos debate (Phase 1)
-> and INVEST validation (Phase 2) have **not** run yet. Remaining open questions are listed under
-> [Open questions](#open-questions) with a recommended answer each — resolve them in the debate.
+> **Status: Phase 1 complete (Three Amigos debate held 2026-09-30).** Ready for Phase 2 (INVEST check by
+> `code-reviewer`, not run yet). Frontend companion: [0083](0083-dashboard-home-overview-ui.md), blocked on this story.
+> Items marked **⚑ owner to confirm** are facilitator decisions the project owner has not explicitly ratified.
 
 ## Description
 
-Backend half of the dashboard home page redesign (frontend half: [0083](0083-dashboard-home-overview-ui.md)).
-The dashboard at `resources/views/dashboard.blade.php` is still the starter-kit placeholder (five
-`x-placeholder-pattern` boxes). The design reference is
-[`docs/PRD/images/01-inicio.png`](../../docs/PRD/images/01-inicio.png): a hero banner with three headline
-counters, then four shortcut cards. The owner wants the four shortcut cards **replaced** by live widgets, plus a
-sales chart. This story adds the read-only queries those widgets need, each as a single-purpose action under
-`app/Actions/Dashboard/`, so the Livewire component of 0083 stays a thin caller.
+Backend half of the dashboard home redesign. `resources/views/dashboard.blade.php` is still the starter-kit
+placeholder. The design reference is [`docs/PRD/images/01-inicio.png`](../../docs/PRD/images/01-inicio.png): a hero banner
+with three counters and four shortcut cards. The owner wants the shortcut cards **replaced** by live widgets plus a sales
+chart. This story adds the read-only queries those widgets need, one single-purpose action each in
+`app/Actions/Dashboard/`, so the Livewire components of 0083 stay thin callers.
 
 Data required:
 
-> Owner decisions of 2026-09-30 are folded in below (R-1 to R-3, D-8, D-9).
-
-1. **Headline counters** — number of *active* users (`users.status = active`), number of products, number of
-   images (`media` rows of image kind).
-2. **Latest blog posts** — the 3 most recent posts whose status is `published` or `scheduled` (drafts excluded),
-   each with title, a description truncated to 80 characters, status and, when `scheduled`, the date it will publish.
-3. **Low-stock products** — the 3 products with the lowest stock (a variable product counts by its lowest variant
-   and is listed as the parent), to warn before they run out.
-4. **Latest orders** — the 5 most recently placed orders.
-5. **Sales series** — revenue over time, bucketed by **day, month or year**, or over an **arbitrary date range**.
+1. **Counters** — active users (`users.status = active`), products (all rows, drafts included), images (every `media` row).
+2. **Latest blog posts** — the 3 newest `published` or `scheduled` posts (drafts excluded): title, a description of at most
+   80 characters, status and, when scheduled, the date it will publish.
+3. **Low-stock products** — the 3 products with the lowest effective stock; a variable product counts by its lowest variant
+   and is listed once, as the parent.
+4. **Latest orders** — the 5 most recent orders.
+5. **Sales series** — sales bucketed by day, month or year over an arbitrary date range, with an include-cancelled toggle.
 
 ## Type
 
-`backend | includes database-expert: no` (no migration is planned — see Q-1 for the one case where that could change).
+`backend | includes database-expert: no` — no migration, no model, no seeder, no route, no permission-catalog change, no new
+dependency. The one schema observation (no index on `orders.created_at`) is recorded as a follow-up trigger, not scope.
 
-## Decisions proposed (to be ratified in the debate)
+## Verified facts that shaped the story
 
-- **D-1 — One action per widget**, all read-only, in `app/Actions/Dashboard/`: `GetDashboardCounters`,
-  `GetLatestBlogPosts`, `GetLowStockProducts`, `GetLatestOrders`, `GetSalesSeries`. Each authorizes with `Gate`
-  against the ability of the module it reads (`users.view`, `products.view`, `blog.view`, `orders.view`) and
-  returns a typed DTO/array shape documented in PHPDoc. The dashboard route itself stays ungated
-  (`config/modules.php` `dashboard` has `permissions => []`), so **each widget is independently permission-gated**:
-  an actor without `orders.view` gets no orders widget and the query is never run.
-- **D-2 — Blog widget:** `status IN (published, scheduled)`, soft-deleted excluded (default scope), ordered by
-  `created_at desc`, limit 3, eager-load nothing unbounded. For `scheduled` posts the publish date is
-  `published_at` (whose meaning is fixed by `status` per the blog schema, D-6 there). Titles are read through the
-  translation layer in the viewer's current locale with the default-language fallback.
-- **D-3 — Low stock:** `products.stock` ascending, limit 3, only `status = active` and `type = physical`
-  (virtual products have no stock to run out). Ties broken by `name`/`id` for determinism. A product with
-  variants: see D-9.
-- **D-4 — Latest orders:** `orders.created_at desc`, limit 5, eager-load `customer` only; show
-  `order_number`, customer name, `total`, `status`, `payment_status`.
-- **D-5 — Sales series:** input is a `granularity` enum (`day|month|year`) and an inclusive `from`/`to` range.
-  Presets (today-relative "last 30 days", "this month", "this year") are resolved by the caller into a range;
-  the action only knows range + granularity. Revenue = `SUM(total - refunded_amount)` over orders whose status
-  is not `cancelled` (Q-4). Buckets with no orders are **zero-filled** so the chart has no gaps. Bucketing is done
-  in the application timezone. Guardrails: `from <= to`, and a maximum number of buckets (e.g. 366 day buckets)
-  so a "day" granularity over ten years is refused with a `ValidationException` instead of returning 3 650 points.
-- **D-8 — Cancelled orders toggle:** `GetSalesSeries` accepts `bool $includeCancelled = false`. Off: orders with
-  status `cancelled` are excluded. On: they are included in the totals like any other order.
-- **D-9 — Effective stock of a product:** for a product **without** variants it is `products.stock`; for a product
-  **with** variants it is the **lowest `product_variants.stock`** among its variants. The widget ranks by effective
-  stock ascending, limit 3, and lists each product **once, as the parent**. Each row also carries
-  `lowVariantCount` (variants at or below the lowest-3 cut-off, i.e. how many variants are driving it) so the
-  frontend can say "2 variants low"; the manager reaches the variants from the product editor. Computed with a
-  single grouped query (`MIN(stock)` over a join/subquery), not one query per product.
-- **D-6 — Counters** are three cheap `COUNT(*)` queries; no caching in this story (revisit if measured slow).
+- **`media` has no kind/type column** — every row is a gallery image, so "images" is `Media::count()`.
+- **`Product` and `ProductVariant` have no `SoftDeletes`**; `BlogPost`, `User` and `Customer` do; `Order` has none
+  (cancelling is a status). Orders **may reference a soft-deleted customer**.
+- **`orders.refunded_amount` is merchandise-only** (quantity × unit price); `total` includes tax and shipping.
+  A **full refund auto-cancels** the order (`AutoCancelFullyRefundedOrder`).
+- **`config/app.php` timezone is `Europe/Madrid`** and Laravel stores `created_at` as Madrid wall-clock time — no
+  `CONVERT_TZ` anywhere.
+- **`orders.created_at` and `blog_posts.created_at` are second-resolution and unindexed**; factory rows share timestamps.
+- **`Customer` has a single `name`**; `PaymentStatus` = `pending_payment|paid|refunded|partially_refunded`.
+- Policies map to the abilities: `UserPolicy`/`ProductPolicy`/`BlogPostPolicy`/`OrderPolicy::viewAny` →
+  `users.view`/`products.view`/`blog.view`/`orders.view`; `MediaPolicy::VIEW_PERMISSION` = `media.view`.
+- **`Product::isOutOfStock()` reads the parent's own stock** and must not be reused for variable products.
 
-## Open questions
+## Decisions
 
-- **Q-2 — "Images" counter:** count all `media` rows, or only those attached/used? Recommend all image rows of the
-  media library (it is what the gallery shows).
-- **Q-4 — Revenue definition:** should `pending`/unpaid orders count? Recommend: count by `orders.created_at`,
-  subtract `refunded_amount`, and leave payment status out of the filter. (Cancelled orders: resolved, see D-8.)
+### D-1 — Five actions, authorized per module through `LogRefusedPrivilegedAttempt`
 
-## Resolved by the project owner (2026-09-30)
+`GetDashboardCounters`, `GetLatestBlogPosts`, `GetLowStockProducts`, `GetLatestOrders`, `GetSalesSeries`, all `__invoke`,
+read-only, in `app/Actions/Dashboard/`. The four list/series actions authorize with the project wrapper
+`LogRefusedPrivilegedAttempt::authorize('viewAny', <Model>::class, targetType: ...)` as their **first statement** (never a
+bare `Gate::authorize()`, per story 0015b), so a refusal is logged and throws `AuthorizationException` **before validation
+and before any query**. Super Admin passes via `Gate::before`. The dashboard **route stays ungated**; each widget is
+independently gated.
 
-- **R-1 — Blog "main image":** `blog_posts` has no image column (verified in `create_blog_posts_table`), so the
-  widget shows **title + a short description truncated to 80 characters**, no image. The description is derived
-  from `body`: strip HTML tags, collapse whitespace, decode entities, then `Str::limit(..., 80)`. A post whose body
-  is `null` (a scheduled/published post requires one, but be defensive) yields an empty description. Derived in the
-  action, never stored. Supersedes the earlier first-`<img>`/placeholder proposal; a featured-image column is out of
-  scope and would be its own story.
-- **R-2 — Cancelled orders in sales:** `GetSalesSeries` takes an `includeCancelled` boolean, **default `false`**,
-  driven by a checkbox in the chart's filters (0083). See D-8.
-- **R-3 — Low stock and variants:** a variable product with **one or more low-stock variants is listed as its
-  parent product**, so the manager opens the product and finds the affected variants there. See D-9.
-- **Q-5 — Low-stock threshold:** the request says "the 3 lowest stock". Recommend exactly that (no configurable
-  threshold); a product at `stock <= 0` is shown as out of stock, consistent with `Product::isOutOfStock()`.
+**`GetDashboardCounters` is the deliberate exception**: it spans three modules, so it never throws. Each counter is guarded
+by its own `Gate::allows` (`users.view`, `products.view`, `media.view`) and is `null` when the actor lacks it; **no count query
+runs for a null counter and nothing is logged** (a hidden counter is not an attempt). Return
+`array{users: ?int, products: ?int, images: ?int}`.
 
-## Gherkin (draft)
+**Caller contract (binding on 0083):** a caller must check the ability itself (`Gate::allows`/`@can`) and call an action only
+when it is already permitted, otherwise every unprivileged dashboard load would write a "Privileged action refused" warning.
+
+### D-2 — Return values are arrays of scalars, never Eloquent models
+
+PHPDoc array shapes (Larastan level 7), enums kept as enums, dates as `CarbonImmutable`, **money as decimal strings, never
+floats**. Returning no models stops the Livewire component lazy-loading relations or leaking columns (e.g. address snapshots)
+into public state. `name`/`title` are **nullable** in every shape (see D-9).
+
+- Posts: `list<array{id: string, title: ?string, description: string, status: BlogPostStatus, publishAt: ?CarbonImmutable}>`
+- Low stock: `list<array{id: string, name: ?string, sku: string, effectiveStock: int, isOutOfStock: bool, hasVariants: bool, lowVariantCount: int}>`
+- Orders: `list<array{id: string, orderNumber: string, customerName: ?string, total: string, status: OrderStatus, paymentStatus: PaymentStatus, createdAt: CarbonImmutable}>`
+- Series: `array{granularity: SalesGranularity, from: CarbonImmutable, to: CarbonImmutable, includeCancelled: bool, totalRevenue: string, points: list<array{bucket: string, label: CarbonImmutable, revenue: string, ordersCount: int}>}`
+  — `bucket` is the machine key (`2026-05-01` / `2026-05` / `2026`); the UI localizes `label`.
+
+### D-3 — Latest blog posts
+
+`status IN (published, scheduled)`, soft-deleted excluded by the default scope, `ORDER BY created_at DESC, id DESC`, limit 3,
+one query, no relations. Ordering by `created_at` (not `published_at`) keeps the meaning "most recently created"; a scheduled
+post created long ago can rank low — accepted **⚑ owner to confirm**. `publishAt` is `published_at` **only when the status is
+`scheduled`** (status governs the column's meaning), else `null`; a scheduled post whose date already passed (scheduler not yet
+run) is still listed with its past date.
+
+**Description** (R-1 of the owner, refined): derive from `body`, in this order — take the first 2 000 characters
+(`mb_substr`, so a `mediumText` body is not processed whole) → `strip_tags` → `html_entity_decode` → collapse whitespace
+(`/\s+/u`) → trim → if longer than 80, `Str::limit($text, 79, '')` followed by `…`, so the **total never exceeds 80
+characters including the ellipsis**. Decoding happens **after** stripping so an encoded `&lt;b&gt;` stays literal text. A
+`null`, empty or tags-only body yields `''`. Multibyte-safe. The output is plain text and is only ever rendered escaped.
+
+### D-4 — Low-stock products
+
+One grouped query, no per-product query:
+
+```php
+$variantMin = ProductVariant::query()->selectRaw('product_id, MIN(stock) AS min_variant_stock')->groupBy('product_id');
+Product::query()->leftJoinSub($variantMin, 'v', 'v.product_id', '=', 'products.id')
+    ->where('products.status', ProductStatus::Active)->where('products.type', ProductType::Physical)
+    ->select('products.*')
+    ->selectRaw('COALESCE(v.min_variant_stock, products.stock) AS effective_stock')
+    ->selectRaw('v.min_variant_stock IS NOT NULL AS has_variants')
+    ->orderBy('effective_stock')->orderBy('products.id')->limit(3);
+```
+
+- **Effective stock** = the lowest variant stock when the product has variants (the parent's own `stock` is then ignored),
+  else `products.stock`. Stock is signed: negative stock ranks first and is out of stock.
+- Only **active, physical parents** are eligible; variants of draft/virtual parents never surface. Tie-break is **`id`** —
+  never `name` (0076 moves it).
+- `isOutOfStock` = `effectiveStock <= 0`, computed here, **not** via `Product::isOutOfStock()`.
+- **`lowVariantCount` — ⚑ owner to confirm.** The cut-off is the `effectiveStock` of the last returned row; a product's
+  `lowVariantCount` is the number of its variants with `stock <= cut-off` (0 for a simple product), obtained in **one extra
+  grouped query** for all returned parents. Variants 40/1/2 among products with effective stocks 1, 7, 9 give cut-off 9 →
+  count 3; the Gherkin below fixes concrete numbers. Total: **2 queries** regardless of catalog size.
+
+### D-5 — Latest orders
+
+`ORDER BY created_at DESC, id DESC`, limit 5, all statuses (cancelled included). Eager-load the customer as
+**`with(['customer' => fn ($q) => $q->withTrashed()->select('id', 'name')])`** — a soft-deleted customer must not produce a
+null and crash the widget. Select only the needed order columns. **2 queries** total. `total` stays the decimal string.
+
+### D-6 — Sales series
+
+Signature: `__invoke(SalesGranularity $granularity, CarbonInterface $from, CarbonInterface $to, bool $includeCancelled = false): array`.
+
+- **Order of operations:** authorize → validate → query.
+- **Range normalization:** `from` → `setTimezone('Europe/Madrid')->startOfDay()`, `to` → end of day, inclusive; predicate is
+  half-open and sargable: `created_at >= from-start` and `created_at < day-after-to-start` (never `whereDate`).
+- **Bucket caps, on bucket count, not span:** `SalesGranularity` carries them — **Day 366, Month 120, Year 50**. `from > to` or
+  too many buckets → `ValidationException::withMessages(['range' => ...])` (single key `range`, which 0083 renders and
+  translates). Cap is computed in PHP before touching the database.
+- **Timezone:** `created_at` is already Madrid wall time, so bucket in SQL **without `CONVERT_TZ`**. DST days
+  (2026-03-29, 2026-10-25) group correctly for that reason.
+- **Bucketing SQL:** `DATE_FORMAT(created_at, '<fmt>') AS bucket` with the format string **interpolated from the enum** (a
+  closed constant, never input) and `GROUP BY bucket` — bound parameters would differ between SELECT and GROUP BY and fail
+  under `ONLY_FULL_GROUP_BY`.
+- **Measure:** `SUM(total - refunded_amount)` by `orders.created_at`, kept as a decimal string; **no clamp** (a negative bucket
+  exposes bad data). Refunds are attributed to the **order's** creation day, not the refund day — deliberate simplification.
+  **Known limitation, accepted:** `refunded_amount` is merchandise-only, so a fully refunded taxed order that is included
+  via the cancelled toggle leaves its tax and shipping as a positive residual.
+- **Filter:** `includeCancelled = false` excludes `status = cancelled`; `true` includes them. Pending and unpaid orders
+  **count** (no `payment_status` filter): bank-transfer orders are paid late and a paid-only chart would sit near zero.
+- **Zero-fill in PHP** with `CarbonPeriod` over the normalized range, merged over the SQL result, default `'0.00'`, ascending,
+  no duplicates, length = bucket count. One aggregate query.
+- The chart is labelled **"Sales"** (orders placed, net of refunds), never "Revenue"/"cash received" (copy lives in 0083).
+
+### D-7 — Counters
+
+`Media::query()->count()`, `Product::query()->count()`, `User::query()->where('status', Active)->count()` (soft-deleted
+excluded). **At most three `COUNT` queries; zero for an actor with none of the three abilities.** No caching (revisit only if
+measured slow).
+
+### D-8 — Cancelled-orders toggle (owner decision)
+
+Boolean `includeCancelled`, default `false`, surfaced by 0083 as a checkbox.
+
+### D-9 — Translatable-content seam (risk: pending 0076 / 0078)
+
+**Risk found in the debate.** Pending stories [0076](0076-translatable-content-retrofit-products-backend.md) and
+[0078](0078-translatable-content-retrofit-blog-posts-backend.md) (both `ready`, unclaimed) **delete `products.name` and
+`blog_posts.title/body`** and move them into translation tables. Neither knows about this story. Decision (**⚑ owner to
+confirm**): **no hard dependency** on them (they are large and would stall the dashboard) — instead **one read seam**:
+
+- name/title/body are read **only** through one private method per action (`resolveTitle`, `resolveBody`, `resolveName`),
+  returning the plain attribute today; the queries `select('products.*')`/`blog_posts.*` and never name a moving column and
+  never `orderBy`/`where`/`pluck` on it.
+- Whichever of {0076, 0078, 0082} **lands last performs the conversion**: swap the seam to `translated('title')` +
+  `withTranslationsFor(...)` in the viewer's UI locale with default-language fallback. Each of 0076/0078 gets a
+  "consumers to migrate: `App\Actions\Dashboard\*`" line in its DoD; 0082 gets an acceptance criterion and one seam test per action.
+- `tasks-status.json`/`tasks-map.md`: `conflict_risk_with` between 0082 and each of 0076/0078 (done in this pass).
+
+## Open questions closed by the debate
+
+| Q | Resolution |
+| --- | --- |
+| Q-2 images counter | all `media` rows (there is no kind column; "used" would need joins over three tables) |
+| Q-4 pending/unpaid in sales | included; date basis `created_at`; refunds netted at the order's day; labelled "Sales" |
+| Q-5 low-stock threshold | none; exactly the 3 lowest effective stocks |
+
+Still **⚑ owner to confirm** (defaults applied): post ordering by `created_at`; `lowVariantCount` cut-off semantics;
+products counter includes drafts; the D-9 no-hard-dependency approach.
+
+## Gherkin
+
+Actors are named business roles. "Catalog manager" and "order manager" are added to the glossary
+(`docs/testing/frontend/gherkin-guidelines.md`) when this story is ratified. Backend tests translate "opens the dashboard" to
+invoking the action.
 
 ```gherkin
-Scenario: Counters show active users only
-  Given an administrator and 4 active users, 1 inactive user and 1 suspended user
-  When the administrator's dashboard counters are computed
-  Then the users counter is 4
+Scenario: The dashboard counts only active users
+  Given Laura, an administrator, and 3 other active users, 1 inactive user and 1 suspended user
+  When Laura opens the dashboard
+  Then the users counter shows 4
 
-Scenario: Latest posts exclude drafts and include scheduled ones with their date
-  Given a blog editor and posts: 1 draft, 2 published, 2 scheduled
-  When the latest blog posts are requested
-  Then at most 3 posts are returned, newest first, none of them a draft
-  And each scheduled post carries the date it will be published
+Scenario: A deleted user is not counted
+  Given Laura, an administrator, and 2 other active users of whom 1 has been deleted
+  When Laura opens the dashboard
+  Then the users counter shows 2
 
-Scenario: A post's description is truncated to 80 characters
-  Given a blog editor and a published post whose body is 300 characters of HTML paragraphs
-  When the latest blog posts are requested
-  Then the post's description is plain text of at most 80 characters
+Scenario: Counters the actor may not see are never read
+  Given Uma, a user manager who may not view products or images
+  When Uma opens the dashboard
+  Then Uma sees the users counter only
+  And no product or image information is read
 
-Scenario: Low-stock list is the 3 lowest active physical products
-  Given a catalog manager and physical products with stock 50, 2, 0, 7 and a virtual product with stock 0
-  When the low-stock products are requested
-  Then the products with stock 0, 2 and 7 are returned in that order
-  And the virtual product is not returned
+Scenario: An empty shop shows zeros
+  Given Laura, an administrator, and a shop with no products, images or orders
+  When Laura opens the dashboard
+  Then the products and images counters show 0 and every list is empty
+  And the sales chart shows every day at zero
 
-Scenario: A variable product with a low variant is listed as the parent
-  Given a catalog manager and a variable product with variants of stock 40, 1 and 2, and a simple product with stock 9
-  When the low-stock products are requested
-  Then the variable product is listed once, as the parent, with effective stock 1 and 2 low variants
+Scenario: The latest posts exclude drafts
+  Given Bea, a blog editor, and posts: 1 draft, 2 published and 2 scheduled
+  When Bea opens the dashboard
+  Then the 3 newest of the published and scheduled posts are shown, newest first
+  And no draft is shown
+
+Scenario: A scheduled post shows the date it will be published
+  Given Bea, a blog editor, and a post scheduled for 15 June 2026
+  When Bea opens the dashboard
+  Then the post is shown as scheduled for 15 June 2026
+
+Scenario: A deleted post is not shown
+  Given Bea, a blog editor, and the 3 newest posts of which one has been deleted
+  When Bea opens the dashboard
+  Then the 3 newest posts that were not deleted are shown
+
+Scenario Outline: A post's description is at most 80 characters of plain text
+  Given Bea, a blog editor, and a published post whose body has <body_length> characters of text
+  When Bea opens the dashboard
+  Then the description has <shown_length> characters
+  Examples:
+    | body_length | shown_length |
+    | 50          | 50           |
+    | 80          | 80           |
+    | 300         | 80           |
+
+Scenario: A post's description is plain text
+  Given Bea, a blog editor, and a published post whose body is formatted text with a bold word and a special character
+  When Bea opens the dashboard
+  Then the description shows the same words without formatting
+
+Scenario: A post without content has an empty description
+  Given Bea, a blog editor, and a published post with no body
+  When Bea opens the dashboard
+  Then the post is shown with an empty description
+
+Scenario: The low-stock list is the 3 lowest active physical products
+  Given Carla, a catalog manager, and physical products with stock 50, 2, 0 and 7, and a virtual product with stock 0
+  When Carla opens the dashboard
+  Then the products with stock 0, 2 and 7 are listed in that order
+  And the virtual product is not listed
+
+Scenario Outline: Products that cannot run out are never listed
+  Given Carla, a catalog manager, and an out-of-stock product that is <kind>
+  When Carla opens the dashboard
+  Then the product is not listed as low stock
+  Examples:
+    | kind              |
+    | still a draft     |
+    | a virtual product |
+
+Scenario: A product owed to customers is listed first
+  Given Carla, a catalog manager, and products with stock 3, -2 and 0
+  When Carla opens the dashboard
+  Then the product with stock -2 is listed first
+
+Scenario: Products with equal stock are always listed in the same order
+  Given Carla, a catalog manager, and 4 products that each have 1 unit in stock
+  When Carla opens the dashboard
+  Then 3 products are listed
+  And opening the dashboard again lists the same 3 in the same order
+
+Scenario: A variable product is listed once, as the parent
+  Given Carla, a catalog manager, a variable product whose variants have 40, 1 and 2 units, and a simple product with 9 units
+  When Carla opens the dashboard
+  Then the variable product is listed once, as the parent, with 1 unit left
   And none of its variants is listed on its own
 
-Scenario: Cancelled orders are excluded from sales by default
-  Given an order manager and one delivered order of 100 and one cancelled order of 40 on the same day
-  When the sales series is requested per day
-  Then that day's total is 100
+Scenario: A variable product's own stock is ignored
+  Given Carla, a catalog manager, and a variable product with 999 units of its own whose variants have 40 and 50 units
+  When Carla opens the dashboard
+  Then the product is ranked by 40 units
 
-Scenario: Cancelled orders can be included
-  Given the same orders
-  When the sales series is requested per day including cancelled orders
-  Then that day's total is 140
+Scenario: A variable product reports how many variants are low
+  Given Carla, a catalog manager, and products whose lowest stocks are 1 (a variable product with variants of 1 and 2 units), 5 and 6
+  When Carla opens the dashboard
+  Then the variable product reports 2 variants at or below the 6-unit cut-off
 
-Scenario: Latest orders are the 5 most recent
-  Given an order manager and 7 orders
-  When the latest orders are requested
-  Then exactly the 5 newest orders are returned, newest first
+Scenario: The latest orders are the 5 most recent
+  Given Olga, an order manager, and 7 orders
+  When Olga opens the dashboard
+  Then exactly the 5 newest orders are listed, newest first
 
-Scenario: Sales series is zero-filled per bucket
-  Given an order manager and orders on 1 May and 3 May but none on 2 May
-  When the sales series is requested per day from 1 May to 3 May
-  Then three buckets are returned and the 2 May bucket is 0
+Scenario: Orders placed in the same second are listed in a stable order
+  Given Olga, an order manager, and 6 orders placed in the same second
+  When Olga opens the dashboard
+  Then 5 orders are listed
+  And opening the dashboard again lists the same 5 in the same order
 
-Scenario Outline: Sales series supports every granularity
-  Given an order manager and orders spread over several days, months and years
-  When the sales series is requested per <granularity>
-  Then the totals are grouped per <granularity>
+Scenario: An order from a deleted customer is still listed
+  Given Olga, an order manager, and an order whose customer has been deleted
+  When Olga opens the dashboard
+  Then the order is listed with that customer's name
 
-Scenario: An oversized range is refused
-  Given an order manager
-  When the sales series is requested per day over ten years
-  Then the request is refused with a validation error
+Scenario Outline: Cancelled orders count in sales only when included
+  Given Olga, an order manager, and one delivered order of 100 and one cancelled order of 40 on the same day
+  When Olga views daily sales <choice>
+  Then that day's sales are <sales>
+  Examples:
+    | choice                             | sales |
+    | without including cancelled orders | 100   |
+    | including cancelled orders         | 140   |
 
-Scenario: A user without the module ability gets nothing
-  Given a user without orders.view
-  When the latest orders are requested
-  Then the action refuses with an authorization error and runs no order query
+Scenario: Unpaid orders count in sales
+  Given Olga, an order manager, and a pending order of 60 awaiting a bank transfer
+  When Olga views daily sales
+  Then that day's sales are 60
+
+Scenario Outline: A refund reduces the sales of the order's day
+  Given Olga, an order manager, and a delivered order of <total> of which <refunded> was refunded
+  When Olga views daily sales for the day of the order
+  Then that day's sales are <sales>
+  Examples:
+    | total | refunded | sales |
+    | 100   | 30       | 70    |
+    | 100   | 100      | 0     |
+
+Scenario: Days without orders show zero
+  Given Olga, an order manager, and orders on 1 May and 3 May but none on 2 May
+  When Olga views daily sales from 1 May to 3 May
+  Then three days are shown and 2 May shows no sales
+
+Scenario Outline: Sales are grouped by the chosen period
+  Given Olga, an order manager, and orders of 10 on 30 April 2026, 20 on 1 May 2026 and 40 on 1 May 2027
+  When Olga views sales <period> from 30 April 2026 to 1 May 2027
+  Then the sales shown are <shown>
+  Examples:
+    | period    | shown                                                                  |
+    | per day   | 10 on 30 April, 20 on 1 May, 40 on 1 May 2027, zero on every other day |
+    | per month | 10 in April 2026, 20 in May 2026, 40 in May 2027, zero in other months |
+    | per year  | 30 in 2026, 40 in 2027                                                 |
+
+Scenario: An order just after midnight belongs to the new day
+  Given Olga, an order manager, and an order placed at 00:30 on 1 May in the shop's local time
+  When Olga views daily sales from 30 April to 1 May
+  Then that order counts towards 1 May
+
+Scenario: A range that ends on a day includes that whole day
+  Given Olga, an order manager, and an order placed at 23:59 on 1 May
+  When Olga views daily sales from 1 May to 1 May
+  Then that order counts towards 1 May
+
+Scenario: A leap day is its own day
+  Given Olga, an order manager, and an order placed on 29 February 2028
+  When Olga views daily sales for February 2028
+  Then 29 days are shown and 29 February shows that order
+
+Scenario: The sales of a single day are one period
+  Given Olga, an order manager
+  When Olga views sales per month for a single day
+  Then one period is shown
+
+Scenario: A range that ends before it starts is refused
+  Given Olga, an order manager
+  When Olga views daily sales from 5 May to 1 May
+  Then Olga is told the range is not valid
+
+Scenario Outline: A range with too many periods is refused
+  Given Olga, an order manager
+  When Olga views sales <period> over <span>
+  Then Olga is told the range is too long
+  And no sales are shown
+  Examples:
+    | period    | span            |
+    | per day   | 367 days        |
+    | per month | 121 months      |
+    | per year  | 51 years        |
+
+Scenario Outline: A user without access to a module reads none of its data
+  Given a user who may not view <module>
+  When the user opens the dashboard
+  Then the user is refused the <widget> widget
+  And no <module> information is read
+  Examples:
+    | module   | widget        |
+    | orders   | latest orders |
+    | orders   | sales chart   |
+    | products | low stock     |
+    | blog     | latest posts  |
+
+Scenario: A super administrator sees every widget
+  Given Sara, a super administrator
+  When Sara opens the dashboard
+  Then every widget is shown
 ```
 
 ## Files to create/modify
 
-- `app/Actions/Dashboard/GetDashboardCounters.php`, `GetLatestBlogPosts.php`, `GetLowStockProducts.php`,
-  `GetLatestOrders.php`, `GetSalesSeries.php`
-- `app/Enums/SalesGranularity.php` (`Day|Month|Year`)
-- `tests/Feature/Dashboard/*ActionTest.php` (one file per action)
-- Docs: `docs/api/routes.md` (dashboard contract), `docs/architecture/overview.md` if a new `Actions/Dashboard`
-  folder needs listing.
+Create:
+- `app/Actions/Dashboard/GetDashboardCounters.php`, `GetLatestBlogPosts.php`, `GetLowStockProducts.php`, `GetLatestOrders.php`, `GetSalesSeries.php`
+- `app/Enums/SalesGranularity.php` — string-backed `Day|Month|Year`; carries SQL format, PHP key format, `CarbonPeriod` step and bucket cap (no `switch` in the action)
+- `tests/Feature/Dashboard/` (see Tests)
+
+Modify: none in application code. Docs (Phase 6, `docs-keeper`): `docs/api/routes.md`, `docs/architecture/overview.md`
+(new `Actions/Dashboard` folder), `docs/architecture/authorization.md` (widgets gated per action, route stays ungated),
+`docs/testing/frontend/gherkin-guidelines.md` glossary (two roles). Coordination: `ai-spec/tasks-status.json`,
+`ai-spec/tasks-map.md`, plus a "consumers to migrate" line in 0076 and 0078 (Phase 6).
 
 ## Tests to perform
 
-Pest feature tests per action against MySQL with factories: correctness of each Gherkin scenario, authorization
-refusal per action, soft-deleted posts/products excluded, ordering ties, empty database (all zeros, empty lists,
-zero-filled series), N+1 guard (query-count assertion on the orders and posts actions).
+Pest 4 feature tests on MySQL, factories, `seed(RolePermissionSeeder)`, explicit `created_at` (never rely on factory
+timestamps), `Carbon::setTestNow` in `Europe/Madrid`.
+
+Files under `tests/Feature/Dashboard/`: `GetDashboardCountersTest`, `GetLatestBlogPostsTest`, `GetLowStockProductsTest`,
+`GetLatestOrdersTest`, `GetSalesSeriesTest` (split `…GranularityTest`/`…TimezoneTest` past ~400 lines),
+`DashboardActionsAuthorizationTest`, `DashboardActionsQueryCountTest`; plus a pure unit test for the description derivation
+in `tests/Unit/Actions/Dashboard/` if it is extracted to its own class.
+
+Required cases (matrix agreed with backend-qa):
+
+- **Counters:** active-only users; soft-deleted user; products incl. draft/virtual; media count incl. an unattached row; empty DB;
+  partial abilities → the others are `null` **and absent from the query log**; none → all `null`, zero queries; Super Admin; ≤ 3 queries.
+- **Posts:** drafts/soft-deleted/stale-`published_at` draft excluded; fewer than 3; ties by `id desc` and identical on repeat;
+  scheduled `publishAt` vs published `null`; past-dated scheduled still listed; description: `null`/empty/`<p></p>`/tags-only,
+  HTML + entities (`&amp; &lt;b&gt;` stays literal), `<script>` text, multibyte (`ñ`, `日本語`, emoji — valid UTF-8, ≤ 80), 79/80/81/300
+  characters, image-only body, 255-char title unchanged; 1 query.
+- **Low stock:** ties and ties straddling the cut-off (stable on repeat); zero-variant vs many variants; variant negative stock;
+  parent stock 999 ignored / parent 0 with variants 40 and 50 ranks by 40; draft/virtual parent with a low variant excluded;
+  parent with all variants deleted falls back to its own stock; 60 variants → still one row; `lowVariantCount` per D-4;
+  **query count constant (2)** for 3 vs 30 products.
+- **Orders:** 5 of 7; ties; cancelled included; trashed customer; exactly 2 queries with `Model::preventLazyLoading()` on.
+- **Series:** default vs include-cancelled over all five statuses; payment status ignored; refund netting incl. full refund
+  (auto-cancelled → excluded by default); anomaly `refunded > total` not clamped; exact decimal sums (0.10 + 0.20 = `0.30`);
+  zero-fill; single-day range for every granularity; `from > to`; exactly-cap accepted / cap + 1 refused for each granularity;
+  month across a year boundary; leap day 2028-02-29; midnight boundaries in Madrid (`00:00:00`, `23:59:59`), `00:30` Madrid
+  lands on the same day, **DST days** each one bucket; orders outside the range excluded; ascending unique keys; 1 aggregate
+  query; authorization refusal wins over an invalid range.
+- **Authorization matrix (dataset):** five actions × {no ability, only its ability, the other abilities, Super Admin}; refusals
+  assert a logged warning and no query on the target table; the counters partial-visibility case asserts **no** warning.
+  An arch/read-only guard: only `SELECT`s run.
+- **D-9 seam tests:** one per action asserting title/name/description resolve through the seam; **`->todo()` placeholders**
+  for the locale cases (Spanish translation, default-language fallback, description from the translated body) until 0076/0078 land.
+- Keep `tests/Feature/DashboardTest.php` green (a user with no permissions still gets HTTP 200 at `/dashboard`).
 
 ## Expected outcome
 
-Five tested, permission-gated, read-only actions that give the dashboard everything it displays.
+Five tested, permission-aware, read-only actions returning scalar shapes that give the dashboard everything it displays,
+with a documented seam so the pending translatable-content retrofits do not break them.
 
 ## Acceptance criteria
 
-- Each action returns exactly the shape and ordering above and refuses actors lacking its ability.
-- No query runs for a widget the actor cannot see.
-- The sales series is zero-filled, timezone-consistent and bounded.
+- Each action returns exactly the shape, filtering, ordering and tie-breaks above; the list/series actions refuse an actor
+  lacking their ability with a **logged** `AuthorizationException` before any query; the counters action never throws.
+- No query runs for a module the actor cannot see; query counts: counters ≤ 3, posts 1, low stock 2, orders 2, series 1.
+- The description never exceeds 80 characters including the ellipsis, is multibyte-safe and plain text.
+- The series is zero-filled, Madrid-day-consistent, bounded by the per-granularity caps, and raises `ValidationException` on `range`.
+- No model is returned; money is a decimal string; `name`/`title` are nullable in every shape.
+- name/title/body are read only through the seam; no moving column is selected by name, ordered on or filtered on.
 - No schema change and no new dependency.
 
 ## Definition of Done
 
-- [ ] Phase 1 debate + Phase 2 INVEST recorded in this file
-- [ ] Tests written first (red) then green; full suite green
-- [ ] Pint and Larastan clean
-- [ ] Appsec review (authorization per widget, no data leak across permissions)
-- [ ] Docs synced (routes/contracts; ER diagram untouched — no new table)
+- [x] Phase 1 debate recorded in this file
+- [ ] Phase 2 INVEST validation (`code-reviewer`)
+- [ ] Tests written first (red) then green; **full suite** green (unscoped)
+- [ ] Pint (unscoped) and Larastan clean
+- [ ] Appsec review (per-module authorization, refusal logging, no cross-module leakage, no models returned)
+- [ ] Docs synced (routes/contracts, overview, authorization, glossary; ER diagram untouched — no new table)
+- [ ] `consumers to migrate` line added to 0076 and 0078
+- [ ] Follow-up recorded: add `index(created_at)` on `orders` (via a `database-expert` story) if the table grows past ~10⁵ rows
+
+## Risks and follow-ups
+
+- **Retrofit collision (0076/0078)** — mitigated by D-9; whichever lands last converts the seam.
+- **No index on `orders.created_at` / `blog_posts.created_at`** — filesort/scan at backoffice scale; not in scope.
+- **Refund/tax residual and refund-day attribution** (D-6) — documented, accepted.
+- **Refusal-log noise** if a caller skips its own permission check — binding caller contract in D-1, enforced by 0083's tests.
 
 ## Dependencies
 
-- None pending. Consumed by [0083](0083-dashboard-home-overview-ui.md) (frontend, blocked on this).
-- None on a blog featured image: R-1 removes the need for one.
+- None pending as a hard dependency (`depends_on: []`). `conflict_risk_with`: 0076, 0078 (D-9).
+- Consumed by [0083](0083-dashboard-home-overview-ui.md).
+
+## Debate record
+
+Facilitator: Claude (product-owner role). Participants: backend-expert, backend-qa (both dispatched as `general-purpose`
+agents reading their `.claude/agents/*.md` definition, because the project agent types are not registered in this session).
+No database-expert (no schema change). Both agents worked read-only. Owner decisions honoured unchanged: title + 80-character
+description with no image; Chart.js; include-cancelled checkbox default off; variable products shown as the parent by lowest
+variant stock.

@@ -35,8 +35,13 @@ added as two new pending files** (Phase 1 drafts; the Three Amigos debate and IN
 run). Standalone stories, no PRD epic, requested directly by the project owner: the dashboard home redesign
 (counters, latest blog posts, low-stock products, latest orders, sales chart). Full-stack request split into a
 backend story numbered first (`0082`, `ready`, `depends_on: []`, no `database-expert`) and a frontend story
-(`0083`, `blocked` on `0082`). Neither shares a `touches` entry with any other pending task, so neither carries
-a `conflict_risk_with` entry. Pending count moves from 11 to 13 numbered files; `done/` is unchanged at 92.
+(`0083`, `blocked` on `0082`). **Update (2026-09-30, same day): the Three Amigos debate ran for both** and both are now Phase 1
+complete, awaiting Phase 2. The debate found that pending `0076` and `0078` delete `products.name` and
+`blog_posts.title/body`, which the dashboard actions read, so `0082` now carries
+`conflict_risk_with: ["0076", "0078"]` and each of those two lists `0082` back (resolved by a read seam in
+0082 D-9: whichever lands last converts it). `0083` widens its `touches` to the two shared list views
+(`orders.blade.php`, `blog-posts.blade.php`), the badge components, `app.css` and `package.json`; it has no
+conflict entry (0079 edits the blog *editor* view, not the list). Pending count moves from 11 to 13 numbered files; `done/` is unchanged at 92.
 
 **Update (2026-09-29): `0081-demo-data-seeder-command.md` added as a new pending file** (Phase 1
 Three Amigos debate complete). Standalone story, not part of any PRD epic — requested directly by
@@ -521,6 +526,8 @@ flowchart LR
     P0071 --> P0079
     P0077 -.-> P0079
     P0082 --> P0083
+    P0082 -.-> P0076
+    P0082 -.-> P0078
 
     class P0073,P0075,P0077,P0079,P0083 pending;
     class P0067,P0069,P0071,P0072,P0074,P0076,P0078,P0082 ready;
