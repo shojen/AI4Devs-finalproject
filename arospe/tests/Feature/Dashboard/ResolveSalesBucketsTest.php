@@ -8,10 +8,13 @@ use App\Enums\OrderStatus;
 use App\Enums\SalesGranularity;
 use Carbon\CarbonImmutable;
 use Illuminate\Validation\ValidationException;
+use Tests\Support\Dashboard\DomainQueryLog;
 
 // Story 0082 (D-6): ResolveSalesBuckets is the shared, NON-authorizing collaborator of the two
 // series actions: range normalization, cap validation, status resolution and the zero-filled bucket
-// list. None of the classes exist yet -- every test is red until they are implemented.
+// list. Advisory hardening (security audit F1/F2): a non-null status list is normalized (non-enum
+// entries dropped, duplicates removed, re-indexed to a list, empty-after-normalization refused) and
+// a range whose first or last day falls outside years 1000..9998 is refused with range_invalid.
 
 function bucketsDay(string $date, string $time = '00:00:00'): CarbonImmutable
 {
@@ -251,3 +254,93 @@ test('only the two series actions reference ResolveSalesBuckets anywhere in app/
         'Actions/Dashboard/ResolveSalesBuckets.php',
     ]);
 });
+
+// --- F1: status-list normalization ---------------------------------------------------------------
+
+function bucketsResolve(?array $statuses): array
+{
+    return app(ResolveSalesBuckets::class)(SalesGranularity::Day, bucketsDay('2026-05-01'), bucketsDay('2026-05-01'), $statuses);
+}
+
+test('a huge status list of duplicates collapses to one status', function () {
+    $result = bucketsResolve(array_fill(0, 200_000, OrderStatus::Delivered));
+
+    expect($result['statuses'])->toBe([OrderStatus::Delivered]);
+});
+
+test('a string-keyed status array yields a proper list', function () {
+    $result = bucketsResolve(['x' => OrderStatus::Shipped]);
+
+    expect($result['statuses'])->toBe([OrderStatus::Shipped])
+        ->and(array_is_list($result['statuses']))->toBeTrue();
+});
+
+test('non-enum entries are dropped and duplicates removed from a mixed list', function () {
+    $result = bucketsResolve([OrderStatus::Shipped, 'shipped', 5, null, OrderStatus::Shipped]);
+
+    expect($result['statuses'])->toBe([OrderStatus::Shipped]);
+});
+
+test('a list with only garbage is refused on the statuses key only', function () {
+    $errors = bucketsErrors(fn () => bucketsResolve(['garbage']));
+
+    expect(array_keys($errors))->toBe(['statuses'])
+        ->and($errors['statuses'][0])->toBe(__('dashboard.errors.statuses_required'));
+});
+
+test('duplicates of different statuses keep the first occurrence order', function () {
+    $result = bucketsResolve([OrderStatus::Shipped, OrderStatus::Pending, OrderStatus::Shipped]);
+
+    expect($result['statuses'])->toBe([OrderStatus::Shipped, OrderStatus::Pending]);
+});
+
+test('the normalized statuses never exceed the number of statuses that exist', function () {
+    $result = bucketsResolve(array_merge(...array_fill(0, 50, OrderStatus::cases())));
+
+    expect($result['statuses'])->toBe(OrderStatus::cases());
+});
+
+// --- F2: extreme dates --------------------------------------------------------------------------
+
+test('a range touching years outside 1000..9998 is refused with range_invalid before any query', function (string $from, string $to) {
+    $counts = DomainQueryLog::capture(function () use ($from, $to, &$errors): void {
+        $errors = bucketsErrors(fn () => app(ResolveSalesBuckets::class)(SalesGranularity::Day, bucketsDay($from), bucketsDay($to), null));
+    });
+
+    expect(array_keys($errors))->toBe(['range'])
+        ->and($errors['range'][0])->toBe(__('dashboard.errors.range_invalid'))
+        ->and($errors['range'][0])->not->toBe('dashboard.errors.range_invalid')
+        ->and($counts['orders'])->toBe(0);
+})->with([
+    'from year 999' => ['0999-12-31', '0999-12-31'],
+    'from year 999 into year 1000' => ['0999-12-31', '1000-01-02'],
+    'from year 1' => ['0001-01-01', '0001-01-02'],
+    'to 9999-12-31' => ['9999-12-30', '9999-12-31'],
+    'single day 9999-12-31' => ['9999-12-31', '9999-12-31'],
+]);
+
+test('a negative year is refused with range_invalid', function () {
+    $from = CarbonImmutable::create(-5, 1, 1, 0, 0, 0, 'Europe/Madrid');
+    $errors = bucketsErrors(fn () => app(ResolveSalesBuckets::class)(SalesGranularity::Day, $from, $from, null));
+
+    expect(array_keys($errors))->toBe(['range'])
+        ->and($errors['range'][0])->toBe(__('dashboard.errors.range_invalid'));
+});
+
+test('a year granularity range from year 999 is range_invalid, not range_too_long', function () {
+    $errors = bucketsErrors(fn () => app(ResolveSalesBuckets::class)(SalesGranularity::Year, bucketsDay('0999-12-31'), bucketsDay('2026-01-01'), null));
+
+    expect($errors['range'][0] ?? null)->toBe(__('dashboard.errors.range_invalid'));
+});
+
+test('the edges of the supported years are accepted', function (string $granularity, string $from, string $to, string $firstKey) {
+    $result = app(ResolveSalesBuckets::class)(SalesGranularity::from($granularity), bucketsDay($from), bucketsDay($to), null);
+
+    expect($result['buckets'][0]['bucket'])->toBe($firstKey)
+        ->and($result['buckets'])->toHaveCount(1);
+})->with([
+    'day 1000-01-01' => ['day', '1000-01-01', '1000-01-01', '1000-01-01'],
+    'day 9998-12-31' => ['day', '9998-12-31', '9998-12-31', '9998-12-31'],
+    'year 9998' => ['year', '9998-12-31', '9998-12-31', '9998'],
+    'year 1000' => ['year', '1000-01-01', '1000-01-01', '1000'],
+]);

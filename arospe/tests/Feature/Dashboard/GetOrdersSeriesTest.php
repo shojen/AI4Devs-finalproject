@@ -9,6 +9,8 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\PermissionRegistrar;
@@ -415,4 +417,87 @@ test('a Super Admin passes through Gate::before and a permitted actor is not log
 
     expect($series['points'])->toHaveCount(1);
     Log::shouldNotHaveReceived('warning');
+});
+
+// --- Security audit F1/F2: hostile status lists and extreme dates --------------------------------
+
+if (! function_exists('seriesOrdersSelects')) {
+    /**
+     * Run $callback and return the bindings of every SELECT that reads the orders table.
+     *
+     * @return list<array<int, mixed>>
+     */
+    function seriesOrdersSelects(callable $callback): array
+    {
+        $selects = [];
+        $recording = true;
+
+        DB::listen(function (QueryExecuted $query) use (&$selects, &$recording): void {
+            if ($recording && preg_match('/^\s*select\b.*\bfrom\s+[`"]?orders[`"]?/is', $query->sql)) {
+                $selects[] = $query->bindings;
+            }
+        });
+
+        try {
+            $callback();
+        } finally {
+            $recording = false;
+        }
+
+        return $selects;
+    }
+}
+
+test('a huge duplicated status list runs one query with at most one status binding plus the date bounds', function () {
+    seriesOrder('2026-05-01 10:00:00', '10.00', OrderStatus::Delivered);
+    $series = null;
+
+    $selects = seriesOrdersSelects(function () use (&$series): void {
+        $series = app(GetOrdersSeries::class)(SalesGranularity::Day, seriesDay('2026-05-01'), seriesDay('2026-05-01'), array_fill(0, 200_000, OrderStatus::Delivered));
+    });
+
+    expect($selects)->toHaveCount(1)
+        ->and(count($selects[0]))->toBeLessThanOrEqual(1 + 2)
+        ->and($series['statuses'])->toBe([OrderStatus::Delivered]);
+});
+
+test('a status list with every status repeated is bound at most once per distinct status', function () {
+    $selects = seriesOrdersSelects(
+        fn () => app(GetOrdersSeries::class)(SalesGranularity::Day, seriesDay('2026-05-01'), seriesDay('2026-05-01'), array_merge(...array_fill(0, 1000, OrderStatus::cases()))),
+    );
+
+    expect($selects)->toHaveCount(1)
+        ->and(count($selects[0]))->toBeLessThanOrEqual(count(OrderStatus::cases()) + 2);
+});
+
+test('a refused extreme range runs no orders query', function (string $from, string $to) {
+    $counts = DomainQueryLog::capture(function () use ($from, $to, &$errors): void {
+        try {
+            app(GetOrdersSeries::class)(SalesGranularity::Day, seriesDay($from), seriesDay($to));
+        } catch (ValidationException $e) {
+            $errors = $e->errors();
+        }
+    });
+
+    expect(array_keys($errors ?? []))->toBe(['range'])
+        ->and($errors['range'][0])->toBe(__('dashboard.errors.range_invalid'))
+        ->and($counts['orders'])->toBe(0);
+})->with([
+    'from year 999' => ['0999-12-31', '0999-12-31'],
+    'to 9999-12-31' => ['9999-12-30', '9999-12-31'],
+]);
+
+test('byStatus keys equal the distinct selected statuses however often they repeat', function () {
+    seriesOrder('2026-05-01 10:00:00', '1.00', OrderStatus::Shipped);
+
+    $series = app(GetOrdersSeries::class)(
+        SalesGranularity::Day,
+        seriesDay('2026-05-01'),
+        seriesDay('2026-05-01'),
+        [OrderStatus::Shipped, OrderStatus::Pending, OrderStatus::Shipped, 'garbage', null],
+    );
+
+    expect($series['statuses'])->toBe([OrderStatus::Shipped, OrderStatus::Pending])
+        ->and(array_keys($series['points'][0]['byStatus']))->toBe(['shipped', 'pending'])
+        ->and($series['points'][0]['byStatus'])->toBe(['shipped' => 1, 'pending' => 0]);
 });
