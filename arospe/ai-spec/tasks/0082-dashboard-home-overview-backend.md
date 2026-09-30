@@ -572,7 +572,7 @@ with a documented seam so the pending translatable-content retrofits do not brea
 - [ ] Docs synced (routes/contracts, overview, authorization, glossary; ER diagram untouched — no new table)
 - [ ] `consumers to migrate` line added to 0076 and 0078
 - [ ] `DemoDataSeeder` seeds paid and cancelled orders; its test updated and green
-- [ ] Follow-up recorded: story "Record order payment" (mark an order paid + `paid_at`), to be created by the project owner's call
+- [x] Follow-up created: stories [0084](0084-order-mark-as-paid-backend.md) and [0085](0085-order-mark-as-paid-ui.md) (mark an order paid + `paid_at`)
 - [ ] Follow-up recorded: add `index(created_at)` on `orders` (via a `database-expert` story) if the table grows past ~10⁵ rows
 
 ## Risks and follow-ups
@@ -588,8 +588,9 @@ with a documented seam so the pending translatable-content retrofits do not brea
   `pending_payment`. The PRD's refund scenarios already assume a "Pagado" state, so this is a gap of the order module, not of the
   dashboard. **Owner decision (2026-09-30):** keep income defined by `payment_status` and handle the gap separately —
   (1) this story makes `DemoDataSeeder` create a share of **paid** orders (and a few cancelled ones) so the dashboard is
-  demonstrable; (2) a **future story "Record order payment"** (mark an order paid from its detail screen, with a `paid_at` column so
-  income can be dated by payment rather than creation) is recorded as a follow-up, not scoped here; (3) until it ships, the UI shows a
+  demonstrable; (2) the gap is filled by **[0084](0084-order-mark-as-paid-backend.md) / [0085](0085-order-mark-as-paid-ui.md)** (mark an order paid
+  from its detail screen, plus a `paid_at` column so income can later be dated by payment rather than creation) — created 2026-09-30,
+  not a dependency of this story; (3) until it ships, the UI shows a
   neutral "income is counted once orders are paid" hint when income is 0.
 - **Refusal-log noise** if a caller skips its own permission check — binding caller contract in D-1, enforced by 0083's tests.
 

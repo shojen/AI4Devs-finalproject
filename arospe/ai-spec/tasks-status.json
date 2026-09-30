@@ -274,6 +274,46 @@
         "lang/es/dashboard.php"
       ],
       "conflict_risk_with": []
+    },
+    {
+      "id": "0084",
+      "slug": "0084-order-mark-as-paid-backend",
+      "title": "Order — mark as paid manually (backend)",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Actions/Orders/MarkOrderAsPaid.php",
+        "app/Policies/OrderPolicy.php",
+        "app/Models/Order.php",
+        "database/migrations/",
+        "database/factories/OrderFactory.php",
+        "lang/en/orders.php",
+        "lang/es/orders.php",
+        "tests/Feature/Orders/"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0085",
+      "slug": "0085-order-mark-as-paid-ui",
+      "title": "Order detail — \"Mark as paid\" control (frontend)",
+      "depends_on": [
+        "0084"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/Orders/Show.php",
+        "resources/views/livewire/orders/show.blade.php",
+        "lang/en/orders.php",
+        "lang/es/orders.php",
+        "tests/Feature/Orders/",
+        "tests/Browser/Orders/"
+      ],
+      "conflict_risk_with": []
     }
   ]
 }

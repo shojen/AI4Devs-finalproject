@@ -35,7 +35,16 @@ added as two new pending files** (Phase 1 drafts; the Three Amigos debate and IN
 run). Standalone stories, no PRD epic, requested directly by the project owner: the dashboard home redesign
 (counters, latest blog posts, low-stock products, latest orders, sales chart). Full-stack request split into a
 backend story numbered first (`0082`, `ready`, `depends_on: []`, no `database-expert`) and a frontend story
-(`0083`, `blocked` on `0082`). **Update (2026-09-30, same day): the Three Amigos debate ran for both** and both are now Phase 1
+(`0083`, `blocked` on `0082`). **Update (2026-09-30): `0084-order-mark-as-paid-backend.md` and `0085-order-mark-as-paid-ui.md` added as two new pending
+files** (Phase 1 drafts; debate and INVEST not run). Standalone, no PRD epic (Epic 3 follow-up): PRD §3.2's manual "mark as paid"
+was never implemented — nothing in `app/` writes `PaymentStatus::Paid`, so no order can be refunded and the dashboard's Real income
+(0082) has no data. `0084` (backend, `ready`, `depends_on: []`, includes `database-expert` for the `orders.paid_at` migration) adds
+`MarkOrderAsPaid`; `0085` (frontend, `blocked` on `0084`) adds the button on the order detail screen. Neither is a dependency of
+0082/0083 (0082 dates income by `created_at`; a later change may use `paid_at`). No shared `touches` with any other pending task
+(0083 edits the orders *list* view; 0085 the *detail* view), so no `conflict_risk_with` entries. Pending count moves from 13 to 15
+numbered files; `done/` unchanged at 92.
+
+**Update (2026-09-30, same day): the Three Amigos debate ran for both** and both are now Phase 1
 complete, awaiting Phase 2. The debate found that pending `0076` and `0078` delete `products.name` and
 `blog_posts.title/body`, which the dashboard actions read, so `0082` now carries
 `conflict_risk_with: ["0076", "0078"]` and each of those two lists `0082` back (resolved by a read seam in
@@ -456,6 +465,8 @@ flowchart LR
     end
 
     %% Standalone (no PRD epic)
+    P0084["0084 Order mark as paid BE"]
+    P0085["0085 Order mark as paid UI"]
     P0082["0082 Dashboard overview BE"]
     P0083["0083 Dashboard overview UI"]
     %% (P0081's own node dropped: 0081 closed to done/ this pass, per the update at the top of this
@@ -526,11 +537,12 @@ flowchart LR
     P0071 --> P0079
     P0077 -.-> P0079
     P0082 --> P0083
+    P0084 --> P0085
     P0082 -.-> P0076
     P0082 -.-> P0078
 
-    class P0073,P0075,P0077,P0079,P0083 pending;
-    class P0067,P0069,P0071,P0072,P0074,P0076,P0078,P0082 ready;
+    class P0073,P0075,P0077,P0079,P0083,P0085 pending;
+    class P0067,P0069,P0071,P0072,P0074,P0076,P0078,P0082,P0084 ready;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
