@@ -44,6 +44,12 @@ was never implemented — nothing in `app/` writes `PaymentStatus::Paid`, so no 
 (0083 edits the orders *list* view; 0085 the *detail* view), so no `conflict_risk_with` entries. Pending count moves from 13 to 15
 numbered files; `done/` unchanged at 92.
 
+**Update (2026-10-01): `0085` amended on the owner's answer** — the "Mark as paid" control lives in the **orders list table** and the
+**order detail page**, not in the dashboard home's latest-orders widget (read-only). `0085` therefore also touches
+`app/Livewire/Orders/Index.php` and `resources/views/livewire/orders.blade.php`, which `0083` edits too (badge extraction), so
+`conflict_risk_with` is now `0083` ↔ `0085` (dotted edge below; different regions of one file, no blocking order). Its title and
+`touches` in `tasks-status.json` were updated to match.
+
 **Update (2026-09-30, same day): the Three Amigos debate ran for both** and both are now Phase 1
 complete, awaiting Phase 2. The debate found that pending `0076` and `0078` delete `products.name` and
 `blog_posts.title/body`, which the dashboard actions read, so `0082` now carries
@@ -538,6 +544,7 @@ flowchart LR
     P0077 -.-> P0079
     P0082 --> P0083
     P0084 --> P0085
+    P0083 -.-> P0085
     P0082 -.-> P0076
     P0082 -.-> P0078
 

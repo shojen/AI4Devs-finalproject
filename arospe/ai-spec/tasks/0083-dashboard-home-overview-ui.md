@@ -583,8 +583,11 @@ leakage and no log noise, and the Chart.js sales chart updates live from its fil
 ## Dependencies
 
 - **Blocked on [0082](0082-dashboard-home-overview-backend.md)**.
-- `conflict_risk_with`: none pending. It shares `orders`/`blog-posts` list views only through the badge extraction (D-5);
-  no other pending story touches them today (0079 edits the blog **editor** view, not the list).
+- `conflict_risk_with`: **[0085](0085-order-mark-as-paid-ui.md)** — both edit `resources/views/livewire/orders.blade.php` (this story
+  extracts the status badges via D-5; 0085 adds a "Mark as paid" button and a confirm dialog to the actions cell). Different regions of
+  the same file; whichever lands second rebases. The blog list has no other pending toucher (0079 edits the blog **editor** view).
+- Owner decision 2026-10-01: the dashboard home's "Latest orders" widget is **read-only** — it carries no "Mark as paid" action; its
+  rows link to the orders list ("Orders") and to each order's page, where 0085 puts the control.
 
 ## Debate record
 

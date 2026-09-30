@@ -273,7 +273,9 @@
         "lang/en/dashboard.php",
         "lang/es/dashboard.php"
       ],
-      "conflict_risk_with": []
+      "conflict_risk_with": [
+        "0085"
+      ]
     },
     {
       "id": "0084",
@@ -298,7 +300,7 @@
     {
       "id": "0085",
       "slug": "0085-order-mark-as-paid-ui",
-      "title": "Order detail — \"Mark as paid\" control (frontend)",
+      "title": "Orders — \"Mark as paid\" control in the orders list and the order detail (frontend)",
       "depends_on": [
         "0084"
       ],
@@ -306,6 +308,8 @@
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
+        "app/Livewire/Orders/Index.php",
+        "resources/views/livewire/orders.blade.php",
         "app/Livewire/Orders/Show.php",
         "resources/views/livewire/orders/show.blade.php",
         "lang/en/orders.php",
@@ -313,7 +317,9 @@
         "tests/Feature/Orders/",
         "tests/Browser/Orders/"
       ],
-      "conflict_risk_with": []
+      "conflict_risk_with": [
+        "0083"
+      ]
     }
   ]
 }
