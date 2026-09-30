@@ -1227,7 +1227,10 @@ Los tickets técnicos son los mismos ficheros de [`arospe/ai-spec/tasks/done/`](
 [#269](https://github.com/LIDR-academy/AI4Devs-finalproject/pull/269)
 
 **Pull Request 2**
+
 [#314](https://github.com/LIDR-academy/AI4Devs-finalproject/pull/314)
 
 **Pull Request 3**
+
+[#361](https://github.com/LIDR-academy/AI4Devs-finalproject/pull/361)
 
