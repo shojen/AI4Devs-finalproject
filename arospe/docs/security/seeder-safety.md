@@ -76,6 +76,18 @@ way. Keep `testing` in the list; the suite's own regression tests depend on the 
 A production deployment should additionally prefer the narrow form — `php artisan db:seed
 --class=ProductionSeeder` — so the entry point cannot pick up fixtures added to `DatabaseSeeder` later.
 
+**The known-credential trap applies even when a seeder carries no environment guard of its own.**
+`DemoDataSeeder` (story 0081, `database/seeders/DemoDataSeeder.php`) holds no allow-list check at
+all — its caller, `App\Console\Commands\GenerateDemoData`, is the only place `local`/`testing` is
+enforced — yet the seeder is directly reachable via `php artisan db:seed --class=DemoDataSeeder
+--force`, bypassing that guard entirely. Its Phase 4 audit (F-1) found the same `UserFactory`
+default-password trap on the fallback author user `resolveCreatorPool()` creates when the database
+has no existing users; the fix gives that one row `Str::password(32)` instead of the factory
+default. **Rule, generalized**: a seeder's own fallback-created row must never carry a factory's
+default/predictable credential, whether or not the seeder is itself environment-guarded — a guard
+one layer up (or none at all, for a seeder invocable directly by class name) does not protect a row
+the seeder creates on its own.
+
 > ⚠️ **This line used to name `--class=RolePermissionSeeder`, and that advice is withdrawn.** Task 0016
 > added a second required catalog (`sales_regions`), so a runbook pinned to one seeder class now brings
 > production up with a **missing** catalog, no error, and no failing test — the exact failure mode a
@@ -440,22 +452,16 @@ password, never a reset token or reset URL. The generated secret in this seeder 
 `User::create()` and hashed by the model's `'hashed'` cast, so no plaintext credential is ever held in a
 variable that a log call or an exception report could pick up. Keep it that way.
 
-_Last updated: 2026-08-20 — Task 0016 Phase 6: corrected the "fail loudly" section, which was written
-during the Phase 4 audit and still quoted the **pre-fix** `$spain?->id` / unchecked-`update()` code as if
-it were current, under the framing "both present in `SalesRegionSeeder` today". Rewritten as an explicit
-❌ before / ✅ after pair against the shipped `throw_if(...)` guards, with the third guard
-(`assertValidCountryFixture()`) recorded. The underlying rule is unchanged._
-
-_Previously: 2026-08-19 — Task 0016 (Sales Region catalog schema + seeder), this repo's first
-**required catalog seeder that is not a privilege bootstrap**. Withdrew the stale
-`--class=RolePermissionSeeder` production runbook line (it now skips a required catalog silently) and
-added four sections: required-catalog registration in `ProductionSeeder` plus the `WithoutModelEvents`
-asymmetry between the two entry points; fail-loudly over `?->` on a structural lookup; the
-byte-exact-PHP vs. `_ci`-database split on a seeder idempotency key (the `roles.name` trap, now on
-`sales_regions.slug`); and the confirmed-safe seeder-owned / administrator-configurable column split
-with the empirically verified `#[Fillable]` guard behind it._
-
-_Previously: 2026-08-10 — Updated during the **third** Phase 4 audit of task 0002: corrected the
-fixture guard to the shipped `app()->environment(['local', 'testing'])` allow-list (the earlier
-`! app()->isProduction()` deny-list snippet is withdrawn), and added the abort-must-not-throw-inside-the-
-transaction rule, the format-validate-before-lookup rule, and the persisted-audit-log rule._
+_Last updated: 2026-09-30 — Story 0081 (Demo data seeder command). Added a note to "Never put
+development-only accounts in an unguarded DatabaseSeeder" generalizing the known-credential-fallback
+rule to a seeder with no environment guard of its own (`DemoDataSeeder`, reachable directly via
+`db:seed --class=... --force`): its fallback-created author user must not carry a factory's default
+password either. Earlier history: task 0016 (Sales Region catalog schema + seeder), this repo's
+first required catalog seeder that is not a privilege bootstrap, withdrew the stale
+`--class=RolePermissionSeeder` runbook line and added the required-catalog/`ProductionSeeder`
+registration, `WithoutModelEvents` asymmetry, fail-loudly-over-`?->`, byte-exact-vs-`_ci` idempotency
+key, and seeder-owned/administrator-configurable column split sections (Phase 6 later corrected the
+fail-loudly section to quote the shipped ❌/✅ pair instead of pre-fix code); task 0002's third Phase 4
+audit corrected the fixture guard to the shipped `app()->environment(['local', 'testing'])`
+allow-list and added the abort-must-not-throw-inside-the-transaction, format-validate-before-lookup,
+and persisted-audit-log rules._

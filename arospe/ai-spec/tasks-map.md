@@ -18,6 +18,43 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**This pass is story 0081's closure (Demo data seeder command, standalone, no PRD epic).** Its
+task file moved `ai-spec/tasks/in-progress/` -> `ai-spec/tasks/done/`, its `tasks-status.json`
+entry was deleted, its node and its `claimed` class membership were removed from the graph, and it
+joined the flat `done/` inventory (Standalone: 0 -> 1). It was nothing's hard dependent
+(`depends_on` edges pointing *at* 0081: none — it was a standalone story with no pending
+dependents), so no other task's `status` changes. The mandatory link-integrity check ran both
+directions for this move: this is an `in-progress/` → `done/` move at the same depth, so the moved
+file's own outbound links needed no re-resolution; a repo-wide search for inbound references to
+`0081-demo-data-seeder-command.md` found only bare filename mentions in this file's own prose above
+(no path segment, and no actual Markdown link `](...)` anywhere in the repo cites it), so no edit
+was needed there either. `ai-spec/tasks/in-progress/` is empty again.
+
+**Update (2026-09-29): `0081-demo-data-seeder-command.md` added as a new pending file** (Phase 1
+Three Amigos debate complete). Standalone story, not part of any PRD epic — requested directly by
+the project owner. Classified Backend, no `database-expert` (every model/factory it needs already
+exists). It depends on no other pending or in-progress task (`depends_on: []`) and touches only
+brand-new files (`database/seeders/DemoDataSeeder.php`, `app/Console/Commands/
+GenerateDemoData.php`, and two new test files), none shared with any other pending task's
+`touches` list, so it carries no `conflict_risk_with` entries either. It is `ready` from creation,
+drawn as an isolated node in the graph below with no incoming edge. This adds one file to the
+overall total and moves the pending count from 11 to 12 numbered files (see the recount bullet
+further down).
+
+**Update (2026-09-29): `0081-demo-data-seeder-command.md` moved from `ai-spec/tasks/` to
+`ai-spec/tasks/in-progress/` (Phase 3 step 0), having passed Phase 2 (INVEST validation, per the
+story's own "Phase 2 INVEST review findings" revision).** It is still pending work, so it keeps its
+node and edges (it has none, `depends_on: []`); its node moves from the green `ready` class to the
+blue `claimed` class below, and its `tasks-status.json` entry's `status` moved to `"claimed"`
+(`claimed_by: "shojen/0081-demo-data-seeder"`, `claimed_at: "2026-09-29T19:32:09Z"`), with
+`depends_on` unchanged (still empty). The mandatory link-integrity check ran both directions for
+this move: the story file itself has no relative Markdown links to check (it is standalone, with
+no cross-references to other task files or docs), so its own outbound links needed no change; a
+repo-wide search for inbound references to the old `ai-spec/tasks/0081-demo-data-seeder-command.md`
+path found none outside this file's own prose mentions above, which name the file by its bare
+filename (no path) and therefore needed no edit either. `ai-spec/tasks/in-progress/` now holds
+exactly this one file.
+
 **Update (2026-09-29, merge reconciliation):** `shojen/0070-translatable-content-mechanism-backend`
 (this branch, having just closed story 0070 per the update below) was merged with
 `origin/finalproject-ARP`, which had independently closed story 0066 (Admin UI locale preference
@@ -202,8 +239,18 @@ graph and from the parallelization analysis below.
   files in `ai-spec/tasks/done/`**, **11 numbered files still pending** in `ai-spec/tasks/` (none
   checked out to `in-progress/`), **+ 1 non-numbered infrastructure doc** — 103 files total,
   unchanged from the prior recount (only the done/pending split moved, by two: `0066` and `0070`
-  both left the pending list for `done/`). This is now the authoritative current count; the "103
-  files total" bullet above is kept for its own reasoning, not its totals.
+  both left the pending list for `done/`).
+- **Recounted once more 2026-09-29** (`0081-demo-data-seeder-command.md` added as a new pending
+  file, per the note at the top of this file): **91 files in `ai-spec/tasks/done/`**, **12
+  numbered files still pending** in `ai-spec/tasks/` (none checked out to `in-progress/`), **+ 1
+  non-numbered infrastructure doc** — 104 files total, up by one (a brand-new file, not a moved
+  one).
+- **Recounted once more 2026-09-30** (`0081-demo-data-seeder-command.md` closed to `done/`, per
+  this pass's own closure note at the top of this file): **92 files in `ai-spec/tasks/done/`**, **11
+  numbered files still pending** in `ai-spec/tasks/` (none checked out to `in-progress/`), **+ 1
+  non-numbered infrastructure doc** — 104 files total, unchanged (a file moved, not added or
+  removed). This is now the authoritative current count; the bullets above are kept for their own
+  reasoning, not their totals.
 - For a machine-readable, per-task claim registry that two parallel Claude Code sessions can use
   to coordinate against this same dependency data, see
   [`ai-spec/tasks-status.json`](tasks-status.json) and its companion protocol,
@@ -212,7 +259,7 @@ graph and from the parallelization analysis below.
 ## Table of contents
 
 - [Inventory](#inventory)
-  - [Done (91) — shipped, out of scope for this graph](#done-91--shipped-out-of-scope-for-this-graph)
+  - [Done (92) — shipped, out of scope for this graph](#done-92--shipped-out-of-scope-for-this-graph)
   - [Pending — not started (11 numbered + 1 infra doc)](#pending--not-started-11-numbered--1-infra-doc)
 - [Dependency graph (pending tasks only)](#dependency-graph-pending-tasks-only)
 - [Analysis](#analysis)
@@ -223,7 +270,7 @@ graph and from the parallelization analysis below.
 
 ## Inventory
 
-### Done (91) — shipped, out of scope for this graph
+### Done (92) — shipped, out of scope for this graph
 
 Already merged into `main`/`finalproject-ARP` and closed via the workflow's Phase 7; see
 [`ai-spec/tasks/done/`](tasks/done/) for each story's full file. Listed here only as IDs, grouped
@@ -329,6 +376,11 @@ appears as a node in the dependency graph below:
   are new pending files. 0064b — Scheduled post publish failure notification (backend), the tenth to close
   (0063 closed ninth, per the Update note above): it had no hard dependent of its own; `0065` and `0078` drop
   it from `conflict_risk_with`.
+- **Standalone (no PRD epic) (1):** 0081 — Demo data seeder command, closed 2026-09-30, this pass's
+  own closure. Requested directly by the project owner rather than derived from a PRD epic; ships
+  `database/seeders/DemoDataSeeder.php` and the `php artisan demo:generate-data` console command.
+  It had no pending dependent of its own (`depends_on` edges pointing *at* 0081: none), so its
+  closure re-derives no `status` change against the pending list.
 
 ### Pending — not started (11 numbered + 1 infra doc)
 
@@ -389,6 +441,11 @@ flowchart LR
         P0078["0078 Blog Posts retrofit BE"]
         P0079["0079 Blog post editor i18n UI"]
     end
+
+    %% Standalone (no PRD epic)
+    %% (P0081's own node dropped: 0081 closed to done/ this pass, per the update at the top of this
+    %% file. It had no incoming edge of its own -- no pending task named it as a depends_on blocker
+    %% -- so removing it re-derives nothing further.)
 
     %% Customers and Orders core
     %% (0042/0043 -> 0044, and 0041/0024/0029/0035/0036/0038 -> 0045, are all satisfied now that
@@ -461,9 +518,10 @@ flowchart LR
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(no node is `claimed` in this snapshot — `0066` and `0070`, the prior `claimed` nodes, both closed
-to `done/` in this pass, on separate branches reconciled together here); yellow (`pending`) = still
-blocked on at least one open pending dependency.
+(no `claimed` node remains in this snapshot; `0081`, the prior sole `claimed` node, closed to
+`done/` this pass — see the update at the top of this file; `0066` and `0070`, the `claimed` nodes
+before that, both closed to `done/` in an earlier pass, on separate branches reconciled together
+here); yellow (`pending`) = still blocked on at least one open pending dependency.
 
 ## Analysis
 

@@ -10,9 +10,13 @@ app/
   Console/Commands/    Artisan commands (PublishScheduledBlogPosts, `blog:publish-scheduled-posts` — story 0064,
                        the app's first: run every minute by the schedule entry in routes/console.php. The
                        command owns the selection and the per-post loop, Actions/Blog/PublishScheduledBlogPost
-                       owns the transition). Auto-discovered from this folder, so it needs no registration —
-                       which also means `php artisan list` showing it proves nothing about the schedule entry;
-                       see ../../testing/backend/scheduled-commands.md
+                       owns the transition; GenerateDemoData, `demo:generate-data` — story 0081, a thin
+                       wrapper that gates the environment (allow-list `local`/`testing`, refused elsewhere
+                       unless `--force`) then calls `db:seed --class=Database\Seeders\DemoDataSeeder
+                       --force`, returning that call's own exit code — the seeder itself carries no guard
+                       of its own, see security/seeder-safety.md). Auto-discovered from this folder, so it
+                       needs no registration — which also means `php artisan list` showing it proves nothing
+                       about the schedule entry; see ../../testing/backend/scheduled-commands.md
   Enums/               Backed enums for domain value sets (UserStatus, RoleName, SalesRegionKind,
                        BlogPostStatus — story 0061, draft/published/scheduled, with label() since story 0063
                        (the posts list badge and the editor's status select), ProductType, ProductStatus — exactly two persisted cases — and
