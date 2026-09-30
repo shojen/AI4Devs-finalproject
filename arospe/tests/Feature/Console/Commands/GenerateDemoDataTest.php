@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Models\BlogTag;
@@ -106,4 +108,65 @@ test('running the command twice adds a second batch, and every customer old and 
         ->and(BlogPost::count())->toBe(20)
         ->and(Order::count())->toBeGreaterThanOrEqual(20)
         ->and(Customer::query()->doesntHave('orders')->exists())->toBeFalse();
+});
+
+// Story 0082 (D-6/"Modify DemoDataSeeder"): the dashboard's Real income and cancelled-orders views
+// need demonstrable data. The seeder makes the FIRST seeded order paid and the SECOND cancelled
+// (deterministic, like 0081's always-tagged first post), and never produces a refund (refunds need
+// line-level RecordRefund data the seeder does not build). 0081's invariants must survive.
+test('one seeding run yields a paid non-cancelled order and a cancelled order', function () {
+    $this->artisan('demo:generate-data')->assertSuccessful();
+
+    $paidAndLive = Order::query()
+        ->where('payment_status', PaymentStatus::Paid)
+        ->where('status', '!=', OrderStatus::Cancelled)
+        ->count();
+    $cancelled = Order::query()->where('status', OrderStatus::Cancelled)->count();
+
+    expect($paidAndLive)->toBeGreaterThanOrEqual(1)
+        ->and($cancelled)->toBeGreaterThanOrEqual(1);
+});
+
+test('the cancelled demo order is a different order from the paid one, and is not paid-and-live', function () {
+    $this->artisan('demo:generate-data')->assertSuccessful();
+
+    $paidIds = Order::query()
+        ->where('payment_status', PaymentStatus::Paid)
+        ->where('status', '!=', OrderStatus::Cancelled)
+        ->pluck('id');
+    $cancelledIds = Order::query()->where('status', OrderStatus::Cancelled)->pluck('id');
+
+    expect($paidIds)->not->toBeEmpty()
+        ->and($cancelledIds)->not->toBeEmpty()
+        ->and($paidIds->intersect($cancelledIds))->toBeEmpty();
+});
+
+test('the seeder never creates a refunded or partially refunded order, nor a refunded amount', function () {
+    $this->artisan('demo:generate-data')->assertSuccessful();
+
+    expect(Order::query()->whereIn('payment_status', [PaymentStatus::Refunded, PaymentStatus::PartiallyRefunded])->count())->toBe(0)
+        ->and(Order::query()->where('refunded_amount', '>', 0)->count())->toBe(0);
+});
+
+test('every seeding run contributes its own paid and cancelled order, deterministically', function () {
+    $this->artisan('demo:generate-data')->assertSuccessful();
+    $this->artisan('demo:generate-data')->assertSuccessful();
+
+    expect(Order::query()->where('payment_status', PaymentStatus::Paid)->where('status', '!=', OrderStatus::Cancelled)->count())->toBeGreaterThanOrEqual(2)
+        ->and(Order::query()->where('status', OrderStatus::Cancelled)->count())->toBeGreaterThanOrEqual(2)
+        ->and(Order::query()->whereIn('payment_status', [PaymentStatus::Refunded, PaymentStatus::PartiallyRefunded])->count())->toBe(0);
+});
+
+test('with paid and cancelled orders seeded, 0081s invariants hold: 1-3 orders per customer and totals equal their items', function () {
+    $this->artisan('demo:generate-data')->assertSuccessful();
+
+    foreach (Customer::query()->withCount('orders')->get() as $customer) {
+        expect($customer->orders_count)->toBeBetween(1, 3);
+    }
+
+    foreach (Order::query()->with('items')->get() as $order) {
+        $itemsTotal = $order->items->sum(fn ($item): float => (float) $item->line_total);
+
+        expect((float) $order->total)->toEqualWithDelta($itemsTotal + (float) $order->tax_amount + (float) $order->shipping_amount, 0.001);
+    }
 });
