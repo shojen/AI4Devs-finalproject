@@ -12,15 +12,16 @@ Productos, Blog) with live widgets:
 
 1. **Hero banner** — time-of-day greeting with the user's first name, and the counters: active users, products,
    images (each shown only if the actor may see that module).
-2. **Blog widget** — the 3 latest published/scheduled posts: main image, title, a status badge
-   (*Published* / *Scheduled*) and, for scheduled posts, the date and time they will go live. Links to the post
-   editor; footer link to the blog list.
+2. **Blog widget** — the 3 latest published/scheduled posts: title, a description truncated to 80 characters
+   (posts have no main image yet), a status badge (*Published* / *Scheduled*) and, for scheduled posts, the date
+   and time they will go live. Links to the post editor; footer link to the blog list.
 3. **Low-stock widget** — the 3 products closest to running out, with stock count and an out-of-stock /
-   low-stock badge; links to the product editor.
+   low-stock badge; links to the product editor. A variable product appears as its **parent**, showing its lowest
+   variant stock and a "N variants low" hint, and links to the editor where its variants are managed.
 4. **Latest orders widget** — the 5 most recent orders (number, customer, total, status); links to the order
    detail.
-5. **Sales chart** — dynamic revenue chart with filters **Day / Month / Year** and a **custom date range**
-   picker; it re-renders without a page reload.
+5. **Sales chart** — dynamic revenue chart with filters **Day / Month / Year**, a **custom date range** picker
+   and an **"Include cancelled orders"** checkbox (unchecked by default); it re-renders without a page reload.
 
 ## Type
 
@@ -31,9 +32,10 @@ Productos, Blog) with live widgets:
 - **D-1 — Livewire component** `App\Livewire\Dashboard\Overview` (class-based, per the repo convention) replaces
   `Route::view('dashboard', 'dashboard')` in `routes/web.php`, keeping the route name `dashboard`. It calls the
   0082 actions; widgets the actor is not authorized for are not rendered.
-- **D-2 — Chart without a new dependency (recommended, Q-1):** an Alpine-driven inline SVG bar/area chart fed by
-  the component's public series array. Adding Chart.js or similar changes `package.json` and needs the project
-  owner's approval (CLAUDE.md: no dependency changes without approval).
+- **D-2 — Chart (recommended, Q-1):** an inline SVG bar/area chart **rendered by Blade from the component's
+  series**, so a filter change is a plain Livewire re-render with no chart JavaScript to keep in sync; Alpine only
+  drives the hover tooltip. Chart.js would add a dependency (needs the project owner's approval per CLAUDE.md) and
+  a `wire:ignore` canvas updated through Livewire events.
 - **D-3 — Filters:** a segmented control for granularity plus presets (last 7/30 days, this month, this year) and a
   from/to date range; state lives in Livewire `#[Url]` properties so a filtered view is shareable/refresh-safe;
   invalid ranges (from > to, oversized) show a validation message, never a 500.
@@ -48,10 +50,11 @@ Productos, Blog) with live widgets:
 
 ## Open questions
 
-- **Q-1 — Charting library:** dependency-free SVG (recommended) vs Chart.js/ApexCharts (richer tooltips, needs
-  approval to add).
-- **Q-2 — Blog main image** inherits [0082 Q-1](0082-dashboard-home-overview-backend.md#open-questions): first
-  body image with a placeholder fallback (recommended) or a future featured-image column.
+- **Q-1 — Charting library:** Blade-rendered SVG (recommended: no dependency, no JS sync with Livewire) vs
+  Chart.js (richer tooltips/axes/animation; needs approval to add and a `wire:ignore` bridge).
+- Resolved by the owner (2026-09-30): no blog image, title + 80-character description
+  ([0082 R-1](0082-dashboard-home-overview-backend.md#resolved-by-the-project-owner-2026-09-30)); cancelled
+  orders are toggled by a checkbox (R-2); variable products show as the parent (R-3).
 - **Q-3 — Default chart range:** recommend granularity *Day*, last 30 days.
 
 ## Gherkin (draft)
@@ -66,7 +69,7 @@ Scenario: The hero shows the greeting and the three counters
 Scenario: The blog widget labels each post's state
   Given a blog editor and one published post and one post scheduled for 12 October 10:00
   When the blog editor opens the dashboard
-  Then the blog widget lists both posts with their title and main image
+  Then the blog widget lists both posts with their title and a description of at most 80 characters
   And the published post carries a "Published" badge
   And the scheduled post carries a "Scheduled" badge and the date 12 October 10:00
 
@@ -75,6 +78,19 @@ Scenario: The low-stock widget warns about the emptiest products
   When the catalog manager opens the dashboard
   Then the widget lists the products with stock 0, 2 and 7
   And the product with stock 0 is marked out of stock
+
+Scenario: A variable product with a low variant shows as its parent
+  Given a catalog manager and a variable product whose variants have stock 40, 1 and 2
+  When the catalog manager opens the dashboard
+  Then the low-stock widget lists the parent product once, with lowest stock 1 and "2 variants low"
+  And the entry links to that product's editor
+
+Scenario: The cancelled-orders checkbox changes the chart
+  Given an order manager and a day with one delivered order of 100 and one cancelled order of 40
+  When the order manager opens the dashboard
+  Then the chart shows 100 for that day and the "Include cancelled orders" checkbox is unchecked
+  When the order manager checks "Include cancelled orders"
+  Then the chart shows 140 for that day
 
 Scenario: The latest orders widget lists five orders
   Given an order manager and 7 orders
@@ -132,7 +148,8 @@ updates live from its filters.
 
 - No placeholder pattern remains on the page; the four shortcut cards are gone.
 - Each widget matches its Gherkin scenario and is hidden when the actor lacks its ability.
-- The chart supports day/month/year and a custom range, with validation and empty states.
+- The chart supports day/month/year, a custom range and the include-cancelled checkbox, with validation and
+  empty states.
 - All strings are translated in `en` and `es`; layout works at phone width.
 
 ## Definition of Done

@@ -1,7 +1,7 @@
 # [0082] Dashboard home overview — read-side actions (backend)
 
 > **Status: Phase 1 draft.** Written from the project owner's request; the Three Amigos debate (Phase 1)
-> and INVEST validation (Phase 2) have **not** run yet. Open questions are listed under
+> and INVEST validation (Phase 2) have **not** run yet. Remaining open questions are listed under
 > [Open questions](#open-questions) with a recommended answer each — resolve them in the debate.
 
 ## Description
@@ -16,11 +16,14 @@ sales chart. This story adds the read-only queries those widgets need, each as a
 
 Data required:
 
+> Owner decisions of 2026-09-30 are folded in below (R-1 to R-3, D-8, D-9).
+
 1. **Headline counters** — number of *active* users (`users.status = active`), number of products, number of
    images (`media` rows of image kind).
 2. **Latest blog posts** — the 3 most recent posts whose status is `published` or `scheduled` (drafts excluded),
-   each with title, main image, status and, when `scheduled`, the date it will publish.
-3. **Low-stock products** — the 3 products with the lowest stock, to warn before they run out.
+   each with title, a description truncated to 80 characters, status and, when `scheduled`, the date it will publish.
+3. **Low-stock products** — the 3 products with the lowest stock (a variable product counts by its lowest variant
+   and is listed as the parent), to warn before they run out.
 4. **Latest orders** — the 5 most recently placed orders.
 5. **Sales series** — revenue over time, bucketed by **day, month or year**, or over an **arbitrary date range**.
 
@@ -42,7 +45,7 @@ Data required:
   translation layer in the viewer's current locale with the default-language fallback.
 - **D-3 — Low stock:** `products.stock` ascending, limit 3, only `status = active` and `type = physical`
   (virtual products have no stock to run out). Ties broken by `name`/`id` for determinism. A product with
-  variants: see Q-3.
+  variants: see D-9.
 - **D-4 — Latest orders:** `orders.created_at desc`, limit 5, eager-load `customer` only; show
   `order_number`, customer name, `total`, `status`, `payment_status`.
 - **D-5 — Sales series:** input is a `granularity` enum (`day|month|year`) and an inclusive `from`/`to` range.
@@ -51,23 +54,35 @@ Data required:
   is not `cancelled` (Q-4). Buckets with no orders are **zero-filled** so the chart has no gaps. Bucketing is done
   in the application timezone. Guardrails: `from <= to`, and a maximum number of buckets (e.g. 366 day buckets)
   so a "day" granularity over ten years is refused with a `ValidationException` instead of returning 3 650 points.
+- **D-8 — Cancelled orders toggle:** `GetSalesSeries` accepts `bool $includeCancelled = false`. Off: orders with
+  status `cancelled` are excluded. On: they are included in the totals like any other order.
+- **D-9 — Effective stock of a product:** for a product **without** variants it is `products.stock`; for a product
+  **with** variants it is the **lowest `product_variants.stock`** among its variants. The widget ranks by effective
+  stock ascending, limit 3, and lists each product **once, as the parent**. Each row also carries
+  `lowVariantCount` (variants at or below the lowest-3 cut-off, i.e. how many variants are driving it) so the
+  frontend can say "2 variants low"; the manager reaches the variants from the product editor. Computed with a
+  single grouped query (`MIN(stock)` over a join/subquery), not one query per product.
 - **D-6 — Counters** are three cheap `COUNT(*)` queries; no caching in this story (revisit if measured slow).
 
 ## Open questions
 
-- **Q-1 — Blog "main image" does not exist in the data model.** `blog_posts` has no `featured_media_id` (verified
-  in `create_blog_posts_table`); products have `featured_media_id`, posts do not. Options: **(a, recommended)**
-  derive it as the first `<img>` in the post body, `null` → a neutral placeholder, no schema change; **(b)** add a
-  `featured_media_id` column + editor field in a separate, earlier story (touches the blog editor and the
-  translatable-content work of 0078/0079). Recommendation (a) keeps this story small; (b) is the correct long-term
-  model and should be filed as its own story if the owner wants a chosen cover image.
 - **Q-2 — "Images" counter:** count all `media` rows, or only those attached/used? Recommend all image rows of the
   media library (it is what the gallery shows).
-- **Q-3 — Low stock and variants:** a product with variants keeps stock on each `product_variants` row. Recommend
-  ranking by the product's own `stock` for simple products and by the **lowest variant stock** for products that
-  have variants, listing the product once. Confirm in the debate.
-- **Q-4 — Revenue definition:** net of refunds and excluding `cancelled`? Should `pending`/unpaid orders count?
-  Recommend: exclude `cancelled`, subtract `refunded_amount`, count by `orders.created_at`.
+- **Q-4 — Revenue definition:** should `pending`/unpaid orders count? Recommend: count by `orders.created_at`,
+  subtract `refunded_amount`, and leave payment status out of the filter. (Cancelled orders: resolved, see D-8.)
+
+## Resolved by the project owner (2026-09-30)
+
+- **R-1 — Blog "main image":** `blog_posts` has no image column (verified in `create_blog_posts_table`), so the
+  widget shows **title + a short description truncated to 80 characters**, no image. The description is derived
+  from `body`: strip HTML tags, collapse whitespace, decode entities, then `Str::limit(..., 80)`. A post whose body
+  is `null` (a scheduled/published post requires one, but be defensive) yields an empty description. Derived in the
+  action, never stored. Supersedes the earlier first-`<img>`/placeholder proposal; a featured-image column is out of
+  scope and would be its own story.
+- **R-2 — Cancelled orders in sales:** `GetSalesSeries` takes an `includeCancelled` boolean, **default `false`**,
+  driven by a checkbox in the chart's filters (0083). See D-8.
+- **R-3 — Low stock and variants:** a variable product with **one or more low-stock variants is listed as its
+  parent product**, so the manager opens the product and finds the affected variants there. See D-9.
 - **Q-5 — Low-stock threshold:** the request says "the 3 lowest stock". Recommend exactly that (no configurable
   threshold); a product at `stock <= 0` is shown as out of stock, consistent with `Product::isOutOfStock()`.
 
@@ -85,11 +100,32 @@ Scenario: Latest posts exclude drafts and include scheduled ones with their date
   Then at most 3 posts are returned, newest first, none of them a draft
   And each scheduled post carries the date it will be published
 
+Scenario: A post's description is truncated to 80 characters
+  Given a blog editor and a published post whose body is 300 characters of HTML paragraphs
+  When the latest blog posts are requested
+  Then the post's description is plain text of at most 80 characters
+
 Scenario: Low-stock list is the 3 lowest active physical products
   Given a catalog manager and physical products with stock 50, 2, 0, 7 and a virtual product with stock 0
   When the low-stock products are requested
   Then the products with stock 0, 2 and 7 are returned in that order
   And the virtual product is not returned
+
+Scenario: A variable product with a low variant is listed as the parent
+  Given a catalog manager and a variable product with variants of stock 40, 1 and 2, and a simple product with stock 9
+  When the low-stock products are requested
+  Then the variable product is listed once, as the parent, with effective stock 1 and 2 low variants
+  And none of its variants is listed on its own
+
+Scenario: Cancelled orders are excluded from sales by default
+  Given an order manager and one delivered order of 100 and one cancelled order of 40 on the same day
+  When the sales series is requested per day
+  Then that day's total is 100
+
+Scenario: Cancelled orders can be included
+  Given the same orders
+  When the sales series is requested per day including cancelled orders
+  Then that day's total is 140
 
 Scenario: Latest orders are the 5 most recent
   Given an order manager and 7 orders
@@ -154,4 +190,4 @@ Five tested, permission-gated, read-only actions that give the dashboard everyth
 ## Dependencies
 
 - None pending. Consumed by [0083](0083-dashboard-home-overview-ui.md) (frontend, blocked on this).
-- Related: if Q-1 resolves to option (b), a new blog featured-image story must land first.
+- None on a blog featured image: R-1 removes the need for one.
