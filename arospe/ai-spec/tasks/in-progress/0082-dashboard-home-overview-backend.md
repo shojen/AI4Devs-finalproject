@@ -1,7 +1,10 @@
 # [0082] Dashboard home overview — read-side actions (backend)
 
-> **Status: Phase 1 complete (Three Amigos debate held 2026-09-30).** Ready for Phase 2 (INVEST check by
-> `code-reviewer`, not run yet). Frontend companion: [0083](0083-dashboard-home-overview-ui.md), blocked on this story.
+> **Status: Phase 2 APPROVED 2026-10-01 (`code-reviewer`, INVEST + docs consistency); ready for Phase 3 (TDD).** Phase 1: Three Amigos
+> debate held 2026-09-30. Phase 2 advisory items folded in: the seeder's paid order is not cancelled and is chosen deterministically;
+> `ResolveSalesBuckets` is **constructor-injected** into the two series actions; the series shapes' `to` is the **raw inclusive end day
+> (start of that day) normalized to the application timezone**, `endExclusive` being internal to the helper. (Original line follows.) Ready for Phase 2 (INVEST check by
+> `code-reviewer`, not run yet). Frontend companion: [0083](../0083-dashboard-home-overview-ui.md), blocked on this story.
 > Items marked **⚑ owner to confirm** are facilitator decisions the project owner has not explicitly ratified.
 > **Amended 2026-09-30 (owner request):** Sales and Real income became two measures, an orders-by-status series was added, and
 > the include-cancelled boolean became one entry of a shared status filter (D-6, D-8). The amendment was written by the facilitator
@@ -10,7 +13,7 @@
 ## Description
 
 Backend half of the dashboard home redesign. `resources/views/dashboard.blade.php` is still the starter-kit
-placeholder. The design reference is [`docs/PRD/images/01-inicio.png`](../../docs/PRD/images/01-inicio.png): a hero banner
+placeholder. The design reference is [`docs/PRD/images/01-inicio.png`](../../../docs/PRD/images/01-inicio.png): a hero banner
 with three counters and four shortcut cards. The owner wants the shortcut cards **replaced** by live widgets plus a sales
 chart. This story adds the read-only queries those widgets need, one single-purpose action each in
 `app/Actions/Dashboard/`, so the Livewire components of 0083 stay thin callers.
@@ -31,7 +34,8 @@ Data required:
 ## Type
 
 `backend | includes database-expert: no` — no migration, no model, no route, no permission-catalog change, no new dependency;
-the only non-action code change is to the demo **seeder** (and a new enum method). The one schema observation (no index on `orders.created_at`) is recorded as a follow-up trigger, not scope.
+besides the six actions and their `ResolveSalesBuckets` collaborator the only code changes are the demo **seeder**, a new
+`SalesGranularity` enum, a new `OrderStatus::defaultDashboardSet()` method and the two `lang/*/dashboard.php` files. The one schema observation (no index on `orders.created_at`) is recorded as a follow-up trigger, not scope.
 
 ## Verified facts that shaped the story
 
@@ -218,8 +222,8 @@ D-6 (`cancelled ∈ $statuses`). The owner's 2026-09-30 request adds filtering t
 
 ### D-9 — Translatable-content seam (risk: pending 0076 / 0078)
 
-**Risk found in the debate.** Pending stories [0076](0076-translatable-content-retrofit-products-backend.md) and
-[0078](0078-translatable-content-retrofit-blog-posts-backend.md) (both `ready`, unclaimed) **delete `products.name` and
+**Risk found in the debate.** Pending stories [0076](../0076-translatable-content-retrofit-products-backend.md) and
+[0078](../0078-translatable-content-retrofit-blog-posts-backend.md) (both `ready`, unclaimed) **delete `products.name` and
 `blog_posts.title/body`** and move them into translation tables. Neither knows about this story. Decision (**⚑ owner to
 confirm**): **no hard dependency** on them (they are large and would stall the dashboard) — instead **one read seam**:
 
@@ -526,8 +530,9 @@ Create:
 - `tests/Feature/Dashboard/` (see Tests)
 
 Modify: `database/seeders/DemoDataSeeder.php` — **measurable expectations** (keeping 0081's invariants: 1–3 orders per customer, order
-totals equal to their items, additive non-idempotent runs — `0081` D-2): after one seeding run **at least 1 order has `payment_status = paid`**
-(via `OrderFactory::paid()`) **and at least 1 has `status = cancelled`**, and **no order is `refunded`/`partially_refunded`** (refunds need
+totals equal to their items, additive non-idempotent runs — `0081` D-2): after one seeding run **at least 1 order has `payment_status = paid` and is not cancelled**
+(via `OrderFactory::paid()`, so Real income is non-zero) **and at least 1 other order has `status = cancelled`**, chosen
+**deterministically** (the first seeded order is paid, the second cancelled — like 0081's always-tagged first post — so the test cannot be flaky), and **no order is `refunded`/`partially_refunded`** (refunds need
 line-level `RecordRefund` data the seeder does not build); extend the existing `tests/Feature/Console/Commands/GenerateDemoDataTest.php`
 with those three assertions. No other application code. Docs (Phase 6, `docs-keeper`): `docs/api/routes.md`, `docs/architecture/overview.md`
 (new `Actions/Dashboard` folder), `docs/architecture/authorization.md` (widgets gated per action, route stays ungated),
@@ -558,8 +563,8 @@ Required cases (matrix agreed with backend-qa):
 - **Low stock:** ties and ties straddling the cut-off (stable on repeat); zero-variant vs many variants; variant negative stock;
   parent stock 999 ignored / parent 0 with variants 40 and 50 ranks by 40; draft/virtual parent with a low variant excluded;
   parent with all variants deleted falls back to its own stock; 60 variants → still one row; `lowVariantCount` per D-4;
-  **query count constant (2)** for 3 vs 30 products.
-- **Orders:** 5 of 7; ties; cancelled included; trashed customer; exactly 2 queries with `Model::preventLazyLoading()` on.
+  **query count constant (2 when rows exist, ≤ 2 when empty)** for 3 vs 30 products.
+- **Orders:** 5 of 7; ties; cancelled included; trashed customer; exactly 2 queries when orders exist (≤ 2 when empty) with `Model::preventLazyLoading()` on.
 - **Series (money + orders, amended 2026-09-30):** status-filter dataset over all five statuses (default set excludes cancelled;
   explicit `cancelled` includes it; empty list refused on `statuses`); **Sales = gross `SUM(total)`**, unaffected by refunds;
   **Real income** dataset over {payment status × order status × refunded amount}: pending → 0, paid → total, partially refunded →
@@ -604,14 +609,14 @@ with a documented seam so the pending translatable-content retrofits do not brea
 ## Definition of Done
 
 - [x] Phase 1 debate recorded in this file
-- [ ] Phase 2 INVEST validation (`code-reviewer`)
+- [x] Phase 2 INVEST validation (`code-reviewer`) — **approved 2026-10-01** after one rewrite round (first verdict FAIL on six blockers B1–B6, all fixed; re-validation PASS)
 - [ ] Tests written first (red) then green; **full suite** green (unscoped)
 - [ ] Pint (unscoped) and Larastan clean
 - [ ] Appsec review (per-module authorization, refusal logging, no cross-module leakage, no models returned)
 - [ ] Docs synced (routes/contracts, overview, authorization, glossary; ER diagram untouched — no new table)
 - [ ] `consumers to migrate` line added to 0076 and 0078
 - [ ] `DemoDataSeeder` seeds paid and cancelled orders; its test updated and green
-- [x] Follow-up created: stories [0084](0084-order-mark-as-paid-backend.md) and [0085](0085-order-mark-as-paid-ui.md) (mark an order paid + `paid_at`)
+- [x] Follow-up created: stories [0084](../0084-order-mark-as-paid-backend.md) and [0085](../0085-order-mark-as-paid-ui.md) (mark an order paid + `paid_at`)
 - [ ] Follow-up recorded: add `index(created_at)` on `orders` (via a `database-expert` story) if the table grows past ~10⁵ rows
 
 ## Risks and follow-ups
@@ -627,7 +632,7 @@ with a documented seam so the pending translatable-content retrofits do not brea
   `pending_payment`. The PRD's refund scenarios already assume a "Pagado" state, so this is a gap of the order module, not of the
   dashboard. **Owner decision (2026-09-30):** keep income defined by `payment_status` and handle the gap separately —
   (1) this story makes `DemoDataSeeder` create a share of **paid** orders (and a few cancelled ones) so the dashboard is
-  demonstrable; (2) the gap is filled by **[0084](0084-order-mark-as-paid-backend.md) / [0085](0085-order-mark-as-paid-ui.md)** (mark an order paid
+  demonstrable; (2) the gap is filled by **[0084](../0084-order-mark-as-paid-backend.md) / [0085](../0085-order-mark-as-paid-ui.md)** (mark an order paid
   from its detail screen, plus a `paid_at` column so income can later be dated by payment rather than creation) — created 2026-09-30,
   not a dependency of this story; (3) until it ships, the UI shows a
   neutral "income is counted once orders are paid" hint when income is 0.
@@ -636,7 +641,7 @@ with a documented seam so the pending translatable-content retrofits do not brea
 ## Dependencies
 
 - None pending as a hard dependency (`depends_on: []`). `conflict_risk_with`: 0076, 0078 (D-9).
-- Consumed by [0083](0083-dashboard-home-overview-ui.md).
+- Consumed by [0083](../0083-dashboard-home-overview-ui.md).
 
 ## Debate record
 

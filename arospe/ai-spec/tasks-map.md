@@ -44,6 +44,14 @@ was never implemented — nothing in `app/` writes `PaymentStatus::Paid`, so no 
 (0083 edits the orders *list* view; 0085 the *detail* view), so no `conflict_risk_with` entries. Pending count moves from 13 to 15
 numbered files; `done/` unchanged at 92.
 
+**Update (2026-10-01): `0082-dashboard-home-overview-backend.md` passed Phase 2 (INVEST) and moved from `ai-spec/tasks/` to
+`ai-spec/tasks/in-progress/`** (Phase 3 starts). Its `tasks-status.json` entry is now `claimed`
+(`claude/0082-dashboard-home-overview`, `2026-09-30T22:42:27Z`). The link-integrity check ran in both directions: the file's own outbound
+links gained one path level (`../../docs/…` → `../../../docs/…`; sibling tasks `00NN-…` → `../00NN-…`, all six targets verified to
+resolve), and the inbound links from `0083` (2) and `0084` (3) now point at `in-progress/0082-…`; no other file links to it (`0085`,
+`tasks-map.md` and `tasks-status.json` cite only its slug as text). Its node stays in the graph below (still pending work, not `done/`);
+`0083` remains `blocked` on it. Counts: **14 numbered files still in `ai-spec/tasks/`, 1 in `ai-spec/tasks/in-progress/`**, `done/` unchanged at 92.
+
 **Update (2026-10-01, later): the Three Amigos debate ran for `0084` and `0085`** (backend-expert, backend-qa, database-expert;
 frontend-expert, frontend-qa) and both are now Phase 1 complete, awaiting Phase 2. Dependency facts unchanged (`0085` blocked on `0084`;
 `0083` ↔ `0085` conflict on `orders.blade.php`). New cross-story coordination: `0083` now owns the "latest-orders widget has no

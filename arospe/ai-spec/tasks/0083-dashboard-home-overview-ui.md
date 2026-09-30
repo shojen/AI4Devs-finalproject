@@ -5,7 +5,7 @@
 > Phase 2 should look at D-9 and the ⚑ flags first.
 >
 > **Status: Phase 1 complete (Three Amigos debate held 2026-09-30).** Ready for Phase 2 (INVEST check, not run yet).
-> Backend companion: [0082](0082-dashboard-home-overview-backend.md), which this story is blocked on — its return shapes,
+> Backend companion: [0082](in-progress/0082-dashboard-home-overview-backend.md), which this story is blocked on — its return shapes,
 > caller contract (D-1) and caps (D-6) are the contract this story consumes.
 > Items marked **⚑ owner to confirm** are facilitator decisions the project owner has not explicitly ratified.
 
@@ -591,7 +591,7 @@ leakage and no log noise, and the Chart.js sales chart updates live from its fil
 
 ## Dependencies
 
-- **Blocked on [0082](0082-dashboard-home-overview-backend.md)**.
+- **Blocked on [0082](in-progress/0082-dashboard-home-overview-backend.md)**.
 - `conflict_risk_with`: **[0085](0085-order-mark-as-paid-ui.md)** — both edit `resources/views/livewire/orders.blade.php` (this story
   extracts the status badges via D-5; 0085 adds a "Mark as paid" button and a confirm dialog to the actions cell). Different regions of
   the same file; whichever lands second rebases. The blog list has no other pending toucher (0079 edits the blog **editor** view).

@@ -231,9 +231,9 @@
       "slug": "0082-dashboard-home-overview-backend",
       "title": "Dashboard home overview — read-side actions (backend)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "claude/0082-dashboard-home-overview",
+      "claimed_at": "2026-09-30T22:42:27Z",
       "touches": [
         "app/Actions/Dashboard/",
         "app/Enums/SalesGranularity.php",
