@@ -223,6 +223,41 @@
       "conflict_risk_with": [
         "0077"
       ]
+    },
+    {
+      "id": "0082",
+      "slug": "0082-dashboard-home-overview-backend",
+      "title": "Dashboard home overview — read-side actions (backend)",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Actions/Dashboard/",
+        "app/Enums/SalesGranularity.php",
+        "tests/Feature/Dashboard/"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0083",
+      "slug": "0083-dashboard-home-overview-ui",
+      "title": "Dashboard home overview — page redesign and sales chart (frontend)",
+      "depends_on": [
+        "0082"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/Dashboard/Overview.php",
+        "resources/views/livewire/dashboard/overview.blade.php",
+        "resources/views/dashboard.blade.php",
+        "routes/web.php",
+        "lang/en/dashboard.php",
+        "lang/es/dashboard.php"
+      ],
+      "conflict_risk_with": []
     }
   ]
 }

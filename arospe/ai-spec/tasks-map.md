@@ -30,6 +30,14 @@ file's own outbound links needed no re-resolution; a repo-wide search for inboun
 (no path segment, and no actual Markdown link `](...)` anywhere in the repo cites it), so no edit
 was needed there either. `ai-spec/tasks/in-progress/` is empty again.
 
+**Update (2026-09-30): `0082-dashboard-home-overview-backend.md` and `0083-dashboard-home-overview-ui.md`
+added as two new pending files** (Phase 1 drafts; the Three Amigos debate and INVEST validation have not
+run). Standalone stories, no PRD epic, requested directly by the project owner: the dashboard home redesign
+(counters, latest blog posts, low-stock products, latest orders, sales chart). Full-stack request split into a
+backend story numbered first (`0082`, `ready`, `depends_on: []`, no `database-expert`) and a frontend story
+(`0083`, `blocked` on `0082`). Neither shares a `touches` entry with any other pending task, so neither carries
+a `conflict_risk_with` entry. Pending count moves from 11 to 13 numbered files; `done/` is unchanged at 92.
+
 **Update (2026-09-29): `0081-demo-data-seeder-command.md` added as a new pending file** (Phase 1
 Three Amigos debate complete). Standalone story, not part of any PRD epic — requested directly by
 the project owner. Classified Backend, no `database-expert` (every model/factory it needs already
@@ -443,6 +451,8 @@ flowchart LR
     end
 
     %% Standalone (no PRD epic)
+    P0082["0082 Dashboard overview BE"]
+    P0083["0083 Dashboard overview UI"]
     %% (P0081's own node dropped: 0081 closed to done/ this pass, per the update at the top of this
     %% file. It had no incoming edge of its own -- no pending task named it as a depends_on blocker
     %% -- so removing it re-derives nothing further.)
@@ -510,9 +520,10 @@ flowchart LR
     P0078 --> P0079
     P0071 --> P0079
     P0077 -.-> P0079
+    P0082 --> P0083
 
-    class P0073,P0075,P0077,P0079 pending;
-    class P0067,P0069,P0071,P0072,P0074,P0076,P0078 ready;
+    class P0073,P0075,P0077,P0079,P0083 pending;
+    class P0067,P0069,P0071,P0072,P0074,P0076,P0078,P0082 ready;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
