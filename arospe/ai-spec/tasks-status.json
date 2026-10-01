@@ -160,8 +160,7 @@
       "conflict_risk_with": [
         "0072",
         "0074",
-        "0078",
-        "0082"
+        "0078"
       ]
     },
     {
@@ -201,8 +200,7 @@
       "conflict_risk_with": [
         "0072",
         "0074",
-        "0076",
-        "0082"
+        "0076"
       ]
     },
     {
@@ -227,37 +225,11 @@
       ]
     },
     {
-      "id": "0082",
-      "slug": "0082-dashboard-home-overview-backend",
-      "title": "Dashboard home overview — read-side actions (backend)",
-      "depends_on": [],
-      "status": "claimed",
-      "claimed_by": "claude/0082-dashboard-home-overview",
-      "claimed_at": "2026-09-30T22:42:27Z",
-      "touches": [
-        "app/Actions/Dashboard/",
-        "app/Enums/SalesGranularity.php",
-        "app/Enums/OrderStatus.php",
-        "database/seeders/DemoDataSeeder.php",
-        "lang/en/dashboard.php",
-        "lang/es/dashboard.php",
-        "tests/Feature/Dashboard/",
-        "tests/Unit/Actions/Dashboard/",
-        "tests/Feature/Console/Commands/GenerateDemoDataTest.php"
-      ],
-      "conflict_risk_with": [
-        "0076",
-        "0078"
-      ]
-    },
-    {
       "id": "0083",
       "slug": "0083-dashboard-home-overview-ui",
       "title": "Dashboard home overview — page redesign and sales chart (frontend)",
-      "depends_on": [
-        "0082"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [

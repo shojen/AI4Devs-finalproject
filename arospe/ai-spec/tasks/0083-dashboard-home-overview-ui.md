@@ -5,7 +5,7 @@
 > Phase 2 should look at D-9 and the ⚑ flags first.
 >
 > **Status: Phase 1 complete (Three Amigos debate held 2026-09-30).** Ready for Phase 2 (INVEST check, not run yet).
-> Backend companion: [0082](in-progress/0082-dashboard-home-overview-backend.md), which this story is blocked on — its return shapes,
+> Backend companion: [0082](done/0082-dashboard-home-overview-backend.md), which this story is blocked on — its return shapes,
 > caller contract (D-1) and caps (D-6) are the contract this story consumes.
 > Items marked **⚑ owner to confirm** are facilitator decisions the project owner has not explicitly ratified.
 
@@ -587,11 +587,17 @@ leakage and no log noise, and the Chart.js sales chart updates live from its fil
 - **R-4 Dark-mode detection has no precedent** — observer on `<html class>` plus its own test.
 - **R-5 Browser-test flake budget** — four documented `Timeout 5000ms` CI flakes exist; `retry(3, …, 250)`, no `networkidle`.
 - **R-6 First `#[Lazy]` and first Chart.js in the repo** — each gets a dedicated test and a PR note.
+- **R-8 Carry-over from 0082's security audit (Phase 4):** bound the hydrated filter **before** it reaches the actions —
+  `statuses` as `['array', 'max:5']` with `statuses.*` → `Rule::enum(OrderStatus::class)`, dates parsed with a validated `Y-m-d` format
+  (catch Carbon's `InvalidFormatException`), and `from`/`to` limited to a sane window (the action refuses years outside 1000..9998 but
+  reuses the "start date after end date" message for that case, so the component's own rule should reject it first with a clearer message);
+  `title`/`description`/`name`/`customerName`/`orderNumber` are plain text and must always be rendered with `{{ }}` (test with a
+  `<script>` description). Without these, a client-writable `statuses` array is the one remaining resource-exhaustion surface.
 - **R-7 Backend contract drift** — if 0082's shapes change, this story's Gherkin and payload change with it.
 
 ## Dependencies
 
-- **Blocked on [0082](in-progress/0082-dashboard-home-overview-backend.md)**.
+- **Blocked on [0082](done/0082-dashboard-home-overview-backend.md)**.
 - `conflict_risk_with`: **[0085](0085-order-mark-as-paid-ui.md)** — both edit `resources/views/livewire/orders.blade.php` (this story
   extracts the status badges via D-5; 0085 adds a "Mark as paid" button and a confirm dialog to the actions cell). Different regions of
   the same file; whichever lands second rebases. The blog list has no other pending toucher (0079 edits the blog **editor** view).

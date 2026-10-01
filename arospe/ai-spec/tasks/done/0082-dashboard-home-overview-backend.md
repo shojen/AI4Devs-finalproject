@@ -1,10 +1,13 @@
 # [0082] Dashboard home overview — read-side actions (backend)
 
-> **Status: Phase 2 APPROVED 2026-10-01 (`code-reviewer`, INVEST + docs consistency); ready for Phase 3 (TDD).** Phase 1: Three Amigos
-> debate held 2026-09-30. Phase 2 advisory items folded in: the seeder's paid order is not cancelled and is chosen deterministically;
-> `ResolveSalesBuckets` is **constructor-injected** into the two series actions; the series shapes' `to` is the **raw inclusive end day
-> (start of that day) normalized to the application timezone**, `endExclusive` being internal to the helper. (Original line follows.) Ready for Phase 2 (INVEST check by
-> `code-reviewer`, not run yet). Frontend companion: [0083](../0083-dashboard-home-overview-ui.md), blocked on this story.
+> **Status: Phases 1–5 complete (2026-10-01); Phase 6 (documentation) in progress, then Phase 7 closure.** Phase 1: Three Amigos debate
+> (2026-09-30). Phase 2: INVEST approved by `code-reviewer` after one rewrite round. Phase 3: TDD red then green (commits `d018cc3` → `5fcdd21`).
+> Phase 4: `appsec-auditor` — no exploitable finding; advisory F1 (status-list normalization) and F2 (year bounds) fixed test-first
+> (`e1c857d` → `4d6ed60`) and re-audited with **no blocking findings**. Phase 5: `code-reviewer` **PASS** conditional on the full suite,
+> which is green (see the approval record below). Decisions folded in along the way: the seeder's paid order is not cancelled and is
+> chosen deterministically; `ResolveSalesBuckets` is **constructor-injected** into the two series actions; the series shapes' `to` is
+> the **last inclusive day (start of that day) in the application timezone**, `endExclusive` being internal to the helper.
+> Frontend companion: [0083](../0083-dashboard-home-overview-ui.md), blocked on this story.
 > Items marked **⚑ owner to confirm** are facilitator decisions the project owner has not explicitly ratified.
 > **Amended 2026-09-30 (owner request):** Sales and Real income became two measures, an orders-by-status series was added, and
 > the include-cancelled boolean became one entry of a shared status filter (D-6, D-8). The amendment was written by the facilitator
@@ -610,14 +613,38 @@ with a documented seam so the pending translatable-content retrofits do not brea
 
 - [x] Phase 1 debate recorded in this file
 - [x] Phase 2 INVEST validation (`code-reviewer`) — **approved 2026-10-01** after one rewrite round (first verdict FAIL on six blockers B1–B6, all fixed; re-validation PASS)
-- [ ] Tests written first (red) then green; **full suite** green (unscoped)
-- [ ] Pint (unscoped) and Larastan clean
-- [ ] Appsec review (per-module authorization, refusal logging, no cross-module leakage, no models returned)
-- [ ] Docs synced (routes/contracts, overview, authorization, glossary; ER diagram untouched — no new table)
-- [ ] `consumers to migrate` line added to 0076 and 0078
-- [ ] `DemoDataSeeder` seeds paid and cancelled orders; its test updated and green
+- [x] Tests written first (red) then green; **full suite** green — 5 141 tests, 0 failures, run as directory chunks because one background command is limited to 10 minutes (see the approval record)
+- [x] Pint (unscoped, `pint --test`) and Larastan (whole configured scope, level 7) clean — verified by `code-reviewer` in Phase 5
+- [x] Appsec review (per-module authorization, refusal logging, no cross-module leakage, no models returned) — approved 2026-10-01
+- [ ] Docs synced (routes/contracts, overview, authorization, glossary; ER diagram untouched — no new table) — Phase 6
+- [x] `consumers to migrate` line added to 0076 and 0078 (DoD of each; links point at this file under `in-progress/`)
+- [x] `DemoDataSeeder` seeds paid and cancelled orders; its test updated and green
 - [x] Follow-up created: stories [0084](../0084-order-mark-as-paid-backend.md) and [0085](../0085-order-mark-as-paid-ui.md) (mark an order paid + `paid_at`)
-- [ ] Follow-up recorded: add `index(created_at)` on `orders` (via a `database-expert` story) if the table grows past ~10⁵ rows
+- [x] Follow-up recorded (see Risks): add `index(created_at)` on `orders` (via a `database-expert` story) if the table grows past ~10⁵ rows
+
+## Approval record (Phases 3–5)
+
+- **Phase 3 — TDD:** `backend-qa` wrote the tests red (two agents on disjoint files; commits `d018cc3`, later `e1c857d`); `backend-expert`
+  made them green (`5fcdd21`, `4d6ed60`) without touching a test. Tests were committed *before* the code to record the red step — the
+  repo's documented layer order is feat/fix → test → docs, so this inversion is noted for the PR; every layer is still its own commit.
+- **Phase 4 — security (`appsec-auditor`):** first audit — no blocking finding; advisory F1 (unbounded/garbage `$statuses` →
+  normalize, de-duplicate, drop non-`OrderStatus`, bound to the number of cases), F2 (extreme dates → years outside 1000..9998 refused),
+  F3 (callers must escape the plain-text description), F4 (no index on `orders.created_at`), F5/F6 informational. F1/F2 fixed test-first;
+  **re-audit: no blocking findings** (advisory: the out-of-range-year refusal reuses the `range_invalid` message; 0083 should bound
+  `statuses` with `array|max:5` + `Rule::enum` and parse dates with a validated format).
+- **Phase 5 — final review (`code-reviewer`): PASS.** Every acceptance criterion met with code and test evidence; advisory nits left as
+  is (a redundant `!== null` check, a `created_at ?? now()` fallback, `const int` vs untyped constants, the `GetSalesSeries` docblock
+  naming two of its three collaborators, helper functions duplicated across four series test files).
+- **Full-suite gate (docs/contracts.md):** `pest` cannot run past 10 minutes in one background command here, so the suite ran as
+  directory chunks, one at a time per database (two databases in parallel), with the browser suite alone at the end:
+  Dashboard 333 (328 passed, 5 intentional `->todo()`), Actions/Auth/Authorization/Blog 944, Orders/Unit/Localization/DashboardTest/ExampleTest 971,
+  Components/Console/Customers/Database/Http/Layout/Media 431, Models/Navigation/Notifications/PaymentMethods/Policies/ProductCategories/Products 1 201,
+  Providers/Roles/SalesRegions/Seeders/Settings/Shipping*/StoreLanguages/Translations/Users 1 039, Browser 222 (219 passed, 3 skipped).
+  **5 141 tests, 0 failures**; every top-level test folder is covered.
+- **Unratified ⚑ defaults now encoded in tests (owner to confirm):** latest posts ordered by `created_at`; the `lowVariantCount` cut-off is the
+  effective stock of the last returned row; the products counter includes drafts; no hard dependency on 0076/0078 (read seam instead); the shared
+  status filter replaces the include-cancelled boolean; Sales vs Real income definitions; silent normalization of the status list and the 1000..9998 year bound.
+  **Real income reads 0 in a real store until 0084/0085 ship** (nothing sets `paid` today).
 
 ## Risks and follow-ups
 
