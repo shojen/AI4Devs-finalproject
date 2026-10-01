@@ -26,6 +26,10 @@ use Tests\Support\Dashboard\DashboardUi as Ui;
 beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
+
+    // With SUPER_ADMIN_EMAIL configured the seeder provisions one ACTIVE account the users counter
+    // rightly counts; expectations add this baseline instead of assuming an empty users table.
+    $this->seededUsers = User::query()->count();
 });
 
 afterEach(function () {
@@ -58,10 +62,13 @@ test('the hero greets the actor by first name only and shows the three counters'
 
     $html = overviewRenderHtml(OVERVIEW_ALL_VIEW, ['name' => 'Laura Gómez Ruiz']);
 
+    // 5 active + the actor + whatever the seeder provisioned; the inactive one is not counted.
+    $expectedUsers = (string) (6 + $this->seededUsers);
+
     expect(Ui::present($html, 'dashboard-greeting'))->toBeTrue()
         ->and(Ui::text($html, 'dashboard-greeting'))->toContain('Laura')->not->toContain('Gómez')->not->toContain('Ruiz')
         ->and(Ui::present($html, 'dashboard-counters'))->toBeTrue()
-        ->and(Ui::text($html, 'dashboard-counter-users'))->toContain('6')
+        ->and(Ui::text($html, 'dashboard-counter-users'))->toContain($expectedUsers)
         ->and(Ui::text($html, 'dashboard-counter-products'))->toContain('6')
         ->and(Ui::text($html, 'dashboard-counter-images'))->toContain('12')
         ->and($html)->toContain(__('dashboard.counters.users'))

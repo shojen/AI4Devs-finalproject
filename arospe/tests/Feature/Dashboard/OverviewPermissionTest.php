@@ -16,11 +16,13 @@ use App\Models\Media;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
 use Livewire\Livewire;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Support\Dashboard\DashboardUi as Ui;
 use Tests\Support\Dashboard\DomainQueryLog;
@@ -309,4 +311,87 @@ test('the widgets cannot be written to or called from the client', function (str
 
     expect(fn () => $component->set('rows', ['x']))->toThrow(Exception::class);
     expect(fn () => $component->call('delete'))->toThrow(Exception::class);
+})->with([BlogWidget::class, LowStockWidget::class, LatestOrdersWidget::class]);
+
+// =====================================================================
+// Missing permission rows: the page must never 500, a missing row means "not allowed"
+// =====================================================================
+
+/**
+ * Empties the permission catalogue, as in a database where RolePermissionSeeder never ran.
+ */
+function overviewWithoutPermissionRows(): void
+{
+    Permission::query()->delete();
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+}
+
+test('the dashboard renders for a bare user in an unseeded database, without a refusal warning', function () {
+    overviewWithoutPermissionRows();
+    $this->actingAs(User::factory()->create(['name' => 'Nora Quiroga']));
+    Log::spy();
+
+    $response = $this->get(route('dashboard'))->assertOk();
+    $html = $response->getContent();
+
+    expect(Ui::text($html, 'dashboard-greeting'))->toContain('Nora')
+        ->and(Ui::present($html, 'dashboard-no-widgets'))->toBeTrue()
+        ->and(Ui::present($html, 'dashboard-counters'))->toBeFalse();
+
+    Log::shouldNotHaveReceived('warning');
+});
+
+test('the dashboard renders for a user whose role holds only one existing permission', function (string $permission, string $visibleHook) {
+    overviewWithoutPermissionRows();
+    Permission::create(['name' => $permission, 'guard_name' => 'web']);
+    $role = Role::create(['name' => 'Single Permission Role', 'guard_name' => 'web']);
+    $role->givePermissionTo($permission);
+    $user = User::factory()->create(['name' => 'Nora Quiroga']);
+    $user->assignRole($role);
+    $this->actingAs($user);
+    Log::spy();
+
+    $html = $this->get(route('dashboard'))->assertOk()->getContent();
+
+    expect(Ui::text($html, 'dashboard-greeting'))->toContain('Nora')
+        ->and(Ui::present($html, $visibleHook))->toBeTrue()
+        ->and(Ui::present($html, 'dashboard-no-widgets'))->toBeFalse();
+
+    Log::shouldNotHaveReceived('warning');
+})->with([
+    'users.view shows the counters' => ['users.view', 'dashboard-counter-users'],
+    'blog.view shows the blog widget' => ['blog.view', 'dashboard-widget-blog'],
+    'products.view shows the stock widget' => ['products.view', 'dashboard-widget-stock'],
+    'orders.view shows the orders widget' => ['orders.view', 'dashboard-widget-orders'],
+]);
+
+test('the widgets mounted on their own render no rows and never throw when permission rows are missing', function (string $widget) {
+    overviewWithoutPermissionRows();
+    $this->actingAs(User::factory()->create());
+    Log::spy();
+
+    $html = Livewire::test($widget)->assertOk()->html();
+
+    expect(Ui::hooksStartingWith($html, 'dashboard-blog-row-'))->toBe([])
+        ->and(Ui::hooksStartingWith($html, 'dashboard-stock-row-'))->toBe([])
+        ->and(Ui::hooksStartingWith($html, 'dashboard-order-row-'))->toBe([]);
+
+    Log::shouldNotHaveReceived('warning');
+})->with([BlogWidget::class, LowStockWidget::class, LatestOrdersWidget::class]);
+
+test('the widgets render no rows for an actor holding one other existing permission', function (string $widget) {
+    overviewWithoutPermissionRows();
+    Permission::create(['name' => 'users.view', 'guard_name' => 'web']);
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('users.view');
+    $this->actingAs($actor);
+    Log::spy();
+
+    $html = Livewire::test($widget)->assertOk()->html();
+
+    expect(Ui::hooksStartingWith($html, 'dashboard-blog-row-'))->toBe([])
+        ->and(Ui::hooksStartingWith($html, 'dashboard-stock-row-'))->toBe([])
+        ->and(Ui::hooksStartingWith($html, 'dashboard-order-row-'))->toBe([]);
+
+    Log::shouldNotHaveReceived('warning');
 })->with([BlogWidget::class, LowStockWidget::class, LatestOrdersWidget::class]);

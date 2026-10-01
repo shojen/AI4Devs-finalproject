@@ -191,14 +191,15 @@ test('no raw dashboard translation key leaks into the render in either locale', 
         ->and($empty)->not->toMatch($leak);
 })->with(['en', 'es']);
 
-test('the new dashboard groups exist in en and es with identical keys and placeholders', function () {
+test('the new dashboard groups exist in en and es', function (string $group, string $locale) {
+    $lang = require base_path("lang/{$locale}/dashboard.php");
+
+    expect(array_key_exists($group, $lang))->toBeTrue("lang/{$locale}/dashboard.php lacks the {$group} group");
+})->with(OVERVIEW_NEW_GROUPS)->with(['en', 'es']);
+
+test('the new dashboard groups have identical keys and placeholders in en and es', function () {
     $en = require base_path('lang/en/dashboard.php');
     $es = require base_path('lang/es/dashboard.php');
-
-    foreach (OVERVIEW_NEW_GROUPS as $group) {
-        expect($en)->toHaveKey($group, "lang/en/dashboard.php lacks the {$group} group")
-            ->and($es)->toHaveKey($group, "lang/es/dashboard.php lacks the {$group} group");
-    }
 
     $flatten = function (array $array, string $prefix = '') use (&$flatten): array {
         $flat = [];

@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Dashboard\Overview;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Spatie\Permission\PermissionRegistrar;
@@ -47,5 +48,7 @@ test('the dashboard route is the full-page Overview component, named dashboard',
 
     expect($route)->not->toBeNull()
         ->and($route->uri())->toBe('dashboard')
-        ->and($route->getActionName())->toContain('Overview');
+        // Route::livewire() registers every page under LivewirePageController and records the routed
+        // component in the route action (HandleRouting), so that key is what identifies the page.
+        ->and($route->getAction('livewire_component'))->toBe(Overview::class);
 });
