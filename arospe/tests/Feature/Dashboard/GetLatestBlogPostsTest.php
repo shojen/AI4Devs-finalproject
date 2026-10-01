@@ -183,6 +183,45 @@ it('derives the description as plain text with entities decoded after stripping'
     'non-breaking space entity is collapsed' => ['<p>one&nbsp;two</p>', 'one two'],
 ]);
 
+it('treats block-level tags as a single space separator even without whitespace between them', function (string $body, string $expected) {
+    expect(descriptionOfBody($body))->toBe($expected);
+})->with([
+    'heading then paragraph' => ['<h2>Heading</h2><p>palabra</p>', 'Heading palabra'],
+    'two paragraphs' => ['<p>one</p><p>two</p>', 'one two'],
+    'list items' => ['<ul><li>a</li><li>b</li></ul>', 'a b'],
+    'line break' => ['line<br>break', 'line break'],
+    'self-closing line break' => ['line<br/>break', 'line break'],
+    'divs' => ['<div>one</div><div>two</div>', 'one two'],
+    'blockquote' => ['<p>one</p><blockquote>two</blockquote>', 'one two'],
+    'table cells' => ['<table><tr><td>a</td><td>b</td></tr><tr><td>c</td></tr></table>', 'a b c'],
+    'block tags with whitespace already between them' => ["<h2>Heading</h2>\n<p>palabra</p>", 'Heading palabra'],
+    'uppercase block tags' => ['<P>one</P><P>two</P>', 'one two'],
+]);
+
+it('does not add a space for inline tags', function (string $body, string $expected) {
+    expect(descriptionOfBody($body))->toBe($expected);
+})->with([
+    'bold inside a word' => ['<b>wor</b>ld', 'world'],
+    'em and strong' => ['<em>a</em><strong>b</strong>c', 'abc'],
+    'link and span and code' => ['x<a href="/y">y</a><span>z</span><code>w</code>', 'xyzw'],
+    'inline tags inside a block' => ['<p>un<i>bel</i>ievable</p>', 'unbelievable'],
+]);
+
+it('does not leave leading, trailing or doubled spaces when blocks are the whole body', function () {
+    expect(descriptionOfBody('<p>a</p><p></p><p>b</p><br><p>c</p>'))->toBe('a b c');
+});
+
+it('still decodes entities after stripping when block tags are separated', function () {
+    expect(descriptionOfBody('<p>&lt;b&gt;</p><p>x &amp; y</p>'))->toBe('<b> x & y');
+});
+
+it('keeps the 80-character limit, ellipsis included, when block tags add separators', function () {
+    $description = descriptionOfBody('<p>'.str_repeat('a', 50).'</p><p>'.str_repeat('b', 50).'</p>');
+
+    expect(mb_strlen($description))->toBe(80)
+        ->and($description)->toBe(str_repeat('a', 50).' '.str_repeat('b', 28).'…');
+});
+
 it('reads only the first 2000 characters of the body', function () {
     $body = str_repeat('<b></b>', 300).'visible text';
 

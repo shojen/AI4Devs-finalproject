@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\Log;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Support\Dashboard\DomainQueryLog;
 use Tests\Support\Orders\OrdersUi;
@@ -151,4 +152,45 @@ it('runs at most three domain-table queries when the actor sees everything', fun
     $statements = DomainQueryLog::statements(fn () => app(GetDashboardCounters::class)());
 
     expect($statements)->toBe(3);
+});
+
+// --- Missing permission rows: a row that does not exist means the actor does not have the ability ---
+
+/**
+ * Removes every permission row, as in a database where RolePermissionSeeder never ran.
+ */
+function countersWithoutPermissionRows(): void
+{
+    Permission::query()->delete();
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+}
+
+it('returns all null and never throws when no permission row exists in the database', function () {
+    countersWithoutPermissionRows();
+    test()->actingAs(User::factory()->create());
+
+    expect(app(GetDashboardCounters::class)())->toBe(['users' => null, 'products' => null, 'images' => null]);
+});
+
+it('returns null for every counter whose permission row is absent, even for a user holding another permission', function () {
+    countersWithoutPermissionRows();
+    $actor = User::factory()->create();
+    Permission::create(['name' => 'products.view', 'guard_name' => 'web']);
+    $actor->givePermissionTo('products.view');
+    test()->actingAs($actor);
+    Product::factory()->count(2)->create();
+
+    expect(app(GetDashboardCounters::class)())->toBe(['users' => null, 'products' => 2, 'images' => null]);
+});
+
+it('keeps a counter null when its permission row exists but the actor does not hold it', function () {
+    countersWithoutPermissionRows();
+    Permission::create(['name' => 'users.view', 'guard_name' => 'web']);
+    Permission::create(['name' => 'media.view', 'guard_name' => 'web']);
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('media.view');
+    test()->actingAs($actor);
+    Media::factory()->create();
+
+    expect(app(GetDashboardCounters::class)())->toBe(['users' => null, 'products' => null, 'images' => 1]);
 });

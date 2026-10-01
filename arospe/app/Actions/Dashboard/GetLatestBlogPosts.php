@@ -91,7 +91,9 @@ class GetLatestBlogPosts
     }
 
     /**
-     * Derive the plain-text description: the first 2000 characters, tags stripped, THEN entities
+     * Derive the plain-text description: the first 2000 characters, block-level tags (p, div, h1-h6, li, ul, ol, br,
+     * blockquote, table parts) replaced by a space so adjacent blocks never glue words together
+     * (inline tags add nothing: `<b>wor</b>ld` is `world`; story 0083), remaining tags stripped, THEN entities
      * decoded (so an encoded `&lt;b&gt;` stays literal text), whitespace collapsed and trimmed, and
      * cut so the total, ellipsis included, never exceeds 80 characters. Multibyte-safe; the result
      * is only ever rendered escaped.
@@ -103,6 +105,7 @@ class GetLatestBlogPosts
         }
 
         $text = mb_substr($body, 0, self::DESCRIPTION_SOURCE_LENGTH);
+        $text = (string) preg_replace('~</?(?:p|div|h[1-6]|li|ul|ol|br|blockquote|table|thead|tbody|tfoot|tr|td|th)\b[^>]*>~i', ' ', $text);
         $text = strip_tags($text);
         $text = html_entity_decode($text);
         $text = trim((string) preg_replace('/\s+/u', ' ', $text));

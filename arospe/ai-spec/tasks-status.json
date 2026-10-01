@@ -225,35 +225,6 @@
       ]
     },
     {
-      "id": "0083",
-      "slug": "0083-dashboard-home-overview-ui",
-      "title": "Dashboard home overview — page redesign and sales chart (frontend)",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "app/Livewire/Dashboard/Overview.php",
-        "resources/views/livewire/dashboard/overview.blade.php",
-        "resources/views/dashboard.blade.php",
-        "resources/views/components/order-status-badge.blade.php",
-        "resources/views/components/blog-status-badge.blade.php",
-        "resources/views/livewire/orders.blade.php",
-        "resources/views/livewire/blog-posts.blade.php",
-        "resources/css/app.css",
-        "resources/js/sales-chart.js",
-        "resources/js/app.js",
-        "package.json",
-        "package-lock.json",
-        "routes/web.php",
-        "lang/en/dashboard.php",
-        "lang/es/dashboard.php"
-      ],
-      "conflict_risk_with": [
-        "0085"
-      ]
-    },
-    {
       "id": "0084",
       "slug": "0084-order-mark-as-paid-backend",
       "title": "Order — mark as paid manually (backend)",
@@ -293,9 +264,31 @@
         "tests/Feature/Orders/",
         "tests/Browser/Orders/"
       ],
-      "conflict_risk_with": [
-        "0083"
-      ]
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0086",
+      "slug": "0086-dashboard-sales-overview-ui",
+      "title": "Dashboard home — sales overview card with filters and Chart.js charts (frontend)",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/Dashboard/SalesOverview.php",
+        "resources/views/livewire/dashboard/sales-overview.blade.php",
+        "resources/views/livewire/dashboard/overview.blade.php",
+        "resources/js/sales-chart.js",
+        "resources/js/app.js",
+        "resources/css/app.css",
+        "package.json",
+        "package-lock.json",
+        "lang/en/dashboard.php",
+        "lang/es/dashboard.php",
+        "tests/Feature/Dashboard/",
+        "tests/Browser/Dashboard/"
+      ],
+      "conflict_risk_with": []
     }
   ]
 }

@@ -14,6 +14,8 @@ the inside of a `wire:*` / `x-on:*` directive value, which is JavaScript.**
 - [The client can rewrite any public property that is not `#[Locked]`, including the one feeding the loop](#the-client-can-rewrite-any-public-property-that-is-not-locked-including-the-one-feeding-the-loop)
 - [A layout slot is echoed unescaped](#a-layout-slot-is-echoed-unescaped--its-body-must-be-encoded-where-it-is-written)
 - [Plain text derived from HTML is still output-escaped by the caller](#plain-text-derived-from-html-is-still-output-escaped-by-the-caller)
+- [Block-level tags are replaced before `strip_tags()`, and the regex is bounded](#block-level-tags-are-replaced-before-strip_tags-and-the-regex-is-bounded)
+- [A badge component forwards `$attributes`, so callers pass only static or UUID-derived hooks](#a-badge-component-forwards-attributes-so-callers-pass-only-static-or-uuid-derived-hooks)
 - [What is already safe and needs no change](#what-is-already-safe-and-needs-no-change)
 
 ## `{{ }}` inside a `wire:` directive is not escaping — it is an injection sink
@@ -167,6 +169,14 @@ Story 0057a's topbar renders each screen's title and subtitle from Livewire name
 Story 0082's `GetLatestBlogPosts` returns a `description` derived from a blog body by **strip-then-decode** (`strip_tags()`, then `html_entity_decode()`): an encoded `&lt;script&gt;` in the body comes out as the literal text `<script>`. That is correct *text*, and a live tag the moment it is echoed raw.
 
 **Rule: the output of strip-then-decode is plain text, never HTML. The caller renders it with `{{ }}` — never `{!! !!}`, `x-html` or a raw `wire:ignore` binding — and the action's docblock says so** ([`GetLatestBlogPosts`](../../app/Actions/Dashboard/GetLatestBlogPosts.php)). The action cannot escape for the caller, because the escaping context belongs to the view. Reversing the order (decode, then strip) is the bug: it turns an encoded tag into a real one and then keeps it.
+
+## Block-level tags are replaced before `strip_tags()`, and the regex is bounded
+
+Story 0083 changed `GetLatestBlogPosts::describe()` so a block-level tag (`p`, `div`, `h1-h6`, `li`, `ul`, `ol`, `br`, `blockquote`, table parts) becomes one space before `strip_tags()`; without it `<p>one</p><p>two</p>` glued into `onetwo`. Inline tags add nothing (`<b>wor</b>ld` stays `world`). This is a **presentation fix, not a sanitizer**: the derived string is still plain text that is only ever rendered with `{{ }}` (rule above), and that is the only reason leaving it unsanitized is safe. The pattern is `</?(?:p|div|…)\b[^>]*>` with the `i` flag, applied to the first 2000 characters only (`mb_substr` runs first): a single negated character class followed by a literal `>` has no nested quantifier, so it cannot backtrack catastrophically, and the capped input bounds the work anyway. Keep both properties if the list grows.
+
+## A badge component forwards `$attributes`, so callers pass only static or UUID-derived hooks
+
+[`<x-order-status-badge>`](../../resources/views/components/order-status-badge.blade.php) and [`<x-blog-status-badge>`](../../resources/views/components/blog-status-badge.blade.php) spread `{{ $attributes }}` onto the badge, which is how a caller adds its `data-test` hook. `{{ $attributes }}` escapes attribute values, so a forwarded value is not an injection by itself; the risk is a caller passing something attacker-controlled or an unvalidated `class`/`wire:` expression. Today every caller passes a static string or a hook built from a UUID row id (`dashboard-blog-status-{{ $row['id'] }}`). The order badge renders an unknown status string escaped (`{{ $case?->label() ?? $status }}`) with a zinc fallback.
 
 ## What is already safe and needs no change
 

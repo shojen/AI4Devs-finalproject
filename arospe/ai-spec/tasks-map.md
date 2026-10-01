@@ -44,6 +44,28 @@ was never implemented — nothing in `app/` writes `PaymentStatus::Paid`, so no 
 (0083 edits the orders *list* view; 0085 the *detail* view), so no `conflict_risk_with` entries. Pending count moves from 13 to 15
 numbered files; `done/` unchanged at 92.
 
+**Update (2026-10-01): `0083-dashboard-home-overview-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (standalone, no PRD epic, so there is no
+epic decision digest to extend; Phases 1–6 are in its own "Approval record"). Its node and every edge touching it (`P0083 -.-> P0085`, `P0083 --> P0086`) are dropped from the graph below and its `tasks-status.json`
+entry (the `claimed` one) was deleted. **`0086` had `0083` as its only pending dependency, so it moves from `blocked` to `ready`**; `0085` drops `"0083"` from `conflict_risk_with` (a done task cannot conflict; the
+two stories' disjoint-region coordination on `orders.blade.php` is now moot — 0083's badge extraction is merged, so 0085 rebases onto it). The link-integrity check ran in both directions: the file's own outbound links needed
+no change (`in-progress/` and `done/` sit at the same depth; all four targets resolve), and the inbound links from `0085` (2), `0086` (3) and the already-closed `0082` (2) were rewritten from `in-progress/0083-…` to
+`done/0083-…` (a bare sibling link inside `done/`); no `docs/` page links to it. `ai-spec/tasks/in-progress/` is empty again. Counts: **14 numbered files pending in `ai-spec/tasks/`, 94 in `ai-spec/tasks/done/`**.
+
+**Update (2026-10-01): `0083-dashboard-home-overview-ui.md` passed Phase 2 (third review PASS) and moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`**
+(Phase 3 starts); its `tasks-status.json` entry is `claimed` (`claude/0083-dashboard-home-overview-ui`, `2026-10-01T11:38:19Z`). Link-integrity check, both directions:
+the file's own outbound links gained one path level (`../../docs/…` → `../../../docs/…`; siblings `00NN-…` → `../00NN-…`; `done/…` → `../done/…`; all four targets resolve) and the
+inbound links from `0085` (2), `0086` (3) and the **done** `0082` (2) were rewritten to `in-progress/0083-…` / `../in-progress/0083-…`; no `docs/` page links to it.
+Its node stays in the graph (pending work); `0086` stays `blocked` on it. Counts: **14 numbered files pending in `ai-spec/tasks/`, 1 in `ai-spec/tasks/in-progress/`**, `done/` at 93.
+
+**Update (2026-10-01): `0083` split after its Phase 2 FAIL — `0086-dashboard-sales-overview-ui.md` added as a new pending file.** The first Phase 2
+review of `0083` (INVEST, run against the merged `0082`) failed it on **size** (an owner-waivable requirement) and on contradictions with the shipped backend.
+**Owner decision: split.** `0083` keeps the hero, the counters, the three list widgets (blog, low stock, latest orders), the status-badge extraction and the
+`Route::view` → `Route::livewire` swap (no Chart.js, no `#[Lazy]`, no dependency); the whole sales card — filters, KPI strip and the two Chart.js charts,
+plus the hydrated-filter hardening carried over from `0082`'s security audit — becomes `0086` (`depends_on: ["0083"]`, `blocked`; adds the card to `0083`'s
+`Overview` page and extends the same `lang/{en,es}/dashboard.php`). The owner also decided that widget rows link to an editor only when the actor may edit.
+`0083` stays `ready` and was rewritten for the narrower scope (it needs a Phase 2 re-validation); `0083` ↔ `0085` keeps its `conflict_risk_with` (both edit
+`orders.blade.php`, disjoint regions). The next free id after `0084`/`0085` was used for the new story. Counts: **15 numbered files pending in `ai-spec/tasks/`**, `done/` unchanged at 93.
+
 **Update (2026-10-01): `0082-dashboard-home-overview-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to
 `ai-spec/tasks/done/`** (standalone, no PRD epic; Phases 1–6 recorded in its own "Approval record"). Its node and every edge touching it
 (`P0082 --> P0083`, the two dotted conflict edges to `0076`/`0078`) are dropped from the graph below and its `tasks-status.json` entry
@@ -499,7 +521,7 @@ flowchart LR
     P0084["0084 Order mark as paid BE"]
     P0085["0085 Order mark as paid UI"]
     %% (P0082's own node dropped: 0082 closed to done/ this pass, per the update at the top of this file.)
-    P0083["0083 Dashboard overview UI"]
+    P0086["0086 Dashboard sales overview UI"]
     %% (P0081's own node dropped: 0081 closed to done/ this pass, per the update at the top of this
     %% file. It had no incoming edge of its own -- no pending task named it as a depends_on blocker
     %% -- so removing it re-derives nothing further.)
@@ -569,10 +591,10 @@ flowchart LR
     P0077 -.-> P0079
     %% (P0082 --> P0083 and P0082 -.-> P0076/P0078 dropped: 0082 is done; 0083 is now ready.)
     P0084 --> P0085
-    P0083 -.-> P0085
+    %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
     class P0073,P0075,P0077,P0079,P0085 pending;
-    class P0067,P0069,P0071,P0072,P0074,P0076,P0078,P0083,P0084 ready;
+    class P0067,P0069,P0071,P0072,P0074,P0076,P0078,P0084,P0086 ready;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
