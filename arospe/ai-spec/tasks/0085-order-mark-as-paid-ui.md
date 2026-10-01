@@ -1,15 +1,24 @@
 # [0085] Orders — "Mark as paid" control in the orders list and the order detail (frontend)
 
 > **Status: Phase 1 complete (Three Amigos debate held 2026-10-01).** Ready for Phase 2 (INVEST check, not run yet).
-> Backend companion: [0084](done/0084-order-mark-as-paid-backend.md), which this story is blocked on — its action contract, refusal logging
+> Backend companion: [0084](0084-order-mark-as-paid-backend.md), which this story is blocked on — its action contract, refusal logging
 > and `Order::isAwaitingPayment()` are what this story consumes.
 > Items marked **⚑ owner to confirm** are facilitator decisions the project owner has not explicitly ratified.
 > **Owner-confirmed:** the control exists in the orders **list** and on the order **detail** page, and **not** on the dashboard home's
 > "Latest orders" widget; both confirm first; no undo.
+>
+> **⚠ Scope flagged for re-debate (2026-10-02) — backend contract changed by the owner; this story is NOT yet updated to it.**
+> [0084](0084-order-mark-as-paid-backend.md#rework-2026-10-02) was reworked: `MarkOrderAsPaid` now takes
+> `(Order $order, PaymentMethod $paymentMethod, OrderPaymentType $type)` — the dashboard must pass the bank-transfer payment method and
+> `OrderPaymentType::Transfer` — and the payment moment is no longer `orders.paid_at` but `order_payments.paid_at`, reached through
+> `Order::payment()` (nullable for legacy paid orders), so every `$order->paid_at` reference below (e.g. the detail page's payment date)
+> is stale. The owner also wants the control placed **in the order create/edit section** of the dashboard, in addition to the list and
+> detail page. The decisions, Gherkin, files and tests below still describe the previous contract and placement; re-run the Phase 1
+> debate for these changes before Phase 2.
 
 ## Description
 
-Expose story [0084](done/0084-order-mark-as-paid-backend.md)'s `MarkOrderAsPaid` action in the admin so an order administrator can record by
+Expose story [0084](0084-order-mark-as-paid-backend.md)'s `MarkOrderAsPaid` action in the admin so an order administrator can record by
 hand that a pending order has been paid (PRD §3.2: a manual admin-set status, no payment gateway).
 
 1. **The orders list** (`App\Livewire\Orders\Index`, `/orders`): a "Mark as paid" button in each eligible row's actions column.
@@ -425,7 +434,7 @@ on the detail page) and becomes refundable.
 
 ## Dependencies
 
-- **Blocked on [0084](done/0084-order-mark-as-paid-backend.md).**
+- **Blocked on [0084](0084-order-mark-as-paid-backend.md).**
 - **`conflict_risk_with` [0083](done/0083-dashboard-home-overview-ui.md):** both edit `resources/views/livewire/orders.blade.php` (disjoint regions, D-6).
 
 ## Debate record
