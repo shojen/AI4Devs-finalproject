@@ -24,3 +24,26 @@ test('the screen-copy groups this story owns exist and no shipped group was rena
         expect($keys)->toContain($owned);
     }
 });
+
+// Story 0084 (Phase 3 red step): the two refusal messages of MarkOrderAsPaid. They must NOT
+// interpolate the order number -- an unauthorized-then-state-refused actor must learn nothing, and
+// a static string cannot leak an identifier.
+test('the orders.payment refusal keys exist in both locales, are non-empty and interpolate nothing', function (string $locale, string $key) {
+    $messages = require lang_path($locale.'/orders.php');
+    $message = Arr::get($messages, $key);
+
+    expect($message)->toBeString()->not->toBe('')
+        ->and($message)->not->toContain(':');
+})->with(function () {
+    foreach (['en', 'es'] as $locale) {
+        foreach (['payment.already_paid', 'payment.cancelled_blocked'] as $key) {
+            yield "$locale $key" => [$locale, $key];
+        }
+    }
+});
+
+test('the two orders.payment refusal messages differ within each locale', function (string $locale) {
+    $messages = require lang_path($locale.'/orders.php');
+
+    expect(Arr::get($messages, 'payment.already_paid'))->not->toBe(Arr::get($messages, 'payment.cancelled_blocked'));
+})->with(['en', 'es']);

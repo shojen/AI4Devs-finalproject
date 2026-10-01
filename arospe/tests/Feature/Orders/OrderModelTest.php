@@ -1,7 +1,10 @@
 <?php
 
+use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
+use Carbon\CarbonInterface;
 
 // Story 0045, Phase 3 (TDD "red" step): App\Actions\Orders\CreateOrder does not exist yet, but
 // App\Models\Order / App\Models\OrderItem, their factories and both migrations already do (the
@@ -130,4 +133,48 @@ test('a unit_price supplied via a plain fill() payload never reaches the model, 
     ]);
 
     expect($item->getAttribute('unit_price'))->toBeNull();
+});
+
+// --- Story 0084 (Phase 3 red step): orders.paid_at, Order::isAwaitingPayment(), OrderFactory::paid() ---
+
+test('the Order fillable set excludes payment_status and paid_at, so only MarkOrderAsPaid can write them', function () {
+    $fillable = (new Order)->getFillable();
+
+    expect($fillable)->not->toContain('payment_status')
+        ->and($fillable)->not->toContain('paid_at');
+});
+
+test('paid_at is cast to a date instance when set and to null when absent', function () {
+    $paid = Order::factory()->paid()->create(['paid_at' => '2026-03-02 08:15:00'])->fresh();
+    $pending = Order::factory()->create()->fresh();
+
+    expect($paid->paid_at)->toBeInstanceOf(CarbonInterface::class)
+        ->and($paid->paid_at->format('Y-m-d H:i:s'))->toBe('2026-03-02 08:15:00')
+        ->and($pending->paid_at)->toBeNull();
+});
+
+// D-5: "can be marked as paid" -- the predicate story 0085's control reads. Same 20 cells the
+// action's own grid uses, so the UI predicate and the action cannot drift apart.
+test('isAwaitingPayment is true exactly for the cells the action accepts', function (PaymentStatus $paymentStatus, OrderStatus $status, string $outcome) {
+    $order = new Order;
+    $order->forceFill(['payment_status' => $paymentStatus, 'status' => $status]);
+
+    expect($order->isAwaitingPayment())->toBe($outcome === 'marked');
+})->with('mark_as_paid_state_grid');
+
+test('OrderFactory::paid() yields a paid order with a non-null paid_at that is never earlier than created_at', function () {
+    $default = Order::factory()->paid()->create()->fresh();
+    $backdated = Order::factory()->paid()->create(['created_at' => now()->subDays(3)->startOfSecond()])->fresh();
+
+    expect($default->payment_status)->toBe(PaymentStatus::Paid)
+        ->and($default->paid_at)->not->toBeNull()
+        ->and($default->paid_at->greaterThanOrEqualTo($default->created_at))->toBeTrue()
+        ->and($backdated->paid_at)->not->toBeNull()
+        ->and($backdated->paid_at->greaterThanOrEqualTo($backdated->created_at))->toBeTrue();
+});
+
+test('OrderFactory::paid() honours an explicit paid_at', function () {
+    $order = Order::factory()->paid()->create(['paid_at' => '2026-03-02 08:15:00'])->fresh();
+
+    expect($order->paid_at->format('Y-m-d H:i:s'))->toBe('2026-03-02 08:15:00');
 });
