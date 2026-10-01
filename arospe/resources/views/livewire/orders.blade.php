@@ -75,18 +75,7 @@
                             </flux:table.cell>
 
                             <flux:table.cell>
-                                <flux:badge
-                                    :color="match ($order['status']) {
-                                        'pending' => 'zinc',
-                                        'processing' => 'blue',
-                                        'shipped' => 'amber',
-                                        'delivered' => 'lime',
-                                        'cancelled' => 'red',
-                                        default => 'zinc',
-                                    }"
-                                >
-                                    {{ $order['statusLabel'] }}
-                                </flux:badge>
+                                <x-order-status-badge :status="$order['status']" />
                             </flux:table.cell>
 
                             <flux:table.cell>
