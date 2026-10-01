@@ -65,4 +65,4 @@ Leaving a stray `testingN` database behind is harmless but wasteful; leaving a s
 
 **`DB_DATABASE` in every `.env.testing` must never be `arospe`, and must never match another active worktree's `.env.testing`.** If you're not sure a worktree still has a live `.env.testing` pointing at a database, check before reusing a name — the failure mode when two worktrees collide is silent data loss in whichever one loses the race, with no error from either side.
 
-_Last updated: 2026-10-01 — added the session-starts-in-`arospe/` convention and the automated `WorktreeCreate`/`WorktreeRemove` hooks; the manual setup below them is unchanged._
+_Last updated: 2026-10-01 — hook commands now resolve through `$CLAUDE_PROJECT_DIR` (they failed with "No such file" when run from the repo root); added the session-starts-in-`arospe/` convention and the automated `WorktreeCreate`/`WorktreeRemove` hooks._
