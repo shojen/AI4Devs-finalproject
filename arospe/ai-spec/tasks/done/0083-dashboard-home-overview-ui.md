@@ -1,6 +1,6 @@
 # [0083] Dashboard home — hero, counters and widgets (frontend)
 
-> **Status: Phase 2 APPROVED 2026-10-01 (`code-reviewer`); in Phase 3 (TDD).** History: the first Phase 2 review (INVEST + docs/code consistency, run
+> **Status: Phases 1–5 complete (2026-10-01); Phase 6 (documentation) in progress, then Phase 7 closure.** See the approval record below. History: the first Phase 2 review (INVEST + docs/code consistency, run
 > against the merged backend [0082](../done/0082-dashboard-home-overview-backend.md)) **failed** this story on **size** and on contradictions with the
 > shipped code. **Owner decisions of 2026-10-01:** (1) the story is **split** — this story keeps the hero, the counters, the three list widgets, the
 > badge extraction and the route swap; the whole sales card (filters, KPI strip, two Chart.js charts) moves to the new
@@ -411,16 +411,42 @@ respecting each actor's rights with no leakage, no dead links and no log noise.
 
 - [x] Phase 1 content rewritten for the narrowed scope (2026-10-01)
 - [x] Phase 2 INVEST re-validation (`code-reviewer`) — **approved 2026-10-01** after the split and two rewrite rounds
-- [ ] Characterization test green before the badge extraction; tests written first (red) then green; **full suite** green (unscoped, run as directory chunks including `tests/Browser`)
-- [ ] Pint (unscoped), Larastan, `npm run build` clean
-- [ ] Appsec review (per-widget authorization, snapshot leakage, XSS sinks, no refusal-log noise, no dead links)
-- [ ] Docs synced (list in "Files")
+- [x] Characterization test green before the badge extraction (it was committed with the red tests and run green against the unchanged lists by `frontend-qa`); tests written first (red) then green; **full suite** green — 5 386 tests, 0 failures, run as 7 directory chunks including `tests/Browser` (see the approval record)
+- [x] Pint (unscoped), Larastan (whole configured scope, 0 errors), `npm run build` clean — run by the orchestrator on 2026-10-01
+- [x] Appsec review (per-widget authorization, snapshot leakage, XSS sinks, no refusal-log noise, no dead links) — **no findings**, approved 2026-10-01
+- [ ] Docs synced (list in "Files") — Phase 6
+
+## Approval record (Phases 3–5)
+
+- **Phase 3 — TDD:** `frontend-qa` wrote the tests red (two agents on disjoint files, `c513675`); the **characterization test of the orders list badges was green before any extraction**;
+  `frontend-expert` implemented (`325d7ab`) without touching a test. The first implementation run found **five failures** and triggered a **return loop**: (1) a **real defect** — the ungated page
+  returned HTTP 500 for any authenticated user when a policy checked a permission row that does not exist in the database (Spatie `PermissionDoesNotExist`); 42 unrelated existing tests
+  (`SidebarModuleGatingTest`, `UiLocaleResolutionTest`) GET `/dashboard` after creating a role with a single permission; (2) a **real defect in the merged 0082 backend** — `GetLatestBlogPosts::describe()` glued
+  words across block tags (`<h2>Heading</h2><p>palabra</p>` → "Headingpalabra"); (3) three **test defects** (`getActionName()` of a `Route::livewire` route never exposes the component; Pest's `toHaveKey` second
+  argument is the expected value, not a message; a hard-coded user count that depends on `SUPER_ADMIN_EMAIL`). Fixed test-first: tests `5189a89`, code `da0ce42` (`App\Concerns\ChecksAbilitiesSafely`, which catches **only**
+  `PermissionDoesNotExist`; `GetDashboardCounters` now returns `null` per counter for a missing permission row; block tags become a space, inline tags add nothing). **This extended scope beyond "Files":** the two 0082 actions,
+  `GetDashboardCounters` and `GetLatestBlogPosts` (and their tests), plus the new trait in `app/Concerns/`.
+- **Phase 4 — security (`appsec-auditor`): NO FINDINGS.** Three gating layers (parent mount decision, child re-gate, the action's own authorization), no public state or mutating method, all output escaped, signed snapshots,
+  the trait cannot turn a deny into an allow, bounded regex. Advisory: **A1** a typo'd permission constant silently denies (a Super Admin masks it in tests) — recommend a seeder-coverage test that every policy `*_PERMISSION`
+  constant exists in `RolePermissionSeeder` (not implemented here); **A2** `blog-status-badge` has a `match` with no default, so a future `BlogPostStatus` case would throw and 500 the dashboard (inherited from the old inline
+  block; tech debt — add `default => 'zinc'` when the next status is added); **A3** `Gate::allows('update', new Model)` stands for every row only while the policies ignore the target; **A4** ~10 queries per load, no caching.
+- **Phase 5 — final review (`code-reviewer`): PASS**, every acceptance criterion met with code and test evidence. Advisory nits left as is: `statusLabel` in `Orders\Index`'s row array is now unused by the orders view; a few "RED until…"
+  comments in the new tests are stale; the browser and characterization tests keep their own uniquely-named helper functions instead of `DashboardUi::actor()`; the dark-mode browser test checks layout/JS errors only.
+- **Full-suite gate (docs/contracts.md):** one background command is limited to 10 minutes, so the suite ran as directory chunks, one at a time per database (two databases in parallel), the browser suite alone at the end:
+  `Feature/Dashboard` 536 (531 passed, 5 intentional `->todo()`), Actions/Auth/Authorization/Blog 944, Orders/Unit/Localization/DashboardTest/ExampleTest 987, Components/Console/Customers/Database/Http/Layout/Media 450,
+  Models/Navigation/Notifications/PaymentMethods/Policies/ProductCategories 597, Products 604, Providers/Roles/SalesRegions/Seeders/Settings/Shipping*/StoreLanguages/Translations/Users 1 039, Browser 229 (226 passed, 3 skipped).
+  **5 386 tests, 0 failures**; every top-level test folder is covered.
+- **Unratified ⚑ defaults now encoded in tests (owner to confirm):** extracting the two badge components; the `d/m/Y H:i` scheduled-date format (scheduled posts only, application timezone); the "Untitled" / "deleted customer"
+  placeholders (defensive, unreachable through the database today, tested with faked actions); greeting boundaries 05/12/20 in the application timezone; a missing permission row means "no ability" across the dashboard;
+  block-level tags become a space in blog descriptions; the hero is the same indigo gradient in both themes; the sales card slot is an empty Blade comment (0086 mounts it).
 
 ## Risks and follow-ups
 
 - **R-1 Shared file with 0085** (`orders.blade.php`): this story edits only the status cell (lines 78-89); 0085 the actions cell and a dialog — disjoint hunks, hook-only tests; whichever lands second rebases.
 - **R-2 Editor-ability mirroring:** the widgets must use the exact check the editors' `mount()` makes; a drift reintroduces dead links. A feature test per module pins it.
 - **R-3 Seam:** after 0076/0078 the shapes' `name`/`title` can be null; the defensive placeholders and their seam tests already cover it.
+- **R-5 Follow-ups from the Phase 4/5 advisories (not scoped here):** a seeder-coverage test that every policy `*_PERMISSION` constant exists in `RolePermissionSeeder` (A1); `default => 'zinc'` in `blog-status-badge`
+  when a status is added (A2); trim `statusLabel` from `Orders\Index`'s row array (nit); an `orders(created_at)` index and short-TTL caching if the dashboard's ~10 queries per load become measurable (A4).
 - **R-4 Sales card:** 0086 adds a card to `overview.blade.php` and extends the same `lang/*/dashboard.php`; this story leaves a clean slot in the grid and no sales-related key.
 
 ## Dependencies

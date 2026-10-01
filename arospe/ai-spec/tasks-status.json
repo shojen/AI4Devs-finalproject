@@ -225,41 +225,6 @@
       ]
     },
     {
-      "id": "0083",
-      "slug": "0083-dashboard-home-overview-ui",
-      "title": "Dashboard home — hero, counters and widgets (frontend)",
-      "depends_on": [],
-      "status": "claimed",
-      "claimed_by": "claude/0083-dashboard-home-overview-ui",
-      "claimed_at": "2026-10-01T11:38:19Z",
-      "touches": [
-        "app/Livewire/Dashboard/Overview.php",
-        "app/Livewire/Dashboard/BlogWidget.php",
-        "app/Livewire/Dashboard/LowStockWidget.php",
-        "app/Livewire/Dashboard/LatestOrdersWidget.php",
-        "resources/views/livewire/dashboard/",
-        "resources/views/dashboard.blade.php",
-        "resources/views/components/dashboard/widget.blade.php",
-        "resources/views/components/order-status-badge.blade.php",
-        "resources/views/components/blog-status-badge.blade.php",
-        "resources/views/livewire/orders.blade.php",
-        "resources/views/livewire/blog-posts.blade.php",
-        "routes/web.php",
-        "lang/en/dashboard.php",
-        "lang/es/dashboard.php",
-        "tests/Feature/Dashboard/",
-        "tests/Feature/DashboardTest.php",
-        "tests/Support/Dashboard/DashboardUi.php",
-        "tests/Browser/Dashboard/",
-        "tests/Feature/Orders/OrdersListStatusBadgeTest.php",
-        "tests/Feature/Components/StatusBadgeComponentsTest.php",
-        "tests/Feature/Navigation/SidebarModuleGatingTest.php"
-      ],
-      "conflict_risk_with": [
-        "0085"
-      ]
-    },
-    {
       "id": "0084",
       "slug": "0084-order-mark-as-paid-backend",
       "title": "Order — mark as paid manually (backend)",
@@ -299,18 +264,14 @@
         "tests/Feature/Orders/",
         "tests/Browser/Orders/"
       ],
-      "conflict_risk_with": [
-        "0083"
-      ]
+      "conflict_risk_with": []
     },
     {
       "id": "0086",
       "slug": "0086-dashboard-sales-overview-ui",
       "title": "Dashboard home — sales overview card with filters and Chart.js charts (frontend)",
-      "depends_on": [
-        "0083"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
