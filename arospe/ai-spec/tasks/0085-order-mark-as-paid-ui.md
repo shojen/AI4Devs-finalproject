@@ -39,7 +39,7 @@ orders list and to each order's page, where the action already lives.
 - `Show::cancelOrder` calls a bare `Gate::authorize` (`Show.php:538`) — an **unlogged** refusal; **not** to be copied here.
 - `orders.index.columns.payment` is the only existing `payment` lang key; a new top-level `orders.payment.*` group collides with nothing.
 - The list loads **all** orders (no filters, pagination or polling), ordered `created_at desc, id desc`.
-- `0083` edits the same blade file (`orders.blade.php`), lines 77-104 (status and payment badge cells); this story edits the actions cell.
+- `0083` edits the same blade file (`orders.blade.php`), lines 78-89 only (the order-status badge cell; the payment-badge cell stays inline); this story edits the actions cell.
 
 ## Decisions
 
@@ -140,7 +140,7 @@ The status word "Paid"/"Pagado" comes from the existing `payment_statuses.paid`.
 
 ### D-6 — Coordination with story 0083 on `orders.blade.php`
 
-- **0083 owns** lines 77-104 (the order-status badge cell and, if it chooses, the payment-badge cell — to be confirmed with 0083 so neither
+- **0083 owns** lines 78-89 only (the order-status badge cell; the payment-badge cell at 93-103 stays inline, confirmed by 0083 D-5 — so neither
   story touches the other's cell).
 - **0085 owns** the actions cell (lines 110-121), the appended dialog, and the view/class docblocks.
 - **Tests probe by `data-test` hook only**, never by badge markup or class, and never assert the literal word "Pagado" through a badge

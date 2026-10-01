@@ -97,9 +97,16 @@ its module's view ability** (`@can`). All are **eager** (3–5 rows each; no `#[
 
 ### D-2 — Row links respect the actor's rights (owner decision 2026-10-01)
 
-- **Blog and low-stock rows link to the editor only when the actor may update** — checked with the **same ability the editor's `mount()`
-  authorizes** (`BlogPosts/Editor.php:393-400`, `Products/Editor.php:146-153`; the implementer reads those two calls and mirrors them through
-  `Gate::allows`); otherwise the title/name renders as **plain text with no link**. A view-only actor therefore never reaches a 403 and never
+- **Blog and low-stock rows link to the editor only when the actor may update.** What the editors really do: `BlogPosts/Editor::mount()`
+  (`Editor.php:117-119`) calls `authorizeSaving()` (`:393-400`), which, for an existing post, authorizes **`'update'` on the `BlogPost` model** through the logging wrapper;
+  `Products/Editor::mount()` (`Editor.php:146-153`) authorizes **`'update'` on the `Product` model**. Both use the **model-level** policy methods
+  (`BlogPostPolicy::update` → `blog.edit`, `ProductPolicy::update` → `products.edit`), neither of which reads its target. The routes only require `blog.view`/`products.view`
+  (`routes/blog-posts.php:23-24`, `routes/products.php:26-28`), so a view-only actor following a link gets a 403 and a refusal warning.
+  **The widgets mirror the check without a query per row:** the action rows carry ids only, and `Gate::allows('update', BlogPost::class)` is **not** viable (a typed model parameter
+  makes a class string a `TypeError`), so each widget evaluates **`Gate::allows('update', new BlogPost)`** (resp. **`new Product`**) **once per widget inside its computed**, never per row.
+  That is safe today only because both policies ignore the target; if a policy ever starts reading it, the evaluation moves per row against an unsaved instance carrying the row's id
+  (`(new Product)->forceFill(['id' => $row['id']])`), still with no query. (`BlogPostPolicy::EDIT_PERMISSION` / `ProductPolicy::EDIT_PERMISSION` through `Gate::allows(<permission>)` is an
+  acceptable but less faithful alternative.) Otherwise the title/name renders as **plain text with no link**. A view-only actor therefore never reaches a 403 and never
   writes a refusal warning. The widget's footer link to the module list is always shown (it needs only the view ability the widget already requires).
 - **Order rows always link to `orders.show`** (it needs `orders.view` only). The customer name is plain text (no customer link).
 - A variable product links to its **parent's** editor (`products.edit`), never to a variant URL.
@@ -114,8 +121,9 @@ its module's view ability** (`@can`). All are **eager** (3–5 rows each; no `#[
   `publishAt` as **`d/m/Y H:i`** in the application timezone (like the orders list); a **published** post shows **no date**.
 - **Low stock:** `effectiveStock`, a **red "Out of stock"** badge when `isOutOfStock`, otherwise an **amber "Low stock"** badge; when `hasVariants`
   and `lowVariantCount > 0`, the hint `trans_choice('dashboard.stock.variants_low', $lowVariantCount)` ("1 variant low" / "2 variants low").
-- **Orders:** number, customer name, total through `<x-money>` (no float cast), the order-status badge, and the payment state through the
-  existing `orders.payment_statuses.*` keys.
+- **Orders:** number, customer name, total through `<x-money>` (no float cast), the order-status badge — the action returns an `OrderStatus` enum, so the widget passes
+  **`$row['status']->value`** to `<x-order-status-badge>` (which takes the string value, like the orders list) — and the payment state through the existing
+  `orders.payment_statuses.*` keys (`$row['paymentStatus']->value`).
 - **Defensive nulls (seam):** a null `title` renders the translated `dashboard.untitled` and stays a valid row; a null `name` renders the SKU; a null
   `customerName` renders `dashboard.deleted_customer`. These are **defensive only** — unreachable through the database today (NOT NULL columns,
   trashed customers keep their name) — and are exercised by tests that **fake the action**, not by Gherkin scenarios.
@@ -124,7 +132,8 @@ its module's view ability** (`@can`). All are **eager** (3–5 rows each; no `#[
 ### D-4 — Layout by visible content
 
 A CSS grid, not fixed columns: blog / low stock / latest orders in `lg:grid-cols-2`, a lone odd last card spanning both columns (the card
-shell uses an arbitrary variant, e.g. `[&>:last-child:nth-child(odd)]:lg:col-span-2` on the grid). If **no counter and no widget** is visible (an actor
+shell uses an arbitrary variant, e.g. `[&>:last-child:nth-child(odd)]:lg:col-span-2` on the grid). **The page reserves a full-width slot between the hero and this grid**
+(empty in this story) where [0086](0086-dashboard-sales-overview-ui.md) mounts its sales card, so 0086 never reworks the widget grid. If **no counter and no widget** is visible (an actor
 whose abilities are, say, only `roles.manage`), the page shows the translated `dashboard.no_widgets` message instead of an empty body. Visuals follow
 `docs/arospe-handoff/project/css/index.css:3-13` (gradient `#4f46e5 → #6d5ef0`, radius 18px, mono counters via Tailwind `font-mono`); the hero
 gradient is the same in dark mode (white text on indigo works in both). Widgets use the existing dark-mode classes of the placeholder. Phone width: the
@@ -168,9 +177,10 @@ Still **⚑ owner to confirm:** extracting the two badge components (vs duplicat
 
 ## Gherkin
 
-Roles are named per the glossary in `docs/testing/frontend/gherkin-guidelines.md` ("catalog manager", "order manager", "user manager", "blog editor",
-"administrator", "super administrator"; the dashboard vocabulary was added by 0082). "Receptionist" is not a glossary role: the no-access actor is
-**"a staff member with no module access"** (Phase 6 adds it). Spanish appears only in the locale scenario.
+Roles come from the glossary in `docs/testing/frontend/gherkin-guidelines.md`: **registered** ("blog editor", "catalog manager", "order manager", "user manager"; the
+dashboard vocabulary was added by 0082) and **not yet registered, added in Phase 6** ("administrator", "super administrator", "staff member with no module access" — the
+no-access actor — and "staff member who may only view the media library"). A "may only view" qualifier on an existing role (e.g. "a blog editor who may only view posts") is used
+instead of inventing roles. Spanish appears only in the locale scenario.
 
 ```gherkin
 Scenario: The hero shows the greeting and the three counters
@@ -198,13 +208,19 @@ Scenario Outline: The dashboard shows only what the actor may see
   Then the dashboard shows <visible>
   And it shows none of <hidden>
   Examples:
-    | actor | role                              | visible                                   | hidden                                  |
-    | Nora  | a staff member with no module access | the greeting only                      | counters, blog, stock and orders        |
-    | Uma   | a user manager                    | the users counter                         | products, images, blog, stock, orders   |
-    | Olga  | an order manager                  | the latest orders widget                  | every counter, blog and stock           |
-    | Carla | a catalog manager                 | products and images counters, low stock   | users counter, blog and orders          |
-    | Bea   | a blog editor                     | the blog widget                           | every counter, stock and orders         |
-    | Sara  | a super administrator             | every counter and widget                  | nothing                                 |
+    | actor | role                                 | visible                                     | hidden                                       |
+    | Nora  | a staff member with no module access | the greeting only                           | counters, blog, stock and orders             |
+    | Uma   | a user manager                       | the users counter                           | products, images, blog, stock, orders        |
+    | Olga  | an order manager                     | the latest orders widget                    | every counter, blog and stock                |
+    | Carla | a catalog manager                    | the products counter and the low-stock widget | users and images counters, blog and orders |
+    | Bea   | a blog editor                        | the blog widget                             | every counter, stock and orders              |
+    | Sara  | a super administrator                | every counter and widget                    | none of them                                 |
+
+Scenario: A media viewer sees the images counter alone
+  Given Mia, a staff member who may only view the media library, and a library with 12 images
+  When Mia opens the dashboard
+  Then the hero shows the images counter 12
+  And it shows no other counter and no widget
 
 Scenario: An actor with no module access is told there is nothing to show
   Given Nora, a staff member with no module access
@@ -247,8 +263,8 @@ Scenario: A blog editor who may edit posts can open a post from the dashboard
   When Bea opens the dashboard
   Then the post's title links to its editor
 
-Scenario: A user who may only view the blog sees the post without a link to its editor
-  Given Vera, a user who may view the blog but not edit posts, and a published post
+Scenario: A blog editor who may only view posts sees the post without a link to its editor
+  Given Vera, a blog editor who may only view posts, and a published post
   When Vera opens the dashboard
   Then the post's title is shown as plain text without a link
   And no refusal is recorded
@@ -274,8 +290,8 @@ Scenario: A catalog manager who may edit products can open the parent product
   When Carla opens the dashboard
   Then the parent product's name links to its editor
 
-Scenario: A user who may only view products sees the product without a link to its editor
-  Given Vera, a user who may view products but not edit them, and a product that is running out
+Scenario: A catalog manager who may only view products sees the product without a link to its editor
+  Given Vera, a catalog manager who may only view products, and a product that is running out
   When Vera opens the dashboard
   Then the product's name is shown as plain text without a link
   And no refusal is recorded
@@ -301,10 +317,10 @@ Scenario Outline: Each widget links to its module's list
   When <actor> opens the dashboard
   Then the <widget> widget offers a link to the <destination> list
   Examples:
-    | actor | role              | items    | widget       | destination |
-    | Bea   | a blog editor     | posts    | blog         | blog        |
-    | Carla | a catalog manager | products | low-stock    | products    |
-    | Olga  | an order manager  | orders   | latest-orders | orders     |
+    | actor | role              | items    | widget        | destination |
+    | Bea   | a blog editor     | posts    | blog          | blog        |
+    | Carla | a catalog manager | products | low stock     | products    |
+    | Olga  | an order manager  | orders   | latest orders | orders      |
 
 Scenario: A store with nothing to show
   Given Laura, an administrator, and a store with no posts, orders or low-stock products
@@ -336,10 +352,13 @@ Modify:
 - `lang/en/dashboard.php`, `lang/es/dashboard.php` (new top-level groups, D-6)
 - `tests/Feature/DashboardTest.php` (extend: a user with no permissions gets 200, the greeting and the "nothing to show" message)
 - `tests/Feature/Dashboard/DashboardLangParityTest.php` — **only its stale header comment** ("files do not exist yet"); the pinned `errors` assertions stay
+- `tests/Feature/Orders/OrdersListStatusBadgeTest.php` (the D-5 **characterization test**, new) and `tests/Feature/Components/StatusBadgeComponentsTest.php` (new); the stale
+  comment in `tests/Feature/Navigation/SidebarModuleGatingTest.php:15` that names `dashboard.blade.php` is updated (comment only)
 - Docs (Phase 6): `docs/api/routes.md` (line 34 still shows `view('dashboard')`), `docs/api/dashboard.md` (the route section and "Consumer: 0083"),
   `docs/architecture/overview.md`, `docs/conventions/directory-structure/livewire-models-policies.md` (a `Dashboard/` area of sibling components),
   `docs/conventions/directory-structure/config-database-resources-tests.md` (new `components/` entries, `tests/Support/Dashboard`), the PRD design-reference note
-  that the shortcut cards were replaced, and the Gherkin glossary ("staff member with no module access"; "hero", "widget").
+  that the shortcut cards were replaced, and the Gherkin glossary ("administrator", "super administrator", "staff member with no module access", "staff member who may only view the
+  media library"; "hero", "widget"); the stale `docs/api/routes.md` footer mention of the placeholder route.
 
 ## Tests to perform
 

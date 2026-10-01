@@ -250,7 +250,10 @@
         "tests/Feature/Dashboard/",
         "tests/Feature/DashboardTest.php",
         "tests/Support/Dashboard/DashboardUi.php",
-        "tests/Browser/Dashboard/"
+        "tests/Browser/Dashboard/",
+        "tests/Feature/Orders/OrdersListStatusBadgeTest.php",
+        "tests/Feature/Components/StatusBadgeComponentsTest.php",
+        "tests/Feature/Navigation/SidebarModuleGatingTest.php"
       ],
       "conflict_risk_with": [
         "0085"
