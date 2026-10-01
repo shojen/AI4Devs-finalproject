@@ -42,8 +42,9 @@ use Illuminate\Support\Carbon;
  * the distinction is unobservable until 0053/0054 populate them (R-2).
  *
  * `paid_at` (story 0084) joins the omitted list as well -- the moment the
- * payment was recorded, written only via `forceFill()` by
- * App\Actions\Orders\MarkOrderAsPaid together with `payment_status`.
+ * payment was recorded, written only by the compare-and-set query-builder
+ * update in App\Actions\Orders\MarkOrderAsPaid, together with
+ * `payment_status` (no model event fires on that write).
  *
  * No `SoftDeletes`: orders are never deleted this phase; `Cancelled` is a
  * `status` value, not a soft delete.
