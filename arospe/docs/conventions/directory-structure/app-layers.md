@@ -40,7 +40,11 @@ app/
                        BlogPostPublishFailureStage, story 0064b -- two cases, Publish/Announce,
                        which of the scheduled sweep's two failure classes a due post's re-read
                        matches; no label(), no rendering site yet -- see
-                       architecture/authorization/domain-invariants.md)
+                       architecture/authorization/domain-invariants.md;
+                       SalesGranularity, story 0082 -- Day/Month/Year, owning every per-granularity
+                       constant (sqlFormat() for SQL, keyFormat(), step(), maxBuckets()) so the
+                       dashboard series never branch on the case; OrderStatus gained
+                       defaultDashboardSet(), the dashboard's default status filter)
   Exceptions/          Domain exceptions that render their own response (ImmutableRoleException → 403,
                        RoleInUseException → 409, PasswordConfirmationRequiredException → 423,
                        OrderNotEditableException → 409 since story 0048 -- the state-based hard

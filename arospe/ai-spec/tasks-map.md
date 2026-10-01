@@ -30,6 +30,59 @@ file's own outbound links needed no re-resolution; a repo-wide search for inboun
 (no path segment, and no actual Markdown link `](...)` anywhere in the repo cites it), so no edit
 was needed there either. `ai-spec/tasks/in-progress/` is empty again.
 
+**Update (2026-09-30): `0082-dashboard-home-overview-backend.md` and `0083-dashboard-home-overview-ui.md`
+added as two new pending files** (Phase 1 drafts; the Three Amigos debate and INVEST validation have not
+run). Standalone stories, no PRD epic, requested directly by the project owner: the dashboard home redesign
+(counters, latest blog posts, low-stock products, latest orders, sales chart). Full-stack request split into a
+backend story numbered first (`0082`, `ready`, `depends_on: []`, no `database-expert`) and a frontend story
+(`0083`, `blocked` on `0082`). **Update (2026-09-30): `0084-order-mark-as-paid-backend.md` and `0085-order-mark-as-paid-ui.md` added as two new pending
+files** (Phase 1 drafts; debate and INVEST not run). Standalone, no PRD epic (Epic 3 follow-up): PRD §3.2's manual "mark as paid"
+was never implemented — nothing in `app/` writes `PaymentStatus::Paid`, so no order can be refunded and the dashboard's Real income
+(0082) has no data. `0084` (backend, `ready`, `depends_on: []`, includes `database-expert` for the `orders.paid_at` migration) adds
+`MarkOrderAsPaid`; `0085` (frontend, `blocked` on `0084`) adds the button on the order detail screen. Neither is a dependency of
+0082/0083 (0082 dates income by `created_at`; a later change may use `paid_at`). No shared `touches` with any other pending task
+(0083 edits the orders *list* view; 0085 the *detail* view), so no `conflict_risk_with` entries. Pending count moves from 13 to 15
+numbered files; `done/` unchanged at 92.
+
+**Update (2026-10-01): `0082-dashboard-home-overview-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to
+`ai-spec/tasks/done/`** (standalone, no PRD epic; Phases 1–6 recorded in its own "Approval record"). Its node and every edge touching it
+(`P0082 --> P0083`, the two dotted conflict edges to `0076`/`0078`) are dropped from the graph below and its `tasks-status.json` entry
+(the `claimed` one) was deleted. **`0083` had `0082` as its only pending dependency, so it moves from `blocked` to `ready`**;
+`0076`/`0078` drop `"0082"` from `conflict_risk_with` (a done task cannot conflict) — the coordination it created lives on as the
+"Consumers to migrate" DoD line in each of them, and the seam it left in `GetLatestBlogPosts`/`GetLowStockProducts` for whichever lands
+last. The link-integrity check ran in both directions: the file's own outbound links needed no change (`in-progress/` and `done/` sit at the
+same depth under `tasks/`; all six targets verified to resolve), and the inbound links from `0076`, `0078`, `0083` (2) and `0084` (3) were
+rewritten from `in-progress/0082-…` to `done/0082-…`; no `docs/` page links to it. `ai-spec/tasks/in-progress/` is empty again. Counts:
+**14 numbered files still pending in `ai-spec/tasks/`, 93 in `ai-spec/tasks/done/`**.
+
+**Update (2026-10-01): `0082-dashboard-home-overview-backend.md` passed Phase 2 (INVEST) and moved from `ai-spec/tasks/` to
+`ai-spec/tasks/in-progress/`** (Phase 3 starts). Its `tasks-status.json` entry is now `claimed`
+(`claude/0082-dashboard-home-overview`, `2026-09-30T22:42:27Z`). The link-integrity check ran in both directions: the file's own outbound
+links gained one path level (`../../docs/…` → `../../../docs/…`; sibling tasks `00NN-…` → `../00NN-…`, all six targets verified to
+resolve), and the inbound links from `0083` (2) and `0084` (3) now point at `in-progress/0082-…`; no other file links to it (`0085`,
+`tasks-map.md` and `tasks-status.json` cite only its slug as text). Its node stays in the graph below (still pending work, not `done/`);
+`0083` remains `blocked` on it. Counts: **14 numbered files still in `ai-spec/tasks/`, 1 in `ai-spec/tasks/in-progress/`**, `done/` unchanged at 92.
+
+**Update (2026-10-01, later): the Three Amigos debate ran for `0084` and `0085`** (backend-expert, backend-qa, database-expert;
+frontend-expert, frontend-qa) and both are now Phase 1 complete, awaiting Phase 2. Dependency facts unchanged (`0085` blocked on `0084`;
+`0083` ↔ `0085` conflict on `orders.blade.php`). New cross-story coordination: `0083` now owns the "latest-orders widget has no
+`mark-as-paid` element" guard (scenario, test and acceptance line added), since a guard in `0085` would be a false green; `0085` also edits
+`tests/Feature/Orders/IndexTest.php` (its public-methods reflection test) and two "read-only" docblocks on `Orders\Index`.
+
+**Update (2026-10-01): `0085` amended on the owner's answer** — the "Mark as paid" control lives in the **orders list table** and the
+**order detail page**, not in the dashboard home's latest-orders widget (read-only). `0085` therefore also touches
+`app/Livewire/Orders/Index.php` and `resources/views/livewire/orders.blade.php`, which `0083` edits too (badge extraction), so
+`conflict_risk_with` is now `0083` ↔ `0085` (dotted edge below; different regions of one file, no blocking order). Its title and
+`touches` in `tasks-status.json` were updated to match.
+
+**Update (2026-09-30, same day): the Three Amigos debate ran for both** and both are now Phase 1
+complete, awaiting Phase 2. The debate found that pending `0076` and `0078` delete `products.name` and
+`blog_posts.title/body`, which the dashboard actions read, so `0082` now carries
+`conflict_risk_with: ["0076", "0078"]` and each of those two lists `0082` back (resolved by a read seam in
+0082 D-9: whichever lands last converts it). `0083` widens its `touches` to the two shared list views
+(`orders.blade.php`, `blog-posts.blade.php`), the badge components, `app.css` and `package.json`; it has no
+conflict entry (0079 edits the blog *editor* view, not the list). Pending count moves from 11 to 13 numbered files; `done/` is unchanged at 92.
+
 **Update (2026-09-29): `0081-demo-data-seeder-command.md` added as a new pending file** (Phase 1
 Three Amigos debate complete). Standalone story, not part of any PRD epic — requested directly by
 the project owner. Classified Backend, no `database-expert` (every model/factory it needs already
@@ -443,6 +496,10 @@ flowchart LR
     end
 
     %% Standalone (no PRD epic)
+    P0084["0084 Order mark as paid BE"]
+    P0085["0085 Order mark as paid UI"]
+    %% (P0082's own node dropped: 0082 closed to done/ this pass, per the update at the top of this file.)
+    P0083["0083 Dashboard overview UI"]
     %% (P0081's own node dropped: 0081 closed to done/ this pass, per the update at the top of this
     %% file. It had no incoming edge of its own -- no pending task named it as a depends_on blocker
     %% -- so removing it re-derives nothing further.)
@@ -510,9 +567,12 @@ flowchart LR
     P0078 --> P0079
     P0071 --> P0079
     P0077 -.-> P0079
+    %% (P0082 --> P0083 and P0082 -.-> P0076/P0078 dropped: 0082 is done; 0083 is now ready.)
+    P0084 --> P0085
+    P0083 -.-> P0085
 
-    class P0073,P0075,P0077,P0079 pending;
-    class P0067,P0069,P0071,P0072,P0074,P0076,P0078 ready;
+    class P0073,P0075,P0077,P0079,P0085 pending;
+    class P0067,P0069,P0071,P0072,P0074,P0076,P0078,P0083,P0084 ready;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue

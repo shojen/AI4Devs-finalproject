@@ -223,6 +223,79 @@
       "conflict_risk_with": [
         "0077"
       ]
+    },
+    {
+      "id": "0083",
+      "slug": "0083-dashboard-home-overview-ui",
+      "title": "Dashboard home overview — page redesign and sales chart (frontend)",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/Dashboard/Overview.php",
+        "resources/views/livewire/dashboard/overview.blade.php",
+        "resources/views/dashboard.blade.php",
+        "resources/views/components/order-status-badge.blade.php",
+        "resources/views/components/blog-status-badge.blade.php",
+        "resources/views/livewire/orders.blade.php",
+        "resources/views/livewire/blog-posts.blade.php",
+        "resources/css/app.css",
+        "resources/js/sales-chart.js",
+        "resources/js/app.js",
+        "package.json",
+        "package-lock.json",
+        "routes/web.php",
+        "lang/en/dashboard.php",
+        "lang/es/dashboard.php"
+      ],
+      "conflict_risk_with": [
+        "0085"
+      ]
+    },
+    {
+      "id": "0084",
+      "slug": "0084-order-mark-as-paid-backend",
+      "title": "Order — mark as paid manually (backend)",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Actions/Orders/MarkOrderAsPaid.php",
+        "app/Policies/OrderPolicy.php",
+        "app/Models/Order.php",
+        "database/migrations/",
+        "database/factories/OrderFactory.php",
+        "lang/en/orders.php",
+        "lang/es/orders.php",
+        "tests/Feature/Orders/"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0085",
+      "slug": "0085-order-mark-as-paid-ui",
+      "title": "Orders — \"Mark as paid\" control in the orders list and the order detail (frontend)",
+      "depends_on": [
+        "0084"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/Orders/Index.php",
+        "resources/views/livewire/orders.blade.php",
+        "app/Livewire/Orders/Show.php",
+        "resources/views/livewire/orders/show.blade.php",
+        "lang/en/orders.php",
+        "lang/es/orders.php",
+        "tests/Feature/Orders/",
+        "tests/Browser/Orders/"
+      ],
+      "conflict_risk_with": [
+        "0083"
+      ]
     }
   ]
 }

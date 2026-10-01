@@ -13,6 +13,7 @@ the inside of a `wire:*` / `x-on:*` directive value, which is JavaScript.**
 - [`{{ }}` inside a `wire:` directive is not escaping — it is an injection sink](#--inside-a-wire-directive-is-not-escaping--it-is-an-injection-sink)
 - [The client can rewrite any public property that is not `#[Locked]`, including the one feeding the loop](#the-client-can-rewrite-any-public-property-that-is-not-locked-including-the-one-feeding-the-loop)
 - [A layout slot is echoed unescaped](#a-layout-slot-is-echoed-unescaped--its-body-must-be-encoded-where-it-is-written)
+- [Plain text derived from HTML is still output-escaped by the caller](#plain-text-derived-from-html-is-still-output-escaped-by-the-caller)
 - [What is already safe and needs no change](#what-is-already-safe-and-needs-no-change)
 
 ## `{{ }}` inside a `wire:` directive is not escaping — it is an injection sink
@@ -161,6 +162,12 @@ Story 0057a's topbar renders each screen's title and subtitle from Livewire name
 
 **Rule: a slot body must contain only `{{ }}` (or `__()` output through it) — never `{!! !!}` and never a value built from user input outside `{{ }}`.** The layout's echo is not a second line of defence, so a `{!! !!}` slot body would be a direct stored-XSS sink.
 
+## Plain text derived from HTML is still output-escaped by the caller
+
+Story 0082's `GetLatestBlogPosts` returns a `description` derived from a blog body by **strip-then-decode** (`strip_tags()`, then `html_entity_decode()`): an encoded `&lt;script&gt;` in the body comes out as the literal text `<script>`. That is correct *text*, and a live tag the moment it is echoed raw.
+
+**Rule: the output of strip-then-decode is plain text, never HTML. The caller renders it with `{{ }}` — never `{!! !!}`, `x-html` or a raw `wire:ignore` binding — and the action's docblock says so** ([`GetLatestBlogPosts`](../../app/Actions/Dashboard/GetLatestBlogPosts.php)). The action cannot escape for the caller, because the escaping context belongs to the view. Reversing the order (decode, then strip) is the bug: it turns an encoded tag into a real one and then keeps it.
+
 ## What is already safe and needs no change
 
 Recorded so a future audit does not re-litigate them:
@@ -192,6 +199,6 @@ Recorded so a future audit does not re-litigate them:
   Alpine auto-invokes the returned function. This is the same pattern already in
   `resources/views/livewire/settings/security.blade.php`; it is not a silently-dead handler.
 
-_Last updated: 2026-09-21 — Story 0057a (topbar). Added the rule that a layout slot body is echoed unescaped, so it must be encoded with `{{ }}` where it is written; from that story's Phase 4 audit (Low hardening, no finding against shipped code)._
+_Last updated: 2026-10-01 — Story 0082 (Phase 4, F3). Added the rule that plain text derived from HTML by strip-then-decode must always be output-escaped by the caller. Earlier: story 0057a added the layout-slot rule (a slot body is echoed unescaped, so it must be encoded with `{{ }}` where it is written)._
 
 _Earlier revision notes: [security--blade-livewire-output-encoding.md](../history/security--blade-livewire-output-encoding.md)._
