@@ -107,6 +107,7 @@ class OrderFactory extends Factory
     {
         return $this->state(fn (array $attributes): array => [
             'payment_status' => PaymentStatus::Paid,
+            'paid_at' => $attributes['created_at'] ?? now(),
         ]);
     }
 

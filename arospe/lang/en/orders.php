@@ -90,6 +90,12 @@ return [
         'already_cancelled' => 'This order is already cancelled.',
     ],
 
+    // Story 0084 -- App\Actions\Orders\MarkOrderAsPaid's two state refusals.
+    'payment' => [
+        'already_paid' => 'This order has already been paid.',
+        'cancelled_blocked' => 'A cancelled order cannot be marked as paid.',
+    ],
+
     // Story 0054 -- tokens written to `orders.flag_reason` by
     // App\Actions\Orders\ResolveVirtualOrderSalesRegion, keyed by its REASON_* constants.
     'flag_reasons' => [

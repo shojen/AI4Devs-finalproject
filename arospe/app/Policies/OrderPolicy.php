@@ -145,4 +145,21 @@ class OrderPolicy
             && $actor->hasPermissionTo(self::ORDER_REFUND_PERMISSION)
             && $order->isManuallyCancellable();
     }
+
+    /**
+     * Determine whether the user can manually mark the order as paid.
+     *
+     * Story 0084's seventh ability: flat `orders.edit`, same shape as
+     * transitionStatus(), with the unused `$order` kept for the same reason.
+     * Deliberately NO state clause (unlike cancel()): inside a Gate-mediated
+     * check it would turn "already paid"/"cancelled" for an ordinary actor
+     * into an AuthorizationException, and it would be inert for a Super Admin
+     * anyway. The state rules live in App\Actions\Orders\MarkOrderAsPaid,
+     * which binds every actor. `orders.refund` is the wrong axis (it
+     * authorizes giving money back), so it is not required here.
+     */
+    public function markPaid(User $actor, Order $order): bool
+    {
+        return $actor->hasPermissionTo(self::EDIT_PERMISSION);
+    }
 }

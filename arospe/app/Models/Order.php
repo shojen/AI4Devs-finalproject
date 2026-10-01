@@ -41,6 +41,10 @@ use Illuminate\Support\Carbon;
  * excludes tax and shipping, which are both `0.00` on every order today, so
  * the distinction is unobservable until 0053/0054 populate them (R-2).
  *
+ * `paid_at` (story 0084) joins the omitted list as well -- the moment the
+ * payment was recorded, written only via `forceFill()` by
+ * App\Actions\Orders\MarkOrderAsPaid together with `payment_status`.
+ *
  * No `SoftDeletes`: orders are never deleted this phase; `Cancelled` is a
  * `status` value, not a soft delete.
  *
@@ -58,6 +62,7 @@ use Illuminate\Support\Carbon;
  * @property string $shipping_amount 'decimal:2' casts to a STRING, not a float
  * @property string $total 'decimal:2' casts to a STRING, not a float
  * @property string $refunded_amount 'decimal:2' casts to a STRING, not a float
+ * @property Carbon|null $paid_at
  * @property bool $flagged_for_review
  * @property string|null $ip_address
  * @property string|null $ip_derived_country
@@ -111,6 +116,7 @@ class Order extends Model
             'shipping_amount' => 'decimal:2',
             'total' => 'decimal:2',
             'refunded_amount' => 'decimal:2',
+            'paid_at' => 'datetime',
             'flagged_for_review' => 'boolean',
         ];
     }
@@ -226,5 +232,20 @@ class Order extends Model
     {
         return in_array($this->status, [OrderStatus::Pending, OrderStatus::Processing], true)
             && $this->payment_status !== PaymentStatus::PartiallyRefunded;
+    }
+
+    /**
+     * Can this order be marked as paid right now?
+     *
+     * Non-throwing predicate: payment still pending and the order not
+     * cancelled (story 0084, D-5). The order-detail control reads this so the
+     * UI cannot drift from App\Actions\Orders\MarkOrderAsPaid, which checks
+     * the two clauses separately because its two refusals differ. Says nothing
+     * about the ACTOR.
+     */
+    public function isAwaitingPayment(): bool
+    {
+        return $this->payment_status === PaymentStatus::PendingPayment
+            && $this->status !== OrderStatus::Cancelled;
     }
 }
