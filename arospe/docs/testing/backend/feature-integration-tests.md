@@ -91,4 +91,21 @@ See [database-strategy.md](database-strategy.md) for why `RefreshDatabase` is wh
 
 When a story fixes a query budget ("one aggregate query however many rows"), measure it with [`Tests\Support\Dashboard\DomainQueryLog`](../../../tests/Support/Dashboard/DomainQueryLog.php): `capture(callable)` returns the statements run **per domain table** (`users`, `products`, `product_variants`, `media`, `blog_posts`, `orders`, `customers`), zero-filled, and `statements(callable)` the total. Permission, role, session, cache and migration tables are deliberately ignored — a `Gate` check on a fresh actor loads roles and permissions through spatie, which would make a raw `DB::listen` count unstable. Assert the budget at two data scales (`->with([3, 30])`) so a per-row query shows up, and assert a refused caller reads no domain table at all. It is a static class, not global functions: a global helper declared by two test files is a fatal redeclare.
 
-_Last updated: 2026-10-01 — Story 0082: added the **Counting queries per domain table** section (`DomainQueryLog`). Still current from earlier tasks: 0017 corrected the **Authorization tests** layers 1 and 3 to the real counts (three module gates, three policies; the headline count stays four layers, and a single-default invariant is a data rule, not a fifth layer); 0015a added step-up as the fourth layer (seed `auth.password_confirmed_at` as a listed change only; assert the refusal on the row, the exempt cases, that a permission refusal wins, and the timeout boundary from both sides, the vendor comparison being `>`); 0004 replaced the stale policies section with the three-layer picture._
+## Characterizing a behaviour before extracting it
+
+Before moving markup into a shared component (story 0083 extracted `<x-order-status-badge>`), pin the **current** behaviour with a test that is green before the move and must stay green after it. Asserting label text is not enough when the thing being moved is a colour: [`OrdersListStatusBadgeTest`](../../../tests/Feature/Orders/OrdersListStatusBadgeTest.php) drives the real orders list (`Livewire::test(Orders\Index::class)`), reads each status badge's colour from its rendered `text-{colour}-{shade}` class inside the row's own `data-test` hook, and also pins the cell that deliberately stays inline (the payment badge). Commit that test first, then refactor.
+
+## Asserting a `Route::livewire` route
+
+A `Route::livewire()` route's action name is Livewire's own controller, so a test that asserts `getActionName()` can never see the component. Read the routed component from the action array instead (see [`DashboardTest`](../../../tests/Feature/DashboardTest.php)):
+
+```php
+// tests/Feature/DashboardTest.php
+expect($route->getAction('livewire_component'))->toBe(Overview::class);
+```
+
+## Counts that do not assume an empty table
+
+`RolePermissionSeeder` provisions one extra active Super Admin account when `SUPER_ADMIN_EMAIL` is configured, so a users counter test that expects an exact number breaks depending on the environment. Take a baseline after seeding and add to it, as [`OverviewRenderingTest`](../../../tests/Feature/Dashboard/OverviewRenderingTest.php) does.
+
+_Last updated: 2026-10-01 — Story 0083: added the characterization-before-extraction technique, the `Route::livewire` routed-component assertion and the seed-independent count rule. Still current from story 0082 (the **Counting queries per domain table** section) and earlier tasks: 0017 corrected the **Authorization tests** layers 1 and 3 to the real counts (three module gates, three policies; the headline count stays four layers, and a single-default invariant is a data rule, not a fifth layer); 0015a added step-up as the fourth layer (seed `auth.password_confirmed_at` as a listed change only; assert the refusal on the row, the exempt cases, that a permission refusal wins, and the timeout boundary from both sides, the vendor comparison being `>`); 0004 replaced the stale policies section with the three-layer picture._

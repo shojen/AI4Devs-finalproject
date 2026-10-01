@@ -15,13 +15,13 @@ One row per page — open the page whose *Read when* matches your task. The long
 
 | Page | Read when |
 | --- | --- |
-| [Authorization patterns](authorization-patterns.md) | you touch `Gate`/policies/roles/permissions, module gates or the sidebar registry: Super Admin bypass gaps, cache-flush timing, ability coverage, omission semantics, ungated-by-absence registries. |
+| [Authorization patterns](authorization-patterns.md) | you touch `Gate`/policies/roles/permissions, module gates or the sidebar registry: Super Admin bypass gaps, cache-flush timing, ability coverage, omission semantics, ungated-by-absence registries, the safe-Gate trait for a missing permission row, UI-only gates. |
 | [Seeder safety](seeder-safety.md) | you write or change a seeder: which columns are seeder-owned vs administrator-configurable, and why upsert is the wrong default. |
 | [Signed-link verification](signed-link-verification.md) | you add a signed route: `ValidateSignature` ordering before `SubstituteBindings` and address-bound, single-use links. |
-| [Livewire component authorization](livewire-authorization.md) | you write a Livewire action/opener: `/livewire/update` as a second entry point, per-method gates, `#[Locked]` properties, action-level rules. |
+| [Livewire component authorization](livewire-authorization.md) | you write a Livewire action/opener or a child widget on an ungated page: `/livewire/update` as a second entry point, per-method gates, `#[Locked]` properties, action-level rules. |
 | [Soft-delete security patterns](soft-delete-patterns.md) | you soft-delete a model or protect administrator-level accounts. |
 | [CI workflow hardening](ci-workflow-hardening.md) | you edit GitHub Actions workflows. |
-| [Blade / Livewire output encoding](blade-livewire-output-encoding.md) | you render user-supplied data or use `{!! !!}` in a view. |
+| [Blade / Livewire output encoding](blade-livewire-output-encoding.md) | you render user-supplied data or use `{!! !!}` in a view, derive plain text from HTML, or forward `$attributes` in a badge. |
 | [Login-time account-status enforcement](login-status-enforcement.md) | you touch sign-in paths or `users.status` enforcement across the three authentication entry points. |
 | [Model-instance trust](model-instance-trust.md) | an action receives a caller-supplied model instance: re-fetch under lock, `save()` vs `fill()` guard limits. |
 | [Step-up authentication](step-up-authentication.md) | you gate a privileged action behind a recently confirmed password. |
@@ -34,4 +34,4 @@ One row per page — open the page whose *Read when* matches your task. The long
 | [Constraint-violation discrimination](constraint-violation-discrimination.md) | you catch a `QueryException` and decide which unique index/FK fired: match `errorInfo`, never `getMessage()` (it interpolates the bindings). |
 | [Raw SQL and query-input bounds](raw-sql-and-query-input-bounds.md) | you interpolate into `DB::raw()`, accept an array of enums or a date range from a Livewire/hydrated caller, or build a dashboard aggregate: closed-enum-only interpolation, normalization and DATETIME-year bounds. |
 
-_Last updated: 2026-10-01 — Story 0082 Phase 4: added the raw SQL and query-input bounds page (F1/F2) and a plain-text-escaping section to the output-encoding page (F3). Detailed abstracts and older history live in [index-details-and-history.md](index-details-and-history.md). Add a new page as one row here._
+_Last updated: 2026-10-01 — Story 0083: extended three existing pages (Livewire component authorization, Authorization patterns, Blade / Livewire output encoding); no new page. Detailed abstracts and older history live in [index-details-and-history.md](index-details-and-history.md). Add a new page as one row here._

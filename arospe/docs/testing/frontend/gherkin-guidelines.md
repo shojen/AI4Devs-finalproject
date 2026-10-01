@@ -253,13 +253,19 @@ A scenario about a signed-in administrator's own interface or emails uses **admi
 
 ### Dashboard vocabulary
 
-**Introduced by story 0082** (the dashboard home overview's read-side actions). Its Gherkin names the actors by the business role that holds the relevant ability, and fixes three measure names. This subsection only registers them; it does **not** settle the open "order" vs. "sale" question in the TODO below — the measure **Sales** is a defined sum, not the canonical word for a purchase.
+**Introduced by story 0082** (the dashboard home overview's read-side actions), extended by story 0083 (the dashboard UI). Its Gherkin names the actors by the business role that holds the relevant ability, and fixes three measure names. This subsection only registers them; it does **not** settle the open "order" vs. "sale" question in the TODO below — the measure **Sales** is a defined sum, not the canonical word for a purchase.
 
 | Term | Meaning | Where it lives |
 | --- | --- | --- |
 | **catalog manager** | The actor who may view products (and so sees the low-stock widget). | `products.view` |
 | **order manager** | The actor who may view orders (and so sees the latest-orders widget and the sales overview). | `orders.view` |
 | **user manager** | The actor who may view users and, by that alone, sees only the users counter on the dashboard. | `users.view` |
+| **administrator** | An actor holding every module's view ability but not the Super Admin role; sees the hero counters and all three widgets. | the seeded `Administrator` role |
+| **super administrator** | The actor for whom every ability check passes through the Super Admin bypass; sees everything regardless of the permission rows. | `Gate::before` ([Super Admin](../../architecture/authorization/super-admin.md)) |
+| **staff member with no module access** | A signed-in actor who holds no view ability; still reaches the dashboard (it is ungated) and sees the greeting and an empty-state message instead of counters or widgets. | no `*.view` ability |
+| **staff member who may only view the media library** | An actor whose only ability is `media.view`; sees the images counter and no widget. | `media.view` |
+| **hero** | The top band of the dashboard: the time-of-day greeting with the actor's first name, a tagline and the counters the actor may see. | `Overview` view |
+| **widget** | One read-only card on the dashboard showing a module's latest data (blog posts, low stock, latest orders), shown only to an actor who may view that module, with a "view all" link. | `app/Livewire/Dashboard/` |
 | **Sales** | The gross total sold in a period, over the selected order statuses (tax and shipping included, refunds not netted). | [Dashboard definitions](../../api/dashboard.md#sales-real-income-and-orders--definitions) |
 | **Real income** | Money actually collected: paid or partially refunded, not cancelled, net of refunds. | same |
 | **Orders** | The count of orders per period and status. | same |
@@ -289,4 +295,4 @@ Conventions for the translation:
 
 See [examples/](examples/) for three complete scenario → Pest translations built on this convention.
 
-_Last updated: 2026-10-01 — Story 0082: added the **Dashboard vocabulary** subsection (catalog manager, order manager, user manager; the measures Sales, Real income, Orders), leaving the commerce "order" vs. "sale" TODO open. Still current from story 0066: the **Internationalization vocabulary** subsection (admin UI language vs. store language). Earlier revision notes live in [history/testing--frontend--gherkin-guidelines.md](../../history/testing--frontend--gherkin-guidelines.md)._
+_Last updated: 2026-10-01 — Story 0083: the **Dashboard vocabulary** subsection gained the actors administrator, super administrator, staff member with no module access, staff member who may only view the media library, and the terms hero and widget; the commerce "order" vs. "sale" TODO stays open. Still current from story 0082 (catalog/order/user manager, Sales, Real income, Orders) and story 0066: the **Internationalization vocabulary** subsection (admin UI language vs. store language). Earlier revision notes live in [history/testing--frontend--gherkin-guidelines.md](../../history/testing--frontend--gherkin-guidelines.md)._

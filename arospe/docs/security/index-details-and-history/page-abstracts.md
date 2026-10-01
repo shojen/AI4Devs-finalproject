@@ -77,6 +77,7 @@
   off by a constant. The registry's *reusable* shape, for a later epic adding its own entry, is owned by
   [architecture/authorization.md](../../architecture/authorization/how-to-gate.md#the-second-half-of-a-module-gate-the-sidebar-registry);
   this page holds only the security rules.
+- Story 0083 additions (no new page): [Livewire component authorization](../livewire-authorization.md) gained the three-layer rule for an ungated page with child widgets (parent mount, child re-gate on a replayed snapshot, action self-authorization; `#[Computed]` not client-callable); [Authorization patterns](../authorization-patterns.md) gained the safe-Gate trait (a missing permission row means deny; a typo hides behind the Super Admin; seeder-coverage test recommended) and the UI-only-gate rule; [Blade / Livewire output encoding](../blade-livewire-output-encoding.md) gained the block-tag/bounded-regex rationale and the badge `$attributes` forwarding rule.
 - [Seeder safety](../seeder-safety.md) — why `db:seed` is a production-reachable operation in this app, why
   fixture data must be guarded by an environment **allow-list** rather than a "not production" deny-list,
   and the rules for bootstrapping a privileged account from a configured email address: canonical

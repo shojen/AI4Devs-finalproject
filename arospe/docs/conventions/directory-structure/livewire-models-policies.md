@@ -40,6 +40,11 @@ app/
                        reaches tags only through the post actions, an arch test fences the tag actions out
                        of this namespace) — the Index-flat / other-nested asymmetry's third Index/Editor-style
                        pair, see naming.md.
+                       Dashboard/ (story 0083) — Overview.php (the routed home page, view
+                       livewire/dashboard/overview.blade.php) plus three sibling read-only widgets
+                       (BlogWidget, LowStockWidget, LatestOrdersWidget) mounted as children by name from
+                       the Overview view; no public property, no mutating method, each re-gates its own
+                       module ability (see architecture/authorization.md).
                        Dev/ (story 0020, the media-gallery-harness
                        scaffolding) was RETIRED by story 0027 once Products/Editor supplied a real
                        host page — see below. Components/ (story 0021, extended by 0022) is not a module area

@@ -31,7 +31,7 @@ Declared in [`routes/web.php`](../../routes/web.php) and the per-area files it r
 | Method | URI | Name | Middleware | Handler |
 | --- | --- | --- | --- | --- |
 | GET | `/` | `home` | — | `view('welcome')` |
-| GET | `/dashboard` | `dashboard` | `auth`, `verified` | `view('dashboard')` |
+| GET | `/dashboard` | `dashboard` | `auth`, `verified` | `App\Livewire\Dashboard\Overview` (`Route::livewire`) |
 | GET | `/users` | `users.index` | `auth`, `verified`, `can:users.view` | `App\Livewire\Users\Index` |
 | GET | `/roles` | `roles.index` | `auth`, `verified`, `can:roles.manage` | `App\Livewire\Roles\Index` |
 | GET | `/taxes/sales-regions` | `sales-regions.index` | `auth`, `verified`, `can:sales-regions.view` | `App\Livewire\SalesRegions\Index` |
@@ -83,7 +83,7 @@ Each permission-gated route family has its own file, split out of what used to b
 - **[Orders routes](orders.md)** — `orders.index` (the eleventh) and `orders.show` (the twelfth). For `orders.show` the middleware column above understates by two abilities: `orders.edit` (line items, status), `orders.edit` + `orders.refund` (cancel) and `orders.refund` (refund) are all enforced in-method, so none appears in this table.
 - **[Blog routes](blog.md)** — `blog-tags.index` (the thirteenth), `blog-categories.index` (the fourteenth) and `blog-posts.index` / `.create` / `.edit` (the fifteenth to seventeenth). Tag delete is unconditional; category delete is hard-blocked with a count while any post uses it. For the three post routes the middleware column understates by one ability: `create` / `update` (editor) and `delete` / `restore` (list) are enforced in the components, so `blog.view` alone reaches the list but gets a 403 on create and edit.
 - **[Store Languages routes](store-languages.md)** — `store-languages.index` (another permission-gated route), shipped backend-only behind a placeholder view: the `store-languages.*` permissions are not new (seeded since story 0002) but this is their first real gated surface and their first policies (`StoreLanguagePolicy`, `LocaleSettingPolicy`). The real screen is story 0069's.
-- **[Dashboard routes and read-side actions](dashboard.md)** — the still-ungated `dashboard` route and the story 0082 read-side actions (`app/Actions/Dashboard/`) behind its home overview: per-widget gating, the contract table, the Sales / Real income / Orders definitions.
+- **[Dashboard routes and read-side actions](dashboard.md)** — the still-ungated `dashboard` route (class-based `Overview` page and its three read-only widgets, story 0083) and the story 0082 read-side actions (`app/Actions/Dashboard/`) behind it: per-widget gating, the contract table, the Sales / Real income / Orders definitions.
 
 ### `email-change.confirm` — the first app-owned route deliberately outside `auth`
 
@@ -160,4 +160,4 @@ Story 0057 first mounted it twice (desktop sidebar + mobile header) because no d
 
 When `routes/api.php` and API resource controllers appear, replace this file's structure with one `api/<resource>.md` per resource, each documenting real request/response JSON pulled from the controller/resource classes — do not add one preemptively.
 
-_Last updated: 2026-10-01 — Story 0082 (Dashboard home overview — backend). Added the [Dashboard routes and read-side actions](dashboard.md) part to the per-area list; the `dashboard` route itself is unchanged (still ungated, `view('dashboard')`). Earlier changes folded per [contracts.md](../contracts/token-and-doc-rules.md#doc-growth-management-rule): 0065 recorded the Bell component's hand-off for the `BlogPostPublished` notification type; 0068 added `store-languages.index`; 0063/0064 added the blog-posts routes and the `routes/console.php` note; 0062/0060 added the blog-categories/blog-tags routes; 0055 added the Orders rows, 0057a moved the bell into a persistent topbar, 0057 added the layout-mounted section, 0047/0044 added the Customers rows, and the per-area split created the linked files._
+_Last updated: 2026-10-01 — Story 0083 (Dashboard home overview UI). The `dashboard` route is now `Route::livewire('dashboard', Overview::class)` (still `auth` + `verified`, ungated); the [Dashboard](dashboard.md) part documents the page. Earlier changes folded per [contracts.md](../contracts/token-and-doc-rules.md#doc-growth-management-rule): 0065 recorded the Bell component's hand-off for the `BlogPostPublished` notification type; 0068 added `store-languages.index`; 0063/0064 added the blog-posts routes and the `routes/console.php` note; 0062/0060 added the blog-categories/blog-tags routes; 0055 added the Orders rows, 0057a moved the bell into a persistent topbar, 0057 added the layout-mounted section, 0047/0044 added the Customers rows, and the per-area split created the linked files._

@@ -252,3 +252,15 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     });
 });
 ```
+
+## A safe-Gate trait turns a missing permission row into a deny, and a typo then hides behind the Super Admin
+
+Spatie's `hasPermissionTo()` throws `PermissionDoesNotExist` for an ability string with no row, which is a 500 on any page that is not behind a `can:` route (the dashboard, story 0083). [`App\Concerns\ChecksAbilitiesSafely::allowsSafely()`](../../../app/Concerns/ChecksAbilitiesSafely.php) wraps `Gate::allows()`, catches **only** that exception and answers `false`; every other `Throwable` propagates, and it can never grant.
+
+**Rule: this trait is the only sanctioned way to absorb a missing permission row, and only for UI that must render for every authenticated user.** A gated route or an action that authorizes should keep failing loudly.
+
+**The cost to know about.** A typo in a policy's permission constant is now a silent deny instead of an exception. A Super Admin never sees it, because `Gate::before` grants before any policy runs, so the typo survives every test that acts as a Super Admin. **Recommended, not implemented (audit advisory A1):** a seeder-coverage test asserting that every policy `*_PERMISSION` constant exists in `RolePermissionSeeder`'s catalog.
+
+## A UI-only gate is not a gate
+
+The dashboard hides a title link, a widget or a counter based on `Gate::allows()`. Those checks decide what is **shown**; the thing they hide is protected by its own gate (the editor route's `can:` middleware, the widget's action). Two consequences: never treat a hidden control as the protection, and a hint derived from a fresh model instance (`Gate::allows('update', new BlogPost)`) is valid only while the policy ignores its target, see [the whole-widget hint rule](../../architecture/authorization/grant-meta-rules-and-ui-hints.md#a-ui-only-gate-for-a-whole-widget--valid-only-while-the-policy-ignores-the-target).
