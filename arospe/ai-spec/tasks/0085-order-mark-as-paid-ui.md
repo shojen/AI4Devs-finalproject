@@ -1,7 +1,7 @@
 # [0085] Orders — "Mark as paid" control in the orders list and the order detail (frontend)
 
 > **Status: Phase 1 complete (Three Amigos debate held 2026-10-01).** Ready for Phase 2 (INVEST check, not run yet).
-> Backend companion: [0084](0084-order-mark-as-paid-backend.md), which this story is blocked on — its action contract, refusal logging
+> Backend companion: [0084](in-progress/0084-order-mark-as-paid-backend.md), which this story is blocked on — its action contract, refusal logging
 > and `Order::isAwaitingPayment()` are what this story consumes.
 > Items marked **⚑ owner to confirm** are facilitator decisions the project owner has not explicitly ratified.
 > **Owner-confirmed:** the control exists in the orders **list** and on the order **detail** page, and **not** on the dashboard home's
@@ -9,7 +9,7 @@
 
 ## Description
 
-Expose story [0084](0084-order-mark-as-paid-backend.md)'s `MarkOrderAsPaid` action in the admin so an order administrator can record by
+Expose story [0084](in-progress/0084-order-mark-as-paid-backend.md)'s `MarkOrderAsPaid` action in the admin so an order administrator can record by
 hand that a pending order has been paid (PRD §3.2: a manual admin-set status, no payment gateway).
 
 1. **The orders list** (`App\Livewire\Orders\Index`, `/orders`): a "Mark as paid" button in each eligible row's actions column.
@@ -425,7 +425,7 @@ on the detail page) and becomes refundable.
 
 ## Dependencies
 
-- **Blocked on [0084](0084-order-mark-as-paid-backend.md).**
+- **Blocked on [0084](in-progress/0084-order-mark-as-paid-backend.md).**
 - **`conflict_risk_with` [0083](done/0083-dashboard-home-overview-ui.md):** both edit `resources/views/livewire/orders.blade.php` (disjoint regions, D-6).
 
 ## Debate record

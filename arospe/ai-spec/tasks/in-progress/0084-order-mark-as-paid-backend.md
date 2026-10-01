@@ -1,24 +1,23 @@
 # [0084] Order — mark as paid manually (backend)
 
-> **Status: Phase 1 complete (Three Amigos debate held 2026-10-01).** Ready for Phase 2 (INVEST check by `code-reviewer`, not run
-> yet). Frontend companion: [0085](0085-order-mark-as-paid-ui.md), blocked on this story.
+> **Status: Phase 2 APPROVED (INVEST check by `code-reviewer`, 2026-10-01); Phase 3 (TDD) in progress.** Frontend companion: [0085](../0085-order-mark-as-paid-ui.md), blocked on this story.
 > Items marked **⚑ owner to confirm** are facilitator decisions the project owner has not explicitly ratified.
 > **Owner-confirmed (2026-09-30/10-01):** no undo action; `paid_at` = the moment of the click; the control lives in the orders list
 > and the order detail page only (0085).
 
 ## Description
 
-[PRD §3.2](../../docs/PRD/sections/epic-3-customers-orders.md) says an order's payment state is **"a manual admin-set status
+[PRD §3.2](../../../docs/PRD/sections/epic-3-customers-orders.md) says an order's payment state is **"a manual admin-set status
 only"** — no payment gateway sets it, the administrator selects it by hand. The order module implements every other part of that
-sentence (story [0045](done/0045-orders-core-crud-backend.md) creates orders as `pending_payment`; story
-[0051](done/0051-order-payment-refund-state-backend.md) derives `refunded`/`partially_refunded` from refunds) but **nothing ever moves
+sentence (story [0045](../done/0045-orders-core-crud-backend.md) creates orders as `pending_payment`; story
+[0051](../done/0051-order-payment-refund-state-backend.md) derives `refunded`/`partially_refunded` from refunds) but **nothing ever moves
 an order to `paid`**: a search of `app/` on 2026-09-30 finds only `OrderFactory::paid()` writing it, and `RecordRefund` refuses any order
 that is not already `paid`/`partially_refunded`, so **no real order can ever be refunded** and the dashboard's "Real income" measure
-(story [0082](done/0082-dashboard-home-overview-backend.md)) has nothing to count. 0051's D-4 explicitly left a payment-state write path
+(story [0082](../done/0082-dashboard-home-overview-backend.md)) has nothing to count. 0051's D-4 explicitly left a payment-state write path
 as a future *decision*; this story is that decision.
 
 It adds a single-purpose action **`MarkOrderAsPaid`** that moves an order from `pending_payment` to `paid` and records **when** in a new
-nullable **`orders.paid_at`** column. The buttons that call it are story [0085](0085-order-mark-as-paid-ui.md).
+nullable **`orders.paid_at`** column. The buttons that call it are story [0085](../0085-order-mark-as-paid-ui.md).
 
 ## Type
 
@@ -132,7 +131,7 @@ the actor. **The action reads the two clauses separately** (the two refusals dif
 
 ### D-7 — Dashboard follow-up (not this story)
 
-[0082](done/0082-dashboard-home-overview-backend.md) dates Real income by `orders.created_at`. A later change may switch to
+[0082](../done/0082-dashboard-home-overview-backend.md) dates Real income by `orders.created_at`. A later change may switch to
 `COALESCE(paid_at, created_at)`; **caution recorded for it:** `paid_at` survives a full refund, so "paid_at is set" does not mean
 "currently paid" — that measure must keep filtering on `payment_status` / subtracting `refunded_amount`. 0082's demo seeder uses
 `OrderFactory::paid()`, which this story extends; harmless in either merge order.
@@ -352,7 +351,7 @@ Real income become usable on real data.
 ## Definition of Done
 
 - [x] Phase 1 debate recorded in this file
-- [ ] Phase 2 INVEST validation (`code-reviewer`)
+- [x] Phase 2 INVEST validation (`code-reviewer`) — APPROVED 2026-10-01
 - [ ] Tests written first (red) then green; **full suite** green (unscoped)
 - [ ] Pint (unscoped) and Larastan clean
 - [ ] Appsec review (authorization, refusal logging, race, mass assignment)
@@ -369,8 +368,8 @@ Real income become usable on real data.
 
 ## Dependencies
 
-- None pending (`depends_on: []`). Consumed by [0085](0085-order-mark-as-paid-ui.md).
-- Related, no blocking: [0082](done/0082-dashboard-home-overview-backend.md) (Real income; its demo seeder uses `OrderFactory::paid()`).
+- None pending (`depends_on: []`). Consumed by [0085](../0085-order-mark-as-paid-ui.md).
+- Related, no blocking: [0082](../done/0082-dashboard-home-overview-backend.md) (Real income; its demo seeder uses `OrderFactory::paid()`).
 
 ## Debate record
 

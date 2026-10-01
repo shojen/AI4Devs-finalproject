@@ -91,6 +91,12 @@ frontend-expert, frontend-qa) and both are now Phase 1 complete, awaiting Phase 
 `mark-as-paid` element" guard (scenario, test and acceptance line added), since a guard in `0085` would be a false green; `0085` also edits
 `tests/Feature/Orders/IndexTest.php` (its public-methods reflection test) and two "read-only" docblocks on `Orders\Index`.
 
+**Update (2026-10-01, later still): `0084-order-mark-as-paid-backend.md` passed Phase 2 (`code-reviewer`: APPROVED) and moved from `ai-spec/tasks/` to
+`ai-spec/tasks/in-progress/`**, claimed by the `0084-order-mark-as-paid-backend` worktree (`tasks-status.json` `claimed`, graph node restyled `claimed`). Link
+integrity: the moved file's 5 distinct outbound targets resolve after the depth change (`../../../docs/…`, `../0085-…`, `../done/…`), and the inbound links
+from `0085` (3) and `0086` (2) now point at `in-progress/0084-…`; no `docs/` page links to it. Counts: **14 files in `ai-spec/tasks/` (including the
+non-numbered ones), 1 in `ai-spec/tasks/in-progress/`**, `done/` unchanged at 94.
+
 **Update (2026-10-01): `0085` amended on the owner's answer** — the "Mark as paid" control lives in the **orders list table** and the
 **order detail page**, not in the dashboard home's latest-orders widget (read-only). `0085` therefore also touches
 `app/Livewire/Orders/Index.php` and `resources/views/livewire/orders.blade.php`, which `0083` edits too (badge extraction), so
@@ -594,7 +600,8 @@ flowchart LR
     %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
     class P0073,P0075,P0077,P0079,P0085 pending;
-    class P0067,P0069,P0071,P0072,P0074,P0076,P0078,P0084,P0086 ready;
+    class P0067,P0069,P0071,P0072,P0074,P0076,P0078,P0086 ready;
+    class P0084 claimed;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
