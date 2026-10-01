@@ -12,8 +12,9 @@
 // conditional markup with no JS/Alpine/Livewire round-trip involved (task
 // file, Phase 2 review F-4) -- a plain HTTP GET to the dashboard route
 // renders the full page through resources/views/layouts/app/sidebar.blade.php
-// (via <x-layouts::app>, confirmed against resources/views/dashboard.blade.php
-// and routes/web.php's `Route::view('dashboard', 'dashboard')`), so a Feature
+// (via <x-layouts::app>; since story 0083 the dashboard is the full-page Livewire
+// component App\Livewire\Dashboard\Overview mounted by routes/web.php's
+// `Route::livewire('dashboard', Overview::class)`), so a Feature
 // test asserting on the response body observes everything a browser test
 // would, without the added flake/runtime.
 //

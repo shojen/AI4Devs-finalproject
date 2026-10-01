@@ -1,7 +1,8 @@
 <?php
 
-// Story 0082 (D-1): lang/{en,es}/dashboard.php are created by this story with an `errors` group;
-// 0083 extends the same files later. The files do not exist yet -- red until implemented.
+// Story 0082 (D-1): lang/{en,es}/dashboard.php were created by that story with an `errors` group;
+// story 0083 extends the same files with new top-level groups (hero, counters, blog, stock, orders,
+// ...), which leaves the pinned `errors` assertions below untouched.
 
 /**
  * @return array<string, mixed>
