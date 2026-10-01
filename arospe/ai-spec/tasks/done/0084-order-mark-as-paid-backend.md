@@ -9,11 +9,11 @@
 
 [PRD §3.2](../../../docs/PRD/sections/epic-3-customers-orders.md) says an order's payment state is **"a manual admin-set status
 only"** — no payment gateway sets it, the administrator selects it by hand. The order module implements every other part of that
-sentence (story [0045](../done/0045-orders-core-crud-backend.md) creates orders as `pending_payment`; story
-[0051](../done/0051-order-payment-refund-state-backend.md) derives `refunded`/`partially_refunded` from refunds) but **nothing ever moves
+sentence (story [0045](0045-orders-core-crud-backend.md) creates orders as `pending_payment`; story
+[0051](0051-order-payment-refund-state-backend.md) derives `refunded`/`partially_refunded` from refunds) but **nothing ever moves
 an order to `paid`**: a search of `app/` on 2026-09-30 finds only `OrderFactory::paid()` writing it, and `RecordRefund` refuses any order
 that is not already `paid`/`partially_refunded`, so **no real order can ever be refunded** and the dashboard's "Real income" measure
-(story [0082](../done/0082-dashboard-home-overview-backend.md)) has nothing to count. 0051's D-4 explicitly left a payment-state write path
+(story [0082](0082-dashboard-home-overview-backend.md)) has nothing to count. 0051's D-4 explicitly left a payment-state write path
 as a future *decision*; this story is that decision.
 
 It adds a single-purpose action **`MarkOrderAsPaid`** that moves an order from `pending_payment` to `paid` and records **when** in a new
@@ -131,7 +131,7 @@ the actor. **The action reads the two clauses separately** (the two refusals dif
 
 ### D-7 — Dashboard follow-up (not this story)
 
-[0082](../done/0082-dashboard-home-overview-backend.md) dates Real income by `orders.created_at`. A later change may switch to
+[0082](0082-dashboard-home-overview-backend.md) dates Real income by `orders.created_at`. A later change may switch to
 `COALESCE(paid_at, created_at)`; **caution recorded for it:** `paid_at` survives a full refund, so "paid_at is set" does not mean
 "currently paid" — that measure must keep filtering on `payment_status` / subtracting `refunded_amount`. 0082's demo seeder uses
 `OrderFactory::paid()`, which this story extends; harmless in either merge order.
@@ -352,10 +352,11 @@ Real income become usable on real data.
 
 - [x] Phase 1 debate recorded in this file
 - [x] Phase 2 INVEST validation (`code-reviewer`) — APPROVED 2026-10-01
-- [ ] Tests written first (red) then green; **full suite** green (unscoped)
-- [ ] Pint (unscoped) and Larastan clean
-- [ ] Appsec review (authorization, refusal logging, race, mass assignment)
-- [ ] Docs synced (orders schema + ER diagram, routes/contracts, authorization, glossary row for "order administrator"/payment states)
+- [x] Tests written first (red) then green
+- [x] **Full suite** green (unscoped) — 2026-10-02, run in three chunks on one database: `tests/Unit` + `tests/Feature/Orders` + `tests/Feature/Localization` 1094/1094; every other `tests/Feature` folder 4175 tests, 4170 passed, 5 skipped, 0 failed; `tests/Browser` alone 229 tests, 226 passed, 3 skipped, 0 failed
+- [x] Pint (unscoped) and Larastan clean
+- [x] Appsec review (authorization, refusal logging, race, mass assignment) — APPROVED 2026-10-01
+- [x] Docs synced (orders schema + ER diagram, routes/contracts, authorization, glossary row for "order administrator"/payment states)
 
 ## Risks and follow-ups
 
@@ -364,12 +365,20 @@ Real income become usable on real data.
 - **`paid_at` semantics for 0082** (D-7): survives refunds; legacy rows are `NULL`.
 - **Unindexed `orders.created_at`/`paid_at`** — measured-trigger follow-up (D-4).
 - **Factory gap:** no `cancelled()`/`refunded()` states; tests use inline states (adding them is optional).
+- **A successful mark records no actor** (appsec finding): no log line and no `paid_by` column, so nobody can later tell who moved an order to `paid`. For the owner to decide; follow-up candidate.
+- **Test-file deviation:** `MarkOrderAsPaidRefusalLoggingTest.php` was written as its own file and replaced the planned extension of `RefusalLoggingTest.php`.
 - **Timestamp limits:** MySQL `timestamp` shares its 2038 range with `created_at`; no new risk.
+
+## Approval records
+
+- **Phase 4 (security audit, `appsec-auditor`) — APPROVED 2026-10-01.** Finding carried to Risks: a successful mark records no actor.
+- **Phase 5 (final code review, `code-reviewer`) — APPROVED 2026-10-01.** Full-suite gate confirmed green 2026-10-02 (counts in the DoD box).
+- **⚑ Owner-to-confirm items still unratified:** `orders.edit` as the only ability; state refusals are not logged; already-paid reported before cancelled; flagged orders markable; the data-anomaly limitation (refunds recorded but still `pending_payment`); and the new "no actor recorded on a successful mark" risk.
 
 ## Dependencies
 
 - None pending (`depends_on: []`). Consumed by [0085](../0085-order-mark-as-paid-ui.md).
-- Related, no blocking: [0082](../done/0082-dashboard-home-overview-backend.md) (Real income; its demo seeder uses `OrderFactory::paid()`).
+- Related, no blocking: [0082](0082-dashboard-home-overview-backend.md) (Real income; its demo seeder uses `OrderFactory::paid()`).
 
 ## Debate record
 
