@@ -1,236 +1,176 @@
-# [0083] Dashboard home overview — page redesign and sales chart (frontend)
+# [0083] Dashboard home — hero, counters and widgets (frontend)
 
-> **Amended 2026-09-30 (owner request): the sales chart became a "Sales overview"** — shared filters with an order-status filter,
-> a KPI strip (Sales · Real income · Orders) and two charts (D-9). Written by the facilitator without a second debate round;
-> Phase 2 should look at D-9 and the ⚑ flags first.
->
-> **Status: Phase 1 complete (Three Amigos debate held 2026-09-30).** Ready for Phase 2 (INVEST check, not run yet).
-> Backend companion: [0082](done/0082-dashboard-home-overview-backend.md), which this story is blocked on — its return shapes,
-> caller contract (D-1) and caps (D-6) are the contract this story consumes.
-> Items marked **⚑ owner to confirm** are facilitator decisions the project owner has not explicitly ratified.
+> **Status: Phase 1 draft, rewritten 2026-10-01 after the Phase 2 FAIL.** The first Phase 2 review (INVEST + docs/code consistency, run
+> against the merged backend [0082](done/0082-dashboard-home-overview-backend.md)) failed this story on **size** and on a set of
+> contradictions with the shipped code. **Owner decisions of 2026-10-01:** (1) the story is **split** — this story keeps the hero,
+> the counters, the three list widgets, the badge extraction and the route swap; the whole sales card (filters, KPI strip, two
+> Chart.js charts) moves to the new [0086](0086-dashboard-sales-overview-ui.md), which depends on this one; (2) a widget row links to
+> an editor **only when the actor may edit**, otherwise it is plain text. Phase 1 content below is rewritten for the narrower scope; it
+> needs a Phase 2 re-validation. Items marked **⚑ owner to confirm** are facilitator defaults the owner has not ratified.
+> Backend: [0082](done/0082-dashboard-home-overview-backend.md) (merged, PR #48) — its shapes and caller contract are what this story consumes.
 
 ## Description
 
-Replace the placeholder `resources/views/dashboard.blade.php` with the real home page, following
-[`docs/PRD/images/01-inicio.png`](../../docs/PRD/images/01-inicio.png) (hero banner: greeting + counters) but **substituting the
-four shortcut cards** with live widgets:
+Replace the placeholder `resources/views/dashboard.blade.php` (five `x-placeholder-pattern` boxes) with the real home page, following
+[`docs/PRD/images/01-inicio.png`](../../docs/PRD/images/01-inicio.png): a **hero** with a greeting and three counters, and, instead of
+the mockup's four shortcut cards, **three live widgets**:
 
-1. **Hero** — time-of-day greeting with the user's first name and the counters (active users, products, images), each shown
-   only if the actor may see that module.
-2. **Blog widget** — the 3 latest published/scheduled posts: title, description of at most 80 characters (posts have no main
-   image), a status badge and, for scheduled posts, the date and time they go live. Links to the post editor; footer link to the blog list.
-3. **Low-stock widget** — the 3 products closest to running out, with stock and an out-of-stock / low-stock badge. A variable
-   product appears as its **parent**, with its lowest variant stock and an "N variants low" hint, linking to the product editor.
-4. **Latest orders widget** — the 5 most recent orders (number, customer, total, status), each linking to the order detail.
-5. **Sales overview (Chart.js)** (amended 2026-09-30, owner request) — one card with **shared filters** (**Day / Month / Year**,
-   presets, a **custom date range** and an **order-status filter**, the old "Include cancelled orders" checkbox now being the
-   *Cancelled* chip, off by default), a **KPI strip** (Sales · Real income · Orders for the period) and **two charts**:
-   **"Sales vs real income"** (line, two series) and **"Orders by status"** (stacked bars, one segment per status). Everything
-   updates without a page reload. See D-9.
+1. **Hero** — time-of-day greeting with the user's first name, and the counters (active users, products, images), each shown only if
+   the actor may see that module.
+2. **Blog widget** — the 3 latest published/scheduled posts: title, a description of at most 80 characters (posts have no main image),
+   a status badge and, for scheduled posts, the date and time they go live; footer link to the blog list.
+3. **Low-stock widget** — the 3 products closest to running out, with stock and an out-of-stock (red) / low-stock (amber) badge. A
+   variable product appears as its **parent**, with its lowest variant stock and an "N variants low" hint; footer link to the product list.
+4. **Latest orders widget** — the 5 most recent orders (number, customer, total, status), each linking to the order detail; footer
+   link to the orders list. **Read-only**: it carries no "Mark as paid" action (owner decision 2026-10-01, see [0085](0085-order-mark-as-paid-ui.md)).
+
+The **sales overview card** (Day/Month/Year filters, order-status filter, KPI strip, "Sales vs real income" and "Orders by status"
+charts) is **not in this story**: it is [0086](0086-dashboard-sales-overview-ui.md). Until 0086 lands the dashboard simply has no
+sales card; no placeholder remains.
 
 ## Type
 
-`frontend | includes database-expert: no` — plus **one approved dependency** (`chart.js`, owner decision 2026-09-30) and a small
-extraction of two shared badge components.
+`frontend | includes database-expert: no` — no new dependency, no `#[Lazy]`, no JavaScript module. One small extraction of two shared
+badge components (D-5).
 
 ## Verified facts that shaped the story
 
-- **Flux free has no date picker** (`flux:date-picker` is Pro; `livewire/flux-pro` is not installed): use native
-  `<flux:input type="date">`, whose value is always `Y-m-d`.
-- **No shared status-badge components exist**: order/blog/product badges are inline `flux:badge` + `match` blocks
-  (`orders.blade.php:78-103`, `blog-posts.blade.php:96-105`, `products.blade.php:68-74`). The earlier draft's claim was wrong.
-- **No card wrapper component exists** in `resources/views/components/`.
-- **Livewire 4.3.3**; `#[Lazy]` is supported but **unused so far** in the repo; `#[Url]` is used in `BlogPosts/Index.php`.
-- **Alpine is bundled with Livewire** (no `alpinejs` import); components register inside `document.addEventListener('alpine:init', …)`
-  like `wysiwygEditor` in `resources/js/app.js`. `app.js` is already the single Vite entry (`vite.config.js:11-16`).
-- **Dark mode is class-based** (`@custom-variant dark`, `app.css:9`, toggled by `@fluxAppearance`); there are no chart tokens.
-- **App timezone is `Europe/Madrid`** (`config/app.php:68`); users have no timezone of their own. (A comment in
-  `BlogPosts/Editor.php:132` says UTC — the code wins; unrelated to this story.)
-- `<x-money>` prints the decimal **string** unchanged (no cast, no `number_format`); the orders list formats dates as `d/m/Y H:i`.
-- `RegistrationTest.php:26` asserts `route('dashboard')`; `tests/Feature/DashboardTest.php` asserts a guest redirect and a 200 for a
-  bare user — both must stay green.
+(re-verified 2026-10-01 against the merged tree)
+
+- **Backend shapes** (0082): `GetDashboardCounters` → `array{users: ?int, products: ?int, images: ?int}` (never throws; `null` = no
+  ability, and no query runs for it); `GetLatestBlogPosts` → `list<array{id, title, description, status: BlogPostStatus, publishAt: ?CarbonImmutable}>`;
+  `GetLowStockProducts` → `list<array{id, name, sku, effectiveStock, isOutOfStock, hasVariants, lowVariantCount}>`; `GetLatestOrders` →
+  `list<array{id, orderNumber, customerName, total: string, status: OrderStatus, paymentStatus: PaymentStatus, createdAt}>`. The four list
+  actions authorize through the logging wrapper and throw; **a caller must check the ability first** (`Gate::allows`) or every
+  unprivileged load logs a "Privileged action refused" warning.
+- **Names and titles are NOT NULL today** (`products.name`, `blog_posts.title`); they become nullable only after 0076/0078. The shapes are
+  `?string` defensively, so the null case is reachable only through a faked action (seam test), not through the database.
+- **A soft-deleted customer is loaded `withTrashed()`** and keeps its real name (`customer_id` is `restrictOnDelete`); `customerName` is never
+  null in practice, and the orders list already shows the trashed customer's name (`orders.blade.php:71-73`).
+- **Editors authorize on `mount()`**: the routes `blog-posts.edit` and `products.edit` only require `blog.view`/`products.view`
+  (`routes/blog-posts.php:23-24`, `routes/products.php:26-28`), but `BlogPosts/Editor.php:393-400` and `Products/Editor.php:146-153`
+  then authorize `update`. A view-only actor following an editor link gets a 403 and a refusal warning. Order rows (`orders.show`,
+  `orders.view` only) are safe.
+- **Routing/layout:** `routes/web.php:8` is `Route::view('dashboard', 'dashboard')` under `auth`+`verified`, ungated; pages mount with
+  `Route::livewire(...)` (`routes/orders.php:14`, `docs/conventions/base-standards/livewire-and-flux-conventions.md`); the full-page layout
+  comes from `config/livewire.php:47` (`component_layout`); a page view is a plain root `<div>` containing `<x-slot:heading>`/`<x-slot:subheading>`
+  (`orders.blade.php:19-20`), not `<x-layouts::app>`. `RegistrationTest.php:26` asserts `route('dashboard')`; `tests/Feature/DashboardTest.php`
+  asserts a guest redirect and a 200 for a bare user — both must stay green. `config/modules.php:130-138` gives the dashboard `permissions => []`.
+- **Badges are inline, no shared component exists:** order status `orders.blade.php:78-89`, order payment `:93-103`, blog `blog-posts.blade.php:96-105`,
+  product `products.blade.php:68-74`, each a `flux:badge` + `match`. `BlogPostsIndexRenderingTest.php:109-138` asserts the blog badge's
+  `data-test="status-badge-blog-post-{id}"` hook, its color class and its Spanish label; `Orders/IndexRenderingTest.php:37-55` asserts label text
+  only (no color, no markup), so the orders extraction is **unprotected today**.
+- **`PaymentStatus` has no `label()`**; `OrderStatus::label()` and `BlogPostStatus::label()` exist. The orders list resolves payment text with
+  `__('orders.payment_statuses.*')` (`Orders/Index.php:81`).
+- **`lang/en/dashboard.php` and `lang/es/dashboard.php` already exist** (created by 0082) with only an `errors` group of exactly three keys,
+  pinned by `tests/Feature/Dashboard/DashboardLangParityTest.php` (`errors` must equal those three keys). This story **extends** the files with
+  **new top-level groups**, which keeps that test green.
+- `<x-money>` prints `€ {{ $amount }}` with the decimal string unchanged (no `number_format`); the orders list formats dates as `d/m/Y H:i`.
+  The app timezone is `Europe/Madrid` (`config/app.php:68`); there is no per-user timezone.
+- No card wrapper component exists in `resources/views/components/`; **`flux:card` exists in Flux free**.
+- CI **does** run the Browser suite (`docs/testing/ci/pipeline-integration.md`: `php artisan test` has included it since 0006b and CI installs
+  Chromium; PR #48's 14-minute `tests` job ran it).
 
 ## Decisions
 
-### D-1 — A thin `Overview` page plus child components
+### D-1 — A thin `Overview` page plus three read-only widgets
 
-`App\Livewire\Dashboard\Overview` (full page, replaces `Route::view('dashboard', 'dashboard')` at `routes/web.php:8`, **same
-route name and middleware, still ungated**) renders the layout heading/subheading (`topbar.dashboard.*`), the hero with counters
-(eager — three cheap counts, avoids layout jump) and four children, each wrapped in `@can`:
-`Dashboard\BlogWidget`, `Dashboard\LowStockWidget`, `Dashboard\LatestOrdersWidget`, `Dashboard\SalesOverview` (filters + KPI strip + both charts; renamed from `SalesChart`).
+`App\Livewire\Dashboard\Overview` (class-based, `#[Title('Dashboard')]` like `Orders\Index`, mounted with **`Route::livewire('dashboard', Overview::class)->name('dashboard')`**
+inside the existing `auth`+`verified` group — **same name, same middleware, still ungated**) renders, in a root `<div>`, the heading slots
+(`topbar.dashboard.*`), the hero with the counters (computed once, eager: three cheap counts, no layout jump) and the three widgets as
+children — `Dashboard\BlogWidget`, `Dashboard\LowStockWidget`, `Dashboard\LatestOrdersWidget` — each rendered **only when the actor holds
+its module's view ability** (`@can`). All are **eager** (3–5 rows each; no `#[Lazy]` in this story).
 
-- **Why children:** a filter change is a request to `SalesOverview` only; it must not re-run the four other queries or re-morph the widgets.
-- **`#[Lazy]` on `SalesOverview` only** (skeleton placeholder with `flux:skeleton`); the three list widgets are eager (3–5 rows).
-  It is the repo's first `#[Lazy]`, so it gets its own test.
-- **Two permission layers per child:** the parent `@can` only avoids rendering; **each child re-checks with `Gate::allows`
-  inside its own computed/actions before calling a 0082 action** (backend D-1 caller contract — otherwise every unprivileged
-  load logs a "Privileged action refused" warning). This includes the filter actions: a hidden chart must not be reachable by
-  posting to the component, and a permission revoked mid-session must be honoured on the next request.
-- `resources/views/dashboard.blade.php` is **deleted**; Overview's own view carries `<x-layouts::app>` with the heading slots
-  like `orders.blade.php:19-20`. `#[Title('Dashboard')]` follows `Orders\Index.php:32`.
-- Optional `resources/views/components/dashboard/widget.blade.php` — plain bordered card shell (title, "view all" link, empty slot),
-  `rounded-xl border border-neutral-200 dark:border-neutral-700` as the placeholder already used.
+- **Why children:** each widget is an isolated, read-only component, so a later change (e.g. 0086 adding a card with its own requests) never
+  re-runs their queries; and each owns its own gate.
+- **Gating, two layers:** the parent `@can` decides whether to mount a child; **each child also checks `Gate::allows(...)` inside the computed that
+  calls its action** and returns an empty result without calling it when the ability is missing — the widgets expose **no write method and no
+  client-writable state**, so there is nothing to forge, and a re-render after a permission change simply shows nothing and logs nothing. Abilities:
+  blog `viewAny` on `BlogPost` (`blog.view`), low stock `viewAny` on `Product` (`products.view`), orders `viewAny` on `Order` (`orders.view`), counters
+  per `users.view`/`products.view`/`media.view` (inside `GetDashboardCounters`).
+- **Computed shape:** results live in `#[Computed]` methods (no parameters) that resolve the action through `app(Action::class)`;
+  no model, Collection, enum or `CarbonImmutable` is ever a public property. The widgets have **no public properties at all**.
+- `resources/views/dashboard.blade.php` is **deleted** (its heading/subheading slots move into `overview.blade.php`).
+- **Widget shell:** one small component `resources/views/components/dashboard/widget.blade.php` (a bordered card with a title, a "view all" footer
+  link and an empty-state slot), built on a plain `rounded-xl border border-neutral-200 dark:border-neutral-700` container — `flux:card` is an
+  acceptable alternative the implementer may choose after checking its dark-mode output.
 
-### D-2 — Livewire state: scalars public, everything else computed
+### D-2 — Row links respect the actor's rights (owner decision 2026-10-01)
 
-Public properties are client-visible and writable: only **scalars** (`string`/`bool`/`int`) are public. Result arrays live in
-`#[Computed]` (never `persist: true`), and **no model, Collection, enum or `CarbonImmutable` is a public property**.
-`SalesOverview` public state:
+- **Blog and low-stock rows link to the editor only when the actor may update** — checked with the **same ability the editor's `mount()`
+  authorizes** (`BlogPosts/Editor.php:393-400`, `Products/Editor.php:146-153`; the implementer reads those two calls and mirrors them through
+  `Gate::allows`); otherwise the title/name renders as **plain text with no link**. A view-only actor therefore never reaches a 403 and never
+  writes a refusal warning. The widget's footer link to the module list is always shown (it needs only the view ability the widget already requires).
+- **Order rows always link to `orders.show`** (it needs `orders.view` only). The customer name is plain text (no customer link).
+- A variable product links to its **parent's** editor (`products.edit`), never to a variant URL.
 
-- `#[Url(as: 'g')] public string $granularity = 'day'`, `#[Url(as: 'from')] public string $from`, `#[Url(as: 'to')] public string $to`,
-  `#[Url(as: 's')] public array $statuses` — **a list of `OrderStatus` value strings** (scalars), default = every status except
-  `cancelled` (`OrderStatus::defaultDashboardSet()` values). Defaults are omitted from the URL. Unknown status strings in the URL are
-  dropped; if none survive, the default set is used. An **empty selection made in the UI** is refused with a translated message
-  (`statuses` error key), the previous data stays.
-- `$granularity` is validated with `Rule::enum(SalesGranularity::class)` and converted with `SalesGranularity::tryFrom()` /
-  `CarbonImmutable::createFromFormat('!Y-m-d', …)` inside a private method — **never `::from()`** (a garbage URL must not 500).
-- `rules()`: `from` `required|date_format:Y-m-d`, `to` `required|date_format:Y-m-d|after_or_equal:from`.
-- **Bad URL state** (`?g=garbage`, `from=not-a-date`, `to=2026-13-45`, empty or array values, only one bound, year 99999,
-  `cancelled=maybe`) is validated in `mount()` and falls back to the defaults: HTTP 200, no exception.
-- **Keeping the previous chart on an invalid range:** validation and the action's `ValidationException` (key `range`) are caught,
-  the message is added to the `range` error bag (**translated**, with the cap as `:max`, never the backend's English text), and
-  **no `sales-overview-updated` event is dispatched**, so neither chart is blanked. `resetValidation()` runs at the start of each
-  successful update.
-- **Presets** (`wire:click="applyPreset('…')"`, computed server-side in the app timezone, so testable): *Last 7 days*,
-  *Last 30 days* (inclusive of today, 30 points), *This month*, *This year*; the active preset is highlighted by comparing from/to.
-  **Changing granularity applies that granularity's default range** (Day: last 30 days · Month: last 12 months · Year: last 5 years)
-  so "Month" never shows one lonely point — **⚑ owner to confirm**. Default state: Day, last 30 days.
-- Rapid repeated changes must end in the state a fresh load of that URL would produce.
+### D-3 — Content rules
 
-### D-3 — Chart.js integration (owner-approved dependency)
+- **Greeting** by **application-timezone** hour: 05:00–11:59 morning, 12:00–19:59 afternoon, otherwise evening; the first name is
+  `Str::of($name)->before(' ')` (the whole name when it has no space). Server-side only (a client-side greeting is untestable).
+- **Counters:** each stat renders only when its value `!== null` (**never `@if($count)`** — `0` must render `0`); with no visible counter the stats
+  container is omitted and the greeting takes the full width; one or two stats keep the flex row.
+- **Blog:** title, description (plain text from the action, always output with `{{ }}`), the status badge, and for a **scheduled** post its go-live
+  `publishAt` as **`d/m/Y H:i`** in the application timezone (like the orders list); a **published** post shows **no date**.
+- **Low stock:** `effectiveStock`, a **red "Out of stock"** badge when `isOutOfStock`, otherwise an **amber "Low stock"** badge; when `hasVariants`
+  and `lowVariantCount > 0`, the hint `trans_choice('dashboard.stock.variants_low', $lowVariantCount)` ("1 variant low" / "2 variants low").
+- **Orders:** number, customer name, total through `<x-money>` (no float cast), the order-status badge, and the payment state through the
+  existing `orders.payment_statuses.*` keys.
+- **Defensive nulls (seam):** a null `title` renders the translated `dashboard.untitled` and stays a valid row; a null `name` renders the SKU; a null
+  `customerName` renders `dashboard.deleted_customer`. These are **defensive only** — unreachable through the database today (NOT NULL columns,
+  trashed customers keep their name) — and are exercised by tests that **fake the action**, not by Gherkin scenarios.
+- **Lists** are stacked `<ul>` rows, not `flux:table`, so phones never scroll horizontally.
 
-Add `chart.js` to `package.json`/`package-lock.json`; **record the bundle-size delta in the PR** (`npm run build`).
+### D-4 — Layout by visible content
 
-- **Markup (superseded for the two-chart layout by D-9; the rules below apply to each chart):** a root `<div x-data="moneyChart(@js($this->moneyPayload))" x-on:sales-overview-updated="update($event.detail.money)">`
-  and its sibling for the orders chart (component-scoped listener, **no `.window`**, matching `WysiwygEditor.php:205`). **`wire:ignore` only on the canvas wrapper**;
-  the empty state and the loading overlay are **siblings** of it and toggle with `x-show`/`hidden` — never a Blade `@if` around
-  the canvas (that would destroy the chart instance).
-- **Initial data:** passed through `x-data`, not through an event (a dispatch during a lazy mount request is lost because Alpine
-  is not yet listening). Update events carry a **scalar payload**: `labels` (server-formatted per locale), `revenue` (floats — display
-  only, for plotting; the money total shown in Blade stays a string via `<x-money>`), `ordersCount`, `granularity`, `locale`.
-- **`resources/js/sales-chart.js`** registers `Alpine.data('moneyChart', …)` and `Alpine.data('ordersChart', …)` inside `alpine:init` and is imported from `app.js` with a
-  single line (no new Vite entry). **Load Chart.js with a dynamic `import('chart.js')` inside `init()`** so it is code-split and
-  loaded on the dashboard only; guard `destroy()` being called before the import resolves. Register only: `BarController`,
-  `BarElement`, `CategoryScale`, `LinearScale`, `Tooltip` (no `chart.js/auto`, no legend for a single series).
-- **Alpine reactivity trap:** the Chart instance must **not** live on the reactive `Alpine.data` object (Proxy → infinite loops);
-  keep it in a closure variable / `Alpine.raw()`.
-- **Instance lifecycle:** created **once** in `init()`, updated with `chart.data.labels = …; chart.data.datasets[0].data = …;
-  chart.update()` (`'none'` when `prefers-reduced-motion`), destroyed in `destroy()` together with the theme observer, so
-  `wire:navigate` away and back raises no "Canvas is already in use".
-- **Testability requirement:** with a tree-shaken import there is no `window.Chart`; the component **exposes its instance on the
-  canvas element** and a `data-chart-ready` attribute plus an instance-creation counter, and disables animation under test.
-- **Theme:** add `--chart-line/--chart-grid/--chart-text` tokens to `resources/css/app.css` with a `.dark` override (the existing
-  `.dark` block at `app.css:32`); read them at init and refresh them from a `MutationObserver` on `<html class>`
-  (what `@fluxAppearance` toggles), followed by `chart.update()` — **same instance**. Set `Chart.defaults.font.family` from `--font-sans`.
-- **Formatting:** category scale (no date adapter dependency); x labels arrive pre-formatted from the server; y ticks and tooltips
-  use `Intl.NumberFormat(payload.locale, {style: 'currency', currency: 'EUR'})` — the **locale comes from the server payload**,
-  never `navigator.language`. Chart-axis formatting is display-only and does not conflict with the `<x-money>` no-cast rule for tables.
-- **Text alternative:** a Blade-rendered `<table class="sr-only">` (caption, `th scope="col"`, one row per bucket) **outside**
-  `wire:ignore`, fed by the same computed series, so Livewire updates it natively; the canvas is `aria-hidden` and the table is the
-  alternative (an `aria-live="polite"` line summarizes the total). This table is also the assertion surface for Livewire tests.
-- **Empty state:** when every point is zero, show the empty message and hide the canvas wrapper (chart instance survives).
-- **Loading:** `wire:loading` overlay on a sibling of the wrapper, `wire:target="granularity,from,to,statuses,applyPreset"`.
-- **Security:** Blade `{{ }}` for every title/description/name (all plain text); never `x-html`, never `{!! !!}`, never interpolate
-  labels into JS strings.
+A CSS grid, not fixed columns: blog / low stock / latest orders in `lg:grid-cols-2`, a lone odd last card spanning both columns (the card
+shell uses an arbitrary variant, e.g. `[&>:last-child:nth-child(odd)]:lg:col-span-2` on the grid). If **no counter and no widget** is visible (an actor
+whose abilities are, say, only `roles.manage`), the page shows the translated `dashboard.no_widgets` message instead of an empty body. Visuals follow
+`docs/arospe-handoff/project/css/index.css:3-13` (gradient `#4f46e5 → #6d5ef0`, radius 18px, mono counters via Tailwind `font-mono`); the hero
+gradient is the same in dark mode (white text on indigo works in both). Widgets use the existing dark-mode classes of the placeholder. Phone width: the
+hero stacks and every grid collapses to one column.
 
-### D-4 — Filters UI
+### D-5 — Shared status-badge components (small extraction, ⚑)
 
-Segmented Day/Month/Year using the `flux:radio.group variant="segmented"` pattern of `appearance.blade.php:5`; two native
-`<flux:input type="date" wire:model.live.blur>` inside a `flux:field` with `flux:error name="range"`; preset buttons; a
-status chips (D-9) in place of the old single checkbox. Measures are named **"Sales"** (total sold, refunds not netted), **"Real
-income"** (money collected, net of refunds) and **"Orders"**, each with a one-line definition in a tooltip; never "Revenue" or
-"cash received". Date inputs: `max` = today on `to` (cosmetic).
+Extract **`resources/views/components/order-status-badge.blade.php`** and **`blog-status-badge.blade.php`** from the inline `match` blocks and reuse
+them in `orders.blade.php` (status cell, lines 78-89), `blog-posts.blade.php` (96-105) **and** the dashboard widgets:
 
-### D-5 — Shared badge components (small extraction)
+- `<x-order-status-badge :status="…"/>` accepts the status **string value** (the orders list passes strings) and renders the same `flux:badge`
+  (color map copied unchanged, label from `OrderStatus::from($status)->label()`); `<x-blog-status-badge :status="…"/>` accepts the **`BlogPostStatus`
+  enum** (the blog list passes the enum). **Both forward `$attributes`** (so the blog `data-test="status-badge-blog-post-{id}"` hook survives).
+- **The orders payment-badge cell (`orders.blade.php:93-103`) and the product badge stay inline** — out of this story (0085 D-6 asked 0083 to say so).
+- **Characterization first:** before moving any markup, a **new test pins the orders list status badge** (color class + label for each of the five
+  statuses, en and es), because today's orders tests assert only label text; the existing blog test (`BlogPostsIndexRenderingTest.php:109-138`) is
+  the safety net for the blog badge. Then the extraction must leave both green.
+- *Fallback if the owner prefers zero blast radius:* keep the `match` blocks inline in the widgets (duplicating them) and log tech debt.
 
-Extract `resources/views/components/order-status-badge.blade.php` and `blog-status-badge.blade.php` (colors from the existing
-`match` blocks, labels from `OrderStatus`/`BlogPostStatus::label()`) and **reuse them in the existing orders, blog and dashboard views**;
-this touches `orders.blade.php` and `blog-posts.blade.php` (low risk, covered by their existing tests). Stock badge: red when
-`isOutOfStock`, amber otherwise. *(Fallback if the owner prefers zero blast radius: duplicate the `match` blocks and log tech debt.)*
+### D-6 — i18n
 
-### D-6 — Formats, copy and tolerance
+**Extend** `lang/en/dashboard.php` and `lang/es/dashboard.php` with new **top-level groups only** (the `errors` group and its three-key parity test are
+untouched): `hero` (`greeting_morning|afternoon|evening` with `:name`, `tagline`), `counters` (`users`, `products`, `images`), `blog` (`title`, `empty`,
+`view_all`, `scheduled_for`), `stock` (`title`, `empty`, `view_all`, `out_of_stock`, `low_stock`, `units` choice, `variants_low` choice), `orders`
+(`title`, `empty`, `view_all`), `untitled`, `deleted_customer`, `no_widgets`. snake_case leaves, `trans_choice` for plurals, **identical key sets
+and placeholders in en and es** (the existing parity test already compares the two flattened key sets). Status words come from
+`OrderStatus::label()`, `BlogPostStatus::label()` and `orders.payment_statuses.*` — **not** from `PaymentStatus::label()`, which does not exist.
+`topbar.dashboard.*` is unchanged. The admin locale is per request (`SetUiLocale`).
 
-- **Greeting** by app-timezone hour: 05:00–11:59 morning, 12:00–19:59 afternoon, otherwise evening; first name =
-  `Str::of($name)->before(' ')` (whole name if it has no space). Server-side only (client-side is untestable).
-- **Dates:** the scheduled date shows as `d/m/Y H:i` in the app timezone, like the orders list; published posts show **no date**.
-- **Nulls:** a null product name shows the SKU; a null post title shows a translated "Untitled" placeholder and stays clickable;
-  a null/removed customer shows a translated "deleted customer" text; no exception, no empty link text.
-- **Money:** table figures and the chart total use `<x-money>`; **order rows do not link the customer**, only the order number
-  (`orders.show`). Blog rows link to `blog-posts.edit`, low-stock rows to `products.edit` (parent, never a variant URL).
-- **Lists:** stacked `<ul>` rows, not `flux:table`, so phones do not scroll horizontally.
-
-### D-7 — Layout by visible content
-
-Grid, not fixed columns: chart full width; blog/stock/orders in `lg:grid-cols-2`, a lone odd last card spans both columns.
-Hero counters: render each stat only when its value `!== null` (**never `@if($count)`** — `0` must render `0`); with **no** visible counter
-the stats container is omitted and the greeting takes the full width; with 1–2 the flex row still works. If **no counter and no widget** is visible
-(a user with only e.g. `roles.manage`), show a friendly "nothing to show yet" message. Visuals per `docs/arospe-handoff/project/css/index.css:3-13`
-(gradient `#4f46e5→#6d5ef0`, radius 18px, mono counters via Tailwind `font-mono`); the hero gradient stays the same in dark mode.
-
-### D-8 — i18n
-
-New `lang/en/dashboard.php` and `lang/es/dashboard.php`, snake_case leaves, `trans_choice` for plurals, **identical key sets**
-(parity test). Groups: `hero` (`greeting_morning|afternoon|evening` with `:name`, `tagline`), `counters`, `blog`, `stock`
-(`out_of_stock`, `low_stock`, `units`, `variants_low` choice), `orders`, `sales` (title, granularity, presets, from/to,
-`include_cancelled`, `total`, `empty`, `range_error` with `:max`, table caption/columns, loading), `untitled`, `deleted_customer`,
-`no_widgets`. Reuse `OrderStatus`/`PaymentStatus`/`BlogPostStatus::label()`; `topbar.dashboard.*` stays. The admin locale is per request
-(`SetUiLocale`), so JS formatting takes it from the server payload.
-
-### D-9 — Sales overview: shared filters, KPI strip and two charts (amended 2026-09-30, ⚑ owner to confirm)
-
-**Why two charts rather than one with a toggle:** money and counts have different units and scales; putting orders (tens) on the
-same axis as sales (thousands of euros) flattens one of them, and a metric toggle hides the comparison the owner asked for (sales
-vs what was actually collected). Two charts of different shapes are also easier to read at a glance.
-
-**Layout (top to bottom inside one widget card "Sales overview"):**
-
-1. **Filter bar (shared, applies to everything below):** granularity segmented control · presets · from/to dates · **status chips**
-   (*Pending, Processing, Shipped, Delivered, Cancelled* — multi-select toggle chips using the same colors as the status badges;
-   *Cancelled* off by default; an "All" / "Reset" affordance). One filter, one URL, one Livewire request.
-2. **KPI strip — three tiles** for the selected period: **Sales** (total), **Real income**, **Orders** (count). Sales and income use
-   `<x-money>`. Income tile hint: "Collected: N% of sales" when sales > 0. If income is 0 while sales > 0 the tile shows a neutral
-   hint "Income is counted once orders are paid" (payment capture does not exist yet — see backend risks).
-3. **Chart A — "Sales vs real income"** (Chart.js **line**, two series with distinct colors *and* distinct line styles/markers so
-   it does not rely on color alone): *Sales* = muted/dashed, *Real income* = accent/solid; the gap between them is the money not
-   yet collected or refunded. Y axis in EUR via `Intl.NumberFormat`; tooltip shows both values and the difference.
-4. **Chart B — "Orders by status"** (Chart.js **stacked bar**, one dataset per *selected* status, colors from the status tokens,
-   integer y axis starting at 0; tooltip shows the status breakdown and the bucket total). The legend is shown; toggling a legend
-   entry only hides that series **locally** (client-side) and does **not** change the server filter — the chips do. The tooltip
-   and the help text say so.
-5. **Responsive:** charts sit side by side from `xl`, stacked below it; KPI tiles wrap to one column on phones; chips scroll
-   horizontally instead of wrapping into a wall.
-
-**Mechanics:** `SalesOverview` calls `GetSalesSeries` and `GetOrdersSeries` (0082) with the same arguments (both gated
-`orders.view`, checked with `Gate::allows` first) and dispatches **one** event `sales-overview-updated` with a scalar payload
-`{money: {labels, sales, income, locale, granularity}, orders: {labels, datasets: [{status, label, data}], locale}}`.
-Two Alpine components, `moneyChart` and `ordersChart`, each create their Chart.js instance **once**, update **in place** and
-keep it outside Alpine's reactivity (D-3 rules apply to **each**), so the page holds **exactly two** Chart instances. Adding or
-removing a status changes the orders chart's **datasets** inside `update()` (no re-creation). Each chart has its own `wire:ignore`
-canvas wrapper, empty state and sr-only data table (two tables, server-rendered, same buckets). Chart.js is still imported
-dynamically once; the extra controllers needed are `LineController`, `LineElement`, `PointElement` (chart A) on top of the bar set.
-A single invalid-range / empty-status response dispatches nothing, so **both** charts keep their previous data.
-
-**Empty and edge states:** all-zero period → both charts show their empty message; income-only-zero → chart A still draws the
-sales line and the income line at 0 with the hint above; a status selected with no orders still appears in the orders legend with
-zeros.
-
-## Open questions closed by the debate
+## Open questions closed
 
 | Q | Resolution |
 | --- | --- |
-| Charting library | Chart.js, dynamic import, tree-shaken (owner) |
-| Default range | Day · last 30 days (inclusive of today) |
-| Date picker | native date inputs (Flux free has none) |
-| Blog image / cancelled toggle / variable products | owner decisions, see backend 0082 |
+| Size | split: this story = hero + widgets; sales card = 0086 (owner, 2026-10-01) |
+| Editor links for view-only actors | link only when the actor may edit, else plain text (owner, 2026-10-01) |
+| Mark as paid in the orders widget | none (owner, 2026-10-01) |
+| Payment-badge cell | stays inline |
 
-Still **⚑ owner to confirm**: D-9's two-chart layout and definitions (Sales gross, Real income = paid net of refunds, one shared
-status filter whose *Cancelled* chip replaces the old checkbox); granularity change resets the range; extracting the two badge components; "Untitled" /
-"deleted customer" placeholders; `d/m/Y H:i` date format.
+Still **⚑ owner to confirm:** extracting the two badge components (vs duplicating); the `d/m/Y H:i` scheduled-date format; the "Untitled" /
+"deleted customer" defensive placeholders; greeting boundaries (05/12/20).
 
 ## Gherkin
 
-"Catalog manager" and "order manager" join the glossary when this story is ratified. Chart assertions go through the sr-only
-data table (canvas content is not testable in Livewire tests); browser tests cover the canvas.
+Roles are named per the glossary in `docs/testing/frontend/gherkin-guidelines.md` ("catalog manager", "order manager", "user manager", "blog editor",
+"administrator", "super administrator"; the dashboard vocabulary was added by 0082). "Receptionist" is not a glossary role: the no-access actor is
+**"a staff member with no module access"** (Phase 6 adds it). Spanish appears only in the locale scenario.
 
 ```gherkin
 Scenario: The hero shows the greeting and the three counters
@@ -245,9 +185,12 @@ Scenario Outline: The greeting follows the time of day
   Then the hero greets her with "<greeting>"
   Examples:
     | time  | greeting  |
-    | 09:00 | morning   |
-    | 14:00 | afternoon |
-    | 22:00 | evening   |
+    | 04:59 | evening   |
+    | 05:00 | morning   |
+    | 11:59 | morning   |
+    | 12:00 | afternoon |
+    | 19:59 | afternoon |
+    | 20:00 | evening   |
 
 Scenario Outline: The dashboard shows only what the actor may see
   Given <actor>, <role>, and a store with users, products, images, posts and orders
@@ -255,15 +198,16 @@ Scenario Outline: The dashboard shows only what the actor may see
   Then the dashboard shows <visible>
   And it shows none of <hidden>
   Examples:
-    | actor | role                      | visible                                   | hidden                                       |
-    | Nora  | a receptionist            | the greeting only                         | counters, blog, stock, orders and sales      |
-    | Uma   | a user manager            | the users counter                         | products, images, blog, stock, orders, sales |
-    | Olga  | an order manager          | latest orders and the sales chart         | every counter, blog and stock                |
-    | Carla | a catalog manager         | products and images counters, low stock   | users counter, blog, orders and sales        |
-    | Sara  | a super administrator     | every counter and widget                  | nothing                                      |
+    | actor | role                              | visible                                   | hidden                                  |
+    | Nora  | a staff member with no module access | the greeting only                      | counters, blog, stock and orders        |
+    | Uma   | a user manager                    | the users counter                         | products, images, blog, stock, orders   |
+    | Olga  | an order manager                  | the latest orders widget                  | every counter, blog and stock           |
+    | Carla | a catalog manager                 | products and images counters, low stock   | users counter, blog and orders          |
+    | Bea   | a blog editor                     | the blog widget                           | every counter, stock and orders         |
+    | Sara  | a super administrator             | every counter and widget                  | nothing                                 |
 
-Scenario: A receptionist with no module access sees a friendly message
-  Given Nora, a receptionist who may see no module
+Scenario: An actor with no module access is told there is nothing to show
+  Given Nora, a staff member with no module access
   When Nora opens the dashboard
   Then Nora is told there is nothing to show yet
 
@@ -272,30 +216,20 @@ Scenario: The hero degrades gracefully when the actor sees no counters
   When Olga opens the dashboard
   Then the hero greets Olga without any counter
 
-Scenario: Hidden widgets are never read nor logged as refusals
+Scenario: Widgets the actor may not see are never read nor reported as refusals
   Given Uma, a user manager
   When Uma opens the dashboard
-  Then no blog, stock, order or sales information is read
-  And no refused-action warning is recorded
-
-Scenario: A hidden widget cannot be reached by tampering with the page
-  Given Uma, a user manager who cannot see orders
-  When Uma's browser asks the dashboard for a sales range
-  Then no sales information is returned to Uma
-
-Scenario: A permission revoked while the page is open is honoured
-  Given Olga, an order manager with the dashboard open, whose order access is then withdrawn
-  When Olga changes the chart filter
-  Then no sales information is returned to Olga
+  Then no blog, stock or order information is read
+  And no refusal is recorded
 
 Scenario Outline: A post's state decides whether a date is shown
   Given Bea, a blog editor, with a <state> post
   When Bea opens the dashboard
   Then the post carries a "<badge>" badge and <date_rule>
   Examples:
-    | state     | badge     | date_rule                            |
-    | published | Published | no date                              |
-    | scheduled | Scheduled | its go-live date and time, 12/10/2026 10:00 |
+    | state     | badge     | date_rule                                       |
+    | published | Published | no date                                         |
+    | scheduled | Scheduled | its go-live date and time, 12/10/2026 10:00     |
 
 Scenario: The blog widget shows a title and a short description, never an image
   Given Bea, a blog editor, and a published post with a long body
@@ -308,193 +242,74 @@ Scenario: A hostile title is shown as text
   When Bea opens the dashboard
   Then the title is shown as plain text
 
+Scenario: A blog editor who may edit posts can open a post from the dashboard
+  Given Bea, a blog editor who may edit posts, and a published post
+  When Bea opens the dashboard
+  Then the post's title links to its editor
+
+Scenario: A user who may only view the blog sees the post without a link to its editor
+  Given Vera, a user who may view the blog but not edit posts, and a published post
+  When Vera opens the dashboard
+  Then the post's title is shown as plain text without a link
+  And no refusal is recorded
+
 Scenario: The low-stock widget warns about the emptiest products
   Given Carla, a catalog manager, and physical products with stock 0, 2, 7 and 50
   When Carla opens the dashboard
   Then the widget lists the products with stock 0, 2 and 7
-  And the product with stock 0 is marked out of stock
+  And the product with stock 0 carries an "Out of stock" badge
+  And the products with stock 2 and 7 carry a "Low stock" badge
 
 Scenario Outline: A variable product shows as its parent with a variants-low hint
-  Given Carla, a catalog manager, and a variable product with <low> variants at or below the cut-off
+  Given Carla, a catalog manager, and a variable product with <low> low-stock variants
   When Carla opens the dashboard
   Then the parent product is listed once with the hint "<hint>"
-  And the entry links to that product's editor
   Examples:
-    | low | hint             |
-    | 1   | 1 variant low    |
-    | 2   | 2 variants low   |
+    | low | hint           |
+    | 1   | 1 variant low  |
+    | 2   | 2 variants low |
 
-Scenario: Entries with missing names still appear
-  Given Carla, a catalog manager, and a product without a name
+Scenario: A catalog manager who may edit products can open the parent product
+  Given Carla, a catalog manager who may edit products, and a variable product with a low-stock variant
   When Carla opens the dashboard
-  Then the product is listed by its SKU
+  Then the parent product's name links to its editor
 
-Scenario: A post without a title still appears
-  Given Bea, a blog editor, and a post without a title
-  When Bea opens the dashboard
-  Then the post is listed as untitled and can still be opened
+Scenario: A user who may only view products sees the product without a link to its editor
+  Given Vera, a user who may view products but not edit them, and a product that is running out
+  When Vera opens the dashboard
+  Then the product's name is shown as plain text without a link
+  And no refusal is recorded
 
 Scenario: The latest orders widget lists five orders
   Given Olga, an order manager, and 7 orders
   When Olga opens the dashboard
   Then 5 orders are listed, newest first, each linking to its detail page
 
+Scenario: An order from a deleted customer still shows the customer's name
+  Given Olga, an order manager, and an order whose customer has since been deleted
+  When Olga opens the dashboard
+  Then the order is listed with that customer's name
+
 Scenario: The latest-orders widget is read-only
-  Given Olga, an order administrator, and an order whose payment state is Pending payment
-  When Olga opens the dashboard home
+  Given Olga, an order manager who may also edit orders, and an order whose payment state is Pending payment
+  When Olga opens the dashboard
   Then the latest-orders widget lists the order with a link to its page
   And the widget offers no "Mark as paid" button
 
-Scenario: An order from a deleted customer still appears
-  Given Olga, an order manager, and an order whose customer has been deleted
-  When Olga opens the dashboard
-  Then the order is listed and its customer is shown as deleted
+Scenario Outline: Each widget links to its module's list
+  Given <actor>, <role>, and some <items>
+  When <actor> opens the dashboard
+  Then the <widget> widget offers a link to the <destination> list
+  Examples:
+    | actor | role              | items    | widget       | destination |
+    | Bea   | a blog editor     | posts    | blog         | blog        |
+    | Carla | a catalog manager | products | low-stock    | products    |
+    | Olga  | an order manager  | orders   | latest-orders | orders     |
 
 Scenario: A store with nothing to show
   Given Laura, an administrator, and a store with no posts, orders or low-stock products
   When Laura opens the dashboard
   Then each widget shows its empty state and the counters read 0
-
-Scenario: The sales overview starts on the last 30 days per day without cancelled orders
-  Given Olga, an order manager
-  When Olga opens the dashboard
-  Then both charts cover the last 30 days per day
-  And every status chip except "Cancelled" is selected
-
-Scenario: Cancelled orders are counted when the Cancelled chip is selected
-  Given Olga, an order manager on the dashboard, with a delivered order of 100 and a cancelled order of 40 on the same day
-  When Olga selects the "Cancelled" chip
-  Then the sales for that day read 140
-  And the orders for that day read 2
-
-Scenario: The KPI strip summarizes the period
-  Given Olga, an order manager, and in the period a paid order of 100, a paid order of 50 partly refunded by 20 and a pending order of 30
-  When Olga opens the dashboard
-  Then the Sales tile reads 180
-  And the Real income tile reads 130
-  And the Orders tile reads 3
-
-Scenario: Sales and real income are two lines of one chart
-  Given Olga, an order manager, and a paid order of 100 and a pending order of 60 on the same day
-  When Olga opens the dashboard
-  Then the "Sales vs real income" chart shows 160 of sales and 100 of real income for that day
-
-Scenario: Real income explains itself when nothing has been paid
-  Given Olga, an order manager, and only pending orders in the period
-  When Olga opens the dashboard
-  Then the Real income tile reads 0
-  And a hint explains that income is counted once orders are paid
-
-Scenario: The orders chart breaks each day down by status
-  Given Olga, an order manager, and on 1 May 2 pending orders and 1 shipped order
-  When Olga opens the dashboard for the period containing 1 May
-  Then the "Orders by status" chart shows 3 orders for 1 May: 2 pending and 1 shipped
-
-Scenario Outline: The status chips narrow every figure
-  Given Olga, an order manager on the dashboard, with a delivered order of 100, a shipped order of 50 and a pending order of 20
-  When Olga keeps only the <chips> chips selected
-  Then sales read <sales>, real income reads <income> and orders read <orders>
-  Examples:
-    | chips              | sales | income | orders |
-    | Delivered          | 100   | 100    | 1      |
-    | Delivered, Shipped | 150   | 150    | 2      |
-    | Pending            | 20    | 0      | 1      |
-
-Scenario: At least one status must stay selected
-  Given Olga, an order manager on the dashboard with only the "Delivered" chip selected
-  When Olga deselects the "Delivered" chip
-  Then Olga is told to pick at least one status
-  And both charts keep their previous data
-
-Scenario: The legend hides a series without changing the filter
-  Given Olga, an order manager on the dashboard
-  When Olga hides the "Pending" entry in the orders chart legend
-  Then the pending segments disappear from the orders chart
-  And the KPI tiles and the money chart do not change
-
-Scenario: The two charts are redrawn together in place
-  Given Olga, an order manager on the dashboard
-  When Olga changes the granularity
-  Then both charts are redrawn in place from the same periods and the page shows no error
-
-Scenario: A shared link restores the status filter
-  Given Olga, an order manager who filtered the overview to Delivered and Shipped for May per day
-  When Olga opens the same dashboard link again
-  Then both charts and the KPI tiles show that filter
-
-Scenario Outline: The chart regroups the sales by period
-  Given Olga, an order manager on the dashboard showing sales per day
-  When Olga selects "<granularity>"
-  Then the chart shows one point per <granularity> without a page reload
-  Examples:
-    | granularity |
-    | Day         |
-    | Month       |
-    | Year        |
-
-Scenario Outline: A preset sets the range
-  Given Olga, an order manager on the dashboard
-  When Olga picks the preset "<preset>"
-  Then the chart covers <range>
-  Examples:
-    | preset       | range                          |
-    | Last 7 days  | the 7 days ending today        |
-    | Last 30 days | the 30 days ending today       |
-    | This month   | the current month so far       |
-    | This year    | the current year so far        |
-
-Scenario: A custom date range filters the chart
-  Given Olga, an order manager on the dashboard
-  When Olga picks 1 May to 15 May
-  Then the sales table shows only those 15 days, including sales at 23:59 on 15 May
-
-Scenario Outline: An invalid range is explained, not crashed
-  Given Olga, an order manager on the dashboard
-  When Olga picks <range>
-  Then a message explains the problem
-  And the chart keeps its previous data
-  Examples:
-    | range                                |
-    | a start date after the end date      |
-    | more than 366 days shown per day     |
-    | more than 120 months shown per month |
-    | more than 50 years shown per year    |
-
-Scenario Outline: A shared link with a broken filter still opens the dashboard
-  Given Olga, an order manager
-  When Olga opens a dashboard link whose <filter> is not valid
-  Then the dashboard opens with the default chart
-  Examples:
-    | filter      |
-    | period      |
-    | start date  |
-    | end date    |
-
-Scenario: A filtered dashboard link restores the same chart
-  Given Olga, an order manager who filtered the chart to May per day
-  When Olga opens the same dashboard link again
-  Then the chart shows May per day
-
-Scenario: The chart is redrawn in place while the page updates around it
-  Given Olga, an order manager on the dashboard
-  When Olga changes the chart filters
-  Then the chart is redrawn in place and the page shows no error
-
-Scenario: The chart data is available as text
-  Given Olga, an order manager on the dashboard
-  When Olga opens the dashboard
-  Then a text alternative lists the same figures as the chart
-
-Scenario: The chart follows the light and dark themes
-  Given Olga, an order manager on the dashboard
-  When Olga switches to the dark theme
-  Then the chart is redrawn with dark colors and keeps its data
-
-Scenario: Unpaid orders are part of the sales but not of the real income
-  Given Olga, an order manager, and a pending order of 60 awaiting a bank transfer
-  When Olga opens the dashboard
-  Then that day's sales include the 60
-  And that day's real income does not
 
 Scenario: The dashboard speaks the administrator's language
   Given Laura, an administrator whose admin UI language is Spanish
@@ -502,113 +317,100 @@ Scenario: The dashboard speaks the administrator's language
   Then every label, badge and date is shown in Spanish
 ```
 
+(Missing names/titles, the sales card, filters, charts and their permission/tamper scenarios are **not** Gherkin here: the first are seam tests with a
+faked action, the rest belong to [0086](0086-dashboard-sales-overview-ui.md).)
+
 ## Files to create/modify
 
 Create:
-- `app/Livewire/Dashboard/Overview.php`, `BlogWidget.php`, `LowStockWidget.php`, `LatestOrdersWidget.php`, `SalesOverview.php`
-- `resources/views/livewire/dashboard/overview.blade.php`, `blog-widget.blade.php`, `low-stock-widget.blade.php`,
-  `latest-orders-widget.blade.php`, `sales-overview.blade.php`
-- `resources/js/sales-chart.js`
-- `resources/views/components/order-status-badge.blade.php`, `blog-status-badge.blade.php` (D-5),
-  optional `resources/views/components/dashboard/widget.blade.php`
-- `lang/en/dashboard.php`, `lang/es/dashboard.php`
-- tests below, incl. `tests/Support/Dashboard/DashboardUi.php` (static helper class: `actor(array $permissions)`, `superAdmin()`,
-  `snapshotOf(Testable)` — static, because global helper functions redeclare-fatal, per the `OrdersUi` docblock)
+- `app/Livewire/Dashboard/Overview.php`, `BlogWidget.php`, `LowStockWidget.php`, `LatestOrdersWidget.php`
+- `resources/views/livewire/dashboard/overview.blade.php`, `blog-widget.blade.php`, `low-stock-widget.blade.php`, `latest-orders-widget.blade.php`
+- `resources/views/components/dashboard/widget.blade.php`, `resources/views/components/order-status-badge.blade.php`, `resources/views/components/blog-status-badge.blade.php`
+- tests below, including the static helper `tests/Support/Dashboard/DashboardUi.php` (`actor(array $permissions)`, `superAdmin()`, `snapshotOf(Testable)` — a static
+  class, never global functions)
 
 Modify:
-- `routes/web.php` (route → `Overview`, name and middleware unchanged)
+- `routes/web.php` (`Route::view(...)` → `Route::livewire('dashboard', Overview::class)->name('dashboard')`, same middleware)
 - `resources/views/dashboard.blade.php` — **delete**
-- `resources/js/app.js` (one import line), `resources/css/app.css` (chart tokens)
-- `package.json`, `package-lock.json` (`chart.js`)
-- `resources/views/livewire/orders.blade.php` and `resources/views/livewire/blog-posts.blade.php` (use the extracted badge components)
-- `tests/Feature/DashboardTest.php` (extend: a user with no permissions sees the greeting and the "nothing to show" message)
-- Docs (Phase 6): `docs/api/routes.md`, the PRD design-reference note that the shortcut cards were replaced, glossary.
+- `resources/views/livewire/orders.blade.php` (status cell only, via the component) and `resources/views/livewire/blog-posts.blade.php` (status cell only)
+- `lang/en/dashboard.php`, `lang/es/dashboard.php` (new top-level groups, D-6)
+- `tests/Feature/DashboardTest.php` (extend: a user with no permissions gets 200, the greeting and the "nothing to show" message)
+- `tests/Feature/Dashboard/DashboardLangParityTest.php` — **only its stale header comment** ("files do not exist yet"); the pinned `errors` assertions stay
+- Docs (Phase 6): `docs/api/routes.md` (line 34 still shows `view('dashboard')`), `docs/api/dashboard.md` (the route section and "Consumer: 0083"),
+  `docs/architecture/overview.md`, `docs/conventions/directory-structure/livewire-models-policies.md` (a `Dashboard/` area of sibling components),
+  `docs/conventions/directory-structure/config-database-resources-tests.md` (new `components/` entries, `tests/Support/Dashboard`), the PRD design-reference note
+  that the shortcut cards were replaced, and the Gherkin glossary ("staff member with no module access"; "hero", "widget").
 
 ## Tests to perform
 
-Per-concern files (the draft's single `OverviewTest.php` is dropped so a red test names its subject):
+Livewire feature tests, MySQL; actors are **non-Super-Admin** users holding exactly the listed abilities (a Super Admin makes every "hidden" assertion a false
+negative through `Gate::before`; it is used only in its own positive case); `seed(RolePermissionSeeder)` and `forgetCachedPermissions()` in `beforeEach`; probes by
+`data-test` hook on rendered HTML; actions that must be unreachable are asserted with `DB::listen` (per domain table, `tests/Support/Dashboard/DomainQueryLog.php`)
+and `Log::spy()`.
 
-Feature (`Livewire::test`, MySQL; actors built with `OrdersUi::actor()`-style helpers — **never** a Super Admin for a "hidden" assertion, `Gate::before` makes it a false negative; `seed(RolePermissionSeeder)` and `forgetCachedPermissions()` in `beforeEach`):
+- `OverviewRenderingTest` — hero greeting and counters (first name only; `0` rendered; partially-null counters; zero counters), greeting boundaries with
+  `setTestNow` (04:59/05:00/11:59/12:00/19:59/20:00, application timezone), each widget's exact text, badges, `d/m/Y H:i` scheduled date (and none for published),
+  amber/red stock badges, the variants-low hint singular and plural, `<x-money>` strings (exact `€ 100.00`), stacked rows, the footer links, empty states, and escaping of
+  hostile titles/descriptions/customer names (`<img onerror>`, `"><script>`, `{{`, `@`). **Cross-story guard:** the latest-orders widget renders **no element whose `data-test`
+  starts with `mark-as-paid`** for an actor holding `orders.edit` with a pending-payment order present (that prefix is a frozen contract with 0085).
+- `OverviewPermissionTest` — profile dataset (none, only `users.view`, only `orders.view`, only `products.view`, only `media.view`, only `blog.view`, three counters,
+  all, Super Admin, Administrator role) asserting the rendered hooks; **no domain-table query for a hidden module and no "Privileged action refused" warning** for any
+  partial actor; the editor-link rule (link only with the editor's ability, plain text otherwise, both for blog and products; order rows always link), with no refusal
+  logged either way; the widgets expose no public property and no mutating method (reflection).
+- `OverviewSeamTest` — with the actions **faked** (container bound to a stub): null `title` → "Untitled" and a valid row; null `name` → the SKU; null `customerName` →
+  the deleted-customer text; no empty link text, no exception. (Real data cannot produce these today.)
+- `OverviewSnapshotSecurityTest` — for restricted actors, decode `wire:snapshot` and assert **sentinel strings** of hidden modules (post title, product SKU, order
+  number, customer name/email, totals) appear neither in the snapshot nor in the HTML; reflection: no public property anywhere holds a model/Collection/enum/Carbon.
+- `OverviewLocaleTest` — actor with `ui_locale = 'es'` (not `app()->setLocale`; `SetUiLocale` re-applies it every round trip): every label, badge, hint plural/singular
+  and date; no raw `dashboard.` key in the render; extend the key-set parity coverage to the new groups (the existing `DashboardLangParityTest` already compares the flattened sets).
+- `StatusBadgeComponentsTest` plus the **characterization test** of D-5 (written and green **before** the extraction): orders-list status badge color and label for the
+  five statuses in en/es; blog badge unchanged (existing `BlogPostsIndexRenderingTest`); both components forward `$attributes`.
+- `tests/Feature/DashboardTest.php` stays green (guest redirect, bare user 200) and `RegistrationTest.php`'s `route('dashboard')`.
 
-- `OverviewRenderingTest` — **the latest-orders widget renders no element whose `data-test` starts with `mark-as-paid`** for an
-  actor who holds `orders.edit`, with a pending-payment order present (the cross-story guard for [0085](0085-order-mark-as-paid-ui.md),
-  which owns the control on the orders list and detail; that `data-test` prefix is a frozen contract); every widget's exact text/badges/dates/links, escaping (`<img onerror>`, `"><script>`, `{{`/`@` in titles, names, customer names — in the widgets **and** the sr-only table), null tolerance, trashed customer, empty states, first-name greeting, greeting boundaries with `setTestNow` (04:59/05:00/11:59/12:00/19:59/20:00).
-- `OverviewPermissionTest` — profile dataset (none, only `users.view`, only `orders.view`, only `products.view`, only `media.view`, only `blog.view`, three counters, all, Super Admin, Administrator role) asserting rendered `data-test` hooks; **`DB::listen`: zero queries on tables of hidden modules; `Log::spy()`: no "Privileged action refused" warning**; direct-call bypass of filter actions; permission revoked between load and action; lazy chart handshake.
-- `OverviewFiltersTest` — default state; granularity switch (Outline) resets to that granularity's default range; presets with `travelTo(2026-09-30)`; custom range boundaries (15 May 23:59:59 counted, 16 May 00:00:00 not); `from > to`; cap boundaries (366 ok / 367 refused, 120/121, 50/51) with the **translated** message and previous series retained; status chips (default set, *Cancelled* on/off, single status, all, **empty selection refused** with the translated message and both charts keeping their data, unknown statuses in the URL dropped); KPI tiles (Sales, Real income, Orders) for paid / pending / partially refunded / cancelled orders, the income hint when income is 0 and sales > 0, the "collected %" hint; `assertDispatched('sales-overview-updated')` with the scalar `{money, orders}` payload after a valid change (status datasets present for every selected status, money and orders labels identical) and `assertNotDispatched` after an invalid one; `#[Url]` round trip and defaults absent from the URL; garbage params via `Livewire::withQueryParams` **and** `$this->get('/dashboard?g=garbage')`; rapid consecutive changes equal a fresh load; a refunded order reduces its bucket (locks the definition on the UI side); Madrid 23:30 order lands on its own day.
-- `OverviewSnapshotSecurityTest` — for restricted actors, decode the `wire:snapshot` and assert **sentinel strings** of hidden modules (post title, product SKU, order number, customer name/email, totals) appear neither in the snapshot nor in the HTML, including the chart wrapper's `x-data`/`data-*`; reflection: no public property is a model/Collection/enum/Carbon; tampering with `set('orders', …)`/`set('counters', …)` is refused or renders nothing.
-- `OverviewLocaleTest` + `DashboardLangParityTest` — actor with `ui_locale = 'es'` (not `app()->setLocale`, `SetUiLocale` re-applies it every round trip): every label, badge, hint plural/singular, date; `array_keys` parity of `lang/en|es/dashboard.php`; no raw `dashboard.` key in the render (precedent `OrdersLangParityTest`).
-
-Browser (`tests/Browser/Dashboard/`; `data-test` selectors, `assertNoJavaScriptErrors()` in every test, **never** `networkidle`, `retry(3, …, 250)` on multi-step tests with a stated reason, output to a file, `pkill -9 -f "playwright run-server"` afterwards; **not** multiplied by permission profile):
-
-- `SalesChartTest` (covers **both** charts) — (1) **exactly two Chart instances exist and both survive** filter changes, status-chip toggles, a custom range and an unrelated re-render (same instance ids, `Chart.instances` length 2, via the exposed instances); toggling a chip adds/removes an orders **dataset** without re-creating the chart; legend toggling hides a series client-side only and leaves the KPI tiles and the money chart untouched; (2) no JS errors through load, filter change, validation error, theme toggle and `wire:navigate` away and back; (3) canvas non-empty (animation disabled under test, or polled); (4) `chart.data.labels`/`datasets[0].data` equal the seeded series, also on first load from a non-default URL range (no interaction needed — guards the `wire:ignore` first-render race); (5) the sr-only table equals the series before and after a filter change, is not `display:none`, canvas is `aria-hidden`; (6) rapid Day/Month/Year/Day clicks end on the last click's state (compare with the `wire:snapshot`), same instance, no error.
-- `SalesChartThemeTest` — dark-mode toggle changes the chart colors without a new instance (no existing precedent — new ground, least certain); 375 px viewport has no horizontal scroll.
-- `DashboardJourneyTest` — blog row → post editor path, low-stock parent row → `/products/{id}/edit`, order row → `/orders/{id}` (`assertPathIs`); smoke `visit(['/dashboard', '/dashboard?g=garbage'])`.
-- Tooltip (Chart.js config assertion, or `chart.tooltip.setActiveElements`, kept as its **own test** so its flake is isolated); dates are seeded relative to `now()` and expected labels computed in PHP (never assert "today" in JS).
-
-Pest browser tests need `npm run build` in the worktree. Browser tests are not run in CI by default per the agent doc while the DoD asks for the full suite:
-**confirm real CI behaviour before promising the chart regression net**, which is why the event payload and the sr-only table also have Feature-level proxies.
+Browser (`tests/Browser/Dashboard/DashboardJourneyTest.php`; `data-test` selectors, `assertNoJavaScriptErrors()`, never `networkidle`, one journey per test; run in CI as part of
+`php artisan test`): an editor-capable actor clicks the blog row → the post editor path, the low-stock parent row → `/products/{id}/edit`, an order row → `/orders/{id}`
+(`assertPathIs`); smoke `visit('/dashboard')` in light and dark at 375 px with no horizontal scroll and no JS errors.
 
 ## Expected outcome
 
-The dashboard home shows the real store state at a glance, matches the mockup's look, respects each actor's permissions with no
-leakage and no log noise, and the Chart.js sales chart updates live from its filters without ever being recreated.
+The dashboard home shows the real state of the store at a glance — hero, counters, latest posts, products about to run out and latest orders — matching the mockup's look,
+respecting each actor's rights with no leakage, no dead links and no log noise.
 
 ## Acceptance criteria
 
-- The latest-orders widget has **no** "Mark as paid" action (owner decision 2026-10-01; asserted by `OverviewRenderingTest`).
-- No placeholder pattern remains; the four shortcut cards are gone; `dashboard.blade.php` is deleted; the route keeps its name and stays ungated.
-- Each widget matches its Gherkin and renders only for an actor allowed to see it; **hidden widgets run no query and write no refusal log**, including through direct calls to the filter actions.
-- Only scalar filter properties are public; no other-module data appears in the snapshot or the HTML.
-- The sales overview offers one shared filter bar (Day/Month/Year, presets, custom range, order-status chips with *Cancelled* off by
-  default), a KPI strip (Sales, Real income, Orders) and **two charts**: "Sales vs real income" (line) and "Orders by status"
-  (stacked bar); invalid or oversized ranges and an empty status selection show a translated message and keep the previous data on
-  both charts; broken URL params never produce a 500.
-- Sales, Real income and Orders are named and defined exactly as in backend D-6, with their definitions in tooltips; Real income
-  shows the "counted once paid" hint when it is 0 while sales are not.
-- Exactly two Chart.js instances per page view, each created once, updated in place, destroyed on navigation; Chart.js is loaded
-  lazily and tree-shaken; light/dark both work; the two charts never rely on color alone (line styles/markers, legend).
-- **Two** sr-only text-alternative tables carry the same figures as the charts; no `x-html`/`{!! !!}` on any title, name or label.
-- Every string exists in `en` and `es` with identical key sets; layout works at phone width.
+- No placeholder pattern remains, the four mockup shortcut cards are gone, `dashboard.blade.php` is deleted, the route is `Route::livewire`, keeps its name `dashboard` and stays ungated.
+- Each widget matches its Gherkin and is mounted only for an actor who may see its module; **a hidden widget runs no domain-table query and writes no refusal log**.
+- Blog and low-stock rows link to the editor only for an actor who may edit (plain text otherwise); order rows link to the order; no widget row ever produces a 403.
+- The latest-orders widget has no "Mark as paid" action.
+- Hero counters render `0` and omit nulls; with no counter and no widget the page says there is nothing to show.
+- No widget exposes a public property or a mutating method; no module data reaches the snapshot or HTML of an actor who cannot see it.
+- The two badge components exist, forward `$attributes`, and the orders/blog lists render byte-for-byte the same badges as before (characterization test).
+- Every new string exists in `en` and `es` with identical key sets and placeholders; the existing `errors` parity test is unchanged and green; layout works at phone width.
 
 ## Definition of Done
 
-- [x] Phase 1 debate recorded in this file
-- [ ] Phase 2 INVEST validation (`code-reviewer`)
-- [ ] Tests written first, **full suite** green (unscoped, including `tests/Browser`)
-- [ ] Pint (unscoped), Larastan, `npm run build` clean; bundle-size delta recorded; `npm audit` state checked
-- [ ] Appsec review (per-widget authorization, snapshot/public-state leakage, XSS sinks, refusal-log noise)
-- [ ] Docs synced (routes contract, PRD design-reference note, glossary)
+- [x] Phase 1 content rewritten for the narrowed scope (2026-10-01)
+- [ ] Phase 2 INVEST re-validation (`code-reviewer`)
+- [ ] Characterization test green before the badge extraction; tests written first (red) then green; **full suite** green (unscoped, run as directory chunks including `tests/Browser`)
+- [ ] Pint (unscoped), Larastan, `npm run build` clean
+- [ ] Appsec review (per-widget authorization, snapshot leakage, XSS sinks, no refusal-log noise, no dead links)
+- [ ] Docs synced (list in "Files")
 
 ## Risks and follow-ups
 
-- **R-1 Chart instance untestable without an exposed handle** — mitigated by D-3's testability requirement.
-- **R-2 Alpine Proxy + Chart.js** — D-3 keeps the instance raw.
-- **R-3 Out-of-order responses** on rapid clicks — browser test (6) verifies last-click-wins; Livewire supersedes requests per component.
-- **R-4 Dark-mode detection has no precedent** — observer on `<html class>` plus its own test.
-- **R-5 Browser-test flake budget** — four documented `Timeout 5000ms` CI flakes exist; `retry(3, …, 250)`, no `networkidle`.
-- **R-6 First `#[Lazy]` and first Chart.js in the repo** — each gets a dedicated test and a PR note.
-- **R-8 Carry-over from 0082's security audit (Phase 4):** bound the hydrated filter **before** it reaches the actions —
-  `statuses` as `['array', 'max:5']` with `statuses.*` → `Rule::enum(OrderStatus::class)`, dates parsed with a validated `Y-m-d` format
-  (catch Carbon's `InvalidFormatException`), and `from`/`to` limited to a sane window (the action refuses years outside 1000..9998 but
-  reuses the "start date after end date" message for that case, so the component's own rule should reject it first with a clearer message);
-  `title`/`description`/`name`/`customerName`/`orderNumber` are plain text and must always be rendered with `{{ }}` (test with a
-  `<script>` description). Without these, a client-writable `statuses` array is the one remaining resource-exhaustion surface.
-- **R-7 Backend contract drift** — if 0082's shapes change, this story's Gherkin and payload change with it.
+- **R-1 Shared file with 0085** (`orders.blade.php`): this story edits only the status cell (lines 78-89); 0085 the actions cell and a dialog — disjoint hunks, hook-only tests; whichever lands second rebases.
+- **R-2 Editor-ability mirroring:** the widgets must use the exact check the editors' `mount()` makes; a drift reintroduces dead links. A feature test per module pins it.
+- **R-3 Seam:** after 0076/0078 the shapes' `name`/`title` can be null; the defensive placeholders and their seam tests already cover it.
+- **R-4 Sales card:** 0086 adds a card to `overview.blade.php` and extends the same `lang/*/dashboard.php`; this story leaves a clean slot in the grid and no sales-related key.
 
 ## Dependencies
 
-- **Blocked on [0082](done/0082-dashboard-home-overview-backend.md)**.
-- `conflict_risk_with`: **[0085](0085-order-mark-as-paid-ui.md)** — both edit `resources/views/livewire/orders.blade.php` (this story
-  extracts the status badges via D-5; 0085 adds a "Mark as paid" button and a confirm dialog to the actions cell). Different regions of
-  the same file; whichever lands second rebases. The blog list has no other pending toucher (0079 edits the blog **editor** view).
-- Owner decision 2026-10-01: the dashboard home's "Latest orders" widget is **read-only** — it carries no "Mark as paid" action; its
-  rows link to the orders list ("Orders") and to each order's page, where 0085 puts the control.
+- Backend [0082](done/0082-dashboard-home-overview-backend.md) is **merged**; no pending dependency (`depends_on: []`).
+- **Consumed by [0086](0086-dashboard-sales-overview-ui.md)** (blocked on this story).
+- `conflict_risk_with`: **[0085](0085-order-mark-as-paid-ui.md)** — both edit `resources/views/livewire/orders.blade.php`, in disjoint regions (above).
 
-## Debate record
+## Review record
 
-Facilitator: Claude (product-owner role). Participants: frontend-expert, frontend-qa (dispatched as `general-purpose` agents
-reading their `.claude/agents/*.md` definition, since the project agent types are not registered in this session). Both read-only.
-Owner decisions honoured unchanged: Chart.js; title + 80-character description with no image; include-cancelled checkbox default
-off; variable products shown as the parent. Corrections made to the earlier draft: no shared badge components existed; Flux free
-has no date picker; one fat component would re-run every query per filter change; the Alpine/Chart.js reactivity trap and the lost
-dispatch on lazy mount were missing; the hero with partially-null counters was unspecified; single `OverviewTest.php` split.
+Phase 2 (first review, 2026-10-01): **FAIL** — Small (split required; waivable by the owner, who chose to split), a wrong lang plan (the dashboard lang files already existed;
+a parity test pinned `errors` to three keys), an inaccurate layout/route description, untestable missing-name/deleted-customer scenarios, dead editor links for view-only
+actors, unprotected orders-badge markup, and stale text. This rewrite addresses the 0083-scope items; the sales-card items moved to 0086.
