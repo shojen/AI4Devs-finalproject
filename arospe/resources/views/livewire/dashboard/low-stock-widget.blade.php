@@ -1,4 +1,6 @@
 <x-dashboard.widget
+    icon="exclamation-triangle"
+    tint="amber"
     widget="stock"
     :title="__('dashboard.stock.title')"
     :href="route('products.index')"
@@ -6,9 +8,9 @@
     :empty="$this->products['rows'] === []"
     :empty-text="__('dashboard.stock.empty')"
 >
-    <ul class="divide-y divide-neutral-200 dark:divide-neutral-700">
+    <ul class="flex flex-col gap-1">
         @foreach ($this->products['rows'] as $row)
-            <li class="flex items-start justify-between gap-3 py-3" data-test="dashboard-stock-row-{{ $row['id'] }}">
+            <li class="flex items-start justify-between gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/60" data-test="dashboard-stock-row-{{ $row['id'] }}">
                 <div class="min-w-0">
                     @if ($this->products['canEdit'])
                         <a href="{{ route('products.edit', $row['id']) }}" wire:navigate class="break-words font-medium hover:underline" data-test="dashboard-stock-name-{{ $row['id'] }}">{{ $row['name'] ?? $row['sku'] }}</a>
