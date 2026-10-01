@@ -29,7 +29,7 @@ For QA engineers writing browser-level tests, and for turning user stories into 
 
 ## Local environment — per-worktree isolated testing databases
 
-- [Worktree databases](worktree-databases.md) — why `.env.testing` (gitignored, one per checkout) is required, why every `git worktree` needs its **own** testing database name (`testing1`, `testing2`, …) rather than sharing one, and the setup/cleanup steps for opening and removing a worktree. Read this before running `artisan migrate:fresh` (with or without `--env=testing`) from any worktree.
+- [Worktree databases](worktree-databases.md) — why `.env.testing` (gitignored, one per checkout) is required, why every `git worktree` needs its **own** testing database name (`testing1`, `testing2`, …) rather than sharing one, the convention that a session always starts in `<worktree>/arospe`, the `WorktreeCreate`/`WorktreeRemove` hooks that automate setup/cleanup, and the manual steps. Read this before running `artisan migrate:fresh` (with or without `--env=testing`) from any worktree.
 
 ## Related, not duplicated here
 
