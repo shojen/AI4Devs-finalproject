@@ -1,0 +1,1 @@
+../../arospe/.claude/agents/appsec-auditor.md
