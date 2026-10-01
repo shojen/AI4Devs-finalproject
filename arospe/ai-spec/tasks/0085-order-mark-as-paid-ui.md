@@ -15,7 +15,7 @@ hand that a pending order has been paid (PRD §3.2: a manual admin-set status, n
 1. **The orders list** (`App\Livewire\Orders\Index`, `/orders`): a "Mark as paid" button in each eligible row's actions column.
 2. **The order detail page** (`App\Livewire\Orders\Show`, `/orders/{order}`): the same button in the totals section, plus the payment date.
 
-It is **not** added to the dashboard home's "Latest orders" widget of [0083](0083-dashboard-home-overview-ui.md): that widget links to the
+It is **not** added to the dashboard home's "Latest orders" widget of [0083](in-progress/0083-dashboard-home-overview-ui.md): that widget links to the
 orders list and to each order's page, where the action already lives.
 
 ## Type
@@ -426,7 +426,7 @@ on the detail page) and becomes refundable.
 ## Dependencies
 
 - **Blocked on [0084](0084-order-mark-as-paid-backend.md).**
-- **`conflict_risk_with` [0083](0083-dashboard-home-overview-ui.md):** both edit `resources/views/livewire/orders.blade.php` (disjoint regions, D-6).
+- **`conflict_risk_with` [0083](in-progress/0083-dashboard-home-overview-ui.md):** both edit `resources/views/livewire/orders.blade.php` (disjoint regions, D-6).
 
 ## Debate record
 

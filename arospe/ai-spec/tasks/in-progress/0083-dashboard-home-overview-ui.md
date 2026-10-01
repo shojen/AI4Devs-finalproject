@@ -1,18 +1,19 @@
 # [0083] Dashboard home — hero, counters and widgets (frontend)
 
-> **Status: Phase 1 draft, rewritten 2026-10-01 after the Phase 2 FAIL.** The first Phase 2 review (INVEST + docs/code consistency, run
-> against the merged backend [0082](done/0082-dashboard-home-overview-backend.md)) failed this story on **size** and on a set of
-> contradictions with the shipped code. **Owner decisions of 2026-10-01:** (1) the story is **split** — this story keeps the hero,
-> the counters, the three list widgets, the badge extraction and the route swap; the whole sales card (filters, KPI strip, two
-> Chart.js charts) moves to the new [0086](0086-dashboard-sales-overview-ui.md), which depends on this one; (2) a widget row links to
-> an editor **only when the actor may edit**, otherwise it is plain text. Phase 1 content below is rewritten for the narrower scope; it
-> needs a Phase 2 re-validation. Items marked **⚑ owner to confirm** are facilitator defaults the owner has not ratified.
-> Backend: [0082](done/0082-dashboard-home-overview-backend.md) (merged, PR #48) — its shapes and caller contract are what this story consumes.
+> **Status: Phase 2 APPROVED 2026-10-01 (`code-reviewer`); in Phase 3 (TDD).** History: the first Phase 2 review (INVEST + docs/code consistency, run
+> against the merged backend [0082](../done/0082-dashboard-home-overview-backend.md)) **failed** this story on **size** and on contradictions with the
+> shipped code. **Owner decisions of 2026-10-01:** (1) the story is **split** — this story keeps the hero, the counters, the three list widgets, the
+> badge extraction and the route swap; the whole sales card (filters, KPI strip, two Chart.js charts) moves to the new
+> [0086](../0086-dashboard-sales-overview-ui.md), which depends on this one; (2) a widget row links to an editor **only when the actor may edit**,
+> otherwise it is plain text. The rewrite was re-validated (second review: FAIL on two small blockers — the editor-link check's arguments and a glossary
+> contradiction in one Gherkin row — both fixed; **third review: PASS**). Optional nit left for Phase 3: in `orders.blade.php` the status cell spans lines
+> ~76-88, so the "78-89" citations are approximate — use "the status cell". Items marked **⚑ owner to confirm** are facilitator defaults the owner has not ratified.
+> Backend: [0082](../done/0082-dashboard-home-overview-backend.md) (merged, PR #48) — its shapes and caller contract are what this story consumes.
 
 ## Description
 
 Replace the placeholder `resources/views/dashboard.blade.php` (five `x-placeholder-pattern` boxes) with the real home page, following
-[`docs/PRD/images/01-inicio.png`](../../docs/PRD/images/01-inicio.png): a **hero** with a greeting and three counters, and, instead of
+[`docs/PRD/images/01-inicio.png`](../../../docs/PRD/images/01-inicio.png): a **hero** with a greeting and three counters, and, instead of
 the mockup's four shortcut cards, **three live widgets**:
 
 1. **Hero** — time-of-day greeting with the user's first name, and the counters (active users, products, images), each shown only if
@@ -22,10 +23,10 @@ the mockup's four shortcut cards, **three live widgets**:
 3. **Low-stock widget** — the 3 products closest to running out, with stock and an out-of-stock (red) / low-stock (amber) badge. A
    variable product appears as its **parent**, with its lowest variant stock and an "N variants low" hint; footer link to the product list.
 4. **Latest orders widget** — the 5 most recent orders (number, customer, total, status), each linking to the order detail; footer
-   link to the orders list. **Read-only**: it carries no "Mark as paid" action (owner decision 2026-10-01, see [0085](0085-order-mark-as-paid-ui.md)).
+   link to the orders list. **Read-only**: it carries no "Mark as paid" action (owner decision 2026-10-01, see [0085](../0085-order-mark-as-paid-ui.md)).
 
 The **sales overview card** (Day/Month/Year filters, order-status filter, KPI strip, "Sales vs real income" and "Orders by status"
-charts) is **not in this story**: it is [0086](0086-dashboard-sales-overview-ui.md). Until 0086 lands the dashboard simply has no
+charts) is **not in this story**: it is [0086](../0086-dashboard-sales-overview-ui.md). Until 0086 lands the dashboard simply has no
 sales card; no placeholder remains.
 
 ## Type
@@ -133,7 +134,7 @@ its module's view ability** (`@can`). All are **eager** (3–5 rows each; no `#[
 
 A CSS grid, not fixed columns: blog / low stock / latest orders in `lg:grid-cols-2`, a lone odd last card spanning both columns (the card
 shell uses an arbitrary variant, e.g. `[&>:last-child:nth-child(odd)]:lg:col-span-2` on the grid). **The page reserves a full-width slot between the hero and this grid**
-(empty in this story) where [0086](0086-dashboard-sales-overview-ui.md) mounts its sales card, so 0086 never reworks the widget grid. If **no counter and no widget** is visible (an actor
+(empty in this story) where [0086](../0086-dashboard-sales-overview-ui.md) mounts its sales card, so 0086 never reworks the widget grid. If **no counter and no widget** is visible (an actor
 whose abilities are, say, only `roles.manage`), the page shows the translated `dashboard.no_widgets` message instead of an empty body. Visuals follow
 `docs/arospe-handoff/project/css/index.css:3-13` (gradient `#4f46e5 → #6d5ef0`, radius 18px, mono counters via Tailwind `font-mono`); the hero
 gradient is the same in dark mode (white text on indigo works in both). Widgets use the existing dark-mode classes of the placeholder. Phone width: the
@@ -334,7 +335,7 @@ Scenario: The dashboard speaks the administrator's language
 ```
 
 (Missing names/titles, the sales card, filters, charts and their permission/tamper scenarios are **not** Gherkin here: the first are seam tests with a
-faked action, the rest belong to [0086](0086-dashboard-sales-overview-ui.md).)
+faked action, the rest belong to [0086](../0086-dashboard-sales-overview-ui.md).)
 
 ## Files to create/modify
 
@@ -409,7 +410,7 @@ respecting each actor's rights with no leakage, no dead links and no log noise.
 ## Definition of Done
 
 - [x] Phase 1 content rewritten for the narrowed scope (2026-10-01)
-- [ ] Phase 2 INVEST re-validation (`code-reviewer`)
+- [x] Phase 2 INVEST re-validation (`code-reviewer`) — **approved 2026-10-01** after the split and two rewrite rounds
 - [ ] Characterization test green before the badge extraction; tests written first (red) then green; **full suite** green (unscoped, run as directory chunks including `tests/Browser`)
 - [ ] Pint (unscoped), Larastan, `npm run build` clean
 - [ ] Appsec review (per-widget authorization, snapshot leakage, XSS sinks, no refusal-log noise, no dead links)
@@ -424,9 +425,9 @@ respecting each actor's rights with no leakage, no dead links and no log noise.
 
 ## Dependencies
 
-- Backend [0082](done/0082-dashboard-home-overview-backend.md) is **merged**; no pending dependency (`depends_on: []`).
-- **Consumed by [0086](0086-dashboard-sales-overview-ui.md)** (blocked on this story).
-- `conflict_risk_with`: **[0085](0085-order-mark-as-paid-ui.md)** — both edit `resources/views/livewire/orders.blade.php`, in disjoint regions (above).
+- Backend [0082](../done/0082-dashboard-home-overview-backend.md) is **merged**; no pending dependency (`depends_on: []`).
+- **Consumed by [0086](../0086-dashboard-sales-overview-ui.md)** (blocked on this story).
+- `conflict_risk_with`: **[0085](../0085-order-mark-as-paid-ui.md)** — both edit `resources/views/livewire/orders.blade.php`, in disjoint regions (above).
 
 ## Review record
 

@@ -44,6 +44,12 @@ was never implemented — nothing in `app/` writes `PaymentStatus::Paid`, so no 
 (0083 edits the orders *list* view; 0085 the *detail* view), so no `conflict_risk_with` entries. Pending count moves from 13 to 15
 numbered files; `done/` unchanged at 92.
 
+**Update (2026-10-01): `0083-dashboard-home-overview-ui.md` passed Phase 2 (third review PASS) and moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`**
+(Phase 3 starts); its `tasks-status.json` entry is `claimed` (`claude/0083-dashboard-home-overview-ui`, `2026-10-01T11:38:19Z`). Link-integrity check, both directions:
+the file's own outbound links gained one path level (`../../docs/…` → `../../../docs/…`; siblings `00NN-…` → `../00NN-…`; `done/…` → `../done/…`; all four targets resolve) and the
+inbound links from `0085` (2), `0086` (3) and the **done** `0082` (2) were rewritten to `in-progress/0083-…` / `../in-progress/0083-…`; no `docs/` page links to it.
+Its node stays in the graph (pending work); `0086` stays `blocked` on it. Counts: **14 numbered files pending in `ai-spec/tasks/`, 1 in `ai-spec/tasks/in-progress/`**, `done/` at 93.
+
 **Update (2026-10-01): `0083` split after its Phase 2 FAIL — `0086-dashboard-sales-overview-ui.md` added as a new pending file.** The first Phase 2
 review of `0083` (INVEST, run against the merged `0082`) failed it on **size** (an owner-waivable requirement) and on contradictions with the shipped backend.
 **Owner decision: split.** `0083` keeps the hero, the counters, the three list widgets (blog, low stock, latest orders), the status-badge extraction and the

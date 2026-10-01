@@ -7,7 +7,7 @@
 > which is green (see the approval record below). Decisions folded in along the way: the seeder's paid order is not cancelled and is
 > chosen deterministically; `ResolveSalesBuckets` is **constructor-injected** into the two series actions; the series shapes' `to` is
 > the **last inclusive day (start of that day) in the application timezone**, `endExclusive` being internal to the helper.
-> Frontend companion: [0083](../0083-dashboard-home-overview-ui.md), blocked on this story.
+> Frontend companion: [0083](../in-progress/0083-dashboard-home-overview-ui.md), blocked on this story.
 > Items marked **⚑ owner to confirm** are facilitator decisions the project owner has not explicitly ratified.
 > **Amended 2026-09-30 (owner request):** Sales and Real income became two measures, an orders-by-status series was added, and
 > the include-cancelled boolean became one entry of a shared status filter (D-6, D-8). The amendment was written by the facilitator
@@ -668,7 +668,7 @@ with a documented seam so the pending translatable-content retrofits do not brea
 ## Dependencies
 
 - None pending as a hard dependency (`depends_on: []`). `conflict_risk_with`: 0076, 0078 (D-9).
-- Consumed by [0083](../0083-dashboard-home-overview-ui.md).
+- Consumed by [0083](../in-progress/0083-dashboard-home-overview-ui.md).
 
 ## Debate record
 

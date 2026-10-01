@@ -1,10 +1,10 @@
 # [0086] Dashboard home — sales overview card with filters and Chart.js charts (frontend)
 
-> **Status: Phase 1 draft (split out of 0083 on 2026-10-01).** Created by the owner-approved split of [0083](0083-dashboard-home-overview-ui.md)
+> **Status: Phase 1 draft (split out of 0083 on 2026-10-01).** Created by the owner-approved split of [0083](in-progress/0083-dashboard-home-overview-ui.md)
 > after its Phase 2 FAIL (size); the sales-card content, decisions and the Phase 2 review items that concern it are carried here, rewritten
 > against the **merged** backend [0082](done/0082-dashboard-home-overview-backend.md). The Three Amigos debate was held for the original 0083
 > (frontend-expert + frontend-qa, 2026-09-30) and the sales card was amended by the owner on 2026-09-30; this story has **not** had its own
-> Phase 2. **⚑** marks facilitator defaults the owner has not ratified. **Blocked on [0083](0083-dashboard-home-overview-ui.md)** (it adds the
+> Phase 2. **⚑** marks facilitator defaults the owner has not ratified. **Blocked on [0083](in-progress/0083-dashboard-home-overview-ui.md)** (it adds the
 > card to the `Overview` page that 0083 creates and extends the lang file 0083 extends).
 
 ## Description
@@ -387,5 +387,5 @@ An order manager sees, at a glance and without leaving the home page, how much w
 
 ## Dependencies
 
-- **Blocked on [0083](0083-dashboard-home-overview-ui.md)** (`depends_on: ["0083"]`): it adds the card to the `Overview` page 0083 creates, uses the status-badge colors 0083 extracts, and extends the same `lang/{en,es}/dashboard.php`.
+- **Blocked on [0083](in-progress/0083-dashboard-home-overview-ui.md)** (`depends_on: ["0083"]`): it adds the card to the `Overview` page 0083 creates, uses the status-badge colors 0083 extracts, and extends the same `lang/{en,es}/dashboard.php`.
 - Backend [0082](done/0082-dashboard-home-overview-backend.md) is merged. No conflict with 0084/0085 (it never touches `orders.blade.php`).

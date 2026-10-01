@@ -229,9 +229,9 @@
       "slug": "0083-dashboard-home-overview-ui",
       "title": "Dashboard home — hero, counters and widgets (frontend)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "claude/0083-dashboard-home-overview-ui",
+      "claimed_at": "2026-10-01T11:38:19Z",
       "touches": [
         "app/Livewire/Dashboard/Overview.php",
         "app/Livewire/Dashboard/BlogWidget.php",
