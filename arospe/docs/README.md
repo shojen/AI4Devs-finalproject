@@ -78,7 +78,7 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Backend](testing/backend/README.md), [philosophy](testing/philosophy.md), [QA guides](testing/qa/risk-based-testing.md) | you design or review Pest 4 backend tests. |
 | [Frontend / browser](testing/frontend/README.md) | you write browser tests; [Browser test setup](testing/frontend/playwright-setup.md) (hub, 3 parts) is the tooling/waiting-rules reference. |
 | [CI commands](testing/ci/commands.md), [pipeline](testing/ci/pipeline-integration.md) | you run the suite (parallel, coverage) or edit CI. |
-| [Worktree databases](testing/worktree-databases.md) | you open a `git worktree` (own `.env.testing` and testing DB). |
+| [Worktree databases](testing/worktree-databases.md) | you open a `git worktree` (own `.env.testing` and testing DB), or start a session in one (always in `<worktree>/arospe`; the `WorktreeCreate` hook automates the setup). |
 
 ## Security
 

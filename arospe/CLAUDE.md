@@ -179,6 +179,9 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 ## Language
 All repository artifacts — code, code comments, documentation (`docs/`, README, ADRs, PRD, user stories), tests, and commit messages — must be written in English, regardless of the language used in conversation with the assistant. This is independent from `lang/en`/`lang/es` (the application's own UI locales, documented in `docs/conventions/naming/translation-keys-and-booleans.md#translation-keys`).
 
+## Working directory
+Start every session in `<worktree>/arospe` (the Laravel app, `.claude/`, `docs/` and `artisan` live there), never in the worktree root, and never symlink `.claude/` to the repository root. The `WorktreeCreate` hook does this automatically; details in `docs/testing/worktree-databases.md`.
+
 ## Project documentation
 The docs are large, so they are split into **hubs plus parts** and you read only what your task needs. Start from the compact index @docs/README.md, open the one document (or split part) whose *Read when* matches your task — at an exact heading when possible — and never open a whole doc "just in case". A hub file lists its parts with a *Read when* column: open the matching part only. Every path below except the `@` ones is a plain path on purpose — an `@` import loads the whole file into every session.
 
