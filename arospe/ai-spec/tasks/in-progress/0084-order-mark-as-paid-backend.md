@@ -1,7 +1,7 @@
 # [0084] Order — mark as paid manually (backend)
 
-> **Status: Phase 1 updated (owner design change, 2026-10-02); awaiting Phase 2 re-validation.** See [Rework (2026-10-02)](#rework-2026-10-02).
-> Frontend companion: [0085](0085-order-mark-as-paid-ui.md), blocked on this story (its scope is flagged for re-debate).
+> **Status: Phase 2 re-validation done (2026-10-02, approved after two text corrections); Phase 3 (TDD) in progress for the `order_payments` design.** See [Rework (2026-10-02)](#rework-2026-10-02).
+> Frontend companion: [0085](../0085-order-mark-as-paid-ui.md), blocked on this story (its scope is flagged for re-debate).
 > Items marked **⚑ owner to confirm** are facilitator decisions the project owner has not explicitly ratified.
 > **Owner-confirmed (2026-09-30/10-02):** no undo action; the payment moment = the moment of the click; the payment is recorded in a new
 > `order_payments` table (one row per order) instead of an `orders.paid_at` column; the action takes the payment method and the payment
@@ -10,19 +10,19 @@
 
 ## Description
 
-[PRD §3.2](../../docs/PRD/sections/epic-3-customers-orders.md) says an order's payment state is **"a manual admin-set status
+[PRD §3.2](../../../docs/PRD/sections/epic-3-customers-orders.md) says an order's payment state is **"a manual admin-set status
 only"** — no payment gateway sets it, the administrator selects it by hand. The order module implements every other part of that
-sentence (story [0045](done/0045-orders-core-crud-backend.md) creates orders as `pending_payment`; story
-[0051](done/0051-order-payment-refund-state-backend.md) derives `refunded`/`partially_refunded` from refunds) but **nothing ever moves
+sentence (story [0045](../done/0045-orders-core-crud-backend.md) creates orders as `pending_payment`; story
+[0051](../done/0051-order-payment-refund-state-backend.md) derives `refunded`/`partially_refunded` from refunds) but **nothing ever moves
 an order to `paid`**: a search of `app/` on 2026-09-30 finds only `OrderFactory::paid()` writing it, and `RecordRefund` refuses any order
 that is not already `paid`/`partially_refunded`, so **no real order can ever be refunded** and the dashboard's "Real income" measure
-(story [0082](done/0082-dashboard-home-overview-backend.md)) has nothing to count. 0051's D-4 explicitly left a payment-state write path
+(story [0082](../done/0082-dashboard-home-overview-backend.md)) has nothing to count. 0051's D-4 explicitly left a payment-state write path
 as a future *decision*; this story is that decision.
 
 It adds a single-purpose action **`MarkOrderAsPaid`** that moves an order from `pending_payment` to `paid` and records the payment in a
 new **`order_payments`** table: **which payment method** was actually used, **which payment type** (`transfer` today; `card`/`paypal`
 reserved for a future checkout) and **when**. One order has at most one payment. The buttons that call it are story
-[0085](0085-order-mark-as-paid-ui.md).
+[0085](../0085-order-mark-as-paid-ui.md).
 
 ## Type
 
@@ -30,7 +30,7 @@ reserved for a future checkout) and **when**. One order has at most one payment.
 
 ## Verified facts that shaped the story
 
-- **No existing action logs a state refusal, and most order actions log nothing at all.** There is no `Gate::after` and no logging in
+- **Precedent for logging a state refusal is split, and most order actions log nothing at all.** `CancelOrder` logs no state refusal, whereas `AddOrderItem` does (`order_not_editable`, `order_item_limit_reached`) through `LogRefusedPrivilegedAttempt::log()`, as do some non-order actions (`RemoveStoreLanguage`, `DeleteProductCategory`, `SetSalesRegionActive`). There is no `Gate::after` and no logging in
   the policy layer; the only emitter of the "Privileged action refused" warning is `LogRefusedPrivilegedAttempt` when called
   explicitly. `CancelOrder`, `TransitionOrderStatus` and `RecordRefund` use a bare `Gate::authorize()` and log **nothing**; only
   `CreateOrder` and the three line-item actions log. `LogRefusedPrivilegedAttempt::resolveTarget()` auto-resolves only `User` and
@@ -41,16 +41,16 @@ reserved for a future checkout) and **when**. One order has at most one payment.
 - Every timestamp column uses plain `timestamp` (precision 0); models type them `Carbon|null` (no immutable cast). The app timezone is
   `Europe/Madrid`.
 - A full refund auto-cancels an order (story 0052), so `refunded + cancelled` is a legitimate, settled state.
-- `OrderFactory` has only a `paid()` state (no `cancelled`/`refunded`/`partially_refunded` states); `DemoDataSeeder` seeds only pending orders.
-- **Payment methods** ([schema](../../docs/database/schema-other/payment-methods.md)): `payment_methods` holds exactly one seeded row,
+- `OrderFactory` has only a `paid()` state (no `cancelled`/`refunded`/`partially_refunded` states); `DemoDataSeeder` seeds its first order with `OrderFactory::paid()` and the rest as pending.
+- **Payment methods** ([schema](../../../docs/database/schema-other/payment-methods.md)): `payment_methods` holds exactly one seeded row,
   `code = bank_transfer` (`App\Enums\PaymentMethodCode::BankTransfer`, `label()` → `payment-methods.names.<value>`); there is no
   create/delete path. `orders.payment_method_id` is a **required**, `restrictOnDelete()` FK — the method chosen at order creation.
 - **Domain enum columns** are `VARCHAR(20)` cast to a backed enum (`orders.status`, `orders.payment_status`), never a MySQL `ENUM`, and
   unindexed. `PaymentStatus` deliberately has no `label()`; `PaymentMethodCode` and `UserStatus` do.
-- **Order-domain child tables** ([schema](../../docs/database/schema-orders/items-and-refunds.md)): UUIDv7 PK via `HasUuids`; only
+- **Order-domain child tables** ([schema](../../../docs/database/schema-orders/items-and-refunds.md)): UUIDv7 PK via `HasUuids`; only
   FK-created indexes, no hand-written ones; `order_items.order_id` is the domain's only cascade (a line item is *part of* its order);
   `refunds` restricts both its FKs to protect a recorded financial fact; derived/actor columns are out of `#[Fillable]` and written
-  with `forceCreate()` from one action. The [three-way delete rule](../../docs/database/migrations/delete-behaviour-and-vendored.md#the-three-way-delete-behaviour-rule-cascade-restrict-or-null)
+  with `forceCreate()` from one action. The [three-way delete rule](../../../docs/database/migrations/delete-behaviour-and-vendored.md#the-three-way-delete-behaviour-rule-cascade-restrict-or-null)
   is: cascade = part of the parent, restrict = a peer whose data a delete would destroy, null = a snapshot makes the reference optional.
   Orders are never hard-deleted this phase (cancel is a status), although `OrderPolicy::delete` exists.
 
@@ -74,7 +74,7 @@ Steps, each pinned by its own test:
 4. **Transactional write (D-3):** the compare-and-set on `orders`, then the `order_payments` insert.
 
 **No new exception class.** Both refusals are `ValidationException` (as `CancelOrder`'s already-cancelled refusal is): mark-as-paid has no
-retryable sibling that needs distinguishing, and the UI catches one type. The two state refusals are **not logged** (a state refusal is
+retryable sibling that needs distinguishing, and the UI catches one type. The two state refusals are **not logged** by recommendation (⚑ owner to confirm: `CancelOrder` does not log them, `AddOrderItem` does; both are valid precedents) (a state refusal is
 not a privilege attempt — same as `CancelOrder`) ⚑; only the authorization refusal is, and a test pins that neither state refusal logs.
 
 **No validation of the method/type pair** in this story: any existing `PaymentMethod` and any `OrderPaymentType` case is accepted
@@ -167,7 +167,7 @@ down-migration of a deployed column is needed.
 - **Enum `App\Enums\OrderPaymentType: string`** — cases `Transfer = 'transfer'`, `Card = 'card'`, `Paypal = 'paypal'`; `label()` →
   `__('orders.payment.types.'.$this->value)` (the `PaymentMethodCode::label()` shape). Only `Transfer` is offered today (bank transfer is
   the only payment method); `Card`/`Paypal` exist for the future checkout and are not offered by any UI in this story or 0085.
-- **Factory `OrderPaymentFactory`:** default state = a new or given order, the bank-transfer `PaymentMethod` (reused if seeded,
+- **Factory `OrderPaymentFactory`:** default state = a new or given order, any existing `PaymentMethod` row (`PaymentMethod::query()->value('id')`, as `OrderFactory` does; only bank transfer exists today) (reused if seeded,
   created otherwise — the same lookup `OrderFactory` uses for `payment_method_id`), `type = transfer`, `paid_at = now()`.
 - **`OrderFactory::paid()`** sets `payment_status = paid` **and**, via `afterCreating`, creates the order's payment with the **order's own
   `payment_method_id`** and `type = transfer`, `paid_at = $order->created_at ?? now()` (never earlier than `created_at`) ⚑ (Q-8). Tests
@@ -201,7 +201,7 @@ does **not** consult `payment()` (`payment_status` is the source of truth). `isR
 
 ### D-7 — Dashboard follow-up (not this story)
 
-[0082](done/0082-dashboard-home-overview-backend.md) dates Real income by `orders.created_at`. A later change may date it by
+[0082](../done/0082-dashboard-home-overview-backend.md) dates Real income by `orders.created_at`. A later change may date it by
 `order_payments.paid_at` (falling back to `orders.created_at` for legacy paid orders without a payment row); **caution recorded for it:**
 the payment row survives a full refund, so "has a payment row" does not mean "currently paid" — that measure must keep filtering on
 `orders.payment_status` / subtracting `refunded_amount`. An index on `order_payments.paid_at` is the measured-trigger follow-up for that
@@ -441,7 +441,7 @@ Files under `tests/Feature/Orders/`:
    is refused, still with no row; a `pending_payment` order that already has a payment row (seeded anomaly) → the insert's unique
    violation propagates **and the `orders` update is rolled back** (still `pending_payment`) — per Q-6; **no side effects**
    (`Event`/`Notification`/`Queue` fakes record nothing order-related; no `refunds`/`order_items`/stock change); query log shows exactly
-   one `UPDATE` on `orders` carrying both predicates and, on success only, one `INSERT` on `order_payments`, inside one transaction;
+   one `UPDATE` on `orders` carrying both predicates and, on success only, one `INSERT` on `order_payments`, inside one transaction (prove it by recording `DB::transactionLevel()` inside a `DB::listen` callback for both statements and asserting it equals the level before the call plus one — `BEGIN`/`SAVEPOINT` never appear in the query log; the unique-violation test expects `Illuminate\Database\UniqueConstraintViolationException`);
    signature is exactly `(Order, PaymentMethod, OrderPaymentType)` (reflection).
 2. `MarkOrderAsPaidAuthorizationTest.php` — permission matrix: none, `orders.view` only, `orders.create`/`orders.delete` only,
    `orders.refund` only → refused; `orders.edit` only (**no refund or payment-methods permission needed**) → OK; `orders.edit +
@@ -504,7 +504,7 @@ checkout can record card/PayPal payments through the same action.
 ## Definition of Done
 
 - [x] Phase 1 debate recorded in this file (rework recorded 2026-10-02)
-- [ ] Phase 2 INVEST re-validation (`code-reviewer`) of the reworked story
+- [x] Phase 2 INVEST re-validation (`code-reviewer`) of the reworked story
 - [ ] `orders.paid_at` migration, cast, factory line, docs and tests removed
 - [ ] Tests written first (red) then green, including `OrderPaymentsTableTest` and `OrderPaymentModelTest`
 - [ ] **Full suite** green (unscoped)
@@ -544,9 +544,9 @@ _Reworked design:_ no approvals yet. **⚑ Owner-to-confirm items unratified:** 
 
 ## Dependencies
 
-- None pending (`depends_on: []`). Consumed by [0085](0085-order-mark-as-paid-ui.md).
-- Related, no blocking: [0082](done/0082-dashboard-home-overview-backend.md) (Real income; its demo seeder uses `OrderFactory::paid()`),
-  [0038](done/0038-payment-methods-bank-transfer-backend.md) (payment methods catalog).
+- None pending (`depends_on: []`). Consumed by [0085](../0085-order-mark-as-paid-ui.md).
+- Related, no blocking: [0082](../done/0082-dashboard-home-overview-backend.md) (Real income; its demo seeder uses `OrderFactory::paid()`),
+  [0038](../done/0038-payment-methods-bank-transfer-backend.md) (payment methods catalog).
 
 ## Debate record
 
@@ -559,3 +559,9 @@ target arguments; the compare-and-set lacked the `status ≠ cancelled` clause a
 
 Rework (2026-10-02): owner-directed design change recorded by the product-owner from the owner's decisions; no new specialist debate
 was held. The table shape, transaction ordering and the ⚑ Q-4..Q-8 recommendations are facilitator proposals for Phase 2 to challenge.
+
+## Phase 2 re-validation record (2026-10-02)
+
+- **`code-reviewer` first verdict: REJECTED, text corrections only** — (1) the claim that no action logs a state refusal was false (`AddOrderItem` logs `order_not_editable`/`order_item_limit_reached`); restated as split precedent and the ⚑ now names both options; (2) the `DemoDataSeeder` fact contradicted the code (it already uses `OrderFactory::paid()`). Both corrected in this file by the orchestrator; no design change.
+- **Notes carried to TDD:** the existing "refused mark issues no write against orders" test must also assert no write to `order_payments`; the static "only writer" test (`MarkOrderAsPaidTest.php`) becomes "only writer of `PaymentStatus::Paid` and of `OrderPayment` creation (`create`/`forceCreate`/`DB::table('order_payments')`)"; the implementer must verify the `order_payments` index set against the migrated schema (an FK that is also unique has no precedent here: Laravel adds the FK's implicit index before `unique()`); the ~14 test files and `DemoDataSeeder` that call `OrderFactory::paid()` must still pass once it creates the payment row; for 0085's re-debate: calling the action inside an outer transaction turns its transaction into a savepoint.
+- **Phase 2: APPROVED after the corrections (2026-10-02).**

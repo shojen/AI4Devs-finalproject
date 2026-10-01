@@ -91,10 +91,7 @@ frontend-expert, frontend-qa) and both are now Phase 1 complete, awaiting Phase 
 `mark-as-paid` element" guard (scenario, test and acceptance line added), since a guard in `0085` would be a false green; `0085` also edits
 `tests/Feature/Orders/IndexTest.php` (its public-methods reflection test) and two "read-only" docblocks on `Orders\Index`.
 
-**Update (2026-10-02): `0084-order-mark-as-paid-backend.md` was reopened and moved back from `ai-spec/tasks/done/` to `ai-spec/tasks/`** (`ready`, unclaimed). The project owner
-changed the design before the PR merged: the payment moment and method move out of `orders.paid_at` into a new one-per-order `order_payments` table. Its node and the edge
-`P0084 --> P0085` are back in the graph and in `tasks-status.json`; `0085` is `blocked` on it again. Link integrity: outbound links resolve from `ai-spec/tasks/`, inbound links from
-`0085` (3) and `0086` (2) point at `0084-order-mark-as-paid-backend.md`; no `docs/` page links to it. `ai-spec/tasks/in-progress/` is empty.
+**Update (2026-10-02): `0084-order-mark-as-paid-backend.md` was reopened (the owner replaced `orders.paid_at` with a one-per-order `order_payments` table) and, after its Phase 2 re-validation, moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`**, claimed by the `0084-order-mark-as-paid-backend` worktree (`claimed` in `tasks-status.json`, graph node restyled `claimed`). `0085` stays `blocked` on it. Link integrity: the moved file's outbound links resolve from `in-progress/`; inbound links from `0085` (3) and `0086` (2) point at `in-progress/0084-…`; no `docs/` page links to it.
 
 **Update (2026-10-01): `0085` amended on the owner's answer** — the "Mark as paid" control lives in the **orders list table** and the
 **order detail page**, not in the dashboard home's latest-orders widget (read-only). `0085` therefore also touches
@@ -599,7 +596,8 @@ flowchart LR
     %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
     class P0073,P0075,P0077,P0079,P0085 pending;
-    class P0067,P0069,P0071,P0072,P0074,P0076,P0078,P0084,P0086 ready;
+    class P0067,P0069,P0071,P0072,P0074,P0076,P0078,P0086 ready;
+    class P0084 claimed;
 
 ```
 

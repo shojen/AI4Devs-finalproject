@@ -229,9 +229,9 @@
       "slug": "0084-order-mark-as-paid-backend",
       "title": "Order — mark as paid manually (backend)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree 0084-order-mark-as-paid-backend",
+      "claimed_at": "2026-10-02T00:00:00+02:00",
       "touches": [
         "app/Actions/Orders/MarkOrderAsPaid.php",
         "app/Policies/OrderPolicy.php",
