@@ -147,6 +147,8 @@ public function up(): void
 - **`string` + a PHP enum over a native MySQL `enum`** — a native `enum` needs DDL for each new value and orders by ordinal rather than alphabetically; `Rule::enum(UserStatus::class)` is the validation boundary, so the database need not re-enforce the value set. The enum class is imported straight into the migration, matching `2026_07_22_100004_*`.
 - **The conditional backfill is why `up()` is two statements.** Applying the `inactive` default blindly would have flipped every already-verified account — the Super Admin included — to `inactive`.
 
+**`2026_10_01_225052_add_paid_at_to_orders_table.php` (story 0084) is a second negative case** — a one-statement nullable `timestamp('paid_at')->after('refunded_amount')`, no `useCurrent()` (it would stamp every existing row), no backfill (`updated_at` moves on refunds and shipping, so any value would be invented) and no index; `down()` drops the column. `NULL` is the honest value for every pre-existing row.
+
 **`2026_09_17_120001_add_refunded_amount_to_orders_table.php` (story 0051) is the confirming *negative* case — a one-statement `up()`, and a docblock stating why rather than leaving the omission to look like an oversight.** `orders.refunded_amount` defaults to `0.00`, and no refund mechanism existed anywhere in the app before this story, so `0.00` is the true value for every pre-existing row — there is nothing for a second statement to correct. The rule this page states ("backfill when the new default mis-states old rows") cuts both ways: it requires a backfill when the check fails, and it forbids inventing one when the check passes.
 
 ### Drop a unique index explicitly before its column
