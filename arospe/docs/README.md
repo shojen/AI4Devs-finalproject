@@ -57,6 +57,7 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Orders](api/orders.md) | `orders.index`, `orders.show`, `<x-money>`, `<x-confirm-dialog>`. |
 | [Blog](api/blog.md) | `blog-tags.index`, `blog-categories.index`, `blog-posts.index` / `.create` / `.edit`. |
 | [Store Languages](api/store-languages.md) | `store-languages.index` (backend-only, placeholder view; real screen is story 0069's). |
+| [Dashboard](api/dashboard.md) | the `dashboard` route's ungated contract or the read-side actions in `app/Actions/Dashboard/` (per-widget gating, counters, latest posts/orders, low stock, sales/orders series, measure definitions). |
 
 ## Conventions
 
@@ -83,7 +84,7 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 
 | Doc | Read when |
 | --- | --- |
-| [Security knowledge base](security/README.md) | you gate access, touch auth, roles, seeders, secrets, uploads or sanitization — the index lists 16 pages, one row each with a *Read when*. |
+| [Security knowledge base](security/README.md) | you gate access, touch auth, roles, seeders, secrets, uploads or sanitization — the index lists 17 pages, one row each with a *Read when*. |
 
 ## Decisions and errors
 
@@ -94,4 +95,4 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Errors log archive](errors-log-archive.md) | the topic index points at an entry dated before 2026-08-27. |
 | [Revision history](history/) | you need the old `_Previously:` revision notes of a doc (moved out of the doc itself; one file per doc, named after its path). |
 
-_Last updated: 2026-09-28 — Story 0066 docs follow-up. Added the [Localization](conventions/localization.md) row (forward-looking notification/admin-dashboard/storefront locale-awareness conventions)._
+_Last updated: 2026-10-01 — Story 0082 docs pass. Added the [Dashboard](api/dashboard.md) row (read-side actions contract) and noted the new security page [Raw SQL and query-input bounds](security/raw-sql-and-query-input-bounds.md) in the Security row's page count (17 pages)._

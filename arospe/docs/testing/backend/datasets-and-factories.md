@@ -43,6 +43,19 @@ test('rejects registration with invalid input', function (array $overrides) {
 
 Named dataset keys (`'empty name' => ...`) matter: they show up in test output and CI failures, so `php artisan test --filter="rejects registration with invalid input with data set \"empty name\""` (or a `--compact` failure line) tells you exactly which case broke, not just "test 2 of 3."
 
+### A dataset row must hold plain tokens, not enum cases or closures
+
+Pest evaluates `dataset()` / `->with([...])` arguments at **collection time**, before any test runs and before a TDD red phase has written the production class. A row that references an enum case or calls a method (`OrderStatus::Pending`, `SomeAction::make()`) fatals the whole run when that class does not exist yet, and a closure row is resolved before the test body. Carry strings (a key, a `Foo::class` constant, a status value) and resolve them inside the test:
+
+```php
+// tests/Feature/Dashboard/DashboardActionsQueryCountTest.php
+dataset('dashboardActionCounts', [
+    'latest orders' => ['orders', 2],
+    'sales series' => ['sales-series', 1],
+]);
+// invokeDashboardAction('orders') maps the token to the action inside the test (a match on the name)
+```
+
 ## When *not* to use a dataset
 
 If the test bodies would need different assertions per case (not just different inputs/expected values), a dataset is the wrong tool — it forces awkward `if` branching inside the closure. Write separate tests instead; a dataset should keep the test body identical across all its cases.
@@ -77,4 +90,4 @@ Don't rely on either inside a test by default; `RefreshDatabase` gives each test
 
 The one legitimate exception is a test **about** authorization: a permission check against an unseeded name throws `PermissionDoesNotExist`, so such a test must seed the catalog explicitly (`$this->seed(RolePermissionSeeder::class)`) rather than fabricate ad-hoc `Role`/`Permission` rows — see `tests/Feature/Authorization/`. When it does, flush the permission cache in `beforeEach()` with `app(PermissionRegistrar::class)->forgetCachedPermissions()`, or role/permission lookups leak across tests through the shared cache store.
 
-_Last updated: 2026-08-10 — Task 0002: `DatabaseSeeder` now environment-gates the `test@example.com` fixture and unconditionally calls `RolePermissionSeeder`; documented the one legitimate case for seeding inside a test (authorization tests) and the required permission-cache flush._
+_Last updated: 2026-10-01 — Story 0082: added the rule that dataset rows carry plain tokens (Pest evaluates datasets at collection time, so an enum or method reference to a not-yet-existing class crashes the run). Earlier: task 0002 documented the one legitimate case for seeding inside a test (authorization tests) and the `DatabaseSeeder` environment gate._
