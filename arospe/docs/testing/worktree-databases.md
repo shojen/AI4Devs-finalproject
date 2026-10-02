@@ -23,7 +23,7 @@ When Claude Code creates a worktree (`claude --worktree <name>`, `EnterWorktree`
 - `.claude/hooks/worktree-create.sh` creates the worktree and the branch `worktree-<name>` from `HEAD`, copies `.env` and `.env.testing` from the main checkout (`DB_HOST=127.0.0.1`, `DB_DATABASE=testing_<name>` in `.env.testing`), creates that database in `arospe-mysql-1`, runs `composer install`, `npm ci`, `npm run build` and `storage:link` (failures are warnings, not errors), and prints `<worktree>/arospe` so the session starts there.
 - `.claude/hooks/worktree-remove.sh` drops `testing_<name>` and removes the worktree; the branch is kept until you delete it after merging.
 
-This replaces steps 1–4 and 6 of the manual setup below, which stays valid for worktrees created by hand (`git worktree add`) or by other tools. The `DB_DATABASE=testing_<name>` prefix on test runs is still mandatory (see the correction below). The hooks are only registered when the session that creates the worktree starts in `arospe/`.
+This replaces steps 1–4 and 6 of the manual setup below, which stays valid for worktrees created by hand (`git worktree add`) or by other tools. The `DB_DATABASE=testing_<name>` prefix on test runs is still mandatory (see the correction below). The hooks are only registered when the session that creates the worktree starts in `arospe/`. Their commands in `.claude/settings.json` use `"$CLAUDE_PROJECT_DIR/.claude/hooks/…"` because Claude Code runs them from the repository root, where a relative `.claude/hooks/…` path does not exist.
 
 ## Setup: opening a new worktree by hand
 
@@ -65,4 +65,4 @@ Leaving a stray `testingN` database behind is harmless but wasteful; leaving a s
 
 **`DB_DATABASE` in every `.env.testing` must never be `arospe`, and must never match another active worktree's `.env.testing`.** If you're not sure a worktree still has a live `.env.testing` pointing at a database, check before reusing a name — the failure mode when two worktrees collide is silent data loss in whichever one loses the race, with no error from either side.
 
-_Last updated: 2026-10-01 — added the session-starts-in-`arospe/` convention and the automated `WorktreeCreate`/`WorktreeRemove` hooks; the manual setup below them is unchanged._
+_Last updated: 2026-10-01 — hook commands now resolve through `$CLAUDE_PROJECT_DIR` (they failed with "No such file" when run from the repo root); added the session-starts-in-`arospe/` convention and the automated `WorktreeCreate`/`WorktreeRemove` hooks._

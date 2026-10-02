@@ -57,6 +57,17 @@ return [
         'already_cancelled' => 'Este pedido ya está cancelado.',
     ],
 
+    // Story 0084 -- App\Actions\Orders\MarkOrderAsPaid's two state refusals.
+    'payment' => [
+        'already_paid' => 'Este pedido ya está pagado.',
+        'cancelled_blocked' => 'Un pedido cancelado no se puede marcar como pagado.',
+        'types' => [
+            'transfer' => 'Transferencia bancaria',
+            'card' => 'Tarjeta',
+            'paypal' => 'PayPal',
+        ],
+    ],
+
     // Story 0054 -- tokens written to `orders.flag_reason` by
     // App\Actions\Orders\ResolveVirtualOrderSalesRegion, keyed by its REASON_* constants.
     'flag_reasons' => [

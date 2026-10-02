@@ -27,12 +27,13 @@ use Illuminate\Support\Facades\DB;
  *   `partially_refunded` and not cancelled -- money actually collected, net of refunds. A cancelled
  *   order never counts, even when `cancelled` is among the statuses.
  *
- * Both are bucketed by `orders.created_at` (there is no `paid_at` column), so income is attributed
- * to the order's creation day. Known limitations, accepted: (a) `refunded_amount` is
+ * Both are bucketed by `orders.created_at`, so income is attributed to the order's creation day
+ * even though `order_payments.paid_at` (story 0084) now records when the payment was made; switching
+ * the bucketing to it is a separate follow-up. Known limitations, accepted: (a) `refunded_amount` is
  * merchandise-only, so a partially refunded order would overstate income by the tax/shipping share
- * of the refund -- unobservable today, tax and shipping being 0.00 on every order; (b) no code path
- * sets `payment_status = paid` yet (only OrderFactory::paid() does), so in a real store Real income
- * reads 0 until a payment-capture story exists.
+ * of the refund -- unobservable today, tax and shipping being 0.00 on every order; (b) `payment_status`
+ * only becomes `paid` through `App\Actions\Orders\MarkOrderAsPaid`, so Real income reads 0 until an
+ * administrator marks an order as paid.
  *
  * One aggregate query, grouped by `DATE_FORMAT(created_at, <format>)`; the format string and the
  * enum values are interpolated from closed enums, never from input. Money stays decimal strings

@@ -268,6 +268,8 @@ A scenario about a signed-in administrator's own interface or emails uses **admi
 | **widget** | One read-only card on the dashboard showing a module's latest data (blog posts, low stock, latest orders), shown only to an actor who may view that module, with a "view all" link. | `app/Livewire/Dashboard/` |
 | **Sales** | The gross total sold in a period, over the selected order statuses (tax and shipping included, refunds not netted). | [Dashboard definitions](../../api/dashboard.md#sales-real-income-and-orders--definitions) |
 | **Real income** | Money actually collected: paid or partially refunded, not cancelled, net of refunds. | same |
+| **order administrator** | The actor who may edit orders (and so may mark one as paid); one who may also refund is named as such ("an order administrator who may refund"). | `orders.edit` (story 0084) |
+| **payment state** | The order's money dimension, independent of its fulfilment status. Values: **Pending payment**, **Paid**, **Partially refunded**, **Refunded**. Scenarios use these labels, never `payment_status` or its stored values. | `payment_status` |
 | **Orders** | The count of orders per period and status. | same |
 
 ### TODO — blog / ecommerce vocabulary (undefined)
@@ -295,4 +297,4 @@ Conventions for the translation:
 
 See [examples/](examples/) for three complete scenario → Pest translations built on this convention.
 
-_Last updated: 2026-10-01 — Story 0083: the **Dashboard vocabulary** subsection gained the actors administrator, super administrator, staff member with no module access, staff member who may only view the media library, and the terms hero and widget; the commerce "order" vs. "sale" TODO stays open. Still current from story 0082 (catalog/order/user manager, Sales, Real income, Orders) and story 0066: the **Internationalization vocabulary** subsection (admin UI language vs. store language). Earlier revision notes live in [history/testing--frontend--gherkin-guidelines.md](../../history/testing--frontend--gherkin-guidelines.md)._
+_Last updated: 2026-10-01 — Story 0084: the Dashboard vocabulary table gained the actor order administrator and the term payment state (Pending payment, Paid, Partially refunded, Refunded). Still current from story 0083: the **Dashboard vocabulary** subsection gained the actors administrator, super administrator, staff member with no module access, staff member who may only view the media library, and the terms hero and widget; the commerce "order" vs. "sale" TODO stays open. Still current from story 0082 (catalog/order/user manager, Sales, Real income, Orders) and story 0066: the **Internationalization vocabulary** subsection (admin UI language vs. store language). Earlier revision notes live in [history/testing--frontend--gherkin-guidelines.md](../../history/testing--frontend--gherkin-guidelines.md)._

@@ -78,3 +78,10 @@ and are not backfilled here — see their own task files in `ai-spec/tasks/done/
 - A `#[Computed]` is memoised only when read as a property; a typed `int` bound to a number input is unset by a cleared box (bind a string); reset the error bag at the top of every action — story 0055 (see docs/errors-log.md).
 - Refund control: row state = absent from DOM, permission = disabled; Super Admin sees Cancel enabled on a Shipped order (documented drift, 409 rendered) — story 0055.
 - Open: RecordRefund/line-item lock-order inversion, interim picker disclosure, unbounded list — backlog items 8-12 in the story file.
+
+## Story 0084 — Order mark-as-paid (backend, reworked to `order_payments`)
+
+- `MarkOrderAsPaid::__invoke(Order, PaymentMethod, OrderPaymentType): Order` — one `DB::transaction()`: status-aware compare-and-set `UPDATE orders`, then (only on 1 row) the `order_payments` insert; no route yet — story 0084.
+- `orders` has **no** `paid_at`; the payment is one `order_payments` row (unique `order_id`, `payment_method_id`, `type` varchar(20) cast to `OrderPaymentType` transfer/card/paypal, `paid_at`), reached via `Order::payment()` (null for legacy paid orders); `OrderPayment` has empty `#[Fillable]` — story 0084.
+- Migration precedent: declare `->unique()` before `->constrained()` so MySQL reuses the unique index as the FK index; both FKs restrict — story 0084.
+- Open for 0085: validate type with `Rule::enum`, resolve method with `findOrFail`, add a code-to-type mapping before a second method; no actor column (F-1, owner decision) — story 0084.

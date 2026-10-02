@@ -197,33 +197,11 @@
       ]
     },
     {
-      "id": "0084",
-      "slug": "0084-order-mark-as-paid-backend",
-      "title": "Order — mark as paid manually (backend)",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "app/Actions/Orders/MarkOrderAsPaid.php",
-        "app/Policies/OrderPolicy.php",
-        "app/Models/Order.php",
-        "database/migrations/",
-        "database/factories/OrderFactory.php",
-        "lang/en/orders.php",
-        "lang/es/orders.php",
-        "tests/Feature/Orders/"
-      ],
-      "conflict_risk_with": []
-    },
-    {
       "id": "0085",
       "slug": "0085-order-mark-as-paid-ui",
       "title": "Orders — \"Mark as paid\" control in the orders list and the order detail (frontend)",
-      "depends_on": [
-        "0084"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
