@@ -25,8 +25,8 @@ app/
                        already established; read-only, no public method mutates anything, gates
                        `customers.view` for the whole page and `orders.view` — OrderPolicy's own
                        first real caller — for the order-history section alone).
-                       Orders/ — Index.php (story 0055, read-only, flat view livewire/orders.blade.php,
-                       reflection-pinned public surface) and Show.php (the detail/editor, nested view
+                       Orders/ — Index.php (story 0055; one pinned write, markAsPaid(), added by story 0085; flat view
+                       livewire/orders.blade.php, reflection-pinned public surface) and Show.php (the detail/editor, nested view
                        livewire/orders/show.blade.php; the only screen consuming every 0048-0052 write
                        action; `#[Locked]` orderId, method-injected actions, computeds read as
                        properties) — the Index-flat / other-nested depth asymmetry's second shipped

@@ -4,12 +4,15 @@ namespace App\Livewire\Orders;
 
 use App\Actions\Orders\AddOrderItem;
 use App\Actions\Orders\CancelOrder;
+use App\Actions\Orders\MarkOrderAsPaid;
 use App\Actions\Orders\RecordRefund;
 use App\Actions\Orders\RemoveOrderItem;
 use App\Actions\Orders\TransitionOrderStatus;
 use App\Actions\Orders\UpdateOrderItemQuantity;
 use App\Concerns\ResolvesFlagReasonLabel;
+use App\Enums\OrderPaymentType;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentMethodCode;
 use App\Enums\ProductStatus;
 use App\Exceptions\OrderCancellationBlockedException;
 use App\Exceptions\OrderNotEditableException;
@@ -17,12 +20,15 @@ use App\Exceptions\OrderStatusRegressionRequiresConfirmationException;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\PaymentMethod;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\Renderless;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -55,6 +61,7 @@ use Livewire\Component;
  * @property-read bool $canCancel
  * @property-read bool $canRefund
  * @property-read bool $isRefundable
+ * @property-read bool $canMarkPaid
  * @property-read array<int, array{value: string, label: string}> $statusOptions
  * @property-read array<int, array{id: string, name: string, sku: string}> $productOptions
  * @property-read bool $productCatalogTruncated
@@ -122,6 +129,8 @@ class Show extends Component
 
     public bool $showRefundModal = false;
 
+    public bool $showMarkPaidConfirm = false;
+
     /**
      * The status a pending backward confirmation would apply. `#[Locked]` AND the only thing that
      * makes `applyStatusChange()` pass `confirmed: true`: a client forging `$showBackwardConfirm`
@@ -157,7 +166,7 @@ class Show extends Component
     public function order(): Order
     {
         return Order::query()
-            ->with(['customer' => fn ($query) => $query->withTrashed(), 'items', 'paymentMethod', 'salesRegion', 'shippingRate'])
+            ->with(['customer' => fn ($query) => $query->withTrashed(), 'items', 'paymentMethod', 'salesRegion', 'shippingRate', 'payment.recordedBy'])
             ->findOrFail($this->orderId);
     }
 
@@ -241,6 +250,16 @@ class Show extends Component
     public function isRefundable(): bool
     {
         return $this->order->isRefundable();
+    }
+
+    /**
+     * Story 0085 -- the "Mark as paid" control: the payment STATE (`Order::isAwaitingPayment()`, the one
+     * rule 0084's action also refuses on) and the `markPaid` permission. Absent from the DOM when false.
+     */
+    #[Computed]
+    public function canMarkPaid(): bool
+    {
+        return $this->order->isAwaitingPayment() && Gate::allows('markPaid', $this->order);
     }
 
     /**
@@ -611,6 +630,63 @@ class Show extends Component
     }
 
     // ---------------------------------------------------------------------
+    // Mark as paid (0085)
+    // ---------------------------------------------------------------------
+
+    /**
+     * A silent no-op when the control does not apply: no Gate throw, no logging. A forged call is
+     * caught where it matters, in `markAsPaid()`.
+     */
+    public function confirmMarkAsPaid(): void
+    {
+        if (! $this->canMarkPaid) {
+            return;
+        }
+
+        $this->showMarkPaidConfirm = true;
+    }
+
+    /**
+     * Renderless on purpose: a refused `markAsPaid()` closes the dialog server-side, the modal's `@close`
+     * then calls this method, and Livewire does not persist the error bag between requests -- a re-render
+     * here would wipe the `payment` error the refusal just added. The property still syncs to the client.
+     */
+    #[Renderless]
+    public function dismissMarkAsPaid(): void
+    {
+        $this->showMarkPaidConfirm = false;
+    }
+
+    /**
+     * Calls the action unconditionally -- NOT behind a bare `Gate::authorize`, which would skip the
+     * action's own refusal logging. An AuthorizationException propagates (already logged). The payment
+     * method is resolved server-side, never from client input.
+     */
+    public function markAsPaid(MarkOrderAsPaid $markOrderAsPaid): void
+    {
+        $this->resetErrorBag('payment');
+
+        $paymentMethod = PaymentMethod::query()->where('code', PaymentMethodCode::BankTransfer)->firstOrFail();
+
+        try {
+            $markOrderAsPaid($this->order, $paymentMethod, OrderPaymentType::Transfer);
+        } catch (ValidationException $exception) {
+            $this->showMarkPaidConfirm = false;
+            $this->refreshOrderState();
+            $this->addError('payment', $this->firstMessage($exception));
+
+            return;
+        }
+
+        $number = $this->order->order_number;
+
+        $this->showMarkPaidConfirm = false;
+        $this->refreshOrderState();
+
+        Flux::toast(variant: 'success', text: __('orders.payment.marked', ['number' => $number]));
+    }
+
+    // ---------------------------------------------------------------------
     // Internals
     // ---------------------------------------------------------------------
 
@@ -701,6 +777,7 @@ class Show extends Component
             $this->canTransitionStatus,
             $this->canCancel,
             $this->isRefundable,
+            $this->canMarkPaid,
             $this->statusOptions,
             $this->productOptions,
             $this->productCatalogTruncated,
