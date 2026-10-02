@@ -1,7 +1,7 @@
 # [0084] Order — mark as paid manually (backend)
 
 > **Status: DONE (2026-10-02) — reworked design (`order_payments`); Phases 1-7 complete. Phases recorded before the rework refer to the superseded `orders.paid_at` design.**
-> Frontend companion: [0085](../in-progress/0085-order-mark-as-paid-ui.md), blocked on this story (its scope is flagged for re-debate).
+> Frontend companion: [0085](0085-order-mark-as-paid-ui.md), blocked on this story (its scope is flagged for re-debate).
 > Items marked **⚑ owner to confirm** are facilitator decisions the project owner has not explicitly ratified.
 > **Owner-confirmed (2026-09-30/10-02):** no undo action; the payment moment = the moment of the click; the payment is recorded in a new
 > `order_payments` table (one row per order) instead of an `orders.paid_at` column; the action takes the payment method and the payment
@@ -22,7 +22,7 @@ as a future *decision*; this story is that decision.
 It adds a single-purpose action **`MarkOrderAsPaid`** that moves an order from `pending_payment` to `paid` and records the payment in a
 new **`order_payments`** table: **which payment method** was actually used, **which payment type** (`transfer` today; `card`/`paypal`
 reserved for a future checkout) and **when**. One order has at most one payment. The buttons that call it are story
-[0085](../in-progress/0085-order-mark-as-paid-ui.md).
+[0085](0085-order-mark-as-paid-ui.md).
 
 ## Type
 
@@ -527,7 +527,7 @@ checkout can record card/PayPal payments through the same action.
 - **Test-file deviation (first design):** `MarkOrderAsPaidRefusalLoggingTest.php` is its own file instead of an extension of `RefusalLoggingTest.php`.
 - **Timestamp limits:** MySQL `timestamp` shares its 2038 range with `created_at`; no new risk.
 - **F-1 (Medium, Phase 4 re-audit) — RESOLVED by the 2026-10-02 amendment (`recorded_by`).** Original finding: `order_payments` had no actor column, unlike `refunds.refunded_by`, and a successful mark logs nothing, so no one can later answer who marked an order paid. Owner decision; cheapest to add now, while the story is unmerged.
-- **F-2 (Low, Phase 4 re-audit): method/type are caller-trusted.** 0085 must validate the type with `Rule::enum(OrderPaymentType::class)`, resolve the method server-side with `findOrFail` (never a posted model) and add a method-code-to-type mapping before a second payment method ships. Noted in [0085](../in-progress/0085-order-mark-as-paid-ui.md).
+- **F-2 (Low, Phase 4 re-audit): method/type are caller-trusted.** 0085 must validate the type with `Rule::enum(OrderPaymentType::class)`, resolve the method server-side with `findOrFail` (never a posted model) and add a method-code-to-type mapping before a second payment method ships. Noted in [0085](0085-order-mark-as-paid-ui.md).
 - **F-3 / F-4:** informational findings of the same re-audit, no action required.
 - **0085 scope change:** resolved — 0085 was re-debated on 2026-10-02 (list + detail only; there is no create-order screen today).
 
@@ -566,7 +566,7 @@ _Reworked design (`order_payments`):_
 
 ## Dependencies
 
-- None pending (`depends_on: []`). Consumed by [0085](../in-progress/0085-order-mark-as-paid-ui.md).
+- None pending (`depends_on: []`). Consumed by [0085](0085-order-mark-as-paid-ui.md).
 - Related, no blocking: [0082](0082-dashboard-home-overview-backend.md) (Real income; its demo seeder uses `OrderFactory::paid()`),
   [0038](0038-payment-methods-bank-transfer-backend.md) (payment methods catalog).
 

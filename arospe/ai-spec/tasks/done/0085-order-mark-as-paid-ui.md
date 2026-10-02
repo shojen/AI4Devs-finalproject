@@ -1,14 +1,14 @@
 # [0085] Orders — "Mark as paid" control in the orders list and the order detail (frontend)
 
-> **Status: Phase 2 approved (2026-10-02), in progress** (Three Amigos debate held 2026-10-01; re-debated and updated 2026-10-02 to the reworked
+> **Status: Done (2026-10-02), Phases 1-7 complete** (Three Amigos debate held 2026-10-01; re-debated and updated 2026-10-02 to the reworked
 > backend contract; INVEST validation corrections applied the same day, see the Approval record).
-> Backend companion: [0084](../done/0084-order-mark-as-paid-backend.md), which this story is blocked on — its action contract, refusal logging,
+> Backend companion: [0084](0084-order-mark-as-paid-backend.md), which this story is blocked on — its action contract, refusal logging,
 > `order_payments` table (including `recorded_by`) and `Order::isAwaitingPayment()` are what this story consumes.
 > Items marked **⚑ owner to confirm** are facilitator decisions the project owner has not explicitly ratified.
 > **Owner-confirmed:** the control exists in the orders **list** and on the order **detail** page, and **not** on the dashboard home's
 > "Latest orders" widget; both confirm first; no undo.
 >
-> **Re-debate resolved (2026-10-02).** [0084](../done/0084-order-mark-as-paid-backend.md#rework-2026-10-02) was reworked (`MarkOrderAsPaid` takes
+> **Re-debate resolved (2026-10-02).** [0084](0084-order-mark-as-paid-backend.md#rework-2026-10-02) was reworked (`MarkOrderAsPaid` takes
 > `(Order $order, PaymentMethod $paymentMethod, OrderPaymentType $type)`; the payment moment lives in `order_payments.paid_at`, reached through
 > `Order::payment()`) and then amended with `order_payments.recorded_by`. Owner decisions for this story:
 > 1. **Placement:** the orders **list** (per eligible row) and the order **detail** (`Show`, which is also the line-item editor). There is
@@ -28,7 +28,7 @@
 
 ## Description
 
-Expose story [0084](../done/0084-order-mark-as-paid-backend.md)'s `MarkOrderAsPaid` action in the admin so an order administrator can record by
+Expose story [0084](0084-order-mark-as-paid-backend.md)'s `MarkOrderAsPaid` action in the admin so an order administrator can record by
 hand that a pending order has been paid (PRD §3.2: a manual admin-set status, no payment gateway).
 
 1. **The orders list** (`App\Livewire\Orders\Index`, `/orders`): a "Mark as paid" button in each eligible row's actions column.
@@ -36,7 +36,7 @@ hand that a pending order has been paid (PRD §3.2: a manual admin-set status, n
 
 Both screens always record a **bank transfer** (fixed `PaymentMethod` and `OrderPaymentType::Transfer`, no selector). There is no create-order screen today, so no control there.
 
-It is **not** added to the dashboard home's "Latest orders" widget of [0083](../done/0083-dashboard-home-overview-ui.md): that widget links to the
+It is **not** added to the dashboard home's "Latest orders" widget of [0083](0083-dashboard-home-overview-ui.md): that widget links to the
 orders list and to each order's page, where the action already lives.
 
 ## Type
@@ -455,11 +455,12 @@ on the detail page) and becomes refundable.
 
 - [x] Phase 1 debate recorded in this file
 - [x] Phase 2 INVEST validation (`code-reviewer`)
-- [ ] Tests written first, **full suite** green (unscoped, including `tests/Browser`, locally)
-- [ ] Pint (unscoped), Larastan, `npm run build` clean
-- [ ] Appsec review (forged calls and ids, refusal logging, public state, focus/keyboard dismissal)
-- [ ] Docs synced (orders routes/contracts, lang group, the `Index` read-only claim, the payment header line)
-- [ ] `IndexTest` reflection allow-list and the `Index` docblocks updated in the same change
+- [x] Tests written first (feature, browser and support files in `aeeae94` / `8555eca`)
+- [x] **Full suite** green (unscoped, including `tests/Browser`, locally; per-chunk counts in the Approval record)
+- [x] Pint (unscoped), Larastan, `npm run build` clean
+- [x] Appsec review (forged calls and ids, refusal logging, public state, focus/keyboard dismissal)
+- [x] Docs synced (orders routes/contracts, lang group, the `Index` read-only claim, the payment header line)
+- [x] `IndexTest` reflection allow-list and the `Index` docblocks updated in the same change
 
 ## Risks and follow-ups
 
@@ -475,8 +476,8 @@ on the detail page) and becomes refundable.
 
 ## Dependencies
 
-- **Blocked on [0084](../done/0084-order-mark-as-paid-backend.md).**
-- **`conflict_risk_with` [0083](../done/0083-dashboard-home-overview-ui.md):** both edit `resources/views/livewire/orders.blade.php` (disjoint regions, D-6).
+- **Blocked on [0084](0084-order-mark-as-paid-backend.md).**
+- **`conflict_risk_with` [0083](0083-dashboard-home-overview-ui.md):** both edit `resources/views/livewire/orders.blade.php` (disjoint regions, D-6).
 
 ## Debate record
 
@@ -496,3 +497,21 @@ placeholder and a `orders.payment.*` collision worry were resolved.
   `refreshOrderState()`; the list opener opens the dialog only when `confirmingPaidRow` is non-null (the modal binds the bool, so `:show` alone would
   leave an empty shell); the slot is evaluated eagerly so it is guarded; the null-id guard uses `orders.payment.not_found`; the reflection DoD is an
   allow-list; a missing bank-transfer method is a 404; `OrdersUi::actor()` takes no attributes.
+- **Phase 4 appsec — APPROVED (2026-10-02, `appsec-auditor`).** Forged calls and ids, refusal logging, public state and dialog dismissal pass. Three Low/Info
+  notes, none blocking: (1) `markAsPaid()` on the list with a null id logs nothing, by design (D-4: there is no order to log against); (2) the
+  bank-transfer `PaymentMethod` `firstOrFail()` runs before the action, so a missing seeded row gives an unlogged 404; (3) a non-string
+  `confirmMarkAsPaid` argument would raise a `TypeError`.
+- **Phase 3 finding (2026-10-02, full-suite Browser run).** The stale-page browser case failed whenever it ran after the detail-confirm case: a refused
+  `markAsPaid()` closes the dialog, the modal's `@close` then fires `dismissMarkAsPaid()`, and that second request's render dropped the `payment` error
+  (Livewire does not persist the error bag between requests); alone, the test only caught the message between the two renders. Fixed by making
+  `Show::dismissMarkAsPaid()` `#[Renderless]` (`d3586f7`), pinned by a reflection test, a one-second-later assertion in the browser case and a new
+  browser case for Cancel on the detail (`b375bcb`). A repeated failure was treated as a real bug, not a flake.
+- **Phase 5 code review — APPROVED (2026-10-02, `code-reviewer`).** No blocking issues. Docs fix applied (`docs/api/orders.md` hidden-versus-disabled note,
+  `3f96aae`). Accepted nits: the non-string `confirmMarkAsPaid` argument `TypeError` (appsec note 3; the UI cannot produce it) and the unguarded dialog slot on the
+  detail (`$order->total` always exists).
+- **Phase 6 docs — done (2026-10-02, `docs-keeper`):** `docs/api/orders.md`, `directory-structure/livewire-models-policies.md`,
+  `testing/frontend/playwright-setup/status-structure-and-syntax.md`, epic-3 digest.
+- **Full-suite gate (2026-10-02, per directory chunk because one background command is capped at 10 minutes):** Orders 872/872; Unit + Localization + Actions +
+  Auth + Authorization + Blog + Components 1466/1466; Console..Media 880 passed, 5 skipped; Models..ProductCategories 597/597; Products + Providers + Roles +
+  SalesRegions 804/804; Seeders..Users 839/839; `tests/Browser` alone 231 passed, 3 skipped (234). Pint unscoped and Larastan (run directly with
+  `--memory-limit=-1`) clean.

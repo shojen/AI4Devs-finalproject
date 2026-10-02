@@ -95,6 +95,8 @@ frontend-expert, frontend-qa) and both are now Phase 1 complete, awaiting Phase 
 
 **Update (2026-10-02): `0085-order-mark-as-paid-ui.md` passed Phase 2 (INVEST, approved with corrections) and moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`; it is now `claimed` (worktree `0085-order-mark-as-paid-ui`, branched from the 0084 branch because 0084 is not yet merged into `main`).** Link integrity: the moved file's outbound links (`done/…`) were rewritten to `../done/…`; the inbound links from `0086` (1) and the done `0082` (2), `0083` (2) and `0084` (4) now point at `in-progress/0085-…`.
 
+**Update (2026-10-02): `0085-order-mark-as-paid-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`.** Its node is dropped from the graph and its `claimed` `tasks-status.json` entry was deleted; no pending task depended on it. Link integrity: the moved file's outbound links (`../done/…`) became bare sibling links, and the inbound links from `0086` (1, now `done/0085-…`) and the done `0082` (2), `0083` (2) and `0084` (4) now point at the sibling `0085-…`. Pending count drops by one.
+
 **Update (2026-10-01): `0085` amended on the owner's answer** — the "Mark as paid" control lives in the **orders list table** and the
 **order detail page**, not in the dashboard home's latest-orders widget (read-only). `0085` therefore also touches
 `app/Livewire/Orders/Index.php` and `resources/views/livewire/orders.blade.php`, which `0083` edits too (badge extraction), so
@@ -524,7 +526,6 @@ flowchart LR
     end
 
     %% Standalone (no PRD epic)
-    P0085["0085 Order mark as paid UI"]
     %% (P0082's own node dropped: 0082 closed to done/ this pass, per the update at the top of this file.)
     P0086["0086 Dashboard sales overview UI"]
     %% (P0081's own node dropped: 0081 closed to done/ this pass, per the update at the top of this
@@ -595,12 +596,11 @@ flowchart LR
     P0071 --> P0079
     P0077 -.-> P0079
     %% (P0082 --> P0083 and P0082 -.-> P0076/P0078 dropped: 0082 is done; 0083 is now ready.)
-    %% (P0084 --> P0085 dropped: 0084 is done; 0085 is now ready.)
+    %% (P0084 --> P0085 dropped: 0084 is done; 0085 is done too.)
     %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
     class P0073,P0075,P0077,P0079 pending;
     class P0067,P0069,P0071,P0072,P0074,P0076,P0078,P0086 ready;
-    class P0085 claimed;
 
 ```
 

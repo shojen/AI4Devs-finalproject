@@ -23,7 +23,7 @@ the mockup's four shortcut cards, **three live widgets**:
 3. **Low-stock widget** — the 3 products closest to running out, with stock and an out-of-stock (red) / low-stock (amber) badge. A
    variable product appears as its **parent**, with its lowest variant stock and an "N variants low" hint; footer link to the product list.
 4. **Latest orders widget** — the 5 most recent orders (number, customer, total, status), each linking to the order detail; footer
-   link to the orders list. **Read-only**: it carries no "Mark as paid" action (owner decision 2026-10-01, see [0085](../in-progress/0085-order-mark-as-paid-ui.md)).
+   link to the orders list. **Read-only**: it carries no "Mark as paid" action (owner decision 2026-10-01, see [0085](0085-order-mark-as-paid-ui.md)).
 
 The **sales overview card** (Day/Month/Year filters, order-status filter, KPI strip, "Sales vs real income" and "Orders by status"
 charts) is **not in this story**: it is [0086](../0086-dashboard-sales-overview-ui.md). Until 0086 lands the dashboard simply has no
@@ -453,7 +453,7 @@ respecting each actor's rights with no leakage, no dead links and no log noise.
 
 - Backend [0082](../done/0082-dashboard-home-overview-backend.md) is **merged**; no pending dependency (`depends_on: []`).
 - **Consumed by [0086](../0086-dashboard-sales-overview-ui.md)** (blocked on this story).
-- `conflict_risk_with`: **[0085](../in-progress/0085-order-mark-as-paid-ui.md)** — both edit `resources/views/livewire/orders.blade.php`, in disjoint regions (above).
+- `conflict_risk_with`: **[0085](0085-order-mark-as-paid-ui.md)** — both edit `resources/views/livewire/orders.blade.php`, in disjoint regions (above).
 
 ## Review record
 
