@@ -61,6 +61,17 @@ return [
     'payment' => [
         'already_paid' => 'Este pedido ya está pagado.',
         'cancelled_blocked' => 'Un pedido cancelado no se puede marcar como pagado.',
+        // Story 0085 -- el control "Marcar como pagado" en el listado y en el detalle del pedido.
+        'action' => 'Marcar como pagado',
+        'dialog_heading' => '¿Marcar este pedido como pagado?',
+        'dialog_body' => 'Esto registra que el pedido :number se pagó por transferencia bancaria. No se puede deshacer desde aquí.',
+        'dialog_amount' => 'Importe recibido',
+        'dialog_confirm' => 'Marcar como pagado',
+        'dialog_dismiss' => 'Cancelar',
+        'marked' => 'Pedido :number marcado como pagado.',
+        'info' => 'Pagado el :date (:type)',
+        'info_by' => 'Pagado el :date (:type), registrado por :user',
+        'not_found' => 'Este pedido ya no existe.',
         'types' => [
             'transfer' => 'Transferencia bancaria',
             'card' => 'Tarjeta',

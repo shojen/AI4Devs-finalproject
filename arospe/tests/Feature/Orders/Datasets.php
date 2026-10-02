@@ -66,3 +66,30 @@ dataset('mark_as_paid_state_grid', $markAsPaidStateGrid);
 dataset('mark_as_paid_markable_cells', array_filter($markAsPaidStateGrid, fn (array $cell): bool => $cell[2] === 'marked'));
 dataset('mark_as_paid_already_paid_cells', array_filter($markAsPaidStateGrid, fn (array $cell): bool => $cell[2] === 'already_paid'));
 dataset('mark_as_paid_cancelled_cells', array_filter($markAsPaidStateGrid, fn (array $cell): bool => $cell[2] === 'cancelled'));
+
+// Story 0085 (D-1) -- whether the "Mark as paid" button is VISIBLE to an `orders.view + orders.edit` actor,
+// for the same 4 x 5 grid, written out literally (never derived from Order::isAwaitingPayment(), which
+// would make the dataset a mirror of the rule it checks). Exactly 4 cells are visible: pending payment
+// crossed with the four non-cancelled statuses. The third value is "the button is rendered".
+dataset('mark_as_paid_button_visibility_grid', [
+    'pending payment / pending' => [PaymentStatus::PendingPayment, OrderStatus::Pending, true],
+    'pending payment / processing' => [PaymentStatus::PendingPayment, OrderStatus::Processing, true],
+    'pending payment / shipped' => [PaymentStatus::PendingPayment, OrderStatus::Shipped, true],
+    'pending payment / delivered' => [PaymentStatus::PendingPayment, OrderStatus::Delivered, true],
+    'pending payment / cancelled' => [PaymentStatus::PendingPayment, OrderStatus::Cancelled, false],
+    'paid / pending' => [PaymentStatus::Paid, OrderStatus::Pending, false],
+    'paid / processing' => [PaymentStatus::Paid, OrderStatus::Processing, false],
+    'paid / shipped' => [PaymentStatus::Paid, OrderStatus::Shipped, false],
+    'paid / delivered' => [PaymentStatus::Paid, OrderStatus::Delivered, false],
+    'paid / cancelled' => [PaymentStatus::Paid, OrderStatus::Cancelled, false],
+    'partially refunded / pending' => [PaymentStatus::PartiallyRefunded, OrderStatus::Pending, false],
+    'partially refunded / processing' => [PaymentStatus::PartiallyRefunded, OrderStatus::Processing, false],
+    'partially refunded / shipped' => [PaymentStatus::PartiallyRefunded, OrderStatus::Shipped, false],
+    'partially refunded / delivered' => [PaymentStatus::PartiallyRefunded, OrderStatus::Delivered, false],
+    'partially refunded / cancelled' => [PaymentStatus::PartiallyRefunded, OrderStatus::Cancelled, false],
+    'refunded / pending' => [PaymentStatus::Refunded, OrderStatus::Pending, false],
+    'refunded / processing' => [PaymentStatus::Refunded, OrderStatus::Processing, false],
+    'refunded / shipped' => [PaymentStatus::Refunded, OrderStatus::Shipped, false],
+    'refunded / delivered' => [PaymentStatus::Refunded, OrderStatus::Delivered, false],
+    'refunded / cancelled' => [PaymentStatus::Refunded, OrderStatus::Cancelled, false],
+]);

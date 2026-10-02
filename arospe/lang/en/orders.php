@@ -94,6 +94,17 @@ return [
     'payment' => [
         'already_paid' => 'This order has already been paid.',
         'cancelled_blocked' => 'A cancelled order cannot be marked as paid.',
+        // Story 0085 -- the "Mark as paid" control on the orders list and the order detail.
+        'action' => 'Mark as paid',
+        'dialog_heading' => 'Mark this order as paid?',
+        'dialog_body' => 'This records that order :number was paid by bank transfer. It cannot be undone from here.',
+        'dialog_amount' => 'Amount received',
+        'dialog_confirm' => 'Mark as paid',
+        'dialog_dismiss' => 'Cancel',
+        'marked' => 'Order :number marked as paid.',
+        'info' => 'Paid on :date (:type)',
+        'info_by' => 'Paid on :date (:type), recorded by :user',
+        'not_found' => 'This order no longer exists.',
         'types' => [
             'transfer' => 'Bank transfer',
             'card' => 'Card',

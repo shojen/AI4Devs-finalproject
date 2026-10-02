@@ -55,3 +55,51 @@ test('the three orders.payment.types labels differ from each other within each l
     expect(array_keys($types))->toContain('transfer', 'card', 'paypal')
         ->and(array_unique(array_values($types)))->toHaveCount(count($types));
 })->with(['en', 'es']);
+
+// Story 0085 (D-5) -- the copy of the "Mark as paid" control on the list and the detail. Red step: the ten
+// keys do not exist yet. The placeholder sets are written out literally, per key, and must be identical in
+// both locales: a translator who drops or renames :number would otherwise ship a broken sentence.
+dataset('mark_as_paid_copy_keys', [
+    'payment.action' => ['payment.action', []],
+    'payment.dialog_heading' => ['payment.dialog_heading', []],
+    'payment.dialog_body' => ['payment.dialog_body', ['number']],
+    'payment.dialog_amount' => ['payment.dialog_amount', []],
+    'payment.dialog_confirm' => ['payment.dialog_confirm', []],
+    'payment.dialog_dismiss' => ['payment.dialog_dismiss', []],
+    'payment.marked' => ['payment.marked', ['number']],
+    'payment.info' => ['payment.info', ['date', 'type']],
+    'payment.info_by' => ['payment.info_by', ['date', 'type', 'user']],
+    'payment.not_found' => ['payment.not_found', []],
+]);
+
+test('each mark-as-paid copy key exists in both locales as a non-empty string with exactly the expected placeholders', function (string $key, array $placeholders) {
+    foreach (['en', 'es'] as $locale) {
+        $message = Arr::get(require lang_path($locale.'/orders.php'), $key);
+
+        expect($message)->toBeString()->not->toBe('');
+
+        preg_match_all('/:([a-z_]+)/i', $message, $found);
+        $actual = array_values(array_unique($found[1]));
+        sort($actual);
+        $expected = $placeholders;
+        sort($expected);
+
+        expect($actual)->toBe($expected, "$locale $key placeholders");
+    }
+})->with('mark_as_paid_copy_keys');
+
+test('each mark-as-paid copy key is translated, not copied, between en and es', function (string $key) {
+    $en = Arr::get(require lang_path('en/orders.php'), $key);
+    $es = Arr::get(require lang_path('es/orders.php'), $key);
+
+    expect($en)->toBeString()->and($es)->toBeString()->and($es)->not->toBe($en);
+})->with([
+    'payment.action', 'payment.dialog_heading', 'payment.dialog_body', 'payment.dialog_amount', 'payment.dialog_confirm',
+    'payment.dialog_dismiss', 'payment.marked', 'payment.info', 'payment.info_by', 'payment.not_found',
+]);
+
+test('the new payment keys sit beside the 0084 keys without replacing them', function (string $locale) {
+    $payment = Arr::get(require lang_path($locale.'/orders.php'), 'payment');
+
+    expect(array_keys($payment))->toContain('already_paid', 'cancelled_blocked', 'types', 'action', 'dialog_heading', 'dialog_body', 'dialog_amount', 'dialog_confirm', 'dialog_dismiss', 'marked', 'info', 'info_by', 'not_found');
+})->with(['en', 'es']);
