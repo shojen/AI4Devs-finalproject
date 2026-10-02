@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -40,6 +41,11 @@ use Illuminate\Support\Carbon;
  * `amount`. It is a MERCHANDISE total only (quantity x unit_price): it
  * excludes tax and shipping, which are both `0.00` on every order today, so
  * the distinction is unobservable until 0053/0054 populate them (R-2).
+ *
+ * Story 0084: the payment itself (method, type, moment) lives in the single
+ * `order_payments` row reachable through `payment()`, written only by
+ * App\Actions\Orders\MarkOrderAsPaid. An order marked Paid before that table
+ * existed has no such row (`payment` is null).
  *
  * No `SoftDeletes`: orders are never deleted this phase; `Cancelled` is a
  * `status` value, not a soft delete.
@@ -81,6 +87,7 @@ use Illuminate\Support\Carbon;
  * @property-read SalesRegion|null $salesRegion
  * @property-read ShippingRate|null $shippingRate
  * @property-read Collection<int, OrderItem> $items
+ * @property-read OrderPayment|null $payment
  */
 #[Fillable([
     'customer_id', 'payment_method_id',
@@ -158,6 +165,16 @@ class Order extends Model
     }
 
     /**
+     * Story 0084: the order's single recorded payment, or null while none exists.
+     *
+     * @return HasOne<OrderPayment, $this>
+     */
+    public function payment(): HasOne
+    {
+        return $this->hasOne(OrderPayment::class);
+    }
+
+    /**
      * The line items belonging to this order.
      *
      * @return HasMany<OrderItem, $this>
@@ -226,5 +243,20 @@ class Order extends Model
     {
         return in_array($this->status, [OrderStatus::Pending, OrderStatus::Processing], true)
             && $this->payment_status !== PaymentStatus::PartiallyRefunded;
+    }
+
+    /**
+     * Can this order be marked as paid right now?
+     *
+     * Non-throwing predicate: payment still pending and the order not
+     * cancelled (story 0084, D-5). The order-detail control reads this so the
+     * UI cannot drift from App\Actions\Orders\MarkOrderAsPaid, which checks
+     * the two clauses separately because its two refusals differ. Says nothing
+     * about the ACTOR.
+     */
+    public function isAwaitingPayment(): bool
+    {
+        return $this->payment_status === PaymentStatus::PendingPayment
+            && $this->status !== OrderStatus::Cancelled;
     }
 }

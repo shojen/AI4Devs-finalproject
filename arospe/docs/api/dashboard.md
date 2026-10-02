@@ -65,15 +65,15 @@ The two series actions take `(SalesGranularity $granularity, CarbonInterface $fr
 | **Real income** | `SUM(total - refunded_amount)` of those orders that are also `paid` or `partially_refunded` **and** not cancelled; a cancelled order never counts even when `cancelled` is selected. |
 | **Orders** | The number of orders per bucket and per status; an order counts once, never once per line. |
 
-All three are bucketed by `orders.created_at`, because there is no `paid_at` column.
+All three are bucketed by `orders.created_at`, even though `order_payments.paid_at` (story 0084) now records when a payment was marked; switching the bucketing to it is a separate follow-up.
 
 ## Known limitations and follow-ups
 
-- **Real income reads 0 in a real store today:** no code path sets `payment_status = paid` yet (only `OrderFactory::paid()` does). Follow-up stories 0084/0085 (mark an order paid, `paid_at`).
+- **Real income reads 0 in a real store today:** `payment_status` only becomes `paid` through [`MarkOrderAsPaid`](orders.md#markorderaspaid--the-action-contract-story-0084-no-route) (story 0084), whose UI is story 0085, so income stays 0 until an administrator marks an order as paid.
 - `refunded_amount` is merchandise-only, so a partially refunded order would overstate income by the refund's tax/shipping share — unobservable while tax and shipping are `0.00`.
 - **`orders.created_at` and `blog_posts.created_at` are unindexed** (second resolution). Fine at back-office scale; add `index(created_at)` on `orders` (a `database-expert` story) if the table passes roughly 10^5 rows. No schema change shipped with this story — see [Orders schema](../database/schema-orders.md).
 - **Shipped consumers:** story 0083 consumes `GetDashboardCounters`, `GetLatestBlogPosts`, `GetLowStockProducts` and `GetLatestOrders`; the two series actions are story 0086's.
 - **Cost:** about ten queries per dashboard load, no caching.
 - **Badge `match` without default:** `<x-blog-status-badge>` has no `default` arm, so a new `BlogPostStatus` case would throw `UnhandledMatchError` and 500 the dashboard and the blog list until the map is updated (the order badge falls back to zinc).
 
-_Last updated: 2026-10-01 — Story 0083 (Dashboard home overview UI). The route is now `Route::livewire`; added the page structure, per-widget gating, the editor-link rule, the null-on-missing-permission and block-tag behaviour changes, and the reserved 0086 slot._
+_Last updated: 2026-10-02 — Story 0084: the income and bucketing notes now reference `MarkOrderAsPaid` and `order_payments.paid_at`. Still current from story 0083 (Dashboard home overview UI): the route is `Route::livewire`, per-widget gating, the editor-link rule and the reserved 0086 slot._

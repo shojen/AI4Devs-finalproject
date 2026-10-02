@@ -6,6 +6,7 @@ Part of [Routes](routes.md) — see [routes.md](routes.md#why-this-file-exists) 
 
 - [`orders.index` — the eleventh permission-gated route, and a screen with no write method](#ordersindex--the-eleventh-permission-gated-route-and-a-screen-with-no-write-method)
 - [`orders.show` — the twelfth permission-gated route, and the first screen governed by three abilities](#ordersshow--the-twelfth-permission-gated-route-and-the-first-screen-governed-by-three-abilities)
+- [`MarkOrderAsPaid` — the action contract (story 0084, no route)](#markorderaspaid--the-action-contract-story-0084-no-route)
 - [Shared pieces this story introduced](#shared-pieces-this-story-introduced)
 
 ## `orders.index` — the eleventh permission-gated route, and a screen with no write method
@@ -53,10 +54,28 @@ The UI hint for each mirrors the predicate its own guard reads — the component
 - **Not on this screen**: order creation, a per-refund history, and a manual-review workflow to clear `flagged_for_review` — all backlog items in [the story's task file](../../ai-spec/tasks/done/0055-orders-list-detail-editor-ui.md). Customer order-history rows (story 0047) still do not link to `orders.show`; that is 0047's own backlog item.
 - **Known concurrency gap (pre-existing, now reachable from one screen):** `RecordRefund` locks the item rows before the `orders` row while the three line-item actions lock the order first, so a concurrent refund and line-item edit can deadlock and surface as a 500. Recommended as a small backend story.
 
+## `MarkOrderAsPaid` — the action contract (story 0084, no route)
+
+[`App\Actions\Orders\MarkOrderAsPaid::__invoke(Order $order, PaymentMethod $paymentMethod, OrderPaymentType $type): Order`](../../app/Actions/Orders/MarkOrderAsPaid.php) moves an order from `pending_payment` to `paid` and records the payment in [`order_payments`](../database/schema-orders/payments.md#order_payments) (`orders` has no `paid_at`). It has **no route and no Livewire caller yet** (the buttons are story 0085). The payment moment is always "now" (the click, `startOfSecond()`), so there is no date parameter; the method and type are the caller's choice and are stored on the payment row. `LogRefusedPrivilegedAttempt` is constructor-injected.
+
+| Step | Behaviour |
+| --- | --- |
+| 1. Authorize | `OrderPolicy::markPaid` (`orders.edit`) through `LogRefusedPrivilegedAttempt::authorize()` with `targetType: 'order'`; refusal is an `AuthorizationException`, logged once, and reveals nothing about the order's state |
+| 2. Already paid | `payment_status` is not `pending_payment` (paid, partially refunded, refunded) -> `ValidationException` on `payment_status`, message `orders.payment.already_paid` |
+| 3. Cancelled | `status = cancelled` (payment still pending) -> `ValidationException` on `payment_status`, message `orders.payment.cancelled_blocked` |
+| 4. Write | one `DB::transaction()`: (a) the status-aware compare-and-set `UPDATE orders ... WHERE payment_status = pending_payment AND status != cancelled` setting `payment_status` and `updated_at`; (b) only when exactly one row was affected, `OrderPayment::forceCreate()` with `order_id`, `payment_method_id`, `type`, `paid_at`, `recorded_by` (`Auth::id()`). No event, no model events |
+
+- **Guard order is deliberate:** already-paid is checked before cancelled, so `cancelled + refunded` reports "already paid" and `cancelled + pending_payment` reports "cancelled". Both state refusals are direct throws: they bind a Super Admin and are **not** logged (only the authorization refusal is).
+- **Lost races:** if the `UPDATE` matches 0 rows nothing is written (no payment row); the action re-reads once and throws the matching refusal (a vanished row throws `ModelNotFoundException`), so this action never produces `paid + cancelled`. A unique violation on `order_payments.order_id` (a data anomaly) propagates uncaught and rolls the `UPDATE` back. On success the caller's instance is synced in memory and `Order::payment` is set to the new row.
+- **Relation:** `Order::payment()` is a `HasOne` returning the single `OrderPayment` (`type` cast to `App\Enums\OrderPaymentType`), or `null` for an order paid before the table existed.
+- **Untouched:** `status`, `refunded_amount`, line items and stock. `flagged_for_review` orders can be marked paid. There is no undo.
+- **Read side:** `Order::isAwaitingPayment()` (`pending_payment` and not cancelled) is the predicate story 0085 reads to show the control; the action reads its two clauses separately because the refusals differ.
+- **Known limitations and requirements for 0085:** (F-1, resolved by the 2026-10-02 amendment) the action stores the actor in `order_payments.recorded_by` (`Auth::id()`, readable through `OrderPayment::recordedBy()`); a later story will replace it with a movements log, and a successful mark still writes no log line. (F-2) the method and type are not cross-checked, so the caller must validate `type` with `Rule::enum(OrderPaymentType::class)`, resolve the method server-side with `findOrFail` (never trust a posted model), and add a method-code-to-type mapping before a second payment method ships. An order with refunds but still `pending_payment` is unreachable through the app.
+
 ## Shared pieces this story introduced
 
 - **`<x-money :amount>`** ([`money.blade.php`](../../resources/views/components/money.blade.php)) prints `€ {amount}` from the stored decimal string, with no cast or formatting. Story 0047's customer order history was retrofitted to it.
 - **`<x-confirm-dialog>`** ([`confirm-dialog.blade.php`](../../resources/views/components/confirm-dialog.blade.php)) — props `show`, `model`, `heading`, `body`, `confirm-label`, `dismiss-label`, `confirm-action`, `dismiss-action`, `test-prefix`, `variant`. It holds no state and decides nothing: the parent owns the bool and both methods. `@close` runs the dismiss method (Flux compiles it to `wire:close` on the `<dialog>`), so Esc, backdrop and the X reach the server like the Cancel button. Its inner content is wrapped in `@if ($show)` and the hooks sit on that inner content, never on `<flux:modal>`. It is the repo's first shared anonymous component that is not navigation chrome.
 - **`Order::isLineItemEditable()`** and **`Order::isRefundable()`** ([`app/Models/Order.php`](../../app/Models/Order.php)) — the single copy of the `Shipped`/`Delivered` block and of the `Paid`/`PartiallyRefunded` refund state, read by the actions and by this screen. The three `assertEditable()` bodies still each log and throw (triplicated), but the status set itself now lives once.
 
-_Last updated: 2026-09-23 — Story 0055 (orders list + detail/editor UI). New file._
+_Last updated: 2026-10-02 — Story 0084 (order mark-as-paid, backend, reworked; amended): the `MarkOrderAsPaid` action contract (three parameters, one transaction, `order_payments` including `recorded_by`). Still current from story 0055 (orders list + detail/editor UI)._
