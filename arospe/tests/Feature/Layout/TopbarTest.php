@@ -56,6 +56,7 @@ function topbarScreens(): array
         'profile settings' => ['profile.edit', 'topbar.settings.profile'],
         'security settings' => ['security.edit', 'topbar.settings.security'],
         'appearance settings' => ['appearance.edit', 'topbar.settings.appearance'],
+        'language settings' => ['language.edit', 'topbar.settings.language'],
     ];
 }
 

@@ -91,19 +91,21 @@ most screens' own domain copy (`users`, `roles`, `navigation`, `sales-regions`, 
 title/subtitle via `topbar.php`, but shared modal/table chrome on some older screens still calls
 `__()` with the literal English string as its own key and no backing catalog entry — for example
 [`resources/views/livewire/users.blade.php`](../../resources/views/livewire/users.blade.php)'s
-`{{ __('Cancel') }}`, `{{ __('Save') }}` and `:label="__('Name')"`. `__('Cancel')` with no
-`lang/es.json`/catalog entry for that literal simply returns `'Cancel'` unchanged under
-`App::setLocale('es')` — it does not error, so the gap is invisible except by reading the rendered
-screen. Do not extend this pattern to new code; a new string gets a real domain-file key from the
-first commit that adds it, not a bare `__('<the English words>')` call.
+`{{ __('Cancel') }}`, `{{ __('Save') }}` and `:label="__('Name')"`. Whether such a bare
+literal translates depends on a hidden `lang/es.json` entry: `"Cancel": "Cancelar"` exists
+there, so that one does translate, while a literal with no JSON entry simply returns itself
+unchanged under `App::setLocale('es')` — it does not error, so the gap is invisible except by
+reading the rendered screen. A bare literal that happens to be in `es.json` is still the wrong
+pattern: the translation lives in a catalog nobody reviews per feature, and the same literal can
+map differently by surface (`Dashboard` → `Panel` there, `Inicio` via `topbar.dashboard.title`). Do not extend this pattern to new code; a new string gets a real domain-file key from the
+first commit that adds it, not a bare `__('<the English words>')` call. The Settings navlist
+(`resources/views/components/settings/layout.blade.php`) is the worked example of the migration:
+story 0067 moved its tab labels from `__('Profile')` etc. to `topbar.settings.*` keys.
 
 ✅ Good — `:label="__('users.fields.name')"` with `'name' => 'Name'` under a `fields` group in
 `lang/en/users.php` / `lang/es/users.php`.
 ❌ Bad — `:label="__('Name')"` with no corresponding `lang/` entry for the literal `'Name'` — renders
 correctly in English only by coincidence (the key equals the fallback copy) and never translates.
+(`__('Cancel')` is *not* a good counter-example of "never translates": `lang/es.json` maps it.)
 
-_Last updated: 2026-09-28 — new file (story 0066 docs follow-up). Establishes three forward-looking
-rules: explicit `->locale()` on an `AnonymousNotifiable` notify() call, `trans()`-backed copy for any
-new admin-dashboard string (cross-referencing [naming/translation-keys-and-booleans.md](naming/translation-keys-and-booleans.md)
-for key naming), and the Layer 1 (`users.ui_locale`/`UiLocale`/`LocaleSetting`)
-vs. Layer 2 (`StoreLanguage`) boundary a future storefront-translation story must respect._
+_Last updated: 2026-10-02 — story 0067. Rule 2's `__('Cancel')` example corrected (`lang/es.json` does translate it; the real hazard is an unreviewed JSON catalog and per-surface divergence) and the keyed Settings navlist added as the migration example. Original forward-looking rules (explicit `->locale()` on an `AnonymousNotifiable` notify() call, `trans()`-backed copy for new admin strings, the Layer 1/Layer 2 boundary) are unchanged._

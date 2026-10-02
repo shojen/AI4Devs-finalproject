@@ -93,6 +93,8 @@ return [
         'profile_subtitle' => 'Actualiza tu nombre y correo electrónico',
         'security_subtitle' => 'Mantén tu cuenta segura: contraseña, doble factor y passkeys',
         'appearance_subtitle' => 'Actualiza la apariencia de tu cuenta',
+        'language' => 'Idioma',
+        'language_subtitle' => 'Elige el idioma de la interfaz de administración',
     ],
 
 ];
