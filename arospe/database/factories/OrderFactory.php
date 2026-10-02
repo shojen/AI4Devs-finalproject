@@ -110,14 +110,14 @@ class OrderFactory extends Factory
      */
     public function paid(): static
     {
-        return $this->state(fn (array $attributes): array => [
+        return $this->state(fn (): array => [
             'payment_status' => PaymentStatus::Paid,
         ])->afterCreating(function (Order $order): void {
             OrderPayment::factory()->create([
                 'order_id' => $order->getKey(),
                 'payment_method_id' => $order->payment_method_id,
                 'type' => OrderPaymentType::Transfer,
-                'paid_at' => $order->created_at,
+                'paid_at' => $order->created_at ?? now(),
             ]);
         });
     }
