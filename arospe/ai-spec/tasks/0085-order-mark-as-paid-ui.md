@@ -1,25 +1,30 @@
 # [0085] Orders — "Mark as paid" control in the orders list and the order detail (frontend)
 
-> **Status: Phase 1 complete (Three Amigos debate held 2026-10-01).** Ready for Phase 2 (INVEST check, not run yet).
-> Backend companion: [0084](done/0084-order-mark-as-paid-backend.md), which this story is blocked on — its action contract, refusal logging
-> and `Order::isAwaitingPayment()` are what this story consumes.
+> **Status: Phase 1 updated, awaiting Phase 2** (Three Amigos debate held 2026-10-01; re-debated and updated 2026-10-02 to the reworked
+> backend contract). INVEST check not run yet.
+> Backend companion: [0084](done/0084-order-mark-as-paid-backend.md), which this story is blocked on — its action contract, refusal logging,
+> `order_payments` table (including `recorded_by`) and `Order::isAwaitingPayment()` are what this story consumes.
 > Items marked **⚑ owner to confirm** are facilitator decisions the project owner has not explicitly ratified.
 > **Owner-confirmed:** the control exists in the orders **list** and on the order **detail** page, and **not** on the dashboard home's
 > "Latest orders" widget; both confirm first; no undo.
 >
-> **⚠ Scope flagged for re-debate (2026-10-02) — backend contract changed by the owner; this story is NOT yet updated to it.**
-> [0084](0084-order-mark-as-paid-backend.md#rework-2026-10-02) was reworked: `MarkOrderAsPaid` now takes
-> `(Order $order, PaymentMethod $paymentMethod, OrderPaymentType $type)` — the dashboard must pass the bank-transfer payment method and
-> `OrderPaymentType::Transfer` — and the payment moment is no longer `orders.paid_at` but `order_payments.paid_at`, reached through
-> `Order::payment()` (nullable for legacy paid orders), so every `$order->paid_at` reference below (e.g. the detail page's payment date)
-> is stale. The owner also wants the control placed **in the order create/edit section** of the dashboard, in addition to the list and
-> detail page. The decisions, Gherkin, files and tests below still describe the previous contract and placement; re-run the Phase 1
-> debate for these changes before Phase 2.
+> **Re-debate resolved (2026-10-02).** [0084](done/0084-order-mark-as-paid-backend.md#rework-2026-10-02) was reworked (`MarkOrderAsPaid` takes
+> `(Order $order, PaymentMethod $paymentMethod, OrderPaymentType $type)`; the payment moment lives in `order_payments.paid_at`, reached through
+> `Order::payment()`) and then amended with `order_payments.recorded_by`. Owner decisions for this story:
+> 1. **Placement:** the orders **list** (per eligible row) and the order **detail** (`Show`, which is also the line-item editor). There is
+>    **no create-order screen** today, so no control there; a future story that adds one will add the control.
+> 2. **Fixed method and type:** the UI always calls the action with the bank-transfer `PaymentMethod` and `OrderPaymentType::Transfer`;
+>    there is **no selector**. The method is resolved server-side with
+>    `PaymentMethod::query()->where('code', PaymentMethodCode::BankTransfer)->firstOrFail()`, never from client input. The confirmation
+>    dialog states "paid by bank transfer".
+> 3. **Paid-order header line:** the detail page of a paid order shows one line with the payment date, the payment type label and who
+>    recorded it, from `Order::payment()` (see D-3).
+> 4. **List scope:** the list gets only the per-row button plus confirmation (no paid-date column, no bulk marking).
 >
-> **Requirement from 0084's Phase 4 re-audit (F-2, Low):** the UI/Livewire caller must validate the payment type with
-> `Rule::enum(OrderPaymentType::class)`, resolve the payment method server-side with `findOrFail` (never trust a posted model or id
-> as-is), and add a payment-method-code to `OrderPaymentType` mapping before a second payment method ships (the action does not
-> cross-check method and type). Also F-1: the action records no actor; do not promise "who paid" in the UI unless the owner adds `paid_by`.
+> **Deferred requirement (0084 Phase 4 re-audit, F-2, Low):** the `Rule::enum(OrderPaymentType::class)` validation, the `findOrFail`
+> lookup of a posted method and the payment-method-code to `OrderPaymentType` mapping become mandatory in **the story that adds a payment
+> method/type selector**; with the fixed method and type of this story there is no client input to validate. F-1 (no actor) is resolved:
+> `recorded_by` exists, so the UI may show who recorded the payment.
 
 ## Description
 
@@ -27,7 +32,9 @@ Expose story [0084](done/0084-order-mark-as-paid-backend.md)'s `MarkOrderAsPaid`
 hand that a pending order has been paid (PRD §3.2: a manual admin-set status, no payment gateway).
 
 1. **The orders list** (`App\Livewire\Orders\Index`, `/orders`): a "Mark as paid" button in each eligible row's actions column.
-2. **The order detail page** (`App\Livewire\Orders\Show`, `/orders/{order}`): the same button in the totals section, plus the payment date.
+2. **The order detail page** (`App\Livewire\Orders\Show`, `/orders/{order}`, which is also the line-item editor): the same button in the totals section, plus, for a paid order, a header line with the payment date, type and who recorded it.
+
+Both screens always record a **bank transfer** (fixed `PaymentMethod` and `OrderPaymentType::Transfer`, no selector). There is no create-order screen today, so no control there.
 
 It is **not** added to the dashboard home's "Latest orders" widget of [0083](done/0083-dashboard-home-overview-ui.md): that widget links to the
 orders list and to each order's page, where the action already lives.
@@ -80,7 +87,7 @@ refund control's disabled-with-tooltip precedent: two dimensions there, one here
   opener by an unauthorized actor opens no dialog. ⚑
 - **`dismissMarkAsPaid()`** — clears both properties; wired to Cancel **and** to the modal's `@close` (Esc, backdrop, X).
 - **`markAsPaid(MarkOrderAsPaid $action)`** — guards a null id (translated error toast, close, refresh), **re-loads `Order::find($id)`** (never
-  trusts the row snapshot; missing → translated `orders.payment.not_found` danger toast), then **calls the action unconditionally**:
+  trusts the row snapshot; missing → translated `orders.payment.not_found` danger toast), then resolves the fixed bank-transfer method (`PaymentMethod::query()->where('code', PaymentMethodCode::BankTransfer)->firstOrFail()`, server-side, never from client input) and **calls the action unconditionally** as `$action($order, $method, OrderPaymentType::Transfer)`:
   - `ValidationException` → danger `Flux::toast` with `$e->validator->errors()->first()` (the already-paid / cancelled message), close, refresh.
   - `AuthorizationException` is **not caught**: the action has already logged the refusal; it surfaces as a 403.
   - Success → clear state, close, refresh, `Flux::toast(variant: 'success', text: __('orders.payment.marked', ['number' => …]))`.
@@ -89,7 +96,7 @@ refund control's disabled-with-tooltip precedent: two dimensions there, one here
     story must revisit it).
 - **Dialog:** one page-level `<x-confirm-dialog test-prefix="mark-as-paid" model="showMarkPaidConfirm" confirm-action="markAsPaid"
   dismiss-action="dismissMarkAsPaid">`, appended before the closing `</div>` of the view and **outside** the `@if (count($this->orders) > 0)`
-  so it is always in the DOM. Heading/body come from lang with `:number` only; the **amount goes in the slot** as `<x-money :amount="$row['total']"/>`
+  so it is always in the DOM. Heading/body come from lang with `:number` only and the body states the order is paid **by bank transfer**; the **amount goes in the slot** as `<x-money :amount="$row['total']"/>`
   under an "Amount received" label (no float cast, no `€` duplicated into a lang string). Both values come from the server row, never client state.
 - **Button (actions cell, `orders.blade.php:110-121`):** the existing View button lines stay byte-identical; wrap View + new button in
   `<div class="flex items-center gap-2 whitespace-nowrap">`; new button `data-test="mark-as-paid-{id}"`, visible label "Mark as paid" **plus**
@@ -111,19 +118,21 @@ refund control's disabled-with-tooltip precedent: two dimensions there, one here
 - **`confirmMarkAsPaid()`** — `if (! $this->canMarkPaid) { return; }` then opens the dialog (silent no-op, no Gate throw, no logging).
   **`dismissMarkAsPaid()`** closes it (Cancel and `@close`).
 - **`markAsPaid(MarkOrderAsPaid $action)`** — `resetErrorBag('payment')`; **calls the action unconditionally and does NOT pre-authorize with a
-  bare `Gate::authorize`** (that would skip the action's refusal logging); `ValidationException` → close dialog, `refreshOrderState()`,
+  bare `Gate::authorize`** (that would skip the action's refusal logging); it resolves the fixed bank-transfer method exactly as the list does and calls `$action($order, $method, OrderPaymentType::Transfer)`; `ValidationException` → close dialog, `refreshOrderState()`,
   `addError('payment', $this->firstMessage($e))` (`Show.php:733`); success → close, `refreshOrderState()`, success `Flux::toast`.
   `AuthorizationException` propagates (already logged); a missing order is the existing `findOrFail` 404.
 - **Markup:** in the **totals section**, immediately above the `@if ($this->isRefundable)` refund block (`show.blade.php:~340`):
   `@if ($this->canMarkPaid)` `<flux:button variant="primary" icon="banknotes" data-test="mark-as-paid" wire:click="confirmMarkAsPaid">`;
   `<flux:error name="payment"/>` **outside** the `@if` and outside the dialog (a raced/forged refusal must stay visible), mirroring
   `show.blade.php:355-358`; the same `<x-confirm-dialog>` after the cancel dialog (`:~420`) with the amount in the slot.
-- **Payment date:** in the header flex row after the badge (`show.blade.php:~72`), `@if ($order->paid_at)` →
-  `<flux:text data-test="paid-at">{{ __('orders.payment.paid_on', ['date' => $order->paid_at->format('d/m/Y H:i')]) }}</flux:text>` — the fixed
-  `d/m/Y H:i` of the list and `placed_at` (the text is localized, the format is not). A paid order with `paid_at = NULL` shows the badge, no
-  line and no error.
+- **Payment header line:** in the header flex row after the badge (`show.blade.php:~72`), `@if ($order->payment)` → one
+  `<flux:text data-test="payment-info">` line with the payment date (`$order->payment->paid_at->format('d/m/Y H:i')` — the fixed `d/m/Y H:i`
+  of the list and `placed_at`; the text is localized, the format is not), the payment type label (`$order->payment->type->label()`, i.e.
+  `OrderPaymentType::label()`) and who recorded it (`$order->payment->recordedBy?->name`). It tolerates a null `recordedBy` (the line omits
+  the "by" part) and a paid order with **no payment row** (legacy): the badge only, no line and no error. `payment.recordedBy` is eager-loaded where
+  the order is loaded (and re-loaded in `refreshOrderState()`) to avoid an N+1 and a lazy load after marking.
 - **Stale page (another admin marked it first):** the action refuses as already paid; the dialog closes, `refreshOrderState()` shows the
-  winner's badge and date, the button disappears.
+  winner's badge and payment line, the button disappears.
 
 ### D-4 — Refusal logging without noise
 
@@ -142,15 +151,16 @@ New top-level `orders.payment.*` (0084 adds `already_paid` and `cancelled_blocke
 | --- | --- | --- |
 | `payment.action` | Mark as paid | Marcar como pagado |
 | `payment.dialog_heading` | Mark this order as paid? | ¿Marcar este pedido como pagado? |
-| `payment.dialog_body` | This records that the payment for order :number was received. It cannot be undone from here. | Esto registra que se recibió el pago del pedido :number. No se puede deshacer desde aquí. |
+| `payment.dialog_body` | This records that order :number was paid by bank transfer. It cannot be undone from here. | Esto registra que el pedido :number se pagó por transferencia bancaria. No se puede deshacer desde aquí. |
 | `payment.dialog_amount` | Amount received | Importe recibido |
 | `payment.dialog_confirm` | Mark as paid | Marcar como pagado |
 | `payment.dialog_dismiss` | Cancel | Cancelar |
 | `payment.marked` | Order :number marked as paid. | Pedido :number marcado como pagado. |
-| `payment.paid_on` | Paid on :date | Pagado el :date |
+| `payment.info` | Paid on :date (:type) | Pagado el :date (:type) |
+| `payment.info_by` | Paid on :date (:type), recorded by :user | Pagado el :date (:type), registrado por :user |
 | `payment.not_found` | This order no longer exists. | Este pedido ya no existe. |
 
-The status word "Paid"/"Pagado" comes from the existing `payment_statuses.paid`. Placeholders (`:number`, `:date`) are identical in both locales.
+The status word "Paid"/"Pagado" comes from the existing `payment_statuses.paid`. Placeholders (`:number`, `:date`, `:type`, `:user`) are identical in both locales; `:type` is `OrderPaymentType::label()`.
 
 ### D-6 — Coordination with story 0083 on `orders.blade.php`
 
@@ -166,15 +176,17 @@ The status word "Paid"/"Pagado" comes from the existing `payment_statuses.paid`.
 ### D-7 — Reuse and scope
 
 `<x-confirm-dialog>`, `<x-money>`, `flux:button`/`flux:badge`, `Flux::toast`; **no new component, no dependency.** Bulk marking and a paid-date
-column in the list are **out of scope** (recommended: no, ⚑).
+column in the list are **out of scope** (owner decision). A payment-method/type selector is also out of scope (fixed bank transfer); the F-2 requirements move to the story that adds it.
 
 ## Open questions closed
 
 | Q | Resolution |
 | --- | --- |
 | Dashboard widget action | **no** (owner) — the control lives in the list and the detail |
-| Bulk marking from the list | no (⚑) |
-| Paid date in the list | no (⚑) |
+| Bulk marking from the list | no (owner) |
+| Paid date in the list | no (owner) |
+| Control in a create-order screen | none exists today; a future story adds it (owner) |
+| Payment method and type | fixed bank transfer, no selector (owner) |
 | Dialog state type | a bool for the modal plus a `#[Locked]` id (list) / a bool only (detail) |
 | Hidden vs disabled when not permitted | hidden (recorded divergence from the refund control) |
 
@@ -215,6 +227,11 @@ Scenario: The list hides the button from a user who may only view orders
   When Nora opens the orders list
   Then no row offers a "Mark as paid" button
   And no refusal is recorded
+
+Scenario: The confirmation states the payment is by bank transfer
+  Given Olga, an order administrator, and an order whose payment state is Pending payment
+  When Olga asks to mark the order as paid from the orders list
+  Then the confirmation says the order is paid by bank transfer
 
 Scenario: The confirmation names the order that was clicked
   Given Olga, an order administrator, and three orders whose payment state is Pending payment
@@ -269,10 +286,12 @@ Scenario: The detail hides the button from a user who may only view orders
   Then Nora does not see the "Mark as paid" button
   And no refusal is recorded
 
-Scenario: Confirming on the detail marks the order as paid and shows the date
+Scenario: Confirming on the detail marks the order as paid and shows who recorded it
   Given Olga, an order administrator, who was asked to confirm marking an order as paid on its page
   When Olga confirms
-  Then the order shows the payment state Paid and the date it was paid
+  Then the order shows the payment state Paid
+  And the header shows the payment date, the type "Transfer" and that Olga recorded it
+  And the order was recorded as paid by bank transfer
   And Olga is told the order was marked as paid
   And the "Mark as paid" button is gone
 
@@ -290,7 +309,7 @@ Scenario: An order marked by someone else in the meantime is reported, not repea
   Given Olga, an order administrator, who was asked to confirm marking an order as paid, and Omar has marked it as paid since
   When Olga confirms
   Then Olga is told the order is already paid
-  And the order keeps the date Omar's mark recorded
+  And the order keeps the payment Omar recorded
 
 Scenario: An order cancelled in the meantime is reported, not applied
   Given Olga, an order administrator, who was asked to confirm marking an order as paid, and Omar has cancelled that order since
@@ -326,12 +345,23 @@ Scenario: A second confirmation of the same order is ignored
   Given Olga, an order administrator, who has just confirmed marking an order as paid
   When Olga confirms the same order a second time
   Then Olga is told the order is already paid
-  And the order keeps its original payment date
+  And the order keeps its original payment
 
-Scenario: An order paid before payment dates were recorded shows no date
-  Given Olga, an order administrator, and a paid order without a recorded payment date
+Scenario: An order paid before payments were recorded shows only its badge
+  Given Olga, an order administrator, and a paid order with no payment record
   When Olga opens the order
-  Then the payment state is shown without a date and without an error
+  Then the payment state is shown without a payment line and without an error
+
+Scenario: A payment whose recorder is unknown still shows its date and type
+  Given Olga, an order administrator, and a paid order whose payment has no recorded user
+  When Olga opens the order
+  Then the header shows the payment date and type without a recorder and without an error
+
+Scenario: The order list has no paid-date column and no bulk marking
+  Given Olga, an order administrator, and orders awaiting payment and paid
+  When Olga opens the orders list
+  Then no row shows a payment date
+  And no control marks several orders at once
 
 Scenario: The controls speak the administrator's language
   Given Laura, an order administrator whose admin UI language is Spanish
@@ -343,15 +373,16 @@ The earlier "latest-orders widget has no button" scenario is **owned by 0083** (
 
 ## Files to create/modify
 
-- `app/Livewire/Orders/Index.php` — properties, `canMarkPaid` row key, `confirmingPaidRow`, `confirmMarkAsPaid`, `dismissMarkAsPaid`,
+- `app/Livewire/Orders/Index.php` — properties (and the server-side fixed bank-transfer method lookup), `canMarkPaid` row key, `confirmingPaidRow`, `confirmMarkAsPaid`, `dismissMarkAsPaid`,
   `markAsPaid`; **class docblock and both array-shape docblocks updated**
 - `resources/views/livewire/orders.blade.php` — actions-cell button, one page-level dialog; **view docblock updated**
-- `app/Livewire/Orders/Show.php` — `showMarkPaidConfirm`, `canMarkPaid`, `confirmMarkAsPaid`, `dismissMarkAsPaid`, `markAsPaid`, the
-  `refreshOrderState()` unset list, the `@property-read` docblock
-- `resources/views/livewire/orders/show.blade.php` — payment-date line, button, `<flux:error name="payment"/>`, dialog
+- `app/Livewire/Orders/Show.php` — `showMarkPaidConfirm`, `canMarkPaid`, `confirmMarkAsPaid`, `dismissMarkAsPaid`, `markAsPaid` (fixed bank-transfer method and `OrderPaymentType::Transfer`), the
+  `refreshOrderState()` unset list (including the `payment.recordedBy` eager load), the `@property-read` docblock
+- `resources/views/livewire/orders/show.blade.php` — payment header line (date, type, recorder), button, `<flux:error name="payment"/>`, dialog
 - `lang/en/orders.php`, `lang/es/orders.php` — the D-5 keys
 - `tests/Feature/Orders/IndexTest.php` — **edit the public-methods reflection test deliberately**: allow `confirmMarkAsPaid`,
   `dismissMarkAsPaid`, `markAsPaid`, `confirmingPaidRow` and assert **exactly one** public method can reach a write (`markAsPaid`)
+- No create-order screen exists, so nothing changes there; no payment-method selector is added.
 - Tests below; docs (Phase 6): `docs/api/orders.md` (both screens' control, the new public methods, the lang group)
 
 ## Tests to perform
@@ -370,7 +401,7 @@ of `data-test="mark-as-paid-`, not mere presence):
     C's; opening A then B leaves B; Cancel, Esc, backdrop and X all reset both properties without error; confirm writes B only.
   - **In place:** the row shows Paid, loses the button, the other rows are byte-identical, the success toast is dispatched (`assertDispatched('toast-show')`),
     the row **stays** in the list.
-  - **Races and refusals:** already-paid elsewhere → translated message, `paid_at` unchanged; cancelled meanwhile → translated message, no write;
+  - **Races and refusals:** already-paid elsewhere → translated message, the recorded payment unchanged; cancelled meanwhile → translated message, no write;
     **permission revoked after the dialog opened** (forget the cached permissions) → refused **and logged**; order removed → translated not-found; double
     call → second is the already-paid message, one write, one success toast.
   - **Forged calls:** a view-only actor calling `confirmMarkAsPaid('<id>')` then `markAsPaid()` is refused **and** `Log::spy()` receives the
@@ -383,15 +414,16 @@ of `data-test="mark-as-paid-`, not mere presence):
   - **Public-state audit:** reflection — no public property holds a model/Collection; the only new public properties are the bool and the locked id; the row
     array adds only the `canMarkPaid` bool; the serialized snapshot contains no total or customer name of the confirmed row.
   - **Locale:** `ui_locale = 'es'` on the actor (not `app()->setLocale`): button, dialog, toast and both refusals resolved from the lang files; English absent.
-- `ShowMarkAsPaidTest` — the same visibility matrix on the detail (plus `canMarkPaid()` agrees with the rendered button); confirm flow; `paid-at`
-  line formatted with a frozen clock (exact string), absent for a pending order, absent and error-free for a legacy paid order with `NULL`; the
+- `ShowMarkAsPaidTest` — the same visibility matrix on the detail (plus `canMarkPaid()` agrees with the rendered button); confirm flow; `payment-info`
+  line formatted with a frozen clock (exact string: date `d/m/Y H:i`, type label, recorder name), absent for a pending order, badge-only and error-free for a paid order with **no payment row**, date and type without recorder when `recordedBy` is null, and a query-count check that `payment.recordedBy` is eager-loaded; the action receives the bank-transfer method and `OrderPaymentType::Transfer` (assert the stored `type`, `payment_method_id` and `recorded_by` = the actor); the
   refund control appears after marking for `orders.edit + orders.refund` and **not** for `orders.edit` only; a stale page shows the winner's badge and
   date; both refusals render in the `payment` error slot; forged view-only `markAsPaid` refused **and logged**; `Show::$orderId` cannot be set from
   the client; Esc/backdrop close the dialog; Spanish locale.
+- Fixed-method guard (both components): with no `bank_transfer` payment method seeded the action fails loudly (`firstOrFail`) rather than writing; no client-writable property can change the method or type.
 - `OrdersLangParityTest` (extended) — the new keys in both locales with identical placeholders.
 - `tests/Browser/Orders/MarkAsPaidTest.php` (one journey per test, **five cases**): (1) list — click the **second** of three pending rows, the
   dialog shows that row's number and amount, Escape closes it, the DB is unchanged; (2) list — click, confirm, that row flips to Paid and loses its
-  button, the other two keep theirs, the toast appears, no reload, `assertNoJavaScriptErrors()`; (3) detail — confirm, the `paid-at` line and the refund
+  button, the other two keep theirs, the toast appears, no reload, `assertNoJavaScriptErrors()`; (3) detail — confirm, the `payment-info` line and the refund
   control appear without navigation, then a server-side check; (4) stale page — mark the order from the DB while the page is open, confirm, see the
   translated already-paid message and no error page; (5) dialog focus **only if** the dialog is specified to manage it (otherwise dropped).
   `data-test` selectors (the label "Mark as paid" collides with the dialog title), never `networkidle`, `retry(3, …, 250)` on multi-step flows,
@@ -401,7 +433,7 @@ of `data-test="mark-as-paid-`, not mere presence):
 
 ## Expected outcome
 
-From the orders list or from an order's page an authorized administrator records a payment in two clicks; the order shows Paid (with its date
+From the orders list or from an order's page an authorized administrator records a bank-transfer payment in two clicks; the order shows Paid (with its date, type and recorder
 on the detail page) and becomes refundable.
 
 ## Acceptance criteria
@@ -412,8 +444,9 @@ on the detail page) and becomes refundable.
   all close it without error.
 - The components never pre-authorize with a bare `Gate::authorize`; a **forged** call is refused and **logged** by the action; rendering as an
   unauthorized actor logs nothing; refusals, races, missing/garbage ids and a revoked permission give a translated message or a 403, never a 500.
-- After marking, the list row / the detail page reflects the new state without a reload; the detail also shows the payment date and, for a refunding
-  actor, the refund control; a legacy `NULL` date renders cleanly.
+- After marking, the list row / the detail page reflects the new state without a reload; the detail also shows the payment line (date, type, recorder) and, for a refunding
+  actor, the refund control; a paid order with no payment row or no recorder renders cleanly.
+- The action is always called with the server-resolved bank-transfer method and `OrderPaymentType::Transfer`; the UI offers no selector.
 - No per-row query is added to the list; the public surface of both components contains only scalars and a locked id; all copy exists in `en` and
   `es` with identical key sets and placeholders; no new component or dependency.
 - The now-false read-only claims in `Index` (class docblock, view docblock, reflection test) are rewritten to the new, precise claim.
@@ -425,7 +458,7 @@ on the detail page) and becomes refundable.
 - [ ] Tests written first, **full suite** green (unscoped, including `tests/Browser`, locally)
 - [ ] Pint (unscoped), Larastan, `npm run build` clean
 - [ ] Appsec review (forged calls and ids, refusal logging, public state, focus/keyboard dismissal)
-- [ ] Docs synced (orders routes/contracts, lang group, the `Index` read-only claim)
+- [ ] Docs synced (orders routes/contracts, lang group, the `Index` read-only claim, the payment header line)
 - [ ] `IndexTest` reflection allow-list and the `Index` docblocks updated in the same change
 
 ## Risks and follow-ups
@@ -435,6 +468,9 @@ on the detail page) and becomes refundable.
 - **Shared file with 0083** (`orders.blade.php`): disjoint hunks, hook-only tests; whichever lands second rebases.
 - **Focus after success** falls to `body` (the opener leaves the DOM) — accepted for now.
 - **Toast assertions are flake-prone** in the browser; Livewire `assertDispatched` carries the contract.
+- **Fixed bank transfer:** a future payment-method selector story must add `Rule::enum`, a `findOrFail` lookup and the code-to-type mapping (0084 F-2).
+- **No create-order screen yet:** a future story adds the control there.
+- **`recorded_by` is interim:** a later story replaces it with a movements log; the header line must then read from the new source.
 - **Hidden vs disabled:** a user without `orders.edit` gets no hint that the action exists (divergence from the refund control).
 
 ## Dependencies

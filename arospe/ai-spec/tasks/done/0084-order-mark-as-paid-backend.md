@@ -152,8 +152,8 @@ down-migration of a deployed column is needed.
 - **`type` as `VARCHAR(20)` + PHP enum, not a MySQL `ENUM` column** — the repo convention for every domain enum; adding `card`/`paypal`
   needs no `ALTER TABLE`. (The owner's wording was "DB/PHP enum"; this reading is ⚑ to confirm, Q-7.)
 - **No `amount` column** — the whole `total` is considered paid (D-6); `refunded_amount` stays the only money counter.
-- **No actor column** (`paid_by`) — out of scope; carried in Risks (the Phase 4 finding "a successful mark records no actor" stands).
-- **Indexes:** exactly `primary`, `order_payments_order_id_unique` and `order_payments_payment_method_id_foreign`; no hand-written index
+- **Actor column:** originally out of scope; added by the 2026-10-02 amendment as `recorded_by` (see the Amendment section).
+- **Indexes:** exactly `primary`, `order_payments_order_id_unique`, `order_payments_payment_method_id_foreign` and (amendment) `order_payments_recorded_by_foreign`; no hand-written index
   (no index on `paid_at` — measured-trigger follow-up with 0082, see D-7).
 - **No backfill.** Existing paid/refunded orders can only come from factories/tests. **A paid order without a payment row is valid**
   ("no recorded payment": legacy rows), so readers must not assume `payment()` is non-null for a paid order; `payment_status` on `orders`
@@ -523,14 +523,27 @@ checkout can record card/PayPal payments through the same action.
 - **Unindexed `orders.created_at`/`order_payments.paid_at`** — measured-trigger follow-up (D-7).
 - **Method/type consistency not validated** (Q-4) — becomes relevant when a second payment method exists.
 - **Factory gap:** no `cancelled()`/`refunded()` states; tests use inline states (adding them is optional).
-- **A successful mark records no actor** (Phase 4 finding, first design; still true): no log line and no `paid_by` column. For the owner
-  to decide; `order_payments` is now the natural home for a future `paid_by`.
+- ~~A successful mark records no actor~~ — **resolved by the 2026-10-02 amendment** (`order_payments.recorded_by`); a successful mark still writes no log line.
 - **Test-file deviation (first design):** `MarkOrderAsPaidRefusalLoggingTest.php` is its own file instead of an extension of `RefusalLoggingTest.php`.
 - **Timestamp limits:** MySQL `timestamp` shares its 2038 range with `created_at`; no new risk.
-- **F-1 (Medium, Phase 4 re-audit): `order_payments` has no actor column**, unlike `refunds.refunded_by`, and a successful mark logs nothing, so no one can later answer who marked an order paid. Owner decision; cheapest to add now, while the story is unmerged.
+- **F-1 (Medium, Phase 4 re-audit) — RESOLVED by the 2026-10-02 amendment (`recorded_by`).** Original finding: `order_payments` had no actor column, unlike `refunds.refunded_by`, and a successful mark logs nothing, so no one can later answer who marked an order paid. Owner decision; cheapest to add now, while the story is unmerged.
 - **F-2 (Low, Phase 4 re-audit): method/type are caller-trusted.** 0085 must validate the type with `Rule::enum(OrderPaymentType::class)`, resolve the method server-side with `findOrFail` (never a posted model) and add a method-code-to-type mapping before a second payment method ships. Noted in [0085](../0085-order-mark-as-paid-ui.md).
 - **F-3 / F-4:** informational findings of the same re-audit, no action required.
-- **0085 scope change:** the owner also wants the control in the order create/edit section; 0085 must be re-debated (see its note).
+- **0085 scope change:** resolved — 0085 was re-debated on 2026-10-02 (list + detail only; there is no create-order screen today).
+
+## Amendment (2026-10-02): recorded_by
+
+**Owner decision.** After the rework the owner asked that the payment record who marked the order as paid (the Phase 4 re-audit's F-1). It is a deliberately small, additive interim: a later story will replace it with a movements log table.
+
+**Contract.**
+- `order_payments.recorded_by`: nullable `CHAR(36)` FK to `users.id`, `restrictOnDelete()`, placed after `paid_at`; the migration (still unmerged) was edited in place. Indexes are now `primary`, `order_payments_order_id_unique`, `order_payments_payment_method_id_foreign` and `order_payments_recorded_by_foreign`.
+- `MarkOrderAsPaid` fills it with `Auth::id()` inside the same transaction as the compare-and-set `UPDATE`; the action signature is unchanged (three parameters).
+- `OrderPayment::recordedBy(): BelongsTo` (to `User`). Still not mass-assignable (`#[Fillable([])]`); factories leave it `null`.
+- A successful mark still writes no log line.
+
+**Findings.** F-1 (Medium, no actor on a payment) is **resolved**; the Risks entries above are struck or updated accordingly. F-2 to F-4 are unchanged.
+
+**Approvals.** The Phase 4 and Phase 5 approvals below predate this small additive amendment. The full suite, Pint and Larastan are re-run before the PR is handed over.
 
 ## Approval records
 
