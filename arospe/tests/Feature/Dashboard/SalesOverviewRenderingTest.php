@@ -51,12 +51,28 @@ it('starts on the last 30 days per day with every status chip on except Cancelle
 it('renders the card root, a heading and the two tables as screen-reader-only text', function () {
     $html = Sales::component()->html();
 
+    // A display:table element ignores sr-only's width/overflow, so each table must sit inside an unclosed sr-only wrapper.
+    // strrpos instead of a lookahead regex: the latter exhausts PCRE's JIT stack on the full card HTML.
+    $isInsideOpenSrOnlyWrapper = function (string $table) use ($html): bool {
+        $tablePosition = strpos($html, '<table data-test="'.$table.'"');
+
+        if ($tablePosition === false) {
+            return false;
+        }
+
+        $beforeTable = substr($html, 0, $tablePosition);
+        $wrapperPosition = strrpos($beforeTable, '<div class="sr-only">');
+
+        return $wrapperPosition !== false
+            && ! str_contains(substr($beforeTable, $wrapperPosition), '</div>');
+    };
+
     expect(Ui::present($html, 'sales-overview'))->toBeTrue()
         ->and(Ui::text($html, 'sales-title'))->toBe(__('dashboard.sales.title'))
         ->and(Ui::tagName($html, 'sales-money-table'))->toBe('table')
-        ->and($html)->toMatch('/<div class="[^"]*\bsr-only\b[^"]*">(?:(?!<\/div>).)*<table data-test="sales-money-table"/s')
+        ->and($isInsideOpenSrOnlyWrapper('sales-money-table'))->toBeTrue()
         ->and(Ui::tagName($html, 'sales-orders-table'))->toBe('table')
-        ->and($html)->toMatch('/<div class="[^"]*\bsr-only\b[^"]*">(?:(?!<\/div>).)*<table data-test="sales-orders-table"/s')
+        ->and($isInsideOpenSrOnlyWrapper('sales-orders-table'))->toBeTrue()
         ->and(Ui::attribute($html, 'money-chart-canvas', 'aria-hidden'))->toBe('true')
         ->and(Ui::attribute($html, 'orders-chart-canvas', 'aria-hidden'))->toBe('true')
         ->and(Ui::present($html, 'sales-summary'))->toBeTrue();
