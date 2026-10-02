@@ -93,6 +93,8 @@ frontend-expert, frontend-qa) and both are now Phase 1 complete, awaiting Phase 
 
 **Update (2026-10-02): `0084-order-mark-as-paid-backend.md` completed Phase 7 (second time: the owner replaced `orders.paid_at` with the one-per-order `order_payments` table before the PR merged, the story was reopened and re-run through Phases 2-7) and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`.** Its node and the edge `P0084 --> P0085` are dropped from the graph and its `tasks-status.json` entry (the `claimed` one) was deleted. **`0085` had `0084` as its only pending dependency, so it moves from `blocked` to `ready`** (its scope is flagged for re-debate in its own file: the action now takes a payment method and type, and the owner also wants the control in the order create/edit section). Link integrity: the moved file's outbound links resolve from `done/`; the inbound links from `0085` (3), `0086` (2) and the done `0082` (3, now a bare sibling link) point at `done/0084-…`; no `docs/` page links to it. `ai-spec/tasks/in-progress/` is empty.
 
+**Update (2026-10-02): `0085-order-mark-as-paid-ui.md` passed Phase 2 (INVEST, approved with corrections) and moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`; it is now `claimed` (worktree `0085-order-mark-as-paid-ui`, branched from the 0084 branch because 0084 is not yet merged into `main`).** Link integrity: the moved file's outbound links (`done/…`) were rewritten to `../done/…`; the inbound links from `0086` (1) and the done `0082` (2), `0083` (2) and `0084` (4) now point at `in-progress/0085-…`.
+
 **Update (2026-10-01): `0085` amended on the owner's answer** — the "Mark as paid" control lives in the **orders list table** and the
 **order detail page**, not in the dashboard home's latest-orders widget (read-only). `0085` therefore also touches
 `app/Livewire/Orders/Index.php` and `resources/views/livewire/orders.blade.php`, which `0083` edits too (badge extraction), so
@@ -597,7 +599,8 @@ flowchart LR
     %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
     class P0073,P0075,P0077,P0079 pending;
-    class P0067,P0069,P0071,P0072,P0074,P0076,P0078,P0085,P0086 ready;
+    class P0067,P0069,P0071,P0072,P0074,P0076,P0078,P0086 ready;
+    class P0085 claimed;
 
 ```
 
