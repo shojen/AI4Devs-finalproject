@@ -16,7 +16,7 @@ Every FK's `->cascadeOnDelete()` / `->restrictOnDelete()` / `->nullOnDelete()` c
 
 Verified against a live, migrated instance rather than read off either migration file: `php artisan db:table orders` reports `orders_customer_id_foreign`, `orders_payment_method_id_foreign`, `orders_sales_region_id_foreign` and `orders_shipping_rate_id_foreign` all as `no action / restrict`; `php artisan db:table order_items` reports `order_items_order_id_foreign` as `no action / cascade` and both `order_items_product_id_foreign` / `order_items_product_variant_id_foreign` as `no action / set null` — exactly the three-way split above, and no hand-written `$table->index()` on any of the six columns ([An FK column does not also get an explicit index here](uuid-primary-keys.md#an-fk-column-does-not-also-get-an-explicit-index-here)).
 
-Story 0084's `order_payments.order_id` and `.payment_method_id` are two more restrict instances (a payment is a financial fact; see [`order_payments`](../schema-orders/payments.md#order_payments)).
+Story 0084's `order_payments.order_id`, `.payment_method_id` and the nullable `.recorded_by` (to `users`) are three more restrict instances (a payment is a financial fact; see [`order_payments`](../schema-orders/payments.md#order_payments)).
 
 **The rule, stated once for reuse:** cascade when the child is a *part of* its parent; restrict when the child is a *peer* whose own data the delete would destroy or orphan; null when a *snapshot* already makes the reference optional to the row's own meaning. A new FK on a domain table should be assignable to one of these three by asking which of the three sentences describes the relationship — not by pattern-matching the nearest existing table.
 

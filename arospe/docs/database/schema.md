@@ -48,6 +48,7 @@ erDiagram
     SHIPPING_RATES ||--o{ ORDERS : "shipping_rate_id (nullable)"
     ORDERS ||--o{ ORDER_ITEMS : order_id
     ORDERS ||--o| ORDER_PAYMENTS : order_id
+    USERS ||--o{ ORDER_PAYMENTS : "recorded_by (nullable)"
     PAYMENT_METHODS ||--o{ ORDER_PAYMENTS : payment_method_id
     PRODUCTS ||--o{ ORDER_ITEMS : "product_id (nullable)"
     PRODUCT_VARIANTS ||--o{ ORDER_ITEMS : "product_variant_id (nullable)"
@@ -314,6 +315,7 @@ erDiagram
         uuid payment_method_id FK
         string type
         timestamp paid_at
+        uuid recorded_by FK
     }
     REFUNDS {
         uuid id PK
@@ -428,6 +430,6 @@ Split by domain into separate files, per [contracts.md](../contracts/token-and-d
 - For migration authoring conventions (naming, `down()` requirements, real examples), see [database/migrations.md](migrations.md).
 - **UUID (v7) primary keys.** Each table's PK type (`uuid` vs `bigint`) is already visible directly in the ER diagram above, and each per-domain schema file states its own table's status against [ADR 0001](../decisions/0001-uuid-primary-keys.md) at the point that table is documented — so this section no longer restates a consolidated status list. The ADR is the single source of truth for the policy and its full history: which entities it covers, the one named `bigint` exception (`geography_entries`), and every amendment since. The model-side convention (`HasUuids`, `@property string $id`, no restated `$keyType`/`$incrementing`) is in [conventions/base-standards.md](../conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys); the migration-side pattern is in [database/migrations.md](migrations/uuid-primary-keys.md#uuid-primary-keys).
 
-_Last updated: 2026-10-02 — Story 0084 (order mark-as-paid, backend, reworked). `ORDER_PAYMENTS` joined the diagram (one row per order via a unique `order_id`; `ORDERS ||--o| ORDER_PAYMENTS` and `PAYMENT_METHODS ||--o{ ORDER_PAYMENTS`; see [`order_payments`](schema-orders/payments.md#order_payments)); `ORDERS` has no `paid_at`. Still current from story 0070: `PRODUCT_CATEGORIES` lost its `string name UK` line and `PRODUCT_CATEGORY_TRANSLATIONS` (one row per `(product_category_id, store_language_id)`) joined the diagram; the **Notes** model-class inventory counts twenty-four. Every application table is diagrammed, relationships or not — since story 0058._
+_Last updated: 2026-10-02 — Story 0084 (order mark-as-paid, backend, reworked; amended with `recorded_by`). `ORDER_PAYMENTS` joined the diagram (one row per order via a unique `order_id`, plus a nullable `recorded_by` FK to `users` with `USERS ||--o{ ORDER_PAYMENTS`; `ORDERS ||--o| ORDER_PAYMENTS` and `PAYMENT_METHODS ||--o{ ORDER_PAYMENTS`; see [`order_payments`](schema-orders/payments.md#order_payments)); `ORDERS` has no `paid_at`. Still current from story 0070: `PRODUCT_CATEGORIES` lost its `string name UK` line and `PRODUCT_CATEGORY_TRANSLATIONS` (one row per `(product_category_id, store_language_id)`) joined the diagram; the **Notes** model-class inventory counts twenty-four. Every application table is diagrammed, relationships or not — since story 0058._
 
 _Earlier revision notes: [database--schema.md](../history/database--schema.md)._
