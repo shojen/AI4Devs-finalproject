@@ -1,21 +1,26 @@
 <?php
 
-// Story 0067 owns the `switcher.*` group (the chrome interface-language switcher); `attributes`
-// and `settings.*` stay reserved for story 0069.
-//
-// Story 0068 -- reserved for the default-locale settings area. The `attributes` block this file
-// originally carried (for the two camelCase field names `defaultUiLocale`/`defaultNotificationLocale`)
-// existed solely to serve App\Concerns\LocaleSettingValidationRules's two rule methods, which
-// nothing in this story called (both App\Actions\Localization\SetDefaultUiLocale and
-// SetDefaultNotificationLocale take an already-type-safe UiLocale parameter, never a raw string
-// needing validation). Phase 5 code review finding B2 deleted that trait as a Larastan
-// `trait.unused` violation this project's CI fails the build on -- ownership of the validation
-// concern (and the attributes this file will then carry) moves to story 0069, whose settings form
-// is its real, calling consumer. Left as an empty, valid lang file rather than deleted outright, so
-// `lang/es/localization.php` stays its key-for-key twin and 0069 has a file to populate rather than
-// create.
+// Story 0067 owns the `switcher.*` group (the chrome interface-language switcher). Story 0069 owns
+// `settings.*` (the Store Languages screen's dashboard defaults section) and `attributes` (the two
+// camelCase property names App\Concerns\LocaleSettingValidationRules validates).
 return [
     'switcher' => [
         'heading' => 'Language',
+    ],
+
+    'settings' => [
+        'heading' => 'Dashboard defaults',
+        'description' => 'System-wide defaults. They apply to every dashboard visitor who has not chosen their own language, and to the sign-in page itself. They are not your personal preference.',
+        'default_ui_locale_label' => 'Default dashboard language',
+        'default_notification_locale_label' => 'Default notification email language',
+        'default_notification_locale_description' => 'The language notifications are sent in to a recipient who has not chosen their own.',
+        'save' => 'Save',
+        'saved' => 'Default saved.',
+        'action_not_allowed' => 'Action not allowed',
+    ],
+
+    'attributes' => [
+        'defaultUiLocale' => 'default dashboard language',
+        'defaultNotificationLocale' => 'default notification email language',
     ],
 ];
