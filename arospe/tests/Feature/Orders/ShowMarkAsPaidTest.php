@@ -21,6 +21,7 @@ use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Log;
+use Livewire\Attributes\Renderless;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
@@ -145,8 +146,9 @@ test('Cancel, Esc, the backdrop and the X all reach dismissMarkAsPaid, which clo
 
     $component->call('dismissMarkAsPaid')->assertHasNoErrors()->assertSet('showMarkPaidConfirm', false);
 
-    expect(MarkAsPaidUi::dialog($component->html()))->toBe('')
-        ->and($order->fresh()->payment_status)->toBe(PaymentStatus::PendingPayment);
+    // dismissMarkAsPaid is renderless (see its docblock), so the closed modal keeps its last markup; the
+    // closed state is the synced property, asserted above.
+    expect($order->fresh()->payment_status)->toBe(PaymentStatus::PendingPayment);
 });
 
 test('confirming marks the order paid by bank transfer, recorded by the actor, and the page reflects it without a reload', function () {
@@ -481,4 +483,10 @@ test('a Spanish administrator gets the dialog, the toast, the payment line and a
 
     expect($stale->html())->toContain(e(__('orders.payment.cancelled_blocked', [], 'es')))
         ->not->toContain(e(__('orders.payment.cancelled_blocked', [], 'en')));
+});
+
+test('dismissing the dialog is renderless so it cannot wipe the payment error a refusal just added', function () {
+    $attributes = (new ReflectionMethod(Show::class, 'dismissMarkAsPaid'))->getAttributes(Renderless::class);
+
+    expect($attributes)->toHaveCount(1);
 });

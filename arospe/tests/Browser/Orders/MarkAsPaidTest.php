@@ -131,10 +131,33 @@ test('confirming on a stale page shows the already-paid message instead of an er
             ->click('@confirm-dialog-mark-as-paid-confirm')
             ->assertSee(__('orders.payment.already_paid'))
             ->assertMissing('@confirm-dialog-mark-as-paid')
+            // The modal's @close fires a second request after the refusal; the message must survive it.
+            ->wait(1)
+            ->assertSee(__('orders.payment.already_paid'))
             ->assertPathIs('/orders/'.$order->id)
             ->assertNoJavaScriptErrors();
 
         expect($order->fresh()->payment_status)->toBe(PaymentStatus::Paid)
             ->and(OrderPayment::query()->where('order_id', $order->id)->count())->toBe(0);
+    }, 250);
+});
+
+test('cancelling the dialog on the detail closes it without paying the order', function () {
+    retry(3, function () {
+        Order::query()->delete();
+        OrderPayment::query()->delete();
+        $order = Order::factory()->withItems(1)->create(['order_number' => 'ORD-CANCEL-666']);
+
+        visit('/orders/'.$order->id)
+            ->assertNoJavaScriptErrors()
+            ->click('@mark-as-paid')
+            ->assertVisible('@confirm-dialog-mark-as-paid')
+            ->click('@confirm-dialog-mark-as-paid-dismiss')
+            ->assertMissing('@confirm-dialog-mark-as-paid')
+            ->assertVisible('@mark-as-paid')
+            ->assertNoJavaScriptErrors();
+
+        expect($order->fresh()->payment_status)->toBe(PaymentStatus::PendingPayment)
+            ->and(OrderPayment::query()->count())->toBe(0);
     }, 250);
 });
