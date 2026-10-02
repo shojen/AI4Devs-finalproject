@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark" @if (app()->environment('testing')) data-testing="true" @endif>
     <head>
         @include('partials.head')
     </head>
