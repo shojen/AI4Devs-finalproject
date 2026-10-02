@@ -44,7 +44,7 @@ was never implemented — nothing in `app/` writes `PaymentStatus::Paid`, so no 
 (0083 edits the orders *list* view; 0085 the *detail* view), so no `conflict_risk_with` entries. Pending count moves from 13 to 15
 numbered files; `done/` unchanged at 92.
 
-**Update (2026-10-02): `0086-dashboard-sales-overview-ui.md` passed Phase 2 (PASS) and moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 started).** Its `tasks-status.json` entry is now `claimed` (by `worktree-0086-dashboard-sales-overview-ui`); the graph is unchanged. The owner ratified the ⚑ defaults with one change (the KPI percent hint shows up to 2 decimals, rounded, instead of an integer). Link-integrity check, both directions: the file's own outbound links gained one `../` level (`../done/0082-…`, `../done/0083-…`, `../done/0084-…`, `../0085-…`) and all resolve; the 5 inbound links from the done `0083` were repointed to `../in-progress/0086-…`; no `docs/` page links to it. Counts: **one file now in `ai-spec/tasks/in-progress/`**, one fewer pending in `ai-spec/tasks/`.
+**Update (2026-10-03): `0086-dashboard-sales-overview-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (Phase 2 PASS 2026-10-02; the owner ratified the ⚑ defaults with one change, the KPI percent hint shows up to 2 decimals). Its node and its `tasks-status.json` entry (the `claimed` one) are dropped because the task is closed. Link-integrity check, both directions: the file's outbound links to `0082`/`0083`/`0084` became bare siblings and `../0085-…` still resolves; the 5 inbound links from the done `0083` were repointed from `../in-progress/0086-…` to the bare sibling `0086-…`; no `docs/` page links to it. `ai-spec/tasks/in-progress/` is empty. Counts: **11 numbered files pending in `ai-spec/tasks/`**.
 
 **Update (2026-10-02): `0067-admin-ui-language-switcher-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** — the fourth Epic 5 story to close. Its node, its `P0067 -.-> P0069` conflict edge and its `tasks-status.json` entry (the `claimed` one) are dropped because the task is closed, and it joins the flat `done/` inventory. Its only pending pairing, `0069`, drops `"0067"` from `conflict_risk_with` (now empty); `0069` had no `depends_on` on it (the story is a soft, rendered-page collision only), so no `status` changes anywhere. Link-integrity check, both directions: this is an `in-progress/` → `done/` move at the same depth, so the file's own outbound links (all `../../../docs/…`) needed no change and all resolve; the inbound links were repointed from `in-progress/0067-…` to `done/0067-…` — `ai-spec/tasks/0069-store-languages-settings-ui.md` (1), `ai-spec/tasks/done/0064b-scheduled-post-publish-failure-notification-backend.md` (2, `../in-progress/0067-…` → bare sibling `0067-…`) and the parent delivery `../readme.md` (1, whose sentence was also updated to say the switcher shipped); `ai-spec/tasks/_digests/epic-5.md` names it only by story number, and no `docs/` page links to it. `ai-spec/tasks/in-progress/` is removed (empty). Counts: **13 numbered files pending in `ai-spec/tasks/`, 95 in `ai-spec/tasks/done/`**.
 
@@ -485,7 +485,6 @@ appears as a node in the dependency graph below:
 | 0079 | Blog post editor — language tabs (frontend) | Epic 5 — i18n |
 | 0084 | Order — mark as paid manually (backend) | Standalone (Epic 3 follow-up) |
 | 0085 | Orders — "Mark as paid" control in the orders list and the order detail (frontend) | Standalone (Epic 3 follow-up) |
-| 0086 | Dashboard home — sales overview card with filters and Chart.js charts (frontend) | Standalone |
 | _(no number)_ | Infrastructure fix: no test suite can open a database connection (local fresh setup or CI) — **status: already fixed and documented**, kept out of the numbering and out of the dependency graph below | Infrastructure |
 
 ## Dependency graph (pending tasks only)
@@ -533,7 +532,6 @@ flowchart LR
     %% Standalone (no PRD epic)
     P0085["0085 Order mark as paid UI"]
     %% (P0082's own node dropped: 0082 closed to done/ this pass, per the update at the top of this file.)
-    P0086["0086 Dashboard sales overview UI"]
     %% (P0081's own node dropped: 0081 closed to done/ this pass, per the update at the top of this
     %% file. It had no incoming edge of its own -- no pending task named it as a depends_on blocker
     %% -- so removing it re-derives nothing further.)
@@ -606,7 +604,7 @@ flowchart LR
     %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
     class P0073,P0075,P0077,P0079 pending;
-    class P0069,P0071,P0072,P0074,P0076,P0078,P0085,P0086 ready;
+    class P0069,P0071,P0072,P0074,P0076,P0078,P0085 ready;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
