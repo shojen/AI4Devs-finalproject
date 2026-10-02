@@ -38,7 +38,7 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Products & Taxes](database/schema-products.md) (hub, 5 parts) | `sales_regions`, `media`, categories, `products`, gallery/region pivots, attributes, variants. |
 | [Shipping](database/schema-shipping.md) (hub, 3 parts) | `geography_entries`, zones, carriers, rates. |
 | [Payment Methods, Customers & Notifications](database/schema-other.md) (hub, 3 parts) | `payment_methods`, `customers`, `notifications`. |
-| [Orders](database/schema-orders.md) (hub, 3 parts) | `orders`, `order_items`, `refunds`, snapshots and derived totals. |
+| [Orders](database/schema-orders.md) (hub, 4 parts) | `orders`, `order_items`, `refunds`, `order_payments`, snapshots and derived totals. |
 | [Blog](database/schema-blog.md) | `blog_categories`, `blog_tags` (stored `normalized_name` uniqueness, folded-length bound), `blog_posts` (soft delete, derived slug, status-governed `published_at`) and the `blog_post_tag` pivot (cascade contract). |
 | [Internationalization](database/schema-localization.md) | `store_languages` (content-authoring language catalog, find-or-create reactivation) and `locale_settings` (this repo's first singleton table: fixed-literal PK, atomic upsert, no enum cast). |
 | [Migrations](database/migrations.md) (hub, 3 parts) | you write a migration (naming, UUID keys, FK indexes, delete behaviour). |
