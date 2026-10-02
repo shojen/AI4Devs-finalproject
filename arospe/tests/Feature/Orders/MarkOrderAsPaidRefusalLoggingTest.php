@@ -1,9 +1,11 @@
 <?php
 
 use App\Actions\Orders\MarkOrderAsPaid;
+use App\Enums\OrderPaymentType;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Models\Order;
+use App\Models\PaymentMethod;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -11,7 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\PermissionRegistrar;
 
-// Story 0084 (D-1 step 1), Phase 3 red step: MarkOrderAsPaid does not exist yet. It calls
+// Story 0084 (D-1 step 1, reworked), Phase 3 red step: the three-parameter MarkOrderAsPaid does not exist yet. It calls
 // LogRefusedPrivilegedAttempt::authorize() with an EXPLICIT targetType/targetId (the resolver only
 // auto-resolves User/Role), so the target_type/target_id assertions below are on VALUES -- both
 // would be null if the explicit arguments were forgotten.
@@ -21,6 +23,13 @@ beforeEach(function () {
     $this->seed(RolePermissionSeeder::class);
 });
 
+function markPaidLogRun(Order $order): Order
+{
+    $method = PaymentMethod::query()->first() ?? PaymentMethod::factory()->create();
+
+    return app(MarkOrderAsPaid::class)($order, $method, OrderPaymentType::Transfer);
+}
+
 test('a refused mark logs "Privileged action refused" once, with ability markPaid and the order as the target', function () {
     Log::spy();
     $actor = User::factory()->create();
@@ -29,7 +38,7 @@ test('a refused mark logs "Privileged action refused" once, with ability markPai
     $order = Order::factory()->create()->fresh();
 
     try {
-        app(MarkOrderAsPaid::class)($order);
+        markPaidLogRun($order);
     } catch (AuthorizationException) {
         //
     }
@@ -50,7 +59,7 @@ test('a guest\'s refused mark is logged against the order with a null actor', fu
     $order = Order::factory()->create()->fresh();
 
     try {
-        app(MarkOrderAsPaid::class)($order);
+        markPaidLogRun($order);
     } catch (AuthorizationException) {
         //
     }
@@ -70,7 +79,7 @@ test('a successful mark logs nothing', function () {
     $actor->givePermissionTo('orders.edit');
     test()->actingAs($actor);
 
-    app(MarkOrderAsPaid::class)(Order::factory()->create()->fresh());
+    markPaidLogRun(Order::factory()->create()->fresh());
 
     Log::shouldNotHaveReceived('warning');
 });
@@ -82,7 +91,7 @@ test('neither state refusal logs, because a state refusal is not a privilege att
     test()->actingAs($actor);
     $order = Order::factory()->create(['payment_status' => $paymentStatus, 'status' => $status])->fresh();
 
-    expect(fn () => app(MarkOrderAsPaid::class)($order))->toThrow(ValidationException::class);
+    expect(fn () => markPaidLogRun($order))->toThrow(ValidationException::class);
 
     Log::shouldNotHaveReceived('warning');
 })->with([

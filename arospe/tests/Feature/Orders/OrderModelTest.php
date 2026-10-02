@@ -4,7 +4,9 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
-use Carbon\CarbonInterface;
+use App\Models\OrderPayment;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 // Story 0045, Phase 3 (TDD "red" step): App\Actions\Orders\CreateOrder does not exist yet, but
 // App\Models\Order / App\Models\OrderItem, their factories and both migrations already do (the
@@ -135,22 +137,19 @@ test('a unit_price supplied via a plain fill() payload never reaches the model, 
     expect($item->getAttribute('unit_price'))->toBeNull();
 });
 
-// --- Story 0084 (Phase 3 red step): orders.paid_at, Order::isAwaitingPayment(), OrderFactory::paid() ---
+// --- Story 0084 (reworked, Phase 3 red step): no orders.paid_at, Order::payment(), Order::isAwaitingPayment(), OrderFactory::paid() ---
 
-test('the Order fillable set excludes payment_status and paid_at, so only MarkOrderAsPaid can write them', function () {
-    $fillable = (new Order)->getFillable();
-
-    expect($fillable)->not->toContain('payment_status')
-        ->and($fillable)->not->toContain('paid_at');
+test('the Order fillable set excludes payment_status, so only MarkOrderAsPaid can write it', function () {
+    expect((new Order)->getFillable())->not->toContain('payment_status')
+        ->and((new Order)->getFillable())->not->toContain('paid_at');
 });
 
-test('paid_at is cast to a date instance when set and to null when absent', function () {
-    $paid = Order::factory()->paid()->create(['paid_at' => '2026-03-02 08:15:00'])->fresh();
-    $pending = Order::factory()->create()->fresh();
+test('orders has no paid_at attribute, column or cast any more: the payment moment lives in order_payments', function () {
+    $order = Order::factory()->paid()->create()->fresh();
 
-    expect($paid->paid_at)->toBeInstanceOf(CarbonInterface::class)
-        ->and($paid->paid_at->format('Y-m-d H:i:s'))->toBe('2026-03-02 08:15:00')
-        ->and($pending->paid_at)->toBeNull();
+    expect(Schema::hasColumn('orders', 'paid_at'))->toBeFalse()
+        ->and((new Order)->getCasts())->not->toHaveKey('paid_at')
+        ->and($order->getAttributes())->not->toHaveKey('paid_at');
 });
 
 // D-5: "can be marked as paid" -- the predicate story 0085's control reads. Same 20 cells the
@@ -162,19 +161,41 @@ test('isAwaitingPayment is true exactly for the cells the action accepts', funct
     expect($order->isAwaitingPayment())->toBe($outcome === 'marked');
 })->with('mark_as_paid_state_grid');
 
-test('OrderFactory::paid() yields a paid order with a non-null paid_at that is never earlier than created_at', function () {
+test('isAwaitingPayment reads payment_status and status only and never consults the payment row', function () {
+    $legacyPaid = Order::factory()->state(['payment_status' => PaymentStatus::Paid])->create()->fresh();
+    $pendingWithRow = Order::factory()->create()->fresh();
+    OrderPayment::factory()->create(['order_id' => $pendingWithRow->id]);
+
+    expect($legacyPaid->isAwaitingPayment())->toBeFalse()
+        ->and($pendingWithRow->fresh()->isAwaitingPayment())->toBeTrue();
+});
+
+test('OrderFactory::paid() yields a paid order with exactly one payment row: the order\'s own method, type transfer, paid_at never earlier than created_at', function () {
     $default = Order::factory()->paid()->create()->fresh();
     $backdated = Order::factory()->paid()->create(['created_at' => now()->subDays(3)->startOfSecond()])->fresh();
 
-    expect($default->payment_status)->toBe(PaymentStatus::Paid)
-        ->and($default->paid_at)->not->toBeNull()
-        ->and($default->paid_at->greaterThanOrEqualTo($default->created_at))->toBeTrue()
-        ->and($backdated->paid_at)->not->toBeNull()
-        ->and($backdated->paid_at->greaterThanOrEqualTo($backdated->created_at))->toBeTrue();
+    foreach ([$default, $backdated] as $order) {
+        $rows = DB::table('order_payments')->where('order_id', $order->id)->get();
+
+        expect($order->payment_status)->toBe(PaymentStatus::Paid)
+            ->and($rows)->toHaveCount(1)
+            ->and($rows[0]->payment_method_id)->toBe($order->payment_method_id)
+            ->and($rows[0]->type)->toBe('transfer')
+            ->and($order->payment)->toBeInstanceOf(OrderPayment::class)
+            ->and($order->payment->paid_at->greaterThanOrEqualTo($order->created_at))->toBeTrue();
+    }
 });
 
-test('OrderFactory::paid() honours an explicit paid_at', function () {
-    $order = Order::factory()->paid()->create(['paid_at' => '2026-03-02 08:15:00'])->fresh();
+test('an inline-state paid order has no payment row, is a valid legacy order and reads back with a null payment', function () {
+    $order = Order::factory()->state(['payment_status' => PaymentStatus::Paid])->create()->fresh();
 
-    expect($order->paid_at->format('Y-m-d H:i:s'))->toBe('2026-03-02 08:15:00');
+    expect($order->payment_status)->toBe(PaymentStatus::Paid)
+        ->and($order->payment)->toBeNull()
+        ->and(DB::table('order_payments')->where('order_id', $order->id)->exists())->toBeFalse();
+});
+
+test('a default-state order creates no payment row', function () {
+    $order = Order::factory()->create();
+
+    expect(DB::table('order_payments')->where('order_id', $order->id)->exists())->toBeFalse();
 });
