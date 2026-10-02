@@ -94,6 +94,11 @@ return [
     'payment' => [
         'already_paid' => 'This order has already been paid.',
         'cancelled_blocked' => 'A cancelled order cannot be marked as paid.',
+        'types' => [
+            'transfer' => 'Bank transfer',
+            'card' => 'Card',
+            'paypal' => 'PayPal',
+        ],
     ],
 
     // Story 0054 -- tokens written to `orders.flag_reason` by

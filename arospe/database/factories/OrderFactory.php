@@ -2,10 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Enums\OrderPaymentType;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Models\Customer;
 use App\Models\Order;
+use App\Models\OrderPayment;
 use App\Models\PaymentMethod;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -101,14 +103,23 @@ class OrderFactory extends Factory
     }
 
     /**
-     * Indicate that the order has been paid in full.
+     * Indicate that the order has been paid in full: `payment_status` Paid plus exactly one
+     * `order_payments` row (story 0084) with the order's own payment method, type Transfer and a
+     * `paid_at` never earlier than the order's `created_at`. An inline
+     * `state(['payment_status' => Paid])` still builds a legacy paid order with no payment row.
      */
     public function paid(): static
     {
         return $this->state(fn (array $attributes): array => [
             'payment_status' => PaymentStatus::Paid,
-            'paid_at' => $attributes['created_at'] ?? now(),
-        ]);
+        ])->afterCreating(function (Order $order): void {
+            OrderPayment::factory()->create([
+                'order_id' => $order->getKey(),
+                'payment_method_id' => $order->payment_method_id,
+                'type' => OrderPaymentType::Transfer,
+                'paid_at' => $order->created_at,
+            ]);
+        });
     }
 
     /**

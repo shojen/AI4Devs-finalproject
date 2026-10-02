@@ -3,18 +3,23 @@
 namespace App\Actions\Orders;
 
 use App\Actions\Auth\LogRefusedPrivilegedAttempt;
+use App\Enums\OrderPaymentType;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Models\Order;
+use App\Models\OrderPayment;
+use App\Models\PaymentMethod;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
  * Story 0084 -- manually mark an order as paid (PRD: manual payment status).
  *
- * The only writer of `payment_status = Paid` and `paid_at` in the app. The
- * moment is always "now" (the click), so `__invoke()` takes no date
- * parameter; `LogRefusedPrivilegedAttempt` is constructor-injected to keep
- * the signature a one-parameter public contract.
+ * The only writer of `payment_status = Paid` and of `order_payments` rows in
+ * the app. The moment is always "now" (the click), so `__invoke()` takes no
+ * date parameter; the payment method and type are the caller's choice and are
+ * stored on the payment row, never on `orders`. `LogRefusedPrivilegedAttempt`
+ * is constructor-injected to keep the public contract to three parameters.
  *
  * Performs, in this exact order:
  *
@@ -29,16 +34,17 @@ use Illuminate\Validation\ValidationException;
  *    paid". Both are direct throws (no second Gate check), so they bind a
  *    Super Admin too, and neither is logged: a state refusal is not a
  *    privilege attempt.
- * 4. Compare-and-set `UPDATE`: matches only a still-pending, not-cancelled
- *    row, so a lost race (two clicks, or a concurrent cancellation) writes
- *    nothing and `paid_at` is never rewritten. The two clauses are read
- *    separately above because the refusals differ; do not collapse them into
- *    `Order::isAwaitingPayment()`.
+ * 4. One `DB::transaction()` holding (a) the compare-and-set `UPDATE` on
+ *    `orders`, which matches only a still-pending, not-cancelled row, and (b)
+ *    only when exactly one row was affected, the `order_payments` INSERT. A
+ *    lost race writes nothing; a unique violation on `order_id` (a data
+ *    anomaly) propagates uncaught and rolls the `UPDATE` back. The two clauses
+ *    are read separately above because the refusals differ; do not collapse
+ *    them into `Order::isAwaitingPayment()`.
  *
- * No `DB::transaction()`: one statement, no follow-up row. A query-builder
- * `update()` fires no model events; there is no `Order` observer today, and
- * any future author adding one must account for that. The caller's instance
- * is synced in memory (no second write, no `refresh()`).
+ * A query-builder `update()` fires no model events; there is no `Order`
+ * observer today, and any future author adding one must account for that. The
+ * caller's instance is synced in memory (no second write, no `refresh()`).
  */
 class MarkOrderAsPaid
 {
@@ -46,7 +52,10 @@ class MarkOrderAsPaid
         private readonly LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt,
     ) {}
 
-    public function __invoke(Order $order): Order
+    /**
+     * @throws ValidationException
+     */
+    public function __invoke(Order $order, PaymentMethod $paymentMethod, OrderPaymentType $type): Order
     {
         $this->logRefusedPrivilegedAttempt->authorize('markPaid', $order, targetType: 'order', targetId: $order->id);
 
@@ -58,21 +67,33 @@ class MarkOrderAsPaid
 
         $now = $order->freshTimestamp()->startOfSecond();
 
-        $affected = Order::query()
-            ->whereKey($order->getKey())
-            ->where('payment_status', PaymentStatus::PendingPayment->value)
-            ->where('status', '!=', OrderStatus::Cancelled->value)
-            ->update([
-                'payment_status' => PaymentStatus::Paid->value,
-                'paid_at' => $now,
-                'updated_at' => $now,
-            ]);
+        $payment = DB::transaction(function () use ($order, $paymentMethod, $type, $now): ?OrderPayment {
+            $affected = Order::query()
+                ->whereKey($order->getKey())
+                ->where('payment_status', PaymentStatus::PendingPayment->value)
+                ->where('status', '!=', OrderStatus::Cancelled->value)
+                ->update([
+                    'payment_status' => PaymentStatus::Paid->value,
+                    'updated_at' => $now,
+                ]);
 
-        if ($affected === 1) {
+            if ($affected !== 1) {
+                return null;
+            }
+
+            return OrderPayment::query()->forceCreate([
+                'order_id' => $order->getKey(),
+                'payment_method_id' => $paymentMethod->getKey(),
+                'type' => $type,
+                'paid_at' => $now,
+            ]);
+        });
+
+        if ($payment !== null) {
             $order->setAttribute('payment_status', PaymentStatus::Paid);
-            $order->setAttribute('paid_at', $now);
             $order->setAttribute('updated_at', $now);
-            $order->syncOriginalAttributes(['payment_status', 'paid_at', 'updated_at']);
+            $order->syncOriginalAttributes(['payment_status', 'updated_at']);
+            $order->setRelation('payment', $payment);
 
             return $order;
         }
