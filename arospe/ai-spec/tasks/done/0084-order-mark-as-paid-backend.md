@@ -543,7 +543,7 @@ checkout can record card/PayPal payments through the same action.
 
 **Findings.** F-1 (Medium, no actor on a payment) is **resolved**; the Risks entries above are struck or updated accordingly. F-2 to F-4 are unchanged.
 
-**Approvals.** The Phase 4 and Phase 5 approvals below predate this small additive amendment. The full suite, Pint and Larastan are re-run before the PR is handed over.
+**Approvals.** The Phase 4 and Phase 5 approvals below predate this small additive amendment. The full suite, Pint and Larastan were re-run after it (2026-10-02): `tests/Unit` + `tests/Feature` 5318 tests, 5313 passed, 5 skipped, 0 failed; `tests/Browser` alone 229 tests, 226 passed, 3 skipped, 0 failed; Pint (unscoped) and Larastan (unscoped, 0 errors) clean.
 
 ## Approval records
 
