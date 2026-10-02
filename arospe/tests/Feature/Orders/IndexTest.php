@@ -84,14 +84,27 @@ test('mounting the Index component without orders.view throws AuthorizationExcep
     expect(fn () => Livewire::test(Index::class))->toThrow(AuthorizationException::class);
 });
 
-test('the list component exposes no public method beyond mount, orders, ordersSummary and canViewCustomers', function () {
+test('the list component exposes exactly the allow-listed public methods, and markAsPaid is the only writer', function () {
     $publicMethods = collect((new ReflectionClass(Index::class))->getMethods(ReflectionMethod::IS_PUBLIC))
         ->reject(fn (ReflectionMethod $method): bool => $method->getDeclaringClass()->getName() !== Index::class)
         ->map(fn (ReflectionMethod $method): string => $method->getName())
         ->values()
         ->all();
 
-    // "The list writes nothing" -- a mutating method reachable over /livewire/update would
-    // falsify it while every markup assertion still passed (0047's precedent).
-    expect($publicMethods)->toEqualCanonicalizing(['mount', 'orders', 'ordersSummary', 'canViewCustomers']);
+    // Story 0085 changed "the list writes nothing" ON PURPOSE: the list now has one write, the
+    // "Mark as paid" action. Reflection cannot prove WHICH method writes, so this is an explicit
+    // allow-list (a new public method fails here and forces a deliberate decision, 0047's precedent);
+    // the class docblock states that markAsPaid is the only writer, and IndexMarkAsPaidTest pins its
+    // behaviour. confirmMarkAsPaid / dismissMarkAsPaid only toggle dialog state, and
+    // confirmingPaidRow is a read-only computed.
+    expect($publicMethods)->toEqualCanonicalizing([
+        'mount',
+        'orders',
+        'ordersSummary',
+        'canViewCustomers',
+        'confirmMarkAsPaid',
+        'dismissMarkAsPaid',
+        'markAsPaid',
+        'confirmingPaidRow',
+    ]);
 });
