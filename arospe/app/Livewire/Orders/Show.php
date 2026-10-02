@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\Renderless;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -645,6 +646,12 @@ class Show extends Component
         $this->showMarkPaidConfirm = true;
     }
 
+    /**
+     * Renderless on purpose: a refused `markAsPaid()` closes the dialog server-side, the modal's `@close`
+     * then calls this method, and Livewire does not persist the error bag between requests -- a re-render
+     * here would wipe the `payment` error the refusal just added. The property still syncs to the client.
+     */
+    #[Renderless]
     public function dismissMarkAsPaid(): void
     {
         $this->showMarkPaidConfirm = false;
