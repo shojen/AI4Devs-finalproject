@@ -221,9 +221,9 @@
       "slug": "0086-dashboard-sales-overview-ui",
       "title": "Dashboard home — sales overview card with filters and Chart.js charts (frontend)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree-0086-dashboard-sales-overview-ui",
+      "claimed_at": "2026-10-02T22:14:15+02:00",
       "touches": [
         "app/Livewire/Dashboard/SalesOverview.php",
         "resources/views/livewire/dashboard/sales-overview.blade.php",

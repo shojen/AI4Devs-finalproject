@@ -1,11 +1,10 @@
 # [0086] Dashboard home — sales overview card with filters and Chart.js charts (frontend)
 
-> **Status: Phase 1 draft (split out of 0083 on 2026-10-01).** Created by the owner-approved split of [0083](done/0083-dashboard-home-overview-ui.md)
+> **Status: Phase 3 (in progress) — Phase 2 PASS 2026-10-02; the owner ratified the ⚑ defaults on 2026-10-02 with ONE change (see "Owner ratification").** Originally a Phase 1 draft (split out of 0083 on 2026-10-01). Created by the owner-approved split of [0083](../done/0083-dashboard-home-overview-ui.md)
 > after its Phase 2 FAIL (size); the sales-card content, decisions and the Phase 2 review items that concern it are carried here, rewritten
-> against the **merged** backend [0082](done/0082-dashboard-home-overview-backend.md). The Three Amigos debate was held for the original 0083
-> (frontend-expert + frontend-qa, 2026-09-30) and the sales card was amended by the owner on 2026-09-30; this story has **not** had its own
-> Phase 2. **⚑** marks facilitator defaults the owner has not ratified. **Blocked on [0083](done/0083-dashboard-home-overview-ui.md)** (it adds the
-> card to the `Overview` page that 0083 creates and extends the lang file 0083 extends).
+> against the **merged** backend [0082](../done/0082-dashboard-home-overview-backend.md). The Three Amigos debate was held for the original 0083
+> (frontend-expert + frontend-qa, 2026-09-30) and the sales card was amended by the owner on 2026-09-30; its own Phase 2 passed
+> on 2026-10-02. **⚑** marks facilitator defaults, now ratified (see "Owner ratification"). [0083](../done/0083-dashboard-home-overview-ui.md) is **done** (it created the `Overview` page this card is added to and the lang file this story extends).
 
 ## Description
 
@@ -91,8 +90,8 @@ Top to bottom inside one widget card "Sales overview":
 
 1. **Filter bar:** a segmented Day/Month/Year (`flux:radio.group variant="segmented"`), preset buttons, two native `<flux:input type="date" wire:model.live.blur>` in a `flux:field` with `flux:error name="range"`,
    `max` = today on `to`, and the status chips (multi-select toggles in the colors of the order-status badges, *Cancelled* off by default, with a "Reset" affordance). One filter, one URL, one request.
-2. **KPI strip:** Sales and Real income through `<x-money>`; Orders as an integer. The Real-income tile shows the hint **"Collected: N% of sales"** where **N = `round(income / sales × 100)` as an integer (half up)**, shown only
-   when sales > 0; when income is 0 while sales > 0 it shows instead the neutral hint **"Income is counted once orders are paid"** (nothing in the application marks an order paid until [0084](done/0084-order-mark-as-paid-backend.md)/[0085](0085-order-mark-as-paid-ui.md)).
+2. **KPI strip:** Sales and Real income through `<x-money>`; Orders as an integer. The Real-income tile shows the hint **"Collected: N% of sales"** where **N = income / sales × 100 rounded half up to at most 2 decimals, trailing zeros trimmed** (4.436 → `4.44`, 50 → `50`; never integer rounding; computed with decimal strings/`bcmath`, not floats; formatted in the active locale), shown only
+   when sales > 0; when income is 0 while sales > 0 it shows instead the neutral hint **"Income is counted once orders are paid"** (until [0084](../done/0084-order-mark-as-paid-backend.md)/[0085](../0085-order-mark-as-paid-ui.md) let an order be marked paid).
 3. **Chart A — "Sales vs real income":** line, two series distinguished by color **and** line style/marker (Sales = muted, dashed, circle markers; Real income = accent, solid, square markers); Y axis in EUR, tooltip shows both values and the difference.
 4. **Chart B — "Orders by status":** stacked bar, one dataset per **selected** status in `OrderStatus::cases()` order, integer Y axis from 0, tooltip with the breakdown and the bucket total. The legend is shown; clicking a legend entry hides
    that series **locally** and does **not** change the server filter (the chips do) — the help text says so.
@@ -134,6 +133,11 @@ Extend `lang/en/dashboard.php` and `lang/es/dashboard.php` with a **`sales` grou
 `presets.last_7_days|last_30_days|this_month|this_year`, `from`, `to`, `statuses` (chip labels come from `OrderStatus::label()`), `reset`, `chart_a_title`, `chart_b_title`, `legend_help`, `empty`, `range_year_window` (`:min`, `:max`),
 `date_invalid`, `statuses_max`, table captions/column headers, `loading`. **No `sales.range_error`**: range and status refusals are the backend's already-translated messages. The pinned `errors` group and its parity test are **not touched**.
 
+## Owner ratification (2026-10-02)
+
+The owner ratified every ⚑ default (two charts + KPI strip; granularity change resets the range; preset→granularity mapping; default ranges; label formats; eager fallback if the lazy+`#[Url]` spike fails) **except the KPI percent hint**, which changed to
+**real numbers, no integer rounding: at most 2 decimals, rounded (4.436 → 4.44)**. Trailing zeros are trimmed (50, not 50.00) — facilitator reading of "máximo 2 decimales"; flag if the owner wants a fixed two decimals.
+
 ## Open questions closed
 
 | Q | Resolution |
@@ -144,7 +148,7 @@ Extend `lang/en/dashboard.php` and `lang/es/dashboard.php` with a **`sales` grou
 | Event delivery | `$wire.$on` in each Alpine component (D-4) |
 | Date picker | native date inputs (Flux free has none) |
 
-Still **⚑ owner to confirm:** the two-chart layout and definitions; the granularity-resets-range rule and the preset→granularity mapping; the exact default ranges; the KPI percent hint (integer, half up); the label formats; keeping an eager fallback if the `#[Lazy]`+`#[Url]` spike fails.
+Still **⚑ owner to confirm:** the two-chart layout and definitions; the granularity-resets-range rule and the preset→granularity mapping; the exact default ranges; the label formats; keeping an eager fallback if the `#[Lazy]`+`#[Url]` spike fails.
 
 ## Gherkin
 
@@ -338,7 +342,7 @@ Modify:
 Feature (`Livewire::withQueryParams([...])->test(SalesOverview::class)` **directly** — with `#[Lazy]`, a `GET /dashboard?...` only renders the placeholder, so it proves nothing about `mount()`; `Livewire::withoutLazyLoading()` for `Overview`-level tests); non-Super-Admin actors;
 `seed(RolePermissionSeeder)`; probes on the **sr-only tables** and `data-test` hooks:
 
-- `SalesOverviewRenderingTest` — default state (Day, 30 days, default chips), KPI tiles with the exact `<x-money>` strings (`€ 180.00`), the collected-% hint (integer, half up, hidden when sales = 0), the income hint, both sr-only tables for paid / unpaid / partially refunded /
+- `SalesOverviewRenderingTest` — default state (Day, 30 days, default chips), KPI tiles with the exact `<x-money>` strings (`€ 180.00`), the collected-% hint (≤ 2 decimals, half up, trailing zeros trimmed, e.g. 4.436 → 4.44; hidden when sales = 0), the income hint, both sr-only tables for paid / unpaid / partially refunded /
   cancelled orders (Sales gross, Real income net, Orders by status), chart labels per granularity in en/es (`1 May`/`1 may`, `May 2026`/`mayo 2026`, `2026`), empty state, stack order by `OrderStatus::cases()` regardless of selection order.
 - `SalesOverviewFiltersTest` — granularity switch resets the range to that granularity's default (12 monthly / 5 yearly buckets ending today), presets set range **and** granularity (travelTo 2026-06-15), custom-range boundaries (15 May 23:59:59 in, 16 May 00:00:00 out), clearing a date, chips (default set, *Cancelled* on/off, single status, all,
   **empty selection refused with the backend's translated `statuses` message and the previous data kept**), cap boundaries (366/367, 120/121, 50/51) showing the translated `range_too_long` with its `:max`, years outside 1000..9998 refused with `sales.range_year_window` **before any action call**, `from > to` showing `range_invalid`,
@@ -369,7 +373,7 @@ An order manager sees, at a glance and without leaving the home page, how much w
 
 ## Definition of Done
 
-- [ ] Phase 2 INVEST validation (`code-reviewer`)
+- [x] Phase 2 INVEST validation (`code-reviewer`) — PASS 2026-10-02, see "Phase 2 — INVEST validation"
 - [ ] The two spikes (lazy child + `#[Url]`; `updating*` keeps the old value; `$wire.$on` delivery) recorded green in the first red tests, or their fallbacks adopted and noted
 - [ ] Tests written first (red) then green; **full suite** green (unscoped, run as directory chunks, including `tests/Browser`)
 - [ ] Pint (unscoped), Larastan, `npm run build` clean; **bundle-size delta and `npm audit` state recorded**; `package-lock.json` committed with the dependency
@@ -387,5 +391,21 @@ An order manager sees, at a glance and without leaving the home page, how much w
 
 ## Dependencies
 
-- **Blocked on [0083](done/0083-dashboard-home-overview-ui.md)** (`depends_on: ["0083"]`): it adds the card to the `Overview` page 0083 creates, uses the status-badge colors 0083 extracts, and extends the same `lang/{en,es}/dashboard.php`.
-- Backend [0082](done/0082-dashboard-home-overview-backend.md) is merged. No conflict with 0084/0085 (it never touches `orders.blade.php`).
+- [0083](../done/0083-dashboard-home-overview-ui.md) is **done** (was `depends_on: ["0083"]`): it added the card to the `Overview` page 0083 creates, uses the status-badge colors 0083 extracts, and extends the same `lang/{en,es}/dashboard.php`.
+- Backend [0082](../done/0082-dashboard-home-overview-backend.md) is merged. No conflict with 0084/0085 (it never touches `orders.blade.php`).
+
+## Phase 2 — INVEST validation
+
+**Decision: PASS** (`code-reviewer`, 2026-10-02, against the merged tree at `733f192`). Dependencies 0082, 0083 and 0084 are merged and in `done/`; every "Verified fact" above was re-checked against the tree and matches.
+INVEST: Independent, Negotiable, Valuable, Estimable and Testable pass; **Small passes, borderline** (26 scenarios, 5 Feature files, 2 Browser files, four repo firsts, a new dependency). **If Phase 3 stalls, split into**
+(a) filters, KPI strip and sr-only tables (pure Livewire) and (b) the Chart.js charts (dependency, Browser tests, theme). Gherkin: every scenario opens with a named actor and has a single `When`; arithmetic verified.
+
+**Findings to address in Phase 3 (non-blocking):**
+
+1. Header stale ("Blocked on 0083", "no Phase 2") — updated 2026-10-02.
+2. Gate with the existing idiom: mount the card from `$this->widgets['orders']` (`ChecksAbilitiesSafely::allowsSafely()`), not `@can`/`Gate::allows`; use `allowsSafely` in `SalesOverview`'s render path too (a missing permission row means "not permitted", never an exception).
+3. `data-testing` does not exist in the layout yet: the layout change is **required**, not optional.
+4. `DashboardLangParityTest` compares placeholders only for the three `errors` keys: add a per-key placeholder parity over `sales.*` (`:percent`, `:min`, `:max`) without touching the `errors` pin.
+5. The status badge uses Flux colour names (zinc, blue, amber, lime, red): the `--chart-status-*` tokens must use the matching Tailwind palette variables.
+6. `updating*` spike: range errors come from the action, so the hook must call it with the candidate value without running the queries twice (reuse/memoise). Chips: prefer a `toggleStatus()` method validating the whole candidate array over `wire:model` on `statuses.N`.
+7. ⚑ defaults ratified by the owner on 2026-10-02 (see "Owner ratification").
