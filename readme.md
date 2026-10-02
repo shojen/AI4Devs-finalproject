@@ -85,7 +85,7 @@ El backoffice cubre ya las cinco épicas del PRD ([`arospe/docs/PRD/PRD.md`](aro
 
 **Epic 5 — Internacionalización.** Dos capas independientes:
 
-- **Idioma del panel** (ES/EN): cada administrador guarda su preferencia y existe un idioma por defecto para el panel y otro para los correos. El backend está hecho; el selector de la interfaz es la historia pendiente [0067](arospe/ai-spec/tasks/0067-admin-ui-language-switcher-ui.md).
+- **Idioma del panel** (ES/EN): cada administrador guarda su preferencia y existe un idioma por defecto para el panel y otro para los correos. El backend y el selector de idioma de la interfaz (menú de cuenta y pestaña Idioma en Ajustes) están hechos en la historia [0067](arospe/ai-spec/tasks/done/0067-admin-ui-language-switcher-ui.md).
 - **Idiomas de la tienda**: catálogo de idiomas del contenido y mecanismo de traducción por idioma, estrenado en las categorías de producto. Las pantallas y su extensión al resto del contenido son las historias pendientes 0069 y 0071–0079.
 
 **Alcance del PRD y estado**

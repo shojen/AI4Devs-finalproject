@@ -44,6 +44,8 @@ was never implemented — nothing in `app/` writes `PaymentStatus::Paid`, so no 
 (0083 edits the orders *list* view; 0085 the *detail* view), so no `conflict_risk_with` entries. Pending count moves from 13 to 15
 numbered files; `done/` unchanged at 92.
 
+**Update (2026-10-02): `0067-admin-ui-language-switcher-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** — the fourth Epic 5 story to close. Its node, its `P0067 -.-> P0069` conflict edge and its `tasks-status.json` entry (the `claimed` one) are dropped because the task is closed, and it joins the flat `done/` inventory. Its only pending pairing, `0069`, drops `"0067"` from `conflict_risk_with` (now empty); `0069` had no `depends_on` on it (the story is a soft, rendered-page collision only), so no `status` changes anywhere. Link-integrity check, both directions: this is an `in-progress/` → `done/` move at the same depth, so the file's own outbound links (all `../../../docs/…`) needed no change and all resolve; the inbound links were repointed from `in-progress/0067-…` to `done/0067-…` — `ai-spec/tasks/0069-store-languages-settings-ui.md` (1), `ai-spec/tasks/done/0064b-scheduled-post-publish-failure-notification-backend.md` (2, `../in-progress/0067-…` → bare sibling `0067-…`) and the parent delivery `../readme.md` (1, whose sentence was also updated to say the switcher shipped); `ai-spec/tasks/_digests/epic-5.md` names it only by story number, and no `docs/` page links to it. `ai-spec/tasks/in-progress/` is removed (empty). Counts: **13 numbered files pending in `ai-spec/tasks/`, 95 in `ai-spec/tasks/done/`**.
+
 **Update (2026-10-01): `0083-dashboard-home-overview-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (standalone, no PRD epic, so there is no
 epic decision digest to extend; Phases 1–6 are in its own "Approval record"). Its node and every edge touching it (`P0083 -.-> P0085`, `P0083 --> P0086`) are dropped from the graph below and its `tasks-status.json`
 entry (the `claimed` one) was deleted. **`0086` had `0083` as its only pending dependency, so it moves from `blocked` to `ready`**; `0085` drops `"0083"` from `conflict_risk_with` (a done task cannot conflict; the
@@ -324,8 +326,12 @@ graph and from the parallelization analysis below.
   this pass's own closure note at the top of this file): **92 files in `ai-spec/tasks/done/`**, **11
   numbered files still pending** in `ai-spec/tasks/` (none checked out to `in-progress/`), **+ 1
   non-numbered infrastructure doc** — 104 files total, unchanged (a file moved, not added or
-  removed). This is now the authoritative current count; the bullets above are kept for their own
-  reasoning, not their totals.
+  removed). The bullets above are kept for their own reasoning, not their totals.
+- **Recounted 2026-10-02** (`0067-admin-ui-language-switcher-ui.md` closed to `done/`, per the
+  update at the top of this file; `ls ai-spec/tasks/done | wc -l`): **95 files in
+  `ai-spec/tasks/done/`**, **13 numbered files still pending** in `ai-spec/tasks/` (none checked out
+  to `in-progress/`, which no longer exists), **+ 1 non-numbered infrastructure doc**. This is the
+  authoritative current count.
 - For a machine-readable, per-task claim registry that two parallel Claude Code sessions can use
   to coordinate against this same dependency data, see
   [`ai-spec/tasks-status.json`](tasks-status.json) and its companion protocol,
@@ -334,8 +340,8 @@ graph and from the parallelization analysis below.
 ## Table of contents
 
 - [Inventory](#inventory)
-  - [Done (92) — shipped, out of scope for this graph](#done-92--shipped-out-of-scope-for-this-graph)
-  - [Pending — not started (11 numbered + 1 infra doc)](#pending--not-started-11-numbered--1-infra-doc)
+  - [Done (95) — shipped, out of scope for this graph](#done-95--shipped-out-of-scope-for-this-graph)
+  - [Pending — not started (13 numbered + 1 infra doc)](#pending--not-started-13-numbered--1-infra-doc)
 - [Dependency graph (pending tasks only)](#dependency-graph-pending-tasks-only)
 - [Analysis](#analysis)
   - [Pending tasks that are independent of each other and safe to parallelize](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
@@ -345,7 +351,7 @@ graph and from the parallelization analysis below.
 
 ## Inventory
 
-### Done (92) — shipped, out of scope for this graph
+### Done (95) — shipped, out of scope for this graph
 
 Already merged into `main`/`finalproject-ARP` and closed via the workflow's Phase 7; see
 [`ai-spec/tasks/done/`](tasks/done/) for each story's full file. Listed here only as IDs, grouped
@@ -414,7 +420,7 @@ appears as a node in the dependency graph below:
   0055 — Orders list + detail/editor UI, the eighteenth story to close and the epic's terminal node:
   nothing named it as a hard dependent, so its closure re-derives no `depends_on`/`status` change
   against this pending list.
-- **Epic 5 — Internationalization (3):** 0068 — Store Languages catalog + the app's two
+- **Epic 5 — Internationalization (4):** 0067 — Admin UI language switcher (frontend), the fourth Epic 5 story to close (2026-10-02): the first personal-language control (account-menu switcher plus a Settings Language tab); it had no hard dependent, and its only pairing, `0069`, drops it from `conflict_risk_with`. 0068 — Store Languages catalog + the app's two
   default-locale settings, the first Epic 5 story to close, and the root of the entire i18n chain.
   Its two dependents that had it as their *only* pending dependency — 0066 (Admin UI locale
   preference backend) and 0070 (translatable-content mechanism backend) — move from `blocked` to
@@ -457,11 +463,10 @@ appears as a node in the dependency graph below:
   It had no pending dependent of its own (`depends_on` edges pointing *at* 0081: none), so its
   closure re-derives no `status` change against the pending list.
 
-### Pending — not started (11 numbered + 1 infra doc)
+### Pending — not started (13 numbered + 1 infra doc)
 
 | ID | Title | Epic area |
 | --- | --- | --- |
-| 0067 | Admin UI language switcher — frontend | Epic 5 — i18n |
 | 0069 | Store Languages settings screen — frontend | Epic 5 — i18n |
 | 0071 | Product Categories taxonomy screen — language tabs (frontend) | Epic 5 — i18n |
 | 0072 | Translatable content retrofit — Blog Categories backend | Epic 5 — i18n |
@@ -472,6 +477,9 @@ appears as a node in the dependency graph below:
 | 0077 | Product editor — language tabs (UI) | Epic 5 — i18n |
 | 0078 | Translatable content retrofit — Blog Posts backend | Epic 5 — i18n |
 | 0079 | Blog post editor — language tabs (frontend) | Epic 5 — i18n |
+| 0084 | Order — mark as paid manually (backend) | Standalone (Epic 3 follow-up) |
+| 0085 | Orders — "Mark as paid" control in the orders list and the order detail (frontend) | Standalone (Epic 3 follow-up) |
+| 0086 | Dashboard home — sales overview card with filters and Chart.js charts (frontend) | Standalone |
 | _(no number)_ | Infrastructure fix: no test suite can open a database connection (local fresh setup or CI) — **status: already fixed and documented**, kept out of the numbering and out of the dependency graph below | Infrastructure |
 
 ## Dependency graph (pending tasks only)
@@ -504,7 +512,6 @@ flowchart LR
 
     subgraph PEND_I18N["Epic 5 — Internationalization"]
         direction TB
-        P0067["0067 Admin UI language switcher"]
         P0069["0069 Store Languages UI"]
         P0071["0071 Product Categories i18n UI"]
         P0072["0072 Blog Categories retrofit BE"]
@@ -580,7 +587,7 @@ flowchart LR
     %% dependency and are now ready; 0073, 0075, 0077 and 0079 drop it but stay blocked on their
     %% other pending deps. 0066 and 0070 closed on separate branches and are reconciled together by
     %% this merge -- neither removal supersedes the other.)
-    P0067 -.-> P0069
+    %% (P0067 -.-> P0069 dropped: 0067 closed to done/ 2026-10-02, the fourth Epic 5 story to close; its node and the conflict edge are removed.)
     P0072 --> P0073
     P0071 --> P0073
     P0074 --> P0075
@@ -594,13 +601,13 @@ flowchart LR
     %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
     class P0073,P0075,P0077,P0079,P0085 pending;
-    class P0067,P0069,P0071,P0072,P0074,P0076,P0078,P0084,P0086 ready;
+    class P0069,P0071,P0072,P0074,P0076,P0078,P0084,P0086 ready;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(no `claimed` node remains in this snapshot; `0081`, the prior sole `claimed` node, closed to
+(no `claimed` node remains in this snapshot; `0067`, the prior sole `claimed` node, closed to
 `done/` this pass — see the update at the top of this file; `0066` and `0070`, the `claimed` nodes
 before that, both closed to `done/` in an earlier pass, on separate branches reconciled together
 here); yellow (`pending`) = still blocked on at least one open pending dependency.
@@ -624,12 +631,11 @@ this file.)
   `conflict_risk_with` entry with the other, so they were also safe to dispatch in parallel — and
   both have since closed too (0066 on 2026-09-28, 0070 on 2026-09-29, on separate branches
   reconciled together by this merge).
-- **0067 — Admin UI language switcher (frontend) and 0069 — Store Languages settings screen
-  (frontend).** Each had `0066` as its only pending dependency, and `0066` closed to `done/`
-  2026-09-28, so both move from `blocked` to `ready`. Unlike most pairs in this section, they **do**
-  share a `conflict_risk_with` entry with each other — both render on the Store Languages settings
-  screen (see [File/merge-conflict risk](#filemerge-conflict-risk-even-where-no-formal-dependency-exists)
-  below) — so "ready" does not mean parallel-safe here; sequence or coordinate them explicitly.
+- **0069 — Store Languages settings screen (frontend).** Its only pending dependency, `0066`, closed
+  to `done/` 2026-09-28, so it moved from `blocked` to `ready`. It used to share a
+  `conflict_risk_with` entry with `0067` (the personal language switcher renders in the chrome of
+  this screen); `0067` closed to `done/` 2026-10-02, so that pairing is resolved and `0069` has no
+  remaining conflict entry.
 - **0071, 0072, 0074, 0076 and 0078 — five stories that each had `0070` as their only pending
   dependency.** `0070` (the translatable-content mechanism) closed to `done/` 2026-09-29, so all
   five move from `blocked` to `ready` at once. `0072`, `0074`, `0076` and `0078` (the four
@@ -699,7 +705,7 @@ terminal node — into `ready` too, with zero pending dependencies left; **0065*
 pending dependency of their own left, and safe to dispatch in parallel to each other. Both have
 since closed too, on separate branches reconciled together by this merge (**0066** on 2026-09-28,
 **0070** on 2026-09-29): **0066**'s closure freed its own two dependents, **0067** and **0069**,
-into `ready` (though not parallel-safe *with each other* — see the note above); **0070**'s closure
+into `ready` (**0067** has since closed too, 2026-10-02); **0070**'s closure
 freed **0071**, **0072**, **0074**, **0076** and **0078** into `ready`, all five with zero pending
 dependencies of their own left.
 
@@ -742,7 +748,6 @@ parallelization one. The major chains, in the order they must be executed:
    sections:
 
    ```text
-   0067                         (admin UI language switcher; its only dependency, 0066, is `done/`)
    0069                         (Store Languages settings UI; its only dependency, 0066, is `done/`)
    0071                         (Product Categories i18n UI; its only former dependency, 0070, is `done/`)
    0071 → 0072 → 0073          (Blog Categories retrofit + i18n UI; 0062 and 0070 are `done/`)
@@ -794,10 +799,11 @@ in [`ai-spec/tasks-status.json`](tasks-status.json):
   with the same caveat as the Blog backend pair (`0058` and `0059`, both now `done/`) about shared registry/lang files, all six pairs among
   them (`0072`~`0074`, `0072`~`0076`, `0072`~`0078`, `0074`~`0076`, `0074`~`0078`, `0076`~`0078`)
   recorded in the JSON registry.
-- **`0067` and `0069` collide on the same rendered page** — the personal language switcher (0067)
-  renders in the chrome of the Store Languages settings screen (0069), which the source task file
-  calls out as *"a real assertion collision (R-3)"* even though 0069 does not depend on 0067's
-  code.
+- **`0067` and `0069` collided on the same rendered page — resolved.** The personal language
+  switcher (0067) renders in the chrome of the Store Languages settings screen (0069), which the
+  source task file called out as *"a real assertion collision (R-3)"*. `0067` closed to `done/`
+  2026-10-02 (it scoped its own hooks as `settings-language-*`), so the pairing is dropped from
+  `0069`'s `conflict_risk_with`.
 - **`0077`/`0079`** carry one softer, non-file-overlap "informational" pairing already shown dashed
   in the graph (a "worked out the UI shape first" precedent) — included in the JSON registry's
   `conflict_risk_with` for completeness, even though the practical collision risk is lower than the
