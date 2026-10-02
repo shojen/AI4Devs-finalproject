@@ -22,10 +22,12 @@ use Illuminate\Support\Carbon;
  * @property string $payment_method_id
  * @property OrderPaymentType $type
  * @property Carbon $paid_at
+ * @property string|null $recorded_by
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Order $order
  * @property-read PaymentMethod $paymentMethod
+ * @property-read User|null $recordedBy
  */
 #[Fillable([])]
 class OrderPayment extends Model
@@ -58,5 +60,13 @@ class OrderPayment extends Model
     public function paymentMethod(): BelongsTo
     {
         return $this->belongsTo(PaymentMethod::class);
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function recordedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'recorded_by');
     }
 }

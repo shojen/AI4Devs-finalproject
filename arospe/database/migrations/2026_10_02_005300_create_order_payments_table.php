@@ -29,6 +29,12 @@ return new class extends Migration
      * state how it was made. `paid_at` is NOT NULL with no default either --
      * the action always supplies the moment explicitly.
      *
+     * `recorded_by` -- the user who marked the order as paid. NULLABLE so a
+     * future system or checkout writer (no signed-in user) may leave it
+     * empty; restrictOnDelete() (matching `refunds.refunded_by`) so a user who
+     * recorded a payment cannot be deleted out from under it. It is an interim
+     * audit trail: a later story replaces it with a movements log table.
+     *
      * No backfill: orders already Paid before this table existed simply have
      * no payment row (a valid legacy state, `Order::$payment` is null). This
      * migration rewrites no existing row.
@@ -46,6 +52,8 @@ return new class extends Migration
 
             $table->string('type', 20);
             $table->timestamp('paid_at');
+
+            $table->foreignUuid('recorded_by')->nullable()->constrained('users')->restrictOnDelete();
 
             $table->timestamps();
         });

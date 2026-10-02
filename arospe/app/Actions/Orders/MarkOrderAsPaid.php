@@ -9,6 +9,7 @@ use App\Enums\PaymentStatus;
 use App\Models\Order;
 use App\Models\OrderPayment;
 use App\Models\PaymentMethod;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -18,7 +19,8 @@ use Illuminate\Validation\ValidationException;
  * The only writer of `payment_status = Paid` and of `order_payments` rows in
  * the app. The moment is always "now" (the click), so `__invoke()` takes no
  * date parameter; the payment method and type are the caller's choice and are
- * stored on the payment row, never on `orders`. `LogRefusedPrivilegedAttempt`
+ * stored on the payment row, never on `orders`, together with `recorded_by`
+ * (the authenticated user, `Auth::id()`). `LogRefusedPrivilegedAttempt`
  * is constructor-injected to keep the public contract to three parameters.
  *
  * Performs, in this exact order:
@@ -86,6 +88,7 @@ class MarkOrderAsPaid
                 'payment_method_id' => $paymentMethod->getKey(),
                 'type' => $type,
                 'paid_at' => $now,
+                'recorded_by' => Auth::id(),
             ]);
         });
 
