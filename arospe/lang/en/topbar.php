@@ -97,6 +97,8 @@ return [
         'profile_subtitle' => 'Update your name and email address',
         'security_subtitle' => 'Keep your account secure: password, two-factor authentication and passkeys',
         'appearance_subtitle' => 'Update the appearance settings for your account',
+        'language' => 'Language',
+        'language_subtitle' => 'Choose the language of the administration interface',
     ],
 
 ];

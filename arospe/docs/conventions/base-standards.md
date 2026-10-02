@@ -29,4 +29,4 @@ This document is split into parts. Each block below gives the **binding core** o
 - Scaffold with `php artisan make:*` and `--no-interaction`.
 - Gates: `php artisan test --compact --filter=<Name>`, `vendor/bin/pint --dirty --format agent`, Larastan level 7. Those are the **iteration** forms — before declaring work done run Pint **unscoped** (`vendor/bin/pint --format agent`) and the **full** test suite unscoped (`php artisan test`, or `--parallel`).
 
-_Last updated: 2026-10-02 — Story 0084: [Stack versions, model and UUID conventions](base-standards/stack-and-model-conventions.md)'s UUID-examples list gained `OrderPayment` (fourteenth). Still current from story 0083: the behavioural-traits list includes `ChecksAbilitiesSafely`._
+_Last updated: 2026-10-02 — Stories 0067 and 0084. [Stack versions, model and UUID conventions](base-standards/stack-and-model-conventions.md)'s behavioural-traits list now covers `HasTranslations`, `ChecksAbilitiesSafely` and `InteractsWithUiLocale` (the first Livewire-component trait), and its UUID-examples list gained `OrderPayment` (fourteenth); the `app/Actions/Translations/` folder note dates from story 0070._

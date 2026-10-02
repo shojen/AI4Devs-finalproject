@@ -1,4 +1,6 @@
 <x-dashboard.widget
+    icon="newspaper"
+    tint="indigo"
     widget="blog"
     :title="__('dashboard.blog.title')"
     :href="route('blog-posts.index')"
@@ -6,9 +8,9 @@
     :empty="$this->posts['rows'] === []"
     :empty-text="__('dashboard.blog.empty')"
 >
-    <ul class="divide-y divide-neutral-200 dark:divide-neutral-700">
+    <ul class="flex flex-col gap-1">
         @foreach ($this->posts['rows'] as $row)
-            <li class="flex items-start justify-between gap-3 py-3" data-test="dashboard-blog-row-{{ $row['id'] }}">
+            <li class="flex items-start justify-between gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/60" data-test="dashboard-blog-row-{{ $row['id'] }}">
                 <div class="min-w-0">
                     @if ($this->posts['canEdit'])
                         <a href="{{ route('blog-posts.edit', $row['id']) }}" wire:navigate class="break-words font-medium hover:underline" data-test="dashboard-blog-title-{{ $row['id'] }}">{{ $row['title'] ?? __('dashboard.untitled') }}</a>

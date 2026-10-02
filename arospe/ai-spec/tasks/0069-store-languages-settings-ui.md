@@ -653,7 +653,7 @@ wrapper on the disabled branch rather than a conditionally-bound `:tooltip` prop
   screen's two selects render, and~~ `preferredLocale()` (*2026-09-27: `UiLocale` is now 0068's, per
   0068's Phase 2 finding B1*), which gives the notification default its meaning
   (**D-5**). Now **shipped** (closed 2026-09-28).
-- **[Story 0067](0067-admin-ui-language-switcher-ui.md)** — not a code dependency, but it renders the
+- **[Story 0067](done/0067-admin-ui-language-switcher-ui.md)** — not a code dependency, but it renders the
   personal switcher in the chrome of *this* page, which creates a real assertion collision (**R-3**).
 - **No new package.** No searchable-select dependency is added; story 0022 stays unbuilt.
 

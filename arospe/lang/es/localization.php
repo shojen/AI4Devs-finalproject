@@ -13,5 +13,7 @@
 // vez de eliminarlo, para que siga siendo el gemelo exacto de `lang/en/localization.php` y la
 // historia 0069 tenga un archivo que rellenar en vez de crear uno nuevo.
 return [
-    //
+    'switcher' => [
+        'heading' => 'Idioma',
+    ],
 ];

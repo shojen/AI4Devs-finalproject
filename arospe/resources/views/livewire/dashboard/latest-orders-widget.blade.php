@@ -1,4 +1,6 @@
 <x-dashboard.widget
+    icon="shopping-bag"
+    tint="emerald"
     widget="orders"
     :title="__('dashboard.orders.title')"
     :href="route('orders.index')"
@@ -6,9 +8,9 @@
     :empty="$this->orders === []"
     :empty-text="__('dashboard.orders.empty')"
 >
-    <ul class="divide-y divide-neutral-200 dark:divide-neutral-700">
+    <ul class="flex flex-col gap-1">
         @foreach ($this->orders as $row)
-            <li class="flex items-start justify-between gap-3 py-3" data-test="dashboard-order-row-{{ $row['id'] }}">
+            <li class="flex items-start justify-between gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/60" data-test="dashboard-order-row-{{ $row['id'] }}">
                 <div class="min-w-0">
                     <a href="{{ route('orders.show', $row['id']) }}" wire:navigate class="break-words font-medium hover:underline" data-test="dashboard-order-link-{{ $row['id'] }}">{{ $row['orderNumber'] }}</a>
 

@@ -56,6 +56,7 @@
                     <flux:profile
                         :initials="auth()->user()->initials()"
                         icon-trailing="chevron-down"
+                        data-test="mobile-menu-button"
                     />
 
                     <flux:menu>
@@ -74,6 +75,10 @@
                                 </div>
                             </div>
                         </flux:menu.radio.group>
+
+                        <flux:menu.separator />
+
+                        <livewire:settings.language-switcher />
 
                         <flux:menu.separator />
 

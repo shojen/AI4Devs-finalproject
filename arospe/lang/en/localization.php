@@ -1,5 +1,8 @@
 <?php
 
+// Story 0067 owns the `switcher.*` group (the chrome interface-language switcher); `attributes`
+// and `settings.*` stay reserved for story 0069.
+//
 // Story 0068 -- reserved for the default-locale settings area. The `attributes` block this file
 // originally carried (for the two camelCase field names `defaultUiLocale`/`defaultNotificationLocale`)
 // existed solely to serve App\Concerns\LocaleSettingValidationRules's two rule methods, which
@@ -12,5 +15,7 @@
 // `lang/es/localization.php` stays its key-for-key twin and 0069 has a file to populate rather than
 // create.
 return [
-    //
+    'switcher' => [
+        'heading' => 'Language',
+    ],
 ];
