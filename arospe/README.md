@@ -34,6 +34,7 @@ Confirmed against `composer.json` and `package.json`:
 - **Tailwind CSS** `^4.0` (via `@tailwindcss/vite`)
 - **laravel-vite-plugin** `^3.1`
 - **@laravel/passkeys** `^0.2.0` — WebAuthn / passkey support
+- **Chart.js** `^4.5.1` — dashboard sales charts (lazy-loaded chunk)
 
 ### Dev tooling
 

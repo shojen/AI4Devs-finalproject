@@ -39,6 +39,16 @@ Two things this does **not** mean — do not overstate them:
 
 Coverage gating is a separate, still-unenacted proposal — see [../ci/pipeline-integration.md](../../ci/pipeline-integration.md); adding the browser suite did not change it.
 
+## Testing a canvas chart: expose the instance, assert the sr-only tables (story 0086)
+
+A `<canvas>` has no DOM to select, so the Chart.js integration ([`resources/js/sales-chart.js`](../../../../resources/js/sales-chart.js)) exposes a test surface; the fixtures are in [`tests/Support/Dashboard/SalesChartBrowser.php`](../../../../tests/Support/Dashboard/SalesChartBrowser.php) and [`SalesOverviewUi.php`](../../../../tests/Support/Dashboard/SalesOverviewUi.php), the specs in `tests/Browser/Dashboard/SalesChartTest.php` and `SalesChartThemeTest.php`.
+
+- **`canvas.chartInstance`** is the live Chart (`data.labels`, `data.datasets`), and the canvas carries **`data-chart-ready="true"`** once it is drawn: wait on that attribute instead of a fixed `wait()`.
+- **`window.__salesChartCreations`** counts every `new Chart()`. Asserting it stays `2` across granularity changes, chip toggles and unrelated re-renders proves instances are updated in place; comparing the same `canvas.chartInstance` object before and after proves they are not re-created.
+- **`<html data-testing="true">`** is emitted by the app layouts only under `APP_ENV=testing`; the script turns animations off when it is present, so assertions never race a transition.
+- **The assertion surface for values is the sr-only tables** (plain text, outside the `wire:ignore` wrapper, in the DOM): assert the figures there and compare them with the chart's data. Put the `sr-only` class on a wrapper `div`, never on the `<table>` (a `display:table` sr-only element widens the page and breaks the 375 px no-horizontal-scroll check). Canvases are `aria-hidden`.
+- **Expected labels and figures are computed in PHP** from relative-to-`now()` seeds, never by asserting "today" in JavaScript. The tooltip is its own test (flake isolation); multi-step flows use `retry(3, ..., 250)` as above.
+
 ## Correct vs. incorrect examples
 
 ❌ Incorrect — brittle, keyed to implementation detail, and no JS-error check:
@@ -68,4 +78,4 @@ it('signs an existing user in and lands them on the dashboard', function () {
 });
 ```
 
-_Last updated: 2026-09-26 — Story 0063 (blog posts list + editor): added `tests/Browser/BlogPosts/` to the folder listing in [status-structure-and-syntax.md](status-structure-and-syntax.md). Earlier, 2026-09-23 — Story 0055 (orders list + detail/editor UI). Added `tests/Browser/Orders/` to the folder listing and the piped-output hang finding (redirect a browser run to a file; the leaked `run-server` keeps the pipe open) beside the orphaned-process section. Earlier updates (2026-07-19 through 2026-09-15) covered: the suite's install/wiring and first files (0006b), the waiting rules and icon-only selector ⚠️ (0018), the `wait(n)`/upload/duplicate-hook limits (0020), the orphaned-process finding (0021), the occlusion diagnostic (0022), and the `retry(3, ..., 250)` CI-flake mitigation with its confirming instances (0024b, 2026-09-06); the `pkill` self-match caveat (0046). Folded into this single line per [contracts.md](../../../contracts/token-and-doc-rules.md#doc-growth-management-rule); see git history for the full prior chain if needed._
+_Last updated: 2026-10-03 — Story 0086: added the canvas-chart testing technique (exposed `chartInstance`, `data-chart-ready`, creation counter, sr-only tables). Earlier updates (2026-07-19 through 2026-09-26) covered the suite's install/wiring, waiting rules, orphaned-process and piped-output findings, `retry(3, ..., 250)` CI-flake mitigation and the per-story browser folders; folded into this single line per [contracts.md](../../../contracts/token-and-doc-rules.md#doc-growth-management-rule); see the repository history for the prior chain._
