@@ -1445,3 +1445,114 @@ test('a Super Admin\'s rendered item hooks exactly match every registered item k
 
     expect($renderedKeys)->toBe($expectedKeys);
 });
+
+// =====================================================================
+// Story 0069 -- the store_languages entry. Placement was decided at Phase 3 start: no group of its
+// own and no `settings` group membership, but the existing `store_settings` cluster (group null,
+// cluster 'store_settings') beside sales_regions / shipping / payment_methods, so the cluster
+// derives its own expand state and the Settings group's `expanded_when` is left alone. The two
+// generic Phase-4 guards (permissions match the route's `can:` middleware; the rendered hook set
+// equals the registry's key set) already cover this entry for free; what follows is the per-entry
+// coverage they cannot supply.
+// =====================================================================
+
+test('a role holding exactly store-languages.view sees the Store Languages entry under the Store settings cluster', function () {
+    $this->actingAs(sidebarNavUserWith(['store-languages.view']));
+
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('data-test="sidebar-group-store"', false)
+        ->assertSee('data-test="sidebar-cluster-store_settings"', false)
+        ->assertSee('data-test="sidebar-link-store_languages"', false)
+        // Holding no other store-settings permission, none of its siblings render.
+        ->assertDontSee('data-test="sidebar-link-sales_regions"', false)
+        ->assertDontSee('data-test="sidebar-link-shipping_zones"', false)
+        ->assertDontSee('data-test="sidebar-link-payment_methods"', false)
+        ->assertDontSee('data-test="sidebar-cluster-products"', false);
+});
+
+test('a role holding the related-but-different store-languages.edit permission without .view sees neither the entry, the Store settings cluster nor the Store group', function () {
+    // The same "never advertise a link the route would refuse" regression story 0013 established
+    // for users.create and 0018 for sales-regions.edit: routes/store-languages.php gates
+    // store-languages.index on exactly can:store-languages.view.
+    $this->actingAs(sidebarNavUserWith(['store-languages.edit', 'store-languages.create', 'store-languages.delete']));
+
+    $response = $this->get(route('dashboard'));
+
+    $response->assertOk();
+    $response->assertSee('data-test="sidebar-link-dashboard"', false);
+    $response->assertDontSee('data-test="sidebar-link-store_languages"', false);
+    $response->assertDontSee('data-test="sidebar-cluster-store_settings"', false);
+    $response->assertDontSee('data-test="sidebar-group-store"', false);
+});
+
+test('the Store group and the Store settings cluster headings vanish for a role holding no store-languages or other store permission', function () {
+    $this->actingAs(sidebarNavUserWith(['users.view']));
+
+    $response = $this->get(route('dashboard'));
+
+    $response->assertOk();
+    $response->assertDontSee('data-test="sidebar-link-store_languages"', false);
+    $response->assertDontSee('data-test="sidebar-cluster-store_settings"', false);
+    $response->assertDontSee('data-test="sidebar-group-store"', false);
+});
+
+test('the Store settings cluster survives on its other members alone, without the Store Languages entry', function () {
+    $this->actingAs(sidebarNavUserWith(['sales-regions.view']));
+
+    $response = $this->get(route('dashboard'));
+
+    $response->assertOk();
+    $response->assertSee('data-test="sidebar-cluster-store_settings"', false);
+    $response->assertSee('data-test="sidebar-link-sales_regions"', false);
+    $response->assertDontSee('data-test="sidebar-link-store_languages"', false);
+});
+
+test('a Super Admin holding zero permission rows sees the Store Languages entry', function () {
+    $this->actingAs(sidebarNavSuperAdmin());
+
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('data-test="sidebar-link-store_languages"', false);
+});
+
+test('the store_languages registry entry nests in the store_settings cluster, declares no group, and gates on exactly its route\'s ability', function () {
+    $item = config('modules.items.store_languages');
+
+    expect($item)->not->toBeNull()
+        ->and($item['group'])->toBeNull()
+        ->and($item['cluster'])->toBe('store_settings')
+        ->and($item['route'])->toBe('store-languages.index')
+        ->and($item['current_when'])->toBe('store-languages.*')
+        ->and($item['permissions'])->toBe(['store-languages.view']);
+
+    $route = Route::getRoutes()->getByName($item['route']);
+
+    expect($route)->not->toBeNull()
+        ->and(collect($route->gatherMiddleware())->filter(fn ($m) => is_string($m) && str_starts_with($m, 'can:'))->values()->all())
+        ->toBe(['can:store-languages.view']);
+});
+
+test('the Settings group is left exactly as it was: its expand pattern is not widened for the Store Languages screen', function () {
+    expect(config('modules.groups.settings.expanded_when'))->toBe('roles.*')
+        ->and(config('modules.items.store_languages.group'))->not->toBe('settings');
+});
+
+test('the store_languages navigation label exists in both locales', function () {
+    foreach (['en', 'es'] as $locale) {
+        expect(trans('navigation.items.store_languages', [], $locale))
+            ->not->toBe('navigation.items.store_languages', "navigation.items.store_languages missing from lang/{$locale}/navigation.php");
+    }
+});
+
+test('visiting store-languages.index expands and highlights the Store settings cluster', function () {
+    $this->actingAs(sidebarNavUserWith(['store-languages.view']));
+
+    $response = $this->get(route('store-languages.index'));
+    $response->assertOk();
+
+    $html = $response->getContent();
+
+    sidebarNavAssertClusterExpanded($html, 'store_settings');
+    sidebarNavAssertLinkCurrent($html, 'store_languages');
+});
