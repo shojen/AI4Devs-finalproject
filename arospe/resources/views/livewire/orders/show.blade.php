@@ -22,7 +22,7 @@
  *
  * The line-item section contains NO confirmation control of any kind -- 0048's hard block has no
  * confirmation path by design (PRD §3.2), and the reusable confirm-dialog below is used only by the
- * backward status transition and the cancellation.
+ * backward status transition, the cancellation and (story 0085) "Mark as paid".
  */
 ?>
 @php
@@ -72,6 +72,20 @@
             </flux:badge>
 
             <flux:text>{{ __('orders.detail.placed_at', ['date' => $order->created_at?->format('d/m/Y H:i') ?? '']) }}</flux:text>
+
+            {{-- Story 0085: who recorded the payment and when. A paid order with no payment row
+                 (legacy) shows the badge only; a null recorder omits the "recorded by" part. --}}
+            @if ($order->payment)
+                @php($payment = $order->payment)
+                @php($paymentArgs = ['date' => $payment->paid_at->format('d/m/Y H:i'), 'type' => $payment->type->label()])
+                <flux:text data-test="payment-info">
+                    @if ($payment->recordedBy)
+                        {{ __('orders.payment.info_by', [...$paymentArgs, 'user' => $payment->recordedBy->name]) }}
+                    @else
+                        {{ __('orders.payment.info', $paymentArgs) }}
+                    @endif
+                </flux:text>
+            @endif
         </div>
 
         @if ($basis['isFlagged'])
@@ -334,6 +348,16 @@
                 <dd class="text-right"><x-money :amount="$order->refunded_amount" /></dd>
             </dl>
 
+            {{-- Story 0085: hidden (not disabled) when it cannot apply -- a state or permission the actor
+                 cannot change here. The error sits OUTSIDE the @if so a raced/forged refusal stays visible. --}}
+            @if ($this->canMarkPaid)
+                <flux:button variant="primary" icon="banknotes" data-test="mark-as-paid" wire:click="confirmMarkAsPaid" class="cursor-pointer!">
+                    {{ __('orders.payment.action') }}
+                </flux:button>
+            @endif
+
+            <flux:error name="payment" />
+
             {{-- The refund control lives beside refunded_amount (D-10). Its payment STATE hides it
                  entirely (PRD §3.2: "the refund action does not render"); its PERMISSION disables it.
                  Two dimensions, two treatments, and they must not be collapsed into one flag. --}}
@@ -418,6 +442,24 @@
         test-prefix="cancel-order"
         variant="danger"
     />
+
+    {{-- The slot is evaluated eagerly by Blade even while the dialog is closed; it is plain markup here. --}}
+    <x-confirm-dialog
+        :show="$showMarkPaidConfirm"
+        model="showMarkPaidConfirm"
+        :heading="__('orders.payment.dialog_heading')"
+        :body="__('orders.payment.dialog_body', ['number' => $order->order_number])"
+        :confirm-label="__('orders.payment.dialog_confirm')"
+        :dismiss-label="__('orders.payment.dialog_dismiss')"
+        confirm-action="markAsPaid"
+        dismiss-action="dismissMarkAsPaid"
+        test-prefix="mark-as-paid"
+    >
+        <dl class="flex items-center justify-between gap-4">
+            <dt>{{ __('orders.payment.dialog_amount') }}</dt>
+            <dd class="font-semibold"><x-money :amount="$order->total" /></dd>
+        </dl>
+    </x-confirm-dialog>
 
     {{-- The refund modal is not a confirm-dialog: it collects per-line units. Its inner content is
          wrapped in @if so only one dismiss control is ever in the DOM. --}}
