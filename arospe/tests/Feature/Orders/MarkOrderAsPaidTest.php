@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
@@ -327,6 +328,47 @@ test('paid_at records the same wall-clock instant in summer and winter under the
     'winter (CET, UTC+1)' => ['2026-01-15 10:30:45'],
 ]);
 
+// --- recorded_by: who marked the order as paid (owner decision 2026-10-02) ---
+
+test('the payment records the acting user as recorded_by, for an administrator and for a super admin', function (string $role) {
+    $actor = User::factory()->create();
+    $actor->assignRole($role);
+    test()->actingAs($actor);
+    $order = markPaidOrder(PaymentStatus::PendingPayment, OrderStatus::Pending);
+
+    markPaidRun($order);
+
+    expect(markPaidPaymentRows($order)[0]['recorded_by'])->toBe($actor->id)
+        ->and(OrderPayment::query()->where('order_id', $order->id)->firstOrFail()->recordedBy->is($actor))->toBeTrue();
+})->with([
+    'administrator' => ['Administrator'],
+    'super admin' => ['Super Admin'],
+]);
+
+test('recorded_by is the acting user, not the order\'s customer or another user', function () {
+    $other = User::factory()->create();
+    $actor = markPaidActingEditor();
+    $order = markPaidOrder(PaymentStatus::PendingPayment, OrderStatus::Pending);
+
+    markPaidRun($order);
+
+    expect(markPaidPaymentRows($order)[0]['recorded_by'])->toBe($actor->id)
+        ->and(markPaidPaymentRows($order)[0]['recorded_by'])->not->toBe($other->id);
+});
+
+test('a refused mark creates no order_payments row and therefore records nobody', function (PaymentStatus $paymentStatus, OrderStatus $status) {
+    markPaidActingSuperAdmin();
+    $order = markPaidOrder($paymentStatus, $status);
+
+    expect(fn () => markPaidRun($order))->toThrow(ValidationException::class);
+
+    expect(DB::table('order_payments')->whereNotNull('recorded_by')->count())->toBe(0)
+        ->and(markPaidPaymentRows($order))->toBe([]);
+})->with([
+    'already paid' => [PaymentStatus::Paid, OrderStatus::Pending],
+    'cancelled' => [PaymentStatus::PendingPayment, OrderStatus::Cancelled],
+]);
+
 // --- Mass assignment (D-4) ---
 
 test('payment_status supplied through fill() never reaches the model, because it is not fillable, and orders has no paid_at', function () {
@@ -446,7 +488,9 @@ test('a successful mark issues exactly one UPDATE on orders carrying both predic
         ->and(strtolower($insert->sql))->toStartWith('insert into `order_payments`')
         ->and($insert->bindings)->toContain($order->id)
         ->and($insert->bindings)->toContain($method->id)
-        ->and($insert->bindings)->toContain('transfer');
+        ->and($insert->bindings)->toContain('transfer')
+        ->and(strtolower($insert->sql))->toContain('`recorded_by`')
+        ->and($insert->bindings)->toContain(Auth::id());
 });
 
 test('both writes run inside one transaction: each statement sees the transaction level one above the level before the call', function () {

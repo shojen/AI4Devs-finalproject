@@ -4,6 +4,7 @@ use App\Enums\OrderPaymentType;
 use App\Models\Order;
 use App\Models\OrderPayment;
 use App\Models\PaymentMethod;
+use App\Models\User;
 use Carbon\CarbonInterface;
 use Database\Seeders\PaymentMethodSeeder;
 use Illuminate\Database\Eloquent\MassAssignmentException;
@@ -52,6 +53,7 @@ test('no OrderPayment column is mass-assignable: the fillable set is empty and f
             'payment_method_id' => 'method-id',
             'type' => 'card',
             'paid_at' => '2026-03-02 08:15:00',
+            'recorded_by' => 'user-id',
         ]))->toThrow(MassAssignmentException::class)
         ->and($payment->getAttributes())->toBe([]);
 });
@@ -123,4 +125,34 @@ test('OrderPaymentFactory attaches to a given order', function () {
 
     expect($payment->order_id)->toBe($order->id)
         ->and(Order::query()->count())->toBe(1);
+});
+
+test('recordedBy() is a BelongsTo to User resolving to the recorder, and recorded_by is a string id', function () {
+    $user = User::factory()->create();
+    $payment = OrderPayment::factory()->create(['recorded_by' => $user->id])->fresh();
+
+    expect($payment->recordedBy())->toBeInstanceOf(BelongsTo::class)
+        ->and($payment->recordedBy()->getRelated())->toBeInstanceOf(User::class)
+        ->and($payment->recorded_by)->toBe($user->id)
+        ->and($payment->recordedBy)->toBeInstanceOf(User::class)
+        ->and($payment->recordedBy->is($user))->toBeTrue();
+});
+
+test('OrderPaymentFactory leaves recorded_by null by default, so recordedBy resolves to null', function () {
+    $payment = OrderPayment::factory()->create()->fresh();
+
+    expect($payment->recorded_by)->toBeNull()
+        ->and($payment->recordedBy)->toBeNull();
+});
+
+test('OrderFactory::paid() leaves the recorder empty (legacy-style paid order)', function () {
+    $order = Order::factory()->paid()->create();
+
+    expect(DB::table('order_payments')->where('order_id', $order->id)->value('recorded_by'))->toBeNull();
+});
+
+test('the OrderPayment docblock declares recorded_by as nullable string', function () {
+    $source = (string) file_get_contents(app_path('Models/OrderPayment.php'));
+
+    expect($source)->toContain('@property string|null $recorded_by');
 });

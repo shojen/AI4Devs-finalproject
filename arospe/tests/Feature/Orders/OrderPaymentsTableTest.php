@@ -1,7 +1,9 @@
 <?php
 
 use App\Models\Order;
+use App\Models\OrderPayment;
 use App\Models\PaymentMethod;
+use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
@@ -46,10 +48,10 @@ function orderPaymentsInsert(string $orderId, string $methodId): void
     ]);
 }
 
-test('order_payments has exactly the D-4 columns in physical order', function () {
+test('order_payments has exactly the D-4 columns (recorded_by last before the timestamps) in physical order', function () {
     expect(Schema::hasTable('order_payments'))->toBeTrue()
         ->and(array_column(Schema::getColumns('order_payments'), 'name'))->toBe([
-            'id', 'order_id', 'payment_method_id', 'type', 'paid_at', 'created_at', 'updated_at',
+            'id', 'order_id', 'payment_method_id', 'type', 'paid_at', 'recorded_by', 'created_at', 'updated_at',
         ]);
 });
 
@@ -65,17 +67,22 @@ test('column types and nullability follow D-4: char(36) keys, varchar(20) type, 
         ->and(orderPaymentsColumn('paid_at')['type_name'])->toBe('timestamp')
         ->and(orderPaymentsColumn('paid_at')['nullable'])->toBeFalse()
         ->and(orderPaymentsColumn('paid_at')['default'])->toBeNull()
+        ->and(orderPaymentsColumn('recorded_by')['type'])->toBe('char(36)')
+        ->and(orderPaymentsColumn('recorded_by')['nullable'])->toBeTrue()
+        ->and(orderPaymentsColumn('recorded_by')['default'])->toBeNull()
         ->and(orderPaymentsColumn('created_at')['type_name'])->toBe('timestamp')
         ->and(orderPaymentsColumn('created_at')['nullable'])->toBeTrue()
         ->and(orderPaymentsColumn('updated_at')['nullable'])->toBeTrue();
 });
 
-test('order_payments carries exactly the primary key, the unique order_id index and the payment_method_id foreign index, nothing hand-written', function () {
+test('order_payments carries exactly the primary key, the unique order_id index and the payment_method_id and recorded_by foreign indexes, nothing hand-written', function () {
     $indexes = collect(Schema::getIndexes('order_payments'))->keyBy('name');
 
     expect($indexes->keys()->sort()->values()->all())->toBe([
-        'order_payments_order_id_unique', 'order_payments_payment_method_id_foreign', 'primary',
+        'order_payments_order_id_unique', 'order_payments_payment_method_id_foreign', 'order_payments_recorded_by_foreign', 'primary',
     ])
+        ->and($indexes['order_payments_recorded_by_foreign']['columns'])->toBe(['recorded_by'])
+        ->and($indexes['order_payments_recorded_by_foreign']['unique'])->toBeFalse()
         ->and($indexes['order_payments_order_id_unique']['columns'])->toBe(['order_id'])
         ->and($indexes['order_payments_order_id_unique']['unique'])->toBeTrue()
         ->and($indexes['order_payments_payment_method_id_foreign']['columns'])->toBe(['payment_method_id'])
@@ -83,16 +90,51 @@ test('order_payments carries exactly the primary key, the unique order_id index 
         ->and($indexes['primary']['columns'])->toBe(['id']);
 });
 
-test('order_id and payment_method_id are foreign keys to orders.id and payment_methods.id that restrict on delete (Q-5)', function () {
+test('order_id, payment_method_id and recorded_by are foreign keys to orders.id, payment_methods.id and users.id that restrict on delete (Q-5)', function () {
     $foreignKeys = collect(Schema::getForeignKeys('order_payments'))->keyBy(fn (array $fk): string => $fk['columns'][0]);
 
-    expect($foreignKeys->keys()->sort()->values()->all())->toBe(['order_id', 'payment_method_id'])
+    expect($foreignKeys->keys()->sort()->values()->all())->toBe(['order_id', 'payment_method_id', 'recorded_by'])
         ->and($foreignKeys['order_id']['foreign_table'])->toBe('orders')
         ->and($foreignKeys['order_id']['foreign_columns'])->toBe(['id'])
         ->and($foreignKeys['order_id']['on_delete'])->toBe('restrict')
         ->and($foreignKeys['payment_method_id']['foreign_table'])->toBe('payment_methods')
         ->and($foreignKeys['payment_method_id']['foreign_columns'])->toBe(['id'])
-        ->and($foreignKeys['payment_method_id']['on_delete'])->toBe('restrict');
+        ->and($foreignKeys['payment_method_id']['on_delete'])->toBe('restrict')
+        ->and($foreignKeys['recorded_by']['foreign_table'])->toBe('users')
+        ->and($foreignKeys['recorded_by']['foreign_columns'])->toBe(['id'])
+        ->and($foreignKeys['recorded_by']['on_delete'])->toBe('restrict');
+});
+
+test('recorded_by may be left empty by a raw insert (a future system writer), and a payment row survives with a null recorder', function () {
+    $order = Order::factory()->create();
+
+    orderPaymentsInsert($order->id, PaymentMethod::query()->value('id'));
+
+    expect(DB::table('order_payments')->where('order_id', $order->id)->value('recorded_by'))->toBeNull();
+});
+
+test('recorded_by rejects an id that is not a user', function () {
+    $order = Order::factory()->create();
+
+    expect(fn () => DB::table('order_payments')->insert([
+        'id' => (string) Str::uuid7(),
+        'order_id' => $order->id,
+        'payment_method_id' => PaymentMethod::query()->value('id'),
+        'type' => 'transfer',
+        'paid_at' => '2026-07-15 10:30:45',
+        'recorded_by' => (string) Str::uuid7(),
+        'created_at' => '2026-07-15 10:30:45',
+        'updated_at' => '2026-07-15 10:30:45',
+    ]))->toThrow(QueryException::class, 'foreign key constraint fails');
+});
+
+test('a user who recorded a payment cannot be deleted (restrictOnDelete)', function () {
+    $user = User::factory()->create();
+    OrderPayment::factory()->create(['recorded_by' => $user->id]);
+
+    expect(fn () => DB::table('users')->where('id', $user->id)->delete())->toThrow(QueryException::class);
+
+    expect(DB::table('users')->where('id', $user->id)->exists())->toBeTrue();
 });
 
 test('a second payment row for the same order is rejected by the database with a unique violation', function () {
