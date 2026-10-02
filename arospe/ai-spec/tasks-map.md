@@ -607,7 +607,8 @@ flowchart LR
     %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
     class P0073,P0075,P0077,P0079 pending;
-    class P0069,P0071,P0072,P0074,P0076,P0078,P0086 ready;
+    class P0071,P0072,P0074,P0076,P0078,P0086 ready;
+    class P0069 claimed;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue

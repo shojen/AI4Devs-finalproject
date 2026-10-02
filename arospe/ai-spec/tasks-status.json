@@ -7,9 +7,9 @@
       "slug": "0069-store-languages-settings-ui",
       "title": "Store Languages settings screen — frontend",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "shojen/0069-store-languages-settings-ui",
+      "claimed_at": "2026-10-03T00:00:00Z",
       "touches": [
         "app/Livewire/Settings/StoreLanguages.php",
         "resources/views/livewire/settings/store-languages.blade.php",

@@ -2,10 +2,10 @@
 
 ## Description
 Build the screen behind `GET /settings/store-languages`, replacing the placeholder view story
-[0068](done/0068-store-languages-catalog-backend.md) ships. **One Livewire component, two visually distinct
+[0068](../done/0068-store-languages-catalog-backend.md) ships. **One Livewire component, two visually distinct
 sections** (confirmed by the human — not two components):
 
-1. **Content languages** — the [PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization)
+1. **Content languages** — the [PRD Epic 5, Layer 2](../../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization)
    store-language catalog: add a language by **picking from the bundled ~184-entry ISO 639-1 list**
    (never free-typed), mark one as the store's default content language, and remove one.
 2. **Dashboard defaults** — two admin-configurable system settings constrained to the **two-value**
@@ -143,7 +143,7 @@ Feature: The Store Languages settings screen — dashboard defaults
 > **Added 2026-09-27 — moved from story 0068 (its Phase 5 review, finding B2).** 0068 originally carried
 > this scenario as *"A language outside the offered pair is refused"*, but its two `Localization` actions
 > take a typed `UiLocale`, so no raw string can reach them and 0068 has no boundary at which a validation
-> error can occur (see [0068's struck scenario and test line](done/0068-store-languages-catalog-backend.md#gherkin)).
+> error can occur (see [0068's struck scenario and test line](../done/0068-store-languages-catalog-backend.md#gherkin)).
 > The first place a raw string exists is **this** story's form: `$defaultUiLocale` and
 > `$defaultNotificationLocale` are client-writable `string` properties (**D-16**), so a forged Livewire
 > payload can carry anything. The scenario is reworded only to add the non-persistence half of the
@@ -156,7 +156,7 @@ Feature: The Store Languages settings screen — dashboard defaults
 
 - **`app/Concerns/LocaleSettingValidationRules.php`** — ⚠️ *added 2026-09-27; originally drafted and
   shipped under story 0068, moved here because this story's settings form is its only real caller*
-  ([0068's struck *Files* bullet](done/0068-store-languages-catalog-backend.md#create--the-locale-settings-half):
+  ([0068's struck *Files* bullet](../done/0068-store-languages-catalog-backend.md#create--the-locale-settings-half):
   Larastan flagged it as dead code in 0068, whose actions take a typed `UiLocale` and never validate a
   raw string — 0068's **D15** "don't ship a validation method nothing calls" rule). Shape unchanged from
   0068's design: `defaultUiLocaleRules()` and `defaultNotificationLocaleRules()`, each
@@ -365,7 +365,7 @@ reason, and every refusal the backend raises lands against the language it conce
 ## Definition of Done
 - [ ] Tests written and green (full suite **unscoped**, not `--filter`)
 - [ ] `vendor/bin/pint --format agent` run **unscoped**, not `--dirty`
-- [ ] **Larastan level 7 run and recorded** — named explicitly because [errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26) records three consecutive stories whose verification notes listed two of three gates and were read as records of all three
+- [ ] **Larastan level 7 run and recorded** — named explicitly because [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26) records three consecutive stories whose verification notes listed two of three gates and were read as records of all three
 - [ ] Code reviewed (code-reviewer)
 - [ ] No security findings (appsec-auditor)
 - [ ] Documentation updated (docs-keeper) — at minimum `docs/api/routes.md` (the fourth gated route's screen, and the second half of its module gate), `docs/architecture/authorization.md` (the sidebar registry's **fifth** entry and **second** group addition), and `docs/conventions/naming.md` if the registry key raises anything new
@@ -391,7 +391,7 @@ to make them administrable *and* to make them visibly distinct.
 
 The Given/When/Then criteria are the two `Feature:` blocks in [Gherkin](#gherkin) above — ~~twenty~~
 twenty-one (*2026-09-27: one scenario moved in from story 0068*) scenarios, each opening with a named business-role actor and carrying exactly one `When`, per
-[gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3. The
+[gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3. The
 checkbox-form criteria they must satisfy are in [Acceptance criteria](#acceptance-criteria). They are
 indexed here rather than restated, so there is one authoritative copy of each.
 
@@ -432,7 +432,7 @@ concerns on one screen. *Rejected:* renaming to a settings-shaped class now — 
 across a file this story does not need to touch, for a naming nicety.
 
 **D-2 — The view is the flat `resources/views/livewire/store-languages.blade.php`.** The
-[`Index`-in-a-subfolder exception](../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
+[`Index`-in-a-subfolder exception](../../../docs/conventions/naming/livewire-components-and-views.md#exception-a-component-named-index-resolves-to-its-parent-folders-name)
 keys on the **class name** being `Index`, not on living in a subfolder — `App\Livewire\Media\Gallery`
 resolving to the *nested* `livewire/media/gallery.blade.php` is the counter-example `naming.md` records
 for exactly this over-application. `StoreLanguages\Index` **is** named `Index`, so the folder name is
@@ -467,7 +467,7 @@ in `lang/{en,es}/localization.php` under `settings.*`, never inline.
 both debate participants, and it is the correction most worth reading in this file.** Both
 `frontend-expert` and `frontend-qa` stated the notification default is inert and has no consumer,
 faithfully following 0068's **D26**/**R-16**. **That text is stale.** Verified by reading
-[`0066-admin-ui-locale-preference-backend.md`](done/0066-admin-ui-locale-preference-backend.md) at `HEAD`:
+[`0066-admin-ui-locale-preference-backend.md`](../done/0066-admin-ui-locale-preference-backend.md) at `HEAD`:
 its **R-2** is marked *"✅ RESOLVED by the human: yes, an administrator's UI language also decides the
 language of their emails"*, and its **D-14** ships the consumer —
 
@@ -615,7 +615,7 @@ unchanged — `code` and `languageId` are still validated by 0068's actions alon
 **D-16 — No `wire:model`-bound property is ever `null`, and `#[Locked]` covers exactly two.** `$code`,
 `$languageId`, `$replacementLanguageId`, `$defaultUiLocale` and `$defaultNotificationLocale` are plain
 `string`s with `''` as the "nothing chosen" sentinel matching a placeholder `<option value="">` — the
-[errors-log rule](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
+[errors-log rule](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
 applied to every control up front rather than case by case. The two locale properties are assigned real
 values in `mount()` before first render. `#[Locked]` goes on `$languages` (a client-writable array of
 rendered rows is a disclosure risk — the `$regions`/`$users` precedent) and `$languageId` (server-only
@@ -646,14 +646,14 @@ wrapper on the disabled branch rather than a conditionally-bound `:tooltip` prop
 
 ### Dependencies
 
-- **[Story 0068](done/0068-store-languages-catalog-backend.md)** — the entire backend contract: both models,
+- **[Story 0068](../done/0068-store-languages-catalog-backend.md)** — the entire backend contract: both models,
   both policies, all five actions, the route, the fixture reader and the placeholder view this story
   replaces. **Specified, not implemented** (see R-1).
-- **[Story 0066](done/0066-admin-ui-locale-preference-backend.md)** — ~~`App\Enums\UiLocale`, which this
+- **[Story 0066](../done/0066-admin-ui-locale-preference-backend.md)** — ~~`App\Enums\UiLocale`, which this
   screen's two selects render, and~~ `preferredLocale()` (*2026-09-27: `UiLocale` is now 0068's, per
   0068's Phase 2 finding B1*), which gives the notification default its meaning
   (**D-5**). Now **shipped** (closed 2026-09-28).
-- **[Story 0067](done/0067-admin-ui-language-switcher-ui.md)** — not a code dependency, but it renders the
+- **[Story 0067](../done/0067-admin-ui-language-switcher-ui.md)** — not a code dependency, but it renders the
   personal switcher in the chrome of *this* page, which creates a real assertion collision (**R-3**).
 - **No new package.** No searchable-select dependency is added; story 0022 stays unbuilt.
 
@@ -712,7 +712,7 @@ wrapper on the disabled branch rather than a conditionally-bound `:tooltip` prop
 
 ### Open questions for the product owner
 
-Per [contracts.md](../../docs/contracts.md)'s Uncertainty Handling Rule, each carries a recommendation
+Per [contracts.md](../../../docs/contracts.md)'s Uncertainty Handling Rule, each carries a recommendation
 rather than a silent assumption.
 
 **Q-1 — Confirm 0068's Q2 is settled as "no pre-seeding". _(needs an answer before Phase 3)_** The brief
@@ -744,7 +744,7 @@ Derived from this debate; **none are in scope for 0069**.
 
 1. **Mark 0068's D26/R-16 superseded** once **Q-2** is confirmed, so no later story inherits the "the
    notification locale has no consumer" claim that 0066's D-14 has already falsified. This is the
-   [stale-claim failure mode](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
+   [stale-claim failure mode](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-docs-this-app-has-no-x-yet-claim-outlived-the-x-by-two-tasks--2026-08-13)
    caught before it propagates a third time.
 2. **Swap the picker's hand-rolled Alpine filter for the searchable multi-select component** if story
    0022 ever ships — this modal is its natural first consumer (**D-6**).
@@ -811,7 +811,68 @@ together with its forged-locale negative test and a matching acceptance criterio
 This story is still at the **new** stage; no phase beyond Phase 1 has run on it, so the amendment is
 subject to its own Phase 2 INVEST check like the rest of the file.
 
-**Not run by this phase**, per [workflow.md](../../docs/workflow.md): the INVEST check (Phase 2), TDD
+**Not run by this phase**, per [workflow.md](../../../docs/workflow.md): the INVEST check (Phase 2), TDD
 implementation (Phase 3), security audit (Phase 4), code review (Phase 5), or the docs pass (Phase 6).
 **Nothing outside this file was created or modified** — no application code, no test, no Blade view, no
 config or lang file, and no sibling story's file.
+
+## Phase 2 review
+
+**`code-reviewer`, 2026-10-02 — APPROVED WITH CORRECTIONS.** INVEST holds: *Independent* (0066, 0067,
+0068 and 0070 are all shipped, so R-1's inverted build order no longer applies), *Negotiable*, *Valuable*,
+*Estimable*, *Small* (one component, no backend), *Testable* (21 single-`When` scenarios plus a concrete
+test plan). The story was written against an unshipped contract, and the drift below was checked against
+`HEAD`. Phase 3 should apply these corrections, all of them in this file, before the first red test:
+
+1. **D-13 / R-5 / Q-3: sidebar placement.** Since story 0080 the registry has `groups`, `clusters` and
+   `items`. `store_settings` (group `store`) now holds `sales_regions`, `shipping_zones`,
+   `shipping_carriers` and `payment_methods`, and 0080 defines it as "store-wide configuration".
+   `settings` still holds only `roles`, with `expanded_when => 'roles.*'`. The array question is settled
+   by reading the code: `Request::routeIs(...$p)` → `Route::named()` → `Str::is()` accepts an iterable,
+   so `['roles.*', 'store-languages.*']` works. **Recommendation:** `group: null, cluster:
+   'store_settings'`. A cluster derives its expand state from its children's `current_when` values, so
+   no `expanded_when` edit is needed. Option (a), joining `settings` and widening `expanded_when`, also
+   works and remains a legitimate choice for the human. Either way, update the sidebar test ("the
+   group's heading vanishes") and the DoD's docs line ("second group addition") to match the placement
+   you pick.
+2. **D-11 / R-6.** `config/store-languages.php` now registers `product_category_translations.store_language_id`
+   (story 0070), so the usage line can already render today. `StoreLanguage::translationUsageCount(string $languageId)`
+   is **static**. To test it, seed a real `product_category_translations` row rather than registering a
+   temporary relation.
+3. **R-1, R-2, D-5 residual, and the DoD's "if 0066 has not yet shipped" item are stale.**
+   `User implements HasLocalePreference` and `preferredLocale()` and `SetUiLocale` both consume
+   `LocaleSetting`. Strike the DoD item as already satisfied.
+4. **D-3 / R-2.** `vendor/` is installed. `flux:card`, `flux:separator`, `flux:modal`, `flux:select` and
+   `flux:tooltip` all exist in Flux Free, and `flux:card`/`flux:separator` are already used in
+   `payment-methods.blade.php` and `roles.blade.php`. Follow those sibling screens.
+5. **D-6.** Story 0022 has shipped (`App\Livewire\Components\SearchableMultiSelect`). It is a multi-select
+   with a `#[Modelable]` array, not an act-now single pick, so the Alpine-filtered button list still
+   stands. Update the "0022 is unbuilt" text and backlog item 2.
+6. **Files.** `tests/Feature/StoreLanguages/IndexTest.php` already exists, holding 0068's 4 route tests,
+   so **extend** it. `lang/{en,es}/localization.php` are **not empty**, because 0067 added
+   `switcher.heading`; add `attributes` and `settings` next to it. Add `lang/{en,es}/topbar.php`
+   (`store_languages.subtitle`, matching the `payment_methods` precedent) to the Modify list, since the
+   TopbarTest move needs a real title/subtitle key. That makes "four lang files" five pairs.
+7. **Verified, no drift.** These match the task's contract:
+   - The `Index` class is still the placeholder (no `render()`), and the route is unchanged.
+   - Only `resources/views/livewire/store-languages.blade.php` exists. There is no
+     `app/Livewire/StoreLanguages/*.blade.php` and no `livewire/store-languages/index.blade.php`.
+   - All five action signatures and their `languageId`/`code` error keys are as the task describes.
+   - Both policies are permission-only (`$target` is not consulted), so R-8 has no drift.
+   - `LocaleSettingValidationRules` is absent, so it must be created.
+   - `UiLocale` has the cases `English`/`Spanish` and a `label()` that returns the endonym.
+   - Do not compose `InteractsWithUiLocale` here: it is the *personal* switcher.
+
+**Open questions:**
+- **Q-1:** resolved (0068's Q2 was answered "no pre-seeding" on 2026-08-29).
+- **Q-2:** answerable as (a). The consumer ships, and 0068's D26/R-16 is already marked superseded, so
+  backlog item 1 is done.
+- **Q-3:** use the `store_settings` cluster *(recommended)*, or (a), which is now verified to work. The
+  human must confirm this before the sidebar test is written.
+- **Q-4:** no, *(recommended)*, unchanged.
+
+**Decisions recorded at Phase 3 start, 2026-10-03.** Q-3 answered by the human: **`group: null, cluster:
+'store_settings'`** (no `expanded_when` change; the sidebar test asserts the cluster, not a `settings`
+group heading). Q-2 → (a), Q-4 → no, as recommended. Phase 2 corrections 1–6 above are binding for the
+implementation and supersede the conflicting text in D-3, D-6, D-11, D-13, R-1, R-2, R-5, R-6, Files and
+the DoD. **Phase 2 exit condition met: APPROVED (with corrections).** Task moved to `in-progress/`.
