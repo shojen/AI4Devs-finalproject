@@ -54,7 +54,8 @@ tests/
                tests/Browser/Components/SearchableMultiSelectTest.php (this component, story 0022) and
                tests/Browser/Orders/ (six files, one per concern: list, tax display, line items,
                status transitions, cancellation, refund visibility; story 0055 — mirrored folder from
-               the start; shared fixtures in tests/Support/Orders/OrdersUi.php) and
+               the start; shared fixtures in tests/Support/Orders/OrdersUi.php; story 0085 added
+               tests/Support/Orders/MarkAsPaidUi.php and the mark-as-paid journeys) and
                tests/Browser/BlogTags/IndexTest.php (the blog tag screen, story 0060 — mirrored
                folder, ratified at that story's Phase 2) and
                tests/Browser/BlogCategories/IndexTest.php (the blog category screen, story 0062 —
