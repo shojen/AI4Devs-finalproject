@@ -1,6 +1,6 @@
 # [0084] Order — mark as paid manually (backend)
 
-> **Status: Phase 2 re-validation done (2026-10-02, approved after two text corrections); Phase 3 (TDD) in progress for the `order_payments` design.** See [Rework (2026-10-02)](#rework-2026-10-02).
+> **Status: DONE (2026-10-02) — reworked design (`order_payments`); Phases 1-7 complete. Phases recorded before the rework refer to the superseded `orders.paid_at` design.**
 > Frontend companion: [0085](../0085-order-mark-as-paid-ui.md), blocked on this story (its scope is flagged for re-debate).
 > Items marked **⚑ owner to confirm** are facilitator decisions the project owner has not explicitly ratified.
 > **Owner-confirmed (2026-09-30/10-02):** no undo action; the payment moment = the moment of the click; the payment is recorded in a new
@@ -12,11 +12,11 @@
 
 [PRD §3.2](../../../docs/PRD/sections/epic-3-customers-orders.md) says an order's payment state is **"a manual admin-set status
 only"** — no payment gateway sets it, the administrator selects it by hand. The order module implements every other part of that
-sentence (story [0045](../done/0045-orders-core-crud-backend.md) creates orders as `pending_payment`; story
-[0051](../done/0051-order-payment-refund-state-backend.md) derives `refunded`/`partially_refunded` from refunds) but **nothing ever moves
+sentence (story [0045](0045-orders-core-crud-backend.md) creates orders as `pending_payment`; story
+[0051](0051-order-payment-refund-state-backend.md) derives `refunded`/`partially_refunded` from refunds) but **nothing ever moves
 an order to `paid`**: a search of `app/` on 2026-09-30 finds only `OrderFactory::paid()` writing it, and `RecordRefund` refuses any order
 that is not already `paid`/`partially_refunded`, so **no real order can ever be refunded** and the dashboard's "Real income" measure
-(story [0082](../done/0082-dashboard-home-overview-backend.md)) has nothing to count. 0051's D-4 explicitly left a payment-state write path
+(story [0082](0082-dashboard-home-overview-backend.md)) has nothing to count. 0051's D-4 explicitly left a payment-state write path
 as a future *decision*; this story is that decision.
 
 It adds a single-purpose action **`MarkOrderAsPaid`** that moves an order from `pending_payment` to `paid` and records the payment in a
@@ -201,7 +201,7 @@ does **not** consult `payment()` (`payment_status` is the source of truth). `isR
 
 ### D-7 — Dashboard follow-up (not this story)
 
-[0082](../done/0082-dashboard-home-overview-backend.md) dates Real income by `orders.created_at`. A later change may date it by
+[0082](0082-dashboard-home-overview-backend.md) dates Real income by `orders.created_at`. A later change may date it by
 `order_payments.paid_at` (falling back to `orders.created_at` for legacy paid orders without a payment row); **caution recorded for it:**
 the payment row survives a full refund, so "has a payment row" does not mean "currently paid" — that measure must keep filtering on
 `orders.payment_status` / subtracting `refunded_amount`. An index on `order_payments.paid_at` is the measured-trigger follow-up for that
@@ -505,13 +505,13 @@ checkout can record card/PayPal payments through the same action.
 
 - [x] Phase 1 debate recorded in this file (rework recorded 2026-10-02)
 - [x] Phase 2 INVEST re-validation (`code-reviewer`) of the reworked story
-- [ ] `orders.paid_at` migration, cast, factory line, docs and tests removed
-- [ ] Tests written first (red) then green, including `OrderPaymentsTableTest` and `OrderPaymentModelTest`
-- [ ] **Full suite** green (unscoped)
-- [ ] Pint (unscoped) and Larastan clean
-- [ ] Appsec re-audit of the new write path (transaction, unique safety net, caller-supplied method/type, mass assignment on `OrderPayment`)
-- [ ] Final code review (`code-reviewer`)
-- [ ] Docs resynced: `docs/database/schema.md` ER diagram (`ORDER_PAYMENTS` entity and its two relationships; `paid_at` removed from
+- [x] `orders.paid_at` migration, cast, factory line, docs and tests removed
+- [x] Tests written first (red) then green, including `OrderPaymentsTableTest` and `OrderPaymentModelTest`
+- [x] **Full suite** green (unscoped) — 2026-10-02, reworked design: `tests/Unit` + `tests/Feature` in one run 5306 tests, 5301 passed, 5 skipped, 0 failed; `tests/Browser` alone 229 tests, 226 passed, 3 skipped, 0 failed
+- [x] Pint (unscoped) and Larastan (unscoped, 0 errors) clean
+- [x] Appsec re-audit of the new write path (transaction, unique safety net, caller-supplied method/type, mass assignment on `OrderPayment`)
+- [x] Final code review (`code-reviewer`)
+- [x] Docs resynced: `docs/database/schema.md` ER diagram (`ORDER_PAYMENTS` entity and its two relationships; `paid_at` removed from
       `ORDERS`), schema-orders docs, migrations delete-behaviour note, payment-methods schema part, `docs/api/orders.md`, authorization
       docs, UUID-model list, Gherkin glossary
 
@@ -527,6 +527,9 @@ checkout can record card/PayPal payments through the same action.
   to decide; `order_payments` is now the natural home for a future `paid_by`.
 - **Test-file deviation (first design):** `MarkOrderAsPaidRefusalLoggingTest.php` is its own file instead of an extension of `RefusalLoggingTest.php`.
 - **Timestamp limits:** MySQL `timestamp` shares its 2038 range with `created_at`; no new risk.
+- **F-1 (Medium, Phase 4 re-audit): `order_payments` has no actor column**, unlike `refunds.refunded_by`, and a successful mark logs nothing, so no one can later answer who marked an order paid. Owner decision; cheapest to add now, while the story is unmerged.
+- **F-2 (Low, Phase 4 re-audit): method/type are caller-trusted.** 0085 must validate the type with `Rule::enum(OrderPaymentType::class)`, resolve the method server-side with `findOrFail` (never a posted model) and add a method-code-to-type mapping before a second payment method ships. Noted in [0085](../0085-order-mark-as-paid-ui.md).
+- **F-3 / F-4:** informational findings of the same re-audit, no action required.
 - **0085 scope change:** the owner also wants the control in the order create/edit section; 0085 must be re-debated (see its note).
 
 ## Approval records
@@ -539,14 +542,20 @@ _First design (`orders.paid_at`) — superseded by the [Rework (2026-10-02)](#re
   1094/1094; other Feature folders 4170 passed, 5 skipped; Browser 226 passed, 3 skipped).
 - **Phase 6 (docs)** — synced for the first design; must be redone.
 
-_Reworked design:_ no approvals yet. **⚑ Owner-to-confirm items unratified:** Q-4 to Q-8 and the carried items listed under
+_Reworked design (`order_payments`):_
+
+- **Phase 4 re-audit (security, `appsec-auditor`) — APPROVED 2026-10-02.** Findings: F-1 Medium (no actor column on `order_payments`; owner decision), F-2 Low (0085 must use `Rule::enum`, a server-side `findOrFail` method lookup and a code-to-type mapping before a second method ships), F-3/F-4 informational. Both are carried to Risks.
+- **Phase 5 re-review (final code review, `code-reviewer`) — APPROVED 2026-10-02**, after comment-only fixes (no behaviour change). The full-suite gate is still open (see Definition of Done).
+- **Phase 6 (docs)** — resynced 2026-10-02 for the reworked design.
+
+**Still open:** **⚑ Owner-to-confirm items unratified:** Q-4 to Q-8 and the carried items listed under
 [Open questions closed](#open-questions-closed).
 
 ## Dependencies
 
 - None pending (`depends_on: []`). Consumed by [0085](../0085-order-mark-as-paid-ui.md).
-- Related, no blocking: [0082](../done/0082-dashboard-home-overview-backend.md) (Real income; its demo seeder uses `OrderFactory::paid()`),
-  [0038](../done/0038-payment-methods-bank-transfer-backend.md) (payment methods catalog).
+- Related, no blocking: [0082](0082-dashboard-home-overview-backend.md) (Real income; its demo seeder uses `OrderFactory::paid()`),
+  [0038](0038-payment-methods-bank-transfer-backend.md) (payment methods catalog).
 
 ## Debate record
 
