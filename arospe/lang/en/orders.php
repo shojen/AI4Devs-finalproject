@@ -57,6 +57,7 @@ return [
     // Story 0049 -- App\Actions\Orders\TransitionOrderStatus's three refusals. No screen copy here
     // (story 0055 extends this group with button/dialog text, and does not rename these keys).
     'transitions' => [
+        'payment_state_blocked' => 'This order\'s payment state does not allow that status.',
         'requires_confirmation' => 'Moving this order backward requires explicit confirmation.',
         'same_status' => 'This order already has that status.',
         'cancellation_unsupported' => 'Cancelling or reopening an order is not available here.',

@@ -27,8 +27,12 @@ use Illuminate\Validation\ValidationException;
  * 3. Refuse a same-status transition -- $confirmed is not consulted (D-4).
  *    Runs above the regression check so Cancelled -> Cancelled is caught by
  *    step 2 rather than reaching rank() by coincidence of equal ranks.
- * 4. Refuse an unconfirmed backward move (D-2).
- * 5. Write, via forceFill() -- `status` is omitted from Order's #[Fillable].
+ * 4. Refuse a status the order's payment state does not allow
+ *    (PaymentStatus::allowsOrderStatus()) -- e.g. an unpaid order cannot be
+ *    processed, shipped or delivered. Above the regression check so a
+ *    forbidden target never reaches the confirmation path.
+ * 5. Refuse an unconfirmed backward move (D-2).
+ * 6. Write, via forceFill() -- `status` is omitted from Order's #[Fillable].
  *
  * No DB::transaction(): a single-row, single-column write with no second
  * statement and no side effect to wrap (see the task file's own D-3 note).
@@ -48,6 +52,12 @@ class TransitionOrderStatus
         if ($newStatus === $order->status) {
             throw ValidationException::withMessages([
                 'status' => __('orders.transitions.same_status'),
+            ]);
+        }
+
+        if (! $order->payment_status->allowsOrderStatus($newStatus)) {
+            throw ValidationException::withMessages([
+                'status' => __('orders.transitions.payment_state_blocked'),
             ]);
         }
 
