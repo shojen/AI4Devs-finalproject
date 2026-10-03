@@ -23,7 +23,7 @@ beforeEach(function () {
 });
 
 test('advancing forward applies immediately with no dialog', function () {
-    $order = Order::factory()->withItems(1)->create(['status' => OrderStatus::Pending]);
+    $order = Order::factory()->paid()->withItems(1)->create(['status' => OrderStatus::Pending]);
 
     visit('/orders/'.$order->id)
         ->assertNoJavaScriptErrors()
@@ -37,7 +37,7 @@ test('advancing forward applies immediately with no dialog', function () {
 });
 
 test('moving backward asks first, and confirming applies it', function () {
-    $order = Order::factory()->withItems(1)->create(['status' => OrderStatus::Shipped]);
+    $order = Order::factory()->paid()->withItems(1)->create(['status' => OrderStatus::Shipped]);
 
     visit('/orders/'.$order->id)
         ->assertNoJavaScriptErrors()
@@ -52,7 +52,7 @@ test('moving backward asks first, and confirming applies it', function () {
 });
 
 test('moving backward and dismissing leaves the order alone and resets the select', function () {
-    $order = Order::factory()->withItems(1)->create(['status' => OrderStatus::Shipped]);
+    $order = Order::factory()->paid()->withItems(1)->create(['status' => OrderStatus::Shipped]);
 
     visit('/orders/'.$order->id)
         ->select('@status-select', __('orders.statuses.pending'))

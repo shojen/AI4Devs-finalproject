@@ -2,6 +2,7 @@
 
 use App\Actions\Orders\TransitionOrderStatus;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
 use App\Exceptions\OrderStatusRegressionRequiresConfirmationException;
 use App\Models\Order;
 use App\Models\User;
@@ -40,7 +41,7 @@ function actingOrderEditorForTransition(): User
 
 test('a forward adjacent transition succeeds unconfirmed, and the refetched order carries the new status as an enum instance', function (OrderStatus $from, OrderStatus $to) {
     actingOrderEditorForTransition();
-    $order = Order::factory()->create(['status' => $from]);
+    $order = Order::factory()->paid()->create(['status' => $from]);
 
     app(TransitionOrderStatus::class)($order, $to);
 
@@ -58,7 +59,7 @@ test('a forward adjacent transition succeeds unconfirmed, and the refetched orde
 // adjacent-pair test above.
 test('a forward skip succeeds unconfirmed, proving the rule is about direction rather than distance', function (OrderStatus $from, OrderStatus $to) {
     actingOrderEditorForTransition();
-    $order = Order::factory()->create(['status' => $from]);
+    $order = Order::factory()->paid()->create(['status' => $from]);
 
     app(TransitionOrderStatus::class)($order, $to);
 
@@ -71,7 +72,7 @@ test('a forward skip succeeds unconfirmed, proving the rule is about direction r
 
 test('the action returns the Order carrying the new status, so a caller need not re-fetch', function () {
     actingOrderEditorForTransition();
-    $order = Order::factory()->create(['status' => OrderStatus::Pending]);
+    $order = Order::factory()->paid()->create(['status' => OrderStatus::Pending]);
 
     $result = app(TransitionOrderStatus::class)($order, OrderStatus::Processing);
 
@@ -94,7 +95,7 @@ test('a successful transition leaves payment_status untouched', function () {
 
 test('a backward adjacent transition unconfirmed throws the regression exception, and the persisted status is unchanged', function (OrderStatus $from, OrderStatus $to) {
     actingOrderEditorForTransition();
-    $order = Order::factory()->create(['status' => $from]);
+    $order = Order::factory()->paid()->create(['status' => $from]);
 
     expect(fn () => app(TransitionOrderStatus::class)($order, $to))
         ->toThrow(OrderStatusRegressionRequiresConfirmationException::class);
@@ -111,7 +112,7 @@ test('a backward adjacent transition unconfirmed throws the regression exception
 // status, not the returned instance, is what a write-then-throw implementation could not fake.
 test('the same backward adjacent pairs succeed once confirmed, and the persisted status is the earlier one', function (OrderStatus $from, OrderStatus $to) {
     actingOrderEditorForTransition();
-    $order = Order::factory()->create(['status' => $from]);
+    $order = Order::factory()->paid()->create(['status' => $from]);
 
     app(TransitionOrderStatus::class)($order, $to, true);
 
@@ -125,12 +126,12 @@ test('the same backward adjacent pairs succeed once confirmed, and the persisted
 test('a backward skip (Delivered to Pending) is refused unconfirmed and succeeds once confirmed', function () {
     actingOrderEditorForTransition();
 
-    $unconfirmedOrder = Order::factory()->create(['status' => OrderStatus::Delivered]);
+    $unconfirmedOrder = Order::factory()->paid()->create(['status' => OrderStatus::Delivered]);
     expect(fn () => app(TransitionOrderStatus::class)($unconfirmedOrder, OrderStatus::Pending))
         ->toThrow(OrderStatusRegressionRequiresConfirmationException::class);
     expect($unconfirmedOrder->fresh()->status)->toBe(OrderStatus::Delivered);
 
-    $confirmedOrder = Order::factory()->create(['status' => OrderStatus::Delivered]);
+    $confirmedOrder = Order::factory()->paid()->create(['status' => OrderStatus::Delivered]);
     app(TransitionOrderStatus::class)($confirmedOrder, OrderStatus::Pending, true);
     expect($confirmedOrder->fresh()->status)->toBe(OrderStatus::Pending);
 });
@@ -167,7 +168,7 @@ test('the regression exception renders a 409 with a JSON body for a JSON request
 // docs/architecture/authorization.md.
 test('the regression exception message equals the requires_confirmation translation, with no interpolation', function () {
     actingOrderEditorForTransition();
-    $order = Order::factory()->create(['status' => OrderStatus::Shipped]);
+    $order = Order::factory()->paid()->create(['status' => OrderStatus::Shipped]);
 
     try {
         app(TransitionOrderStatus::class)($order, OrderStatus::Pending);
@@ -184,7 +185,7 @@ test('the regression exception message equals the requires_confirmation translat
 
 test('the same-status ValidationException carries the refusal on the status field', function () {
     actingOrderEditorForTransition();
-    $order = Order::factory()->create(['status' => OrderStatus::Processing]);
+    $order = Order::factory()->paid()->create(['status' => OrderStatus::Processing]);
 
     try {
         app(TransitionOrderStatus::class)($order, OrderStatus::Processing);
@@ -199,7 +200,7 @@ test('the same-status ValidationException carries the refusal on the status fiel
 // D-4: confirmation is not a way past it -- the two refusals are different in kind.
 test('confirming does not make a same-status transition valid', function () {
     actingOrderEditorForTransition();
-    $order = Order::factory()->create(['status' => OrderStatus::Processing]);
+    $order = Order::factory()->paid()->create(['status' => OrderStatus::Processing]);
 
     expect(fn () => app(TransitionOrderStatus::class)($order, OrderStatus::Processing, true))
         ->toThrow(ValidationException::class);
@@ -209,7 +210,7 @@ test('confirming does not make a same-status transition valid', function () {
 
 test('the identity transition is rejected from all four linear statuses', function (OrderStatus $status) {
     actingOrderEditorForTransition();
-    $order = Order::factory()->create(['status' => $status]);
+    $order = Order::factory()->paid()->create(['status' => $status]);
 
     expect(fn () => app(TransitionOrderStatus::class)($order, $status))
         ->toThrow(ValidationException::class);
@@ -226,7 +227,7 @@ test('the identity transition is rejected from all four linear statuses', functi
 
 test('transitioning to Cancelled is refused outright from every linear status, confirmed and unconfirmed', function (OrderStatus $from, bool $confirmed) {
     actingOrderEditorForTransition();
-    $order = Order::factory()->create(['status' => $from]);
+    $order = Order::factory()->paid()->create(['status' => $from]);
 
     expect(fn () => app(TransitionOrderStatus::class)($order, OrderStatus::Cancelled, $confirmed))
         ->toThrow(ValidationException::class);
@@ -245,7 +246,7 @@ test('transitioning to Cancelled is refused outright from every linear status, c
 
 test('transitioning away from Cancelled is refused outright to every linear status, confirmed and unconfirmed', function (OrderStatus $to, bool $confirmed) {
     actingOrderEditorForTransition();
-    $order = Order::factory()->create(['status' => OrderStatus::Cancelled]);
+    $order = Order::factory()->paid()->create(['status' => OrderStatus::Cancelled]);
 
     expect(fn () => app(TransitionOrderStatus::class)($order, $to, $confirmed))
         ->toThrow(ValidationException::class);
@@ -268,7 +269,7 @@ test('transitioning away from Cancelled is refused outright to every linear stat
 // message, since both are (per D-6's recommended shape) a ValidationException on the same field.
 test('Cancelled to Cancelled is refused by the cancellation guard, not by the same-status validation', function () {
     actingOrderEditorForTransition();
-    $order = Order::factory()->create(['status' => OrderStatus::Cancelled]);
+    $order = Order::factory()->paid()->create(['status' => OrderStatus::Cancelled]);
 
     try {
         app(TransitionOrderStatus::class)($order, OrderStatus::Cancelled);
@@ -289,7 +290,7 @@ test('Cancelled to Cancelled is refused by the cancellation guard, not by the sa
 // that combines both guards.
 test('the cancellation refusal is never the regression-confirmation exception', function () {
     actingOrderEditorForTransition();
-    $order = Order::factory()->create(['status' => OrderStatus::Processing]);
+    $order = Order::factory()->paid()->create(['status' => OrderStatus::Processing]);
 
     try {
         app(TransitionOrderStatus::class)($order, OrderStatus::Cancelled);
@@ -308,7 +309,7 @@ test('the cancellation refusal is never the regression-confirmation exception', 
 // the test for its own, unrelated reason.
 test('no UnhandledMatchError escapes for any Cancelled-involving transition', function (OrderStatus $from, OrderStatus $to, bool $confirmed) {
     actingOrderEditorForTransition();
-    $order = Order::factory()->create(['status' => $from]);
+    $order = Order::factory()->paid()->create(['status' => $from]);
 
     try {
         app(TransitionOrderStatus::class)($order, $to, $confirmed);
@@ -346,7 +347,7 @@ test('an actor lacking orders.edit is refused by TransitionOrderStatus with an A
     $actor->givePermissionTo('orders.view');
     test()->actingAs($actor);
 
-    $order = Order::factory()->create(['status' => OrderStatus::Pending]);
+    $order = Order::factory()->paid()->create(['status' => OrderStatus::Pending]);
 
     expect(fn () => app(TransitionOrderStatus::class)($order, OrderStatus::Processing))
         ->toThrow(AuthorizationException::class);
@@ -357,7 +358,7 @@ test('an actor lacking orders.edit is refused by TransitionOrderStatus with an A
 // The positive case beside the 403 -- without which a mistyped ability passes silently.
 test('an actor holding orders.edit succeeds', function () {
     actingOrderEditorForTransition();
-    $order = Order::factory()->create(['status' => OrderStatus::Pending]);
+    $order = Order::factory()->paid()->create(['status' => OrderStatus::Pending]);
 
     app(TransitionOrderStatus::class)($order, OrderStatus::Processing);
 
@@ -371,7 +372,7 @@ test('a Super Admin holding no individual orders permission succeeds via Gate::b
 
     expect($superAdmin->getAllPermissions())->toHaveCount(0);
 
-    $order = Order::factory()->create(['status' => OrderStatus::Pending]);
+    $order = Order::factory()->paid()->create(['status' => OrderStatus::Pending]);
 
     app(TransitionOrderStatus::class)($order, OrderStatus::Processing);
 
@@ -397,7 +398,7 @@ test('an actor lacking orders.edit attempting an unconfirmed backward transition
     $actor = User::factory()->create();
     test()->actingAs($actor);
 
-    $order = Order::factory()->create(['status' => OrderStatus::Shipped]);
+    $order = Order::factory()->paid()->create(['status' => OrderStatus::Shipped]);
 
     try {
         app(TransitionOrderStatus::class)($order, OrderStatus::Pending);
@@ -410,3 +411,43 @@ test('an actor lacking orders.edit attempting an unconfirmed backward transition
 
     expect($order->fresh()->status)->toBe(OrderStatus::Shipped);
 });
+
+// --- Payment-state compatibility (PaymentStatus::allowsOrderStatus()) ---
+
+test('an order awaiting payment cannot move to a fulfilment status its payment state forbids, and nothing is written', function (OrderStatus $to) {
+    actingOrderEditorForTransition();
+    $order = Order::factory()->create(['status' => OrderStatus::Pending, 'payment_status' => PaymentStatus::PendingPayment]);
+
+    expect(fn () => app(TransitionOrderStatus::class)($order, $to))
+        ->toThrow(ValidationException::class);
+
+    expect($order->fresh()->status)->toBe(OrderStatus::Pending);
+})->with([
+    'Processing' => [OrderStatus::Processing],
+    'Shipped' => [OrderStatus::Shipped],
+    'Delivered' => [OrderStatus::Delivered],
+]);
+
+test('the same moves succeed once the order is paid', function (OrderStatus $to) {
+    actingOrderEditorForTransition();
+    $order = Order::factory()->paid()->create(['status' => OrderStatus::Pending]);
+
+    app(TransitionOrderStatus::class)($order, $to);
+
+    expect($order->fresh()->status)->toBe($to);
+})->with([
+    'Processing' => [OrderStatus::Processing],
+    'Shipped' => [OrderStatus::Shipped],
+    'Delivered' => [OrderStatus::Delivered],
+]);
+
+test('PaymentStatus::allowsOrderStatus() encodes the agreed payment/fulfilment matrix', function (PaymentStatus $payment, array $allowed) {
+    foreach (OrderStatus::cases() as $status) {
+        expect($payment->allowsOrderStatus($status))->toBe(in_array($status, $allowed, true), "{$payment->value} / {$status->value}");
+    }
+})->with([
+    'pending_payment' => [PaymentStatus::PendingPayment, [OrderStatus::Pending, OrderStatus::Cancelled]],
+    'paid' => [PaymentStatus::Paid, OrderStatus::cases()],
+    'refunded' => [PaymentStatus::Refunded, [OrderStatus::Cancelled]],
+    'partially_refunded' => [PaymentStatus::PartiallyRefunded, [OrderStatus::Pending, OrderStatus::Processing, OrderStatus::Shipped, OrderStatus::Delivered]],
+]);
