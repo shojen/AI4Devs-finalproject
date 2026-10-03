@@ -47,6 +47,7 @@ function topbarScreens(): array
         'shipping' => ['shipping.index', 'shipping.carriers.index.heading'],
         'shipping zones' => ['shipping.zones.index', 'shipping.zones.index.heading'],
         'payment methods' => ['payment-methods.index', 'payment-methods.index.heading'],
+        'store languages' => ['store-languages.index', 'store-languages.index.heading'],
         'customers' => ['customers.index', 'topbar.customers.title'],
         'orders' => ['orders.index', 'topbar.orders.title'],
         'blog posts' => ['blog-posts.index', 'blog-posts.index.title'],
@@ -165,18 +166,11 @@ test('the sidebar no longer contains the bell', function () {
 
 test('every authenticated app screen is covered by the dataset or an explicit exclusion', function () {
     $excludedPrefixes = ['verification.', 'password.', 'passkey.', 'two-factor.', 'login', 'register', 'email-change.'];
-    // Story 0068 -- store-languages.index renders a PLACEHOLDER view only (App\Livewire\
-    // StoreLanguages\Index has no real topbar title/subtitle key yet; that's story 0069's job,
-    // the same 0017 -> 0018 split sales-regions.index went through before it). Excluded here
-    // rather than added to topbarScreens(), which asserts a real title key. Story 0069 MUST move
-    // this into topbarScreens() (with its real title key) once the actual screen exists, not
-    // leave it excluded alongside a real screen.
-    $placeholderScreens = ['store-languages.index'];
-
+    // Story 0069 -- store-languages.index (a placeholder view under story 0068, hence its former
+    // exclusion here) is now a real, titled screen and lives in topbarScreens() above.
     $covered = array_merge(
         collect(topbarScreens())->pluck(0)->all(),
         ['customers.show', 'orders.show', 'products.edit', 'blog-posts.edit'],
-        $placeholderScreens,
     );
 
     $uncovered = collect(Route::getRoutes()->getRoutes())
@@ -190,6 +184,16 @@ test('every authenticated app screen is covered by the dataset or an explicit ex
         ->all();
 
     expect($uncovered)->toBe([]);
+});
+
+test('the store languages screen carries its own translated topbar subtitle in both locales', function () {
+    expect(topbarText(renderScreen('store-languages.index'), 'topbar-subtitle'))
+        ->toBe(__('topbar.store_languages.subtitle'))
+        ->not->toBe('topbar.store_languages.subtitle');
+
+    foreach (['en', 'es'] as $locale) {
+        expect(trans('topbar.store_languages.subtitle', [], $locale))->not->toBe('topbar.store_languages.subtitle');
+    }
 });
 
 test('every topbar translation key exists in both locales', function () {

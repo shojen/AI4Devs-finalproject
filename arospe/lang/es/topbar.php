@@ -60,6 +60,10 @@ return [
         'subtitle' => 'Configura cómo pagan los clientes.',
     ],
 
+    'store_languages' => [
+        'subtitle' => 'Elige los idiomas en los que está escrito el contenido de tu tienda y los valores predeterminados del panel.',
+    ],
+
     'customers' => [
         'title' => 'Clientes',
         'subtitle' => 'Los clientes de la tienda y su historial de pedidos.',
