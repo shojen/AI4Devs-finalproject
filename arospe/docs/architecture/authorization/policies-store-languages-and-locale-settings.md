@@ -25,7 +25,7 @@ All three actions authorize as their own first statement, outside any validation
 
 | Ability | Signature | Rule | Authorized from |
 | --- | --- | --- | --- |
-| `viewAny` | `(User $actor)` | holds `store-languages.view` | Nothing yet — story 0069's settings form is the named future consumer |
+| `viewAny` | `(User $actor)` | holds `store-languages.view` | Still nothing: story 0069's `Index::mount()` authorizes `StoreLanguage`'s `viewAny` only, and its dashboard-defaults section shows the current values to anyone who can open the screen, disabling the selects unless this policy's `update` passes |
 | `update` | `(User $actor, ?LocaleSetting $target = null)` | holds `store-languages.edit` | `App\Actions\Localization\SetDefaultUiLocale::__invoke()` and `SetDefaultNotificationLocale::__invoke()`, each its own first statement |
 
 ```php

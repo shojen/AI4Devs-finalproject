@@ -56,7 +56,7 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Customers](api/customers.md) | `customers.index`, `customers.show`. |
 | [Orders](api/orders.md) | `orders.index`, `orders.show`, `<x-money>`, `<x-confirm-dialog>`. |
 | [Blog](api/blog.md) | `blog-tags.index`, `blog-categories.index`, `blog-posts.index` / `.create` / `.edit`. |
-| [Store Languages](api/store-languages.md) | `store-languages.index` (backend-only, placeholder view; real screen is story 0069's). |
+| [Store Languages](api/store-languages.md) | `store-languages.index`: the two-section Store Languages settings screen (story 0069). |
 | [Dashboard](api/dashboard.md) | the `dashboard` route's ungated contract or the read-side actions in `app/Actions/Dashboard/` (per-widget gating, counters, latest posts/orders, low stock, sales/orders series, measure definitions). |
 
 ## Conventions
