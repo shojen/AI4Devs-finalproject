@@ -3,23 +3,6 @@
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
     {
-      "id": "0069",
-      "slug": "0069-store-languages-settings-ui",
-      "title": "Store Languages settings screen — frontend",
-      "depends_on": [],
-      "status": "claimed",
-      "claimed_by": "shojen/0069-store-languages-settings-ui",
-      "claimed_at": "2026-10-03T00:00:00Z",
-      "touches": [
-        "app/Livewire/Settings/StoreLanguages.php",
-        "resources/views/livewire/settings/store-languages.blade.php",
-        "routes/settings.php",
-        "lang/en/store-languages.php",
-        "lang/es/store-languages.php"
-      ],
-      "conflict_risk_with": []
-    },
-    {
       "id": "0071",
       "slug": "0071-product-categories-language-tabs-ui",
       "title": "Product Categories taxonomy screen — language tabs (frontend)",

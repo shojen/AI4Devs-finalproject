@@ -44,6 +44,8 @@ was never implemented — nothing in `app/` writes `PaymentStatus::Paid`, so no 
 (0083 edits the orders *list* view; 0085 the *detail* view), so no `conflict_risk_with` entries. Pending count moves from 13 to 15
 numbered files; `done/` unchanged at 92.
 
+**Update (2026-10-03): `0069-store-languages-settings-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** — the fifth Epic 5 story to close. Its node, its inventory row and its `tasks-status.json` entry (the `claimed` one) are dropped because the task is closed; it had no pending dependents. Link-integrity check, both directions: the file's own outbound links were repointed (`../done/…` siblings became bare names; the `../../../docs/…` links needed no change at the same depth) and the one inbound link from `ai-spec/tasks/0075-blog-tags-language-tabs-ui.md` was repointed from `in-progress/0069-…` to `done/0069-…`; no `docs/` page links to it. `ai-spec/tasks/in-progress/` is removed (empty).
+
 **Update (2026-10-02): `0067-admin-ui-language-switcher-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** — the fourth Epic 5 story to close. Its node, its `P0067 -.-> P0069` conflict edge and its `tasks-status.json` entry (the `claimed` one) are dropped because the task is closed, and it joins the flat `done/` inventory. Its only pending pairing, `0069`, drops `"0067"` from `conflict_risk_with` (now empty); `0069` had no `depends_on` on it (the story is a soft, rendered-page collision only), so no `status` changes anywhere. Link-integrity check, both directions: this is an `in-progress/` → `done/` move at the same depth, so the file's own outbound links (all `../../../docs/…`) needed no change and all resolve; the inbound links were repointed from `in-progress/0067-…` to `done/0067-…` — `ai-spec/tasks/0069-store-languages-settings-ui.md` (1), `ai-spec/tasks/done/0064b-scheduled-post-publish-failure-notification-backend.md` (2, `../in-progress/0067-…` → bare sibling `0067-…`) and the parent delivery `../readme.md` (1, whose sentence was also updated to say the switcher shipped); `ai-spec/tasks/_digests/epic-5.md` names it only by story number, and no `docs/` page links to it. `ai-spec/tasks/in-progress/` is removed (empty). Counts: **13 numbered files pending in `ai-spec/tasks/`, 95 in `ai-spec/tasks/done/`**.
 
 **Update (2026-10-01): `0083-dashboard-home-overview-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (standalone, no PRD epic, so there is no
@@ -475,7 +477,6 @@ appears as a node in the dependency graph below:
 
 | ID | Title | Epic area |
 | --- | --- | --- |
-| 0069 | Store Languages settings screen — frontend | Epic 5 — i18n |
 | 0071 | Product Categories taxonomy screen — language tabs (frontend) | Epic 5 — i18n |
 | 0072 | Translatable content retrofit — Blog Categories backend | Epic 5 — i18n |
 | 0073 | Blog Categories screen — language tabs | Epic 5 — i18n |
@@ -520,7 +521,6 @@ flowchart LR
 
     subgraph PEND_I18N["Epic 5 — Internationalization"]
         direction TB
-        P0069["0069 Store Languages UI"]
         P0071["0071 Product Categories i18n UI"]
         P0072["0072 Blog Categories retrofit BE"]
         P0073["0073 Blog Categories i18n UI"]
@@ -608,7 +608,6 @@ flowchart LR
 
     class P0073,P0075,P0077,P0079 pending;
     class P0071,P0072,P0074,P0076,P0078,P0086 ready;
-    class P0069 claimed;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
