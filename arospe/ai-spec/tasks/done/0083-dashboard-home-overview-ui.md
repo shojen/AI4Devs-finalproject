@@ -4,7 +4,7 @@
 > against the merged backend [0082](../done/0082-dashboard-home-overview-backend.md)) **failed** this story on **size** and on contradictions with the
 > shipped code. **Owner decisions of 2026-10-01:** (1) the story is **split** — this story keeps the hero, the counters, the three list widgets, the
 > badge extraction and the route swap; the whole sales card (filters, KPI strip, two Chart.js charts) moves to the new
-> [0086](../0086-dashboard-sales-overview-ui.md), which depends on this one; (2) a widget row links to an editor **only when the actor may edit**,
+> [0086](0086-dashboard-sales-overview-ui.md), which depends on this one; (2) a widget row links to an editor **only when the actor may edit**,
 > otherwise it is plain text. The rewrite was re-validated (second review: FAIL on two small blockers — the editor-link check's arguments and a glossary
 > contradiction in one Gherkin row — both fixed; **third review: PASS**). Optional nit left for Phase 3: in `orders.blade.php` the status cell spans lines
 > ~76-88, so the "78-89" citations are approximate — use "the status cell". Items marked **⚑ owner to confirm** are facilitator defaults the owner has not ratified.
@@ -26,7 +26,7 @@ the mockup's four shortcut cards, **three live widgets**:
    link to the orders list. **Read-only**: it carries no "Mark as paid" action (owner decision 2026-10-01, see [0085](0085-order-mark-as-paid-ui.md)).
 
 The **sales overview card** (Day/Month/Year filters, order-status filter, KPI strip, "Sales vs real income" and "Orders by status"
-charts) is **not in this story**: it is [0086](../0086-dashboard-sales-overview-ui.md). Until 0086 lands the dashboard simply has no
+charts) is **not in this story**: it is [0086](0086-dashboard-sales-overview-ui.md). Until 0086 lands the dashboard simply has no
 sales card; no placeholder remains.
 
 ## Type
@@ -134,7 +134,7 @@ its module's view ability** (`@can`). All are **eager** (3–5 rows each; no `#[
 
 A CSS grid, not fixed columns: blog / low stock / latest orders in `lg:grid-cols-2`, a lone odd last card spanning both columns (the card
 shell uses an arbitrary variant, e.g. `[&>:last-child:nth-child(odd)]:lg:col-span-2` on the grid). **The page reserves a full-width slot between the hero and this grid**
-(empty in this story) where [0086](../0086-dashboard-sales-overview-ui.md) mounts its sales card, so 0086 never reworks the widget grid. If **no counter and no widget** is visible (an actor
+(empty in this story) where [0086](0086-dashboard-sales-overview-ui.md) mounts its sales card, so 0086 never reworks the widget grid. If **no counter and no widget** is visible (an actor
 whose abilities are, say, only `roles.manage`), the page shows the translated `dashboard.no_widgets` message instead of an empty body. Visuals follow
 `docs/arospe-handoff/project/css/index.css:3-13` (gradient `#4f46e5 → #6d5ef0`, radius 18px, mono counters via Tailwind `font-mono`); the hero
 gradient is the same in dark mode (white text on indigo works in both). Widgets use the existing dark-mode classes of the placeholder. Phone width: the
@@ -335,7 +335,7 @@ Scenario: The dashboard speaks the administrator's language
 ```
 
 (Missing names/titles, the sales card, filters, charts and their permission/tamper scenarios are **not** Gherkin here: the first are seam tests with a
-faked action, the rest belong to [0086](../0086-dashboard-sales-overview-ui.md).)
+faked action, the rest belong to [0086](0086-dashboard-sales-overview-ui.md).)
 
 ## Files to create/modify
 
@@ -452,7 +452,7 @@ respecting each actor's rights with no leakage, no dead links and no log noise.
 ## Dependencies
 
 - Backend [0082](../done/0082-dashboard-home-overview-backend.md) is **merged**; no pending dependency (`depends_on: []`).
-- **Consumed by [0086](../0086-dashboard-sales-overview-ui.md)** (blocked on this story).
+- **Consumed by [0086](0086-dashboard-sales-overview-ui.md)** (blocked on this story).
 - `conflict_risk_with`: **[0085](0085-order-mark-as-paid-ui.md)** — both edit `resources/views/livewire/orders.blade.php`, in disjoint regions (above).
 
 ## Review record

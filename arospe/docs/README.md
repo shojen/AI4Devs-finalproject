@@ -57,7 +57,7 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Orders](api/orders.md) | `orders.index`, `orders.show`, `<x-money>`, `<x-confirm-dialog>`. |
 | [Blog](api/blog.md) | `blog-tags.index`, `blog-categories.index`, `blog-posts.index` / `.create` / `.edit`. |
 | [Store Languages](api/store-languages.md) | `store-languages.index`: the two-section Store Languages settings screen (story 0069). |
-| [Dashboard](api/dashboard.md) | the `dashboard` route's ungated contract or the read-side actions in `app/Actions/Dashboard/` (per-widget gating, counters, latest posts/orders, low stock, sales/orders series, measure definitions). |
+| [Dashboard](api/dashboard.md) | the `dashboard` route's ungated contract, the `SalesOverview` card (filters, event, Chart.js charts) or the read-side actions in `app/Actions/Dashboard/` (per-widget gating, counters, latest posts/orders, low stock, sales/orders series, measure definitions). |
 
 ## Conventions
 
@@ -95,4 +95,4 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Errors log archive](errors-log-archive.md) | the topic index points at an entry dated before 2026-08-27. |
 | [Revision history](history/) | you need the old `_Previously:` revision notes of a doc (moved out of the doc itself; one file per doc, named after its path). |
 
-_Last updated: 2026-10-01 — Story 0082 docs pass. Added the [Dashboard](api/dashboard.md) row (read-side actions contract) and noted the new security page [Raw SQL and query-input bounds](security/raw-sql-and-query-input-bounds.md) in the Security row's page count (17 pages)._
+_Last updated: 2026-10-03 — Story 0086: the Dashboard row now covers the `SalesOverview` card._

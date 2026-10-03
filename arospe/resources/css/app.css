@@ -36,6 +36,34 @@
     }
 }
 
+/* Story 0086 -- the sales overview charts' colours (resources/js/sales-chart.js reads them from
+   <html> at init and again whenever the `dark` class toggles). The status tokens use the same Tailwind
+   palette hues as the order status badge (resources/views/components/order-status-badge.blade.php:
+   zinc, blue, amber, lime, red). Light values here, dark overrides in the `.dark` block. */
+:root {
+    --chart-text: var(--color-zinc-600);
+    --chart-grid: var(--color-zinc-200);
+    --chart-sales: var(--color-zinc-500);
+    --chart-income: var(--color-indigo-600);
+    --chart-status-pending: var(--color-zinc-400);
+    --chart-status-processing: var(--color-blue-500);
+    --chart-status-shipped: var(--color-amber-500);
+    --chart-status-delivered: var(--color-lime-500);
+    --chart-status-cancelled: var(--color-red-500);
+}
+
+.dark {
+    --chart-text: var(--color-zinc-300);
+    --chart-grid: var(--color-zinc-700);
+    --chart-sales: var(--color-zinc-400);
+    --chart-income: var(--color-indigo-400);
+    --chart-status-pending: var(--color-zinc-400);
+    --chart-status-processing: var(--color-blue-400);
+    --chart-status-shipped: var(--color-amber-400);
+    --chart-status-delivered: var(--color-lime-400);
+    --chart-status-cancelled: var(--color-red-400);
+}
+
 @layer base {
 
     *,

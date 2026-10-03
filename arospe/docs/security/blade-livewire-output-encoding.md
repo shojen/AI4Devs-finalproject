@@ -16,6 +16,7 @@ the inside of a `wire:*` / `x-on:*` directive value, which is JavaScript.**
 - [Plain text derived from HTML is still output-escaped by the caller](#plain-text-derived-from-html-is-still-output-escaped-by-the-caller)
 - [Block-level tags are replaced before `strip_tags()`, and the regex is bounded](#block-level-tags-are-replaced-before-strip_tags-and-the-regex-is-bounded)
 - [A badge component forwards `$attributes`, so callers pass only static or UUID-derived hooks](#a-badge-component-forwards-attributes-so-callers-pass-only-static-or-uuid-derived-hooks)
+- [Chart payloads and sr-only tables are plain text](#chart-payloads-and-sr-only-tables-are-plain-text-story-0086)
 - [What is already safe and needs no change](#what-is-already-safe-and-needs-no-change)
 
 ## `{{ }}` inside a `wire:` directive is not escaping — it is an injection sink
@@ -178,6 +179,10 @@ Story 0083 changed `GetLatestBlogPosts::describe()` so a block-level tag (`p`, `
 
 [`<x-order-status-badge>`](../../resources/views/components/order-status-badge.blade.php) and [`<x-blog-status-badge>`](../../resources/views/components/blog-status-badge.blade.php) spread `{{ $attributes }}` onto the badge, which is how a caller adds its `data-test` hook. `{{ $attributes }}` escapes attribute values, so a forwarded value is not an injection by itself; the risk is a caller passing something attacker-controlled or an unvalidated `class`/`wire:` expression. Today every caller passes a static string or a hook built from a UUID row id (`dashboard-blog-status-{{ $row['id'] }}`). The order badge renders an unknown status string escaped (`{{ $case?->label() ?? $status }}`) with a zinc fallback.
 
+## Chart payloads and sr-only tables are plain text (story 0086)
+
+The sales card passes data to Chart.js and to screen readers without any HTML sink. [`sales-overview.blade.php`](../../resources/views/livewire/dashboard/sales-overview.blade.php) writes the chart config as a `{{ }}`-escaped JSON attribute on a hidden `data-config` element (read with `JSON.parse`; the same payload travels in the `sales-overview-updated` event), and the two sr-only tables print labels and money through `{{ }}`. Chart.js draws labels and tooltips on the canvas, and `sales-chart.js` has no `innerHTML`, `x-html` or string-built markup. The values are server-formatted dates, `OrderStatus` labels and translations, never user content. A new chart or table must keep the same shape: scalar payloads, escaped attributes, no `{!! !!}`.
+
 ## What is already safe and needs no change
 
 Recorded so a future audit does not re-litigate them:
@@ -209,6 +214,6 @@ Recorded so a future audit does not re-litigate them:
   Alpine auto-invokes the returned function. This is the same pattern already in
   `resources/views/livewire/settings/security.blade.php`; it is not a silently-dead handler.
 
-_Last updated: 2026-10-01 — Story 0082 (Phase 4, F3). Added the rule that plain text derived from HTML by strip-then-decode must always be output-escaped by the caller. Earlier: story 0057a added the layout-slot rule (a slot body is echoed unescaped, so it must be encoded with `{{ }}` where it is written)._
+_Last updated: 2026-10-03 — Story 0086: added the rule that chart payloads and sr-only tables are plain text (escaped attributes, no HTML sink). Earlier: story 0082 (plain text derived from HTML is output-escaped by the caller) and story 0057a (layout-slot rule)._
 
 _Earlier revision notes: [security--blade-livewire-output-encoding.md](../history/security--blade-livewire-output-encoding.md)._

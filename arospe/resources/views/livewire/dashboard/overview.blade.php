@@ -2,8 +2,8 @@
 /**
  * View for App\Livewire\Dashboard\Overview (story 0083). A counter renders whenever its value is
  * not null -- never `@if($count)`, because 0 is a value worth showing. The widgets mount only for
- * actors holding the module's view ability (each widget re-checks it). The empty full-width slot
- * between the hero and the grid is reserved for the sales card of story 0086.
+ * actors holding the module's view ability (each widget re-checks it). The full-width sales card
+ * (story 0086) sits between the hero and the grid.
  */
 ?>
 <div class="flex w-full flex-col gap-6">
@@ -33,11 +33,14 @@
         @endif
     </section>
 
-    {{-- Reserved, full width: story 0086 mounts the sales overview card here. --}}
-
     @php($showBlog = $this->widgets['blog'])
     @php($showStock = $this->widgets['stock'])
     @php($showOrders = $this->widgets['orders'])
+
+    {{-- Story 0086: the full-width sales overview card, for actors who may see orders. --}}
+    @if ($showOrders)
+        <livewire:dashboard.sales-overview />
+    @endif
 
     @if ($showBlog || $showStock || $showOrders)
         <div class="grid gap-6 lg:grid-cols-2 [&>:last-child:nth-child(odd)]:lg:col-span-2">

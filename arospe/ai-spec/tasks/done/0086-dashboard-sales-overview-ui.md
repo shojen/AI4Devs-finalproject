@@ -1,11 +1,10 @@
 # [0086] Dashboard home — sales overview card with filters and Chart.js charts (frontend)
 
-> **Status: Phase 1 draft (split out of 0083 on 2026-10-01).** Created by the owner-approved split of [0083](done/0083-dashboard-home-overview-ui.md)
+> **Status: Phase 3 (in progress) — Phase 2 PASS 2026-10-02; the owner ratified the ⚑ defaults on 2026-10-02 with ONE change (see "Owner ratification").** Originally a Phase 1 draft (split out of 0083 on 2026-10-01). Created by the owner-approved split of [0083](0083-dashboard-home-overview-ui.md)
 > after its Phase 2 FAIL (size); the sales-card content, decisions and the Phase 2 review items that concern it are carried here, rewritten
-> against the **merged** backend [0082](done/0082-dashboard-home-overview-backend.md). The Three Amigos debate was held for the original 0083
-> (frontend-expert + frontend-qa, 2026-09-30) and the sales card was amended by the owner on 2026-09-30; this story has **not** had its own
-> Phase 2. **⚑** marks facilitator defaults the owner has not ratified. **Blocked on [0083](done/0083-dashboard-home-overview-ui.md)** (it adds the
-> card to the `Overview` page that 0083 creates and extends the lang file 0083 extends).
+> against the **merged** backend [0082](0082-dashboard-home-overview-backend.md). The Three Amigos debate was held for the original 0083
+> (frontend-expert + frontend-qa, 2026-09-30) and the sales card was amended by the owner on 2026-09-30; its own Phase 2 passed
+> on 2026-10-02. **⚑** marks facilitator defaults, now ratified (see "Owner ratification"). [0083](0083-dashboard-home-overview-ui.md) is **done** (it created the `Overview` page this card is added to and the lang file this story extends).
 
 ## Description
 
@@ -91,8 +90,8 @@ Top to bottom inside one widget card "Sales overview":
 
 1. **Filter bar:** a segmented Day/Month/Year (`flux:radio.group variant="segmented"`), preset buttons, two native `<flux:input type="date" wire:model.live.blur>` in a `flux:field` with `flux:error name="range"`,
    `max` = today on `to`, and the status chips (multi-select toggles in the colors of the order-status badges, *Cancelled* off by default, with a "Reset" affordance). One filter, one URL, one request.
-2. **KPI strip:** Sales and Real income through `<x-money>`; Orders as an integer. The Real-income tile shows the hint **"Collected: N% of sales"** where **N = `round(income / sales × 100)` as an integer (half up)**, shown only
-   when sales > 0; when income is 0 while sales > 0 it shows instead the neutral hint **"Income is counted once orders are paid"** (nothing in the application marks an order paid until [0084](done/0084-order-mark-as-paid-backend.md)/[0085](done/0085-order-mark-as-paid-ui.md)).
+2. **KPI strip:** Sales and Real income through `<x-money>`; Orders as an integer. The Real-income tile shows the hint **"Collected: N% of sales"** where **N = income / sales × 100 rounded half up to at most 2 decimals, trailing zeros trimmed** (4.436 → `4.44`, 50 → `50`; never integer rounding; computed with decimal strings/`bcmath`, not floats; formatted in the active locale), shown only
+   when sales > 0; when income is 0 while sales > 0 it shows instead the neutral hint **"Income is counted once orders are paid"** (until [0084](0084-order-mark-as-paid-backend.md)/[0085](0085-order-mark-as-paid-ui.md) let an order be marked paid).
 3. **Chart A — "Sales vs real income":** line, two series distinguished by color **and** line style/marker (Sales = muted, dashed, circle markers; Real income = accent, solid, square markers); Y axis in EUR, tooltip shows both values and the difference.
 4. **Chart B — "Orders by status":** stacked bar, one dataset per **selected** status in `OrderStatus::cases()` order, integer Y axis from 0, tooltip with the breakdown and the bucket total. The legend is shown; clicking a legend entry hides
    that series **locally** and does **not** change the server filter (the chips do) — the help text says so.
@@ -134,6 +133,11 @@ Extend `lang/en/dashboard.php` and `lang/es/dashboard.php` with a **`sales` grou
 `presets.last_7_days|last_30_days|this_month|this_year`, `from`, `to`, `statuses` (chip labels come from `OrderStatus::label()`), `reset`, `chart_a_title`, `chart_b_title`, `legend_help`, `empty`, `range_year_window` (`:min`, `:max`),
 `date_invalid`, `statuses_max`, table captions/column headers, `loading`. **No `sales.range_error`**: range and status refusals are the backend's already-translated messages. The pinned `errors` group and its parity test are **not touched**.
 
+## Owner ratification (2026-10-02)
+
+The owner ratified every ⚑ default (two charts + KPI strip; granularity change resets the range; preset→granularity mapping; default ranges; label formats; eager fallback if the lazy+`#[Url]` spike fails) **except the KPI percent hint**, which changed to
+**real numbers, no integer rounding: at most 2 decimals, rounded (4.436 → 4.44)**. Trailing zeros are trimmed (50, not 50.00) — facilitator reading of "máximo 2 decimales"; flag if the owner wants a fixed two decimals.
+
 ## Open questions closed
 
 | Q | Resolution |
@@ -144,7 +148,7 @@ Extend `lang/en/dashboard.php` and `lang/es/dashboard.php` with a **`sales` grou
 | Event delivery | `$wire.$on` in each Alpine component (D-4) |
 | Date picker | native date inputs (Flux free has none) |
 
-Still **⚑ owner to confirm:** the two-chart layout and definitions; the granularity-resets-range rule and the preset→granularity mapping; the exact default ranges; the KPI percent hint (integer, half up); the label formats; keeping an eager fallback if the `#[Lazy]`+`#[Url]` spike fails.
+Still **⚑ owner to confirm:** the two-chart layout and definitions; the granularity-resets-range rule and the preset→granularity mapping; the exact default ranges; the label formats; keeping an eager fallback if the `#[Lazy]`+`#[Url]` spike fails.
 
 ## Gherkin
 
@@ -338,7 +342,7 @@ Modify:
 Feature (`Livewire::withQueryParams([...])->test(SalesOverview::class)` **directly** — with `#[Lazy]`, a `GET /dashboard?...` only renders the placeholder, so it proves nothing about `mount()`; `Livewire::withoutLazyLoading()` for `Overview`-level tests); non-Super-Admin actors;
 `seed(RolePermissionSeeder)`; probes on the **sr-only tables** and `data-test` hooks:
 
-- `SalesOverviewRenderingTest` — default state (Day, 30 days, default chips), KPI tiles with the exact `<x-money>` strings (`€ 180.00`), the collected-% hint (integer, half up, hidden when sales = 0), the income hint, both sr-only tables for paid / unpaid / partially refunded /
+- `SalesOverviewRenderingTest` — default state (Day, 30 days, default chips), KPI tiles with the exact `<x-money>` strings (`€ 180.00`), the collected-% hint (≤ 2 decimals, half up, trailing zeros trimmed, e.g. 4.436 → 4.44; hidden when sales = 0), the income hint, both sr-only tables for paid / unpaid / partially refunded /
   cancelled orders (Sales gross, Real income net, Orders by status), chart labels per granularity in en/es (`1 May`/`1 may`, `May 2026`/`mayo 2026`, `2026`), empty state, stack order by `OrderStatus::cases()` regardless of selection order.
 - `SalesOverviewFiltersTest` — granularity switch resets the range to that granularity's default (12 monthly / 5 yearly buckets ending today), presets set range **and** granularity (travelTo 2026-06-15), custom-range boundaries (15 May 23:59:59 in, 16 May 00:00:00 out), clearing a date, chips (default set, *Cancelled* on/off, single status, all,
   **empty selection refused with the backend's translated `statuses` message and the previous data kept**), cap boundaries (366/367, 120/121, 50/51) showing the translated `range_too_long` with its `:max`, years outside 1000..9998 refused with `sales.range_year_window` **before any action call**, `from > to` showing `range_invalid`,
@@ -369,12 +373,12 @@ An order manager sees, at a glance and without leaving the home page, how much w
 
 ## Definition of Done
 
-- [ ] Phase 2 INVEST validation (`code-reviewer`)
-- [ ] The two spikes (lazy child + `#[Url]`; `updating*` keeps the old value; `$wire.$on` delivery) recorded green in the first red tests, or their fallbacks adopted and noted
-- [ ] Tests written first (red) then green; **full suite** green (unscoped, run as directory chunks, including `tests/Browser`)
-- [ ] Pint (unscoped), Larastan, `npm run build` clean; **bundle-size delta and `npm audit` state recorded**; `package-lock.json` committed with the dependency
-- [ ] Appsec review (per-component authorization on both paths, hydrated-state bounds, XSS sinks, refusal-log behaviour)
-- [ ] Docs synced (list in "Files")
+- [x] Phase 2 INVEST validation (`code-reviewer`) — PASS 2026-10-02, see "Phase 2 — INVEST validation"
+- [x] The two spikes (lazy child + `#[Url]`; `updating*` keeps the old value; `$wire.$on` delivery) recorded green in the first red tests, or their fallbacks adopted and noted — see "Spec deviations"
+- [x] Tests written first (red) then green; **full suite** green (unscoped, run as directory chunks, including `tests/Browser`)
+- [x] Pint (unscoped), Larastan, `npm run build` clean; **bundle-size delta and `npm audit` state recorded** (recorded in `docs/conventions/base-standards/stack-and-model-conventions.md`: app JS 62.20 → 68.41 kB, +2.23 kB gzip; chart chunk 171.32 kB / 59.64 gzip; CSS 251.34 → 255.29 kB; `npm audit`: 2 pre-existing highs, nanoid and postcss, none from chart.js); `package-lock.json` committed with the dependency
+- [x] Appsec review (per-component authorization on both paths, hydrated-state bounds, XSS sinks, refusal-log behaviour)
+- [x] Docs synced (list in "Files") — see "Phase 6 — Documentation"
 
 ## Risks and follow-ups
 
@@ -387,5 +391,75 @@ An order manager sees, at a glance and without leaving the home page, how much w
 
 ## Dependencies
 
-- **Blocked on [0083](done/0083-dashboard-home-overview-ui.md)** (`depends_on: ["0083"]`): it adds the card to the `Overview` page 0083 creates, uses the status-badge colors 0083 extracts, and extends the same `lang/{en,es}/dashboard.php`.
-- Backend [0082](done/0082-dashboard-home-overview-backend.md) is merged. No conflict with 0084/0085 (it never touches `orders.blade.php`).
+- [0083](0083-dashboard-home-overview-ui.md) is **done** (was `depends_on: ["0083"]`): it added the card to the `Overview` page 0083 creates, uses the status-badge colors 0083 extracts, and extends the same `lang/{en,es}/dashboard.php`.
+- Backend [0082](0082-dashboard-home-overview-backend.md) is merged. No conflict with 0084/0085 (it never touches `orders.blade.php`).
+
+## Phase 2 — INVEST validation
+
+**Decision: PASS** (`code-reviewer`, 2026-10-02, against the merged tree at `733f192`). Dependencies 0082, 0083 and 0084 are merged and in `done/`; every "Verified fact" above was re-checked against the tree and matches.
+INVEST: Independent, Negotiable, Valuable, Estimable and Testable pass; **Small passes, borderline** (26 scenarios, 5 Feature files, 2 Browser files, four repo firsts, a new dependency). **If Phase 3 stalls, split into**
+(a) filters, KPI strip and sr-only tables (pure Livewire) and (b) the Chart.js charts (dependency, Browser tests, theme). Gherkin: every scenario opens with a named actor and has a single `When`; arithmetic verified.
+
+**Findings to address in Phase 3 (non-blocking):**
+
+1. Header stale ("Blocked on 0083", "no Phase 2") — updated 2026-10-02.
+2. Gate with the existing idiom: mount the card from `$this->widgets['orders']` (`ChecksAbilitiesSafely::allowsSafely()`), not `@can`/`Gate::allows`; use `allowsSafely` in `SalesOverview`'s render path too (a missing permission row means "not permitted", never an exception).
+3. `data-testing` does not exist in the layout yet: the layout change is **required**, not optional.
+4. `DashboardLangParityTest` compares placeholders only for the three `errors` keys: add a per-key placeholder parity over `sales.*` (`:percent`, `:min`, `:max`) without touching the `errors` pin.
+5. The status badge uses Flux colour names (zinc, blue, amber, lime, red): the `--chart-status-*` tokens must use the matching Tailwind palette variables.
+6. `updating*` spike: range errors come from the action, so the hook must call it with the candidate value without running the queries twice (reuse/memoise). Chips: prefer a `toggleStatus()` method validating the whole candidate array over `wire:model` on `statuses.N`.
+7. ⚑ defaults ratified by the owner on 2026-10-02 (see "Owner ratification").
+
+## Phase 5 — Code review
+
+**Decision: PASS** (`code-reviewer`, 2026-10-02, uncommitted diff on `worktree-0086-dashboard-sales-overview-ui`). Every Gherkin scenario maps to at least one Feature or Browser test; the KPI percent follows the owner rule (bcmath, `bcadd(…, '0.005', 2)` half up, trailing zeros trimmed, locale separator; dataset covers 4.436 → 4.44, 0.005 → 0.01, 12.50 → 12.5); lang `sales` group has en/es key and per-key placeholder parity and the `errors` pin is untouched; no `x-html`/`{!! !!}`; public state is four scalars; Larastan level 7 clean on `SalesOverview.php`; the PHP reads Pint-clean. Phase 2 findings 2–6 are addressed. Suites as verified by the orchestrator (Feature/Dashboard, Browser/Dashboard green); full suite, docs and appsec remain open DoD items.
+
+Deviations judged acceptable (each must be recorded in this file before closure, the "spikes … or fallbacks adopted and noted" DoD item is not yet ticked): (a) `x-data="moneyChart"` plus a hidden `data-config` child instead of `moneyChart(@js(…))` — avoids Alpine re-initialising on morph; still `{{ }}`-escaped; (b) refusal handled by `updating()` throwing plus `updated()` putting the previous value back (Livewire swallows hook exceptions) instead of the `applied*` fallback — proven by SPIKE 2; (c) es labels stripped of the CLDR dot — matches the story's own "1 may"; (d) extra lang keys (`filters_label`, `*.label`, `granularity_invalid`, `statuses_invalid`, `period`, `difference`, `total`, `summary`, `updating`) — all used; (e) `$statuses` initialised `[]` with `except` = default set, documented in the docblock.
+
+Non-blocking findings: 1. The UI can reach a one-bound state (set only `from`, or clear `to`, e.g. SPIKE 2's `from=2026-06-10, to=''`), which `rangeFor()` renders, but `sanitizeUrlState()` treats a one-bound link as broken, so reloading that URL shows the default range instead — either accept one bound in `mount()` (as `rangeFor()` already does) or document it as intended. 2. `sales.loading` is required by the parity test but has no consumer (the placeholder is markup only) — use it as the placeholder's `aria-label`/sr-only text or drop it. 3. `$wire.$on(...)` returns an unsubscribe function that `destroy()` does not call (guarded by `isDestroyed`, so harmless).
+
+## Phase 4 — Security audit
+
+**Decision: PASS** (`appsec-auditor`, 2026-10-02, against the uncommitted Phase 3 tree on `worktree-0086-dashboard-sales-overview-ui`). No Critical, High or Medium finding. The Low findings below are recommended before Phase 5 but do not block.
+
+**Verified safe:**
+
+- **Authorization, both paths.** Render: `allowsSafely('viewAny', Order::class)` returns an empty card with no query and no log (`SalesOverview.php:228`, mount's `sanitizeUrlState()` at :556); the parent mounts the card only from `widgets['orders']`. Update: `updating()` (:121) and `applyPreset`/`toggleStatus`/`resetStatuses` (:172/:202/:221) call `LogRefusedPrivilegedAttempt::authorize()` first; an `AuthorizationException` from a hook is not swallowed by Livewire v4.3.3, so the 403 precedes any assignment. The series actions re-authorize as the last layer.
+- **Bookkeeping cannot be forged.** `$memo` and `$refusedUpdates` are protected: not in the snapshot, and `updateProperty()` refuses non-public names. The final state is re-validated on render (:232-238) and falls back to defaults, so no tampered value reaches a query.
+- **Hydrated-state bounds.** Granularity enum, ≤ 5 string `OrderStatus` values, strict `Y-m-d` with round-trip check, years 1000..9998, bucket caps 366/120/50 in `ResolveSalesBuckets` before any query; non-string scalars map to an always-invalid marker; Livewire's 1 MB payload / depth 10 / 50 calls limits apply.
+- **XSS.** Every view value is `{{ }}`-escaped, including the `data-config` JSON (HTML-escaped attribute, read with `JSON.parse`); `wire:click` arguments are server constants/enum values; Chart.js draws labels and tooltips on canvas; `sales-chart.js` has no `innerHTML`/`x-html`/string-built markup; labels are server-formatted dates, enum labels and translations (no user content). `JSON.parse` cannot pollute prototypes.
+- **Event payload / disclosure.** `sales-overview-updated` carries only aggregate scalars to an already-authorized actor. `data-testing` is emitted only under `APP_ENV=testing`.
+- **Refusal log.** One `Log::warning` per refused update (actor id, ability, target type; no PII); a silent render for non-orders actors, as the acceptance criteria require.
+- **Dependency.** `chart.js` 4.5.1 and `@kurkle/color` 0.3.4: MIT, no known advisories, no install/postinstall scripts, `integrity` hashes from `registry.npmjs.org`. `npm audit` lists only the pre-existing transitive `nanoid` and `postcss` advisories (unrelated to this story); record that state in the DoD.
+
+**Findings:**
+
+- **L-1 (Low, input validation / robustness, CWE-20). Dotted update paths into scalar properties are validated against the wrong candidate.** `stateAfterUpdate()`'s `else` branch (`SalesOverview.php:325-329`) treats every unmatched dotted name as `statuses.<rest>`: `from.x`/`to.x` give `substr(...) === ''`, so the candidate becomes `statuses[''] = $value` and passes; Livewire then tries to set a nested path on a string and throws, which is an unhandled 500 with an error-level log entry (authorized actors only). `statuses.*` is also validated with `data_set()`'s wildcard semantics, while Livewire assigns the literal key `*`. No authorization bypass and no invalid state survives (`updated()` normalizes and render re-validates). **Fix:** in `updating()`, refuse any `$name !== $property` when the property is not `statuses`, and accept `statuses.<n>` only when `<n>` is a single `ctype_digit` segment below `MAX_STATUSES`; set `$statuses[(int) $n] = $value` directly instead of `data_set()`. Add Feature cases for `from.x`, `granularity.x`, `statuses.*` and `statuses.0.x` (expected: refused, no 500, previous data kept).
+- **L-2 (Low, resource consumption, CWE-770). Per-request query amplification.** One `/livewire/update` can carry up to 50 calls (`livewire.payload.max_calls`); alternating `toggleStatus` calls produce distinct states, and the single-entry memo misses, so each call runs two aggregate scans over the unindexed `orders.created_at` (R-9), about 100 scans per request, with no throttle. Only an `orders.view` holder can do this. **Fix (one of):** a per-actor `RateLimiter` on the component's write paths (e.g. 30 per minute, refusal logged), or a per-request counter that refuses after a few state changes; and keep the R-9 index follow-up.
+- **L-3 (Informational, logic). Several updates in one request.** `updated()` clears `$refusedUpdates` on the first call, so a refused property's own `updated()` later runs the accepted-change side effects (e.g. a refused `granularity` clears an accepted custom range) and dispatches twice. The final state is still valid. **Fix:** clear only the entry of the property being finished (`unset($this->refusedUpdates[$property])` after restoring it), restoring all entries first.
+- **I-4 (Informational, tests).** `SalesOverviewPermissionTest`'s never-authorized dataset (`:155-160`) omits `resetStatuses`; add it.
+
+Knowledge base: `docs/security/livewire-authorization/entry-point-and-method-gates.md` gained "A child widget WITH client-writable filters" (gate `updating()`, the swallowed `ValidationException`, validate the update path).
+
+## Spec deviations
+
+Judged acceptable in Phase 5 and recorded here:
+
+- `x-data="moneyChart"` plus a hidden `data-config` child instead of `moneyChart(@js(...))`: Alpine does not re-initialise on morph, so charts are never re-created; still `{{ }}`-escaped.
+- **Refusal handling:** `updating()` throws and `updated()` puts the previous value back (via the protected `$refusedUpdates`), because Livewire 4 swallows a `ValidationException` from a hook and still assigns (SPIKE 2); a tampered update path is refused with `abort(422)` (appsec L-1).
+- Spanish chart labels carry no CLDR dot (`1 may`), matching the story's own example.
+- Extra lang keys beyond the story (`filters_label`, `*.label`, `granularity_invalid`, `statuses_invalid`, `period`, `difference`, `total`, `summary`, `updating`, `loading`), all used.
+- `$statuses` is initialised `[]` with `except:` set to the default set (Livewire merges a URL array into the initial array by index); `mount()` turns the empty state into the default set.
+- A single-bound range (only `from`, or only `to`) is accepted from the URL, as `rangeFor()` already renders it.
+- The KPI collected-% follows the owner's percent rule: at most 2 decimals, half up, trailing zeros trimmed, locale separator, hidden when Sales is 0.
+
+## Phase 6 — Documentation
+
+**Done** (`docs-keeper`, 2026-10-03). Synced: `docs/conventions/base-standards/livewire-and-flux-conventions.md` (second `wire:ignore` region, first `#[Lazy]` + `#[Url]` child, `[]` default + `except:`, `$refusedUpdates`, constant `x-data` + `data-config`) and its hub; `docs/conventions/base-standards/stack-and-model-conventions.md` (Chart.js, bundle delta, `npm audit`); `docs/api/dashboard.md` (SalesOverview contract, accepted L-2); `docs/testing/frontend/playwright-setup/selectors-tagging-and-ci.md` (exposed-instance technique, sr-only tables); `docs/testing/frontend/gherkin-guidelines.md` (status chip, KPI strip); `docs/security/blade-livewire-output-encoding.md`; `docs/security/livewire-authorization/entry-point-and-method-gates.md` (422 on tampered paths, L-2); `docs/README.md`; root `README.md` (Chart.js). `docs/conventions/localization.md` lists no dashboard groups, so it is unchanged (the percent rule lives in `docs/api/dashboard.md`). No epic decision digest exists for the dashboard stories (epics 2-5 only), so none was appended.
+
+**Accepted Low risk L-2** (appsec): one `/livewire/update` can carry up to 50 calls, so an `orders.view` actor can cause about 100 order scans in a request; there is no rate limiter. Accepted for now and tracked under R-9 (unindexed `orders.created_at`); revisit with a per-actor `RateLimiter` if measured slow.
+
+## Phase 7 — Closure
+
+**Gates (2026-10-03):** full suite green, run as 35 sequential directory chunks on one isolated database (`tests/Feature/*/`, `tests/Unit`, `tests/Browser` and the top-level Feature files; 5,777 tests, every chunk exit 0); `tests/Browser/Dashboard` re-run on the final code (18/18); Pint unscoped passed; Larastan clean on `SalesOverview.php`; `npm run build` clean (bundle delta and `npm audit` state recorded in Phase 6). Three layered commits: `feat(dashboard)`, `test(dashboard)`, `docs(dashboard)`.
+Link integrity (both directions) checked on the move to `done/`; `tasks-map.md` and `tasks-status.json` regenerated (the `claimed` entry dropped).
