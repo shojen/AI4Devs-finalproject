@@ -4,11 +4,11 @@ Part of [Routes](routes.md) — see [routes.md](routes.md#why-this-file-exists) 
 
 ## Table of Contents
 
-- [`store-languages.index` — another permission-gated route, shipped backend-only](#store-languagesindex--another-permission-gated-route-shipped-backend-only)
+- [`store-languages.index` — the Store Languages settings screen](#store-languagesindex--the-store-languages-settings-screen)
 
-### `store-languages.index` — another permission-gated route, shipped backend-only
+### `store-languages.index` — the Store Languages settings screen
 
-Story 0068 (backend: the `store_languages`/`locale_settings` tables, the two policies, the three catalog actions, this route). Declared in its own [`routes/store-languages.php`](../../routes/store-languages.php), the same shape every prior area file uses:
+Story 0068 shipped the backend (the `store_languages`/`locale_settings` tables, the two policies, the three catalog actions, this route behind a placeholder view); story 0069 replaced the placeholder with the real screen. Declared in its own [`routes/store-languages.php`](../../routes/store-languages.php), the same shape every prior area file uses:
 
 ```php
 // routes/store-languages.php
@@ -25,13 +25,37 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 ```
 
-**This route resolves to a deliberate minimal placeholder, matching what story 0017 shipped before 0018 replaced it.** [`App\Livewire\StoreLanguages\Index`](../../app/Livewire/StoreLanguages/Index.php) exists so `Livewire::test()` and an HTTP visit have something to render against; the real card/list UI — adding a language from the bundled ISO 639-1 picker, changing the default, removing a language, and the two default-locale settings on the same screen — is story **0069**'s. Until then:
+**One Livewire component, two visually distinct sections (story 0069).** [`App\Livewire\StoreLanguages\Index`](../../app/Livewire/StoreLanguages/Index.php) (class-based, flat view `resources/views/livewire/store-languages.blade.php`, `lang/{en,es}/store-languages.php`) renders two `flux:card` sections that belong to **different i18n layers** (see [conventions/localization.md](../conventions/localization.md#the-two-layers-and-why-a-change-must-never-cross-between-them)):
 
-- **The `store-languages.*` permissions are not new** — they have existed in `RolePermissionSeeder::MODULES` since story 0002's catalog, unused by any route or policy until this story. This is the first story to give them a real gated surface and real `Gate` abilities behind them (`StoreLanguagePolicy`, `LocaleSettingPolicy` — see [architecture/authorization.md](../architecture/authorization/policies-store-languages-and-locale-settings.md)).
-- **`/settings/store-languages` carries no `config/modules.php` sidebar entry yet** — the identical temporary half-state `roles.index` sat in between stories 0010 and 0013, and `sales-regions.index` between 0017 and 0018. Acceptable only because 0069 immediately follows; that story must add the `items.store_languages` entry (`permissions` exactly `['store-languages.view']`) and both `navigation.php` leaves.
-- **Three domain actions exist and are fully tested behind this route with no UI caller yet**: `App\Actions\StoreLanguages\AddStoreLanguage`, `RemoveStoreLanguage`, `SetDefaultStoreLanguage` — each self-authorizes against `StoreLanguagePolicy` as its own first statement, so a queued job or Artisan caller inherits the same rule story 0069's component will use as a second layer. See [../database/schema-localization.md](../database/schema-localization.md#store_languages) for what each writes.
-- **The two default-locale settings actions (`App\Actions\Localization\SetDefaultUiLocale`/`SetDefaultNotificationLocale`) have no route of their own at all** — they are reached only through story 0069's future form on this same screen, gated by `LocaleSettingPolicy`, which **borrows** `store-languages.view`/`.edit` rather than adding a new permission (D25) — see [architecture/authorization.md](../architecture/authorization/policies-store-languages-and-locale-settings.md) for the stated cost this borrowing has on what `store-languages.edit` now means.
+- **Content languages (Layer 2).** Active `store_languages` rows, default first. Add from the bundled ISO 639-1 list (a picker of act-now buttons filtered client-side by Alpine; never a free-typed code; codes held by an *active* row are not offered, a removed language is), mark one as default, remove one. Removal of the current default is one click for the user but two backend calls: the chosen replacement is promoted with `SetDefaultStoreLanguage`, then the old default removed with `RemoveStoreLanguage`. The removal modal has three states (replacement select for a default, plain confirm, and "add another language first" with Confirm disabled for the last active language) and shows a usage line from `StoreLanguage::translationUsageCount()` only when it is greater than zero.
+- **Dashboard defaults (Layer 1).** Two independent selects, each saved by its own method (`saveDefaultUiLocale()`, `saveDefaultNotificationLocale()`), constrained to the two `App\Enums\UiLocale` cases. The copy states the scope is system-wide, not the personal language switcher (`InteractsWithUiLocale` is deliberately **not** composed here).
+
+```php
+// app/Livewire/StoreLanguages/Index.php
+public function saveDefaultUiLocale(SetDefaultUiLocale $setDefaultUiLocale, LogRefusedPrivilegedAttempt $log): void
+{
+    $log->authorize('update', LocaleSetting::class, targetType: 'locale_setting', targetId: LocaleSetting::SINGLETON_ID);
+
+    $this->validate(
+        ['defaultUiLocale' => $this->defaultUiLocaleRules()],
+        attributes: ['defaultUiLocale' => __('localization.attributes.defaultUiLocale')],
+    );
+
+    $setDefaultUiLocale(UiLocale::from($this->defaultUiLocale));
+    // ...
+}
+```
+
+The locale actions take an already-typed `UiLocale` and validate nothing, so the component is the only layer holding the raw client-writable string: [`App\Concerns\LocaleSettingValidationRules`](../../app/Concerns/LocaleSettingValidationRules.php) (`defaultUiLocaleRules()`, `defaultNotificationLocaleRules()`, each `['required', 'string', Rule::enum(UiLocale::class)]`) runs **before** `UiLocale::from()`, so a forged value is a validation error and never a `ValueError`.
+
+**Authorization and logging.** `mount()` calls `Gate::authorize('viewAny', StoreLanguage::class)` (unlogged, the documented exception: the route's `can:` already refuses a real HTTP actor). Every action method, including the two modal-opening disclosure paths (`openAddLanguageModal()`, `confirmRemoveLanguage()`), method-injects `LogRefusedPrivilegedAttempt` and authorizes itself with the right `targetType` (`store_language` or `locale_setting`; the latter passes `LocaleSetting::SINGLETON_ID` so the screen's refusal lines match the actions' own). Row targets are resolved with `findOrFail()` before the gate. Per-row and per-section controls render disabled with a tooltip (never hidden) from `allowsSafely()` hints that mirror the policy. `#[Locked]` covers exactly `$languages` and `$languageId`; the removal modal body (and its usage count) renders only when `$languageId !== ''` and `canRemoveSelectedLanguage` re-passes `delete` on each render. `$languageId` and `$code` are declared public properties solely so the `ValidationException` keys thrown by 0068's actions survive Livewire's dehydrate.
+
+**Sidebar.** `config/modules.php` has `items.store_languages` in the **`store_settings` cluster** (`group => null`, `cluster => 'store_settings'`, `permissions` exactly `['store-languages.view']`, `current_when => 'store-languages.*'`), not in the `settings` group; no `expanded_when` change was needed. See [architecture/authorization.md](../architecture/authorization/how-to-gate.md). The topbar subtitle key is `topbar.store_languages.subtitle`.
+
+The `store-languages.*` permissions have existed since story 0002's catalog; 0068 gave them their first policies and 0069 their first UI. `LocaleSettingPolicy` still **borrows** `store-languages.view`/`.edit` (D25), see [architecture/authorization.md](../architecture/authorization/policies-store-languages-and-locale-settings.md).
 
 HTTP behaviour pinned by this story's own tests: guest → redirect to login; an actor without `store-languages.view` → 403; a holder → 200; a Super Admin holding zero permission rows → 200 (the `Gate::before` bypass).
 
 `tests/Feature/Authorization/ModuleRouteAccessTest.php` is **not** extended to cover this route (a pre-existing gap this story does not close — see [routes.md](routes.md#app-owned-routes)'s own note on that file, and the story's own backlog item 7); this route's four-case HTTP block lives in its own dedicated test file instead, the same gap `sales-regions.index` already left.
+
+_Last updated: 2026-10-03 — story 0069 (Store Languages settings screen): placeholder replaced by the real two-section component, sidebar entry in the `store_settings` cluster, `LocaleSettingValidationRules`._

@@ -38,4 +38,43 @@ return [
         'code' => 'language code',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Store Languages screen copy
+    |--------------------------------------------------------------------------
+    |
+    | UI copy for App\Livewire\StoreLanguages\Index's content languages section -- story 0069.
+    | The dashboard defaults section's copy lives in lang/{locale}/localization.php.
+    |
+    */
+
+    'index' => [
+        'heading' => 'Store languages',
+        'section_heading' => 'Content languages',
+        'section_description' => 'The languages your store content (products, categories, pages) can be written in. This is separate from the language of this dashboard.',
+        'add_button' => 'Add language',
+        'add_modal_heading' => 'Add a content language',
+        'add_modal_description' => 'Pick a language from the list. A language you removed earlier can be added again.',
+        'search_placeholder' => 'Search languages',
+        'default_badge' => 'Default',
+        'set_default_label' => 'Set :name as default',
+        'remove_label' => 'Remove :name',
+        'column_language' => 'Language',
+        'column_actions' => 'Actions',
+        'empty' => 'No content languages yet.',
+        'action_not_allowed' => 'Action not allowed',
+        'already_default_tooltip' => 'Already the default',
+        'remove_default_tooltip' => 'Set another language as default first',
+        'remove_last_language_tooltip' => 'Add another language before removing this one',
+        'remove_modal_heading' => 'Remove :name?',
+        'remove_modal_body' => 'Removing a language deactivates it. It can be re-added later, and any existing content stays intact.',
+        'remove_usage' => ':count translation uses this language.|:count translations use this language.',
+        'remove_replacement_label' => 'New default language',
+        'remove_replacement_placeholder' => 'Choose a replacement',
+        'remove_replacement_description' => 'This is the store default. Choose the language that becomes the default instead.',
+        'remove_last_language_notice' => 'This is the only active language. Add another language before removing it.',
+        'confirm_remove' => 'Remove language',
+        'cancel' => 'Cancel',
+    ],
+
 ];

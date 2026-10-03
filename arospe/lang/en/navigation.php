@@ -36,6 +36,7 @@ return [
         'shipping_zones' => 'Shipping zones',
         'shipping_carriers' => 'Carriers & rates',
         'payment_methods' => 'Payment methods',
+        'store_languages' => 'Store languages',
         'customers' => 'Customers',
         'orders' => 'Orders',
         'blog_posts' => 'Posts',

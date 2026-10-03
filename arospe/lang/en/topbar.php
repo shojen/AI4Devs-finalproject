@@ -64,6 +64,10 @@ return [
         'subtitle' => 'Configure how customers pay.',
     ],
 
+    'store_languages' => [
+        'subtitle' => 'Choose the languages your store content is written in and the dashboard defaults.',
+    ],
+
     'customers' => [
         'title' => 'Customers',
         'subtitle' => "Your store's customers and their order history.",
