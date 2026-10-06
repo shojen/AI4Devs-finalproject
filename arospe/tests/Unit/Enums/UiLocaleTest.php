@@ -37,11 +37,14 @@ test('from throws ValueError for an unmapped value', function () {
     expect(fn () => UiLocale::from('fr'))->toThrow(ValueError::class);
 });
 
-// D-6 / D19-D21: no label() and no default() method exist on this enum -- the default lives
-// solely at LocaleSetting's one call site, not forked onto the enum itself.
-test('the enum declares no label method and no default method', function () {
-    $reflection = new ReflectionEnum(UiLocale::class);
+// Story 0067 (D-9) added label() as the second consumer arrived: endonyms, not translated.
+test('label returns each language in its own language', function () {
+    expect(UiLocale::English->label())->toBe('English')
+        ->and(UiLocale::Spanish->label())->toBe('Español');
+});
 
-    expect($reflection->hasMethod('label'))->toBeFalse()
-        ->and($reflection->hasMethod('default'))->toBeFalse();
+// D-6 / D19-D21: no default() method exists on this enum -- the default lives solely at
+// LocaleSetting's one call site, not forked onto the enum itself.
+test('the enum still declares no default method', function () {
+    expect((new ReflectionEnum(UiLocale::class))->hasMethod('default'))->toBeFalse();
 });

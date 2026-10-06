@@ -75,6 +75,7 @@ El backoffice cubre ya las cinco épicas del PRD ([`arospe/docs/PRD/PRD.md`](aro
 
 - **Clientes** (`/customers`): alta, edición y borrado lógico, con direcciones de envío y facturación, e historial de pedidos en su ficha.
 - **Pedidos** (`/orders`): listado y ficha con edición de líneas, cambios de estado, cancelación manual y reembolsos parciales o totales (un reembolso total cancela el pedido automáticamente). El precio de cada línea y las direcciones quedan **congeladas** al crear el pedido. La región fiscal se resuelve según la dirección de envío (productos físicos) o la de facturación (virtuales), y en los virtuales, si el país de la IP no coincide con el de facturación, el pedido se marca para revisión.
+- **Resumen de ventas en el panel de inicio** (`/dashboard`, solo con el permiso `orders.view`): tarjeta con tres indicadores —**Ventas** (total vendido, sin descontar reembolsos), **Ingreso real** (dinero cobrado, neto de reembolsos) y **Pedidos** (recuento)— y dos gráficas de [Chart.js](https://www.chartjs.org/): «Ventas vs ingreso real» (líneas) y «Pedidos por estado» (barras apiladas). Se filtra por día, mes o año, con atajos de periodo (últimos 7 o 30 días, este mes, este año), un rango de fechas libre y chips de estado (los cancelados quedan desactivados por defecto). El filtro vive en la URL, así que un enlace reproduce la misma vista; el porcentaje cobrado se muestra con hasta dos decimales. Las gráficas siguen el tema claro/oscuro y cada una trae una tabla de texto para lectores de pantalla. Chart.js es la única dependencia nueva y se carga bajo demanda.
 
 **Epic 4 — Blog**
 
@@ -85,8 +86,8 @@ El backoffice cubre ya las cinco épicas del PRD ([`arospe/docs/PRD/PRD.md`](aro
 
 **Epic 5 — Internacionalización.** Dos capas independientes:
 
-- **Idioma del panel** (ES/EN): cada administrador guarda su preferencia y existe un idioma por defecto para el panel y otro para los correos. El backend está hecho; el selector de la interfaz es la historia pendiente [0067](arospe/ai-spec/tasks/0067-admin-ui-language-switcher-ui.md).
-- **Idiomas de la tienda**: catálogo de idiomas del contenido y mecanismo de traducción por idioma, estrenado en las categorías de producto. Las pantallas y su extensión al resto del contenido son las historias pendientes 0069 y 0071–0079.
+- **Idioma del panel** (ES/EN): cada administrador guarda su preferencia y existe un idioma por defecto para el panel y otro para los correos. El backend y el selector de idioma de la interfaz (menú de cuenta y pestaña Idioma en Ajustes) están hechos en la historia [0067](arospe/ai-spec/tasks/done/0067-admin-ui-language-switcher-ui.md).
+- **Idiomas de la tienda**: catálogo de idiomas del contenido y mecanismo de traducción por idioma, estrenado en las categorías de producto. La pantalla de idiomas de tienda (añadir idiomas desde la lista ISO 639-1 incluida, elegir el idioma por defecto del contenido, quitarlos, y fijar los idiomas por defecto del panel y de los correos) ya está hecha; la extensión de las traducciones al resto del contenido son las historias pendientes 0071–0079.
 
 **Alcance del PRD y estado**
 
@@ -101,7 +102,7 @@ El backoffice cubre ya las cinco épicas del PRD ([`arospe/docs/PRD/PRD.md`](aro
 | Clientes y pedidos | ✅ Hecho |
 | Blog (categorías, etiquetas, posts, publicación programada) | ✅ Hecho |
 | Notificaciones: nuevo cliente, nuevo pedido, post publicado | ✅ Hecho |
-| Internacionalización | 🟡 Backend hecho; faltan el selector de idioma del panel, la pantalla de idiomas de tienda y las pestañas de traducción de productos, categorías, etiquetas y posts |
+| Internacionalización | 🟡 Backend, selector de idioma del panel y pantalla de idiomas de tienda hechos; faltan las pestañas de traducción de productos, categorías, etiquetas y posts |
 | Notificaciones de stock bajo / agotado | ⏳ Pendiente |
 | Búsqueda global (usuarios, productos, posts) | ⏳ Pendiente |
 
@@ -292,7 +293,7 @@ flowchart LR
 - **Eventos, listeners y notificaciones** — `ActivateVerifiedUser` es el único punto que activa una cuenta al verificar su correo; `RejectNonActiveUserLogin` cierra la sesión de una cuenta no activa; `CancelFullyRefundedOrder` cancela un pedido reembolsado por completo (evento `OrderFullyRefunded`); y `SendBlogPostPublishedNotification` reacciona a `ScheduledBlogPostPublished`. Las seis notificaciones son `UserInvitation` y `PendingEmailVerification` (correo), `CustomerCreated`, `OrderCreated` y `BlogPostPublished` (base de datos) y `ScheduledBlogPostPublishFailed` (ambos canales). Solo `PendingEmailVerification` y `ScheduledBlogPostPublishFailed` pasan por la cola; la invitación se envía de forma síncrona para no dejar su token en la tabla `jobs`.
 - **Enums y excepciones de dominio** — 14 enums respaldados por string (`UserStatus`, `OrderStatus`, `PaymentStatus`, `BlogPostStatus`, `UiLocale`, `GeographyLevel`…) y excepciones que se convierten solas en su respuesta HTTP: 403 para un rol inmutable, 409 para un rol en uso o un pedido que ya no admite el cambio, y 423 cuando falta la reconfirmación de contraseña.
 - **Registro declarativo del menú (`config/modules.php`)** — declara los grupos del menú lateral («Tienda», «Contenido», «Ajustes»), los *clusters* que anidan entradas relacionadas («Productos», «Configuración de tienda», «Blog») y cada entrada con su ruta, icono, clave de traducción y **permisos exigidos**. Un único componente Blade lo lee, filtra por el `Gate` y agrupa lo que sobrevive, así que publicar un módulo es añadir una entrada y no editar plantillas. Dos tests lo protegen: uno ata el permiso de cada entrada al `can:` real de su ruta, y otro mantiene la lista blanca de las entradas que pueden ir sin permiso (hoy solo el panel de control). El fichero no contiene closures, para que `config:cache` pueda serializarlo.
-- **Internacionalización** — dos capas independientes. Los textos de la interfaz viven en `lang/en/` y `lang/es/` (un fichero por área, 19 por idioma); cada administrador puede guardar su idioma (`users.ui_locale`) y `locale_settings` fija los idiomas por defecto del panel y de los correos. El **contenido** de la tienda se traduce aparte: `store_languages` define los idiomas y un mecanismo reutilizable (`HasTranslations` más una tabla de traducciones por entidad, estrenado en las categorías de producto) guarda un valor por idioma con vuelta al idioma por defecto. Los plurales se escriben como una sola clave con `|` y se resuelven con `trans_choice()`.
+- **Internacionalización** — dos capas independientes. Los textos de la interfaz viven en `lang/en/` y `lang/es/` (un fichero por área, 20 por idioma); cada administrador puede guardar su idioma (`users.ui_locale`) y `locale_settings` fija los idiomas por defecto del panel y de los correos. El **contenido** de la tienda se traduce aparte: `store_languages` define los idiomas y un mecanismo reutilizable (`HasTranslations` más una tabla de traducciones por entidad, estrenado en las categorías de producto) guarda un valor por idioma con vuelta al idioma por defecto. Los plurales se escriben como una sola clave con `|` y se resuelven con `trans_choice()`.
 - **Modelos Eloquent (`app/Models/**`, 24)** — usan atributos PHP 8 (`#[Fillable]`, `#[Hidden]`) y un método `casts()`. Dejar una columna fuera de `#[Fillable]` es la protección contra la asignación masiva: columnas como `status`, `pending_email` o `ui_locale` solo se escriben con `forceFill()` desde su acción. Todas las entidades de negocio usan UUID v7 (ver [3.1](#31-diagrama-del-modelo-de-datos)). `Role` es una subclase del modelo de rol de Spatie sobre la misma tabla y es el único que el código puede usar, porque lleva las invariantes del `Super Admin` y del `Administrator`.
 - **Autenticación — `laravel/fortify` (^1.37)**: registro, login, reseteo de contraseña, verificación de email y 2FA. **Passkeys (WebAuthn)** con `laravel/passkeys`, que llega como dependencia de Fortify y se gestiona desde `App\Livewire\Settings\Security`.
 - **Autorización — `spatie/laravel-permission` (^8.3)**: `RolePermissionSeeder` siembra 2 roles (`Super Admin` y `Administrator`) y **43 permisos** (10 módulos × 4 acciones CRUD, más `roles.manage`, `roles.manage-administrators` y `orders.refund`). El `Super Admin` no tiene permisos propios: autoriza por el bypass `Gate::before` de `AppServiceProvider`. Detalle en [`arospe/docs/architecture/authorization.md`](arospe/docs/architecture/authorization.md).
@@ -1227,7 +1228,10 @@ Los tickets técnicos son los mismos ficheros de [`arospe/ai-spec/tasks/done/`](
 [#269](https://github.com/LIDR-academy/AI4Devs-finalproject/pull/269)
 
 **Pull Request 2**
+
 [#314](https://github.com/LIDR-academy/AI4Devs-finalproject/pull/314)
 
 **Pull Request 3**
+
+[#361](https://github.com/LIDR-academy/AI4Devs-finalproject/pull/361)
 

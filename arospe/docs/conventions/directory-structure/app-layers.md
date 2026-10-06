@@ -6,13 +6,17 @@
 
 ```
 app/
-  Concerns/            Shared traits (validation rule sets, incl. BlogCategoryValidationRules — story 0058; BlogTagValidationRules — story 0059 (two name-rule methods, `nameFormatRules()` and `nameRules()`, because create and find-or-create disagree about what an existing name means); BlogPostValidationRules — story 0061 (field-named methods, two of them status-parameterised: `bodyRules()` and `publishedAtRules()`); ResolvesSalesRegionFromAddress — the country/Spain-postal-prefix → Sales Region mapping shared by the physical and virtual tax-region resolvers; ResolvesFlagReasonLabel — story 0055, the `flag_reason` → copy resolution shared by the orders list marker and the detail callout, so the two never word one flag differently; HasTranslations — story 0070, the FIRST behavioural (non-validation-rules) trait in this folder: per-field fallback resolution and bounded eager loading for any `<Entity>` with an `<entity>_translations` child table, mixed into ProductCategory alongside its companion interface Translatable — see conventions/base-standards.md#behavioural-traits-in-appconcerns and database/schema.md's product_category_translations entry)
+  Concerns/            Shared traits (validation rule sets, incl. BlogCategoryValidationRules — story 0058; BlogTagValidationRules — story 0059 (two name-rule methods, `nameFormatRules()` and `nameRules()`, because create and find-or-create disagree about what an existing name means); LocaleSettingValidationRules — story 0069 (the two dashboard-default locale rule methods, consumed only by `Livewire\StoreLanguages\Index`); BlogPostValidationRules — story 0061 (field-named methods, two of them status-parameterised: `bodyRules()` and `publishedAtRules()`); ResolvesSalesRegionFromAddress — the country/Spain-postal-prefix → Sales Region mapping shared by the physical and virtual tax-region resolvers; ResolvesFlagReasonLabel — story 0055, the `flag_reason` → copy resolution shared by the orders list marker and the detail callout, so the two never word one flag differently; HasTranslations — story 0070, the FIRST behavioural (non-validation-rules) trait in this folder: per-field fallback resolution and bounded eager loading for any `<Entity>` with an `<entity>_translations` child table, mixed into ProductCategory alongside its companion interface Translatable; ChecksAbilitiesSafely — story 0083, the second behavioural trait: `allowsSafely()` is `Gate::allows()` that treats a missing permission row (Spatie's `PermissionDoesNotExist`, the only exception it catches) as a deny, for the ungated dashboard (see architecture/authorization.md); InteractsWithUiLocale — story 0067, the first behavioural trait for a Livewire component: the interface-language switchers' shared `currentLocale()` computed and `applyUiLocale()` persist-then-redirect, used by Settings\LanguageSwitcher and Settings\Language — see conventions/base-standards.md#behavioural-traits-in-appconcerns and database/schema.md's product_category_translations entry)
   Console/Commands/    Artisan commands (PublishScheduledBlogPosts, `blog:publish-scheduled-posts` — story 0064,
                        the app's first: run every minute by the schedule entry in routes/console.php. The
                        command owns the selection and the per-post loop, Actions/Blog/PublishScheduledBlogPost
-                       owns the transition). Auto-discovered from this folder, so it needs no registration —
-                       which also means `php artisan list` showing it proves nothing about the schedule entry;
-                       see ../../testing/backend/scheduled-commands.md
+                       owns the transition; GenerateDemoData, `demo:generate-data` — story 0081, a thin
+                       wrapper that gates the environment (allow-list `local`/`testing`, refused elsewhere
+                       unless `--force`) then calls `db:seed --class=Database\Seeders\DemoDataSeeder
+                       --force`, returning that call's own exit code — the seeder itself carries no guard
+                       of its own, see security/seeder-safety.md). Auto-discovered from this folder, so it
+                       needs no registration — which also means `php artisan list` showing it proves nothing
+                       about the schedule entry; see ../../testing/backend/scheduled-commands.md
   Enums/               Backed enums for domain value sets (UserStatus, RoleName, SalesRegionKind,
                        BlogPostStatus — story 0061, draft/published/scheduled, with label() since story 0063
                        (the posts list badge and the editor's status select), ProductType, ProductStatus — exactly two persisted cases — and
@@ -36,7 +40,11 @@ app/
                        BlogPostPublishFailureStage, story 0064b -- two cases, Publish/Announce,
                        which of the scheduled sweep's two failure classes a due post's re-read
                        matches; no label(), no rendering site yet -- see
-                       architecture/authorization/domain-invariants.md)
+                       architecture/authorization/domain-invariants.md;
+                       SalesGranularity, story 0082 -- Day/Month/Year, owning every per-granularity
+                       constant (sqlFormat() for SQL, keyFormat(), step(), maxBuckets()) so the
+                       dashboard series never branch on the case; OrderStatus gained
+                       defaultDashboardSet(), the dashboard's default status filter)
   Exceptions/          Domain exceptions that render their own response (ImmutableRoleException → 403,
                        RoleInUseException → 409, PasswordConfirmationRequiredException → 423,
                        OrderNotEditableException → 409 since story 0048 -- the state-based hard

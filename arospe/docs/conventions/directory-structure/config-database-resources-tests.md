@@ -34,7 +34,11 @@ resources/
     components/        Blade components — all anonymous (no app/View/Components/ in this repo). Story
                         0055 added the first two shared ones that are not navigation chrome: money.blade.php
                         (`<x-money :amount>`, `€ {amount}` with no cast) and confirm-dialog.blade.php
-                        (a stateless confirmation dialog whose parent owns the flag and both methods)
+                        (a stateless confirmation dialog whose parent owns the flag and both methods).
+                        Story 0083 added dashboard/widget.blade.php (`<x-dashboard.widget>`, the card shell
+                        of the three dashboard widgets) and the two extracted status badges
+                        order-status-badge.blade.php and blog-status-badge.blade.php (shared by the
+                        list screens and the dashboard; both forward `$attributes`)
     layouts/            Auth/app layout shells
     livewire/           Views for Livewire components AND plain auth Blade views (see naming.md).
                         products/variant-builder.blade.php (story 0031) is the ordinary mirror-rule
@@ -113,7 +117,7 @@ tests/
                         ../../testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure. Story 0055 adds
                         Browser/Orders/ (six files, one per concern), Browser/BlogPosts/ (story 0063: IndexTest.php and
                         EditorJourneyTest.php, beside 0060's and 0062's Browser/BlogTags/ and Browser/BlogCategories/)
-                        and Support/Orders/OrdersUi.php
+                        and Support/Orders/OrdersUi.php (story 0083 added Support/Dashboard/DashboardUi.php the same way, plus Browser/Dashboard/)
                         (shared permission profiles and rendered-HTML probes, a class of static methods
                         rather than global Pest helpers, which would redeclare-fatal across the many
                         Feature/Orders files)

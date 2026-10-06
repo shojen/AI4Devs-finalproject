@@ -27,6 +27,7 @@ import jsonLang from 'highlight.js/lib/languages/json';
 import phpLang from 'highlight.js/lib/languages/php';
 import sqlLang from 'highlight.js/lib/languages/sql';
 import xmlLang from 'highlight.js/lib/languages/xml';
+import './sales-chart';
 
 hljs.registerLanguage('bash', bashLang);
 hljs.registerLanguage('css', cssLang);

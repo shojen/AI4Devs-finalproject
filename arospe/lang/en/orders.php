@@ -57,6 +57,7 @@ return [
     // Story 0049 -- App\Actions\Orders\TransitionOrderStatus's three refusals. No screen copy here
     // (story 0055 extends this group with button/dialog text, and does not rename these keys).
     'transitions' => [
+        'payment_state_blocked' => 'This order\'s payment state does not allow that status.',
         'requires_confirmation' => 'Moving this order backward requires explicit confirmation.',
         'same_status' => 'This order already has that status.',
         'cancellation_unsupported' => 'Cancelling or reopening an order is not available here.',
@@ -88,6 +89,28 @@ return [
     'cancellation' => [
         'blocked' => 'This order can no longer be cancelled.',
         'already_cancelled' => 'This order is already cancelled.',
+    ],
+
+    // Story 0084 -- App\Actions\Orders\MarkOrderAsPaid's two state refusals.
+    'payment' => [
+        'already_paid' => 'This order has already been paid.',
+        'cancelled_blocked' => 'A cancelled order cannot be marked as paid.',
+        // Story 0085 -- the "Mark as paid" control on the orders list and the order detail.
+        'action' => 'Mark as paid',
+        'dialog_heading' => 'Mark this order as paid?',
+        'dialog_body' => 'This records that order :number was paid by bank transfer. It cannot be undone from here.',
+        'dialog_amount' => 'Amount received',
+        'dialog_confirm' => 'Mark as paid',
+        'dialog_dismiss' => 'Cancel',
+        'marked' => 'Order :number marked as paid.',
+        'info' => 'Paid on :date (:type)',
+        'info_by' => 'Paid on :date (:type), recorded by :user',
+        'not_found' => 'This order no longer exists.',
+        'types' => [
+            'transfer' => 'Bank transfer',
+            'card' => 'Card',
+            'paypal' => 'PayPal',
+        ],
     ],
 
     // Story 0054 -- tokens written to `orders.flag_reason` by

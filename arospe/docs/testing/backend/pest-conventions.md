@@ -52,3 +52,7 @@ Use `describe('ClassOrFeature', function () { ... })` to group related tests onl
 ## Assertions: prefer specific over generic
 
 Per the existing [pest-testing skill](../../../.claude/skills/pest-testing/SKILL.md), use `assertSuccessful()`/`assertNotFound()`/`assertForbidden()` instead of `assertStatus(200)` etc. This carries the same "specific over generic" principle into `expect()`: prefer `expect($user->name)->toBe('Ada Lovelace')` over `expect($user->name)->not->toBeNull()` — the former fails loudly and specifically when wrong; the latter passes for any non-null garbage.
+
+**`toHaveKey()`'s second argument is the expected value, not a failure message.** `expect($array)->toHaveKey('id', 'why it failed')` asserts that `$array['id'] === 'why it failed'`; a descriptive string there makes a correct test fail (or a wrong one pass vacuously on a missing-value check). Pass only the key to assert presence, or the real expected value to assert content.
+
+_Last updated: 2026-10-01 — Story 0083: added the `toHaveKey()` second-argument rule._

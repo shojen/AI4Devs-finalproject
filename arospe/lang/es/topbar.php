@@ -60,6 +60,10 @@ return [
         'subtitle' => 'Configura cómo pagan los clientes.',
     ],
 
+    'store_languages' => [
+        'subtitle' => 'Elige los idiomas en los que está escrito el contenido de tu tienda y los valores predeterminados del panel.',
+    ],
+
     'customers' => [
         'title' => 'Clientes',
         'subtitle' => 'Los clientes de la tienda y su historial de pedidos.',
@@ -93,6 +97,8 @@ return [
         'profile_subtitle' => 'Actualiza tu nombre y correo electrónico',
         'security_subtitle' => 'Mantén tu cuenta segura: contraseña, doble factor y passkeys',
         'appearance_subtitle' => 'Actualiza la apariencia de tu cuenta',
+        'language' => 'Idioma',
+        'language_subtitle' => 'Elige el idioma de la interfaz de administración',
     ],
 
 ];

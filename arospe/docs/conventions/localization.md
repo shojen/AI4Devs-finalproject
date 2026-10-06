@@ -91,19 +91,30 @@ most screens' own domain copy (`users`, `roles`, `navigation`, `sales-regions`, 
 title/subtitle via `topbar.php`, but shared modal/table chrome on some older screens still calls
 `__()` with the literal English string as its own key and no backing catalog entry — for example
 [`resources/views/livewire/users.blade.php`](../../resources/views/livewire/users.blade.php)'s
-`{{ __('Cancel') }}`, `{{ __('Save') }}` and `:label="__('Name')"`. `__('Cancel')` with no
-`lang/es.json`/catalog entry for that literal simply returns `'Cancel'` unchanged under
-`App::setLocale('es')` — it does not error, so the gap is invisible except by reading the rendered
-screen. Do not extend this pattern to new code; a new string gets a real domain-file key from the
-first commit that adds it, not a bare `__('<the English words>')` call.
+`{{ __('Cancel') }}`, `{{ __('Save') }}` and `:label="__('Name')"`. Whether such a bare
+literal translates depends on a hidden `lang/es.json` entry: `"Cancel": "Cancelar"` exists
+there, so that one does translate, while a literal with no JSON entry simply returns itself
+unchanged under `App::setLocale('es')` — it does not error, so the gap is invisible except by
+reading the rendered screen. A bare literal that happens to be in `es.json` is still the wrong
+pattern: the translation lives in a catalog nobody reviews per feature, and the same literal can
+map differently by surface (`Dashboard` → `Panel` there, `Inicio` via `topbar.dashboard.title`). Do not extend this pattern to new code; a new string gets a real domain-file key from the
+first commit that adds it, not a bare `__('<the English words>')` call. The Settings navlist
+(`resources/views/components/settings/layout.blade.php`) is the worked example of the migration:
+story 0067 moved its tab labels from `__('Profile')` etc. to `topbar.settings.*` keys.
 
 ✅ Good — `:label="__('users.fields.name')"` with `'name' => 'Name'` under a `fields` group in
 `lang/en/users.php` / `lang/es/users.php`.
 ❌ Bad — `:label="__('Name')"` with no corresponding `lang/` entry for the literal `'Name'` — renders
 correctly in English only by coincidence (the key equals the fallback copy) and never translates.
+(`__('Cancel')` is *not* a good counter-example of "never translates": `lang/es.json` maps it.)
 
-_Last updated: 2026-09-28 — new file (story 0066 docs follow-up). Establishes three forward-looking
-rules: explicit `->locale()` on an `AnonymousNotifiable` notify() call, `trans()`-backed copy for any
-new admin-dashboard string (cross-referencing [naming/translation-keys-and-booleans.md](naming/translation-keys-and-booleans.md)
-for key naming), and the Layer 1 (`users.ui_locale`/`UiLocale`/`LocaleSetting`)
-vs. Layer 2 (`StoreLanguage`) boundary a future storefront-translation story must respect._
+## Where Layer 1's system defaults are edited, and why it shares a screen with Layer 2
+
+The two admin-configurable Layer 1 defaults (`LocaleSetting`'s default dashboard language and default notification-email language) are edited on the **Store Languages screen** (`store-languages.index`, story 0069), in a **Dashboard defaults** section visually and verbally separate from the **Content languages** section that manages Layer 2. The screen is one Livewire component by product decision, not because the layers merged:
+
+- ✅ The dashboard selects offer exactly the two `UiLocale` cases and never a catalog language; the content picker offers the bundled ISO 639-1 list and never `UiLocale`. The copy says the dashboard defaults are system-wide and distinct from a user's own language switcher.
+- ✅ The two settings save independently (`saveDefaultUiLocale()` / `saveDefaultNotificationLocale()`), through the narrow `SetDefaultUiLocale` / `SetDefaultNotificationLocale` actions; saving one never touches the other or the store's default content language.
+- ❌ Composing `InteractsWithUiLocale` there, or reading a catalog `StoreLanguage` to decide a dashboard default: that trait is the *personal* switcher (`users.ui_locale`), and the layers share no default.
+- Both settings are client-writable strings, so the component validates them with [`LocaleSettingValidationRules`](../../app/Concerns/LocaleSettingValidationRules.php) before `UiLocale::from()`. Details: [api/store-languages.md](../api/store-languages.md#store-languagesindex--the-store-languages-settings-screen). Lang keys: `localization.settings.*` / `localization.attributes.*` (story 0067 had reserved them) and `store-languages.*`.
+
+_Last updated: 2026-10-03 — story 0069. Added where Layer 1's system defaults are edited (the Store Languages screen's Dashboard defaults section). Earlier rules unchanged: explicit `->locale()` on an `AnonymousNotifiable` notify() call, `trans()`-backed copy for new admin strings (Rule 2's `__('Cancel')` example corrected in 0067), and the Layer 1/Layer 2 boundary._

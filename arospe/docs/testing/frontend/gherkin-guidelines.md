@@ -251,6 +251,29 @@ Canonical terms for what exists in the code **today**, derived from [`app/Models
 
 A scenario about a signed-in administrator's own interface or emails uses **admin UI language**; a scenario about content the store presents to its customers in more than one language uses **store language**. Never use one term when the other is meant, even though both ultimately resolve to the same `en`/`es` value set today.
 
+### Dashboard vocabulary
+
+**Introduced by story 0082** (the dashboard home overview's read-side actions), extended by story 0083 (the dashboard UI). Its Gherkin names the actors by the business role that holds the relevant ability, and fixes three measure names. This subsection only registers them; it does **not** settle the open "order" vs. "sale" question in the TODO below — the measure **Sales** is a defined sum, not the canonical word for a purchase.
+
+| Term | Meaning | Where it lives |
+| --- | --- | --- |
+| **catalog manager** | The actor who may view products (and so sees the low-stock widget). | `products.view` |
+| **order manager** | The actor who may view orders (and so sees the latest-orders widget and the sales overview). | `orders.view` |
+| **user manager** | The actor who may view users and, by that alone, sees only the users counter on the dashboard. | `users.view` |
+| **administrator** | An actor holding every module's view ability but not the Super Admin role; sees the hero counters and all three widgets. | the seeded `Administrator` role |
+| **super administrator** | The actor for whom every ability check passes through the Super Admin bypass; sees everything regardless of the permission rows. | `Gate::before` ([Super Admin](../../architecture/authorization/super-admin.md)) |
+| **staff member with no module access** | A signed-in actor who holds no view ability; still reaches the dashboard (it is ungated) and sees the greeting and an empty-state message instead of counters or widgets. | no `*.view` ability |
+| **staff member who may only view the media library** | An actor whose only ability is `media.view`; sees the images counter and no widget. | `media.view` |
+| **hero** | The top band of the dashboard: the time-of-day greeting with the actor's first name, a tagline and the counters the actor may see. | `Overview` view |
+| **widget** | One read-only card on the dashboard showing a module's latest data (blog posts, low stock, latest orders), shown only to an actor who may view that module, with a "view all" link. | `app/Livewire/Dashboard/` |
+| **Sales** | The gross total sold in a period, over the selected order statuses (tax and shipping included, refunds not netted). | [Dashboard definitions](../../api/dashboard.md#sales-real-income-and-orders--definitions) |
+| **Real income** | Money actually collected: paid or partially refunded, not cancelled, net of refunds. | same |
+| **order administrator** | The actor who may edit orders (and so may mark one as paid); one who may also refund is named as such ("an order administrator who may refund"). | `orders.edit` (story 0084) |
+| **payment state** | The order's money dimension, independent of its fulfilment status. Values: **Pending payment**, **Paid**, **Partially refunded**, **Refunded**. Scenarios use these labels, never `payment_status` or its stored values. | `payment_status` |
+| **Orders** | The count of orders per period and status. | same |
+| **status chip** | One toggle button in the sales card's filter bar, one per order status (*Pending, Processing, Shipped, Delivered, Cancelled*); on/off, with *Cancelled* off by default. The selection is never allowed to be empty. | `SalesOverview` (story 0086) |
+| **KPI strip** | The three tiles at the top of the sales card: **Sales**, **Real income** and **Orders**, each with a one-line definition tooltip. | `SalesOverview` (story 0086) |
+
 ### TODO — blog / ecommerce vocabulary (undefined)
 
 The blog domain is built (`BlogPost`, `BlogCategory`, `BlogTag` in `app/Models/`) and its vocabulary is settled in [Blog vocabulary](#blog-vocabulary) above; the ecommerce domain is built too (products, orders, customers), and what this file still leaves unanswered is the purchase vocabulary in (b) and (c) below. Do **not** invent terms for what is undecided. This section still needs canonical terms decided by the product owner:
@@ -276,4 +299,4 @@ Conventions for the translation:
 
 See [examples/](examples/) for three complete scenario → Pest translations built on this convention.
 
-_Last updated: 2026-09-28 — Story 0066 (Admin UI locale preference & resolution — backend): added the **Internationalization vocabulary** subsection, distinguishing **admin UI language** (Layer 1, this story's `users.ui_locale`) from **store language** (Layer 2, story 0068's `store_languages` catalog), per the PRD's own warning against conflating the two Epic 5 layers. Earlier revision notes live in [history/testing--frontend--gherkin-guidelines.md](../../history/testing--frontend--gherkin-guidelines.md)._
+_Last updated: 2026-10-03 — Story 0086: the Dashboard vocabulary table gained **status chip** and **KPI strip**. Still current from story 0084: the Dashboard vocabulary table gained the actor order administrator and the term payment state (Pending payment, Paid, Partially refunded, Refunded). Still current from story 0083: the **Dashboard vocabulary** subsection gained the actors administrator, super administrator, staff member with no module access, staff member who may only view the media library, and the terms hero and widget; the commerce "order" vs. "sale" TODO stays open. Still current from story 0082 (catalog/order/user manager, Sales, Real income, Orders) and story 0066: the **Internationalization vocabulary** subsection (admin UI language vs. store language). Earlier revision notes live in [history/testing--frontend--gherkin-guidelines.md](../../history/testing--frontend--gherkin-guidelines.md)._

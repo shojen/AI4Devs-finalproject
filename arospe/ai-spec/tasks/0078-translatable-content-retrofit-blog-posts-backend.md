@@ -658,6 +658,12 @@ covers a fourth registered entry with no change to the guard.
       docs passes already made these claims** rather than restating them.
 - [ ] **Recorded as a handoff, not done here:** the sibling-story amendments in **R-1**. This story edits
       no other story's file.
+- [ ] **Consumers to migrate (added by story [0082](done/0082-dashboard-home-overview-backend.md)):**
+      `App\Actions\Dashboard\GetLatestBlogPosts` reads `blog_posts.title`/`body` only through its private
+      `resolveTitle()`/`resolveBody()` seam. Whichever of 0078/0082 lands last converts that seam to
+      `translated('title'|'body')` + `withTranslationsFor(...)` (viewer locale, default-language fallback) and
+      activates the `->todo()` locale tests in `tests/Feature/Dashboard/GetLatestBlogPostsTest.php`; a grep
+      for `App\Actions\Dashboard` readers belongs in this story's Phase 3.
 - [ ] Acceptance criteria met
 
 ## 4. Documented functional decisions

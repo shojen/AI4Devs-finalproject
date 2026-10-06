@@ -251,6 +251,20 @@ return [
             'current_when' => 'payment-methods.*',
             'permissions' => ['payment-methods.view'],
         ],
+        // Story 0069 -- Store Languages is store-wide configuration, so it nests in the same
+        // `store_settings` cluster as sales_regions / shipping / payment_methods (group null, so
+        // the cluster derives its own expand state; the `settings` group's `expanded_when` is left
+        // alone). 'permissions' is EXACTLY the ability routes/store-languages.php's own `can:`
+        // middleware enforces on store-languages.index -- never a broader set.
+        'store_languages' => [
+            'group' => null,
+            'cluster' => 'store_settings',
+            'label' => 'navigation.items.store_languages',
+            'icon' => 'language',
+            'route' => 'store-languages.index',
+            'current_when' => 'store-languages.*',
+            'permissions' => ['store-languages.view'],
+        ],
         // Story 0044 -- Customers is a top-level operational module like `users` (a bare item,
         // group: null, cluster: null), not store configuration and not a sub-resource of an
         // existing cluster. 'permissions' is EXACTLY the ability routes/customers.php's own

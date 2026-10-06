@@ -64,6 +64,7 @@ Controllers, by contrast, **are** suffixed `Controller`, and are named after the
 | `App\Policies\StoreLanguagePolicy` | `app/Policies/StoreLanguagePolicy.php` |
 | `App\Policies\LocaleSettingPolicy` | `app/Policies/LocaleSettingPolicy.php` |
 | `App\Concerns\StoreLanguageValidationRules` | `app/Concerns/StoreLanguageValidationRules.php` |
+| `App\Concerns\LocaleSettingValidationRules` | `app/Concerns/LocaleSettingValidationRules.php` |
 | `App\Actions\StoreLanguages\AddStoreLanguage` | `app/Actions/StoreLanguages/AddStoreLanguage.php` |
 | `App\Actions\Localization\SetDefaultUiLocale` | `app/Actions/Localization/SetDefaultUiLocale.php` |
 | `App\Models\ProductCategoryTranslation` | `app/Models/ProductCategoryTranslation.php` |

@@ -24,6 +24,15 @@ app/
                        confirmed instance of "a collaborator invoked only by an already-authorized
                        action needs no gate", after SyncProductGallery/SyncProductSalesRegions/
                        SyncProductAttributeValues/EnforceGrantorPermissionScope)
+  Actions/Dashboard/   Read-side area for the dashboard home overview (story 0082), the first
+                       cross-module action folder: GetDashboardCounters, GetLatestBlogPosts,
+                       GetLowStockProducts, GetLatestOrders, GetSalesSeries, GetOrdersSeries.
+                       Read-only, return scalars (never models); each widget is gated by its own
+                       action while the dashboard route stays ungated (contract table in
+                       docs/api/dashboard.md). ResolveSalesBuckets is a NON-ACTION collaborator:
+                       it authorizes nothing and only the two series actions may call it (pinned
+                       by a test), the same "collaborator of an already-authorized action" shape
+                       as CalculateTaxAmount
   Actions/Fortify/    Fortify contract implementations (CreatesNewUsers, ResetsUserPasswords)
   Actions/Localization/ Cross-cutting, not a module area (D24) -- the app's two default-locale
                        settings (SetDefaultUiLocale, SetDefaultNotificationLocale -- story 0068),

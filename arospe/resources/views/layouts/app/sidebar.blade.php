@@ -1,6 +1,6 @@
 @props(['title' => null, 'heading' => null, 'subheading' => null])
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark" @if (app()->environment('testing')) data-testing="true" @endif>
     <head>
         @include('partials.head')
     </head>
@@ -56,6 +56,7 @@
                     <flux:profile
                         :initials="auth()->user()->initials()"
                         icon-trailing="chevron-down"
+                        data-test="mobile-menu-button"
                     />
 
                     <flux:menu>
@@ -74,6 +75,10 @@
                                 </div>
                             </div>
                         </flux:menu.radio.group>
+
+                        <flux:menu.separator />
+
+                        <livewire:settings.language-switcher />
 
                         <flux:menu.separator />
 

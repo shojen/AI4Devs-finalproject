@@ -93,16 +93,7 @@
                             {{-- Asserted through this row-scoped hook, never a page-global status word: on a blog
                             list almost every page contains some row with any given status. --}}
                             <flux:table.cell>
-                                <flux:badge
-                                    data-test="status-badge-blog-post-{{ $post['id'] }}"
-                                    :color="match ($post['status']) {
-                                        \App\Enums\BlogPostStatus::Draft => 'zinc',
-                                        \App\Enums\BlogPostStatus::Scheduled => 'amber',
-                                        \App\Enums\BlogPostStatus::Published => 'lime',
-                                    }"
-                                >
-                                    {{ $post['status']->label() }}
-                                </flux:badge>
+                                <x-blog-status-badge :status="$post['status']" data-test="status-badge-blog-post-{{ $post['id'] }}" />
                             </flux:table.cell>
 
                             <flux:table.cell>

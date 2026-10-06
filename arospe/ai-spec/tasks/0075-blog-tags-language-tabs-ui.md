@@ -607,7 +607,7 @@ exactly that name (**D-7**); and the strip owns its own `data-test="language-tab
 generic rather than domain-prefixed (**D-10**).
 
 *What this decision replaced.* This debate had independently concluded — on `frontend-expert`'s
-analysis and story [0069](0069-store-languages-settings-ui.md)'s **D-3** precedent — that the strip
+analysis and story [0069](done/0069-store-languages-settings-ui.md)'s **D-3** precedent — that the strip
 should be built from `flux:button`, because `composer.json` requires only the **free** `livewire/flux`
 `^2.13.1` (no `flux-pro`, no private repository), `vendor/` is absent, and a repo-wide grep finds **no
 `flux:tab` anywhere**. That reasoning is not withdrawn — it is now **0071's to own**, and it should be
@@ -1135,7 +1135,7 @@ and no `flux:tab` appears anywhere in `resources/` — which, with `vendor/` abs
 a decision under uncertainty rather than a component choice.
 
 **One decision was found already made elsewhere rather than re-derived.** `frontend-expert` correctly
-reported it could not verify whether `<flux:tabs>` exists. Story [0069](0069-store-languages-settings-ui.md)'s
+reported it could not verify whether `<flux:tabs>` exists. Story [0069](done/0069-store-languages-settings-ui.md)'s
 **D-3** had already faced the identical question for `flux:card`, on identical evidence, days earlier —
 so **D-1** follows an established Epic 5 precedent instead of inventing one.
 

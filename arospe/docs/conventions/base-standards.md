@@ -20,7 +20,7 @@ This document is split into parts. Each block below gives the **binding core** o
 **Read the full text when:** you write a Livewire component, a `contenteditable`/browser-owned region, or a popover/dropdown.
 
 - Livewire components are class-based (not single-file): a `Livewire\Component` in `app/Livewire/**` with a kebab-case view mirror and a `#[Title]` attribute.
-- Use `wire:ignore` only for a region a browser API owns (e.g. `contenteditable`); `flux:dropdown` needs a real `<button>` trigger, otherwise use the manual `x-show`/`x-cloak` popover fallback.
+- Use `wire:ignore` only for a region a browser API owns (e.g. `contenteditable`, a Chart.js `<canvas>`); a `#[Lazy]` child with `#[Url]` state follows the story 0086 pattern (empty array default + `except:`, protected `$refusedUpdates`, constant `x-data`); `flux:dropdown` needs a real `<button>` trigger, otherwise use the manual `x-show`/`x-cloak` popover fallback.
 
 ### [Artisan-first workflow and quality gates](base-standards/workflow-and-quality-gates.md)
 
@@ -29,4 +29,4 @@ This document is split into parts. Each block below gives the **binding core** o
 - Scaffold with `php artisan make:*` and `--no-interaction`.
 - Gates: `php artisan test --compact --filter=<Name>`, `vendor/bin/pint --dirty --format agent`, Larastan level 7. Those are the **iteration** forms — before declaring work done run Pint **unscoped** (`vendor/bin/pint --format agent`) and the **full** test suite unscoped (`php artisan test`, or `--parallel`).
 
-_Last updated: 2026-09-29 — Story 0070 (Translatable content mechanism — backend, piloted on Product Categories). [Stack versions, model and UUID conventions](base-standards/stack-and-model-conventions.md)'s UUID-examples list gained `ProductCategoryTranslation` (thirteenth, this repo's first per-language-content model); the same part now names `app/Actions/Translations/` as a further cross-cutting-concern folder and documents `App\Concerns\HasTranslations` as the first behavioural (non-validation-rules) trait in `app/Concerns/`._
+_Last updated: 2026-10-03 — Story 0086: [Livewire, wire:ignore and Flux conventions](base-standards/livewire-and-flux-conventions.md) gained the second `wire:ignore` region (Chart.js canvas) and the lazy + `#[Url]` pattern; [stack versions](base-standards/stack-and-model-conventions.md) lists Chart.js._

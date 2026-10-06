@@ -1,17 +1,27 @@
 <?php
 
-// Historia 0068 -- reservado para el área de ajustes de idioma predeterminado. El bloque
-// `attributes` que este archivo llevaba originalmente (para los dos nombres de campo en camelCase
-// `defaultUiLocale`/`defaultNotificationLocale`) existía solo para App\Concerns\
-// LocaleSettingValidationRules, cuyos dos métodos de reglas nada en esta historia llamaba (tanto
-// App\Actions\Localization\SetDefaultUiLocale como SetDefaultNotificationLocale reciben un
-// parámetro UiLocale ya validado por tipo, nunca una cadena en bruto que necesite validación). La
-// revisión de código de la Fase 5 (hallazgo B2) eliminó ese trait por ser una violación
-// `trait.unused` de Larastan que el CI de este proyecto convierte en build roja -- la propiedad de
-// esa validación (y de los atributos que este archivo llevará) pasa a la historia 0069, cuyo
-// formulario de ajustes es su consumidor real. Se deja como archivo de idioma vacío pero válido en
-// vez de eliminarlo, para que siga siendo el gemelo exacto de `lang/en/localization.php` y la
-// historia 0069 tenga un archivo que rellenar en vez de crear uno nuevo.
+// La historia 0067 es dueña del grupo `switcher.*` (el selector de idioma de la interfaz). La
+// historia 0069 es dueña de `settings.*` (la sección de valores predeterminados del panel en la
+// pantalla Idiomas de la tienda) y de `attributes` (los nombres camelCase de las dos propiedades
+// que valida App\Concerns\LocaleSettingValidationRules).
 return [
-    //
+    'switcher' => [
+        'heading' => 'Idioma',
+    ],
+
+    'settings' => [
+        'heading' => 'Valores predeterminados del panel',
+        'description' => 'Valores predeterminados de todo el sistema. Se aplican a cada visitante del panel que no haya elegido su propio idioma y a la propia página de inicio de sesión. No son tu preferencia personal.',
+        'default_ui_locale_label' => 'Idioma predeterminado del panel',
+        'default_notification_locale_label' => 'Idioma predeterminado de los correos de notificación',
+        'default_notification_locale_description' => 'El idioma en el que se envían las notificaciones a un destinatario que no ha elegido el suyo.',
+        'save' => 'Guardar',
+        'saved' => 'Valor predeterminado guardado.',
+        'action_not_allowed' => 'Acción no permitida',
+    ],
+
+    'attributes' => [
+        'defaultUiLocale' => 'idioma predeterminado del panel',
+        'defaultNotificationLocale' => 'idioma predeterminado de los correos de notificación',
+    ],
 ];

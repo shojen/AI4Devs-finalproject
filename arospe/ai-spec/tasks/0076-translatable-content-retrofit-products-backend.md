@@ -515,6 +515,7 @@ Feature and Unit only. **No browser tests** — this story ships no screen. This
 - [ ] No security findings (appsec-auditor) — **point the audit at D-8 and D-16 specifically**: the sanitizer now has two layers and one of them is a model event, and the write path this story ships contains no `Gate` check at any layer it owns
 - [ ] Documentation updated (docs-keeper) — at minimum `docs/database/schema.md` (the first translation table with more than one translatable column, and the first carrying a nullable `MEDIUMTEXT`), `docs/database/migrations.md` (the recipe's third retrofit pair, and the first whose parent-drop migration has **no** index to drop), and `docs/architecture/authorization.md` (recording again that translated content adds no ability and no permission)
 - [ ] **Recorded as a handoff, not done here:** the coordination items in **R-1**, **R-3** and **R-6**. This story edits no other story's file.
+- [ ] **Consumers to migrate (added by story [0082](done/0082-dashboard-home-overview-backend.md)):** `App\Actions\Dashboard\GetLowStockProducts` reads `products.name` only through its private `resolveName()` seam. Whichever of 0076/0082 lands last converts that seam to `translated('name')` + `withTranslationsFor(...)` (viewer locale, default-language fallback) and activates the `->todo()` locale tests in `tests/Feature/Dashboard/GetLowStockProductsTest.php`; a grep for `App\Actions\Dashboard` readers belongs in this story's Phase 3.
 - [ ] Acceptance criteria met
 
 ## 4. Documented functional decisions

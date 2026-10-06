@@ -12,7 +12,20 @@ The fix: every checkout of this repo — the main checkout **and every `git work
 
 Multiple worktrees run their own Sail stack against the **same** `arospe-mysql-1` container (`docker compose` in this repo is not per-worktree). If every worktree's `.env.testing` pointed at the same `testing` database, two worktrees running `php artisan test` concurrently would truncate and reseed the same tables into each other — the exact class of failure this whole convention exists to prevent, just moved one level down.
 
-## Setup: opening a new worktree
+## Convention: the session always starts in `<worktree>/arospe`
+
+A git worktree always contains the whole repository, and the Laravel app (with `.claude/`, `CLAUDE.md`, `docs/`, `artisan`, `vendor/`) lives in its `arospe/` subfolder. Start every Claude Code session in `<worktree>/arospe`, never in the worktree root: only there are the project agents, skills, commands, settings and `CLAUDE.md` `@docs/...` imports loaded, and every relative path used by agents and skills (`docs/...`, `php artisan`, `vendor/bin/pint`) resolves. Do not symlink `.claude/` to the repository root — it covers only one folder and leaves the relative paths broken (PR 49 was closed for that reason).
+
+## Automated setup: the `WorktreeCreate` / `WorktreeRemove` hooks
+
+When Claude Code creates a worktree (`claude --worktree <name>`, `EnterWorktree`) from a session started in `arospe/`, the hooks registered in `.claude/settings.json` run instead of the default `git worktree add`:
+
+- `.claude/hooks/worktree-create.sh` creates the worktree and the branch `worktree-<name>` from `HEAD`, copies `.env` and `.env.testing` from the main checkout (`DB_HOST=127.0.0.1`, `DB_DATABASE=testing_<name>` in `.env.testing`), creates that database in `arospe-mysql-1`, runs `composer install`, `npm ci`, `npm run build` and `storage:link` (failures are warnings, not errors), and prints `<worktree>/arospe` so the session starts there.
+- `.claude/hooks/worktree-remove.sh` drops `testing_<name>` and removes the worktree; the branch is kept until you delete it after merging.
+
+This replaces steps 1–4 and 6 of the manual setup below, which stays valid for worktrees created by hand (`git worktree add`) or by other tools. The `DB_DATABASE=testing_<name>` prefix on test runs is still mandatory (see the correction below). The hooks are only registered when the session that creates the worktree starts in `arospe/`. Their commands in `.claude/settings.json` use `"$CLAUDE_PROJECT_DIR/.claude/hooks/…"` because Claude Code runs them from the repository root, where a relative `.claude/hooks/…` path does not exist.
+
+## Setup: opening a new worktree by hand
 
 1. Copy `.env` to `.env.testing` in the new worktree (or start from `.env.testing.example` if the repo ships one — it doesn't today, so copy `.env`). **Copy the whole file, not just the `DB_*` lines** — `APP_KEY` in particular must come along; a `.env.testing` missing it produces a wide, misleading spray of failures across unrelated Feature test files (`No application encryption key has been specified`, often surfacing as a wrapping `Illuminate\View\ViewException` instead) that has nothing to do with whatever those tests are actually about. See the [errors-log.md](../errors-log/2026-09-01-to-2026-09-07.md#a-envtesting-missing-most-of-envs-content-produced-a-wide-spray-of-unrelated-looking-feature-test-failures--2026-09-06) entry for the full failure shape and why it's easy to misdiagnose as a real regression.
 2. Pick a database name that doesn't collide with any other active worktree or the main checkout: `testing`, `testing1`, `testing2`, … A quick check: `docker exec arospe-mysql-1 mysql -usail -ppassword -e "SHOW DATABASES;"`.
@@ -52,6 +65,4 @@ Leaving a stray `testingN` database behind is harmless but wasteful; leaving a s
 
 **`DB_DATABASE` in every `.env.testing` must never be `arospe`, and must never match another active worktree's `.env.testing`.** If you're not sure a worktree still has a live `.env.testing` pointing at a database, check before reusing a name — the failure mode when two worktrees collide is silent data loss in whichever one loses the race, with no error from either side.
 
-_Last updated: 2026-09-06 — Story 0032 (Shipping geography catalog seed). Added step 1's warning about copying `.env.testing`'s full content (not just `DB_*`) and a new step 6 (`npm run build` + `storage:link`, once per worktree) after the incident recorded in [`errors-log.md`](../errors-log/2026-09-01-to-2026-09-07.md#a-envtesting-missing-most-of-envs-content-produced-a-wide-spray-of-unrelated-looking-feature-test-failures--2026-09-06)._
-
-_Previously: 2026-08-26 — created after the incident recorded in [`errors-log.md`](../errors-log/archive-2026-08-23-to-2026-08-26.md#a-missing-envtesting-file-let-a-self-healing-migratefresh-wipe-the-shared-dev-database--2026-08-26)._
+_Last updated: 2026-10-01 — hook commands now resolve through `$CLAUDE_PROJECT_DIR` (they failed with "No such file" when run from the repo root); added the session-starts-in-`arospe/` convention and the automated `WorktreeCreate`/`WorktreeRemove` hooks._

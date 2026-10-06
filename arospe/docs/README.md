@@ -38,7 +38,7 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Products & Taxes](database/schema-products.md) (hub, 5 parts) | `sales_regions`, `media`, categories, `products`, gallery/region pivots, attributes, variants. |
 | [Shipping](database/schema-shipping.md) (hub, 3 parts) | `geography_entries`, zones, carriers, rates. |
 | [Payment Methods, Customers & Notifications](database/schema-other.md) (hub, 3 parts) | `payment_methods`, `customers`, `notifications`. |
-| [Orders](database/schema-orders.md) (hub, 3 parts) | `orders`, `order_items`, `refunds`, snapshots and derived totals. |
+| [Orders](database/schema-orders.md) (hub, 4 parts) | `orders`, `order_items`, `refunds`, `order_payments`, snapshots and derived totals. |
 | [Blog](database/schema-blog.md) | `blog_categories`, `blog_tags` (stored `normalized_name` uniqueness, folded-length bound), `blog_posts` (soft delete, derived slug, status-governed `published_at`) and the `blog_post_tag` pivot (cascade contract). |
 | [Internationalization](database/schema-localization.md) | `store_languages` (content-authoring language catalog, find-or-create reactivation) and `locale_settings` (this repo's first singleton table: fixed-literal PK, atomic upsert, no enum cast). |
 | [Migrations](database/migrations.md) (hub, 3 parts) | you write a migration (naming, UUID keys, FK indexes, delete behaviour). |
@@ -56,7 +56,8 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Customers](api/customers.md) | `customers.index`, `customers.show`. |
 | [Orders](api/orders.md) | `orders.index`, `orders.show`, `<x-money>`, `<x-confirm-dialog>`. |
 | [Blog](api/blog.md) | `blog-tags.index`, `blog-categories.index`, `blog-posts.index` / `.create` / `.edit`. |
-| [Store Languages](api/store-languages.md) | `store-languages.index` (backend-only, placeholder view; real screen is story 0069's). |
+| [Store Languages](api/store-languages.md) | `store-languages.index`: the two-section Store Languages settings screen (story 0069). |
+| [Dashboard](api/dashboard.md) | the `dashboard` route's ungated contract, the `SalesOverview` card (filters, event, Chart.js charts) or the read-side actions in `app/Actions/Dashboard/` (per-widget gating, counters, latest posts/orders, low stock, sales/orders series, measure definitions). |
 
 ## Conventions
 
@@ -77,13 +78,13 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Backend](testing/backend/README.md), [philosophy](testing/philosophy.md), [QA guides](testing/qa/risk-based-testing.md) | you design or review Pest 4 backend tests. |
 | [Frontend / browser](testing/frontend/README.md) | you write browser tests; [Browser test setup](testing/frontend/playwright-setup.md) (hub, 3 parts) is the tooling/waiting-rules reference. |
 | [CI commands](testing/ci/commands.md), [pipeline](testing/ci/pipeline-integration.md) | you run the suite (parallel, coverage) or edit CI. |
-| [Worktree databases](testing/worktree-databases.md) | you open a `git worktree` (own `.env.testing` and testing DB). |
+| [Worktree databases](testing/worktree-databases.md) | you open a `git worktree` (own `.env.testing` and testing DB), or start a session in one (always in `<worktree>/arospe`; the `WorktreeCreate` hook automates the setup). |
 
 ## Security
 
 | Doc | Read when |
 | --- | --- |
-| [Security knowledge base](security/README.md) | you gate access, touch auth, roles, seeders, secrets, uploads or sanitization — the index lists 16 pages, one row each with a *Read when*. |
+| [Security knowledge base](security/README.md) | you gate access, touch auth, roles, seeders, secrets, uploads or sanitization — the index lists 17 pages, one row each with a *Read when*. |
 
 ## Decisions and errors
 
@@ -94,4 +95,4 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Errors log archive](errors-log-archive.md) | the topic index points at an entry dated before 2026-08-27. |
 | [Revision history](history/) | you need the old `_Previously:` revision notes of a doc (moved out of the doc itself; one file per doc, named after its path). |
 
-_Last updated: 2026-09-28 — Story 0066 docs follow-up. Added the [Localization](conventions/localization.md) row (forward-looking notification/admin-dashboard/storefront locale-awareness conventions)._
+_Last updated: 2026-10-03 — Story 0086: the Dashboard row now covers the `SalesOverview` card._

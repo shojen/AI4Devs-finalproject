@@ -64,6 +64,10 @@ return [
         'subtitle' => 'Configure how customers pay.',
     ],
 
+    'store_languages' => [
+        'subtitle' => 'Choose the languages your store content is written in and the dashboard defaults.',
+    ],
+
     'customers' => [
         'title' => 'Customers',
         'subtitle' => "Your store's customers and their order history.",
@@ -97,6 +101,8 @@ return [
         'profile_subtitle' => 'Update your name and email address',
         'security_subtitle' => 'Keep your account secure: password, two-factor authentication and passkeys',
         'appearance_subtitle' => 'Update the appearance settings for your account',
+        'language' => 'Language',
+        'language_subtitle' => 'Choose the language of the administration interface',
     ],
 
 ];

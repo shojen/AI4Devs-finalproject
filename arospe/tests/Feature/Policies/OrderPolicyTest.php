@@ -167,7 +167,7 @@ test('a Super Admin actor passes transitionStatus while holding zero permission 
 // itself resolves correctly; this proves TransitionOrderStatus actually calls
 // Gate::authorize('transitionStatus', $order) rather than a different ability or none at all.
 test('transitionStatus is enforced through TransitionOrderStatus, not only through Gate::forUser', function () {
-    $order = Order::factory()->create(['status' => OrderStatus::Pending]);
+    $order = Order::factory()->paid()->create(['status' => OrderStatus::Pending]);
 
     $deniedActor = User::factory()->create();
     test()->actingAs($deniedActor);

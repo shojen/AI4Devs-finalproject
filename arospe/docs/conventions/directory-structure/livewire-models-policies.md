@@ -25,8 +25,8 @@ app/
                        already established; read-only, no public method mutates anything, gates
                        `customers.view` for the whole page and `orders.view` — OrderPolicy's own
                        first real caller — for the order-history section alone).
-                       Orders/ — Index.php (story 0055, read-only, flat view livewire/orders.blade.php,
-                       reflection-pinned public surface) and Show.php (the detail/editor, nested view
+                       Orders/ — Index.php (story 0055; one pinned write, markAsPaid(), added by story 0085; flat view
+                       livewire/orders.blade.php, reflection-pinned public surface) and Show.php (the detail/editor, nested view
                        livewire/orders/show.blade.php; the only screen consuming every 0048-0052 write
                        action; `#[Locked]` orderId, method-injected actions, computeds read as
                        properties) — the Index-flat / other-nested depth asymmetry's second shipped
@@ -40,6 +40,11 @@ app/
                        reaches tags only through the post actions, an arch test fences the tag actions out
                        of this namespace) — the Index-flat / other-nested asymmetry's third Index/Editor-style
                        pair, see naming.md.
+                       Dashboard/ (story 0083) — Overview.php (the routed home page, view
+                       livewire/dashboard/overview.blade.php) plus three sibling read-only widgets
+                       (BlogWidget, LowStockWidget, LatestOrdersWidget) mounted as children by name from
+                       the Overview view; no public property, no mutating method, each re-gates its own
+                       module ability (see architecture/authorization.md).
                        Dev/ (story 0020, the media-gallery-harness
                        scaffolding) was RETIRED by story 0027 once Products/Editor supplied a real
                        host page — see below. Components/ (story 0021, extended by 0022) is not a module area
