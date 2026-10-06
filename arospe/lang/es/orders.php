@@ -30,6 +30,7 @@ return [
     ],
 
     'transitions' => [
+        'payment_state_blocked' => 'El estado de pago del pedido no permite ese estado.',
         'requires_confirmation' => 'Mover este pedido hacia atrás requiere confirmación explícita.',
         'same_status' => 'Este pedido ya tiene ese estado.',
         'cancellation_unsupported' => 'Cancelar o reabrir un pedido no está disponible aquí.',

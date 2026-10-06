@@ -5,6 +5,7 @@
 // only as defence in depth.
 
 use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
 use App\Livewire\Orders\Show;
 use App\Models\Order;
 use Database\Seeders\RolePermissionSeeder;
@@ -24,7 +25,7 @@ function ordersUiStatusEditor(): void
 
 function ordersUiStatusOrder(OrderStatus $status): Order
 {
-    return Order::factory()->withItems(1)->create(['status' => $status]);
+    return Order::factory()->paid()->withItems(1)->create(['status' => $status]);
 }
 
 // --- statusOptions() (D-8) ---
@@ -63,6 +64,24 @@ test('the status select binds a real backing-value string, defaulting to the ord
 });
 
 // --- Forward: no confirmation ---
+
+test('an order awaiting payment refuses Processing, Shipped and Delivered with an error and keeps its status', function (OrderStatus $to) {
+    ordersUiStatusEditor();
+
+    $order = Order::factory()->withItems(1)->create(['status' => OrderStatus::Pending, 'payment_status' => PaymentStatus::PendingPayment]);
+
+    Livewire::test(Show::class, ['order' => $order])
+        ->set('selectedStatus', $to->value)
+        ->call('requestStatusChange')
+        ->assertHasErrors('selectedStatus')
+        ->assertSet('showBackwardConfirm', false);
+
+    expect($order->fresh()->status)->toBe(OrderStatus::Pending);
+})->with([
+    'Processing' => [OrderStatus::Processing],
+    'Shipped' => [OrderStatus::Shipped],
+    'Delivered' => [OrderStatus::Delivered],
+]);
 
 test('choosing a forward status and applying it changes the order WITHOUT opening a confirmation', function (OrderStatus $from, OrderStatus $to) {
     ordersUiStatusEditor();

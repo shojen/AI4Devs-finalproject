@@ -483,7 +483,9 @@ class Show extends Component
             return;
         }
 
-        if ($this->isBackwardTransition($target)) {
+        // A target the payment state forbids skips the backward dialog: confirming would only reach the
+        // action's refusal, so go straight there and render it.
+        if ($this->isBackwardTransition($target) && $this->order->payment_status->allowsOrderStatus(OrderStatus::from($target))) {
             $this->pendingStatus = $target;
             $this->pendingFromStatus = $this->order->status->value;
             $this->showBackwardConfirm = true;
