@@ -831,6 +831,9 @@ erDiagram
     PRODUCT_VARIANTS ||--o{ ORDER_ITEMS : "product_variant_id (nullable)"
     REFUNDS }o--|| ORDER_ITEMS : order_item_id
     REFUNDS }o--|| USERS : refunded_by
+    ORDERS ||--o| ORDER_PAYMENTS : order_id
+    PAYMENT_METHODS ||--o{ ORDER_PAYMENTS : payment_method_id
+    USERS ||--o{ ORDER_PAYMENTS : "recorded_by (nullable)"
 
     CUSTOMERS {
         uuid id PK
@@ -899,6 +902,14 @@ erDiagram
         decimal unit_price
         decimal line_total
         int refunded_quantity
+    }
+    ORDER_PAYMENTS {
+        uuid id PK
+        uuid order_id FK, UK
+        uuid payment_method_id FK
+        string type
+        timestamp paid_at
+        uuid recorded_by FK
     }
     REFUNDS {
         uuid id PK
@@ -1077,6 +1088,8 @@ Relaciones: `hasMany` → `passkeys` (vía `PasskeyAuthenticatable`); `hasMany` 
 **`orders`** — el pedido ([PRD §3.2](arospe/docs/PRD/PRD.md)). Además del UUID tiene un `order_number` legible y único (`ORD-YYYY-NNNNNN`, numerado por año). Dos estados, que se evalúan por separado salvo por una regla cruzada (`PaymentStatus::allowsOrderStatus()`: sin cobrar no se procesa, envía ni entrega; reembolsado del todo solo admite cancelado): `status` (`pending`, `processing`, `shipped`, `delivered`, `cancelled`) y `payment_status` (`pending_payment`, `paid`, `refunded`, `partially_refunded`). Todas sus FK restringen el borrado: cliente, método de pago, región fiscal y tarifa de envío (las dos últimas opcionales). Los importes son `DECIMAL(10,2)` y se recalculan cada vez que cambian las líneas. `tax_rate` (`DECIMAL(6,3)`) se **copia** una vez al resolver la región fiscal y nunca se consulta en vivo. Las direcciones de envío y facturación también se **congelan** en 12 columnas en el momento del pedido. Para la revisión antifraude guarda `flagged_for_review`, `ip_address`, `ip_derived_country` y `flag_reason`. Sin `SoftDeletes`: un pedido no se borra, se cancela.
 
 **`order_items`** / **`refunds`** — las líneas del pedido y su registro de reembolsos. `unit_price` es **el precio en el momento del pedido** y no cambia después de insertarse; `product_name` y `product_sku` también se copian, así que la línea sobrevive aunque se borre el producto (`product_id` y `product_variant_id` pasan a `NULL`). Si la línea es una variante, precio y SKU salen de la variante. `order_id` es el único borrado en cascada del área de pedidos. `refunds` es un registro de eventos: cada fila guarda cantidad, importe (cantidad × `unit_price`, copiado en ese momento), motivo y el usuario que lo hizo (`refunded_by`, obligatorio). Ambas FK restringen el borrado. `order_items.refunded_quantity` y `orders.refunded_amount` son acumulados de este registro.
+
+**`order_payments`** — el pago registrado de un pedido (historia 0084). Una fila por pedido, garantizada por un índice único sobre `order_id`; un pedido que estaba `Paid` antes de que existiera la tabla no tiene fila, y es un estado válido. Guarda el método que eligió la persona administradora (`payment_method_id`; `orders` conserva el suyo propio, el del momento del pedido), el `type` (`transfer`, `card` o `paypal`, casteado a `OrderPaymentType`), el instante `paid_at` y quién lo marcó (`recorded_by`, nullable). `orders` no tiene columna `paid_at`: el momento del pago vive aquí. Nada es asignable en masa: el único escritor es `MarkOrderAsPaid`, dentro de la misma transacción que actualiza `orders`. Las tres FK restringen el borrado, porque un pago es un hecho financiero, y la fila nunca se actualiza ni se borra desde la aplicación.
 
 **`notifications`** — la tabla de notificaciones en base de datos de Laravel: una fila por destinatario y evento. Usa `uuidMorphs` en vez de `morphs` porque `users.id` es un UUID, y `data` (JSON) no se modifica nunca tras escribirse.
 

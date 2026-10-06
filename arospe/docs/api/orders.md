@@ -38,7 +38,7 @@ Route::livewire('orders/{order}', OrdersShow::class)
 | Control | Ability | Enforced by |
 | --- | --- | --- |
 | Add / remove / re-quantify a line item | `orders.edit` (`OrderPolicy::update`) + `Order::isLineItemEditable()` | `Gate::authorize('update', …)` first in each method, then the action |
-| Change status (incl. backward, confirmed) | `orders.edit` (`OrderPolicy::transitionStatus`) | `requestStatusChange()` / `applyStatusChange()` |
+| Change status (incl. backward, confirmed; limited by the payment state via `PaymentStatus::allowsOrderStatus()`) | `orders.edit` (`OrderPolicy::transitionStatus`) | `requestStatusChange()` / `applyStatusChange()` |
 | Cancel | `orders.edit` **and** `orders.refund` **and** `Order::isManuallyCancellable()` (`OrderPolicy::cancel`) | `confirmCancel()` / `cancelOrder()` |
 | Record a refund | `orders.refund` (independent of `orders.edit`) + `Order::isRefundable()` | `openRefundModal()` / `recordRefund()` |
 | Mark as paid (story 0085) | `orders.edit` (`OrderPolicy::markPaid`) + `Order::isAwaitingPayment()` | `canMarkPaid` computed gates the button; `confirmMarkAsPaid()` / `markAsPaid()` |
