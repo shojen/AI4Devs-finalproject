@@ -27,7 +27,7 @@ beforeEach(function () {
 });
 
 test('deleting a category removes the row outright', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
 
     $deleted = app(DeleteBlogCategory::class)($category);
 
@@ -36,32 +36,32 @@ test('deleting a category removes the row outright', function () {
 });
 
 test('the freed name can immediately be reused by a new category', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
 
     app(DeleteBlogCategory::class)($category);
 
     $reused = app(CreateBlogCategory::class)('Guías');
 
-    expect($reused->fresh()->name)->toBe('Guías')
+    expect($reused->fresh()->translated('name'))->toBe('Guías')
         ->and(BlogCategory::count())->toBe(1);
 });
 
 // The action takes an already-resolved model, so a malformed or unknown id cannot reach it (that is
 // route binding's job in the UI story). What CAN reach it is an instance whose row has since gone.
 test('deleting a category whose row is already gone fails cleanly instead of reporting success', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     app(DeleteBlogCategory::class)($category);
 
     expect(fn () => app(DeleteBlogCategory::class)($category))->toThrow(ModelNotFoundException::class);
 });
 
 test('deleting one category leaves the others untouched', function () {
-    $doomed = BlogCategory::factory()->create(['name' => 'Guías']);
-    $kept = BlogCategory::factory()->create(['name' => 'Novedades']);
+    $doomed = BlogCategory::factory()->named('Guías')->create();
+    $kept = BlogCategory::factory()->named('Novedades')->create();
 
     app(DeleteBlogCategory::class)($doomed);
 
-    $this->assertDatabaseHas('blog_categories', ['id' => $kept->id, 'name' => 'Novedades']);
+    $this->assertDatabaseHas('blog_category_translations', ['blog_category_id' => $kept->id, 'name' => 'Novedades']);
 });
 
 // --- Story 0061, D-18: the hard block while any post still uses the category ---
@@ -82,20 +82,20 @@ function blogCategoryDeleteRefusal(BlogCategory $category): ValidationException
 }
 
 test('deleting a category with posts throws and the row still exists afterwards', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     BlogPost::factory()->count(5)->create(['blog_category_id' => $category->id]);
     BlogPost::factory()->count(2)->create();
 
     expect(fn () => app(DeleteBlogCategory::class)($category))->toThrow(ValidationException::class);
 
-    $this->assertDatabaseHas('blog_categories', ['id' => $category->id, 'name' => 'Guías']);
+    $this->assertDatabaseHas('blog_category_translations', ['blog_category_id' => $category->id, 'name' => 'Guías']);
     expect(BlogPost::query()->forCategory($category->id)->count())->toBe(5);
 });
 
 // Literal expected strings, never a second trans_choice() call: re-invoking it with the same
 // arguments would be tautological. Three rows so a hardcoded "1 or 2" cannot pass.
 test('the block message states the real count, singular and plural, keyed on blogCategoryId', function (int $count, string $message) {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     BlogPost::factory()->count($count)->create(['blog_category_id' => $category->id]);
     BlogPost::factory()->count(3)->create();
 
@@ -112,7 +112,7 @@ test('the block message states the real count, singular and plural, keyed on blo
 // The likeliest implementation bug: "in use" reads like "publicly visible", so a stray
 // where('status', Published) on the count would let a category be deleted out from under drafts.
 test('draft posts count towards the block', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     BlogPost::factory()->draft()->count(3)->create(['blog_category_id' => $category->id]);
     BlogPost::factory()->published()->count(2)->create();
 
@@ -135,7 +135,7 @@ test('scheduled posts count towards the block', function () {
 // "used by 0 posts". Assert the DIGIT so a guard that blocks for the right reason with the wrong
 // number still fails.
 test('a soft-deleted post still blocks, and the count includes it', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $post = BlogPost::factory()->create(['blog_category_id' => $category->id]);
     $post->delete();
     BlogPost::factory()->count(2)->create();
@@ -147,7 +147,7 @@ test('a soft-deleted post still blocks, and the count includes it', function () 
 });
 
 test('deleting an unused category still succeeds, even with a trashed post in a different category', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     BlogPost::factory()->create()->delete();
     BlogPost::factory()->create();
 
@@ -157,8 +157,8 @@ test('deleting an unused category still succeeds, even with a trashed post in a 
 });
 
 test('reassigning the last post to another category frees the original for deletion', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
-    $other = BlogCategory::factory()->create(['name' => 'Novedades']);
+    $category = BlogCategory::factory()->named('Guías')->create();
+    $other = BlogCategory::factory()->named('Novedades')->create();
     $post = BlogPost::factory()->create(['blog_category_id' => $category->id]);
 
     expect(fn () => app(DeleteBlogCategory::class)($category))->toThrow(ValidationException::class);
@@ -197,7 +197,7 @@ test('calling the delete twice in succession is refused both times', function ()
 // The strongest of the three: it is what distinguishes a data-integrity rule from an authorization
 // check. No privilege level can force it.
 test('a Super Admin is refused exactly like any other administrator', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     BlogPost::factory()->count(5)->create(['blog_category_id' => $category->id]);
     BlogPost::factory()->count(2)->create();
 
@@ -216,7 +216,7 @@ test('a Super Admin is refused exactly like any other administrator', function (
 // only because the FK is restrictOnDelete() (D-2). The collision is driven through the REAL
 // constraint, never a mocked exception.
 test('a post assigned between the count and the delete is refused cleanly by the FK backstop', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $armed = true;
 
     BlogCategory::deleting(function (BlogCategory $deleting) use (&$armed): void {
@@ -236,7 +236,7 @@ test('the refusal is logged with target_type blog_category and the reason catego
     Log::spy();
 
     $actor = $this->actor;
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     BlogPost::factory()->create(['blog_category_id' => $category->id]);
 
     blogCategoryDeleteRefusal($category);

@@ -2,13 +2,17 @@
 
 use App\Actions\Blog\CreateBlogCategory;
 use App\Models\BlogCategory;
+use App\Models\BlogCategoryTranslation;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
-// Story 0058, Phase 3 (TDD "red" step): the action, model, factory, trait and migration do not exist yet.
+// Story 0072: CreateBlogCategory writes the name into the store DEFAULT language's
+// blog_category_translations row, so every test needs a default store language and every read goes
+// through BlogCategoryTranslation / ->translated('name').
 //
 // D-13: CreateBlogCategory authorizes itself BEFORE it validates, so every test runs actingAs() an
 // actor holding blog.create -- without one, each negative-validation test below would throw
@@ -19,6 +23,8 @@ beforeEach(function () {
     $this->actor = User::factory()->create();
     $this->actor->givePermissionTo('blog.create');
     $this->actingAs($this->actor);
+
+    $this->defaultLanguage = StoreLanguage::factory()->default()->create();
 });
 
 /**
@@ -36,7 +42,7 @@ function blogCategoryCreateOutcome(string $name): ?Throwable
 }
 
 /**
- * Whether any INSERT into blog_categories was attempted while $callback ran -- what tells a
+ * Whether any INSERT into blog_category_translations was attempted while $callback ran -- what tells a
  * pre-flight validation refusal apart from the unique index refusing a row that validation let through.
  */
 function blogCategoryInsertAttempted(Closure $callback): bool
@@ -51,13 +57,13 @@ function blogCategoryInsertAttempted(Closure $callback): bool
         DB::flushQueryLog();
     }
 
-    return $queries->contains(fn (string $sql): bool => str_starts_with($sql, 'insert into `blog_categories`'));
+    return $queries->contains(fn (string $sql): bool => str_starts_with($sql, 'insert into `blog_category_translations`'));
 }
 
 test('creating with a valid name persists exactly one row and populates timestamps', function () {
     $category = app(CreateBlogCategory::class)('Guías');
 
-    expect(BlogCategory::where('name', 'Guías')->count())->toBe(1);
+    expect(BlogCategoryTranslation::where('name', 'Guías')->count())->toBe(1);
 
     $fresh = $category->fresh();
 
@@ -87,13 +93,13 @@ test('creating with a whitespace-only name is refused and writes no row', functi
 test('surrounding whitespace is trimmed before validation, so it never counts toward the maximum', function () {
     $category = app(CreateBlogCategory::class)('  '.str_repeat('a', 255).'  ');
 
-    expect($category->fresh()->name)->toBe(str_repeat('a', 255));
+    expect($category->fresh()->translated('name'))->toBe(str_repeat('a', 255));
 });
 
 // PHP's trim() leaves these in place and the shared normaliser then folds them to a plain space, so
 // without a Unicode-aware trim "\u{00A0}Guías" folds to " guias" and slips past the duplicate check.
 test('a non-breaking or zero-width space around a name is stripped, so it cannot dodge the duplicate check', function (string $padded) {
-    BlogCategory::factory()->create(['name' => 'Guías']);
+    BlogCategory::factory()->named('Guías')->create();
 
     $caught = blogCategoryCreateOutcome($padded);
 
@@ -127,14 +133,14 @@ test('a name over the maximum reports the length error exactly once', function (
 test('a name with leading and trailing whitespace is stored trimmed', function () {
     $category = app(CreateBlogCategory::class)('  Guías  ');
 
-    expect($category->fresh()->name)->toBe('Guías')
+    expect($category->fresh()->translated('name'))->toBe('Guías')
         ->and(BlogCategory::count())->toBe(1);
 });
 
 test('a name of exactly 255 characters is accepted and one character more is refused', function () {
     $accepted = app(CreateBlogCategory::class)(str_repeat('a', 255));
 
-    expect($accepted->fresh()->name)->toHaveLength(255);
+    expect($accepted->fresh()->translated('name'))->toHaveLength(255);
 
     $caught = blogCategoryCreateOutcome(str_repeat('b', 256));
 
@@ -150,7 +156,7 @@ test('a name whose folded form no longer fits normalized_name is refused, at the
     // 127 x "ß" (-> 254) + "a" folds to exactly 255: accepted.
     $accepted = app(CreateBlogCategory::class)(str_repeat('ß', 127).'a');
 
-    expect($accepted->fresh()->normalized_name)->toHaveLength(255);
+    expect($accepted->fresh()->translations->first()->normalized_name)->toHaveLength(255);
 
     // 128 x "ß" folds to 256: refused although the visible name is only 128 characters.
     $caught = blogCategoryCreateOutcome(str_repeat('ß', 128));
@@ -166,7 +172,7 @@ test('a name whose folded form no longer fits normalized_name is refused, at the
 });
 
 test('creating a duplicate name is refused by validation and never reaches the insert', function () {
-    BlogCategory::factory()->create(['name' => 'Guías']);
+    BlogCategory::factory()->named('Guías')->create();
 
     $caught = null;
     $inserted = blogCategoryInsertAttempted(function () use (&$caught) {
@@ -176,11 +182,11 @@ test('creating a duplicate name is refused by validation and never reaches the i
     expect($caught)->toBeInstanceOf(ValidationException::class)
         ->and($caught->errors())->toHaveKey('name')
         ->and($inserted)->toBeFalse()
-        ->and(BlogCategory::where('name', 'Guías')->count())->toBe(1);
+        ->and(BlogCategoryTranslation::where('name', 'Guías')->count())->toBe(1);
 });
 
 test('a case-only duplicate is refused by validation, not by the unique index', function () {
-    BlogCategory::factory()->create(['name' => 'Guías']);
+    BlogCategory::factory()->named('Guías')->create();
 
     $caught = null;
     $inserted = blogCategoryInsertAttempted(function () use (&$caught) {
@@ -194,7 +200,7 @@ test('a case-only duplicate is refused by validation, not by the unique index', 
 });
 
 test('an accent-only duplicate is refused by validation, not by the unique index', function () {
-    BlogCategory::factory()->create(['name' => 'Guías']);
+    BlogCategory::factory()->named('Guías')->create();
 
     $caught = null;
     $inserted = blogCategoryInsertAttempted(function () use (&$caught) {
@@ -208,13 +214,32 @@ test('an accent-only duplicate is refused by validation, not by the unique index
 });
 
 // Rule::unique()-style pre-flight checks are not race guards. A competing request that commits
-// between the validation pass and the INSERT is simulated by a real row landing in the `creating`
-// hook, so the collision is driven through the REAL unique index on normalized_name -- no mocked
-// exception. The outcome must be a clean ValidationException on `name`, never a 500.
+// between the validation pass and the INSERT is simulated by a real row landing right after the
+// validation query, so the collision is driven through the REAL per-language unique index on
+// normalized_name -- no mocked exception. The outcome must be a clean ValidationException on
+// `name`, never a 500.
 test('a duplicate that races past validation is refused by the unique index as a ValidationException', function () {
-    BlogCategory::creating(function (BlogCategory $incoming): void {
+    $raced = false;
+
+    DB::listen(function ($query) use (&$raced): void {
+        if ($raced || ! str_contains($query->sql, 'blog_category_translations')) {
+            return;
+        }
+
+        $raced = true;
+
+        $racerCategoryId = (string) Str::uuid7();
+
         DB::table('blog_categories')->insert([
+            'id' => $racerCategoryId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('blog_category_translations')->insert([
             'id' => (string) Str::uuid7(),
+            'blog_category_id' => $racerCategoryId,
+            'store_language_id' => $this->defaultLanguage->id,
             'name' => 'GUÍAS',
             'normalized_name' => 'guias',
             'created_at' => now(),
@@ -224,8 +249,8 @@ test('a duplicate that races past validation is refused by the unique index as a
 
     $caught = blogCategoryCreateOutcome('Guías');
 
-    expect($caught)->toBeInstanceOf(ValidationException::class)
+    expect($raced)->toBeTrue()
+        ->and($caught)->toBeInstanceOf(ValidationException::class)
         ->and($caught->errors())->toHaveKey('name')
-        ->and(BlogCategory::count())->toBe(1)
-        ->and(BlogCategory::first()->name)->toBe('GUÍAS');
+        ->and(BlogCategoryTranslation::where('normalized_name', 'guias')->count())->toBeLessThan(2);
 });

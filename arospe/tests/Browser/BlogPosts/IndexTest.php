@@ -46,7 +46,7 @@ function blogPostsBrowserActor(array $permissions = ['blog.view', 'blog.create',
 
 test('the list renders its rows, filters and trashed section with no JavaScript error', function () {
     $this->actingAs(blogPostsBrowserActor());
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $post = BlogPost::factory()->published()->create(['title' => 'Botas de invierno', 'blog_category_id' => $category->id]);
     BlogPost::factory()->create()->delete();
 
@@ -60,8 +60,8 @@ test('the list renders its rows, filters and trashed section with no JavaScript 
 
 test('choosing a category in the filter narrows the visible rows, and choosing All restores them', function () {
     $this->actingAs(blogPostsBrowserActor());
-    $guides = BlogCategory::factory()->create(['name' => 'Guías']);
-    $news = BlogCategory::factory()->create(['name' => 'Novedades']);
+    $guides = BlogCategory::factory()->named('Guías')->create();
+    $news = BlogCategory::factory()->named('Novedades')->create();
     $guide = BlogPost::factory()->create(['title' => 'Una guía', 'blog_category_id' => $guides->id]);
     $newsPost = BlogPost::factory()->create(['title' => 'Una novedad', 'blog_category_id' => $news->id]);
 
@@ -101,7 +101,7 @@ test('choosing a tag in the filter narrows the visible rows', function () {
 
 test('the trashed section starts closed, expands on a click, and restoring a post returns it to the main table', function () {
     $this->actingAs(blogPostsBrowserActor());
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $post = BlogPost::factory()->create(['title' => 'Botas de invierno', 'blog_category_id' => $category->id]);
     $post->delete();
 

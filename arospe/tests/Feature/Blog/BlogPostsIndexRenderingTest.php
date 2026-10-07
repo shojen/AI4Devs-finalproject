@@ -150,8 +150,8 @@ test('the date cell renders the row\'s own date through its hook, beside a decoy
 });
 
 test('each row renders its title, its category name and its tags through row-scoped hooks', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
-    $decoyCategory = BlogCategory::factory()->create(['name' => 'Novedades']);
+    $category = BlogCategory::factory()->named('Guías')->create();
+    $decoyCategory = BlogCategory::factory()->named('Novedades')->create();
     $post = BlogPost::factory()->create(['title' => 'Botas de invierno', 'blog_category_id' => $category->id]);
     $post->tags()->attach([
         BlogTag::factory()->create(['name' => 'running'])->id,
@@ -257,7 +257,7 @@ test('the empty state renders when no post exists, and does not render when one 
 });
 
 test('a filter that matches nothing says so, instead of claiming that no post exists', function () {
-    $empty = BlogCategory::factory()->create(['name' => 'Vacía']);
+    $empty = BlogCategory::factory()->named('Vacía')->create();
     BlogPost::factory()->create();
     $this->actingAs(blogPostsRenderingActor(['blog.view']));
 
@@ -269,8 +269,8 @@ test('a filter that matches nothing says so, instead of claiming that no post ex
 });
 
 test('both filters render as live selects offering an all option plus every category and tag', function () {
-    BlogCategory::factory()->create(['name' => 'Guías']);
-    BlogCategory::factory()->create(['name' => 'Novedades']);
+    BlogCategory::factory()->named('Guías')->create();
+    BlogCategory::factory()->named('Novedades')->create();
     BlogTag::factory()->create(['name' => 'running']);
     $this->actingAs(blogPostsRenderingActor(['blog.view']));
 
@@ -350,7 +350,7 @@ test('with trashed posts the section renders closed on first paint and its count
 });
 
 test('a trashed row shows its title and category, and offers no edit link (its edit URL is a 404)', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $post = BlogPost::factory()->create(['title' => 'Botas de invierno', 'blog_category_id' => $category->id]);
     $post->delete();
     $this->actingAs(blogPostsRenderingActor());
@@ -363,7 +363,7 @@ test('a trashed row shows its title and category, and offers no edit link (its e
 });
 
 test('restoring resolves the trashed row, brings it back to the list with its category and tags, and empties the section', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $post = BlogPost::factory()->create(['title' => 'Botas de invierno', 'blog_category_id' => $category->id]);
     $post->tags()->attach(BlogTag::factory()->create(['name' => 'running'])->id);
     $post->delete();

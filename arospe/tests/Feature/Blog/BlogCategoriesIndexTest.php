@@ -19,7 +19,9 @@ use App\Actions\Blog\RenameBlogCategory;
 use App\Concerns\BlogCategoryValidationRules;
 use App\Livewire\BlogCategories\Index;
 use App\Models\BlogCategory;
+use App\Models\BlogCategoryTranslation;
 use App\Models\BlogPost;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -32,6 +34,8 @@ use Spatie\Permission\PermissionRegistrar;
 beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
+
+    StoreLanguage::factory()->default()->create();
 });
 
 /**
@@ -81,9 +85,9 @@ function blogCategoriesIndexCodeWithoutComments(): string
  */
 function blogCategoriesIndexCategoryWithPosts(string $name, int $count, int $decoyPosts = 4): BlogCategory
 {
-    $category = BlogCategory::factory()->create(['name' => $name]);
+    $category = BlogCategory::factory()->named($name)->create();
     BlogPost::factory()->count($count)->create(['blog_category_id' => $category->id]);
-    BlogPost::factory()->count($decoyPosts)->create(['blog_category_id' => BlogCategory::factory()->create(['name' => 'Decoy '.$name])->id]);
+    BlogPost::factory()->count($decoyPosts)->create(['blog_category_id' => BlogCategory::factory()->named('Decoy '.$name)->create()->id]);
 
     return $category;
 }
@@ -162,7 +166,7 @@ test('openCreateModal() is refused without blog.create', function () {
 
 test('openEditModal() is refused without blog.edit', function () {
     $this->withoutExceptionHandling();
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $this->actingAs(blogCategoriesIndexTestActor(['blog.view']));
 
     $component = Livewire::test(Index::class);
@@ -172,7 +176,7 @@ test('openEditModal() is refused without blog.edit', function () {
 
 test('confirmDelete() is refused without blog.delete', function () {
     $this->withoutExceptionHandling();
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $this->actingAs(blogCategoriesIndexTestActor(['blog.view']));
 
     $component = Livewire::test(Index::class);
@@ -195,7 +199,7 @@ test('save() in create mode is refused when blog.create is revoked after the mod
 
 test('save() in edit mode is refused when blog.edit is revoked after the modal opened, and renames nothing', function () {
     $this->withoutExceptionHandling();
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $actor = blogCategoriesIndexTestActor();
     $this->actingAs($actor);
 
@@ -204,7 +208,7 @@ test('save() in edit mode is refused when blog.edit is revoked after the modal o
     blogCategoriesIndexRevoke($actor, 'blog.edit');
 
     expect(fn () => $component->call('save'))->toThrow(AuthorizationException::class);
-    expect($category->fresh()->name)->toBe('Guías');
+    expect($category->fresh()->translated('name'))->toBe('Guías');
 });
 
 test('deleteCategory() is refused when blog.delete is revoked after the confirmation opened, and deletes nothing', function () {
@@ -226,7 +230,7 @@ test('a Super Admin holding zero permission rows can create, rename and delete',
     $superAdmin->assignRole('Super Admin');
     $this->actingAs($superAdmin);
 
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
 
     Livewire::test(Index::class)
         ->call('openCreateModal')->set('name', 'Novedades')->call('save')
@@ -234,7 +238,7 @@ test('a Super Admin holding zero permission rows can create, rename and delete',
         ->call('confirmDelete', $category->id)->call('deleteCategory')
         ->assertHasNoErrors();
 
-    expect(BlogCategory::query()->pluck('name')->all())->toBe(['Novedades']);
+    expect(BlogCategoryTranslation::query()->pluck('name')->all())->toBe(['Novedades']);
 });
 
 test('an actor holding only blog.view sees every row action disabled -- one global-state test, not a per-row matrix', function () {
@@ -263,7 +267,7 @@ test('row hints follow the policy independently: blog.edit alone enables edit bu
 
 test('the list is ordered by name, whatever order the rows were created in', function () {
     foreach (['Zeta', 'alpha', 'Beta'] as $name) {
-        BlogCategory::factory()->create(['name' => $name]);
+        BlogCategory::factory()->named($name)->create();
     }
     $this->actingAs(blogCategoriesIndexTestActor(['blog.view']));
 
@@ -273,7 +277,7 @@ test('the list is ordered by name, whatever order the rows were created in', fun
 });
 
 test('each row exposes exactly {id, name, postCount, canEdit, canDelete}', function () {
-    BlogCategory::factory()->create(['name' => 'Guías']);
+    BlogCategory::factory()->named('Guías')->create();
     $this->actingAs(blogCategoriesIndexTestActor());
 
     $row = Livewire::test(Index::class)->get('categories')[0];
@@ -308,12 +312,12 @@ test('creating a category with a valid name persists exactly one row, lists it a
         ->assertSet('showModal', false)
         ->assertSet('name', '');
 
-    expect(BlogCategory::query()->pluck('name')->all())->toBe(['Guías'])
+    expect(BlogCategoryTranslation::query()->pluck('name')->all())->toBe(['Guías'])
         ->and(collect($component->get('categories'))->pluck('name')->all())->toBe(['Guías']);
 });
 
 test('opening the create form after an edit shows a blank field, never the previous category', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $this->actingAs(blogCategoriesIndexTestActor());
 
     Livewire::test(Index::class)
@@ -326,7 +330,7 @@ test('opening the create form after an edit shows a blank field, never the previ
 });
 
 test('an unacceptable create name is refused on the name field and adds no row', function (string $invalid) {
-    BlogCategory::factory()->create(['name' => 'Guías']);
+    BlogCategory::factory()->named('Guías')->create();
     $this->actingAs(blogCategoriesIndexTestActor());
 
     Livewire::test(Index::class)
@@ -378,7 +382,7 @@ test('save() validates through the injected actions, never a component-side rule
 // =====================================================================
 
 test('renaming a category to a free name updates the row and closes the modal', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $this->actingAs(blogCategoriesIndexTestActor());
 
     $component = Livewire::test(Index::class)
@@ -391,22 +395,22 @@ test('renaming a category to a free name updates the row and closes the modal', 
         ->assertHasNoErrors()
         ->assertSet('showModal', false);
 
-    expect($category->fresh()->name)->toBe('Guías de compra')
+    expect($category->fresh()->translated('name'))->toBe('Guías de compra')
         ->and(collect($component->get('categories'))->pluck('name')->all())->toBe(['Guías de compra']);
 });
 
 test('saving a category under its own unchanged name is accepted', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $this->actingAs(blogCategoriesIndexTestActor());
 
     Livewire::test(Index::class)->call('openEditModal', $category->id)->call('save')->assertHasNoErrors();
 
-    expect($category->fresh()->name)->toBe('Guías');
+    expect($category->fresh()->translated('name'))->toBe('Guías');
 });
 
 test('renaming a category onto another category\'s exact name is refused and the category keeps its name', function () {
-    BlogCategory::factory()->create(['name' => 'Guías']);
-    $other = BlogCategory::factory()->create(['name' => 'Novedades']);
+    BlogCategory::factory()->named('Guías')->create();
+    $other = BlogCategory::factory()->named('Novedades')->create();
     $this->actingAs(blogCategoriesIndexTestActor());
 
     Livewire::test(Index::class)
@@ -416,7 +420,7 @@ test('renaming a category onto another category\'s exact name is refused and the
         ->assertHasErrors(['name'])
         ->assertSet('showModal', true);
 
-    expect($other->fresh()->name)->toBe('Novedades');
+    expect($other->fresh()->translated('name'))->toBe('Novedades');
 });
 
 test('the id feeding the uniqueness exclusion is server-authoritative: a forged editingCategoryId throws instead of retargeting the rename', function () {
@@ -424,8 +428,8 @@ test('the id feeding the uniqueness exclusion is server-authoritative: a forged 
     // set('editingCategoryId', $b) between opening the modal and saving would turn the uniqueness
     // check into a rename-any-category primitive.
     $this->withoutExceptionHandling();
-    $a = BlogCategory::factory()->create(['name' => 'Alfa']);
-    $b = BlogCategory::factory()->create(['name' => 'Beta']);
+    $a = BlogCategory::factory()->named('Alfa')->create();
+    $b = BlogCategory::factory()->named('Beta')->create();
     $this->actingAs(blogCategoriesIndexTestActor());
 
     $component = Livewire::test(Index::class)->call('openEditModal', $a->id);
@@ -434,7 +438,7 @@ test('the id feeding the uniqueness exclusion is server-authoritative: a forged 
 
     $component->set('name', 'Renombrada')->call('save');
 
-    expect($a->fresh()->name)->toBe('Renombrada')->and($b->fresh()->name)->toBe('Beta');
+    expect($a->fresh()->translated('name'))->toBe('Renombrada')->and($b->fresh()->translated('name'))->toBe('Beta');
 });
 
 test('saving an edit for a category deleted in the meantime fails cleanly rather than recreating or silently succeeding', function () {
@@ -450,7 +454,7 @@ test('saving an edit for a category deleted in the meantime fails cleanly rather
 });
 
 test('closing the modal clears a stale name error so it cannot leak into the next attempt', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $this->actingAs(blogCategoriesIndexTestActor());
 
     Livewire::test(Index::class)
@@ -464,8 +468,8 @@ test('closing the modal clears a stale name error so it cannot leak into the nex
 // =====================================================================
 
 test('deleting an unused category removes the row and it disappears from the reloaded list', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
-    BlogCategory::factory()->create(['name' => 'Novedades']);
+    $category = BlogCategory::factory()->named('Guías')->create();
+    BlogCategory::factory()->named('Novedades')->create();
     $this->actingAs(blogCategoriesIndexTestActor());
 
     $component = Livewire::test(Index::class)
@@ -500,7 +504,7 @@ test('closeDeleteModal() clears the stale blogCategoryId error so it cannot leak
     // R-5, written before the happy-path delete on purpose: the block message lives in the error
     // bag, not in a property closeDeleteModal()'s reset() would clear.
     $blocked = blogCategoriesIndexCategoryWithPosts('Guías', 2);
-    $unused = BlogCategory::factory()->create(['name' => 'Novedades']);
+    $unused = BlogCategory::factory()->named('Novedades')->create();
     $this->actingAs(blogCategoriesIndexTestActor());
 
     Livewire::test(Index::class)
@@ -563,7 +567,7 @@ test('the block message states the real count, singular and plural, against a de
 ]);
 
 test('unpublished posts count towards the block', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     BlogPost::factory()->draft()->count(2)->create(['blog_category_id' => $category->id]);
     BlogPost::factory()->scheduled()->create(['blog_category_id' => $category->id]);
     $this->actingAs(blogCategoriesIndexTestActor());
@@ -575,7 +579,7 @@ test('unpublished posts count towards the block', function () {
 });
 
 test('a category whose only post is trashed still blocks, with a count of 1 and not 0', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     BlogPost::factory()->create(['blog_category_id' => $category->id])->delete();
     $this->actingAs(blogCategoriesIndexTestActor());
 
@@ -588,7 +592,7 @@ test('a category whose only post is trashed still blocks, with a count of 1 and 
 });
 
 test('the rendered row count equals the count the refusal states: 1 live and 2 trashed posts are both 3', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     BlogPost::factory()->create(['blog_category_id' => $category->id]);
     BlogPost::factory()->count(2)->create(['blog_category_id' => $category->id])->each->delete();
     $this->actingAs(blogCategoriesIndexTestActor());
@@ -633,7 +637,7 @@ test('a post assigned between the count and the delete is refused cleanly by the
     // R-7: the only test that reaches DeleteBlogCategory's 1451 fallback through the screen. The
     // collision is driven through the REAL constraint by a `deleting` listener, the technique
     // 0061's own action-level test uses.
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $this->actingAs(blogCategoriesIndexTestActor());
     $armed = false;
 
@@ -656,7 +660,7 @@ test('a post assigned between the count and the delete is refused cleanly by the
 
 test('a category whose posts arrive between opening the modal and confirming fails closed instead of reading as unused', function () {
     // D-13: the loaded postCount is display-only; the action re-counts at click time.
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $this->actingAs(blogCategoriesIndexTestActor());
 
     $component = Livewire::test(Index::class)->call('confirmDelete', $category->id);
@@ -753,7 +757,7 @@ function blogCategoriesRefusedContext(Closure $refuse): array
 }
 
 test('every refusal this component raises writes exactly one warning with target_type blog_category, the actor, the ability and the target', function (string $ability, string $revoke, Closure $act) {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $actor = blogCategoriesIndexTestActor();
     $this->actingAs($actor);
 

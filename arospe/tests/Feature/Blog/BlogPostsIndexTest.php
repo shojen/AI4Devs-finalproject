@@ -217,7 +217,7 @@ test('mounting the component with blog.view succeeds', function () {
 // =====================================================================
 
 test('each row carries the documented shape, with the category name and the tag names resolved', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $post = BlogPost::factory()->published()->create(['title' => 'Botas de invierno', 'blog_category_id' => $category->id]);
     $post->tags()->attach([
         BlogTag::factory()->create(['name' => 'running'])->id,
@@ -395,9 +395,11 @@ test('a valid filter id is accepted even when the option dropdown is capped belo
     // sanitizeFilters() asks the database whether the id exists; it must not consult the (capped,
     // uncached) option list, or a real id beyond FILTER_OPTIONS_LIMIT would read as forged.
     $limit = (new ReflectionClassConstant(Index::class, 'FILTER_OPTIONS_LIMIT'))->getValue();
-    BlogCategory::factory()->count($limit)->sequence(fn ($sequence) => ['name' => sprintf('a-%04d', $sequence->index)])->create();
+    foreach (range(0, $limit - 1) as $index) {
+        BlogCategory::factory()->named(sprintf('a-%04d', $index))->create();
+    }
     BlogTag::factory()->count($limit)->sequence(fn ($sequence) => ['name' => sprintf('a-%04d', $sequence->index)])->create();
-    $category = BlogCategory::factory()->create(['name' => 'zzz last']);
+    $category = BlogCategory::factory()->named('zzz last')->create();
     $tag = BlogTag::factory()->create(['name' => 'zzz last']);
     $this->actingAs(blogPostsIndexActor(['blog.view']));
 
@@ -412,8 +414,8 @@ test('a valid filter id is accepted even when the option dropdown is capped belo
 // =====================================================================
 
 test('the category filter narrows the list to that category, leaving a decoy category out', function () {
-    $guides = BlogCategory::factory()->create(['name' => 'Guías']);
-    $news = BlogCategory::factory()->create(['name' => 'Novedades']);
+    $guides = BlogCategory::factory()->named('Guías')->create();
+    $news = BlogCategory::factory()->named('Novedades')->create();
     BlogPost::factory()->create(['title' => 'Guide one', 'blog_category_id' => $guides->id, 'created_at' => '2026-03-02 00:00:00']);
     BlogPost::factory()->create(['title' => 'Guide two', 'blog_category_id' => $guides->id, 'created_at' => '2026-03-01 00:00:00']);
     BlogPost::factory()->create(['title' => 'News one', 'blog_category_id' => $news->id]);
@@ -438,8 +440,8 @@ test('the tag filter narrows the list to posts carrying that tag, leaving a deco
 });
 
 test('the two filters compose: category AND tag narrow further, they do not replace each other', function () {
-    $guides = BlogCategory::factory()->create(['name' => 'Guías']);
-    $news = BlogCategory::factory()->create(['name' => 'Novedades']);
+    $guides = BlogCategory::factory()->named('Guías')->create();
+    $news = BlogCategory::factory()->named('Novedades')->create();
     $running = BlogTag::factory()->create(['name' => 'running']);
     BlogPost::factory()->create(['title' => 'Guide + running', 'blog_category_id' => $guides->id])->tags()->attach($running->id);
     BlogPost::factory()->create(['title' => 'Guide only', 'blog_category_id' => $guides->id]);
@@ -454,7 +456,7 @@ test('the two filters compose: category AND tag narrow further, they do not repl
 });
 
 test('clearing a filter restores the full list', function () {
-    $guides = BlogCategory::factory()->create(['name' => 'Guías']);
+    $guides = BlogCategory::factory()->named('Guías')->create();
     BlogPost::factory()->create(['blog_category_id' => $guides->id]);
     BlogPost::factory()->count(2)->create();
     $this->actingAs(blogPostsIndexActor(['blog.view']));
@@ -467,7 +469,7 @@ test('clearing a filter restores the full list', function () {
 });
 
 test('changing either filter returns to page 1', function (string $property) {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $tag = BlogTag::factory()->create(['name' => 'running']);
     BlogPost::factory()->count(30)->create(['blog_category_id' => $category->id])
         ->each(fn (BlogPost $post) => $post->tags()->attach($tag->id));
@@ -492,7 +494,7 @@ test('both filters are bound to the URL as ?category= and ?tag=', function () {
             ->and($attributes[0]->newInstance()->as)->toBe($alias);
     }
 
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $tag = BlogTag::factory()->create(['name' => 'running']);
     $this->actingAs(blogPostsIndexActor(['blog.view']));
 
@@ -531,7 +533,7 @@ test('a forged filter arriving through the URL, even as an array, renders the fu
 ]);
 
 test('a filter naming a trashed post\'s category still degrades cleanly and never surfaces the trashed post', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     BlogPost::factory()->create(['title' => 'Trashed', 'blog_category_id' => $category->id])->delete();
     $this->actingAs(blogPostsIndexActor(['blog.view']));
 

@@ -37,15 +37,15 @@ test('CreateBlogCategory refuses an actor without blog.create and writes nothing
 });
 
 test('RenameBlogCategory refuses an actor without blog.edit and writes nothing', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $this->actingAs(blogCategoryActorWithout('blog.edit'));
 
     expect(fn () => app(RenameBlogCategory::class)($category, 'Tutoriales'))->toThrow(AuthorizationException::class);
-    expect($category->fresh()->name)->toBe('Guías');
+    expect($category->fresh()->translated('name'))->toBe('Guías');
 });
 
 test('DeleteBlogCategory refuses an actor without blog.delete and writes nothing', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $this->actingAs(blogCategoryActorWithout('blog.delete'));
 
     expect(fn () => app(DeleteBlogCategory::class)($category))->toThrow(AuthorizationException::class);
@@ -79,7 +79,7 @@ test('a refused create is logged with target_type blog_category', function () {
 
 test('a refused rename and a refused delete are logged with the target category id', function () {
     Log::spy();
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
 
     $editor = blogCategoryActorWithout('blog.edit');
     $this->actingAs($editor);

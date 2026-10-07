@@ -21,7 +21,9 @@
 // compensates for exactly that: the DOM has not yet re-rendered from the server response.
 
 use App\Models\BlogCategory;
+use App\Models\BlogCategoryTranslation;
 use App\Models\BlogPost;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Spatie\Permission\PermissionRegistrar;
@@ -29,6 +31,8 @@ use Spatie\Permission\PermissionRegistrar;
 beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
+
+    StoreLanguage::factory()->default()->create();
 });
 
 /**
@@ -47,7 +51,7 @@ function blogCategoriesBrowserActor(array $permissions = ['blog.view', 'blog.cre
 
 test('opening the create form shows a blank field, with no stale prefill from a previous edit', function () {
     $this->actingAs(blogCategoriesBrowserActor());
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
 
     visit('/blog/categories')
         ->assertNoJavaScriptErrors()
@@ -71,14 +75,14 @@ test('creating a category through a real fill and click round trip adds it to th
         ->wait(1)
         ->assertNoJavaScriptErrors();
 
-    $category = BlogCategory::query()->where('name', 'Guías')->sole();
+    $category = BlogCategoryTranslation::query()->where('name', 'Guías')->sole()->blogCategory;
 
     visit('/blog/categories')->assertPresent('@edit-blog-category-'.$category->id);
 });
 
 test('editing prefills the name, and re-saving it unchanged preserves it', function () {
     $this->actingAs(blogCategoriesBrowserActor());
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
 
     visit('/blog/categories')
         ->click('@edit-blog-category-'.$category->id)
@@ -87,12 +91,12 @@ test('editing prefills the name, and re-saving it unchanged preserves it', funct
         ->wait(1)
         ->assertNoJavaScriptErrors();
 
-    expect($category->fresh()->name)->toBe('Guías');
+    expect($category->fresh()->translated('name'))->toBe('Guías');
 });
 
 test('renaming through the real input persists the new name', function () {
     $this->actingAs(blogCategoriesBrowserActor());
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
 
     visit('/blog/categories')
         ->click('@edit-blog-category-'.$category->id)
@@ -101,7 +105,7 @@ test('renaming through the real input persists the new name', function () {
         ->wait(1)
         ->assertNoJavaScriptErrors();
 
-    expect($category->fresh()->name)->toBe('Novedades');
+    expect($category->fresh()->translated('name'))->toBe('Novedades');
 });
 
 test('cancelling the create form adds nothing', function () {
@@ -119,7 +123,7 @@ test('cancelling the create form adds nothing', function () {
 
 test('deleting an unused category through the confirmation modal removes it from the list', function () {
     $this->actingAs(blogCategoriesBrowserActor());
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
 
     visit('/blog/categories')
         ->assertNoJavaScriptErrors()
@@ -139,7 +143,7 @@ test('deleting a category that is in use renders the refusal inline, keeps the c
     // The highest-value browser test in this story: only a real DOM render proves the
     // confirmation UI does not close and drop the row while the delete was refused server-side.
     $this->actingAs(blogCategoriesBrowserActor());
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     BlogPost::factory()->count(5)->create(['blog_category_id' => $category->id]);
 
     visit('/blog/categories')
@@ -159,7 +163,7 @@ test('deleting a category that is in use renders the refusal inline, keeps the c
 
 test('creating a duplicate name through the real form shows the inline error', function () {
     $this->actingAs(blogCategoriesBrowserActor());
-    BlogCategory::factory()->create(['name' => 'Guías']);
+    BlogCategory::factory()->named('Guías')->create();
 
     visit('/blog/categories')
         ->click('@create-blog-category-button')
@@ -174,7 +178,7 @@ test('creating a duplicate name through the real form shows the inline error', f
 
 test('a smoke pass through create, edit and blocked delete openers and cancels raises no JavaScript error', function () {
     $this->actingAs(blogCategoriesBrowserActor());
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     BlogPost::factory()->create(['blog_category_id' => $category->id]);
 
     visit('/blog/categories')

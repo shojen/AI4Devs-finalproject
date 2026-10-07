@@ -93,8 +93,8 @@ test('a blog editor writes a scheduled post with a body, an image and tags, save
 
     // The FIRST category by name is the one the journey picks: a pick of the first real option is
     // the case the null-<select> desync swallowed.
-    $first = BlogCategory::factory()->create(['name' => 'Aaa primera']);
-    BlogCategory::factory()->create(['name' => 'Zzz última']);
+    $first = BlogCategory::factory()->named('Aaa primera')->create();
+    BlogCategory::factory()->named('Zzz última')->create();
     BlogTag::factory()->create(['name' => 'running']);
     $media = Media::factory()->withRealFiles()->create(['title' => 'Journey Widget', 'description' => null]);
     $bodyText = 'Texto escrito en el navegador';
@@ -220,7 +220,7 @@ test('a blog editor writes a scheduled post with a body, an image and tags, save
 
 test('a refusal is rendered beside its own field in a real browser, and the typed form survives it', function () {
     $this->actingAs(blogPostsEditorJourneyActor());
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
 
     retry(3, function () use ($category): void {
         visit(route('blog-posts.create'))

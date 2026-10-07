@@ -19,23 +19,23 @@ function blogCategoryValidationRulesHarness(): object
         /**
          * @return array<int, mixed>
          */
-        public function exposedNameRules(NormalizeForSearch $normalizeForSearch, ?string $blogCategoryId = null): array
+        public function exposedNameRules(NormalizeForSearch $normalizeForSearch, string $storeLanguageId, ?string $blogCategoryId = null): array
         {
-            return $this->nameRules($normalizeForSearch, $blogCategoryId);
+            return $this->nameRules($normalizeForSearch, $storeLanguageId, $blogCategoryId);
         }
 
         /**
          * @return array<string, array<int, mixed>>
          */
-        public function exposedBlogCategoryRules(NormalizeForSearch $normalizeForSearch, ?string $blogCategoryId = null): array
+        public function exposedBlogCategoryRules(NormalizeForSearch $normalizeForSearch, string $storeLanguageId, ?string $blogCategoryId = null): array
         {
-            return $this->blogCategoryRules($normalizeForSearch, $blogCategoryId);
+            return $this->blogCategoryRules($normalizeForSearch, $storeLanguageId, $blogCategoryId);
         }
     };
 }
 
 it('nameRules() returns bail/required/string/max:255 followed by the two closure rules', function () {
-    $rules = blogCategoryValidationRulesHarness()->exposedNameRules(app(NormalizeForSearch::class));
+    $rules = blogCategoryValidationRulesHarness()->exposedNameRules(app(NormalizeForSearch::class), 'a-store-language-id');
 
     expect($rules)->toHaveCount(6)
         ->and($rules[0])->toBe('bail')
@@ -50,16 +50,17 @@ it('nameRules($id) threads the id into the uniqueness closure\'s captured state,
     $normalizeForSearch = app(NormalizeForSearch::class);
     $harness = blogCategoryValidationRulesHarness();
 
-    $withoutId = (new ReflectionFunction($harness->exposedNameRules($normalizeForSearch, null)[5]))->getStaticVariables();
-    $withId = (new ReflectionFunction($harness->exposedNameRules($normalizeForSearch, 'a-blog-category-id')[5]))->getStaticVariables();
+    $withoutId = (new ReflectionFunction($harness->exposedNameRules($normalizeForSearch, 'a-store-language-id', null)[5]))->getStaticVariables();
+    $withId = (new ReflectionFunction($harness->exposedNameRules($normalizeForSearch, 'a-store-language-id', 'a-blog-category-id')[5]))->getStaticVariables();
 
     expect($withoutId)->toHaveKey('blogCategoryId')
         ->and($withoutId['blogCategoryId'])->toBeNull()
-        ->and($withId['blogCategoryId'])->toBe('a-blog-category-id');
+        ->and($withId['blogCategoryId'])->toBe('a-blog-category-id')
+        ->and($withId['storeLanguageId'])->toBe('a-store-language-id');
 });
 
 it('blogCategoryRules() wraps nameRules() under the "name" key', function () {
-    $rules = blogCategoryValidationRulesHarness()->exposedBlogCategoryRules(app(NormalizeForSearch::class), 'a-blog-category-id');
+    $rules = blogCategoryValidationRulesHarness()->exposedBlogCategoryRules(app(NormalizeForSearch::class), 'a-store-language-id', 'a-blog-category-id');
 
     expect($rules)->toHaveKey('name')
         ->and($rules)->toHaveCount(1)

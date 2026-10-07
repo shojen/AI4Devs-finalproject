@@ -26,7 +26,7 @@ beforeEach(function () {
     $this->actor->givePermissionTo(['blog.create', 'blog.edit', 'blog.view']);
     $this->actingAs($this->actor);
 
-    $this->category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $this->category = BlogCategory::factory()->named('Guías')->create();
 });
 
 afterEach(function () {
