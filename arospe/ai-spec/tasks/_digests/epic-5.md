@@ -46,3 +46,11 @@ closed earlier and are not backfilled here (read their `done/` files or `docs/`)
 - Create/Rename write only the default-language translation (D-7); the non-default write path and the French Gherkin scenarios belong to 0073 — story 0072.
 - BlogCategories/Index, BlogPosts/Index and BlogPosts/Editor were minimally migrated to `translated('name')` + `CompareTranslatedNames` (D-14); `FILTER_OPTIONS_LIMIT` now caps the rendered category list, not the query — story 0072.
 - `down()` of the drop migration restores nullable columns, no unique index; rollback is data-lossy (D-11) — story 0072.
+
+## Story 0073 — Blog categories language tabs (frontend)
+
+- `BlogCategories\Index` swapped `public string $name` for `public array $names` keyed by store-language id (values plain strings, `''` = not typed, never `null`); adds `$activeLanguageId` and `setActiveLanguageTab()` and reuses `<x-language-tab-strip>` unmodified — story 0073 (D-2).
+- `app/Actions/Blog/SetBlogCategoryTranslation` is the self-sufficient non-default-language writer (layer 2, direct-call tested) and the only blog-category caller of `SetTranslation`; `save()` gained it as a fourth method-injected parameter — story 0073 (D-8).
+- Every language panel is always mounted and hidden with `x-show` + `x-cloak`, never an `@if` on `$activeLanguageId`; hooks are keyed by language id: `blog-category-name-input-{id}`, `language-tab-{id}`, `language-name-error-{id}`, `language-untranslated-{id}` — story 0073 (A-10, A-16, D-11).
+- The edit field reads the raw translation row, never `translated('name')`, so a fallback is never silently saved as a translation — story 0073 (D-6).
+- Known follow-up: the strip's `aria-label` is hardcoded (two consumers now), to be generalised by 0075 — story 0073 (Phase 5/6 notes).

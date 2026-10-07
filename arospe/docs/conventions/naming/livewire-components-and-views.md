@@ -75,9 +75,10 @@ Note: `resources/views/livewire/auth/*.blade.php` (login, register, forgot-passw
 
 ### Shared anonymous Blade components carry a consumer contract (story 0071)
 
-[`resources/views/components/language-tab-strip.blade.php`](../../../resources/views/components/language-tab-strip.blade.php) is the first **shared anonymous component whose behaviour belongs to its consumer**: it renders the tab headers and error markers (`<x-language-tab-strip :languages :active :error-language-ids />`) but emits `wire:click="setActiveLanguageTab(<id>)"`, so the consuming Livewire component **must expose `setActiveLanguageTab(string $languageId)`** and render its own panels. The contract lives in the component's header comment, not in a trait or interface.
+[`resources/views/components/language-tab-strip.blade.php`](../../../resources/views/components/language-tab-strip.blade.php) is the first **shared anonymous component whose behaviour belongs to its consumer** (consumers: `ProductCategories\Index` since story 0071, `BlogCategories\Index` since story 0073): it renders the tab headers and error markers (`<x-language-tab-strip :languages :active :error-language-ids />`) but emits `wire:click="setActiveLanguageTab(<id>)"`, so the consuming Livewire component **must expose `setActiveLanguageTab(string $languageId)`** and render its own panels. The contract lives in the component's header comment, not in a trait or interface.
 
 - ✅ A kebab-case file in `resources/views/components/`, props declared with `@props`, the consumer's required method and hook obligations documented in a `{{-- --}}` header, and the id embedded with `Js::from()` ([`language-tab-strip.blade.php`](../../../resources/views/components/language-tab-strip.blade.php)).
 - ❌ Calling it from a component that lacks `setActiveLanguageTab()` (the click fails at runtime, not at render), or interpolating the id with `@js()` inside the template.
+- Known coupling: the strip's error-marker `aria-label` is hardcoded to `products.categories.index.tabs.error_marker`, so every consumer shows the products wording. Moving it to a neutral key or a prop is a follow-up for story 0075.
 - Panels stay the consumer's markup: each is always mounted, hidden with `x-show` (never `@if`), and carries `data-test="language-panel-{id}"`.
 

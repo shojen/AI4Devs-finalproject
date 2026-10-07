@@ -16,7 +16,6 @@
 use App\Actions\Blog\CreateBlogCategory;
 use App\Actions\Blog\DeleteBlogCategory;
 use App\Actions\Blog\RenameBlogCategory;
-use App\Concerns\BlogCategoryValidationRules;
 use App\Livewire\BlogCategories\Index;
 use App\Models\BlogCategory;
 use App\Models\BlogCategoryTranslation;
@@ -35,7 +34,7 @@ beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
 
-    StoreLanguage::factory()->default()->create();
+    $this->defaultLanguage = StoreLanguage::factory()->default()->create();
 });
 
 /**
@@ -74,6 +73,21 @@ function blogCategoriesIndexCodeWithoutComments(): string
     $source = file_get_contents((new ReflectionClass(Index::class))->getFileName());
 
     return collect(token_get_all($source))
+        ->reject(fn ($token): bool => is_array($token) && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true))
+        ->map(fn ($token): string => is_array($token) ? $token[1] : $token)
+        ->implode('');
+}
+
+/**
+ * Only `deleteCategory()`'s code, comments stripped: the hard block must arrive as an uncaught
+ * ValidationException there, while save() legitimately catches (story 0073's name re-key).
+ */
+function blogCategoriesIndexDeleteCategoryCodeWithoutComments(): string
+{
+    $method = new ReflectionMethod(Index::class, 'deleteCategory');
+    $lines = array_slice(file($method->getFileName()), $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1);
+
+    return collect(token_get_all("<?php\n".implode('', $lines)))
         ->reject(fn ($token): bool => is_array($token) && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true))
         ->map(fn ($token): string => is_array($token) ? $token[1] : $token)
         ->implode('');
@@ -189,7 +203,7 @@ test('save() in create mode is refused when blog.create is revoked after the mod
     $actor = blogCategoriesIndexTestActor();
     $this->actingAs($actor);
 
-    $component = Livewire::test(Index::class)->call('openCreateModal')->set('name', 'Guías');
+    $component = Livewire::test(Index::class)->call('openCreateModal')->set('names.'.$this->defaultLanguage->id, 'Guías');
 
     blogCategoriesIndexRevoke($actor, 'blog.create');
 
@@ -203,7 +217,7 @@ test('save() in edit mode is refused when blog.edit is revoked after the modal o
     $actor = blogCategoriesIndexTestActor();
     $this->actingAs($actor);
 
-    $component = Livewire::test(Index::class)->call('openEditModal', $category->id)->set('name', 'Novedades');
+    $component = Livewire::test(Index::class)->call('openEditModal', $category->id)->set('names.'.$this->defaultLanguage->id, 'Novedades');
 
     blogCategoriesIndexRevoke($actor, 'blog.edit');
 
@@ -233,8 +247,8 @@ test('a Super Admin holding zero permission rows can create, rename and delete',
     $category = BlogCategory::factory()->named('Guías')->create();
 
     Livewire::test(Index::class)
-        ->call('openCreateModal')->set('name', 'Novedades')->call('save')
-        ->call('openEditModal', $category->id)->set('name', 'Guías de compra')->call('save')
+        ->call('openCreateModal')->set('names.'.$this->defaultLanguage->id, 'Novedades')->call('save')
+        ->call('openEditModal', $category->id)->set('names.'.$this->defaultLanguage->id, 'Guías de compra')->call('save')
         ->call('confirmDelete', $category->id)->call('deleteCategory')
         ->assertHasNoErrors();
 
@@ -306,11 +320,11 @@ test('creating a category with a valid name persists exactly one row, lists it a
 
     $component = Livewire::test(Index::class)
         ->call('openCreateModal')
-        ->set('name', 'Guías')
+        ->set('names.'.$this->defaultLanguage->id, 'Guías')
         ->call('save')
         ->assertHasNoErrors()
         ->assertSet('showModal', false)
-        ->assertSet('name', '');
+        ->assertSet('names', []);
 
     expect(BlogCategoryTranslation::query()->pluck('name')->all())->toBe(['Guías'])
         ->and(collect($component->get('categories'))->pluck('name')->all())->toBe(['Guías']);
@@ -322,10 +336,10 @@ test('opening the create form after an edit shows a blank field, never the previ
 
     Livewire::test(Index::class)
         ->call('openEditModal', $category->id)
-        ->assertSet('name', 'Guías')
+        ->assertSet('names.'.$this->defaultLanguage->id, 'Guías')
         ->call('closeModal')
         ->call('openCreateModal')
-        ->assertSet('name', '')
+        ->assertSet('names.'.$this->defaultLanguage->id, '')
         ->assertSet('editingCategoryId', null);
 });
 
@@ -335,9 +349,9 @@ test('an unacceptable create name is refused on the name field and adds no row',
 
     Livewire::test(Index::class)
         ->call('openCreateModal')
-        ->set('name', $invalid)
+        ->set('names.'.$this->defaultLanguage->id, $invalid)
         ->call('save')
-        ->assertHasErrors(['name'])
+        ->assertHasErrors(['names.'.$this->defaultLanguage->id])
         ->assertSet('showModal', true);
 
     expect(BlogCategory::query()->count())->toBe(1);
@@ -354,25 +368,26 @@ test('the length boundary is read from the shared constant: max accepted, max + 
     $max = BlogCategory::NAME_MAX_LENGTH;
 
     Livewire::test(Index::class)
-        ->call('openCreateModal')->set('name', str_repeat('a', $max + 1))->call('save')
-        ->assertHasErrors(['name'])
-        ->set('name', str_repeat('a', $max))->call('save')
+        ->call('openCreateModal')->set('names.'.$this->defaultLanguage->id, str_repeat('a', $max + 1))->call('save')
+        ->assertHasErrors(['names.'.$this->defaultLanguage->id])
+        ->set('names.'.$this->defaultLanguage->id, str_repeat('a', $max))->call('save')
         ->assertHasNoErrors();
 
     expect(BlogCategory::query()->count())->toBe(1);
 });
 
-test('save() validates through the injected actions, never a component-side rule', function () {
-    // D-1: the component neither composes the validation trait nor calls $this->validate().
+test('save() routes into the injected actions and holds no fold logic of its own', function () {
+    // Story 0073 (A-3) supersedes 0062's D-1: the component now composes the validation trait and
+    // validates the per-language `names.*` keys, so the old "no trait, no ->validate(" assertions
+    // are gone. What stays is the part still true: the writes go through the actions and the fold
+    // is never re-implemented here (it is reached only through NormalizeForSearch).
     $injected = collect((new ReflectionMethod(Index::class, 'save'))->getParameters())
         ->map(fn (ReflectionParameter $parameter): string => $parameter->getType()->getName())
         ->all();
 
     expect($injected)->toContain(CreateBlogCategory::class)
         ->toContain(RenameBlogCategory::class)
-        ->and(class_uses(Index::class))->not->toContain(BlogCategoryValidationRules::class)
         ->and(blogCategoriesIndexCodeWithoutComments())
-        ->not->toContain('->validate(')
         ->not->toContain('Str::lower')
         ->not->toContain('Str::ascii');
 });
@@ -387,10 +402,10 @@ test('renaming a category to a free name updates the row and closes the modal', 
 
     $component = Livewire::test(Index::class)
         ->call('openEditModal', $category->id)
-        ->assertSet('name', 'Guías')
+        ->assertSet('names.'.$this->defaultLanguage->id, 'Guías')
         ->assertSet('editingCategoryId', $category->id)
         ->assertSet('showModal', true)
-        ->set('name', 'Guías de compra')
+        ->set('names.'.$this->defaultLanguage->id, 'Guías de compra')
         ->call('save')
         ->assertHasNoErrors()
         ->assertSet('showModal', false);
@@ -415,9 +430,9 @@ test('renaming a category onto another category\'s exact name is refused and the
 
     Livewire::test(Index::class)
         ->call('openEditModal', $other->id)
-        ->set('name', 'Guías')
+        ->set('names.'.$this->defaultLanguage->id, 'Guías')
         ->call('save')
-        ->assertHasErrors(['name'])
+        ->assertHasErrors(['names.'.$this->defaultLanguage->id])
         ->assertSet('showModal', true);
 
     expect($other->fresh()->translated('name'))->toBe('Novedades');
@@ -436,7 +451,7 @@ test('the id feeding the uniqueness exclusion is server-authoritative: a forged 
 
     expect(fn () => $component->set('editingCategoryId', $b->id))->toThrow(CannotUpdateLockedPropertyException::class);
 
-    $component->set('name', 'Renombrada')->call('save');
+    $component->set('names.'.$this->defaultLanguage->id, 'Renombrada')->call('save');
 
     expect($a->fresh()->translated('name'))->toBe('Renombrada')->and($b->fresh()->translated('name'))->toBe('Beta');
 });
@@ -446,7 +461,7 @@ test('saving an edit for a category deleted in the meantime fails cleanly rather
     $category = BlogCategory::factory()->create();
     $this->actingAs(blogCategoriesIndexTestActor());
 
-    $component = Livewire::test(Index::class)->call('openEditModal', $category->id)->set('name', 'x');
+    $component = Livewire::test(Index::class)->call('openEditModal', $category->id)->set('names.'.$this->defaultLanguage->id, 'x');
     $category->delete();
 
     expect(fn () => $component->call('save'))->toThrow(ModelNotFoundException::class);
@@ -458,7 +473,7 @@ test('closing the modal clears a stale name error so it cannot leak into the nex
     $this->actingAs(blogCategoriesIndexTestActor());
 
     Livewire::test(Index::class)
-        ->call('openCreateModal')->set('name', '')->call('save')->assertHasErrors(['name'])
+        ->call('openCreateModal')->set('names.'.$this->defaultLanguage->id, '')->call('save')->assertHasErrors(['names.'.$this->defaultLanguage->id])
         ->call('closeModal')->assertHasNoErrors()
         ->call('openEditModal', $category->id)->assertHasNoErrors();
 });
@@ -524,15 +539,15 @@ test('the two modals reset only their own error key: closeModal() leaves the blo
     $this->actingAs(blogCategoriesIndexTestActor());
 
     Livewire::test(Index::class)
-        ->call('openCreateModal')->set('name', '')->call('save')->assertHasErrors(['name'])
+        ->call('openCreateModal')->set('names.'.$this->defaultLanguage->id, '')->call('save')->assertHasErrors(['names.'.$this->defaultLanguage->id])
         ->call('confirmDelete', $blocked->id)->call('deleteCategory')->assertHasErrors(['blogCategoryId'])
         ->call('closeModal')
-        ->assertHasNoErrors(['name'])
+        ->assertHasNoErrors(['names.'.$this->defaultLanguage->id])
         ->assertHasErrors(['blogCategoryId'])
-        ->call('openCreateModal')->set('name', '')->call('save')->assertHasErrors(['name'])
+        ->call('openCreateModal')->set('names.'.$this->defaultLanguage->id, '')->call('save')->assertHasErrors(['names.'.$this->defaultLanguage->id])
         ->call('closeDeleteModal')
         ->assertHasNoErrors(['blogCategoryId'])
-        ->assertHasErrors(['name']);
+        ->assertHasErrors(['names.'.$this->defaultLanguage->id]);
 });
 
 test('a blocked delete surfaces an error on the blogCategoryId key, keeps the modal open and the category alive', function () {
@@ -703,7 +718,7 @@ test('there is no force, confirm-and-proceed or reassign path -- the hard block 
 
     expect($deleteCategory->getParameters()[0]->getType()->getName())->toBe(DeleteBlogCategory::class)
         ->and(collect($deleteCategory->getParameters())->map->getName()->filter(fn (string $name): bool => str_contains(strtolower($name), 'force')))->toBeEmpty()
-        ->and(blogCategoriesIndexCodeWithoutComments())->not->toContain('catch');
+        ->and(blogCategoriesIndexDeleteCategoryCodeWithoutComments())->not->toContain('catch');
 });
 
 // =====================================================================
@@ -781,7 +796,7 @@ test('every refusal this component raises writes exactly one warning with target
     'openCreateModal' => ['create', 'blog.create', fn ($c, $t, $phase) => $phase === 'refuse' ? $c->call('openCreateModal') : null],
     'openEditModal' => ['update', 'blog.edit', fn ($c, $t, $phase) => $phase === 'refuse' ? $c->call('openEditModal', $t->id) : null],
     'confirmDelete' => ['delete', 'blog.delete', fn ($c, $t, $phase) => $phase === 'refuse' ? $c->call('confirmDelete', $t->id) : null],
-    'save (create)' => ['create', 'blog.create', fn ($c, $t, $phase) => $phase === 'arrange' ? $c->call('openCreateModal')->set('name', 'x') : $c->call('save')],
+    'save (create)' => ['create', 'blog.create', fn ($c, $t, $phase) => $phase === 'arrange' ? $c->call('openCreateModal')->set('names.'.StoreLanguage::query()->where('is_default', true)->value('id'), 'x') : $c->call('save')],
     'save (edit)' => ['update', 'blog.edit', fn ($c, $t, $phase) => $phase === 'arrange' ? $c->call('openEditModal', $t->id) : $c->call('save')],
     'deleteCategory' => ['delete', 'blog.delete', fn ($c, $t, $phase) => $phase === 'arrange' ? $c->call('confirmDelete', $t->id) : $c->call('deleteCategory')],
 ]);

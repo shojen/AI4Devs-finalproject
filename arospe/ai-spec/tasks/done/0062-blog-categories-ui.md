@@ -23,7 +23,7 @@ false.** Two later stories change the schema this screen reads:
   moves both into a `blog_category_translations` child table, one row per store language, read
   through `BlogCategory::translated('name')`. Uniqueness moves with them, re-scoped to
   `UNIQUE(store_language_id, normalized_name)` (its **D-1**).
-- **[0073 — Blog Categories screen, language tabs](../0073-blog-categories-language-tabs-ui.md)** is the
+- **[0073 — Blog Categories screen, language tabs](0073-blog-categories-language-tabs-ui.md)** is the
   UI half: it replaces this screen's single `name` input with **one name input per active store
   language** behind 0071's shared `<x-language-tab-strip>`, adds the backend action
   `App\Actions\Blog\SetBlogCategoryTranslation`, and **owns the replacement list query** (its
@@ -314,7 +314,7 @@ is a registry key.
 >
 > ⚠️ **Correction, 2026-08-30 — the `lang/{en,es}/blog.php` collision is now FOUR stories, not two.**
 > [0063](0063-blog-posts-list-editor-ui.md) appends its own group, and
-> [0073](../0073-blog-categories-language-tabs-ui.md) appends a `categories.index.tabs.*` group to this
+> [0073](0073-blog-categories-language-tabs-ui.md) appends a `categories.index.tabs.*` group to this
 > screen's own block. 0073 carries the four-story form of this fence and notes it is *"the worse of
 > the two"* such collisions in flight (the other being `lang/*/products.php` at three). The rule is
 > unchanged and simply binds more widely: **none of the four may be dispatched in the same batch.**
@@ -435,7 +435,7 @@ class Index extends Component
 }
 ```
 
-> ⚠️ **Correction, 2026-08-30 — [0073](../0073-blog-categories-language-tabs-ui.md) supersedes part of this surface, and its own file records that it *"supersedes 0062's committed surface rather than extending it"* (its **R-1**).** What this file declares stays correct for this story's own delivery; the table records what 0073 changes.
+> ⚠️ **Correction, 2026-08-30 — [0073](0073-blog-categories-language-tabs-ui.md) supersedes part of this surface, and its own file records that it *"supersedes 0062's committed surface rather than extending it"* (its **R-1**).** What this file declares stays correct for this story's own delivery; the table records what 0073 changes.
 >
 > | Declared above | After 0073 |
 > | --- | --- |
@@ -530,7 +530,7 @@ public function save(CreateBlogCategory $createBlogCategory, RenameBlogCategory 
 ```
 
 > ⚠️ **Correction, 2026-08-30 — `save()` grows a second write path and an error-key adapter in
-> [0073](../0073-blog-categories-language-tabs-ui.md) **D-8**.** The shape above stays the **default
+> [0073](0073-blog-categories-language-tabs-ui.md) **D-8**.** The shape above stays the **default
 > store language's** half and is not rewritten; three things are added around it.
 >
 > 1. **A per-language write.** Every *non*-default language whose tab was filled goes through the new
@@ -603,7 +603,7 @@ no grouping) *plus* 0025's count column and blocked-delete modal.
 - **Create/edit modal** — one `flux:input` bound to `name`, its inner content wrapped in
   `@if ($showModal)` so only one "Cancel" control is ever in the DOM (the pattern
   `users.blade.php` / `roles.blade.php` / `sales-regions.blade.php` all use).
-  ⚠️ **The single field is superseded by [0073](../0073-blog-categories-language-tabs-ui.md)** — see the
+  ⚠️ **The single field is superseded by [0073](0073-blog-categories-language-tabs-ui.md)** — see the
   correction under the hook table below. The `@if ($showModal)` wrapper is **not** superseded and must
   survive the rewrite.
 - **Delete-confirmation modal** — names the target via `$deletingCategoryName`, wrapped in
@@ -656,7 +656,7 @@ the enabled and the disabled branch so a test selects the same control either wa
 | `sidebar-group-blog`, `sidebar-link-blog_categories` | rendered by `<x-sidebar-nav />` from the registry keys — nothing to author |
 
 > ⚠️ **Correction, 2026-08-30 — the create/edit modal stops being a single-field form, and one hook is
-> renamed.** [0073](../0073-blog-categories-language-tabs-ui.md) replaces the one `flux:input` with
+> renamed.** [0073](0073-blog-categories-language-tabs-ui.md) replaces the one `flux:input` with
 > **0071's shared `<x-language-tab-strip>` plus one panel — and one name input — per *active* store
 > language**, the default language's tab selected on open. Four consequences for this section:
 >
@@ -711,7 +711,7 @@ consistency" edit does not introduce one.
 4. **`public string $name = '';`, never `?string`** — the rule that no `wire:model`-bound property is
    ever `null` binds regardless of control type.
    ⚠️ **Correction, 2026-08-30:** the *property* is replaced by `public array $names` in
-   [0073](../0073-blog-categories-language-tabs-ui.md) **D-2**, and **the rule survives one level down** —
+   [0073](0073-blog-categories-language-tabs-ui.md) **D-2**, and **the rule survives one level down** —
    every active language gets a real `''` entry at modal-open and **no value in `$names` is ever
    `null`**, which 0073 records as extending this repo's never-`null`-bound-property rule from scalars
    to array **values**. So this trap does not stop applying; its subject moves.
@@ -729,7 +729,7 @@ consistency" edit does not introduce one.
 
 1. **No `null`-property / native-`<select>` trap.** There is no `<select>` anywhere on this screen —
    one text input, nothing else. (Rule 4 above still holds, for the ordinary reason.)
-   ⚠️ **Correction, 2026-08-30:** after [0073](../0073-blog-categories-language-tabs-ui.md) it is **N text
+   ⚠️ **Correction, 2026-08-30:** after [0073](0073-blog-categories-language-tabs-ui.md) it is **N text
    inputs, one per active store language** — but the conclusion is unchanged, because **there is still
    no `<select>`**: 0073's tabs are driven by `$activeLanguageId` through an `@if`, deliberately not by
    a bound `<select>`, which is what keeps this trap structurally inapplicable rather than merely
@@ -757,7 +757,7 @@ into the same shared rule** and that the outcome **renders**.
       and catches a developer adapting `ProductCategories\Index` who reaches for
       `withCount('products')` against a relation that does not exist here.
 
-> ⚠️ **Correction, 2026-08-30 — both cases above survive [0072](0072-translatable-content-retrofit-blog-categories-backend.md)/[0073](../0073-blog-categories-language-tabs-ui.md) in intent but not in fixture, and 0073 owns the edit.** The ordering test keeps its *"why it can fail"* reasoning verbatim — nothing in the schema enforces order, only the query does — but the ordering it asserts is produced by a **PHP `sortBy(translated('name'))`** rather than by `orderBy('name')`, so its arrangement must create *translations* rather than set a `name` column. The row-shape test's `name` becomes **`?string`**, and it gains a case a `string` shape could not express: a category with **no** default-language translation exposes `name => null` and renders an em dash. 0073's Modify table names `tests/Feature/Blog/BlogCategoriesIndexTest.php` and scopes its edit to *"only where its own cases assert against the dropped `name` column"* — these two are that set.
+> ⚠️ **Correction, 2026-08-30 — both cases above survive [0072](0072-translatable-content-retrofit-blog-categories-backend.md)/[0073](0073-blog-categories-language-tabs-ui.md) in intent but not in fixture, and 0073 owns the edit.** The ordering test keeps its *"why it can fail"* reasoning verbatim — nothing in the schema enforces order, only the query does — but the ordering it asserts is produced by a **PHP `sortBy(translated('name'))`** rather than by `orderBy('name')`, so its arrangement must create *translations* rather than set a `name` column. The row-shape test's `name` becomes **`?string`**, and it gains a case a `string` shape could not express: a category with **no** default-language translation exposes `name => null` and renders an em dash. 0073's Modify table names `tests/Feature/Blog/BlogCategoriesIndexTest.php` and scopes its edit to *"only where its own cases assert against the dropped `name` column"* — these two are that set.
 
 *Create*
 - [x] A valid name persists exactly one row and the modal closes.
@@ -857,7 +857,7 @@ into the same shared rule** and that the outcome **renders**.
 - [x] The create/edit modal contains exactly one input and **no `<select>` markup** — a cheap guard
       against a stray element copy-pasted in from the Users view.
       ⚠️ **Correction, 2026-08-30:** the *"exactly one input"* half is falsified by
-      [0073](../0073-blog-categories-language-tabs-ui.md) — the modal holds **one input per active store
+      [0073](0073-blog-categories-language-tabs-ui.md) — the modal holds **one input per active store
       language** — and 0073 lists this file's superseded cases in its own **R-1**. The **`<select>`**
       half is unaffected and should be kept: 0073 adds tabs but deliberately no `<select>`, so this
       remains a live guard rather than a stale one. Re-express the count as *N inputs for N active
@@ -967,7 +967,7 @@ links to, or shares anything with the product taxonomy.
 - [x] Saving a category under its own unchanged name is accepted.
 
 > ⚠️ **Correction, 2026-08-30 — three of the criteria above are superseded by
-> [0073](../0073-blog-categories-language-tabs-ui.md), which states in its own **R-1** that it
+> [0073](0073-blog-categories-language-tabs-ui.md), which states in its own **R-1** that it
 > *"supersedes 0062's committed contract"* and that Phase 2 must accept the amendments explicitly
 > rather than discover them at implementation.**
 >
@@ -1005,7 +1005,7 @@ links to, or shares anything with the product taxonomy.
 > is therefore untouched by [0072](0072-translatable-content-retrofit-blog-categories-backend.md)
 > dropping both. Verified against both later stories rather than assumed: 0072's *"Deliberately not
 > touched"* list names `app/Actions/Blog/DeleteBlogCategory.php` as **untouched**, and
-> [0073](../0073-blog-categories-language-tabs-ui.md) lists the delete-confirmation modal, its
+> [0073](0073-blog-categories-language-tabs-ui.md) lists the delete-confirmation modal, its
 > `blogCategoryId` error key and the post-count column under its own *"Deliberately not touched"*
 > table, requiring **one regression assertion** proving the blocked-delete refusal still renders —
 > precisely because it rewrites the file containing it.
@@ -1317,7 +1317,7 @@ links to, or shares anything with the product taxonomy.
 > - **[0072](0072-translatable-content-retrofit-blog-categories-backend.md)** retrofits the table this
 >   screen reads, dropping `blog_categories.name` / `normalized_name`. Its **R-1** names this file's
 >   `orderBy('name')` and its `{id, name, …}` row shape as breakage it **explicitly declines to fix**.
-> - **[0073](../0073-blog-categories-language-tabs-ui.md)** is the paired UI story and **owns the fix**
+> - **[0073](0073-blog-categories-language-tabs-ui.md)** is the paired UI story and **owns the fix**
 >   (its **Q-2**, resolved 2026-08-30 by analogy with 0071's **Q-3**). It also depends on **0071** for
 >   the shared `<x-language-tab-strip>`, giving the strict order
 >   **0058 → 0061 → 0062 → 0068 → 0070 → 0071 → 0072 → 0073**.
