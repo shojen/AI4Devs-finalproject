@@ -44,6 +44,10 @@ was never implemented — nothing in `app/` writes `PaymentStatus::Paid`, so no 
 (0083 edits the orders *list* view; 0085 the *detail* view), so no `conflict_risk_with` entries. Pending count moves from 13 to 15
 numbered files; `done/` unchanged at 92.
 
+**Update (2026-10-08): `0073-blog-categories-language-tabs-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** -- the eighth Epic 5 story to close. Its node, its `tasks-status.json` entry (the `claimed` one) and its `claimed` class membership are dropped because the task is closed; it joins the flat `done/` inventory (97 -> 98). It had no pending dependent (`0075`/`0079` name the shared strip from 0071, not this story), so no other task's `depends_on`/`status` changes; `0073` is removed from every `conflict_risk_with` list. Link-integrity check, both directions: same-depth move, so the file's own outbound links still resolve unchanged; inbound links were repointed from `../in-progress/0073-...` to the bare sibling in `done/0062` (13) and `done/0063` (2). `ai-spec/tasks/in-progress/` is empty again.
+
+**Update (2026-10-07): `0073-blog-categories-language-tabs-ui.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 3 step 0, claimed by `worktree-0073-blog-categories-language-tabs-ui`). It is still pending work, so it keeps its node; its node moves from the green `ready` class to the blue `claimed` class, and its `tasks-status.json` entry becomes `"claimed"` with `depends_on` still empty and `touches` widened to the story's *Files to create/modify* set. The link-integrity check ran both directions: the moved file's 35 outbound relative links were repointed one level deeper (`](done/…)` to `](../done/…)`, `](../../docs/…)` to `](../../../docs/…)`, the bare `](0074-…md)` to `](../0074-…md)`) and all resolve; inbound links were repointed (`](../0073-…md)` to `](../in-progress/0073-…md)`) in `done/0062` (13) and `done/0063` (2); `0075` only mentions the file name in prose (no link), and `0074`/`0077`/`0079` and the digests hold no link to it. `ai-spec/tasks/in-progress/` holds exactly this one file. Counts unchanged.
+
 **Update (2026-10-07): `0072-translatable-content-retrofit-blog-categories-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** -- the seventh Epic 5 story to close. Its node, its `P0072 --> P0073` edge and its `tasks-status.json` entry (the `claimed` one) are dropped because the task is closed; it joins the flat `done/` inventory. Its one dependent `0073` drops `"0072"` from `depends_on` and moves from `blocked` to `ready` (its only pending dependency); `0072` is removed from every `conflict_risk_with` list. Link-integrity check, both directions: same-depth move, so the file's own outbound links lost their `../done/` prefix (bare siblings) and all resolve; inbound links were repointed from `in-progress/0072-...` to `done/0072-...` in `0073` (3) and from `../in-progress/0072-...` to the bare sibling in `done/0062` (5) and `done/0063` (1). `ai-spec/tasks/in-progress/` is empty again.
 
 **Update (2026-10-07): `0072-translatable-content-retrofit-blog-categories-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 3 step 0, claimed by `worktree-0072`). It is still pending work, so it keeps its node and edge (`P0072 --> P0073`); its node moves from the green `ready` class to the blue `claimed` class, and its `tasks-status.json` entry stays `"claimed"` (live claim carried forward, nothing dropped) with `depends_on` still empty and `touches` widened to the real write set (the three Livewire screens read the dropped column, story D-14). The link-integrity check ran both directions: the moved file's 21 outbound links were repointed one level deeper (`](done/…)` to `](../done/…)`, `](../../docs/…)` and `](../../database/…)` to `](../../../…)`), and inbound links were repointed in `0073` (`](0072-…md)` to `](in-progress/0072-…md)`) and in `done/0062`, `done/0063` (`](../0072-…md)` to `](../in-progress/0072-…md)`); a grep found no other inbound links. `ai-spec/tasks/in-progress/` holds exactly this one file. Counts unchanged: pending numbered files and `done/` as before.
@@ -358,8 +362,8 @@ graph and from the parallelization analysis below.
 ## Table of contents
 
 - [Inventory](#inventory)
-  - [Done (96) — shipped, out of scope for this graph](#done-96--shipped-out-of-scope-for-this-graph)
-  - [Pending — not started (12 numbered + 1 infra doc)](#pending--not-started-12-numbered--1-infra-doc)
+  - [Done (98) — shipped, out of scope for this graph](#done-98--shipped-out-of-scope-for-this-graph)
+  - [Pending — not started (10 numbered + 1 infra doc)](#pending--not-started-10-numbered--1-infra-doc)
 - [Dependency graph (pending tasks only)](#dependency-graph-pending-tasks-only)
 - [Analysis](#analysis)
   - [Pending tasks that are independent of each other and safe to parallelize](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
@@ -369,7 +373,7 @@ graph and from the parallelization analysis below.
 
 ## Inventory
 
-### Done (97) — shipped, out of scope for this graph
+### Done (98) — shipped, out of scope for this graph
 
 Already merged into `main`/`finalproject-ARP` and closed via the workflow's Phase 7; see
 [`ai-spec/tasks/done/`](tasks/done/) for each story's full file. Listed here only as IDs, grouped
@@ -438,7 +442,7 @@ appears as a node in the dependency graph below:
   0055 — Orders list + detail/editor UI, the eighteenth story to close and the epic's terminal node:
   nothing named it as a hard dependent, so its closure re-derives no `depends_on`/`status` change
   against this pending list.
-- **Epic 5 — Internationalization (5):** 0071 — Product Categories taxonomy screen language tabs (frontend), the sixth Epic 5 story to close (2026-10-07): ships the shared `<x-language-tab-strip>`; its dependents 0073/0075/0079 drop it from `depends_on`. 0067 — Admin UI language switcher (frontend), the fourth Epic 5 story to close (2026-10-02): the first personal-language control (account-menu switcher plus a Settings Language tab); it had no hard dependent, and its only pairing, `0069`, drops it from `conflict_risk_with`. 0068 — Store Languages catalog + the app's two
+- **Epic 5 — Internationalization (6):** 0073 — Blog Categories screen language tabs (frontend), the eighth Epic 5 story to close (2026-10-08): per-language names through tabs, no pending dependent. 0071 — Product Categories taxonomy screen language tabs (frontend), the sixth Epic 5 story to close (2026-10-07): ships the shared `<x-language-tab-strip>`; its dependents 0073/0075/0079 drop it from `depends_on`. 0067 — Admin UI language switcher (frontend), the fourth Epic 5 story to close (2026-10-02): the first personal-language control (account-menu switcher plus a Settings Language tab); it had no hard dependent, and its only pairing, `0069`, drops it from `conflict_risk_with`. 0068 — Store Languages catalog + the app's two
   default-locale settings, the first Epic 5 story to close, and the root of the entire i18n chain.
   Its two dependents that had it as their *only* pending dependency — 0066 (Admin UI locale
   preference backend) and 0070 (translatable-content mechanism backend) — move from `blocked` to
@@ -483,12 +487,11 @@ appears as a node in the dependency graph below:
   0084 — Order mark as paid (backend), closed 2026-10-02: adds `MarkOrderAsPaid` and the `order_payments` table; its one
   dependent, 0085, drops it and moves to `ready`.
 
-### Pending — not started (11 numbered + 1 infra doc)
+### Pending — not started (10 numbered + 1 infra doc)
 
 | ID | Title | Epic area |
 | --- | --- | --- |
 | 0072 | Translatable content retrofit — Blog Categories backend | Epic 5 — i18n |
-| 0073 | Blog Categories screen — language tabs | Epic 5 — i18n |
 | 0074 | Translatable content retrofit — Blog Tags backend | Epic 5 — i18n |
 | 0075 | Blog Tags screen — language tabs | Epic 5 — i18n |
 | 0076 | Translatable content retrofit — Products backend | Epic 5 — i18n |
@@ -529,7 +532,6 @@ flowchart LR
 
     subgraph PEND_I18N["Epic 5 — Internationalization"]
         direction TB
-        P0073["0073 Blog Categories i18n UI"]
         P0074["0074 Blog Tags retrofit BE"]
         P0075["0075 Blog Tags i18n UI"]
         P0076["0076 Products retrofit BE"]
@@ -609,7 +611,8 @@ flowchart LR
     %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
     class P0075,P0077,P0079 pending;
-    class P0073,P0074,P0076,P0078 ready;
+    class P0074,P0076,P0078 ready;
+    %% (P0073 closed to done/ 2026-10-08; no node remains `claimed`.)
     %% (P0071 --> P0073/P0075/P0079 dropped: 0071 closed to done/ 2026-10-07.)
 ```
 
@@ -759,7 +762,7 @@ parallelization one. The major chains, in the order they must be executed:
    ```text
    0069                         (Store Languages settings UI; its only dependency, 0066, is `done/`)
    0071                         (Product Categories i18n UI; its only former dependency, 0070, is `done/`)
-   0071 → 0072 → 0073          (Blog Categories retrofit + i18n UI; 0062 and 0070 are `done/`)
+   0073                         (Blog Categories i18n UI; closed to `done/` 2026-10-08, no longer pending)
    0063 → 0074 → 0075          (Blog Tags retrofit + i18n UI, 0075 also
                                                               needs 0071's shared <x-language-tab-strip>)
    0076 → 0077                                (Products retrofit + i18n UI — 0024, the
@@ -836,7 +839,7 @@ in [`ai-spec/tasks-status.json`](tasks-status.json):
   [`docs/errors-log.md`](../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
   states explicitly). This map inherits that caveat: **before actually starting a pending story,
   re-verify its own "Dependencies" section against `HEAD` rather than trusting this snapshot**,
-  especially for any story more than a few positions deep in a chain (0073 and 0079 in particular
+  especially for any story more than a few positions deep in a chain (0079 in particular
   chain through seven or more prerequisites each — 0055's own seven-story Orders chain, once the
   deepest in this backlog, closed out entirely as of this pass).
 - **One dependency in this map is already stale as written and is called out here rather than
