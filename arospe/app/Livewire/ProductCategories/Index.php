@@ -7,23 +7,29 @@ use App\Actions\NormalizeForSearch;
 use App\Actions\ProductCategories\CreateProductCategory;
 use App\Actions\ProductCategories\DeleteProductCategory;
 use App\Actions\ProductCategories\RenameProductCategory;
+use App\Actions\ProductCategories\SetProductCategoryTranslation;
 use App\Actions\Translations\CompareTranslatedNames;
 use App\Concerns\ProductCategoryValidationRules;
 use App\Models\ProductCategory;
+use App\Models\ProductCategoryTranslation;
 use App\Models\StoreLanguage;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 /**
  * Product categories management screen: list, create/edit modal, blocked
- * delete (story 0025). This is the first and only call site of
- * ProductCategoryPolicy and the three App\Actions\ProductCategories\*
- * actions -- it owns the whole client surface (component, route, view,
- * sidebar entry, copy), consuming 0023's model/actions/policy and 0024b's
- * delete guard exactly as App\Livewire\Users\Index consumes
- * app/Actions/Users/*.
+ * delete (story 0025), with the name authored per active store language
+ * through language tabs (story 0071). This is the first and only call site of
+ * ProductCategoryPolicy and the App\Actions\ProductCategories\* actions -- it
+ * owns the whole client surface (component, route, view, sidebar entry,
+ * copy), consuming 0023's model/actions/policy and 0024b's delete guard
+ * exactly as App\Livewire\Users\Index consumes app/Actions/Users/*.
  *
  * Access is gated on `products.view` (route middleware, `mount()`), with
  * per-action checks for `products.create` / `products.edit` /
@@ -31,8 +37,14 @@ use Livewire\Component;
  * method, since Livewire 4's `PersistentMiddleware` allowlist does not
  * carry Spatie's `permission:` middleware -- see
  * docs/architecture/authorization.md. Every gate is defence in depth on
- * top of the identical gate each of the three actions now performs as its
- * own first statement.
+ * top of the identical gate each of the actions performs as its own first
+ * statement.
+ *
+ * Writing a non-default language's name goes ONLY through
+ * SetProductCategoryTranslation, which authorizes and validates on its own (D-4);
+ * the unguarded SetTranslation primitive must never be imported here.
+ *
+ * @property-read Collection<int, StoreLanguage> $languages
  */
 #[Title('Product categories')]
 class Index extends Component
@@ -64,13 +76,39 @@ class Index extends Component
     public bool $showModal = false;
 
     /**
-     * The only form field. Never `?string` -- a bound property should
-     * carry an empty value in the type the DOM expects (this modal holds a
-     * single text input and no `<select>`, so the null-property/native-
-     * `<select>` desync trap does not apply here, but the rule is followed
-     * anyway).
+     * One name per active store language, keyed by store_language_id (story 0071). '' means
+     * "not typed" -- never null, so each bound text input holds the type the DOM expects.
+     * Deliberately unlocked (D-3): nothing reads it for a decision -- save() iterates the active
+     * languages queried from the database, never the keys of this array, so a forged key is
+     * ignored. Typed `mixed` for the analyser only: a client can forge a non-string value, which
+     * save() normalises to '' before anything reads it.
+     *
+     * @var array<string, mixed>
      */
-    public string $name = '';
+    public array $names = [];
+
+    /**
+     * The language ids this category already held a translation in when the modal opened. Locked
+     * because it feeds D-7's conditional-requiredness branch: a forged value would let an actor
+     * blank an existing translation without tripping the blank-is-refused rule.
+     *
+     * @var array<int, string>
+     */
+    #[Locked]
+    public array $originalTranslatedLanguageIds = [];
+
+    /**
+     * The tab currently shown; overwritten to a real language id when the modal opens. Never
+     * binds a <select> -- it only drives an x-show comparison.
+     */
+    public string $activeLanguageId = '';
+
+    /**
+     * UI hint only (B-1): false in create mode for an actor lacking products.edit, so the
+     * non-default name inputs render disabled. Enforcement is save()'s own logged check.
+     */
+    #[Locked]
+    public bool $canAuthorTranslations = true;
 
     public bool $showDeleteModal = false;
 
@@ -104,7 +142,48 @@ class Index extends Component
     }
 
     /**
-     * Open the create-category form with an empty field.
+     * The active store languages, one tab each (D-14): the store default first, then the rest by
+     * name. Queried once per request.
+     *
+     * @return Collection<int, StoreLanguage>
+     */
+    #[Computed]
+    public function languages(): Collection
+    {
+        return StoreLanguage::query()
+            ->active()
+            ->orderByDesc('is_default')
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * Switch the visible language tab.
+     *
+     * Deliberately no Gate check (D-4): switching a tab discloses nothing the open modal does not
+     * already hold. The id is resolved against the ACTIVE languages with findOrFail(), so a
+     * forged unknown or inactive id fails and leaves the current tab unchanged.
+     */
+    public function setActiveLanguageTab(string $languageId): void
+    {
+        $language = StoreLanguage::query()->active()->findOrFail($languageId);
+
+        $this->activeLanguageId = $language->id;
+    }
+
+    /**
+     * Map every `names.<id>` key to the localized "name" (N-1), so validation messages never
+     * show the internal key.
+     *
+     * @return array<string, string>
+     */
+    protected function validationAttributes(): array
+    {
+        return ['names.*' => __('products.categories.index.tabs.name_attribute')];
+    }
+
+    /**
+     * Open the create-category form with one empty field per active language.
      *
      * Authorizes as its first statement -- a disclosure/UI-opening path,
      * not only the mutating save(), per
@@ -115,12 +194,19 @@ class Index extends Component
     {
         $logRefusedPrivilegedAttempt->authorize('create', ProductCategory::class, targetType: 'product_category');
 
-        $this->reset(['editingCategoryId', 'name']);
+        $this->reset(['editingCategoryId', 'names', 'originalTranslatedLanguageIds']);
+        $this->resetValidation();
+
+        $this->names = $this->languages
+            ->mapWithKeys(fn (StoreLanguage $language): array => [$language->id => ''])
+            ->all();
+        $this->activeLanguageId = (string) $this->languages->first()?->id;
+        $this->canAuthorTranslations = Gate::allows('update', new ProductCategory);
         $this->showModal = true;
     }
 
     /**
-     * Open the edit form prefilled with the target category's current name.
+     * Open the edit form prefilled with the target category's own name in every active language.
      *
      * This is a Livewire method call, not route-model binding, so
      * HasUuids::resolveRouteBindingQuery()'s Str::isUuid() short-circuit
@@ -132,39 +218,60 @@ class Index extends Component
      * $categoryId argument (R-3) -- the server-authoritative id the
      * ->ignore() uniqueness rule relies on.
      *
-     * Prefills from $target->translated('name') -- with NO language argument, so it resolves the
-     * DEFAULT store language only (story 0070, D-15). No cross-language fallback can leak into
-     * the edit field: a single default-language field has nothing to fall back FROM.
+     * Each field reads the RAW translation row of its own language (D-6), never translated():
+     * the fallback would silently pre-fill an untranslated tab with another language's name.
      */
     public function openEditModal(string $categoryId, LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt): void
     {
-        $target = ProductCategory::query()->withTranslationsFor()->findOrFail($categoryId);
+        $target = ProductCategory::query()->findOrFail($categoryId);
 
         $logRefusedPrivilegedAttempt->authorize('update', $target, targetType: 'product_category', targetId: $target->id);
 
+        /** @var array<string, string> $ownNames */
+        $ownNames = ProductCategoryTranslation::query()
+            ->where('product_category_id', $target->id)
+            ->whereIn('store_language_id', $this->languages->modelKeys())
+            ->pluck('name', 'store_language_id')
+            ->all();
+
+        $this->resetValidation();
         $this->editingCategoryId = $target->id;
-        $this->name = $target->translated('name') ?? '';
+        $this->names = $this->languages
+            ->mapWithKeys(fn (StoreLanguage $language): array => [$language->id => $ownNames[$language->id] ?? ''])
+            ->all();
+        $this->originalTranslatedLanguageIds = array_map('strval', array_keys($ownNames));
+        $this->activeLanguageId = (string) $this->languages->first()?->id;
+        $this->canAuthorTranslations = true;
         $this->showModal = true;
     }
 
     /**
-     * Validate and persist the create or edit form.
+     * Validate and persist the create or edit form, one name per active store language.
      *
      * Authorization is the first statement of each branch: `create` when
      * no category is being edited, `update` (against a freshly re-resolved
      * target) otherwise -- re-checked here even though openCreateModal()/
      * openEditModal() already authorized the same operation, since a
      * permission can be revoked between opening the modal and submitting
-     * it.
+     * it. On the create branch, a non-empty non-default name additionally requires `update`
+     * (B-1), checked here -- logged, before validation and before the transaction opens -- so a
+     * forged value is refused with nothing written.
      *
-     * The default store language's id is resolved for validation, but a missing default is NOT
-     * pre-empted here (story 0070, D-15): when none exists, an empty string is passed to the
-     * rules (against which no existing translation can ever match, so uniqueness trivially
-     * passes) and CreateProductCategory/RenameProductCategory refuse legibly on their own.
+     * Layer 1 of the two-layer write guard (D-4): this method authorizes and validates the whole
+     * batch; SetProductCategoryTranslation then re-authorizes and re-validates each non-default
+     * row independently. Every value is trimmed and written back into $names (N-6), so the
+     * trimmed text is what is validated and written.
+     *
+     * Every write of the batch runs in one transaction (Q-5). A refusal from any write rolls the
+     * whole click back, switches to the refused tab and keeps every typed value. The default
+     * language's refusals arrive keyed `name` (0023's actions) and are re-keyed to
+     * `names.{defaultId}`, since Livewire drops an error whose first key segment is not a
+     * component property.
      */
     public function save(
         CreateProductCategory $createProductCategory,
         RenameProductCategory $renameProductCategory,
+        SetProductCategoryTranslation $setProductCategoryTranslation,
         NormalizeForSearch $normalizeForSearch,
         LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt,
     ): void {
@@ -177,14 +284,69 @@ class Index extends Component
             $logRefusedPrivilegedAttempt->authorize('update', $target, targetType: 'product_category', targetId: $target->id);
         }
 
-        $storeLanguageId = StoreLanguage::defaultStoreLanguage()->id ?? '';
+        $languages = $this->languages;
+        $defaultId = (string) $languages->first(fn (StoreLanguage $language): bool => (bool) $language->is_default)?->id;
 
-        $validated = $this->validate($this->productCategoryRules($normalizeForSearch, $storeLanguageId, $this->editingCategoryId));
+        foreach ($languages as $language) {
+            $value = $this->names[$language->id] ?? '';
 
-        if ($target === null) {
-            $createProductCategory((string) $validated['name']);
-        } else {
-            $renameProductCategory($target, (string) $validated['name']);
+            $this->names[$language->id] = is_string($value) ? trim($value) : '';
+        }
+
+        if ($target === null && $languages->contains(fn (StoreLanguage $language): bool => $language->id !== $defaultId && $this->names[$language->id] !== '')) {
+            $logRefusedPrivilegedAttempt->authorize('update', new ProductCategory, targetType: 'product_category');
+        }
+
+        $rules = [];
+
+        foreach ($languages as $language) {
+            $languageRules = $this->nameRules($normalizeForSearch, $language->id, $this->editingCategoryId);
+
+            if ($language->id !== $defaultId && ! in_array($language->id, $this->originalTranslatedLanguageIds, true)) {
+                $languageRules = ['nullable', ...array_values(array_filter($languageRules, fn (mixed $rule): bool => $rule !== 'required'))];
+            }
+
+            $rules['names.'.$language->id] = $languageRules;
+        }
+
+        try {
+            $this->validate($rules);
+        } catch (ValidationException $exception) {
+            $this->activeLanguageId = $this->firstErroringLanguageId($exception, $this->activeLanguageId);
+
+            throw $exception;
+        }
+
+        try {
+            DB::transaction(function () use ($languages, $defaultId, $target, $createProductCategory, $renameProductCategory, $setProductCategoryTranslation): void {
+                $defaultName = $this->names[$defaultId] ?? '';
+
+                if ($target === null) {
+                    $target = $createProductCategory($defaultName);
+                } else {
+                    $currentName = ProductCategoryTranslation::query()
+                        ->where('product_category_id', $target->id)
+                        ->where('store_language_id', $defaultId)
+                        ->value('name');
+
+                    if ($currentName !== $defaultName) {
+                        $renameProductCategory($target, $defaultName);
+                    }
+                }
+
+                foreach ($languages as $language) {
+                    if ($language->id === $defaultId || $this->names[$language->id] === '') {
+                        continue;
+                    }
+
+                    $setProductCategoryTranslation($target, $language, $this->names[$language->id]);
+                }
+            });
+        } catch (ValidationException $exception) {
+            $rekeyed = ValidationException::withMessages($this->rekeyDefaultLanguageErrors($exception, $defaultId));
+            $this->activeLanguageId = $this->firstErroringLanguageId($rekeyed, $defaultId);
+
+            throw $rekeyed;
         }
 
         $this->loadProductCategories();
@@ -192,19 +354,17 @@ class Index extends Component
     }
 
     /**
-     * Close the create/edit modal and reset its form field.
+     * Close the create/edit modal and reset its form state.
      *
-     * Also resets the 'name' validation error (Phase 4 audit finding N-3):
-     * Livewire persists the error bag across round trips, so without this a
-     * refused save's inline message would leak into the next time the
-     * create/edit modal opens, mirroring closeDeleteModal()'s identical
-     * resetErrorBag() call for the same reason.
+     * Also clears EVERY `names.*` validation error (Phase 4 audit finding N-3): Livewire
+     * persists the error bag across round trips, so without this a refused save's inline message
+     * would leak into the next time the create/edit modal opens.
      */
     public function closeModal(): void
     {
         $this->showModal = false;
-        $this->reset(['editingCategoryId', 'name']);
-        $this->resetValidation('name');
+        $this->reset(['editingCategoryId', 'names', 'originalTranslatedLanguageIds', 'activeLanguageId']);
+        $this->resetValidation();
     }
 
     /**
@@ -276,6 +436,39 @@ class Index extends Component
         $this->showDeleteModal = false;
         $this->reset(['deletingCategoryId', 'deletingCategoryName']);
         $this->resetErrorBag('productCategoryId');
+    }
+
+    /**
+     * The id of the first language (in tab order) carrying an error in the exception, or
+     * $fallback when none does.
+     */
+    private function firstErroringLanguageId(ValidationException $exception, string $fallback): string
+    {
+        $errors = $exception->errors();
+
+        foreach ($this->languages as $language) {
+            if (isset($errors['names.'.$language->id])) {
+                return $language->id;
+            }
+        }
+
+        return $fallback;
+    }
+
+    /**
+     * Re-key a `name` error from 0023's default-language actions to `names.{defaultId}`.
+     *
+     * @return array<string, array<int, string>>
+     */
+    private function rekeyDefaultLanguageErrors(ValidationException $exception, string $defaultId): array
+    {
+        $rekeyed = [];
+
+        foreach ($exception->errors() as $key => $messages) {
+            $rekeyed[$key === 'name' ? 'names.'.$defaultId : $key] = $messages;
+        }
+
+        return $rekeyed;
     }
 
     /**

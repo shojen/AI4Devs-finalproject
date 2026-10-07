@@ -28,6 +28,14 @@ return [
         // summary key (nothing in the PRD or brief asks for one, unlike users.index.summary).
         'index' => [
             'action_not_allowed' => 'Action not allowed',
+
+            // Story 0071 -- the per-language name tabs.
+            'tabs' => [
+                'name_attribute' => 'name',
+                'untranslated' => 'This category has no name in this language yet.',
+                'translation_requires_edit' => 'You need permission to edit categories to add a translation.',
+                'error_marker' => 'This language has a problem',
+            ],
         ],
     ],
 

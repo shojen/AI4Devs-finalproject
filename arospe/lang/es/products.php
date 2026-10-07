@@ -26,6 +26,14 @@ return [
         // Story 0025 -- key-for-key identical to lang/en/products.php.
         'index' => [
             'action_not_allowed' => 'Acción no permitida',
+
+            // Story 0071 -- key-for-key identical to lang/en/products.php.
+            'tabs' => [
+                'name_attribute' => 'nombre',
+                'untranslated' => 'Esta categoría aún no tiene nombre en este idioma.',
+                'translation_requires_edit' => 'Necesitas permiso para editar categorías para añadir una traducción.',
+                'error_marker' => 'Este idioma tiene un problema',
+            ],
         ],
     ],
 

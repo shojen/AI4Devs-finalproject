@@ -20,7 +20,7 @@
                     @foreach ($productCategories as $category)
                         <flux:table.row :key="$category['id']">
                             <flux:table.cell>
-                                <div class="font-medium text-zinc-800 dark:text-white">{{ ($category['name'] ?? '—') }}</div>
+                                <div class="font-medium text-zinc-800 dark:text-white" data-test="product-category-name-{{ $category['id'] }}">{{ ($category['name'] ?? '—') }}</div>
                             </flux:table.cell>
 
                             <flux:table.cell>
@@ -114,7 +114,54 @@
                 </flux:heading>
 
                 <div class="space-y-4">
-                    <flux:input wire:model="name" :label="__('Name')" required autofocus />
+                    <x-language-tab-strip
+                        :languages="$this->languages"
+                        :active="$activeLanguageId"
+                        :error-language-ids="$this->languages->pluck('id')->filter(fn ($languageId) => $errors->has('names.'.$languageId))->values()->all()"
+                    />
+
+                    {{-- D-2: every panel stays mounted and is hidden with x-show, never @if. --}}
+                    @foreach ($this->languages as $language)
+                        @php
+                            $isDefaultLanguage = (bool) $language->is_default;
+                            $isTranslationLocked = ! $isDefaultLanguage && ! $canAuthorTranslations;
+                        @endphp
+
+                        <div
+                            x-show="$wire.activeLanguageId === {{ Js::from($language->id) }}"
+                            x-cloak
+                            role="tabpanel"
+                            data-test="language-panel-{{ $language->id }}"
+                            class="space-y-2"
+                        >
+                            <flux:field>
+                                <flux:label>{{ __('Name') }}</flux:label>
+
+                                <flux:input
+                                    wire:model="names.{{ $language->id }}"
+                                    data-test="language-name-input-{{ $language->id }}"
+                                    :disabled="$isTranslationLocked"
+                                    :required="$isDefaultLanguage"
+                                />
+
+                                @error('names.'.$language->id)
+                                    <p class="text-sm font-medium text-red-500" data-test="language-name-error-{{ $language->id }}">{{ $message }}</p>
+                                @enderror
+                            </flux:field>
+
+                            @if ($editingCategoryId !== null && ! in_array($language->id, $originalTranslatedLanguageIds, true))
+                                <flux:text size="sm" data-test="language-untranslated-{{ $language->id }}">
+                                    {{ __('products.categories.index.tabs.untranslated') }}
+                                </flux:text>
+                            @endif
+
+                            @if ($isTranslationLocked)
+                                <flux:text size="sm">
+                                    {{ __('products.categories.index.tabs.translation_requires_edit') }}
+                                </flux:text>
+                            @endif
+                        </div>
+                    @endforeach
                 </div>
 
                 <div class="flex gap-3 justify-end">
