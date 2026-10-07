@@ -602,7 +602,7 @@ this story **appends an item to it**, and does not create it.
 > is not re-litigated.
 >
 > **The one narrowing:** `resources/views/components/language-tab-strip.blade.php` is
-> [**0071's**](../0071-product-categories-language-tabs-ui.md) and is **consumed, never edited, forked or
+> [**0071's**](0071-product-categories-language-tabs-ui.md) and is **consumed, never edited, forked or
 > copied** — by 0073, 0075, 0077 and 0079 alike. It does not appear in either table above because it
 > did not exist when this file was written; add it to the *not touched* list mentally, owned by 0071.
 >
@@ -2006,7 +2006,7 @@ requiring PHP execution was verified and every such claim is flagged at its site
 > | [**0078**](../0078-translatable-content-retrofit-blog-posts-backend.md) | **hard, blocking, total**, not implemented | Drops `blog_posts.title`/`body`/`slug`. The list query, the editor's two fields, the delete modal's label and the body rules all depend on it. |
 > | [**0079**](../0079-blog-post-editor-language-tabs-ui.md) | **depends on this story**, not the reverse | It builds the language tabs *on top of* this editor and rewrites this list's query. It must land **strictly after** this story and must never be batched with it. |
 > | [**0070**](0070-translatable-content-mechanism-product-categories-backend.md) / [**0068**](0068-store-languages-catalog-backend.md) | hard, transitively | `HasTranslations`, `translated()`, `withTranslationsFor()`, `SetTranslation`, `StoreLanguage` and its `is_default` row. Consumed, never re-implemented. |
-> | [**0071**](../0071-product-categories-language-tabs-ui.md) | soft, via 0079 | Owns `<x-language-tab-strip>`, `setActiveLanguageTab()` and the two-layer pattern 0079 consumes. |
+> | [**0071**](0071-product-categories-language-tabs-ui.md) | soft, via 0079 | Owns `<x-language-tab-strip>`, `setActiveLanguageTab()` and the two-layer pattern 0079 consumes. |
 >
 > **The sequencing, strictly:** 0058 → 0059 → 0061 → **0063** → 0068 → 0070 → 0072 → 0074 → 0078 →
 > 0079, each fully closed before the next starts, with 0020/0021/0060 landing before this story as

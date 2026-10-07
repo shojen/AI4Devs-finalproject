@@ -8,7 +8,7 @@ surfaces as a tab in the Product and **Blog editors**"* and its `Switching an ed
 switches only translatable fields` scenario. Consumes story
 [0078](0078-translatable-content-retrofit-blog-posts-backend.md)'s retrofit — which **deletes the
 `blog_posts.title` and `blog_posts.body` columns this screen currently reads** — and story
-[0071](0071-product-categories-language-tabs-ui.md)'s shared tab-strip pattern, both unchanged.
+[0071](done/0071-product-categories-language-tabs-ui.md)'s shared tab-strip pattern, both unchanged.
 
 It also adds **one backend action**, `App\Actions\Blog\SetBlogPostTranslation`, so that writing a
 non-default-language translation is authorized and validated at **two independent layers** — the
@@ -1294,7 +1294,7 @@ a post's French title is neither identity-sensitive nor hard to reverse.
   **Its own hard gate — 0061's OQ-2 — is inherited here** (**R-4**).
 - **[0063](done/0063-blog-posts-list-editor-ui.md)** — hard, blocking, not implemented. The list, the routed
   editor, the routes, the registry entry and the lang files this story widens. See **R-1**.
-- **[0071](0071-product-categories-language-tabs-ui.md)** — hard. The shared strip, `setActiveLanguageTab()`,
+- **[0071](done/0071-product-categories-language-tabs-ui.md)** — hard. The shared strip, `setActiveLanguageTab()`,
   the two-layer pattern, the `x-show` rendering mode, the derived error key. **Consumed, never edited.**
 - **[0077](0077-product-editor-language-tabs-ui.md)** — soft but load-bearing. Not a code dependency;
   it is where the multi-field, routed-page, WYSIWYG-in-tabs shape was worked out, and this story adopts

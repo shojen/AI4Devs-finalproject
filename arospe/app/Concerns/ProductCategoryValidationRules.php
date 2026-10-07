@@ -82,7 +82,7 @@ trait ProductCategoryValidationRules
 
             foreach ($existingNames as $existingName) {
                 if ($normalizeForSearch($existingName) === $normalisedCandidate) {
-                    $fail(trans('validation.unique', ['attribute' => $attribute]));
+                    $fail('validation.unique')->translate();
 
                     return;
                 }

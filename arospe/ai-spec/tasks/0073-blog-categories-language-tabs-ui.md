@@ -8,7 +8,7 @@ language surfaces as a tab … in the taxonomy management screens"* and its `Tax
 translatable per store language` scenario for the **Blog category** row. Consumes story
 [0072](0072-translatable-content-retrofit-blog-categories-backend.md)'s retrofit — which **deletes
 the `blog_categories.name` column this screen currently reads** — and story
-[0071](0071-product-categories-language-tabs-ui.md)'s shared tab-strip pattern, both unchanged.
+[0071](done/0071-product-categories-language-tabs-ui.md)'s shared tab-strip pattern, both unchanged.
 
 It also adds **one backend action**, `App\Actions\Blog\SetBlogCategoryTranslation`, so that writing a
 translation is authorized and validated at **two independent layers** — the component *and* a
@@ -18,13 +18,13 @@ story by number.
 > **Read this first: this story is the *second* consumer of a pattern story 0071 established, and it
 > was reconciled against 0071 after the fact.**
 >
-> This debate began while `ai-spec/tasks/0071-product-categories-language-tabs-ui.md` **did not
+> This debate began while `ai-spec/tasks/in-progress/0071-product-categories-language-tabs-ui.md` **did not
 > exist** — verified by directory listing at the time, and corroborated by
 > [0074](0074-translatable-content-retrofit-blog-tags-backend.md)'s own Provenance, which records
 > `0071`–`0073` as absent. 0071 was written **concurrently** and landed mid-debate. Its decisions
 > were then read in full and **this file was rewritten to follow them**, because two taxonomy tab
 > screens diverging on tab mechanics, error routing and hook naming is exactly the outcome
-> [0071's **R-8**](0071-product-categories-language-tabs-ui.md) warns about ("the pattern this story
+> [0071's **R-8**](done/0071-product-categories-language-tabs-ui.md) warns about ("the pattern this story
 > sets is copied four times").
 >
 > **Four of this debate's own conclusions were overturned by 0071 and are recorded as corrections
@@ -767,7 +767,7 @@ translation is refused"* scenario hold at the UI layer, since `SetTranslation` p
 of its own. The condition is expressed in the **component**, never pushed into
 `BlogCategoryValidationRules` — "was this language translated when the modal opened" is a property of
 the *session*, not of the field, and the trait must stay reusable by 0075/0079. **Consequence,
-settled upstream:** [0071's **Q-1** was resolved on 2026-08-30 as option (a)](0071-product-categories-language-tabs-ui.md) —
+settled upstream:** [0071's **Q-1** was resolved on 2026-08-30 as option (a)](done/0071-product-categories-language-tabs-ui.md) —
 a translation, once authored, can be corrected but not removed — so this story ships no removal path
 and does not re-ask the question.
 
@@ -912,7 +912,7 @@ not survive verification.
 | **C-1** | Tabs switch **client-side (Alpine `x-show`)**; auto-switching to an erroring tab is unreliable because Livewire's morph preserves Alpine state, so rely on a per-tab marker plus a page-level callout instead. | **Server-side `$activeLanguageId`** (**D-3**), with `save()` setting it to the first erroring language. | The debate correctly identified that Alpine cannot learn *which* tab errored — and then designed around the limitation instead of removing it. 0071 removes it. The page-level callout is dropped as redundant once the offending tab is brought into view. |
 | **C-2** | Add `App\Actions\Blog\TranslateBlogCategory`, because `SetTranslation` does not authorize and a component-only gate leaves a non-dashboard caller ungated. | **Both layers**: the component authorizes and validates the batch, *and* `App\Actions\Blog\SetBlogCategoryTranslation` authorizes and validates per row (**D-8**). | ✅ **Resolved by the human on 2026-08-30** — *"everything must be controlled from both front and back for security"*. `frontend-expert`'s original instinct (**V-1**) was right about the gap and understated the remedy: the answer is not action-*instead-of*-component but **both**. 0071 **D-13** makes it the master pattern and names this story by number; only the class name changed, to 0071's prescribed `Set<Entity>Translation` form. |
 | **C-3** | `data-test` hooks key on the language **`code`** (`es`, `fr`) — stable across a fresh test database and human-legible. | Hooks key on **`{id}`**, and no assertion may match a name or code (**D-11**). | The debate missed that a two-letter code matches inside ordinary prose (`fr` in "from"/"confirm"). That is a live assertion hazard this repo has already been burned by in another form. |
-| **C-4** | The create modal offers **only the default** language; other languages after the first save. | **Every tab on create** — [0071 **Q-2**, resolved 2026-08-30 as option (a)](0071-product-categories-language-tabs-ui.md). | Resolved upstream by the product owner. PRD Epic 5 does not distinguish create from edit, and the extra languages go through `SetBlogCategoryTranslation` exactly as on edit. |
+| **C-4** | The create modal offers **only the default** language; other languages after the first save. | **Every tab on create** — [0071 **Q-2**, resolved 2026-08-30 as option (a)](done/0071-product-categories-language-tabs-ui.md). | Resolved upstream by the product owner. PRD Epic 5 does not distinguish create from edit, and the extra languages go through `SetBlogCategoryTranslation` exactly as on edit. |
 
 **What this debate contributed that 0071 does not cover**, and which is the substance of this file:
 the `normalized_name` fold reaching the UI (accent-only collisions within one language, accepted
@@ -927,7 +927,7 @@ user meets it, 0058 **D-13**'s authorize-before-validate trap (absent from 0071 
 - **[0072](0072-translatable-content-retrofit-blog-categories-backend.md)** — hard, blocking. The
   translation table, the model wiring, the re-scoped validation rule, the dropped `name` /
   `normalized_name` columns. **Specified, not implemented.**
-- **[0071](0071-product-categories-language-tabs-ui.md)** — hard, blocking. Supplies
+- **[0071](done/0071-product-categories-language-tabs-ui.md)** — hard, blocking. Supplies
   `<x-language-tab-strip>` and the `setActiveLanguageTab()` contract. ⚠️ **A new dependency this
   debate did not originally have**, and the reason 0071 must be sequenced first.
 - **[0062](done/0062-blog-categories-ui.md)** — hard, blocking. The component, view, route and sidebar

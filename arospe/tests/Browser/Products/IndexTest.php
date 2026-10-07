@@ -8,7 +8,7 @@
 // Written at TDD Phase 3 step 1 (red), before App\Livewire\Products\Index or routes/products.php
 // exist.
 //
-// SELECTOR STRATEGY, mirroring tests/Browser/ProductCategoriesIndexTest.php and
+// SELECTOR STRATEGY, mirroring tests/Browser/ProductCategories/IndexTest.php and
 // tests/Browser/UsersIndexTest.php: icon-only row actions carry data-test="edit-product-{id}" /
 // "delete-product-{id}" hooks (present on both the enabled and disabled branch, per D-16), targeted
 // with Pest's "@"-prefixed [data-test=...] shorthand; the "Nuevo producto" opener and modal controls

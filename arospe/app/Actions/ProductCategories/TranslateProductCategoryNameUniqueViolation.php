@@ -37,9 +37,10 @@ class TranslateProductCategoryNameUniqueViolation
      * $errorKey is the field the caller reports on. It is derived by the caller from its own
      * arguments (this story's two actions pass 'name'; story 0071's
      * SetProductCategoryTranslation passes "names.{$language->id}"). It never decides WHETHER
-     * the violation is a name collision.
+     * the violation is a name collision. $attributeLabel is the human-readable field name
+     * interpolated into the message, so a derived key is never shown to the user.
      */
-    public function __invoke(QueryException $e, string $errorKey = 'name'): ValidationException
+    public function __invoke(QueryException $e, string $errorKey = 'name', string $attributeLabel = 'name'): ValidationException
     {
         $isNameCollision = ($e->errorInfo[1] ?? null) === 1062
             && preg_match(
@@ -49,7 +50,7 @@ class TranslateProductCategoryNameUniqueViolation
 
         if ($isNameCollision) {
             return ValidationException::withMessages([
-                $errorKey => trans('validation.unique', ['attribute' => $errorKey]),
+                $errorKey => trans('validation.unique', ['attribute' => $attributeLabel]),
             ]);
         }
 

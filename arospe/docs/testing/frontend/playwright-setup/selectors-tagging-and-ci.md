@@ -49,6 +49,10 @@ A `<canvas>` has no DOM to select, so the Chart.js integration ([`resources/js/s
 - **The assertion surface for values is the sr-only tables** (plain text, outside the `wire:ignore` wrapper, in the DOM): assert the figures there and compare them with the chart's data. Put the `sr-only` class on a wrapper `div`, never on the `<table>` (a `display:table` sr-only element widens the page and breaks the 375 px no-horizontal-scroll check). Canvases are `aria-hidden`.
 - **Expected labels and figures are computed in PHP** from relative-to-`now()` seeds, never by asserting "today" in JavaScript. The tooltip is its own test (flake isolation); multi-step flows use `retry(3, ..., 250)` as above.
 
+## Never assert on a language name or code in a multi-language screen (story 0071)
+
+A language's display name (`English`, `Español`) and its two-letter code appear in the tab strip, the language switcher, the sidebar and flash text at once, and the default language's name changes with the UI locale, so `assertSee('Español')` matches the wrong element or passes for the wrong reason. Select and count by the id-keyed hooks instead (`language-tab-{id}`, `language-panel-{id}`, `language-name-input-{id}`, `language-name-error-{id}`; see [the tabbed modal](../../../api/products/product-categories.md#the-tabbed-createedit-modal-story-0071)), and resolve the ids from the database in the test. A "validation error shown" assertion on the default panel uses `assertVisible('@language-name-error-{id}')`; `assertPresent` would also pass for a hidden panel, which is always mounted.
+
 ## Correct vs. incorrect examples
 
 ❌ Incorrect — brittle, keyed to implementation detail, and no JS-error check:

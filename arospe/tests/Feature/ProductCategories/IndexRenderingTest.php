@@ -23,6 +23,7 @@ use App\Actions\ProductCategories\CreateProductCategory;
 use App\Livewire\ProductCategories\Index;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\ProductCategoryTranslation;
 use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
@@ -74,16 +75,20 @@ test('the empty state renders when the catalog holds no categories', function ()
     expect($html)->toContain('data-test="product-categories-empty-state"');
 });
 
-test('the create and edit modal contains exactly one text input and no select markup', function () {
+test('the create and edit modal contains exactly one text input per active store language and no select markup', function () {
     // A cheap guard against a stray element copy-pasted in from the Users view, which has both
-    // a role AND a status <select>. This story's modal has a single name field and no <select>
-    // anywhere (per the story's own "runtime traps" section, trap 4).
+    // a role AND a status <select>. Story 0071: one name input per ACTIVE store language (the
+    // fixture holds the default plus one other active language and one inactive language, which
+    // must contribute no input) and still no <select> anywhere.
     $actor = productCategoriesIndexRenderingActor();
     $this->actingAs($actor);
 
+    StoreLanguage::factory()->create();
+    StoreLanguage::factory()->inactive()->create();
+
     $html = Livewire::test(Index::class)->call('openCreateModal')->html();
 
-    expect(substr_count($html, '<input'))->toBe(1)
+    expect(substr_count($html, '<input'))->toBe(2)
         ->and($html)->not->toContain('<select');
 });
 
@@ -121,9 +126,9 @@ test('a validation message appears next to the name field and the modal stays op
 
     Livewire::test(Index::class)
         ->call('openCreateModal')
-        ->set('name', '')
+        ->set('names.'.StoreLanguage::defaultStoreLanguage()->id, '')
         ->call('save')
-        ->assertSee(__('validation.required', ['attribute' => 'name']))
+        ->assertSee(__('validation.required', ['attribute' => __('products.categories.index.tabs.name_attribute')]))
         ->assertSet('showModal', true);
 });
 
@@ -140,20 +145,33 @@ test('the product category screen references no blog taxonomy', function () {
     Livewire::test(Index::class)->assertDontSee('blog');
 });
 
-// Phase 4 audit finding N-3: closeModal() must clear the 'name' validation error, or a refused
-// save's inline message leaks into the next time the create/edit modal opens -- Livewire persists
-// the error bag across round trips, and this modal's flux:input renders the 'name' error whenever
-// one is present in the bag, regardless of which category (or none) the modal is now open for.
-test('closing the modal after a refused save clears the stale validation error', function () {
+// Phase 4 audit finding N-3 (story 0071: now N error keys): closeModal() must clear EVERY
+// `names.*` validation error, or a refused save's inline message leaks into the next time the
+// create/edit modal opens -- Livewire persists the error bag across round trips. Two languages
+// carry an error here, so a closeModal() that clears only one key (or only the default's) fails.
+test('closing the modal after a refused save clears the stale validation error on every language', function () {
     $actor = productCategoriesIndexRenderingActor();
     $this->actingAs($actor);
 
+    $default = StoreLanguage::defaultStoreLanguage();
+    $french = StoreLanguage::factory()->create();
+
+    $category = ProductCategory::factory()->named('Calzado')->create();
+    ProductCategoryTranslation::factory()->forLanguage($french)->create([
+        'product_category_id' => $category->id,
+        'name' => 'Chaussures',
+    ]);
+
+    // Both languages hold a name, so blanking both is refused on both keys (a previously
+    // translated non-default language is required, D-7).
     Livewire::test(Index::class)
-        ->call('openCreateModal')
-        ->set('name', '')
+        ->call('openEditModal', $category->id)
+        ->set('names.'.$default->id, '')
+        ->set('names.'.$french->id, '')
         ->call('save')
-        ->assertHasErrors('name')
+        ->assertHasErrors(['names.'.$default->id, 'names.'.$french->id])
         ->call('closeModal')
+        ->assertHasNoErrors()
         ->call('openCreateModal')
         ->assertHasNoErrors();
 });
