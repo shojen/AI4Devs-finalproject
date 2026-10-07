@@ -32,7 +32,7 @@ beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
 
-    StoreLanguage::factory()->default()->create();
+    $this->defaultLanguage = StoreLanguage::factory()->default()->create();
 });
 
 /**
@@ -57,11 +57,11 @@ test('opening the create form shows a blank field, with no stale prefill from a 
         ->assertNoJavaScriptErrors()
         ->click('@edit-blog-category-'.$category->id)
         ->assertNoJavaScriptErrors()
-        ->assertValue('@blog-category-name-input', 'Guías')
+        ->assertValue('@blog-category-name-input-'.$this->defaultLanguage->id, 'Guías')
         ->click('Cancel')
         ->click('@create-blog-category-button')
         ->assertNoJavaScriptErrors()
-        ->assertValue('@blog-category-name-input', '');
+        ->assertValue('@blog-category-name-input-'.$this->defaultLanguage->id, '');
 });
 
 test('creating a category through a real fill and click round trip adds it to the list', function () {
@@ -70,7 +70,7 @@ test('creating a category through a real fill and click round trip adds it to th
     visit('/blog/categories')
         ->assertNoJavaScriptErrors()
         ->click('@create-blog-category-button')
-        ->fill('name', 'Guías')
+        ->fill('@blog-category-name-input-'.$this->defaultLanguage->id, 'Guías')
         ->click('Save')
         ->wait(1)
         ->assertNoJavaScriptErrors();
@@ -86,7 +86,7 @@ test('editing prefills the name, and re-saving it unchanged preserves it', funct
 
     visit('/blog/categories')
         ->click('@edit-blog-category-'.$category->id)
-        ->assertValue('@blog-category-name-input', 'Guías')
+        ->assertValue('@blog-category-name-input-'.$this->defaultLanguage->id, 'Guías')
         ->click('Save')
         ->wait(1)
         ->assertNoJavaScriptErrors();
@@ -100,7 +100,7 @@ test('renaming through the real input persists the new name', function () {
 
     visit('/blog/categories')
         ->click('@edit-blog-category-'.$category->id)
-        ->fill('name', 'Novedades')
+        ->fill('@blog-category-name-input-'.$this->defaultLanguage->id, 'Novedades')
         ->click('Save')
         ->wait(1)
         ->assertNoJavaScriptErrors();
@@ -113,7 +113,7 @@ test('cancelling the create form adds nothing', function () {
 
     visit('/blog/categories')
         ->click('@create-blog-category-button')
-        ->fill('name', 'Guías')
+        ->fill('@blog-category-name-input-'.$this->defaultLanguage->id, 'Guías')
         ->click('Cancel')
         ->wait(1)
         ->assertNoJavaScriptErrors();
@@ -167,11 +167,11 @@ test('creating a duplicate name through the real form shows the inline error', f
 
     visit('/blog/categories')
         ->click('@create-blog-category-button')
-        ->fill('name', 'GUÍAS')
+        ->fill('@blog-category-name-input-'.$this->defaultLanguage->id, 'GUÍAS')
         ->click('Save')
         ->wait(1)
         ->assertNoJavaScriptErrors()
-        ->assertSee(trans('validation.unique', ['attribute' => 'name']));
+        ->assertSee(trans('validation.unique', ['attribute' => __('blog.categories.index.tabs.name_attribute')]));
 
     expect(BlogCategory::query()->count())->toBe(1);
 });
