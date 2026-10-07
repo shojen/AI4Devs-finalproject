@@ -8,7 +8,7 @@
 > reader needs to know which won. **Q-2, Q-3 and Q-4 remain open**, and are unaffected by that
 > resolution. Full options are in [§5's open questions](#open-questions-for-the-product-owner).
 >
-> 0. **Sibling story [0071](0071-product-categories-language-tabs-ui.md) was written while this debate
+> 0. **Sibling story [0071](done/0071-product-categories-language-tabs-ui.md) was written while this debate
 >    was running, and this file has been reconciled against it.** It did not exist when this debate
 >    began — verified then, and the file's own timestamp is **57 seconds** before this one's. It is
 >    the same pattern for Product Categories, it names 0075 by number as a consumer, and **most of its
@@ -878,7 +878,7 @@ renders. The mismatch is a property of the *edit* form's array binding, not of t
   implemented**. `HasTranslations`, `SetTranslation`, `defaultStoreLanguage()` and its memo.
 - **[0068](done/0068-store-languages-catalog-backend.md)** — hard, **not implemented**. `StoreLanguage`,
   `scopeActive()`, and the factory states every fixture here uses.
-- **[0071](0071-product-categories-language-tabs-ui.md)** — **new, hard, and unusual**: this story
+- **[0071](done/0071-product-categories-language-tabs-ui.md)** — **new, hard, and unusual**: this story
   consumes the shared `language-tab-strip.blade.php` component 0071's **D-1** extracts, and inherits
   its **D-2**, **D-6**, **D-7**, **D-8** and **D-11** rather than re-deriving them (**R-1**). ⚠️ **This
   is a *frontend-to-frontend* dependency between two same-epic UI stories, which this project has no
@@ -895,7 +895,7 @@ renders. The mismatch is a property of the *edit* form's array binding, not of t
 
 ### Risks
 
-- **R-1 — Reconciled against sibling story [0071](0071-product-categories-language-tabs-ui.md), which
+- **R-1 — Reconciled against sibling story [0071](done/0071-product-categories-language-tabs-ui.md), which
   was written concurrently and landed 57 seconds before this file was saved.** It did not exist when
   the debate opened, so **neither amigo saw it** and both contributed as if this were the first
   language-tabs story. The reconciliation was done by the facilitator after the fact, by reading 0071

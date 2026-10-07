@@ -44,6 +44,10 @@ was never implemented — nothing in `app/` writes `PaymentStatus::Paid`, so no 
 (0083 edits the orders *list* view; 0085 the *detail* view), so no `conflict_risk_with` entries. Pending count moves from 13 to 15
 numbered files; `done/` unchanged at 92.
 
+**Update (2026-10-07): `0071-product-categories-language-tabs-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** -- the sixth Epic 5 story to close, and the owner of the shared `<x-language-tab-strip>` the other i18n screens consume. Its node, its `P0071 --> P0073/P0075/P0079` edges and its `tasks-status.json` entry (the `claimed` one) are dropped because the task is closed; it joins the flat `done/` inventory. Its dependents drop `"0071"` from `depends_on` and are re-derived: `0073` stays `blocked` on `0072`, `0075` on `0074`, `0079` on `0078` (each of those backend retrofits is `ready`); no `status` changes. Link-integrity check, both directions: same-depth `in-progress/` to `done/` move, so the file's own outbound links (`../../../docs/...`, `../0077-...`, `../done/...` forms already resolved from the moved depth) were re-verified; inbound links were repointed from `in-progress/0071-...` to `done/0071-...` in `0073` (5), `0075` (3), `0077` (11), `0079` (2) and from `../in-progress/0071-...` to the bare sibling `0071-...` in `done/0025` (8), `done/0060` (3), `done/0063` (2), `done/0070` (4). Remaining textual (non-link) mentions of the `in-progress/` path are historical prose in `0073` and code comments in three test files (not editable by the docs pass). `ai-spec/tasks/in-progress/` is empty again. Counts: **8 numbered files pending in `ai-spec/tasks/`** (0072-0079) plus the infra doc, **`done/` +1**.
+
+**Update (2026-10-07): `0071-product-categories-language-tabs-ui.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 3 step 0). It is still pending work, so it keeps its node and edges (`P0071 --> P0073/P0075/P0079`); its node moves from the green `ready` class to the blue `claimed` class, and its `tasks-status.json` entry's `status` moved to `"claimed"` (`claimed_by: "shojen/0071-product-categories-language-tabs-ui"`), with `depends_on` unchanged (still empty) and `touches` widened to the full *Files to create/modify* set of the story (no overlap with any other pending task's `touches`). `ai-spec/tasks/in-progress/` now holds exactly this one file. The mandatory link-integrity check ran both directions: the moved file's own relative links were repointed one level deeper (`../../docs/…` to `../../../docs/…`, `](done/…)` to `](../done/…)`, the bare `](0077-…md)` to `](../0077-…md)`) and all 27 resolve; inbound links were repointed in `0073`, `0075`, `0077`, `0079` (`](0071-…md)` to `](in-progress/0071-…md)`) and in `done/0025`, `done/0060`, `done/0063`, `done/0070` (`](../0071-…md)` to `](../in-progress/0071-…md)`); one unrelated pre-existing broken link in `done/0070` (`](../0069-…md)` to `](0069-…md)`) was fixed in passing.
+
 **Update (2026-10-03): `0086-dashboard-sales-overview-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (Phase 2 PASS 2026-10-02; the owner ratified the ⚑ defaults with one change, the KPI percent hint shows up to 2 decimals). Its node and its `tasks-status.json` entry (the `claimed` one) are dropped because the task is closed. Link-integrity check, both directions: the file's outbound links to `0082`/`0083`/`0084` became bare siblings and `../0085-…` still resolves; the 5 inbound links from the done `0083` were repointed from `../in-progress/0086-…` to the bare sibling `0086-…`; no `docs/` page links to it. `ai-spec/tasks/in-progress/` is empty. Counts: **9 numbered files pending in `ai-spec/tasks/` (after the 0085 and 0069 closures merged from the base branch)**.
 
 **Update (2026-10-03): `0069-store-languages-settings-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** — the fifth Epic 5 story to close. Its node, its inventory row and its `tasks-status.json` entry (the `claimed` one) are dropped because the task is closed; it had no pending dependents. Link-integrity check, both directions: the file's own outbound links were repointed (`../done/…` siblings became bare names; the `../../../docs/…` links needed no change at the same depth) and the one inbound link from `ai-spec/tasks/0075-blog-tags-language-tabs-ui.md` was repointed from `in-progress/0069-…` to `done/0069-…`; no `docs/` page links to it. `ai-spec/tasks/in-progress/` is removed (empty).
@@ -361,7 +365,7 @@ graph and from the parallelization analysis below.
 
 ## Inventory
 
-### Done (96) — shipped, out of scope for this graph
+### Done (97) — shipped, out of scope for this graph
 
 Already merged into `main`/`finalproject-ARP` and closed via the workflow's Phase 7; see
 [`ai-spec/tasks/done/`](tasks/done/) for each story's full file. Listed here only as IDs, grouped
@@ -430,7 +434,7 @@ appears as a node in the dependency graph below:
   0055 — Orders list + detail/editor UI, the eighteenth story to close and the epic's terminal node:
   nothing named it as a hard dependent, so its closure re-derives no `depends_on`/`status` change
   against this pending list.
-- **Epic 5 — Internationalization (4):** 0067 — Admin UI language switcher (frontend), the fourth Epic 5 story to close (2026-10-02): the first personal-language control (account-menu switcher plus a Settings Language tab); it had no hard dependent, and its only pairing, `0069`, drops it from `conflict_risk_with`. 0068 — Store Languages catalog + the app's two
+- **Epic 5 — Internationalization (5):** 0071 — Product Categories taxonomy screen language tabs (frontend), the sixth Epic 5 story to close (2026-10-07): ships the shared `<x-language-tab-strip>`; its dependents 0073/0075/0079 drop it from `depends_on`. 0067 — Admin UI language switcher (frontend), the fourth Epic 5 story to close (2026-10-02): the first personal-language control (account-menu switcher plus a Settings Language tab); it had no hard dependent, and its only pairing, `0069`, drops it from `conflict_risk_with`. 0068 — Store Languages catalog + the app's two
   default-locale settings, the first Epic 5 story to close, and the root of the entire i18n chain.
   Its two dependents that had it as their *only* pending dependency — 0066 (Admin UI locale
   preference backend) and 0070 (translatable-content mechanism backend) — move from `blocked` to
@@ -475,11 +479,10 @@ appears as a node in the dependency graph below:
   0084 — Order mark as paid (backend), closed 2026-10-02: adds `MarkOrderAsPaid` and the `order_payments` table; its one
   dependent, 0085, drops it and moves to `ready`.
 
-### Pending — not started (12 numbered + 1 infra doc)
+### Pending — not started (11 numbered + 1 infra doc)
 
 | ID | Title | Epic area |
 | --- | --- | --- |
-| 0071 | Product Categories taxonomy screen — language tabs (frontend) | Epic 5 — i18n |
 | 0072 | Translatable content retrofit — Blog Categories backend | Epic 5 — i18n |
 | 0073 | Blog Categories screen — language tabs | Epic 5 — i18n |
 | 0074 | Translatable content retrofit — Blog Tags backend | Epic 5 — i18n |
@@ -522,7 +525,6 @@ flowchart LR
 
     subgraph PEND_I18N["Epic 5 — Internationalization"]
         direction TB
-        P0071["0071 Product Categories i18n UI"]
         P0072["0072 Blog Categories retrofit BE"]
         P0073["0073 Blog Categories i18n UI"]
         P0074["0074 Blog Tags retrofit BE"]
@@ -595,19 +597,17 @@ flowchart LR
     %% this merge -- neither removal supersedes the other.)
     %% (P0067 -.-> P0069 dropped: 0067 closed to done/ 2026-10-02, the fourth Epic 5 story to close; its node and the conflict edge are removed.)
     P0072 --> P0073
-    P0071 --> P0073
     P0074 --> P0075
-    P0071 --> P0075
     P0076 --> P0077
     P0078 --> P0079
-    P0071 --> P0079
     P0077 -.-> P0079
     %% (P0082 --> P0083 and P0082 -.-> P0076/P0078 dropped: 0082 is done; 0083 is now ready.)
     %% (P0084 --> P0085 dropped: 0084 is done; 0085 is done too.)
     %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
     class P0073,P0075,P0077,P0079 pending;
-    class P0071,P0072,P0074,P0076,P0078 ready;
+    class P0072,P0074,P0076,P0078 ready;
+    %% (P0071 --> P0073/P0075/P0079 dropped: 0071 closed to done/ 2026-10-07.)
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue

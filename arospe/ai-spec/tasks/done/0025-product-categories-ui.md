@@ -26,7 +26,7 @@ files — changed that ground underneath it:
   `product_category_translations` child table, read per language through
   `ProductCategory::translated('name', ?string $storeLanguageId = null)`, which falls back to the
   store default language and returns `null` when neither language supplies one (its **D-5**/**D-6**).
-- **[0071](../0071-product-categories-language-tabs-ui.md)** (frontend) retrofits **this very screen**
+- **[0071](0071-product-categories-language-tabs-ui.md)** (frontend) retrofits **this very screen**
   with one language tab — and therefore **one name input per active store language** — replacing
   this story's `public string $name` with `public array $names` keyed by store-language id.
 
@@ -350,7 +350,7 @@ establishes for `SalesRegions`, applied here before it is discovered as a live g
 ### Component public surface
 
 > ⚠️ **Correction, 2026-08-30 — two declarations in the block below are superseded by
-> [0071](../0071-product-categories-language-tabs-ui.md), which retrofits this component.**
+> [0071](0071-product-categories-language-tabs-ui.md), which retrofits this component.**
 >
 > **(a) `public string $name = '';` does not survive.** It is replaced by
 > **`public array $names = [];`**, keyed by `store_language_id`, holding `''` (never `null`) for a
@@ -417,7 +417,7 @@ class Index extends Component
 > `orderBy('name')` targets **`product_categories.name`, a column 0070 drops** (its **D-4**) — so
 > this is not a cosmetic mis-ordering but a **SQL error on page load**.
 >
-> **The replacement, from [0071](../0071-product-categories-language-tabs-ui.md)'s D-12, which owns
+> **The replacement, from [0071](0071-product-categories-language-tabs-ui.md)'s D-12, which owns
 > applying it to this screen (its Q-3, resolved (a) on 2026-08-30):**
 >
 > ```php
@@ -480,7 +480,7 @@ Three are already paid for in [errors-log.md](../../../docs/errors-log.md); the 
    declaration (never `?string`), for the ordinary reason that a bound property should carry an empty
    value in the type the DOM expects.
    > ⚠️ **Correction, 2026-08-30 — "a single text `name` field" is stale, but the conclusion survives
-   > intact.** Under [0071](../0071-product-categories-language-tabs-ui.md) the modal holds **one text
+   > intact.** Under [0071](0071-product-categories-language-tabs-ui.md) the modal holds **one text
    > input per active store language**, bound to `$names[$languageId]`. There is still **no
    > `<select>` anywhere**: 0071's **D-3** records that its `$activeLanguageId` drives an `x-show`
    > comparison rather than a bound `<select>`, so the trap stays *structurally* inapplicable — and
@@ -514,7 +514,7 @@ than reimplementing its own.
 > names **in the store default language** rather than on a column. The row-shape test's `name` key is
 > now **`?string`** and must accept `null` for a category with no default-language translation, so a
 > `toBeString()`-style assertion on it would fail for a legitimate row.
-> **[0071](../0071-product-categories-language-tabs-ui.md) owns both amended assertions** — its own test
+> **[0071](0071-product-categories-language-tabs-ui.md) owns both amended assertions** — its own test
 > plan carries "the list renders the fallback-resolved name and an em dash when it resolves to
 > `null`" — so this file records the change rather than re-specifying the tests.
 
@@ -584,7 +584,7 @@ than reimplementing its own.
 - [ ] The create/edit modal contains exactly one input and **no `<select>` markup** — a cheap guard
       against a stray element copy-pasted in from the Users view.
       > ⚠️ **Correction, 2026-08-30 — "exactly one input" is false under
-      > [0071](../0071-product-categories-language-tabs-ui.md) and must not be written as stated.**
+      > [0071](0071-product-categories-language-tabs-ui.md) and must not be written as stated.**
       > The modal holds **one name input per *active* store language**, one per tab — so the correct
       > assertion is a **count of `N` name inputs for `N` active store languages**, driven off an
       > N-active-language fixture, never a hardcoded 1 and never a hardcoded 2. 0071 states the same
@@ -676,7 +676,7 @@ component. Nothing on the screen references, links to, or shares anything with a
       whitespace-only, over-length, duplicate, case-only-duplicate and accent-only-duplicate names are
       each refused with a message on the `name` field and add no row.
       > ⚠️ **Correction, 2026-08-30.** *"a modal whose only field is `name`"* is superseded by
-      > [0071](../0071-product-categories-language-tabs-ui.md): the modal carries **one name field per
+      > [0071](0071-product-categories-language-tabs-ui.md): the modal carries **one name field per
       > active store language**, behind tabs. The **refusal set is unchanged in kind** — blank,
       > whitespace-only, over-length and duplicate names are all still refused — but two things move.
       > **(a) The error key** is `names.{languageId}`, not `name`, and the refusal must render on
@@ -815,7 +815,7 @@ component. Nothing on the screen references, links to, or shares anything with a
   > ⚠️ **Correction, 2026-08-30 — the ordering half is superseded; the pagination half is what
   > survives, and it is load-bearing.** `name ASC, id ASC` is SQL ordering against a column
   > [0070](0070-translatable-content-mechanism-product-categories-backend.md) drops; the replacement
-  > is [0071](../0071-product-categories-language-tabs-ui.md)'s **D-12** PHP `sortBy()` over
+  > is [0071](0071-product-categories-language-tabs-ui.md)'s **D-12** PHP `sortBy()` over
   > `translated('name')`, quoted in full under the component surface above. **"No pagination" is
   > *why* that replacement is acceptable** — 0071 cites this decision by name for exactly that
   > reason: the whole table is already in PHP, so sorting there costs nothing extra. If a later story
