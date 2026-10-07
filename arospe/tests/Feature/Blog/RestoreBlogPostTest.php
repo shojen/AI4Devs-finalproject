@@ -47,7 +47,7 @@ test('restoring a trashed post clears deleted_at and returns it to a default que
 
 // Each half is covered by DeleteBlogPostTest.php; only the round trip proves they compose.
 test('the round trip preserves title, body, category and tags', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $running = BlogTag::factory()->create(['name' => 'running']);
     $invierno = BlogTag::factory()->create(['name' => 'invierno']);
     $original = BlogPost::factory()->create([
@@ -72,7 +72,7 @@ test('the round trip preserves title, body, category and tags', function () {
 });
 
 test('a restored post is still in the category it had', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $post = restoreTestTrashedPost($this->editor, ['blog_category_id' => $category->id]);
 
     app(RestoreBlogPost::class)($post);

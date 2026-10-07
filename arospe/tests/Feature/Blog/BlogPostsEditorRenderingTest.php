@@ -126,8 +126,8 @@ function blogPostsEditorTooltipContent(string $html, string $hook): ?string
 
 test('the category select renders every category plus exactly one disabled, selected, empty placeholder and no none option', function () {
     $this->actingAs(blogPostsEditorRenderingActor());
-    $guides = BlogCategory::factory()->create(['name' => 'Guías']);
-    $news = BlogCategory::factory()->create(['name' => 'Novedades']);
+    $guides = BlogCategory::factory()->named('Guías')->create();
+    $news = BlogCategory::factory()->named('Novedades')->create();
 
     $options = blogPostsEditorSelectOptions(Livewire::test(Editor::class)->html(), 'blogCategoryId');
 

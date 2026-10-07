@@ -131,7 +131,7 @@ function blogPostsEditorErrors(Testable $component, string $key): array
 
 test('create persists the title, category, status, body and tags, and redirects to the list', function () {
     $this->actingAs(blogPostsEditorActor());
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
 
     $component = blogPostsEditorFill(Livewire::test(Editor::class), $category, ['body' => '<p>Un cuerpo <strong>largo</strong></p>'])
         ->set('tagInput', 'running')

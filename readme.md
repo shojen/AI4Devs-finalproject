@@ -931,13 +931,20 @@ erDiagram
 erDiagram
     USERS ||--o{ BLOG_POSTS : "created_by (nullable)"
     BLOG_CATEGORIES ||--o{ BLOG_POSTS : blog_category_id
+    BLOG_CATEGORIES ||--o{ BLOG_CATEGORY_TRANSLATIONS : blog_category_id
+    STORE_LANGUAGES ||--o{ BLOG_CATEGORY_TRANSLATIONS : store_language_id
     BLOG_TAGS ||--o{ BLOG_POST_TAG : blog_tag_id
     BLOG_POSTS ||--o{ BLOG_POST_TAG : blog_post_id
 
     BLOG_CATEGORIES {
         uuid id PK
+    }
+    BLOG_CATEGORY_TRANSLATIONS {
+        uuid id PK
+        uuid blog_category_id FK
+        uuid store_language_id FK
         string name
-        string normalized_name UK
+        string normalized_name
     }
     BLOG_TAGS {
         uuid id PK
@@ -1080,7 +1087,7 @@ Relaciones: `hasMany` → `passkeys` (vía `PasskeyAuthenticatable`); `hasMany` 
 
 **`notifications`** — la tabla de notificaciones en base de datos de Laravel: una fila por destinatario y evento. Usa `uuidMorphs` en vez de `morphs` porque `users.id` es un UUID, y `data` (JSON) no se modifica nunca tras escribirse.
 
-**`blog_categories`** / **`blog_tags`** — las taxonomías del blog (Epic 4), independientes de las categorías de producto. En ambas la unicidad está en `normalized_name` (sin mayúsculas ni acentos), no en `name`, y ninguna usa `SoftDeletes`, así que un nombre borrado puede reutilizarse. Una categoría no se puede borrar mientras la use algún post, incluidos los que están en la papelera. Una etiqueta, en cambio, se borra siempre y la cascada del pivote la quita de todos los posts.
+**`blog_categories`** / **`blog_tags`** — las taxonomías del blog (Epic 4), independientes de las categorías de producto. En ambas la unicidad está en `normalized_name` (sin mayúsculas ni acentos), no en `name`, y ninguna usa `SoftDeletes`, así que un nombre borrado puede reutilizarse. Una categoría no se puede borrar mientras la use algún post, incluidos los que están en la papelera. Una etiqueta, en cambio, se borra siempre y la cascada del pivote la quita de todos los posts. Desde la historia 0072 el nombre de la categoría ya no es una columna de `blog_categories`: vive por idioma en `blog_category_translations` (una fila por categoría e idioma de tienda), con la unicidad por idioma sobre `normalized_name`; el nombre existente se migró al idioma por defecto.
 
 **`blog_posts`** / **`blog_post_tag`** — el post y sus etiquetas. `slug` es único y se genera a partir del título; el título no es único. `body` es HTML saneado (`MEDIUMTEXT`, opcional en borradores). `status` puede ser `draft`, `published` o `scheduled`, y `published_at` es coherente con él: nulo en un borrador, futuro en uno programado y pasado o presente en uno publicado. Un índice compuesto (`deleted_at`, `status`, `published_at`) sirve al comando programado que publica los posts a su hora. `blog_category_id` es obligatorio y restringe el borrado; `created_by` (el autor, no el último editor) pasa a `NULL` si se borra el usuario. Es el tercer modelo con **`SoftDeletes`**, tras `users` y `customers`, para poder recuperar un post borrado por error. Como el borrado lógico es un `UPDATE`, un post en la papelera conserva sus etiquetas; las dos FK del pivote borran en cascada.
 

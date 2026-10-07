@@ -14,7 +14,7 @@
 >
 > | Pair | What it removes from under this screen |
 > | --- | --- |
-> | [**0072** — Blog Categories backend](../0072-translatable-content-retrofit-blog-categories-backend.md) + [**0073** — Blog Categories language tabs](../0073-blog-categories-language-tabs-ui.md) | Drops `blog_categories.name` **and** `normalized_name` into `blog_category_translations`. A category's name is now `translated('name', $languageId)`. |
+> | [**0072** — Blog Categories backend](0072-translatable-content-retrofit-blog-categories-backend.md) + [**0073** — Blog Categories language tabs](../0073-blog-categories-language-tabs-ui.md) | Drops `blog_categories.name` **and** `normalized_name` into `blog_category_translations`. A category's name is now `translated('name', $languageId)`. |
 > | [**0074** — Blog Tags backend](../0074-translatable-content-retrofit-blog-tags-backend.md) + [**0075** — Blog Tags language tabs](../0075-blog-tags-language-tabs-ui.md) | Drops `blog_tags.name` **and** `normalized_name` into `blog_tag_translations`, with uniqueness re-scoped per store language. A tag's name is read the same way. |
 > | [**0078** — Blog Posts backend](../0078-translatable-content-retrofit-blog-posts-backend.md) + [**0079** — Blog post editor language tabs](../0079-blog-post-editor-language-tabs-ui.md) | **The largest.** Drops `blog_posts.title`, `body` **and** `slug` into `blog_post_translations`, one row per `(post, store language)`, with `UNIQUE(store_language_id, slug)`. `BlogPost` narrows to `#[Fillable(['blog_category_id', 'status'])]`. 0079 then turns this story's editor into per-language tabs and adds `App\Actions\Blog\SetBlogPostTranslation`. |
 >
@@ -2001,7 +2001,7 @@ requiring PHP execution was verified and every such claim is flagged at its site
 >
 > | Story | Kind | Why |
 > | --- | --- | --- |
-> | [**0072**](../0072-translatable-content-retrofit-blog-categories-backend.md) | **hard**, not implemented | Drops `blog_categories.name`. Two of this screen's queries and two of its option sets name it. |
+> | [**0072**](0072-translatable-content-retrofit-blog-categories-backend.md) | **hard**, not implemented | Drops `blog_categories.name`. Two of this screen's queries and two of its option sets name it. |
 > | [**0074**](../0074-translatable-content-retrofit-blog-tags-backend.md) | **hard**, not implemented | Drops `blog_tags.name`. The list's eager load and the editor's chip hydration name it. |
 > | [**0078**](../0078-translatable-content-retrofit-blog-posts-backend.md) | **hard, blocking, total**, not implemented | Drops `blog_posts.title`/`body`/`slug`. The list query, the editor's two fields, the delete modal's label and the body rules all depend on it. |
 > | [**0079**](../0079-blog-post-editor-language-tabs-ui.md) | **depends on this story**, not the reverse | It builds the language tabs *on top of* this editor and rewrites this list's query. It must land **strictly after** this story and must never be batched with it. |

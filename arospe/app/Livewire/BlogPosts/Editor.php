@@ -6,6 +6,7 @@ use App\Actions\Auth\LogRefusedPrivilegedAttempt;
 use App\Actions\Blog\CreateBlogPost;
 use App\Actions\Blog\UpdateBlogPost;
 use App\Actions\NormalizeForSearch;
+use App\Actions\Translations\CompareTranslatedNames;
 use App\Enums\BlogPostStatus;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
@@ -269,12 +270,19 @@ class Editor extends Component
     #[Computed]
     public function categoryOptions(): array
     {
+        $compareTranslatedNames = app(CompareTranslatedNames::class);
+
         return array_values(
             BlogCategory::query()
-                ->orderBy('name')
-                ->orderBy('id')
-                ->get(['id', 'name'])
-                ->map(fn (BlogCategory $category): array => ['id' => $category->id, 'name' => $category->name])
+                ->withTranslationsFor()
+                ->get()
+                ->sort(fn (BlogCategory $a, BlogCategory $b): int => $compareTranslatedNames(
+                    $a->translated('name'),
+                    $a->id,
+                    $b->translated('name'),
+                    $b->id,
+                ))
+                ->map(fn (BlogCategory $category): array => ['id' => $category->id, 'name' => $category->translated('name') ?? '—'])
                 ->all()
         );
     }

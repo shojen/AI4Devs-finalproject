@@ -30,6 +30,7 @@ return [
 
     'translation_relations' => [
         ['table' => 'product_category_translations', 'column' => 'store_language_id'],
+        ['table' => 'blog_category_translations', 'column' => 'store_language_id'],
     ],
 
 ];

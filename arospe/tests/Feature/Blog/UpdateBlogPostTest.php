@@ -25,7 +25,7 @@ beforeEach(function () {
     $this->actor->givePermissionTo(['blog.edit', 'blog.view']);
     $this->actingAs($this->actor);
 
-    $this->category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $this->category = BlogCategory::factory()->named('Guías')->create();
 });
 
 afterEach(function () {
@@ -71,7 +71,7 @@ test('a valid update persists every changed field', function () {
         'body' => '<p>Original</p>',
         'blog_category_id' => $this->category->id,
     ]);
-    $other = BlogCategory::factory()->create(['name' => 'Novedades']);
+    $other = BlogCategory::factory()->named('Novedades')->create();
 
     updateBlogPostWith($post, [
         'title' => 'Botas de invierno 2026',

@@ -2,14 +2,14 @@
 
 ## Description
 Applies the per-store-language translatable-content mechanism built by story
-[0070](done/0070-translatable-content-mechanism-product-categories-backend.md) to the **Blog Categories**
-taxonomy ([PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization); assumption 14
+[0070](0070-translatable-content-mechanism-product-categories-backend.md) to the **Blog Categories**
+taxonomy ([PRD Epic 5, Layer 2](../../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization); assumption 14
 names "category/tag names" as translatable content, and Epic 5's own Gherkin lists **Blog category**
 as a taxonomy whose name must be authorable per store language). It creates the
 `blog_category_translations` child table, wires `App\Models\BlogCategory` to
 `App\Concerns\HasTranslations`, re-scopes name uniqueness from global to per-store-language, backfills
 every existing category into the store default language, and appends **one** entry to
-[0068](done/0068-store-languages-catalog-backend.md)'s `translation_relations` registry.
+[0068](0068-store-languages-catalog-backend.md)'s `translation_relations` registry.
 
 **This story consumes a recipe; it does not write one.** `HasTranslations`, `SetTranslation` and
 `StoreLanguage::defaultStoreLanguage()` are 0070's and are used **unmodified**. What this story owns is
@@ -18,12 +18,12 @@ the one place the recipe does not fit as written — see the box below.
 > **Read this before anything else: this story diverges from 0070's pilot in exactly one structural
 > way, and getting it wrong is a regression rather than an omission.**
 >
-> 0070 retrofits `product_categories`, whose story [0023](done/0023-product-categories-backend.md)
+> 0070 retrofits `product_categories`, whose story [0023](0023-product-categories-backend.md)
 > enforces name uniqueness with a plain `unique('name')` index plus a PHP-only comparison. **Blog
-> categories do not work that way.** Story [0058](done/0058-blog-categories-backend.md) specifies
+> categories do not work that way.** Story [0058](0058-blog-categories-backend.md) specifies
 > `blog_categories` with a stored, derived **`normalized_name`** column carrying the sole `UNIQUE`
 > index, written by a `static::saving()` hook calling the shared `App\Actions\NormalizeForSearch` —
-> the project-wide convention [0032's **D-N1**](done/0032-shipping-geography-catalog-seed.md) confirmed on
+> the project-wide convention [0032's **D-N1**](0032-shipping-geography-catalog-seed.md) confirmed on
 > 2026-08-18, which 0058's own **D-4** records that 0023 predates and is *"the outlier, not the
 > standard"*.
 >
@@ -44,7 +44,7 @@ the one place the recipe does not fit as written — see the box below.
 > **Stories 0058 (`blog_categories`), 0068 (`store_languages`) and 0070 (the mechanism) are all Phase 1
 > files, not shipped code.** Everything below is designed against their *specified* shape. Phase 3
 > must re-verify every signature named here against `HEAD` before writing a line of code — the
-> [deferred-findings failure mode](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+> [deferred-findings failure mode](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
 > this project already records once, and which applies **twice over** here (**R-12**).
 
 ## Type
@@ -72,7 +72,7 @@ a UI story; see **R-6a**.
 ## Gherkin — 2. Detailed acceptance criteria (Given/When/Then)
 
 Every scenario opens with a named business-role actor and carries exactly one `When`, per
-[gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3. The actor is
+[gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3. The actor is
 **"a blog editor"**, taken from the PRD's own Epic 4 scenarios and used consistently by 0058
 (see 0058's OQ-3 glossary note, still open).
 
@@ -189,7 +189,7 @@ Feature: Per-store-language blog category names
 
 - **`database/migrations/<timestamp>_create_blog_category_translations_table.php`** — the child table
   plus its backfill in one `up()`, following the precedent
-  [`add_status_to_users_table`](../../database/migrations/2026_08_11_175426_add_status_to_users_table.php)
+  [`add_status_to_users_table`](../../../database/migrations/2026_08_11_175426_add_status_to_users_table.php)
   sets for backfilling in the migration that creates the thing needing backfilling:
 
   ```php
@@ -283,7 +283,7 @@ Feature: Per-store-language blog category names
 
 - **`app/Actions/Blog/BackfillBlogCategoryTranslations.php`** — the extracted, container-resolved
   backfill (**D-5**, **D-6**), fail-loud per
-  [seeder-safety.md](../../docs/security/seeder-safety.md#a-catalog-seeder-must-fail-loudly-rather-than-commit-a-structurally-invalid-catalog):
+  [seeder-safety.md](../../../docs/security/seeder-safety.md#a-catalog-seeder-must-fail-loudly-rather-than-commit-a-structurally-invalid-catalog):
 
   ```php
   public function __invoke(): int
@@ -340,7 +340,7 @@ Feature: Per-store-language blog category names
   **signatures unchanged** (`__invoke(string $name)` / `__invoke(BlogCategory $c, string $name)`),
   meaning narrowed to *"the default store language's name"* (**D-7**). Each additionally
   constructor-injects `App\Actions\Translations\SetTranslation`, per
-  [code-style.md](../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)'s
+  [code-style.md](../../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)'s
   documented exception. `CreateBlogCategory` writes the parent row and its default-language
   translation in **one transaction**. Both keep 0058's **D-13** authorize-first ordering and their
   `LogRefusedPrivilegedAttempt` refusal logging with `target_type: 'blog_category'` — unchanged.
@@ -479,7 +479,7 @@ Feature and Unit only. **No browser tests** — this story ships no screen.
       each, in the default store language, with `name` **byte-identical** to the original — asserted
       **per row, never as a count**. *Why:* a count assertion passes even if every row got the wrong
       name or all rows collapsed to one value — the
-      [count-assertion failure mode](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21)
+      [count-assertion failure mode](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21)
       this project records.
 - [ ] Feature: the backfilled `normalized_name` equals a **fresh** `NormalizeForSearch` call on the
       name — not merely equal to the parent's old column value (**D-5**).
@@ -488,7 +488,7 @@ Feature and Unit only. **No browser tests** — this story ships no screen.
 - [ ] Feature: the backfill with **no default store language** throws and writes nothing.
 - [ ] The migration itself is **not** separately tested — `RefreshDatabase` proves it runs, and the
       extraction (**D-5**) is what makes the part that could be wrong testable. A deliberate application
-      of [what-not-to-test.md](../../docs/testing/qa/what-not-to-test.md)'s migration rule, legitimate
+      of [what-not-to-test.md](../../../docs/testing/qa/what-not-to-test.md)'s migration rule, legitimate
       **only because** of the extraction.
 
 ### Deletion and cascade
@@ -602,17 +602,17 @@ too, and 0070's drift guard covers a second registered entry with no change to t
       fallback logic, no fold logic and no write primitive exists at any call site in this story's diff.
 
 ## Definition of Done
-- [ ] Tests written and green (**full suite unscoped**, not `--filter`) — mandatory rather than
+- [x] Tests written and green (**full suite unscoped**, not `--filter`) — mandatory rather than
       advisory here, because this story adds a model event, whose blast radius is the whole suite by
       construction
-- [ ] `vendor/bin/pint --format agent` run **unscoped**, not `--dirty`
-- [ ] **Larastan level 7 run and recorded** — named explicitly because
-      [errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
+- [x] `vendor/bin/pint --format agent` run **unscoped**, not `--dirty`
+- [x] **Larastan level 7 run and recorded** — named explicitly because
+      [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
       records three consecutive stories whose verification notes listed two of three gates and were read
       as records of all three. A record naming two gates is a record of two gates.
-- [ ] Code reviewed (code-reviewer)
-- [ ] No security findings (appsec-auditor)
-- [ ] Documentation updated (docs-keeper) — at minimum `docs/database/schema.md` (a second
+- [x] Code reviewed (code-reviewer)
+- [x] No security findings (appsec-auditor)
+- [x] Documentation updated (docs-keeper) — at minimum `docs/database/schema.md` (a second
       per-language content table), `docs/database/migrations.md` (the **second** instance of a migration
       that removes a source-of-truth column after backfilling it elsewhere, and the first that drops a
       `NOT NULL UNIQUE` derived column), and `docs/conventions/naming.md` (`<Entity>Translation` as an
@@ -630,7 +630,7 @@ remain unique **per store language**; the only question this story resolves is *
 it*. 0070's pilot writes `unique(['store_language_id', 'name'])` because `product_categories` has no
 folded column at all — it retrofits 0023's raw-`name` design. `blog_categories` does have one, and
 0058's **D-4** argues at length why: a pre-flight PHP check is **not a race guard**
-([the rule this repo already states for `pending_email`](../../docs/security/signed-link-verification.md#a-pre-flight-check-is-not-a-race-guard--re-check-under-a-lock-and-let-the-unique-index-have-the-last-word)),
+([the rule this repo already states for `pending_email`](../../../docs/security/signed-link-verification.md#a-pre-flight-check-is-not-a-race-guard--re-check-under-a-lock-and-let-the-unique-index-have-the-last-word)),
 so two concurrent requests submitting `"Guías"` and `"Guias"` in the same language both pass a
 byte-exact pre-flight, both insert, and a raw-`name` index catches neither. Porting the pilot's literal
 shape would reopen that race on a table whose parent already closed it — a regression against the very
@@ -662,7 +662,7 @@ generalises (0076/0078 translate five fields with different derivation needs, or
 on the model that owns the column, which is exactly where 0058 put it for the parent. **The rule
 0058 cites is what forces it to be a hook at all rather than a line in each action:**
 [an identity derived from a mutable column must be locked at the model layer as soon as code exists that
-can mutate it](../../docs/security/authorization-patterns.md) — and this story *increases* the number of
+can mutate it](../../../docs/security/authorization-patterns.md) — and this story *increases* the number of
 writers, since `SetTranslation` joins `CreateBlogCategory` and `RenameBlogCategory`. *Rejected:* each
 action computing and `forceFill`ing it, which re-splits one invariant across three implementations —
 0058 records the identical rejection for the parent. **The parent's hook is deleted rather than left**,
@@ -721,7 +721,7 @@ tested by calling it directly.
 
 **D-8 — Translated content adds no permission, no ability and no policy.** Verified against shipped
 code rather than against a task file: `'blog'` is already in
-[`RolePermissionSeeder::MODULES`](../../database/seeders/RolePermissionSeeder.php) (line 25), so
+[`RolePermissionSeeder::MODULES`](../../../database/seeders/RolePermissionSeeder.php) (line 25), so
 `blog.view/create/edit/delete` all exist today with **zero** seeder change and the catalog stays at 42.
 Authoring a translation is *using* an already-configured language, not managing the language catalog, so
 it requires **no `store-languages.*` permission** — 0068's **D18** draws that boundary and 0070's
@@ -762,7 +762,7 @@ column every row shows as `NULL` it would protect nothing (NULLs are exempt from
 MySQL and SQLite, the same property `users.pending_email` relies on) while misrepresenting the state as
 "restored". This is stated in a comment on the method itself, the way 0070 states its own. A rollback
 across this pair is data-lossy in the same way
-[ADR 0001's `users` conversion set](../../docs/decisions/0001-uuid-primary-keys.md#consequences) is.
+[ADR 0001's `users` conversion set](../../../docs/decisions/0001-uuid-primary-keys.md#consequences) is.
 
 **D-12 — The mechanism is consumed, not re-derived, and this story writes no drift guard.** No fallback
 logic, no default-language memo, no write primitive and no schema-derived registry guard appears in this
@@ -782,22 +782,26 @@ which adds a hard-block guard refusing deletion while posts reference the catego
 *before* the delete, so it does not weaken the cascade argument — a category that reaches `->delete()`
 is one no post uses, and its translations are exactly the data that has just become meaningless.
 
+**D-14 — The three shipped Livewire screens are minimally migrated in this story (added at implementation, 2026-10-07).** `App\Livewire\BlogCategories\Index`, `App\Livewire\BlogPosts\Index` and `App\Livewire\BlogPosts\Editor` already shipped (0062, 0063) and read `blog_categories.name`, which D-2 drops, so leaving them untouched would break three working screens in the same merge. They now read the name through `translated('name')` (eager-loaded with `withTranslationsFor()`, a missing translation rendering `—`) and sort through `CompareTranslatedNames` in PHP, `id` as tiebreak. No route, signature, `data-test` hook or rendered contract changed; the full language-tab UI stays 0073's. **Supersedes** the "no Livewire touched" scope fence in *Deliberately not touched* and **R-1**'s handoff-only plan for these three components. Consequence accepted by the appsec audit (Low): the post list's category filter options are sorted in PHP, so `FILTER_OPTIONS_LIMIT` caps the rendered list rather than the query, consistent with 0070.
+
+**D-15 — The backfill refuses only when categories exist and no default store language does (added at implementation).** `BackfillBlogCategoryTranslations::assertCanBackfill()` is a no-op when `blog_categories` is empty and throws only when it holds rows and `store_languages` has no default. `store_languages` is populated by `StoreLanguageSeeder`, never by a migration, so it is empty at migration time on every fresh install and every `RefreshDatabase` run; the unconditional throw written in the task text would have made the migration unrunnable there. Follows 0070's **D-16**. **Supersedes** the unconditional throw described earlier in this file.
+
 ## 5. Dependencies, risks, open technical questions
 
 ### Dependencies
 
-- **[Story 0058](done/0058-blog-categories-backend.md)** — hard, and **not yet implemented**. This story
+- **[Story 0058](0058-blog-categories-backend.md)** — hard, and **not yet implemented**. This story
   retrofits its table, its model, its validation trait and two of its three actions. See **R-2**, **R-3**.
-- **[Story 0070](done/0070-translatable-content-mechanism-product-categories-backend.md)** — hard, and **not
+- **[Story 0070](0070-translatable-content-mechanism-product-categories-backend.md)** — hard, and **not
   yet implemented**. Supplies `HasTranslations`, `SetTranslation`, `StoreLanguage::defaultStoreLanguage()`
   and the drift guard, all consumed unmodified. **0070's own Q1 is still open** (must every entity always
   hold a default-language translation?) and this story assumes its recommended answer **(a) yes** —
   `CreateBlogCategory` writes one and the backfill guarantees one. If 0070 resolves Q1 differently, this
   story's create-path acceptance criterion changes with it; it is not re-asked here.
-- **[Story 0068](done/0068-store-languages-catalog-backend.md)** — hard, and not yet implemented. Supplies
+- **[Story 0068](0068-store-languages-catalog-backend.md)** — hard, and not yet implemented. Supplies
   `store_languages`, the `is_default` row the fallback resolves through, and the registry.
 - **Story 0022** — supplies `App\Actions\NormalizeForSearch`, consumed unchanged at both write time (the
-  hook) and read time (the validation rule), per [0032's **D-N1**](done/0032-shipping-geography-catalog-seed.md).
+  hook) and read time (the validation rule), per [0032's **D-N1**](0032-shipping-geography-catalog-seed.md).
 - **Story 0061 depends on this story only incidentally** — it extends `DeleteBlogCategory` in place with
   the in-use guard, which this story does not touch.
 - **No new Composer package.**
@@ -806,11 +810,11 @@ is one no post uses, and its translations are exactly the data that has just bec
 
 - **R-1 — Dropping the parent's `name` (D-2) breaks two already-written sibling stories, and this story
   cannot fix them.** Verified by grep against `ai-spec/tasks/`:
-  [`0062-blog-categories-ui.md`](done/0062-blog-categories-ui.md) line 370 specifies
+  [`0062-blog-categories-ui.md`](0062-blog-categories-ui.md) line 370 specifies
   `BlogCategory::query()->withCount(...)->orderBy('name')->orderBy('id')`, and its component surface
   (line ~329) declares a row shape `array{id: string, name: string, postCount: int, canEdit: bool,
   canDelete: bool}` plus a `$deletingCategoryName` property, all fed from `$category->name`;
-  [`0063-blog-posts-list-editor-ui.md`](done/0063-blog-posts-list-editor-ui.md) lines 792 and 978 specify
+  [`0063-blog-posts-list-editor-ui.md`](0063-blog-posts-list-editor-ui.md) lines 792 and 978 specify
   `->with(['category:id,name', ...])` — a **partial column select**, which is a sharper break than an
   `orderBy` because it names the dropped column explicitly in the eager load. All are **unimplemented
   Phase 1 files**, so the cost is an amendment rather than a code break — but the amendment is real and
@@ -830,7 +834,7 @@ is one no post uses, and its translations are exactly the data that has just bec
   *moves* that column and so doubles the surface. **Whatever widths 0058's Phase 2 settles must be applied
   identically to `blog_category_translations`.** The expansion factor **could not be verified here**: this
   worktree has no `vendor/`, and per
-  [this project's hedge rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
+  [this project's hedge rule](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
   an unverified mechanism must not be written up as fact. What *is* verified is that `composer.lock` pins
   `voku/portable-ascii` 2.1.1 as the real library behind `Str::ascii()`, so the hazard is concrete rather
   than hypothetical. The command that settles it, at Phase 2/3:
@@ -906,16 +910,16 @@ close:
 
 Derived from this debate; **none are in scope for 0072**.
 
-1. **Amend stories [0062](done/0062-blog-categories-ui.md) and [0063](done/0063-blog-posts-list-editor-ui.md)** so
+1. **Amend stories [0062](0062-blog-categories-ui.md) and [0063](0063-blog-posts-list-editor-ui.md)** so
    their queries no longer reference a `blog_categories.name` column — an ordered join over the
    translation for the requested language, and a replacement for the `category:id,name` partial select
    (**R-1**). The coordinator's, not this story's. Note this is the blog half of the same amendment 0070's
    own backlog item 1 raises for 0025/0027/0060/0062.
-2. **Carry the index-count finding back to [0070](done/0070-translatable-content-mechanism-product-categories-backend.md)**
+2. **Carry the index-count finding back to [0070](0070-translatable-content-mechanism-product-categories-backend.md)**
    — its line 243 asserts a fourth auto-created FK index on a column its own migration makes leftmost in a
    composite `UNIQUE` (**D-10**, **R-4**). Verify with `db:table` on both tables and correct whichever is
    wrong.
-3. **Close 0058's OQ-1 jointly with [0059](done/0059-blog-tags-backend.md)** before either Epic 5 taxonomy
+3. **Close 0058's OQ-1 jointly with [0059](0059-blog-tags-backend.md)** before either Epic 5 taxonomy
    retrofit implements — the length trio is now a length *quintet* once the translation tables exist
    (**R-3**).
 4. **Story 0074 (Blog Tags) inherits this story's D-1 verbatim, not 0070's.** `blog_tags` carries the same
@@ -993,5 +997,27 @@ The facilitator re-verified independently rather than trusting that citation: `p
 **Nothing outside this file was created or modified.** No application code, migration or test was written,
 and the files of stories 0023, 0058, 0059, 0061, 0062, 0063, 0068, 0069 and 0070 are untouched.
 
-**Not run by this phase**, per [workflow.md](../../docs/workflow.md): the INVEST check (Phase 2), TDD
+**Not run by this phase**, per [workflow.md](../../../docs/workflow.md): the INVEST check (Phase 2), TDD
 implementation (Phase 3), security audit (Phase 4), code review (Phase 5), or the docs pass (Phase 6).
+
+## Phase 2 — INVEST validation (2026-10-07)
+
+**Accepted at implementation start.** The story is independent of its siblings once 0070 and 0068 are done, small enough for one pass, testable through the Gherkin above, and valuable on its own (the name leaves the parent row so 0073 can build the language tabs). No changes requested.
+
+## Phase 3 — TDD (2026-10-07)
+
+**Done.** Production code in commit `18da146`, tests in `58cb814`. Full suite green unscoped (2507 + 3365 tests across the two chunks), Pint run unscoped and clean, Larastan clean at the configured level (`vendor/bin/phpstan analyse --memory-limit=2G`).
+
+**Scope notes.** The French-language Gherkin scenarios for authorization and blank-translation have **no non-default write path in this story** (D-7: only the default-language translation is written), so they cannot be exercised here and belong to 0073, which introduces the per-language authoring action. D-14 and D-15 above record the two decisions taken during implementation.
+
+## Phase 4 — Security audit (2026-10-07)
+
+**APPROVED** (appsec-auditor). Two Low items accepted: (1) category options are sorted in PHP, so `FILTER_OPTIONS_LIMIT` caps the rendered list rather than the query, consistent with 0070 (D-14); (2) rolling back 0072 is data-lossy by design (D-11), so take a database backup before any rollback.
+
+## Phase 5 — Final code review (2026-10-07)
+
+**Code approved** (code-reviewer). The bookkeeping findings (broken relative links after the move into `in-progress/`, inbound links from 0073, 0062 and 0063, the stale coordination files, and the unrecorded D-14/D-15) were fixed in the docs pass.
+
+## Phase 6 — Documentation (2026-10-07)
+
+Updated `docs/database/schema-blog.md` (new `blog_category_translations` section, `blog_categories` columns and indexes), `docs/database/schema.md` (ER diagram, hub text, model count), `docs/database/migrations/basics-and-alterations.md` (second use of the source-of-truth drop, `NOT NULL UNIQUE` derived column, non-inverse `down()`), `docs/conventions/naming/classes.md` (pattern established twice) and `docs/api/blog.md` (rows and list read translated names; no contract change). The decision digest `ai-spec/tasks/_digests/epic-5.md` gained this story's bullets.

@@ -6,6 +6,7 @@ use App\Actions\Auth\LogRefusedPrivilegedAttempt;
 use App\Actions\Blog\CreateBlogCategory;
 use App\Actions\Blog\DeleteBlogCategory;
 use App\Actions\Blog\RenameBlogCategory;
+use App\Actions\Translations\CompareTranslatedNames;
 use App\Models\BlogCategory;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Locked;
@@ -121,12 +122,12 @@ class Index extends Component
      */
     public function openEditModal(string $categoryId, LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt): void
     {
-        $target = BlogCategory::query()->findOrFail($categoryId);
+        $target = BlogCategory::query()->withTranslationsFor()->findOrFail($categoryId);
 
         $logRefusedPrivilegedAttempt->authorize('update', $target, targetType: 'blog_category', targetId: $target->id);
 
         $this->editingCategoryId = $target->id;
-        $this->name = $target->name;
+        $this->name = $target->translated('name') ?? '';
         $this->resetValidation('name');
         $this->showModal = true;
     }
@@ -176,12 +177,12 @@ class Index extends Component
      */
     public function confirmDelete(string $categoryId, LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt): void
     {
-        $target = BlogCategory::query()->findOrFail($categoryId);
+        $target = BlogCategory::query()->withTranslationsFor()->findOrFail($categoryId);
 
         $logRefusedPrivilegedAttempt->authorize('delete', $target, targetType: 'blog_category', targetId: $target->id);
 
         $this->blogCategoryId = $target->id;
-        $this->deletingCategoryName = $target->name;
+        $this->deletingCategoryName = $target->translated('name') ?? '—';
         $this->showDeleteModal = true;
     }
 
@@ -224,8 +225,9 @@ class Index extends Component
     }
 
     /**
-     * Ordered `name ASC, id ASC`: a small backoffice lookup table, so no pagination, search or
-     * sort picker. `Gate::allows()`, never `Gate::authorize()`, which would throw while rendering
+     * Ordered by the default-language name through the shared CompareTranslatedNames (story 0072,
+     * the name no longer being a column), `id` as the tiebreak: a small backoffice lookup table, so
+     * no pagination, search or sort picker. `Gate::allows()`, never `Gate::authorize()`, which would throw while rendering
      * a list.
      *
      * The count says `withTrashed()` -- the SAME scope DeleteBlogCategory's own guard counts with
@@ -235,14 +237,22 @@ class Index extends Component
      */
     private function loadCategories(): void
     {
+        $compareTranslatedNames = app(CompareTranslatedNames::class);
+
         $this->categories = BlogCategory::query()
             ->withCount(['posts' => fn ($query) => $query->withTrashed()])
-            ->orderBy('name')
-            ->orderBy('id')
+            ->withTranslationsFor()
             ->get()
+            ->sort(fn (BlogCategory $a, BlogCategory $b): int => $compareTranslatedNames(
+                $a->translated('name'),
+                $a->id,
+                $b->translated('name'),
+                $b->id,
+            ))
+            ->values()
             ->map(fn (BlogCategory $category): array => [
                 'id' => $category->id,
-                'name' => $category->name,
+                'name' => $category->translated('name') ?? '—',
                 'postCount' => (int) $category->posts_count,
                 'canEdit' => Gate::allows('update', $category),
                 'canDelete' => Gate::allows('delete', $category),

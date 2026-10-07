@@ -13,6 +13,7 @@
 use App\Livewire\BlogCategories\Index;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Livewire\Livewire;
@@ -21,6 +22,8 @@ use Spatie\Permission\PermissionRegistrar;
 beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
+
+    StoreLanguage::factory()->default()->create();
 });
 
 /**
@@ -67,8 +70,8 @@ function blogCategoriesRenderedPostCount(string $html, string $categoryId): ?int
 }
 
 test('the list renders each category\'s name and its own post count', function () {
-    $guides = BlogCategory::factory()->create(['name' => 'Guías']);
-    $news = BlogCategory::factory()->create(['name' => 'Novedades']);
+    $guides = BlogCategory::factory()->named('Guías')->create();
+    $news = BlogCategory::factory()->named('Novedades')->create();
     BlogPost::factory()->count(3)->create(['blog_category_id' => $guides->id]);
     $this->actingAs(blogCategoriesRenderingActor(['blog.view']));
 
@@ -102,7 +105,7 @@ test('the create modal contains exactly one input and no select', function () {
 });
 
 test('the edit modal prefills the one field and offers a single Cancel control', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $this->actingAs(blogCategoriesRenderingActor());
 
     $html = Livewire::test(Index::class)->call('openEditModal', $category->id)->html();
@@ -133,7 +136,7 @@ test('a refused name renders its message beside the field and the modal stays op
 });
 
 test('a duplicate name renders its message beside the field', function () {
-    BlogCategory::factory()->create(['name' => 'Guías']);
+    BlogCategory::factory()->named('Guías')->create();
     $this->actingAs(blogCategoriesRenderingActor());
 
     Livewire::test(Index::class)
@@ -148,7 +151,7 @@ test('a duplicate name renders its message beside the field', function () {
 // =====================================================================
 
 test('the blocked-delete refusal renders in the DOM with the correct digit, singular and plural', function (int $count, string $message) {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     BlogPost::factory()->count($count)->create(['blog_category_id' => $category->id]);
     $this->actingAs(blogCategoriesRenderingActor());
 
@@ -166,7 +169,7 @@ test('the blocked-delete refusal renders in the DOM with the correct digit, sing
 ]);
 
 test('the delete confirmation names the category and renders no refusal callout until a delete has been refused', function () {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     BlogPost::factory()->count(2)->create(['blog_category_id' => $category->id]);
     $this->actingAs(blogCategoriesRenderingActor());
 
@@ -182,7 +185,7 @@ test('the delete confirmation names the category and renders no refusal callout 
 
 test('the delete modal renders no confirm-and-proceed control of any kind once the delete is blocked', function () {
     // Arguably the single highest-value test in this story: absence is the thing under test.
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     BlogPost::factory()->count(5)->create(['blog_category_id' => $category->id]);
     $superAdmin = User::factory()->create();
     $superAdmin->assignRole('Super Admin');
@@ -208,7 +211,7 @@ test('the delete modal renders no confirm-and-proceed control of any kind once t
 });
 
 test('the delete modal for an unused category renders no refusal and a confirm control that is never disabled', function () {
-    $category = BlogCategory::factory()->create(['name' => str_repeat('a', 100)]);
+    $category = BlogCategory::factory()->named(str_repeat('a', 100))->create();
     $this->actingAs(blogCategoriesRenderingActor());
 
     $html = Livewire::test(Index::class)->call('confirmDelete', $category->id)->html();
@@ -226,9 +229,9 @@ test('the delete modal is absent until a confirmation is opened', function () {
 });
 
 test('a stale refusal does not render in the delete modal of an unused category opened afterwards', function () {
-    $blocked = BlogCategory::factory()->create(['name' => 'Guías']);
+    $blocked = BlogCategory::factory()->named('Guías')->create();
     BlogPost::factory()->create(['blog_category_id' => $blocked->id]);
-    $unused = BlogCategory::factory()->create(['name' => 'Novedades']);
+    $unused = BlogCategory::factory()->named('Novedades')->create();
     $this->actingAs(blogCategoriesRenderingActor());
 
     $html = Livewire::test(Index::class)
@@ -288,7 +291,7 @@ test('a view-only actor sees the create control unavailable too', function () {
 });
 
 test('every row action carries an accessible name', function () {
-    BlogCategory::factory()->create(['name' => 'Guías']);
+    BlogCategory::factory()->named('Guías')->create();
     $this->actingAs(blogCategoriesRenderingActor());
 
     $html = Livewire::test(Index::class)->html();
@@ -311,7 +314,7 @@ test('each row\'s wire:click hands its id to the component as a quoted JS litera
 });
 
 test('a category name that looks like markup is escaped, not rendered', function () {
-    BlogCategory::factory()->create(['name' => '<script>alert(1)</script>']);
+    BlogCategory::factory()->named('<script>alert(1)</script>')->create();
     $this->actingAs(blogCategoriesRenderingActor(['blog.view']));
 
     $html = Livewire::test(Index::class)->html();

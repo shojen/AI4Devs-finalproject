@@ -13,6 +13,7 @@ use App\Livewire\BlogPosts\Index;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Models\BlogTag;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\DB;
@@ -72,7 +73,7 @@ function blogPostsQuerySelectedColumns(array $statements): array
 }
 
 test('every row-fetching query on blog_posts names explicit columns and never body, slug or *', function (string $scenario) {
-    $category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $category = BlogCategory::factory()->named('Guías')->create();
     $tag = BlogTag::factory()->create(['name' => 'running']);
     BlogPost::factory()->count(3)->create(['blog_category_id' => $category->id])
         ->each(fn (BlogPost $post) => $post->tags()->attach($tag->id));
@@ -152,6 +153,10 @@ test('rendering N posts each with a category and tags issues the same bounded nu
     Gate::allows('update', BlogPost::factory()->create());
     BlogPost::withTrashed()->forceDelete();
 
+    // Same reason for the memoised default store language: the first render would otherwise pay its
+    // one-off lookup, which the second counted run does not.
+    StoreLanguage::defaultStoreLanguage();
+
     $queryCountFor = function (int $postCount): int {
         BlogPost::withTrashed()->forceDelete();
 
@@ -176,7 +181,7 @@ test('the query counter can see a per-row query, so the equality above is not va
         BlogPost::factory()->count($postCount)->create();
 
         return count(blogPostsQueryCapture(
-            fn () => BlogPost::query()->get()->each(fn (BlogPost $post) => $post->category->name),
+            fn () => BlogPost::query()->get()->each(fn (BlogPost $post) => $post->category->translated('name')),
         ));
     };
 

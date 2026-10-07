@@ -19,7 +19,7 @@ beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
 
-    $this->category = BlogCategory::factory()->create(['name' => 'Guías']);
+    $this->category = BlogCategory::factory()->named('Guías')->create();
 
     $this->actingAs(tagAssignmentActor(['blog.create', 'blog.edit', 'blog.view']));
 });

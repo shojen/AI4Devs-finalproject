@@ -18,7 +18,7 @@ is consumed from 0058 and 0061 as already-shipped code.
 **This file predates Epic 5's translatable-content retrofit and several of its statements are now
 false.** Two later stories change the schema this screen reads:
 
-- **[0072 — Translatable content retrofit, Blog Categories backend](../0072-translatable-content-retrofit-blog-categories-backend.md)**
+- **[0072 — Translatable content retrofit, Blog Categories backend](0072-translatable-content-retrofit-blog-categories-backend.md)**
   **drops `blog_categories.name` and `blog_categories.normalized_name` entirely** (its **D-2**) and
   moves both into a `blog_category_translations` child table, one row per store language, read
   through `BlogCategory::translated('name')`. Uniqueness moves with them, re-scoped to
@@ -350,7 +350,7 @@ App\Actions\Blog\DeleteBlogCategory::__invoke(BlogCategory $c): bool
 lang/en|es/blog.php                                              // created by 0061, carrying categories.delete_blocked
 ```
 
-> ⚠️ **Correction, 2026-08-30 — three lines of the contract above are falsified by [0072](../0072-translatable-content-retrofit-blog-categories-backend.md), which had not been written when this file was.**
+> ⚠️ **Correction, 2026-08-30 — three lines of the contract above are falsified by [0072](0072-translatable-content-retrofit-blog-categories-backend.md), which had not been written when this file was.**
 >
 > | Line above, as written | After 0072 |
 > | --- | --- |
@@ -480,7 +480,7 @@ a click would actually do
 ([authorization.md](../../../docs/architecture/authorization/grant-meta-rules-and-ui-hints.md#gateallows-in-a-list-query-is-a-ui-hint-not-a-layer)).
 
 > ⚠️ **Correction, 2026-08-30 — `->orderBy('name')->orderBy('id')` sorts on a column
-> [0072](../0072-translatable-content-retrofit-blog-categories-backend.md) **D-2** drops.** This is the
+> [0072](0072-translatable-content-retrofit-blog-categories-backend.md) **D-2** drops.** This is the
 > sharpest of the breaks: 0072's own **R-1** names this exact line (*"line 370"*) as the first of two
 > downstream sites it invalidates and explicitly declines to fix, and 0073's **Q-2** resolved on
 > 2026-08-30 that **0073 owns the replacement for this screen** — because splitting *"the modal gets
@@ -757,7 +757,7 @@ into the same shared rule** and that the outcome **renders**.
       and catches a developer adapting `ProductCategories\Index` who reaches for
       `withCount('products')` against a relation that does not exist here.
 
-> ⚠️ **Correction, 2026-08-30 — both cases above survive [0072](../0072-translatable-content-retrofit-blog-categories-backend.md)/[0073](../0073-blog-categories-language-tabs-ui.md) in intent but not in fixture, and 0073 owns the edit.** The ordering test keeps its *"why it can fail"* reasoning verbatim — nothing in the schema enforces order, only the query does — but the ordering it asserts is produced by a **PHP `sortBy(translated('name'))`** rather than by `orderBy('name')`, so its arrangement must create *translations* rather than set a `name` column. The row-shape test's `name` becomes **`?string`**, and it gains a case a `string` shape could not express: a category with **no** default-language translation exposes `name => null` and renders an em dash. 0073's Modify table names `tests/Feature/Blog/BlogCategoriesIndexTest.php` and scopes its edit to *"only where its own cases assert against the dropped `name` column"* — these two are that set.
+> ⚠️ **Correction, 2026-08-30 — both cases above survive [0072](0072-translatable-content-retrofit-blog-categories-backend.md)/[0073](../0073-blog-categories-language-tabs-ui.md) in intent but not in fixture, and 0073 owns the edit.** The ordering test keeps its *"why it can fail"* reasoning verbatim — nothing in the schema enforces order, only the query does — but the ordering it asserts is produced by a **PHP `sortBy(translated('name'))`** rather than by `orderBy('name')`, so its arrangement must create *translations* rather than set a `name` column. The row-shape test's `name` becomes **`?string`**, and it gains a case a `string` shape could not express: a category with **no** default-language translation exposes `name => null` and renders an em dash. 0073's Modify table names `tests/Feature/Blog/BlogCategoriesIndexTest.php` and scopes its edit to *"only where its own cases assert against the dropped `name` column"* — these two are that set.
 
 *Create*
 - [x] A valid name persists exactly one row and the modal closes.
@@ -1002,7 +1002,7 @@ links to, or shares anything with the product taxonomy.
 > retrofit, and this is stated positively so a later reader does not have to re-derive it.** The
 > block's count is `$category->posts()->withTrashed()->count()` — a count of **`blog_posts` rows
 > referencing the category**, which touches neither `blog_categories.name` nor `normalized_name` and
-> is therefore untouched by [0072](../0072-translatable-content-retrofit-blog-categories-backend.md)
+> is therefore untouched by [0072](0072-translatable-content-retrofit-blog-categories-backend.md)
 > dropping both. Verified against both later stories rather than assumed: 0072's *"Deliberately not
 > touched"* list names `app/Actions/Blog/DeleteBlogCategory.php` as **untouched**, and
 > [0073](../0073-blog-categories-language-tabs-ui.md) lists the delete-confirmation modal, its
@@ -1314,7 +1314,7 @@ links to, or shares anything with the product taxonomy.
 > ⚠️ **Added 2026-08-30 — two *downstream* dependencies this file could not have known about.** These
 > do not block this story; this story blocks **them**.
 >
-> - **[0072](../0072-translatable-content-retrofit-blog-categories-backend.md)** retrofits the table this
+> - **[0072](0072-translatable-content-retrofit-blog-categories-backend.md)** retrofits the table this
 >   screen reads, dropping `blog_categories.name` / `normalized_name`. Its **R-1** names this file's
 >   `orderBy('name')` and its `{id, name, …}` row shape as breakage it **explicitly declines to fix**.
 > - **[0073](../0073-blog-categories-language-tabs-ui.md)** is the paired UI story and **owns the fix**
