@@ -151,6 +151,10 @@ app/
                        Actions/Translations/SetTranslation primitive (below), never a scalar column
   Actions/Blog/        Domain actions for the Blog area (CreateBlogCategory, RenameBlogCategory,
                        DeleteBlogCategory — story 0058; CreateBlogTag, RenameBlogTag,
+                       SetBlogCategoryTranslation (story 0073) is the per-language name writer: self-authorizing
+                       (logged `update`, first statement), self-validating (nested data against `names.{languageId}`) wrapper
+                       over the unguarded Translations\SetTranslation primitive; the second of its kind after
+                       ProductCategories/SetProductCategoryTranslation, and the only blog code that may import the primitive;
                        DeleteBlogTag, FindOrCreateBlogTag — story 0059; CreateBlogPost, UpdateBlogPost,
                        DeleteBlogPost (a soft delete), RestoreBlogPost, SyncBlogPostTags (the single writer of
                        blog_post_tag; authorizes nothing, its callers did) — story 0061; each other action self-authorizes as its first
