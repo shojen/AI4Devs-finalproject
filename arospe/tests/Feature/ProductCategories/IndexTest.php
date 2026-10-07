@@ -46,6 +46,15 @@ beforeEach(function () {
 });
 
 /**
+ * The store default language's id -- the key of the one `names.{id}` field every pre-tabs case in
+ * this file drives (story 0071 replaced the single `$name` property with the `$names` array).
+ */
+function productCategoriesDefaultLanguageId(): string
+{
+    return (string) StoreLanguage::defaultStoreLanguage()?->id;
+}
+
+/**
  * An actor holding every products.* CRUD permission -- the default fixture for tests whose
  * subject is not authorization itself.
  *
@@ -114,7 +123,7 @@ test('submitting a new product category persists exactly one row and closes the 
 
     Livewire::test(Index::class)
         ->call('openCreateModal')
-        ->set('name', 'Outerwear')
+        ->set('names.'.productCategoriesDefaultLanguageId(), 'Outerwear')
         ->call('save')
         ->assertHasNoErrors()
         ->assertSet('showModal', false);
@@ -133,9 +142,9 @@ test('blank and whitespace-only names are refused and add no row', function (str
 
     Livewire::test(Index::class)
         ->call('openCreateModal')
-        ->set('name', $invalidName)
+        ->set('names.'.productCategoriesDefaultLanguageId(), $invalidName)
         ->call('save')
-        ->assertHasErrors(['name']);
+        ->assertHasErrors(['names.'.productCategoriesDefaultLanguageId()]);
 
     expect(ProductCategory::count())->toBe($countBefore);
 })->with([
@@ -151,9 +160,9 @@ test('creating a product category with a name already in the catalog is refused 
 
     Livewire::test(Index::class)
         ->call('openCreateModal')
-        ->set('name', 'Footwear')
+        ->set('names.'.productCategoriesDefaultLanguageId(), 'Footwear')
         ->call('save')
-        ->assertHasErrors(['name']);
+        ->assertHasErrors(['names.'.productCategoriesDefaultLanguageId()]);
 
     expect(ProductCategoryTranslation::where('name', 'Footwear')->count())->toBe(1);
 });
@@ -170,9 +179,9 @@ test('a case-only or accent-only duplicate name is refused on the name field', f
 
     Livewire::test(Index::class)
         ->call('openCreateModal')
-        ->set('name', $submittedDuplicate)
+        ->set('names.'.productCategoriesDefaultLanguageId(), $submittedDuplicate)
         ->call('save')
-        ->assertHasErrors(['name']);
+        ->assertHasErrors(['names.'.productCategoriesDefaultLanguageId()]);
 
     expect(ProductCategory::count())->toBe(1);
 })->with([
@@ -187,7 +196,7 @@ test('a name at the accepted length boundary is accepted, one character over is 
 
     Livewire::test(Index::class)
         ->call('openCreateModal')
-        ->set('name', str_repeat('A', 255))
+        ->set('names.'.productCategoriesDefaultLanguageId(), str_repeat('A', 255))
         ->call('save')
         ->assertHasNoErrors();
 
@@ -197,9 +206,9 @@ test('a name at the accepted length boundary is accepted, one character over is 
 
     Livewire::test(Index::class)
         ->call('openCreateModal')
-        ->set('name', str_repeat('B', 256))
+        ->set('names.'.productCategoriesDefaultLanguageId(), str_repeat('B', 256))
         ->call('save')
-        ->assertHasErrors(['name']);
+        ->assertHasErrors(['names.'.productCategoriesDefaultLanguageId()]);
 
     expect(ProductCategory::count())->toBe($countBefore);
 });
@@ -216,7 +225,7 @@ test('renaming a category to a free name updates the row', function () {
 
     Livewire::test(Index::class)
         ->call('openEditModal', $category->id)
-        ->set('name', 'Running shoes')
+        ->set('names.'.productCategoriesDefaultLanguageId(), 'Running shoes')
         ->call('save')
         ->assertHasNoErrors();
 
@@ -233,7 +242,7 @@ test('saving a category under its own unchanged name is accepted', function () {
 
     Livewire::test(Index::class)
         ->call('openEditModal', $category->id)
-        ->set('name', 'Footwear')
+        ->set('names.'.productCategoriesDefaultLanguageId(), 'Footwear')
         ->call('save')
         ->assertHasNoErrors();
 
@@ -456,9 +465,9 @@ test('saving a new category is forbidden for an actor lacking products.create', 
 
     $countBefore = ProductCategory::count();
 
-    // set('name', ...) directly rather than via openCreateModal(), since that opener is itself
+    // set('names.{id}', ...) directly rather than via openCreateModal(), since that opener is itself
     // gated on 'create' above and would throw before save() is ever reached.
-    expect(fn () => Livewire::test(Index::class)->set('name', 'Should Not Persist')->call('save'))
+    expect(fn () => Livewire::test(Index::class)->set('names.'.productCategoriesDefaultLanguageId(), 'Should Not Persist')->call('save'))
         ->toThrow(AuthorizationException::class);
 
     expect(ProductCategory::count())->toBe($countBefore);
@@ -497,7 +506,7 @@ test('renaming a category is re-checked inside save, not only at the opener', fu
     $actor->revokePermissionTo('products.edit');
     app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-    expect(fn () => $component->set('name', 'Should Not Persist')->call('save'))
+    expect(fn () => $component->set('names.'.productCategoriesDefaultLanguageId(), 'Should Not Persist')->call('save'))
         ->toThrow(AuthorizationException::class);
 
     expect($target->fresh()->translated('name'))->not->toBe('Should Not Persist');
@@ -552,13 +561,13 @@ test('a Super Admin holding zero permission rows passes viewAny, create and upda
 
     Livewire::test(Index::class)
         ->call('openCreateModal')
-        ->set('name', 'Super Admin Created')
+        ->set('names.'.productCategoriesDefaultLanguageId(), 'Super Admin Created')
         ->call('save')
         ->assertHasNoErrors();
 
     Livewire::test(Index::class)
         ->call('openEditModal', $target->id)
-        ->set('name', 'Super Admin Renamed')
+        ->set('names.'.productCategoriesDefaultLanguageId(), 'Super Admin Renamed')
         ->call('save')
         ->assertHasNoErrors();
 

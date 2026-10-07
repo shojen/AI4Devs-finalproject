@@ -1,16 +1,13 @@
 <?php
 
 // Pest 4 browser tests for the product category management screen, per
-// ai-spec/tasks/in-progress/0025-product-categories-ui.md's "Tests to perform" section, WRITTEN
-// AGAINST THE ORIGINAL (pre-0070/0071) design -- a single `name` field, no language tabs, no
-// per-language tab strip. Every "⚠️ Correction, 2026-08-30" block in the story file describes
-// 0070/0071's later contract and is deliberately not applied here.
+// ai-spec/tasks/in-progress/0025-product-categories-ui.md's "Tests to perform" section, migrated
+// by story 0071 (D-9) to the tabbed modal: the single `name` field became one input per active
+// store language, addressed through its data-test hook `@language-name-input-{languageId}`. Every
+// test keeps its original name and intent; only the field selectors changed.
 //
-// Deliberately kept FLAT (tests/Browser/ProductCategoriesIndexTest.php, not a
-// tests/Browser/ProductCategories/ subfolder), per the story file's own explicit note: 0071's D-9
-// puts ITS browser file in the mirrored subfolder and lists this flat path as a further amendment
-// to this story -- "not applied here ... flagged for a human, not silently changed." A testing
-// convention decision belongs in a Phase 2 review, not to this dispatch.
+// Moved at story 0071 from the flat tests/Browser/ProductCategoriesIndexTest.php into this
+// mirrored subfolder (D-9), beside LanguageTabsTest.php.
 //
 // Written at TDD Phase 3 step 1 (red), before App\Livewire\ProductCategories\Index or
 // routes/product-categories.php existed. Every test below is green against the shipped screen.
@@ -43,6 +40,11 @@ beforeEach(function () {
     StoreLanguage::factory()->default()->create();
 });
 
+function productCategoriesBrowserDefaultLanguageId(): string
+{
+    return (string) StoreLanguage::defaultStoreLanguage()?->id;
+}
+
 function productCategoriesBrowserActor(): User
 {
     $actor = User::factory()->create();
@@ -62,12 +64,12 @@ test('opening the create form shows a blank field, with no stale prefill leaking
         ->assertNoJavaScriptErrors()
         ->click('@edit-product-category-'.$existing->id)
         ->assertNoJavaScriptErrors()
-        ->assertValue('name', 'Footwear')
+        ->assertValue('@language-name-input-'.productCategoriesBrowserDefaultLanguageId(), 'Footwear')
         ->click('Cancel')
         ->assertNoJavaScriptErrors()
         ->click('New category')
         ->assertNoJavaScriptErrors()
-        ->assertValue('name', '');
+        ->assertValue('@language-name-input-'.productCategoriesBrowserDefaultLanguageId(), '');
 });
 
 // Scenario: A catalog administrator creates a product category from the screen
@@ -81,7 +83,7 @@ test('creating a category through a real fill and save round-trip adds it to the
         ->assertNoJavaScriptErrors()
         ->click('New category')
         ->assertNoJavaScriptErrors()
-        ->fill('name', 'Outerwear')
+        ->fill('@language-name-input-'.productCategoriesBrowserDefaultLanguageId(), 'Outerwear')
         ->click('Save')
         ->assertNoJavaScriptErrors()
         ->assertSee('Outerwear');
@@ -100,7 +102,7 @@ test('editing prefills the name, and re-saving it unchanged preserves it', funct
         ->assertNoJavaScriptErrors()
         ->click('@edit-product-category-'.$category->id)
         ->assertNoJavaScriptErrors()
-        ->assertValue('name', 'Footwear')
+        ->assertValue('@language-name-input-'.productCategoriesBrowserDefaultLanguageId(), 'Footwear')
         ->click('Save')
         ->assertNoJavaScriptErrors();
 
@@ -118,7 +120,7 @@ test('cancelling the create form adds nothing', function () {
         ->assertNoJavaScriptErrors()
         ->click('New category')
         ->assertNoJavaScriptErrors()
-        ->fill('name', 'Should Not Persist')
+        ->fill('@language-name-input-'.productCategoriesBrowserDefaultLanguageId(), 'Should Not Persist')
         ->click('Cancel')
         ->assertNoJavaScriptErrors()
         ->assertDontSee('Should Not Persist');
@@ -172,7 +174,9 @@ test('deleting a category still in use shows the blocked message inline, the cat
 
 // Scenario: Creating a product category with a name already in the catalog is refused on the screen
 test('creating a duplicate name through the real form shows the inline error', function () {
-    // Proves the @error binding works in a real browser, not merely in the component's error bag.
+    // Proves the error binding works in a real browser, not merely in the component's error bag.
+    // Asserts the error marker rather than the message text (D-11: message text risks colliding
+    // with other page copy; the localized wording is asserted at the feature layer).
     $actor = productCategoriesBrowserActor();
     $this->actingAs($actor);
 
@@ -182,10 +186,11 @@ test('creating a duplicate name through the real form shows the inline error', f
         ->assertNoJavaScriptErrors()
         ->click('New category')
         ->assertNoJavaScriptErrors()
-        ->fill('name', 'Footwear')
+        ->fill('@language-name-input-'.productCategoriesBrowserDefaultLanguageId(), 'Footwear')
         ->click('Save')
+        ->wait(1)
         ->assertNoJavaScriptErrors()
-        ->assertSee(__('validation.unique', ['attribute' => 'name']));
+        ->assertVisible('@language-name-error-'.productCategoriesBrowserDefaultLanguageId());
 
     expect(ProductCategoryTranslation::where('name', 'Footwear')->count())->toBe(1);
 });

@@ -70,6 +70,21 @@ test('a custom $errorKey is honoured on the returned ValidationException, instea
         ->and($result->errors())->not->toHaveKey('name');
 });
 
+test('the message uses the default "name" label unless a custom attribute label is passed', function () {
+    $e = constructedQueryExceptionFor(
+        "SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'x' for key "
+            ."'product_category_translations.product_category_translations_store_language_id_name_unique'",
+        ['23000', 1062, "Duplicate entry 'x' for key 'product_category_translations.product_category_translations_store_language_id_name_unique'"],
+    );
+
+    $default = app(TranslateProductCategoryNameUniqueViolation::class)($e, 'names.fr-language-id');
+    $custom = app(TranslateProductCategoryNameUniqueViolation::class)($e, 'names.fr-language-id', 'nombre');
+
+    expect($default->errors()['names.fr-language-id'][0])->toBe(trans('validation.unique', ['attribute' => 'name']))
+        ->and($custom->errors()['names.fr-language-id'][0])->toBe(trans('validation.unique', ['attribute' => 'nombre']))
+        ->and($custom->errors()['names.fr-language-id'][0])->not->toContain('names.');
+});
+
 // Unreachable through Create/Rename, which always pass the id of an EXISTING default language --
 // this is the branch that would ship untested if the discrimination were left inline instead of
 // extracted (D-7 (ii)).

@@ -13,6 +13,7 @@
 // unreachable over HTTP.
 
 use App\Actions\ProductCategories\CreateProductCategory;
+use App\Actions\ProductCategories\SetProductCategoryTranslation;
 use App\Livewire\ProductCategories\Index;
 use App\Models\Product;
 use App\Models\ProductCategory;
@@ -128,7 +129,7 @@ test('save() authorization refusal is logged', function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
 
     try {
-        $component->set('name', 'Should Not Persist')->call('save');
+        $component->set('names.'.StoreLanguage::defaultStoreLanguage()->id, 'Should Not Persist')->call('save');
     } catch (AuthorizationException) {
         //
     }
@@ -136,6 +137,36 @@ test('save() authorization refusal is logged', function () {
     Log::shouldHaveReceived('warning')
         ->withArgs(fn (string $message, array $context): bool => $message === 'Privileged action refused'
             && ($context['actor_id'] ?? null) === $creator->id
+            && ($context['ability'] ?? null) === 'update'
+            && ($context['target_type'] ?? null) === 'product_category'
+            && ($context['target_id'] ?? null) === $target->id
+            && productCategoriesRefusalLogContextHasNoSecretLookingKey($context))
+        ->once();
+});
+
+// Story 0071 (D-4): the backend layer of the defence-in-depth decision logs its own refusals, so a
+// non-UI caller (an importer, a console command) leaves the same audit trail the screen does. A
+// direct call, with no component involved, is what proves the ACTION logs rather than its caller.
+test('SetProductCategoryTranslation refusal is logged with the actor, ability and target when called directly', function () {
+    Log::spy();
+
+    $creator = productCategoriesRefusalTestActor(['products.view', 'products.create']);
+    $this->actingAs($creator);
+    $target = app(CreateProductCategory::class)('Footwear');
+    $french = StoreLanguage::factory()->create();
+
+    $actor = productCategoriesRefusalTestActor();
+    $this->actingAs($actor);
+
+    try {
+        app(SetProductCategoryTranslation::class)($target, $french, 'Chaussures');
+    } catch (AuthorizationException) {
+        //
+    }
+
+    Log::shouldHaveReceived('warning')
+        ->withArgs(fn (string $message, array $context): bool => $message === 'Privileged action refused'
+            && ($context['actor_id'] ?? null) === $actor->id
             && ($context['ability'] ?? null) === 'update'
             && ($context['target_type'] ?? null) === 'product_category'
             && ($context['target_id'] ?? null) === $target->id

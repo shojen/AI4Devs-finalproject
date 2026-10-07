@@ -24,7 +24,7 @@
 // round trip re-renders it with typed text. The type row actions and the "New attribute
 // type"/Save/Cancel controls carry real visible text or the story's own data-test hooks and are
 // targeted by text/`@hook`, per this app's existing convention (see
-// tests/Browser/ProductCategoriesIndexTest.php).
+// tests/Browser/ProductCategories/IndexTest.php).
 //
 // A second trap, also found and fixed while writing this file rather than left in: `->click(...)
 // ->assertNoJavaScriptErrors()` does NOT wait for the Livewire round trip that click triggers to
