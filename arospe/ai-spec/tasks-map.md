@@ -44,6 +44,10 @@ was never implemented — nothing in `app/` writes `PaymentStatus::Paid`, so no 
 (0083 edits the orders *list* view; 0085 the *detail* view), so no `conflict_risk_with` entries. Pending count moves from 13 to 15
 numbered files; `done/` unchanged at 92.
 
+**Update (2026-10-07): `0072-translatable-content-retrofit-blog-categories-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** -- the seventh Epic 5 story to close. Its node, its `P0072 --> P0073` edge and its `tasks-status.json` entry (the `claimed` one) are dropped because the task is closed; it joins the flat `done/` inventory. Its one dependent `0073` drops `"0072"` from `depends_on` and moves from `blocked` to `ready` (its only pending dependency); `0072` is removed from every `conflict_risk_with` list. Link-integrity check, both directions: same-depth move, so the file's own outbound links lost their `../done/` prefix (bare siblings) and all resolve; inbound links were repointed from `in-progress/0072-...` to `done/0072-...` in `0073` (3) and from `../in-progress/0072-...` to the bare sibling in `done/0062` (5) and `done/0063` (1). `ai-spec/tasks/in-progress/` is empty again.
+
+**Update (2026-10-07): `0072-translatable-content-retrofit-blog-categories-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 3 step 0, claimed by `worktree-0072`). It is still pending work, so it keeps its node and edge (`P0072 --> P0073`); its node moves from the green `ready` class to the blue `claimed` class, and its `tasks-status.json` entry stays `"claimed"` (live claim carried forward, nothing dropped) with `depends_on` still empty and `touches` widened to the real write set (the three Livewire screens read the dropped column, story D-14). The link-integrity check ran both directions: the moved file's 21 outbound links were repointed one level deeper (`](done/…)` to `](../done/…)`, `](../../docs/…)` and `](../../database/…)` to `](../../../…)`), and inbound links were repointed in `0073` (`](0072-…md)` to `](in-progress/0072-…md)`) and in `done/0062`, `done/0063` (`](../0072-…md)` to `](../in-progress/0072-…md)`); a grep found no other inbound links. `ai-spec/tasks/in-progress/` holds exactly this one file. Counts unchanged: pending numbered files and `done/` as before.
+
 **Update (2026-10-07): `0071-product-categories-language-tabs-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** -- the sixth Epic 5 story to close, and the owner of the shared `<x-language-tab-strip>` the other i18n screens consume. Its node, its `P0071 --> P0073/P0075/P0079` edges and its `tasks-status.json` entry (the `claimed` one) are dropped because the task is closed; it joins the flat `done/` inventory. Its dependents drop `"0071"` from `depends_on` and are re-derived: `0073` stays `blocked` on `0072`, `0075` on `0074`, `0079` on `0078` (each of those backend retrofits is `ready`); no `status` changes. Link-integrity check, both directions: same-depth `in-progress/` to `done/` move, so the file's own outbound links (`../../../docs/...`, `../0077-...`, `../done/...` forms already resolved from the moved depth) were re-verified; inbound links were repointed from `in-progress/0071-...` to `done/0071-...` in `0073` (5), `0075` (3), `0077` (11), `0079` (2) and from `../in-progress/0071-...` to the bare sibling `0071-...` in `done/0025` (8), `done/0060` (3), `done/0063` (2), `done/0070` (4). Remaining textual (non-link) mentions of the `in-progress/` path are historical prose in `0073` and code comments in three test files (not editable by the docs pass). `ai-spec/tasks/in-progress/` is empty again. Counts: **8 numbered files pending in `ai-spec/tasks/`** (0072-0079) plus the infra doc, **`done/` +1**.
 
 **Update (2026-10-07): `0071-product-categories-language-tabs-ui.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 3 step 0). It is still pending work, so it keeps its node and edges (`P0071 --> P0073/P0075/P0079`); its node moves from the green `ready` class to the blue `claimed` class, and its `tasks-status.json` entry's `status` moved to `"claimed"` (`claimed_by: "shojen/0071-product-categories-language-tabs-ui"`), with `depends_on` unchanged (still empty) and `touches` widened to the full *Files to create/modify* set of the story (no overlap with any other pending task's `touches`). `ai-spec/tasks/in-progress/` now holds exactly this one file. The mandatory link-integrity check ran both directions: the moved file's own relative links were repointed one level deeper (`../../docs/…` to `../../../docs/…`, `](done/…)` to `](../done/…)`, the bare `](0077-…md)` to `](../0077-…md)`) and all 27 resolve; inbound links were repointed in `0073`, `0075`, `0077`, `0079` (`](0071-…md)` to `](in-progress/0071-…md)`) and in `done/0025`, `done/0060`, `done/0063`, `done/0070` (`](../0071-…md)` to `](../in-progress/0071-…md)`); one unrelated pre-existing broken link in `done/0070` (`](../0069-…md)` to `](0069-…md)`) was fixed in passing.
@@ -525,7 +529,6 @@ flowchart LR
 
     subgraph PEND_I18N["Epic 5 — Internationalization"]
         direction TB
-        P0072["0072 Blog Categories retrofit BE"]
         P0073["0073 Blog Categories i18n UI"]
         P0074["0074 Blog Tags retrofit BE"]
         P0075["0075 Blog Tags i18n UI"]
@@ -596,7 +599,7 @@ flowchart LR
     %% other pending deps. 0066 and 0070 closed on separate branches and are reconciled together by
     %% this merge -- neither removal supersedes the other.)
     %% (P0067 -.-> P0069 dropped: 0067 closed to done/ 2026-10-02, the fourth Epic 5 story to close; its node and the conflict edge are removed.)
-    P0072 --> P0073
+    %% (P0072 --> P0073 dropped: 0072 closed to done/ 2026-10-07; 0073 is now ready.)
     P0074 --> P0075
     P0076 --> P0077
     P0078 --> P0079
@@ -605,8 +608,8 @@ flowchart LR
     %% (P0084 --> P0085 dropped: 0084 is done; 0085 is done too.)
     %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
-    class P0073,P0075,P0077,P0079 pending;
-    class P0072,P0074,P0076,P0078 ready;
+    class P0075,P0077,P0079 pending;
+    class P0073,P0074,P0076,P0078 ready;
     %% (P0071 --> P0073/P0075/P0079 dropped: 0071 closed to done/ 2026-10-07.)
 ```
 

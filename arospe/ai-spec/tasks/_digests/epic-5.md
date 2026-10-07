@@ -36,3 +36,13 @@ closed earlier and are not backfilled here (read their `done/` files or `docs/`)
 - L-1: `TranslateProductCategoryNameUniqueViolation::__invoke($e, $errorKey = 'name', $attributeLabel = 'name')` gained the optional third argument (backward compatible); the action also passes `['names.*' => __('products.categories.index.tabs.name_attribute')]` as validator attributes. Siblings (0073/0075/0077/0079) copy this widened translator — story 0071.
 - Validator pitfall: a flat `["names.{id}" => $v]` data key is escaped by `parseData()` and never reaches a dotted rule key; use nested data (errors-log 2026-10-07) — story 0071.
 - Browser tests live in the mirrored `tests/Browser/ProductCategories/` (D-9); the former flat `ProductCategoriesIndexTest.php` moved to `IndexTest.php` — story 0071.
+
+## Story 0072 — Blog categories retrofit (backend)
+
+- `blog_category_translations` mirrors 0070's shape but its per-language unique index is `UNIQUE(store_language_id, normalized_name)` (named `blog_category_translations_language_normalized_name_unique`), not raw `name`; `BlogCategoryTranslation::booted()` derives `normalized_name` on `saving` — story 0072 (D-1, D-3).
+- `BlogCategoryValidationRules::blogCategoryRules()/nameRules()/uniqueNormalisedName()` gained a required `string $storeLanguageId` before the optional `?string $blogCategoryId`; the own-row exclusion is `where('blog_category_id', '!=', $id)`, never the translation PK — story 0072 (D-4).
+- `TranslateBlogCategoryNameUniqueViolation::__invoke($e, $errorKey = 'name', $attributeLabel = 'name')` is ready for 0073's per-language action; it converts only a 1062 on the language/`normalized_name` index — story 0072 (R-11).
+- `BackfillBlogCategoryTranslations` recomputes `normalized_name` (never copies); it refuses only when categories exist and no default store language does, because `store_languages` is empty at migration time on fresh installs/tests — story 0072 (D-5, D-15).
+- Create/Rename write only the default-language translation (D-7); the non-default write path and the French Gherkin scenarios belong to 0073 — story 0072.
+- BlogCategories/Index, BlogPosts/Index and BlogPosts/Editor were minimally migrated to `translated('name')` + `CompareTranslatedNames` (D-14); `FILTER_OPTIONS_LIMIT` now caps the rendered category list, not the query — story 0072.
+- `down()` of the drop migration restores nullable columns, no unique index; rollback is data-lossy (D-11) — story 0072.

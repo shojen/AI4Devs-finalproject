@@ -6,7 +6,7 @@ name is authored **per active store language** through language tabs, satisfying
 [PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization)'s *"each active store
 language surfaces as a tab … in the taxonomy management screens"* and its `Taxonomy names are
 translatable per store language` scenario for the **Blog category** row. Consumes story
-[0072](0072-translatable-content-retrofit-blog-categories-backend.md)'s retrofit — which **deletes
+[0072](done/0072-translatable-content-retrofit-blog-categories-backend.md)'s retrofit — which **deletes
 the `blog_categories.name` column this screen currently reads** — and story
 [0071](done/0071-product-categories-language-tabs-ui.md)'s shared tab-strip pattern, both unchanged.
 
@@ -780,7 +780,7 @@ content intact. Critically, **0070's D-6 makes this story that layer**: *"the `i
 belongs one layer up, at the UI's 'which tabs do I render' decision — never inside the fallback."* So
 `StoreLanguage::active()` gates the **tab strip only**, and no `is_active` clause may appear on any
 read, relation or fallback path. ⚠️ The residual — no signal that stale content exists in a removed
-language — is [0069's backlog item 3 / 0072's **R-7**](0072-translatable-content-retrofit-blog-categories-backend.md),
+language — is [0069's backlog item 3 / 0072's **R-7**](done/0072-translatable-content-retrofit-blog-categories-backend.md),
 now passing unaddressed for a **fourth** time (0070, 0072, 0071, this story). Recorded by number
 rather than locally patched (**R-7**); the signal already exists at the right layer, in
 `StoreLanguage::translationUsageCount()` and 0069's removal warning.
@@ -924,7 +924,7 @@ user meets it, 0058 **D-13**'s authorize-before-validate trap (absent from 0071 
 
 ### Dependencies
 
-- **[0072](0072-translatable-content-retrofit-blog-categories-backend.md)** — hard, blocking. The
+- **[0072](done/0072-translatable-content-retrofit-blog-categories-backend.md)** — hard, blocking. The
   translation table, the model wiring, the re-scoped validation rule, the dropped `name` /
   `normalized_name` columns. **Specified, not implemented.**
 - **[0071](done/0071-product-categories-language-tabs-ui.md)** — hard, blocking. Supplies
