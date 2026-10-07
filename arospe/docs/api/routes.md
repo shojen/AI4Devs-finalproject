@@ -162,4 +162,4 @@ Story 0057 first mounted the bell twice (desktop sidebar + mobile header) becaus
 
 When `routes/api.php` and API resource controllers appear, replace this file's structure with one `api/<resource>.md` per resource, each documenting real request/response JSON pulled from the controller/resource classes — do not add one preemptively.
 
-_Last updated: 2026-10-03 — Story 0069 (Store Languages settings screen). The `store-languages.index` entry now describes the real screen and its `store_settings` sidebar entry; see [store-languages.md](store-languages.md). Earlier: story 0067 (admin UI language switcher) added the `language.edit` route row and the layout-mounted `LanguageSwitcher` row._
+_Last updated: 2026-10-07 — Story 0071: the `product-categories.index` screen's create/edit modal is now tabbed per store language (no route change; see [product-categories.md](products/product-categories.md#the-tabbed-createedit-modal-story-0071)). Still current from story 0069: the `store-languages.index` entry and its `store_settings` sidebar entry ([store-languages.md](store-languages.md)), and the `language.edit` and layout-mounted `LanguageSwitcher` rows from story 0067._

@@ -109,11 +109,10 @@ tests/
                         test double can exist; autoloaded via composer.json's existing
                         "Tests\\": "tests/" mapping, no new autoload entry
   Browser/              Pest browser tests. Mirrors app structure (Auth/, Media/, Components/,
-                        Products/ since story 0027) — but four of the eleven files sit flat instead
-                        (UsersIndexTest.php, RolesIndexTest.php, SalesRegionsIndexTest.php,
-                        ProductCategoriesIndexTest.php; the previous "three of eight" count here
-                        missed ProductCategoriesIndexTest.php entirely, a gap present since story
-                        0025 and corrected by story 0027's own pass); see
+                        Products/ since story 0027, ProductCategories/ since story 0071) — but three of the
+                        eleven files sit flat instead (UsersIndexTest.php, RolesIndexTest.php,
+                        SalesRegionsIndexTest.php; story 0071 moved the former flat
+                        ProductCategoriesIndexTest.php to ProductCategories/IndexTest.php); see
                         ../../testing/frontend/playwright-setup/status-structure-and-syntax.md#folder-structure. Story 0055 adds
                         Browser/Orders/ (six files, one per concern), Browser/BlogPosts/ (story 0063: IndexTest.php and
                         EditorJourneyTest.php, beside 0060's and 0062's Browser/BlogTags/ and Browser/BlogCategories/)
