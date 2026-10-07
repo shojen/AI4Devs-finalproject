@@ -28,6 +28,13 @@ return [
             'delete_heading' => 'Eliminar categoría',
             'delete_body' => '¿Seguro que quieres eliminar ":name"? Esta acción no se puede deshacer.',
             'delete_confirm' => 'Eliminar :name',
+
+            // Story 0073 -- the per-language name tabs.
+            'tabs' => [
+                'name_attribute' => 'nombre',
+                'untranslated' => 'Esta categoría aún no tiene nombre en este idioma.',
+                'translation_requires_edit' => 'Necesitas permiso para editar categorías para añadir una traducción.',
+            ],
         ],
     ],
 

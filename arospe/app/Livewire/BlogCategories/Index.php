@@ -6,28 +6,36 @@ use App\Actions\Auth\LogRefusedPrivilegedAttempt;
 use App\Actions\Blog\CreateBlogCategory;
 use App\Actions\Blog\DeleteBlogCategory;
 use App\Actions\Blog\RenameBlogCategory;
+use App\Actions\Blog\SetBlogCategoryTranslation;
+use App\Actions\NormalizeForSearch;
 use App\Actions\Translations\CompareTranslatedNames;
+use App\Concerns\BlogCategoryValidationRules;
 use App\Models\BlogCategory;
+use App\Models\BlogCategoryTranslation;
+use App\Models\StoreLanguage;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 /**
  * Backoffice blog category management screen: a permission-gated list with each category's post
- * count, a create/edit modal carrying a single `name` field, and a delete-confirmation modal that
+ * count, a create/edit modal carrying one `name` field per active store language, and a delete-confirmation modal that
  * renders the hard-block-with-count refusal -- story 0062.
  *
  * This is the first component call site of App\Policies\BlogCategoryPolicy and of the three
  * App\Actions\Blog category actions story 0058 shipped with none, and the screen story 0061's
  * `blogCategoryId` error-bag contract was built for.
  *
- * Deliberately does NOT compose BlogCategoryValidationRules and never calls `$this->validate()`:
- * the actions trim, validate (`nameRules()`) and map the unique-index race to a `name`-keyed
- * ValidationException themselves, so this component calls them and lets that exception propagate
- * into Livewire's error bag. Validating here too would duplicate a rule 0058 put inside the action
- * on purpose, so that a non-dashboard caller inherits it (D-1). For the same reason there is no
- * fold logic here: NormalizeForSearch is reached only through the actions.
+ * Story 0073: the name is authored per active store language through language tabs. The default
+ * language's name is written by CreateBlogCategory / RenameBlogCategory, every other language's
+ * ONLY through SetBlogCategoryTranslation, which authorizes and validates on its own account; the
+ * unguarded SetTranslation primitive must never be imported here. This component is layer 1 of
+ * that two-layer guard: it authorizes and validates the whole batch before any write.
  *
  * Deleting a category still used by any post is HARD-BLOCKED with a count, at every privilege level
  * (0061 D-18). That refusal is a domain invariant, not an authorization rule -- a Super Admin is
@@ -41,10 +49,14 @@ use Livewire\Component;
  * LogRefusedPrivilegedAttempt with `target_type: 'blog_category'` passed explicitly (it
  * auto-resolves only User and Role targets). The actions authorize again themselves; the
  * component's own check is defence in depth and fails fast before anything opens (D-9).
+ *
+ * @property-read Collection<int, StoreLanguage> $languages
  */
 #[Title('Blog categories')]
 class Index extends Component
 {
+    use BlogCategoryValidationRules;
+
     /**
      * `#[Locked]` like every id-carrying property here: rows are rebuilt from the database on
      * every mutation and nothing a client sends may replace them (the newer Sales Regions
@@ -73,9 +85,38 @@ class Index extends Component
     public bool $showModal = false;
 
     /**
-     * Never null -- a null wire:model-bound property desyncs its native control.
+     * One name per active store language, keyed by store_language_id. '' means "not typed" --
+     * never null, so each bound text input holds the type the DOM expects. Deliberately unlocked:
+     * nothing reads it for a decision -- save() iterates the active languages queried from the
+     * database, never the keys of this array, so a forged key is ignored. Typed `mixed` for the
+     * analyser only: a client can forge a non-string value, which save() normalises to ''.
+     *
+     * @var array<string, mixed>
      */
-    public string $name = '';
+    public array $names = [];
+
+    /**
+     * The language ids this category already held a translation in when the modal opened. Locked
+     * because it feeds the conditional-requiredness branch: a forged value would let an actor
+     * blank an existing translation without tripping the blank-is-refused rule.
+     *
+     * @var array<int, string>
+     */
+    #[Locked]
+    public array $originalTranslatedLanguageIds = [];
+
+    /**
+     * The tab currently shown; overwritten to a real language id when the modal opens. It only
+     * drives an x-show comparison.
+     */
+    public string $activeLanguageId = '';
+
+    /**
+     * UI hint only: false in create mode for an actor lacking blog.edit, so the non-default name
+     * inputs render disabled. Enforcement is save()'s own logged check.
+     */
+    #[Locked]
+    public bool $canAuthorTranslations = true;
 
     public bool $showDeleteModal = false;
 
@@ -108,47 +149,190 @@ class Index extends Component
         $this->loadCategories();
     }
 
+    /**
+     * The active store languages, one tab each: the store default first, then the rest by name.
+     * Queried once per request.
+     *
+     * @return Collection<int, StoreLanguage>
+     */
+    #[Computed]
+    public function languages(): Collection
+    {
+        return StoreLanguage::query()
+            ->active()
+            ->orderByDesc('is_default')
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * Switch the visible language tab. Deliberately no Gate check: switching a tab discloses
+     * nothing the open modal does not already hold. The id is resolved against the ACTIVE
+     * languages with findOrFail(), so a forged unknown or inactive id fails and leaves the
+     * current tab unchanged.
+     */
+    public function setActiveLanguageTab(string $languageId): void
+    {
+        $language = StoreLanguage::query()->active()->findOrFail($languageId);
+
+        $this->activeLanguageId = $language->id;
+    }
+
+    /**
+     * Map every `names.<id>` key to the localized "name", so validation messages never show the
+     * internal key.
+     *
+     * @return array<string, string>
+     */
+    protected function validationAttributes(): array
+    {
+        return ['names.*' => __('blog.categories.index.tabs.name_attribute')];
+    }
+
+    /**
+     * Open the create form with one empty field per active language.
+     */
     public function openCreateModal(LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt): void
     {
         $logRefusedPrivilegedAttempt->authorize('create', BlogCategory::class, targetType: 'blog_category');
 
-        $this->reset(['editingCategoryId', 'name']);
-        $this->resetValidation('name');
+        $this->reset(['editingCategoryId', 'names', 'originalTranslatedLanguageIds']);
+        $this->resetNameErrors();
+
+        $this->names = $this->languages
+            ->mapWithKeys(fn (StoreLanguage $language): array => [$language->id => ''])
+            ->all();
+        $this->activeLanguageId = (string) $this->languages->first()?->id;
+        $this->canAuthorTranslations = Gate::allows('update', new BlogCategory);
         $this->showModal = true;
     }
 
     /**
-     * A disclosure path, not only a mutation, so it authorizes independently of save().
+     * Open the edit form prefilled with the category's OWN name in every active language, read
+     * from the raw translation rows -- never translated(), whose fallback would silently pre-fill
+     * an untranslated tab with another language's name.
+     *
+     * $editingCategoryId is assigned from $target->id, never the raw argument, so the id feeding
+     * the uniqueness exclusion stays server-authoritative.
      */
     public function openEditModal(string $categoryId, LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt): void
     {
-        $target = BlogCategory::query()->withTranslationsFor()->findOrFail($categoryId);
+        $target = BlogCategory::query()->findOrFail($categoryId);
 
         $logRefusedPrivilegedAttempt->authorize('update', $target, targetType: 'blog_category', targetId: $target->id);
 
+        /** @var array<string, string> $ownNames */
+        $ownNames = BlogCategoryTranslation::query()
+            ->where('blog_category_id', $target->id)
+            ->whereIn('store_language_id', $this->languages->modelKeys())
+            ->pluck('name', 'store_language_id')
+            ->all();
+
+        $this->resetNameErrors();
         $this->editingCategoryId = $target->id;
-        $this->name = $target->translated('name') ?? '';
-        $this->resetValidation('name');
+        $this->names = $this->languages
+            ->mapWithKeys(fn (StoreLanguage $language): array => [$language->id => $ownNames[$language->id] ?? ''])
+            ->all();
+        $this->originalTranslatedLanguageIds = array_map('strval', array_keys($ownNames));
+        $this->activeLanguageId = (string) $this->languages->first()?->id;
+        $this->canAuthorTranslations = true;
         $this->showModal = true;
     }
 
     /**
-     * No `$this->validate()` and no manual trim: CreateBlogCategory / RenameBlogCategory do both,
-     * and a refusal propagates as a ValidationException keyed `name`, which aborts this method --
-     * that is what keeps the modal open by construction (D-1).
+     * Validate and persist the create or edit form, one name per active store language.
+     *
+     * Layer 1 of the two-layer write guard: authorizes (logged, first statement of each branch;
+     * plus `update` on create when a non-default name is typed) and validates the whole batch;
+     * SetBlogCategoryTranslation then re-authorizes and re-validates each non-default row on its
+     * own. Every value is trimmed with trimName() and written back into $names.
+     *
+     * Every write of the batch runs in one transaction. A refusal rolls the whole click back,
+     * switches to the first refused tab and keeps every typed value. The default language's
+     * refusals arrive keyed `name` (from the create/rename actions) and are re-keyed to
+     * `names.{defaultId}`, since Livewire drops an error whose first key segment is not a
+     * component property.
      */
-    public function save(CreateBlogCategory $createBlogCategory, RenameBlogCategory $renameBlogCategory, LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt): void
-    {
+    public function save(
+        CreateBlogCategory $createBlogCategory,
+        RenameBlogCategory $renameBlogCategory,
+        SetBlogCategoryTranslation $setBlogCategoryTranslation,
+        NormalizeForSearch $normalizeForSearch,
+        LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt,
+    ): void {
+        $target = null;
+
         if ($this->editingCategoryId === null) {
             $logRefusedPrivilegedAttempt->authorize('create', BlogCategory::class, targetType: 'blog_category');
-
-            $createBlogCategory($this->name);
         } else {
             $target = BlogCategory::query()->findOrFail($this->editingCategoryId);
 
             $logRefusedPrivilegedAttempt->authorize('update', $target, targetType: 'blog_category', targetId: $target->id);
+        }
 
-            $renameBlogCategory($target, $this->name);
+        $languages = $this->languages;
+        $defaultId = (string) $languages->first(fn (StoreLanguage $language): bool => (bool) $language->is_default)?->id;
+
+        foreach ($languages as $language) {
+            $value = $this->names[$language->id] ?? '';
+
+            $this->names[$language->id] = is_string($value) ? $this->trimName($value) : '';
+        }
+
+        if ($target === null && $languages->contains(fn (StoreLanguage $language): bool => $language->id !== $defaultId && $this->names[$language->id] !== '')) {
+            $logRefusedPrivilegedAttempt->authorize('update', new BlogCategory, targetType: 'blog_category');
+        }
+
+        $rules = [];
+
+        foreach ($languages as $language) {
+            $languageRules = $this->nameRules($normalizeForSearch, $language->id, $this->editingCategoryId);
+
+            if ($language->id !== $defaultId && ! in_array($language->id, $this->originalTranslatedLanguageIds, true)) {
+                $languageRules = ['bail', 'nullable', ...array_values(array_filter($languageRules, fn (mixed $rule): bool => $rule !== 'required' && $rule !== 'bail'))];
+            }
+
+            $rules['names.'.$language->id] = $languageRules;
+        }
+
+        try {
+            $this->validate($rules);
+        } catch (ValidationException $exception) {
+            $this->activeLanguageId = $this->firstErroringLanguageId($exception, $this->activeLanguageId);
+
+            throw $exception;
+        }
+
+        try {
+            DB::transaction(function () use ($languages, $defaultId, $target, $createBlogCategory, $renameBlogCategory, $setBlogCategoryTranslation): void {
+                $defaultName = $this->names[$defaultId] ?? '';
+
+                if ($target === null) {
+                    $target = $createBlogCategory($defaultName);
+                } else {
+                    $currentName = BlogCategoryTranslation::query()
+                        ->where('blog_category_id', $target->id)
+                        ->where('store_language_id', $defaultId)
+                        ->value('name');
+
+                    if ($currentName !== $defaultName) {
+                        $renameBlogCategory($target, $defaultName);
+                    }
+                }
+
+                foreach ($languages as $language) {
+                    if ($language->id === $defaultId || $this->names[$language->id] === '') {
+                        continue;
+                    }
+
+                    $setBlogCategoryTranslation($target, $language, $this->names[$language->id]);
+                }
+            });
+        } catch (ValidationException $exception) {
+            $rekeyed = ValidationException::withMessages($this->rekeyDefaultLanguageErrors($exception, $defaultId));
+            $this->activeLanguageId = $this->firstErroringLanguageId($rekeyed, $defaultId);
+
+            throw $rekeyed;
         }
 
         $this->loadCategories();
@@ -156,18 +340,14 @@ class Index extends Component
     }
 
     /**
-     * Also clears the `name` error: Livewire persists the error bag across requests, so without
-     * this a refused create, then Cancel, then an edit on an unrelated row would render a stale
-     * message beside a field that never triggered it.
-     *
-     * Clears the `name` key ONLY. The delete modal's `blogCategoryId` error is a different modal's
-     * state and is cleared by closeDeleteModal() -- do not conflate the two resets.
+     * Close the create/edit modal and reset its form state, clearing every `names.*` validation
+     * error so a refused save's message never leaks into the next open.
      */
     public function closeModal(): void
     {
         $this->showModal = false;
-        $this->reset(['editingCategoryId', 'name']);
-        $this->resetValidation('name');
+        $this->reset(['editingCategoryId', 'names', 'originalTranslatedLanguageIds', 'activeLanguageId']);
+        $this->resetNameErrors();
     }
 
     /**
@@ -222,6 +402,56 @@ class Index extends Component
         $this->showDeleteModal = false;
         $this->reset(['blogCategoryId', 'deletingCategoryName']);
         $this->resetValidation('blogCategoryId');
+    }
+
+    /**
+     * Clear every `names.*` error and nothing else: the delete modal's `blogCategoryId` error is
+     * a different modal's state and is cleared only by closeDeleteModal().
+     */
+    private function resetNameErrors(): void
+    {
+        $nameKeys = array_values(array_filter(
+            $this->getErrorBag()->keys(),
+            fn (string $key): bool => str_starts_with($key, 'names.'),
+        ));
+
+        // An empty list would clear the WHOLE bag, blogCategoryId included.
+        if ($nameKeys !== []) {
+            $this->resetValidation($nameKeys);
+        }
+    }
+
+    /**
+     * The id of the first language (in tab order) carrying an error in the exception, or
+     * $fallback when none does.
+     */
+    private function firstErroringLanguageId(ValidationException $exception, string $fallback): string
+    {
+        $errors = $exception->errors();
+
+        foreach ($this->languages as $language) {
+            if (isset($errors['names.'.$language->id])) {
+                return $language->id;
+            }
+        }
+
+        return $fallback;
+    }
+
+    /**
+     * Re-key a `name` error from the default-language actions to `names.{defaultId}`.
+     *
+     * @return array<string, array<int, string>>
+     */
+    private function rekeyDefaultLanguageErrors(ValidationException $exception, string $defaultId): array
+    {
+        $rekeyed = [];
+
+        foreach ($exception->errors() as $key => $messages) {
+            $rekeyed[$key === 'name' ? 'names.'.$defaultId : $key] = $messages;
+        }
+
+        return $rekeyed;
     }
 
     /**
