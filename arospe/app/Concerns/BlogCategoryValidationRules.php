@@ -4,6 +4,7 @@ namespace App\Concerns;
 
 use App\Actions\NormalizeForSearch;
 use App\Models\BlogCategory;
+use App\Models\BlogCategoryTranslation;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 
@@ -16,18 +17,21 @@ trait BlogCategoryValidationRules
      */
     protected function blogCategoryRules(
         NormalizeForSearch $normalizeForSearch,
+        string $storeLanguageId,
         ?string $blogCategoryId = null,
     ): array {
-        return ['name' => $this->nameRules($normalizeForSearch, $blogCategoryId)];
+        return ['name' => $this->nameRules($normalizeForSearch, $storeLanguageId, $blogCategoryId)];
     }
 
     /**
-     * Get the validation rules used to validate a blog category name.
+     * Get the validation rules used to validate a blog category name, in a given store language
+     * (story 0072, D-1): uniqueness is scoped to that language.
      *
      * @return array<int, ValidationRule|Closure|array<mixed>|string>
      */
     protected function nameRules(
         NormalizeForSearch $normalizeForSearch,
+        string $storeLanguageId,
         ?string $blogCategoryId = null,
     ): array {
         return [
@@ -37,7 +41,7 @@ trait BlogCategoryValidationRules
             'string',
             'max:'.BlogCategory::NAME_MAX_LENGTH,
             $this->foldedNameFits($normalizeForSearch),
-            $this->uniqueNormalisedName($normalizeForSearch, $blogCategoryId),
+            $this->uniqueNormalisedName($normalizeForSearch, $storeLanguageId, $blogCategoryId),
         ];
     }
 
@@ -85,21 +89,27 @@ trait BlogCategoryValidationRules
     }
 
     /**
-     * A closure-based rule, not a bare Rule::unique() (D-4/D-12): the value compared must be the
-     * candidate's NORMALISED form, produced by the same shared App\Actions\NormalizeForSearch call
-     * BlogCategory's saving hook uses to write the column, against the `normalized_name` column the
+     * A closure-based rule (D-4/D-12): the value compared must be the candidate's NORMALISED form,
+     * produced by the same shared App\Actions\NormalizeForSearch call BlogCategoryTranslation's
+     * saving hook uses to write the column, against the `normalized_name` column the per-language
      * UNIQUE index guards -- so the pre-flight check and the constraint can never disagree.
      *
-     * $blogCategoryId excludes that row from the comparison, which is what makes saving a category
-     * under its own unchanged name succeed (R-1). It must stay server-authoritative when a
-     * component feeds it (docs/security/livewire-authorization.md).
+     * $blogCategoryId excludes that category's OWN translation, via the `blog_category_id` FK
+     * column and NOT the translation's primary key (story 0072, D-4): no translation id ever
+     * equals a category id, so ignoring by primary key would silently never match and saving a
+     * category under its own unchanged name would start failing as a duplicate. It must stay
+     * server-authoritative when a component feeds it (docs/security/livewire-authorization.md).
      */
-    protected function uniqueNormalisedName(NormalizeForSearch $normalizeForSearch, ?string $blogCategoryId = null): Closure
-    {
-        return function (string $attribute, mixed $value, Closure $fail) use ($normalizeForSearch, $blogCategoryId): void {
-            $taken = BlogCategory::query()
+    protected function uniqueNormalisedName(
+        NormalizeForSearch $normalizeForSearch,
+        string $storeLanguageId,
+        ?string $blogCategoryId = null,
+    ): Closure {
+        return function (string $attribute, mixed $value, Closure $fail) use ($normalizeForSearch, $storeLanguageId, $blogCategoryId): void {
+            $taken = BlogCategoryTranslation::query()
+                ->where('store_language_id', $storeLanguageId)
                 ->where('normalized_name', $normalizeForSearch((string) $value))
-                ->when($blogCategoryId !== null, fn ($query) => $query->whereKeyNot($blogCategoryId))
+                ->when($blogCategoryId !== null, fn ($query) => $query->where('blog_category_id', '!=', $blogCategoryId))
                 ->exists();
 
             if ($taken) {

@@ -5,6 +5,7 @@ namespace App\Livewire\BlogPosts;
 use App\Actions\Auth\LogRefusedPrivilegedAttempt;
 use App\Actions\Blog\DeleteBlogPost;
 use App\Actions\Blog\RestoreBlogPost;
+use App\Actions\Translations\CompareTranslatedNames;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Models\BlogTag;
@@ -38,9 +39,10 @@ use Livewire\WithPagination;
  * abilities those methods authorize against, so a disabled control can never drift from what a click
  * would actually do -- and they are hints, never the control.
  *
- * Written against the pre-Epic-5 schema (`blog_posts.title`, `blog_categories.name`,
- * `blog_tags.name`). Whatever reads those columns does so in the two private row mappers below, so
- * the translatable-content retrofit has one place to change.
+ * Written against the pre-Epic-5 schema (`blog_posts.title`, `blog_tags.name`); category names are
+ * already read through `translated('name')` (story 0072). Whatever still reads the other columns
+ * does so in the two private row mappers below, so the remaining retrofits (0074, 0078) have one
+ * place to change.
  */
 #[Title('Blog posts')]
 class Index extends Component
@@ -51,7 +53,9 @@ class Index extends Component
 
     /**
      * Upper bound on each filter dropdown's option set. The taxonomies are small lookup tables, but
-     * an unbounded query on a select would be one runaway import away from a slow page.
+     * an unbounded select would be one runaway import away from a slow page. Category options are
+     * sorted in PHP by their translated name (the name is no longer a column), so for them the cap
+     * bounds the rendered list rather than the query.
      */
     private const FILTER_OPTIONS_LIMIT = 500;
 
@@ -209,7 +213,7 @@ class Index extends Component
     {
         $query = BlogPost::query()
             ->select(['id', 'blog_category_id', 'title', 'status', 'published_at', 'created_at'])
-            ->with(['category:id,name', 'tags:id,name'])
+            ->with(['category' => fn ($query) => $query->select('id')->withTranslationsFor(), 'tags:id,name'])
             ->when($this->categoryFilter !== '', fn ($query) => $query->forCategory($this->categoryFilter))
             ->when($this->tagFilter !== '', fn ($query) => $query->forTag($this->tagFilter))
             ->orderByDesc('created_at')
@@ -228,7 +232,7 @@ class Index extends Component
         return $paginator->through(fn (BlogPost $post): array => [
             'id' => $post->id,
             'title' => $post->title,
-            'categoryName' => $post->category->name,
+            'categoryName' => $post->category->translated('name') ?? '—',
             'status' => $post->status,
             'date' => $this->formatDate($post->published_at ?? $post->created_at),
             'tags' => $post->tags->pluck('name')->all(),
@@ -251,7 +255,7 @@ class Index extends Component
     {
         return BlogPost::onlyTrashed()
             ->select(['id', 'blog_category_id', 'title', 'deleted_at'])
-            ->with('category:id,name')
+            ->with(['category' => fn ($query) => $query->select('id')->withTranslationsFor()])
             ->orderByDesc('deleted_at')
             ->orderBy('id')
             ->limit(self::TRASHED_LIMIT)
@@ -259,7 +263,7 @@ class Index extends Component
             ->map(fn (BlogPost $post): array => [
                 'id' => $post->id,
                 'title' => $post->title,
-                'categoryName' => $post->category->name,
+                'categoryName' => $post->category->translated('name') ?? '—',
                 'deletedAt' => $this->formatDate($post->deleted_at),
                 'canRestore' => Gate::allows('restore', $post),
             ])
@@ -281,13 +285,20 @@ class Index extends Component
     #[Computed]
     public function categoryOptions(): array
     {
+        $compareTranslatedNames = app(CompareTranslatedNames::class);
+
         return BlogCategory::query()
-            ->select(['id', 'name'])
-            ->orderBy('name')
-            ->orderBy('id')
-            ->limit(self::FILTER_OPTIONS_LIMIT)
+            ->withTranslationsFor()
             ->get()
-            ->map(fn (BlogCategory $category): array => ['id' => $category->id, 'name' => $category->name])
+            ->sort(fn (BlogCategory $a, BlogCategory $b): int => $compareTranslatedNames(
+                $a->translated('name'),
+                $a->id,
+                $b->translated('name'),
+                $b->id,
+            ))
+            ->take(self::FILTER_OPTIONS_LIMIT)
+            ->map(fn (BlogCategory $category): array => ['id' => $category->id, 'name' => $category->translated('name') ?? '—'])
+            ->values()
             ->all();
     }
 
