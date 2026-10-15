@@ -11,6 +11,8 @@ use App\Enums\BlogPostStatus;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Models\BlogTag;
+use App\Models\BlogTagTranslation;
+use App\Models\StoreLanguage;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
@@ -49,7 +51,7 @@ use Livewire\Component;
  * new tag (`blog.create`) is a UI hint only -- the disabled control changes no server behaviour, and
  * the action's own refusal remains the control.
  *
- * Written against the pre-Epic-5 schema (`blog_posts.title/body`, `blog_tags.name`).
+ * Written against the pre-Epic-5 schema (`blog_posts.title/body`, `blog_tags.name`, since moved to `blog_tag_translations`).
  */
 #[Title('Blog post editor')]
 class Editor extends Component
@@ -133,7 +135,25 @@ class Editor extends Component
         // The application timezone is UTC, and so is the value.
         $this->publishedAt = $blogPost->published_at?->format('Y-m-d\TH:i:s') ?? '';
         $this->body = $blogPost->body ?? '';
-        $this->tagNames = array_values($blogPost->tags()->orderBy('blog_tags.name')->pluck('blog_tags.name')->all());
+        $compareTranslatedNames = app(CompareTranslatedNames::class);
+
+        // A tag with no name in the default language (after a default change) still shows, under
+        // whichever stored translation it has: dropping the chip would make Save detach the tag.
+        $nameOf = fn (BlogTag $tag): ?string => $tag->translated('name')
+            ?? $tag->translations->first()?->name;
+
+        $this->tagNames = array_values($blogPost->tags()
+            ->with('translations')
+            ->get()
+            ->sort(fn (BlogTag $a, BlogTag $b): int => $compareTranslatedNames(
+                $nameOf($a),
+                $a->id,
+                $nameOf($b),
+                $b->id,
+            ))
+            ->map($nameOf)
+            ->filter()
+            ->all());
     }
 
     /**
@@ -183,7 +203,7 @@ class Editor extends Component
         // UI-only guard: the action refuses a new tag name from an actor without blog.create, rolling
         // the whole save back, so do not let the keyboard put a chip on screen that Save can only
         // reject. Existing names always add; the action's own refusal stays the real control.
-        if (! $this->canCreateTags() && ! BlogTag::query()->where('normalized_name', $key)->exists()) {
+        if (! $this->canCreateTags() && ! $this->defaultLanguageHasTagNamed($key)) {
             $this->addError('tagNames', __('blog-posts.editor.tag_create_not_allowed'));
 
             return;
@@ -319,11 +339,12 @@ class Editor extends Component
         $normalize = app(NormalizeForSearch::class);
 
         return array_values(
-            BlogTag::query()
+            BlogTagTranslation::query()
+                ->where('store_language_id', StoreLanguage::defaultStoreLanguage()?->id)
                 ->where('normalized_name', 'like', '%'.addcslashes($term, '\\%_').'%')
                 ->whereNotIn('normalized_name', array_map($normalize, $this->cleanTagNames()))
                 ->orderBy('name')
-                ->orderBy('id')
+                ->orderBy('blog_tag_id')
                 ->limit(self::SUGGESTION_LIMIT)
                 ->pluck('name')
                 ->all()
@@ -358,7 +379,25 @@ class Editor extends Component
 
         $this->authorizeTagLookup();
 
-        return ! BlogTag::query()->where('normalized_name', $term)->exists();
+        return ! $this->defaultLanguageHasTagNamed($term);
+    }
+
+    /**
+     * Whether a tag already carries this folded name in the store default language -- the only
+     * language FindOrCreateBlogTag looks up and authors in (story 0074, D-7/D-8).
+     */
+    private function defaultLanguageHasTagNamed(string $foldedName): bool
+    {
+        $defaultLanguage = StoreLanguage::defaultStoreLanguage();
+
+        if ($defaultLanguage === null) {
+            return false;
+        }
+
+        return BlogTagTranslation::query()
+            ->where('store_language_id', $defaultLanguage->id)
+            ->where('normalized_name', $foldedName)
+            ->exists();
     }
 
     /**

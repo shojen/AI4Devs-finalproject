@@ -4,11 +4,14 @@ namespace App\Actions\Blog;
 
 use App\Actions\Auth\LogRefusedPrivilegedAttempt;
 use App\Actions\NormalizeForSearch;
+use App\Actions\Translations\SetTranslation;
 use App\Concerns\BlogTagValidationRules;
 use App\Models\BlogTag;
+use App\Models\StoreLanguage;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class CreateBlogTag
 {
@@ -22,10 +25,14 @@ class CreateBlogTag
     public function __construct(
         private readonly LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt,
         private readonly NormalizeForSearch $normalizeForSearch,
+        private readonly SetTranslation $setTranslation,
+        private readonly TranslateBlogTagNameUniqueViolation $translateNameUniqueViolation,
     ) {}
 
     /**
-     * Create a new blog tag.
+     * Create a new blog tag, writing its name into the store DEFAULT language only (story 0074,
+     * D-7) -- the parent row and its translation in ONE transaction (D-5), so a lost unique race
+     * on the translation never leaves a translationless parent behind.
      *
      * Authorizes `create` on `BlogTag::class` as its own first statement (D-12), so a non-dashboard
      * caller inherits the refusal. `targetType` is passed explicitly since LogRefusedPrivilegedAttempt
@@ -38,25 +45,33 @@ class CreateBlogTag
     {
         $this->logRefusedPrivilegedAttempt->authorize('create', BlogTag::class, targetType: 'blog_tag');
 
+        $defaultLanguage = StoreLanguage::defaultStoreLanguage();
+
+        throw_if(
+            $defaultLanguage === null,
+            RuntimeException::class,
+            'Cannot create a blog tag: no default store language is configured.',
+        );
+
         $name = $this->trimName($name);
 
         Validator::make(
             ['name' => $name],
-            ['name' => $this->nameRules($this->normalizeForSearch)],
+            ['name' => $this->nameRules($this->normalizeForSearch, $defaultLanguage->id)],
         )->validate();
 
         try {
-            return BlogTag::create(['name' => $name]);
-        } catch (QueryException $e) {
-            if ($e->getCode() === '23000') {
-                // The normalized_name unique index is the last-word RACE guard behind the
-                // validation rule above -- the pre-flight check is not one (D-3).
-                throw ValidationException::withMessages([
-                    'name' => trans('validation.unique', ['attribute' => 'name']),
-                ]);
-            }
+            return DB::transaction(function () use ($name, $defaultLanguage): BlogTag {
+                $blogTag = BlogTag::create();
 
-            throw $e;
+                ($this->setTranslation)($blogTag, $defaultLanguage, ['name' => $name]);
+
+                return $blogTag;
+            });
+        } catch (QueryException $e) {
+            // The per-language normalized_name unique index is the last-word RACE guard behind
+            // the validation rule above -- the pre-flight check is not one (D-3).
+            throw ($this->translateNameUniqueViolation)($e);
         }
     }
 }
