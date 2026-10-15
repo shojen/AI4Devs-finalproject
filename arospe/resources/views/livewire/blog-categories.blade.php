@@ -145,12 +145,57 @@
                     {{ $editingCategoryId === null ? __('blog.categories.index.create_heading') : __('blog.categories.index.edit_heading') }}
                 </flux:heading>
 
-                <flux:input
-                    wire:model="name"
-                    data-test="blog-category-name-input"
-                    :label="__('blog.categories.index.name_label')"
-                    autofocus
-                />
+                <div class="space-y-4">
+                    <x-language-tab-strip
+                        :languages="$this->languages"
+                        :active="$activeLanguageId"
+                        :error-language-ids="$this->languages->pluck('id')->filter(fn ($languageId) => $errors->has('names.'.$languageId))->values()->all()"
+                    />
+
+                    {{-- Every panel stays mounted and is hidden with x-show, never @if (A-10): an @if
+                    would destroy the unsaved text typed into the hidden tabs on every switch. --}}
+                    @foreach ($this->languages as $language)
+                        @php
+                            $isDefaultLanguage = (bool) $language->is_default;
+                            $isTranslationLocked = ! $isDefaultLanguage && ! $canAuthorTranslations;
+                        @endphp
+
+                        <div
+                            x-show="$wire.activeLanguageId === {{ Js::from($language->id) }}"
+                            x-cloak
+                            role="tabpanel"
+                            data-test="language-panel-{{ $language->id }}"
+                            class="space-y-2"
+                        >
+                            <flux:field>
+                                <flux:label>{{ __('blog.categories.index.name_label') }}</flux:label>
+
+                                <flux:input
+                                    wire:model="names.{{ $language->id }}"
+                                    data-test="blog-category-name-input-{{ $language->id }}"
+                                    :disabled="$isTranslationLocked"
+                                    :required="$isDefaultLanguage"
+                                />
+
+                                @error('names.'.$language->id)
+                                    <p class="text-sm font-medium text-red-500" data-test="language-name-error-{{ $language->id }}">{{ $message }}</p>
+                                @enderror
+                            </flux:field>
+
+                            @if ($editingCategoryId !== null && ! in_array($language->id, $originalTranslatedLanguageIds, true))
+                                <flux:text size="sm" data-test="language-untranslated-{{ $language->id }}">
+                                    {{ __('blog.categories.index.tabs.untranslated') }}
+                                </flux:text>
+                            @endif
+
+                            @if ($isTranslationLocked)
+                                <flux:text size="sm">
+                                    {{ __('blog.categories.index.tabs.translation_requires_edit') }}
+                                </flux:text>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
 
                 <div class="flex gap-3 justify-end">
                     <flux:button variant="outline" wire:click="closeModal">

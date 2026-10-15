@@ -23,7 +23,7 @@ beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
 
-    StoreLanguage::factory()->default()->create();
+    $this->defaultLanguage = StoreLanguage::factory()->default()->create();
 });
 
 /**
@@ -94,13 +94,15 @@ test('the header carries the create action, hooked for browser tests', function 
     expect(blogCategoriesControlExists(Livewire::test(Index::class)->html(), 'create-blog-category-button'))->toBeTrue();
 });
 
-test('the create modal contains exactly one input and no select', function () {
+test('the create modal contains exactly one input per active language and no select', function () {
     $this->actingAs(blogCategoriesRenderingActor());
 
     $html = Livewire::test(Index::class)->call('openCreateModal')->html();
 
+    // Story 0073 (A-8/A-16): the hook is now keyed by language id; this fixture has one active
+    // language, so one input.
     expect(substr_count($html, '<input'))->toBe(1)
-        ->and(blogCategoriesControlExists($html, 'blog-category-name-input'))->toBeTrue()
+        ->and(blogCategoriesControlExists($html, 'blog-category-name-input-'.$this->defaultLanguage->id))->toBeTrue()
         ->and($html)->not->toContain('<select');
 });
 
@@ -129,10 +131,10 @@ test('a refused name renders its message beside the field and the modal stays op
 
     Livewire::test(Index::class)
         ->call('openCreateModal')
-        ->set('name', '')
+        ->set('names.'.$this->defaultLanguage->id, '')
         ->call('save')
         ->assertSet('showModal', true)
-        ->assertSee(trans('validation.required', ['attribute' => 'name']));
+        ->assertSee(trans('validation.required', ['attribute' => __('blog.categories.index.tabs.name_attribute')]));
 });
 
 test('a duplicate name renders its message beside the field', function () {
@@ -141,9 +143,9 @@ test('a duplicate name renders its message beside the field', function () {
 
     Livewire::test(Index::class)
         ->call('openCreateModal')
-        ->set('name', 'GUÍAS')
+        ->set('names.'.$this->defaultLanguage->id, 'GUÍAS')
         ->call('save')
-        ->assertSee(trans('validation.unique', ['attribute' => 'name']));
+        ->assertSee(trans('validation.unique', ['attribute' => __('blog.categories.index.tabs.name_attribute')]));
 });
 
 // =====================================================================

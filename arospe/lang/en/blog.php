@@ -28,6 +28,13 @@ return [
             'delete_heading' => 'Delete category',
             'delete_body' => 'Are you sure you want to delete ":name"? This cannot be undone.',
             'delete_confirm' => 'Delete :name',
+
+            // Story 0073 -- the per-language name tabs.
+            'tabs' => [
+                'name_attribute' => 'name',
+                'untranslated' => 'This category has no name in this language yet.',
+                'translation_requires_edit' => 'You need permission to edit categories to add a translation.',
+            ],
         ],
     ],
 
