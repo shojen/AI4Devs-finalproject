@@ -5,6 +5,7 @@ use App\Models\BlogTag;
 use App\Models\StoreLanguage;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 // Story 0074 (D-10): the backfill carries each tag's name into the default store language,
@@ -91,4 +92,55 @@ test('with zero tags the backfill is a no-op returning 0, whatever store_languag
 
     expect(app(BackfillBlogTagTranslations::class)())->toBe(0)
         ->and(DB::table('blog_tag_translations')->count())->toBe(0);
+});
+
+// A real __invoke() needs the legacy columns the retrofit dropped, so they are re-added for this one
+// test. MySQL DDL implicitly commits, which defeats RefreshDatabase's rollback: the finally block
+// removes every row and both columns again so no state leaks into later tests.
+test('a real run gives every existing tag a default-language translation copied byte-for-byte', function () {
+    $default = StoreLanguage::factory()->default()->create();
+    $other = StoreLanguage::factory()->create();
+
+    Schema::table('blog_tags', function ($table): void {
+        $table->string('name', 100)->nullable();
+        $table->string('normalized_name', 100)->nullable();
+    });
+
+    try {
+        $legacy = [
+            ['name' => 'Niño', 'normalized_name' => 'nino'],
+            ['name' => '  Trail  Running ', 'normalized_name' => 'legacy-fold'],
+            ['name' => str_repeat('a', 100), 'normalized_name' => str_repeat('a', 100)],
+        ];
+        $ids = [];
+
+        foreach ($legacy as $row) {
+            $ids[$row['normalized_name']] = (string) Str::uuid7();
+            DB::table('blog_tags')->insert($row + [
+                'id' => $ids[$row['normalized_name']],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        expect(app(BackfillBlogTagTranslations::class)())->toBe(3);
+
+        foreach ($legacy as $row) {
+            $translations = DB::table('blog_tag_translations')->where('blog_tag_id', $ids[$row['normalized_name']])->get();
+
+            expect($translations)->toHaveCount(1)
+                ->and($translations[0]->store_language_id)->toBe($default->id)
+                ->and($translations[0]->name)->toBe($row['name'])
+                ->and($translations[0]->normalized_name)->toBe($row['normalized_name']);
+        }
+
+        expect(DB::table('blog_tag_translations')->where('store_language_id', $other->id)->count())->toBe(0);
+    } finally {
+        DB::table('blog_tag_translations')->delete();
+        DB::table('blog_tags')->delete();
+        Schema::table('blog_tags', function ($table): void {
+            $table->dropColumn(['name', 'normalized_name']);
+        });
+        DB::table('store_languages')->delete();
+    }
 });

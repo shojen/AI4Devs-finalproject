@@ -286,6 +286,47 @@ test('translated() follows the default language when the default changes', funct
         ->and($tag->fresh()->translated('name'))->toBe('correr');
 });
 
+// R-9 / D-6: the deepest fallback branch. A tag translated only into the OLD default has nothing to
+// fall back to once the default moves, so it resolves to null instead of throwing.
+test('translated() returns null when the tag only has a name in the former default language', function () {
+    $old = StoreLanguage::factory()->default()->create();
+    $new = StoreLanguage::factory()->create();
+    $tag = BlogTag::factory()->withoutTranslations()->create();
+    BlogTagTranslation::factory()->forLanguage($old)->create(['blog_tag_id' => $tag->id, 'name' => 'running']);
+
+    expect($tag->fresh()->translated('name'))->toBe('running');
+
+    DB::table('store_languages')->update(['is_default' => false]);
+    DB::table('store_languages')->where('id', $new->id)->update(['is_default' => true]);
+    StoreLanguage::flushDefaultStoreLanguage();
+
+    $fresh = $tag->fresh();
+
+    expect($fresh->translated('name'))->toBeNull()
+        ->and($fresh->translated('name', $new->id))->toBeNull()
+        ->and($fresh->translated('name', $old->id))->toBe('running');
+});
+
+// D-9: accepted behaviour, not a defect. Uniqueness binds STORED rows; translated() falls back, so two
+// different tags can render identically in a non-default language without violating any constraint.
+// Do not "fix" the fallback design because identical output looks like a missed constraint.
+test('two tags may render the same name in a non-default language when one stores it and the other falls back', function () {
+    $default = StoreLanguage::factory()->default()->create();
+    $french = StoreLanguage::factory()->create();
+    $storesFrench = BlogTag::factory()->withoutTranslations()->create();
+    $fallsBack = BlogTag::factory()->withoutTranslations()->create();
+    BlogTagTranslation::factory()->forLanguage($default)->create(['blog_tag_id' => $storesFrench->id, 'name' => 'sprint']);
+    BlogTagTranslation::factory()->forLanguage($default)->create(['blog_tag_id' => $fallsBack->id, 'name' => 'running']);
+
+    // Neither write raises: the French row collides with no stored row, only with a fallback value.
+    $row = BlogTagTranslation::factory()->forLanguage($french)->create(['blog_tag_id' => $storesFrench->id, 'name' => 'running']);
+
+    expect($row->normalized_name)->toBe('running')
+        ->and($storesFrench->fresh()->translated('name', $french->id))->toBe('running')
+        ->and($fallsBack->fresh()->translated('name', $french->id))->toBe('running')
+        ->and(BlogTagTranslation::query()->where('store_language_id', $french->id)->count())->toBe(1);
+});
+
 test('withTranslationsFor() eager loads only the requested and default language rows', function () {
     $default = StoreLanguage::factory()->default()->create();
     $spanish = StoreLanguage::factory()->create();
