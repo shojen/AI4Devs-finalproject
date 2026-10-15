@@ -2,7 +2,7 @@
 
 ## Current state (real, as of this writing)
 
-[`.github/workflows/tests.yml`](../../../../.github/workflows/tests.yml) runs on every push to `develop`/`main`/`master` and on every PR targeting `develop`/`main`/`master`/`workos`/`feature-entrega2-ARP`/`finalproject-ARP` (a work branch is validated through its PR only — listing it under `push` as well ran every workflow twice on the same commit, once per event), but only when the change touches `arospe/**` or the workflow file itself (a `paths:` filter — a docs-only change outside `arospe/` triggers no run). It is pinned to a single PHP version, **`8.5`** (2026-09-06) — matching the version this project actually develops and deploys with. There is deliberately no `strategy.matrix` any more: an earlier `['8.4', '8.5']` two-version matrix was dropped rather than narrowed to one entry, since a matrix with a single leg is pure indirection over a literal value. The relevant steps today:
+[`.github/workflows/tests.yml`](../../../../.github/workflows/tests.yml) runs on every push to `develop`/`main`/`master` and on every PR targeting `develop`/`main`/`master`/`workos`/`feature-entrega2-ARP`/`finalproject-ARP` (a work branch is validated through its PR only — listing it under `push` as well ran every workflow twice on the same commit, once per event), but only when the change touches `arospe/**` or the workflow file itself (a `paths:` filter — a docs-only change outside `arospe/` triggers no run). It also accepts a manual `workflow_dispatch`, so it can be run against the current `main` HEAD when the push never produced a run. It is pinned to a single PHP version, **`8.5`** (2026-09-06) — matching the version this project actually develops and deploys with. There is deliberately no `strategy.matrix` any more: an earlier `['8.4', '8.5']` two-version matrix was dropped rather than narrowed to one entry, since a matrix with a single leg is pure indirection over a literal value. The relevant steps today:
 
 ```yaml
 - name: Setup PHP
@@ -39,7 +39,7 @@ A coverage driver (`xdebug`) is already installed by the `setup-php` step, but *
 
 ## Other workflows: style check and production deploy
 
-**[`lint.yml`](../../../../.github/workflows/lint.yml)** (workflow name `linter`) shares `tests.yml`'s exact trigger — the same `push` and `pull_request` branch lists and the same `arospe/**` path filter — and runs `composer lint` (Pint) on PHP `8.4`. Its auto-commit step is commented out, so it only reports; style is fixed locally. It still declares `permissions: contents: write`, which nothing uses any more — a known gap recorded in [security/ci-workflow-hardening.md](../../security/ci-workflow-hardening.md).
+**[`lint.yml`](../../../../.github/workflows/lint.yml)** (workflow name `linter`) shares `tests.yml`'s exact trigger — the same `push` and `pull_request` branch lists, the same `arospe/**` path filter and the same manual `workflow_dispatch` — and runs `composer lint` (Pint) on PHP `8.4`. Its auto-commit step is commented out, so it only reports; style is fixed locally. It still declares `permissions: contents: write`, which nothing uses any more — a known gap recorded in [security/ci-workflow-hardening.md](../../security/ci-workflow-hardening.md).
 
 **[`prod.yml`](../../../../.github/workflows/prod.yml)** (workflow name `PROD`) is the production deploy, and it consumes the two workflows above as a gate rather than re-running them:
 
@@ -47,6 +47,8 @@ A coverage driver (`xdebug`) is already installed by the `setup-php` step, but *
 2. **`verificar-ci`** reads every run for the exact commit being deployed (`gh run list --commit "$SHA"`) and fails unless the latest run of each workflow named in `REQUIRED_WORKFLOWS` exists, has `completed`, and concluded `success`.
 3. **`deploy`** writes the SSH key and a pinned `known_hosts` from secrets, then runs `deploy <sha>` on the VPS with that verified SHA — never "the branch tip".
 4. `concurrency: prod-deploy` with `cancel-in-progress: false` serializes deploys without aborting one already in flight; `timeout-minutes: 30` bounds a hung one.
+
+If `verificar-ci` reports that `tests` or `linter` "no se ejecutó" for the commit, the push to `main` produced no run (a merge that touched nothing under `arospe/`, or a push event GitHub never fired — merge of PR #63 on 2026-10-15). Run both workflows by hand on `main` (`gh workflow run tests.yml --ref main` and `gh workflow run lint.yml --ref main`), wait for them to finish, then dispatch PROD again. Do **not** loosen the gate to fall back to runs of the branch: they belong to other commits and would let untested code deploy.
 
 `REQUIRED_WORKFLOWS` is matched **case-sensitively against each workflow's `name:` field**, not its file name — today `"tests,linter"`. It originally read `"Tests,Lint"`, which matched neither workflow, so `verificar-ci` reported "not run" on every commit and no deploy could ever pass the gate. **Renaming either workflow's `name:` silently breaks the deploy gate**; update `REQUIRED_WORKFLOWS` in the same change.
 
@@ -71,6 +73,6 @@ Nothing else in the workflow needs to change — `coverage: xdebug` is already c
 
 Since this repo's PR contract ([`docs/contracts.md`](../../contracts.md)) calls for asking before taking non-obvious actions rather than assuming: adding `--min=80` to the real workflow is a deliberate decision for whoever owns CI to make (it will start failing PRs the moment coverage is under 80%, which may or may not be true today — nobody has measured it yet with `php artisan test --coverage` locally). Run that locally first to see where this repo actually stands before wiring the gate into `tests.yml`.
 
-_Last updated: 2026-09-29 — Added `finalproject-ARP` and the `arospe/**` path filter to the trigger description, fixed the relative link depth to `.github/`, and added **Other workflows** documenting `lint.yml` and the `prod.yml` deploy gate, including the `REQUIRED_WORKFLOWS` fix (`"Tests,Lint"` → `"tests,linter"`). Later the same day: dropped `workos`/`feature-entrega2-ARP`/`finalproject-ARP` from the `push` branch list of `tests.yml` and `lint.yml`, so a PR shows one run per workflow instead of two._
+_Last updated: 2026-10-15 — `tests.yml` and `lint.yml` now accept a manual `workflow_dispatch`, and the `prod.yml` gate section documents how to recover when no CI run exists for the commit being deployed._
 
 _Earlier revision notes: [testing--ci--pipeline-integration.md](../../history/testing--ci--pipeline-integration.md)._
