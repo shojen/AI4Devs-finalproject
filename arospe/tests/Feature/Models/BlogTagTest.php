@@ -1,10 +1,14 @@
 <?php
 
 use App\Models\BlogTag;
+use App\Models\BlogTagTranslation;
+use Illuminate\Database\Eloquent\MassAssignmentException;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+
+// Story 0074 (D-2): BlogTag is identity-only -- its names live in blog_tag_translations, whose own
+// behaviour (the derivation hook, uniqueness, cascade) is pinned in BlogTagTranslationTest.php.
 
 test('a factory-created blog tag receives a uuidv7 string primary key', function () {
     $tag = BlogTag::factory()->create();
@@ -20,74 +24,46 @@ test('two blog tags created in immediate succession sort lexicographically in cr
     expect(strcmp($first->id, $second->id))->toBeLessThan(0);
 });
 
-test('creating and re-fetching a blog tag persists name and populates both timestamps', function () {
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+test('creating and re-fetching a blog tag populates both timestamps', function () {
+    $fresh = BlogTag::factory()->create()->fresh();
 
-    $fresh = $tag->fresh();
-
-    expect($fresh->name)->toBe('running')
-        ->and($fresh->created_at)->not->toBeNull()
+    expect($fresh->created_at)->not->toBeNull()
         ->and($fresh->updated_at)->not->toBeNull();
 });
 
-test('name is mass-assignable but normalized_name is not, so a forged value is replaced by the derived one', function () {
-    $tag = BlogTag::create(['name' => 'running', 'normalized_name' => 'hijacked']);
-
-    expect($tag->fresh()->normalized_name)->toBe('running');
+test('no attribute is mass-assignable, so a forged name or normalized_name cannot reach the parent row', function () {
+    expect(fn () => BlogTag::create(['name' => 'running']))->toThrow(MassAssignmentException::class)
+        ->and(fn () => BlogTag::create(['normalized_name' => 'hijacked']))->toThrow(MassAssignmentException::class)
+        ->and(BlogTag::count())->toBe(0);
 });
 
-test('the saving hook derives normalized_name on insert and re-derives it on a rename', function () {
-    $tag = BlogTag::create(['name' => 'Niño']);
+test('the factory writes one default-language translation by default and none when asked not to', function () {
+    $named = BlogTag::factory()->named('running')->create();
+    $bare = BlogTag::factory()->withoutTranslations()->create();
 
-    expect($tag->fresh()->normalized_name)->toBe('nino');
-
-    $tag->update(['name' => 'Trail  Running']);
-
-    expect($tag->fresh()->normalized_name)->toBe('trail running');
-});
-
-test('saving a blog tag without touching name does not rewrite normalized_name', function () {
-    $tag = BlogTag::create(['name' => 'running']);
-
-    // A sentinel no fold could ever produce: if the hook re-derived it on this unrelated save, the
-    // value would flip back to 'running'.
-    DB::table('blog_tags')->where('id', $tag->id)->update(['normalized_name' => 'sentinel']);
-
-    $fresh = $tag->fresh();
-    $fresh->updated_at = now()->addMinute();
-    $fresh->save();
-
-    expect($fresh->fresh()->normalized_name)->toBe('sentinel');
-});
-
-test('a directly assigned normalized_name is overwritten by the derived one on save', function () {
-    $tag = BlogTag::create(['name' => 'running']);
-
-    $tag->normalized_name = 'hijacked';
-    $tag->save();
-
-    expect($tag->fresh()->normalized_name)->toBe('running');
+    expect(BlogTagTranslation::where('blog_tag_id', $named->id)->sole()->name)->toBe('running')
+        ->and($named->fresh()->translated('name'))->toBe('running')
+        ->and(BlogTagTranslation::where('blog_tag_id', $bare->id)->count())->toBe(0)
+        ->and($bare->fresh()->translated('name'))->toBeNull();
 });
 
 test('blog tag does not use SoftDeletes', function () {
     expect(class_uses_recursive(BlogTag::class))->not->toContain(SoftDeletes::class);
 });
 
-test('blog_tags carries exactly the specified columns and no unique index on name', function () {
+test('blog_tags carries exactly the identity columns and no name column or name index', function () {
     $columns = Schema::getColumnListing('blog_tags');
     sort($columns);
 
-    expect($columns)->toBe(['created_at', 'id', 'name', 'normalized_name', 'updated_at']);
+    expect($columns)->toBe(['created_at', 'id', 'updated_at']);
 
-    $indexes = collect(Schema::getIndexes('blog_tags'))->keyBy('name');
+    $indexes = collect(Schema::getIndexes('blog_tags'))->pluck('name')->sort()->values()->all();
 
-    expect($indexes->keys()->sort()->values()->all())->toBe(['blog_tags_normalized_name_unique', 'primary'])
-        ->and($indexes['blog_tags_normalized_name_unique']['columns'])->toBe(['normalized_name'])
-        ->and($indexes['blog_tags_normalized_name_unique']['unique'])->toBeTrue();
+    expect($indexes)->toBe(['primary']);
 });
 
-test('the length constants match the columns they guard', function () {
-    $columns = collect(Schema::getColumns('blog_tags'))->keyBy('name');
+test('the length constants match the translation columns they guard', function () {
+    $columns = collect(Schema::getColumns('blog_tag_translations'))->keyBy('name');
 
     expect(BlogTag::NAME_MAX_LENGTH)->toBe(100)
         ->and($columns['name']['type'])->toBe('varchar(100)')

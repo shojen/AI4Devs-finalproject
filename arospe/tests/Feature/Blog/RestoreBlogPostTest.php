@@ -48,8 +48,8 @@ test('restoring a trashed post clears deleted_at and returns it to a default que
 // Each half is covered by DeleteBlogPostTest.php; only the round trip proves they compose.
 test('the round trip preserves title, body, category and tags', function () {
     $category = BlogCategory::factory()->named('Guías')->create();
-    $running = BlogTag::factory()->create(['name' => 'running']);
-    $invierno = BlogTag::factory()->create(['name' => 'invierno']);
+    $running = BlogTag::factory()->named('running')->create();
+    $invierno = BlogTag::factory()->named('invierno')->create();
     $original = BlogPost::factory()->create([
         'title' => 'Botas de invierno',
         'body' => '<p>Cuerpo <img src="https://example.com/a.jpg" alt="a"></p>',
@@ -96,8 +96,8 @@ test('a restored post reclaims its own slug, unchanged', function () {
 // restores with the surviving tags only. A second tag is the control, so "restores with no tags at
 // all" cannot pass.
 test('a tag deleted while the post was trashed does not come back', function () {
-    $running = BlogTag::factory()->create(['name' => 'running']);
-    $invierno = BlogTag::factory()->create(['name' => 'invierno']);
+    $running = BlogTag::factory()->named('running')->create();
+    $invierno = BlogTag::factory()->named('invierno')->create();
     $post = BlogPost::factory()->create();
     $post->tags()->attach([$running->id, $invierno->id]);
 

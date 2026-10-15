@@ -42,7 +42,7 @@ function blogTagsBrowserActor(array $permissions = ['blog.view', 'blog.create', 
 
 test('opening the create form shows a blank field, with no stale prefill from a previous edit', function () {
     $this->actingAs(blogTagsBrowserActor());
-    $tag = BlogTag::factory()->create(['name' => 'Marathon']);
+    $tag = BlogTag::factory()->named('Marathon')->create();
 
     visit('/blog/tags')
         ->assertNoJavaScriptErrors()
@@ -73,7 +73,7 @@ test('creating a tag through a real fill and click round trip adds it to the lis
 
 test('editing prefills the name, and re-saving it unchanged preserves it', function () {
     $this->actingAs(blogTagsBrowserActor());
-    $tag = BlogTag::factory()->create(['name' => 'Marathon']);
+    $tag = BlogTag::factory()->named('Marathon')->create();
 
     visit('/blog/tags')
         ->click('@edit-blog-tag-'.$tag->id)
@@ -87,7 +87,7 @@ test('editing prefills the name, and re-saving it unchanged preserves it', funct
 
 test('renaming through the real input persists the new name', function () {
     $this->actingAs(blogTagsBrowserActor());
-    $tag = BlogTag::factory()->create(['name' => 'Marathon']);
+    $tag = BlogTag::factory()->named('Marathon')->create();
 
     visit('/blog/tags')
         ->click('@edit-blog-tag-'.$tag->id)
@@ -117,7 +117,7 @@ test('deleting a tag through the confirmation modal removes it in one click, wit
     // categories one: only a real DOM click proves the confirm control was never wired to a guard
     // that does not exist server-side.
     $this->actingAs(blogTagsBrowserActor());
-    $tag = BlogTag::factory()->create(['name' => 'Marathon']);
+    $tag = BlogTag::factory()->named('Marathon')->create();
 
     visit('/blog/tags')
         ->assertNoJavaScriptErrors()
@@ -136,7 +136,7 @@ test('deleting a tag through the confirmation modal removes it in one click, wit
 
 test('creating a duplicate name through the real form shows the inline error', function () {
     $this->actingAs(blogTagsBrowserActor());
-    BlogTag::factory()->create(['name' => 'Marathon']);
+    BlogTag::factory()->named('Marathon')->create();
 
     visit('/blog/tags')
         ->click('@create-blog-tag-button')
@@ -151,7 +151,7 @@ test('creating a duplicate name through the real form shows the inline error', f
 
 test('a smoke pass through create, edit and delete openers and cancels raises no JavaScript error', function () {
     $this->actingAs(blogTagsBrowserActor());
-    $tag = BlogTag::factory()->create(['name' => 'Marathon']);
+    $tag = BlogTag::factory()->named('Marathon')->create();
 
     visit('/blog/tags')
         ->assertNoJavaScriptErrors()

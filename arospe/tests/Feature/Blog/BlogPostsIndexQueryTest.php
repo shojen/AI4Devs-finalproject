@@ -74,7 +74,7 @@ function blogPostsQuerySelectedColumns(array $statements): array
 
 test('every row-fetching query on blog_posts names explicit columns and never body, slug or *', function (string $scenario) {
     $category = BlogCategory::factory()->named('Guías')->create();
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
     BlogPost::factory()->count(3)->create(['blog_category_id' => $category->id])
         ->each(fn (BlogPost $post) => $post->tags()->attach($tag->id));
     BlogPost::factory()->create(['blog_category_id' => $category->id])->delete();

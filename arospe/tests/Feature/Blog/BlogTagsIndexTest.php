@@ -19,6 +19,8 @@ use App\Concerns\BlogTagValidationRules;
 use App\Livewire\BlogTags\Index;
 use App\Livewire\Roles\Index as RolesIndex;
 use App\Models\BlogTag;
+use App\Models\BlogTagTranslation;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -31,6 +33,8 @@ use Spatie\Permission\PermissionRegistrar;
 beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
+
+    StoreLanguage::factory()->default()->create();
 });
 
 /**
@@ -148,7 +152,7 @@ test('openCreateModal() is refused without blog.create', function () {
 
 test('openEditModal() is refused without blog.edit and populates nothing', function () {
     $this->withoutExceptionHandling();
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
     $this->actingAs(blogTagsIndexTestActor(['blog.view']));
 
     $component = Livewire::test(Index::class);
@@ -160,7 +164,7 @@ test('openEditModal() is refused without blog.edit and populates nothing', funct
 
 test('confirmDelete() is refused without blog.delete and populates nothing', function () {
     $this->withoutExceptionHandling();
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
     $this->actingAs(blogTagsIndexTestActor(['blog.view']));
 
     $component = Livewire::test(Index::class);
@@ -185,7 +189,7 @@ test('save() in create mode is refused when blog.create is revoked after the mod
 
 test('save() in edit mode is refused when blog.edit is revoked after the modal opened, and renames nothing', function () {
     $this->withoutExceptionHandling();
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
     $actor = blogTagsIndexTestActor();
     $this->actingAs($actor);
 
@@ -194,7 +198,7 @@ test('save() in edit mode is refused when blog.edit is revoked after the modal o
     blogTagsIndexRevoke($actor, 'blog.edit');
 
     expect(fn () => $component->call('save'))->toThrow(AuthorizationException::class);
-    expect($tag->fresh()->name)->toBe('running');
+    expect($tag->fresh()->translated('name'))->toBe('running');
 });
 
 test('deleteTag() is refused when blog.delete is revoked after the confirmation opened, and deletes nothing', function () {
@@ -216,7 +220,7 @@ test('a Super Admin holding zero permission rows can create, rename and delete',
     $superAdmin->assignRole('Super Admin');
     $this->actingAs($superAdmin);
 
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
 
     Livewire::test(Index::class)
         ->call('openCreateModal')->set('name', 'invierno')->call('save')
@@ -224,7 +228,7 @@ test('a Super Admin holding zero permission rows can create, rename and delete',
         ->call('confirmDelete', $tag->id)->call('deleteTag')
         ->assertHasNoErrors();
 
-    expect(BlogTag::query()->pluck('name')->all())->toBe(['invierno']);
+    expect(BlogTagTranslation::query()->pluck('name')->all())->toBe(['invierno']);
 });
 
 test('an actor holding only blog.view sees every row action disabled -- one global-state test, not a per-row matrix', function () {
@@ -253,7 +257,7 @@ test('row hints follow the policy independently: blog.edit alone enables edit bu
 
 test('the list is ordered by name, whatever order the rows were created in', function () {
     foreach (['Zeta', 'alpha', 'Beta'] as $name) {
-        BlogTag::factory()->create(['name' => $name]);
+        BlogTag::factory()->named($name)->create();
     }
     $this->actingAs(blogTagsIndexTestActor(['blog.view']));
 
@@ -263,7 +267,7 @@ test('the list is ordered by name, whatever order the rows were created in', fun
 });
 
 test('each row exposes exactly {id, name, canEdit, canDelete} and no post or usage-count key', function () {
-    BlogTag::factory()->create(['name' => 'running']);
+    BlogTag::factory()->named('running')->create();
     $this->actingAs(blogTagsIndexTestActor());
 
     $row = Livewire::test(Index::class)->get('tags')[0];
@@ -298,7 +302,7 @@ test('creating a tag with a valid name persists exactly one row, lists it and cl
         ->assertSet('showModal', false)
         ->assertSet('name', '');
 
-    expect(BlogTag::query()->pluck('name')->all())->toBe(['running'])
+    expect(BlogTagTranslation::query()->pluck('name')->all())->toBe(['running'])
         ->and(collect($component->get('tags'))->pluck('name')->all())->toBe(['running']);
 });
 
@@ -307,11 +311,11 @@ test('the create name is trimmed by the action, not persisted raw', function () 
 
     Livewire::test(Index::class)->call('openCreateModal')->set('name', "  running \u{00A0}")->call('save')->assertHasNoErrors();
 
-    expect(BlogTag::query()->sole()->name)->toBe('running');
+    expect(BlogTag::query()->sole()->translated('name'))->toBe('running');
 });
 
 test('opening the create form after an edit shows a blank field, never the previous tag', function () {
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
     $this->actingAs(blogTagsIndexTestActor());
 
     Livewire::test(Index::class)
@@ -324,8 +328,8 @@ test('opening the create form after an edit shows a blank field, never the previ
 });
 
 test('an unacceptable create name is refused on the name field and adds no row', function (string $invalid) {
-    BlogTag::factory()->create(['name' => 'running']);
-    BlogTag::factory()->create(['name' => 'Niño']);
+    BlogTag::factory()->named('running')->create();
+    BlogTag::factory()->named('Niño')->create();
     $this->actingAs(blogTagsIndexTestActor());
 
     Livewire::test(Index::class)
@@ -374,7 +378,7 @@ test('save() validates through the injected actions, never the find-or-create ac
 });
 
 test('a duplicate submitted through the screen never silently succeeds -- it is an error, not a find-or-create hit', function () {
-    BlogTag::factory()->create(['name' => 'running']);
+    BlogTag::factory()->named('running')->create();
     $this->actingAs(blogTagsIndexTestActor());
 
     Livewire::test(Index::class)->call('openCreateModal')->set('name', 'running')->call('save')->assertHasErrors(['name']);
@@ -387,7 +391,7 @@ test('a duplicate submitted through the screen never silently succeeds -- it is 
 // =====================================================================
 
 test('renaming a tag to a free name updates the row and closes the modal', function () {
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
     $this->actingAs(blogTagsIndexTestActor());
 
     $component = Livewire::test(Index::class)
@@ -400,22 +404,22 @@ test('renaming a tag to a free name updates the row and closes the modal', funct
         ->assertHasNoErrors()
         ->assertSet('showModal', false);
 
-    expect($tag->fresh()->name)->toBe('trail running')
+    expect($tag->fresh()->translated('name'))->toBe('trail running')
         ->and(collect($component->get('tags'))->pluck('name')->all())->toBe(['trail running']);
 });
 
 test('saving a tag under its own unchanged name is accepted', function () {
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
     $this->actingAs(blogTagsIndexTestActor());
 
     Livewire::test(Index::class)->call('openEditModal', $tag->id)->call('save')->assertHasNoErrors();
 
-    expect($tag->fresh()->name)->toBe('running');
+    expect($tag->fresh()->translated('name'))->toBe('running');
 });
 
 test('renaming a tag onto another tag\'s exact name is refused and the tag keeps its name', function () {
-    BlogTag::factory()->create(['name' => 'running']);
-    $other = BlogTag::factory()->create(['name' => 'invierno']);
+    BlogTag::factory()->named('running')->create();
+    $other = BlogTag::factory()->named('invierno')->create();
     $this->actingAs(blogTagsIndexTestActor());
 
     Livewire::test(Index::class)
@@ -425,7 +429,7 @@ test('renaming a tag onto another tag\'s exact name is refused and the tag keeps
         ->assertHasErrors(['name'])
         ->assertSet('showModal', true);
 
-    expect($other->fresh()->name)->toBe('invierno');
+    expect($other->fresh()->translated('name'))->toBe('invierno');
 });
 
 test('the id feeding the uniqueness exclusion is server-authoritative: a forged editingTagId throws instead of retargeting the rename', function () {
@@ -433,8 +437,8 @@ test('the id feeding the uniqueness exclusion is server-authoritative: a forged 
     // #[Locked], set('editingTagId', $b) between opening the modal and saving would turn the
     // uniqueness check into a rename-any-tag primitive.
     $this->withoutExceptionHandling();
-    $a = BlogTag::factory()->create(['name' => 'alpha']);
-    $b = BlogTag::factory()->create(['name' => 'beta']);
+    $a = BlogTag::factory()->named('alpha')->create();
+    $b = BlogTag::factory()->named('beta')->create();
     $this->actingAs(blogTagsIndexTestActor());
 
     $component = Livewire::test(Index::class)->call('openEditModal', $a->id);
@@ -443,7 +447,7 @@ test('the id feeding the uniqueness exclusion is server-authoritative: a forged 
 
     $component->set('name', 'renamed')->call('save');
 
-    expect($a->fresh()->name)->toBe('renamed')->and($b->fresh()->name)->toBe('beta');
+    expect($a->fresh()->translated('name'))->toBe('renamed')->and($b->fresh()->translated('name'))->toBe('beta');
 });
 
 test('saving an edit for a tag deleted in the meantime fails cleanly rather than recreating or silently succeeding', function () {
@@ -459,7 +463,7 @@ test('saving an edit for a tag deleted in the meantime fails cleanly rather than
 });
 
 test('closing the modal clears a stale name error so it cannot leak into the next attempt', function () {
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
     $this->actingAs(blogTagsIndexTestActor());
 
     Livewire::test(Index::class)
@@ -473,8 +477,8 @@ test('closing the modal clears a stale name error so it cannot leak into the nex
 // =====================================================================
 
 test('deleting a tag removes the row unconditionally and it disappears from the reloaded list', function () {
-    $tag = BlogTag::factory()->create(['name' => 'running']);
-    BlogTag::factory()->create(['name' => 'invierno']);
+    $tag = BlogTag::factory()->named('running')->create();
+    BlogTag::factory()->named('invierno')->create();
     $this->actingAs(blogTagsIndexTestActor());
 
     $component = Livewire::test(Index::class)
@@ -578,7 +582,7 @@ function blogTagsRefusedContext(Closure $refuse): array
 }
 
 test('every refusal this component raises writes exactly one warning with target_type blog_tag, the actor, the ability and the target', function (string $ability, string $revoke, Closure $act) {
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
     $actor = blogTagsIndexTestActor();
     $this->actingAs($actor);
 

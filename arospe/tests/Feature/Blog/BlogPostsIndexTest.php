@@ -220,8 +220,8 @@ test('each row carries the documented shape, with the category name and the tag 
     $category = BlogCategory::factory()->named('Guías')->create();
     $post = BlogPost::factory()->published()->create(['title' => 'Botas de invierno', 'blog_category_id' => $category->id]);
     $post->tags()->attach([
-        BlogTag::factory()->create(['name' => 'running'])->id,
-        BlogTag::factory()->create(['name' => 'invierno'])->id,
+        BlogTag::factory()->named('running')->create()->id,
+        BlogTag::factory()->named('invierno')->create()->id,
     ]);
     $this->actingAs(blogPostsIndexActor());
 
@@ -398,9 +398,11 @@ test('a valid filter id is accepted even when the option dropdown is capped belo
     foreach (range(0, $limit - 1) as $index) {
         BlogCategory::factory()->named(sprintf('a-%04d', $index))->create();
     }
-    BlogTag::factory()->count($limit)->sequence(fn ($sequence) => ['name' => sprintf('a-%04d', $sequence->index)])->create();
+    foreach (range(0, $limit - 1) as $index) {
+        BlogTag::factory()->named(sprintf('a-%04d', $index))->create();
+    }
     $category = BlogCategory::factory()->named('zzz last')->create();
-    $tag = BlogTag::factory()->create(['name' => 'zzz last']);
+    $tag = BlogTag::factory()->named('zzz last')->create();
     $this->actingAs(blogPostsIndexActor(['blog.view']));
 
     Livewire::withQueryParams(['category' => $category->id, 'tag' => $tag->id])
@@ -427,8 +429,8 @@ test('the category filter narrows the list to that category, leaving a decoy cat
 });
 
 test('the tag filter narrows the list to posts carrying that tag, leaving a decoy tag out', function () {
-    $running = BlogTag::factory()->create(['name' => 'running']);
-    $winter = BlogTag::factory()->create(['name' => 'invierno']);
+    $running = BlogTag::factory()->named('running')->create();
+    $winter = BlogTag::factory()->named('invierno')->create();
     BlogPost::factory()->create(['title' => 'Runner'])->tags()->attach($running->id);
     BlogPost::factory()->create(['title' => 'Winter'])->tags()->attach($winter->id);
     BlogPost::factory()->create(['title' => 'Untagged']);
@@ -442,7 +444,7 @@ test('the tag filter narrows the list to posts carrying that tag, leaving a deco
 test('the two filters compose: category AND tag narrow further, they do not replace each other', function () {
     $guides = BlogCategory::factory()->named('Guías')->create();
     $news = BlogCategory::factory()->named('Novedades')->create();
-    $running = BlogTag::factory()->create(['name' => 'running']);
+    $running = BlogTag::factory()->named('running')->create();
     BlogPost::factory()->create(['title' => 'Guide + running', 'blog_category_id' => $guides->id])->tags()->attach($running->id);
     BlogPost::factory()->create(['title' => 'Guide only', 'blog_category_id' => $guides->id]);
     BlogPost::factory()->create(['title' => 'News + running', 'blog_category_id' => $news->id])->tags()->attach($running->id);
@@ -470,7 +472,7 @@ test('clearing a filter restores the full list', function () {
 
 test('changing either filter returns to page 1', function (string $property) {
     $category = BlogCategory::factory()->named('Guías')->create();
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
     BlogPost::factory()->count(30)->create(['blog_category_id' => $category->id])
         ->each(fn (BlogPost $post) => $post->tags()->attach($tag->id));
     $this->actingAs(blogPostsIndexActor(['blog.view']));
@@ -495,7 +497,7 @@ test('both filters are bound to the URL as ?category= and ?tag=', function () {
     }
 
     $category = BlogCategory::factory()->named('Guías')->create();
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
     $this->actingAs(blogPostsIndexActor(['blog.view']));
 
     Livewire::withQueryParams(['category' => $category->id, 'tag' => $tag->id])

@@ -95,7 +95,7 @@ test('a blog editor writes a scheduled post with a body, an image and tags, save
     // the case the null-<select> desync swallowed.
     $first = BlogCategory::factory()->named('Aaa primera')->create();
     BlogCategory::factory()->named('Zzz última')->create();
-    BlogTag::factory()->create(['name' => 'running']);
+    BlogTag::factory()->named('running')->create();
     $media = Media::factory()->withRealFiles()->create(['title' => 'Journey Widget', 'description' => null]);
     $bodyText = 'Texto escrito en el navegador';
     $scheduledFor = now()->addDays(30)->format('Y-m-d\TH:i:s');

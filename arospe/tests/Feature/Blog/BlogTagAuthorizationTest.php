@@ -4,6 +4,7 @@ use App\Actions\Blog\CreateBlogTag;
 use App\Actions\Blog\DeleteBlogTag;
 use App\Actions\Blog\RenameBlogTag;
 use App\Models\BlogTag;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -14,6 +15,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 // under test, so a policy that checked "any blog.*" could not pass.
 beforeEach(function () {
     $this->seed(RolePermissionSeeder::class);
+
+    StoreLanguage::factory()->default()->create();
 });
 
 /**
@@ -38,15 +41,15 @@ test('CreateBlogTag refuses an actor without blog.create and writes nothing', fu
 });
 
 test('RenameBlogTag refuses an actor without blog.edit and writes nothing', function () {
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
     $this->actingAs(blogTagActorWithout('blog.edit'));
 
     expect(fn () => app(RenameBlogTag::class)($tag, 'invierno'))->toThrow(AuthorizationException::class);
-    expect($tag->fresh()->name)->toBe('running');
+    expect($tag->fresh()->translated('name'))->toBe('running');
 });
 
 test('DeleteBlogTag refuses an actor without blog.delete and writes nothing', function () {
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
     $this->actingAs(blogTagActorWithout('blog.delete'));
 
     expect(fn () => app(DeleteBlogTag::class)($tag))->toThrow(AuthorizationException::class);
@@ -54,13 +57,13 @@ test('DeleteBlogTag refuses an actor without blog.delete and writes nothing', fu
 });
 
 test('each action is allowed for an actor holding exactly its own permission', function () {
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
 
     $this->actingAs(User::factory()->create()->givePermissionTo('blog.create'));
     expect(app(CreateBlogTag::class)('invierno'))->toBeInstanceOf(BlogTag::class);
 
     $this->actingAs(User::factory()->create()->givePermissionTo('blog.edit'));
-    expect(app(RenameBlogTag::class)($tag, 'trail running')->name)->toBe('trail running');
+    expect(app(RenameBlogTag::class)($tag, 'trail running')->translated('name'))->toBe('trail running');
 
     $this->actingAs(User::factory()->create()->givePermissionTo('blog.delete'));
     expect(app(DeleteBlogTag::class)($tag))->toBeTrue();
@@ -73,7 +76,7 @@ test('authorization runs before validation, so an unauthorized blank name is an 
 });
 
 test('an unauthenticated caller is refused by every action', function () {
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
 
     expect(fn () => app(CreateBlogTag::class)('invierno'))->toThrow(AuthorizationException::class)
         ->and(fn () => app(RenameBlogTag::class)($tag, 'invierno'))->toThrow(AuthorizationException::class)

@@ -275,7 +275,7 @@ test('every chip carries its tag-chip-{name} hook, and every tag on the post is 
     $this->actingAs(blogPostsEditorRenderingActor());
     $post = BlogPost::factory()->create();
     $names = collect(range(1, 12))->map(fn (int $n): string => 'tag '.$n)->all();
-    $post->tags()->attach(collect($names)->map(fn (string $name) => BlogTag::factory()->create(['name' => $name])->id)->all());
+    $post->tags()->attach(collect($names)->map(fn (string $name) => BlogTag::factory()->named($name)->create()->id)->all());
 
     $html = Livewire::test(Editor::class, ['blogPost' => $post])->html();
 
@@ -297,7 +297,7 @@ test('a chip name is escaped, never interpolated raw', function () {
 
 test('the add-tag control is disabled inside an explicit tooltip, with a reason, for an actor without blog.create typing a new name', function () {
     $this->actingAs(blogPostsEditorRenderingActor(['blog.view', 'blog.edit']));
-    BlogTag::factory()->create(['name' => 'running']);
+    BlogTag::factory()->named('running')->create();
 
     $html = Livewire::test(Editor::class, ['blogPost' => BlogPost::factory()->create()])->set('tagInput', 'invierno')->html();
 
@@ -307,7 +307,7 @@ test('the add-tag control is disabled inside an explicit tooltip, with a reason,
 
 test('the add-tag control is enabled for the same actor typing a name that already exists, even in another case', function () {
     $this->actingAs(blogPostsEditorRenderingActor(['blog.view', 'blog.edit']));
-    BlogTag::factory()->create(['name' => 'running']);
+    BlogTag::factory()->named('running')->create();
 
     $html = Livewire::test(Editor::class, ['blogPost' => BlogPost::factory()->create()])->set('tagInput', 'RUNNING')->html();
 
@@ -328,7 +328,7 @@ test('the add-tag control is enabled for an actor holding blog.create typing a n
 
 test('an actor without blog.create still sees a suggestion for an existing tag, enabled', function () {
     $this->actingAs(blogPostsEditorRenderingActor(['blog.view', 'blog.edit']));
-    BlogTag::factory()->create(['name' => 'running']);
+    BlogTag::factory()->named('running')->create();
 
     $html = Livewire::test(Editor::class, ['blogPost' => BlogPost::factory()->create()])->set('tagInput', 'run')->html();
 
@@ -338,7 +338,7 @@ test('an actor without blog.create still sees a suggestion for an existing tag, 
 
 test('no suggestion list renders while nothing is typed', function () {
     $this->actingAs(blogPostsEditorRenderingActor());
-    BlogTag::factory()->create(['name' => 'running']);
+    BlogTag::factory()->named('running')->create();
 
     $html = Livewire::test(Editor::class)->html();
 

@@ -54,8 +54,8 @@ test('a deleted post disappears from a default query and from both scopes, and w
 // survive -- which is what makes a restore lossless. Asserted against the pivot DIRECTLY, never via
 // $post->tags(), and every tag it used is still in the catalog.
 test('a soft-deleted post keeps its blog_post_tag rows and its tags stay in the catalog', function () {
-    $running = BlogTag::factory()->create(['name' => 'running']);
-    $invierno = BlogTag::factory()->create(['name' => 'invierno']);
+    $running = BlogTag::factory()->named('running')->create();
+    $invierno = BlogTag::factory()->named('invierno')->create();
     $post = BlogPost::factory()->create();
     $post->tags()->attach([$running->id, $invierno->id]);
 
@@ -63,8 +63,8 @@ test('a soft-deleted post keeps its blog_post_tag rows and its tags stay in the 
 
     $this->assertDatabaseHas('blog_post_tag', ['blog_post_id' => $post->id, 'blog_tag_id' => $running->id]);
     $this->assertDatabaseHas('blog_post_tag', ['blog_post_id' => $post->id, 'blog_tag_id' => $invierno->id]);
-    $this->assertDatabaseHas('blog_tags', ['id' => $running->id, 'name' => 'running']);
-    $this->assertDatabaseHas('blog_tags', ['id' => $invierno->id, 'name' => 'invierno']);
+    $this->assertDatabaseHas('blog_tag_translations', ['blog_tag_id' => $running->id, 'name' => 'running']);
+    $this->assertDatabaseHas('blog_tag_translations', ['blog_tag_id' => $invierno->id, 'name' => 'invierno']);
 });
 
 test('deleting a post leaves the other posts untouched', function () {
