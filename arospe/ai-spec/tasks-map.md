@@ -46,6 +46,8 @@ numbered files; `done/` unchanged at 92.
 
 **Update (2026-10-08): `0073-blog-categories-language-tabs-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** -- the eighth Epic 5 story to close. Its node, its `tasks-status.json` entry (the `claimed` one) and its `claimed` class membership are dropped because the task is closed; it joins the flat `done/` inventory (97 -> 98). It had no pending dependent (`0075`/`0079` name the shared strip from 0071, not this story), so no other task's `depends_on`/`status` changes; `0073` is removed from every `conflict_risk_with` list. Link-integrity check, both directions: same-depth move, so the file's own outbound links still resolve unchanged; inbound links were repointed from `../in-progress/0073-...` to the bare sibling in `done/0062` (13) and `done/0063` (2). `ai-spec/tasks/in-progress/` is empty again.
 
+**Update (2026-10-15): `0074-translatable-content-retrofit-blog-tags-backend.md` completed Phase 7 and moved from `ai-spec/tasks/` to `ai-spec/tasks/done/`** -- the Blog Tags backend retrofit (claimed by `worktree-0074-blog-tags-translatable-retrofit`). Its node and its `tasks-status.json` entry were removed; its only dependent, `0075`, drops `"0074"` from `depends_on` and moves from `blocked` to `ready`. The link-integrity check ran both directions: the moved file's 12 outbound links were repointed one level deeper (`](../../docs/…)` to `](../../../docs/…)`, `](done/…)` to `](…)`) and all resolve; inbound links were repointed in `0075` (2, to `](done/0074-…md)`), `done/0060` (6), `done/0063` (3) and `done/0073` (1).
+
 **Update (2026-10-07): `0073-blog-categories-language-tabs-ui.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 3 step 0, claimed by `worktree-0073-blog-categories-language-tabs-ui`). It is still pending work, so it keeps its node; its node moves from the green `ready` class to the blue `claimed` class, and its `tasks-status.json` entry becomes `"claimed"` with `depends_on` still empty and `touches` widened to the story's *Files to create/modify* set. The link-integrity check ran both directions: the moved file's 35 outbound relative links were repointed one level deeper (`](done/…)` to `](../done/…)`, `](../../docs/…)` to `](../../../docs/…)`, the bare `](0074-…md)` to `](../0074-…md)`) and all resolve; inbound links were repointed (`](../0073-…md)` to `](../in-progress/0073-…md)`) in `done/0062` (13) and `done/0063` (2); `0075` only mentions the file name in prose (no link), and `0074`/`0077`/`0079` and the digests hold no link to it. `ai-spec/tasks/in-progress/` holds exactly this one file. Counts unchanged.
 
 **Update (2026-10-07): `0072-translatable-content-retrofit-blog-categories-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** -- the seventh Epic 5 story to close. Its node, its `P0072 --> P0073` edge and its `tasks-status.json` entry (the `claimed` one) are dropped because the task is closed; it joins the flat `done/` inventory. Its one dependent `0073` drops `"0072"` from `depends_on` and moves from `blocked` to `ready` (its only pending dependency); `0072` is removed from every `conflict_risk_with` list. Link-integrity check, both directions: same-depth move, so the file's own outbound links lost their `../done/` prefix (bare siblings) and all resolve; inbound links were repointed from `in-progress/0072-...` to `done/0072-...` in `0073` (3) and from `../in-progress/0072-...` to the bare sibling in `done/0062` (5) and `done/0063` (1). `ai-spec/tasks/in-progress/` is empty again.
@@ -532,7 +534,6 @@ flowchart LR
 
     subgraph PEND_I18N["Epic 5 — Internationalization"]
         direction TB
-        P0074["0074 Blog Tags retrofit BE"]
         P0075["0075 Blog Tags i18n UI"]
         P0076["0076 Products retrofit BE"]
         P0077["0077 Product editor i18n UI"]
@@ -602,7 +603,7 @@ flowchart LR
     %% this merge -- neither removal supersedes the other.)
     %% (P0067 -.-> P0069 dropped: 0067 closed to done/ 2026-10-02, the fourth Epic 5 story to close; its node and the conflict edge are removed.)
     %% (P0072 --> P0073 dropped: 0072 closed to done/ 2026-10-07; 0073 is now ready.)
-    P0074 --> P0075
+    %% (P0074 --> P0075 dropped: 0074 closed to done/ 2026-10-15; 0075 is now ready.)
     P0076 --> P0077
     P0078 --> P0079
     P0077 -.-> P0079
@@ -610,8 +611,8 @@ flowchart LR
     %% (P0084 --> P0085 dropped: 0084 is done; 0085 is done too.)
     %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
-    class P0075,P0077,P0079 pending;
-    class P0074,P0076,P0078 ready;
+    class P0077,P0079 pending;
+    class P0075,P0076,P0078 ready;
     %% (P0073 closed to done/ 2026-10-08; no node remains `claimed`.)
     %% (P0071 --> P0073/P0075/P0079 dropped: 0071 closed to done/ 2026-10-07.)
 ```

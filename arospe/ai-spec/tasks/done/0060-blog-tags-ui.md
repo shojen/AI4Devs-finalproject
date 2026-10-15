@@ -7,7 +7,7 @@
 > silently rewritten** — each carries a ⚠️ **Correction, 2026-08-30** block stating what this file used
 > to say and why it is now wrong, so a reader can tell a decision from a stale sentence.
 >
-> - **[0074](../0074-translatable-content-retrofit-blog-tags-backend.md) — Blog Tags translatable-content
+> - **[0074](0074-translatable-content-retrofit-blog-tags-backend.md) — Blog Tags translatable-content
 >   retrofit (backend, Phase 1).** It **deletes `blog_tags.name` and `blog_tags.normalized_name`
 >   entirely**, moving both into a `blog_tag_translations` child table — one row per
 >   `(tag, store language)` — with name uniqueness re-scoped from global to **per store language** and
@@ -313,7 +313,7 @@ App\Concerns\BlogTagValidationRules::nameRules(NormalizeForSearch $n, ?string $i
 App\Concerns\BlogTagValidationRules::nameFormatRules(): array       // format ONLY — this screen must never reach it (0059 D-9)
 ```
 
-> ⚠️ **Correction, 2026-08-30 — two lines of that block are falsified by [0074](../0074-translatable-content-retrofit-blog-tags-backend.md), and this is the correction 0075's own R-6 asks for by name** (its backlog item 1: *"correct 0060's stale interface contract in place"*). Both are corrected here rather than left for whoever implements this story to write against a shape that will not exist.
+> ⚠️ **Correction, 2026-08-30 — two lines of that block are falsified by [0074](0074-translatable-content-retrofit-blog-tags-backend.md), and this is the correction 0075's own R-6 asks for by name** (its backlog item 1: *"correct 0060's stale interface contract in place"*). Both are corrected here rather than left for whoever implements this story to write against a shape that will not exist.
 >
 > **(a) The `BlogTag` line.** It says `#[Fillable(['name'])]` and *"`normalized_name` derived by a `saving()` hook (0059 D-4)"*. **Every clause of that is false after 0074:** the model becomes **identity-only** with `#[Fillable([])]` (0074 **D-2**), there is no `name` column and no `normalized_name` column on `blog_tags` at all, and the `saving()` hook **relocates** to `App\Models\BlogTagTranslation` (0074 **D-4** — which is also what lets `SetTranslation` stay unmodified). Read instead:
 >
@@ -397,7 +397,7 @@ class Index extends Component
 }
 ```
 
-> ⚠️ **Correction, 2026-08-30 — three items in the surface above are affected by [0074](../0074-translatable-content-retrofit-blog-tags-backend.md) / [0075](../0075-blog-tags-language-tabs-ui.md). The class is otherwise unchanged**, and in particular `$editingTagId` / `$deletingTagId` / `$deletingTagName` stay `#[Locked]`, every method still authorizes through `LogRefusedPrivilegedAttempt`, and `mount()` stays the one deliberate unlogged exclusion.
+> ⚠️ **Correction, 2026-08-30 — three items in the surface above are affected by [0074](0074-translatable-content-retrofit-blog-tags-backend.md) / [0075](../0075-blog-tags-language-tabs-ui.md). The class is otherwise unchanged**, and in particular `$editingTagId` / `$deletingTagId` / `$deletingTagName` stay `#[Locked]`, every method still authorizes through `LogRefusedPrivilegedAttempt`, and `mount()` stays the one deliberate unlogged exclusion.
 >
 > **(a) The `$tags` row shape.** It is declared `array{id: string, name: string, canEdit: bool, canDelete: bool}`, and `name` reads as a column. **It is no longer one.** After 0074 there is no `blog_tags.name`, so the row's `name` is **derived** — `translated('name')` resolved for the **store default** store language (0075 **D-8**: the store default, *never* the admin UI locale, which PRD is explicit must not be conflated with it). It can legitimately be **absent**: 0074's **R-9** records that immediately after a store-default change this may be true of *most of the catalog*, and 0075 **D-8** renders that as the em-dash-style placeholder `users.blade.php` / `roles.blade.php` / `sales-regions.blade.php` already use — never a blank and never an error. **The four keys are otherwise unchanged, and the D-5 "no post/usage-count key" assertion is unaffected.** ⚠️ **Undecided, and flagged rather than guessed:** whether the PHP type becomes `name: ?string` (the component surfaces `null` and the view branches) or stays `name: string` (the component maps a missing translation to `''` and the view branches on empty). 0075 states the *behaviour* — placeholder, no error — but not the array shape, and this file cannot settle a property of a component 0075 rewrites. **Phase 2 decides**; whichever is chosen, 0060's own "no `wire:model`-bound property is ever `null`" rule does not reach it, because `$tags` is `#[Locked]` and bound to nothing.
 >
@@ -858,7 +858,7 @@ product taxonomy.
 - [x] **Story 0059 is closed, with its two *blocking* whitespace tests intact** — a hard prerequisite,
       not a courtesy. See **R-3**: this story's own case/accent canaries cannot prove
       `NormalizeForSearch` is in the call path, and that proof lives entirely in 0059's suite.
-      ⚠️ **Amended, 2026-08-30 — [0074](../0074-translatable-content-retrofit-blog-tags-backend.md) joins
+      ⚠️ **Amended, 2026-08-30 — [0074](0074-translatable-content-retrofit-blog-tags-backend.md) joins
       0059 as a hard prerequisite, and the whitespace-test obligation travels with it.** 0074 **R-8**
       records that its own retrofit preserves the false-green exactly: `utf8mb4_unicode_ci` is case-
       *and* accent-insensitive, so an implementation that skips `NormalizeForSearch` entirely still
@@ -1042,7 +1042,7 @@ product taxonomy.
 
 - **D-9 — Ordered `name ASC, id ASC`; no pagination, no search, no sort picker.**
   ⚠️ **Correction, 2026-08-30 — the *SQL* half of this decision is no longer executable.**
-  [0074](../0074-translatable-content-retrofit-blog-tags-backend.md) deletes `blog_tags.name`, so there is
+  [0074](0074-translatable-content-retrofit-blog-tags-backend.md) deletes `blog_tags.name`, so there is
   no column to `orderBy`. [0075](../0075-blog-tags-language-tabs-ui.md) **D-8** carries the correction and
   it is `frontend-expert`'s: **sort after fetch, keeping the `id` tiebreak** — the same shape sibling
   story 0071 reached independently for Product Categories (its **D-12**), which is the strongest signal
@@ -1088,7 +1088,7 @@ product taxonomy.
   ⚠️ **Correction, 2026-08-30 — still binding *on this story*, and no longer a statement about the
   screen.** The fence is unchanged as a scope rule: 0060 creates no translations table and no language
   tabs. But the screen does not stay monolingual —
-  [0074](../0074-translatable-content-retrofit-blog-tags-backend.md) creates `blog_tag_translations` and
+  [0074](0074-translatable-content-retrofit-blog-tags-backend.md) creates `blog_tag_translations` and
   [0075](../0075-blog-tags-language-tabs-ui.md) adds the tabs by **modifying this story's own component,
   view, lang files and tests**. Read this bullet as *"not here, not by this story"*, never as *"this
   screen is single-language"* — the second reading is what would make someone rewrite 0075's work back

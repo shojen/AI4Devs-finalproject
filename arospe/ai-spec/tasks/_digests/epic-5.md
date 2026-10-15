@@ -54,3 +54,12 @@ closed earlier and are not backfilled here (read their `done/` files or `docs/`)
 - Every language panel is always mounted and hidden with `x-show` + `x-cloak`, never an `@if` on `$activeLanguageId`; hooks are keyed by language id: `blog-category-name-input-{id}`, `language-tab-{id}`, `language-name-error-{id}`, `language-untranslated-{id}` — story 0073 (A-10, A-16, D-11).
 - The edit field reads the raw translation row, never `translated('name')`, so a fallback is never silently saved as a translation — story 0073 (D-6).
 - Known follow-up: the strip's `aria-label` is hardcoded (two consumers now), to be generalised by 0075 — story 0073 (Phase 5/6 notes).
+
+## Story 0074 — Blog tags retrofit (backend)
+
+- `blog_tag_translations` follows 0072's shape: `UNIQUE(store_language_id, normalized_name)` (named `blog_tag_translations_language_normalized_name_unique`) and `UNIQUE(blog_tag_id, store_language_id)`; exactly three indexes (the FK columns are leftmost in the composites) — story 0074 (D-1, D-3).
+- `BackfillBlogTagTranslations` **copies** `name` and `normalized_name` byte-for-byte (unlike 0072); the column-drop migration aborts when a tag has no translation row; `down()` restores nullable columns, no unique index — story 0074 (D-10, D-11).
+- `Create`/`FindOrCreateBlogTag` write parent + default-language translation in one `DB::transaction`, overriding 0059 D-10; `RenameBlogTag` does not — story 0074 (D-5).
+- `BlogTagValidationRules::nameRules()/uniqueNormalisedName()` take a required `string $storeLanguageId` before the optional `?string $blogTagId`; own-row exclusion is `blog_tag_id !=`, never `->ignore()` — story 0074 (D-6).
+- `FindOrCreateBlogTag` looks up the default language only, plus a bounded fallback that reuses a tag holding NO default-language name (after a default change), so a post save never mints a duplicate or detaches a tag; the editor/list show such a tag under any stored translation — story 0074 (D-8 amended).
+- Non-default-language authoring and its French Gherkin scenarios belong to 0075; `TranslateBlogTagNameUniqueViolation` already accepts `$errorKey`/`$attributeLabel` for it — story 0074.

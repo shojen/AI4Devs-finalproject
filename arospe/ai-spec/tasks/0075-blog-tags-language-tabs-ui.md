@@ -43,7 +43,7 @@ Add per-store-language name editing to the Blog Tags management screen that stor
 switching the translatable fields in place"*, and *"**Category and tag names** … each becomes a
 per-store-language field with the same tab-based editor UX."*
 
-It consumes story [0074](0074-translatable-content-retrofit-blog-tags-backend.md)'s
+It consumes story [0074](done/0074-translatable-content-retrofit-blog-tags-backend.md)'s
 `blog_tag_translations` retrofit and story [0070](done/0070-translatable-content-mechanism-product-categories-backend.md)'s
 `HasTranslations` / `SetTranslation` mechanism, and story [0068](done/0068-store-languages-catalog-backend.md)'s
 `StoreLanguage::active()` scope. It adds **one** backend artifact — the authorizing, validating write
@@ -870,7 +870,7 @@ renders. The mismatch is a property of the *edit* form's array binding, not of t
 
 ### Dependencies
 
-- **[0074](0074-translatable-content-retrofit-blog-tags-backend.md)** — hard, **not implemented**.
+- **[0074](done/0074-translatable-content-retrofit-blog-tags-backend.md)** — hard, **not implemented**.
   `blog_tag_translations`, `BlogTagTranslation`, the re-signed `nameRules()`, per-language uniqueness.
 - **[0060](done/0060-blog-tags-ui.md)** — hard, **not implemented**. The screen, the route, the sidebar
   group, the lang files, the policy call site. This story modifies its component and view.
