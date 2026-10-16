@@ -62,7 +62,11 @@ class BackfillBlogTagTranslations
     }
 
     /**
-     * @return int the number of translation rows written (0 when there are no tags)
+     * Idempotent: a tag that already has a default-language row is skipped, so a re-run (the
+     * second migration's guard tells the operator to do exactly that) fills only the gaps instead
+     * of tripping the per-tag-and-language UNIQUE.
+     *
+     * @return int the number of translation rows written (0 when there is nothing left to carry)
      */
     public function __invoke(): int
     {
@@ -78,7 +82,11 @@ class BackfillBlogTagTranslations
         $written = 0;
 
         DB::table('blog_tags')
-            ->select(['id', 'name', 'normalized_name'])
+            ->select(['blog_tags.id', 'blog_tags.name', 'blog_tags.normalized_name'])
+            ->whereNotExists(fn ($query) => $query->select(DB::raw(1))
+                ->from('blog_tag_translations')
+                ->whereColumn('blog_tag_translations.blog_tag_id', 'blog_tags.id')
+                ->where('blog_tag_translations.store_language_id', $storeLanguageId))
             ->chunkById(500, function (Collection $tags) use ($storeLanguageId, $now, &$written): void {
                 /** @var iterable<object{id: string, name: string, normalized_name: string}> $tags */
                 $rows = $this->translationRowsFor($tags, $storeLanguageId, $now);
@@ -86,7 +94,7 @@ class BackfillBlogTagTranslations
                 DB::table('blog_tag_translations')->insert($rows);
 
                 $written += count($rows);
-            });
+            }, 'blog_tags.id', 'id');
 
         return $written;
     }

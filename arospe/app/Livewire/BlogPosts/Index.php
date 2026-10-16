@@ -311,14 +311,13 @@ class Index extends Component
     private function tagNamesFor(BlogPost $post): array
     {
         $compareTranslatedNames = app(CompareTranslatedNames::class);
-        $nameOf = fn (BlogTag $tag): ?string => $tag->translated('name')
-            ?? $tag->translations->first()?->name;
+        $nameOf = fn (BlogTag $tag): ?string => $tag->displayName();
 
-        return $post->tags
+        return array_values($post->tags
             ->sort(fn (BlogTag $a, BlogTag $b): int => $compareTranslatedNames($nameOf($a), $a->id, $nameOf($b), $b->id))
             ->map(fn (BlogTag $tag): string => $nameOf($tag) ?? '—')
             ->values()
-            ->all();
+            ->all());
     }
 
     /**

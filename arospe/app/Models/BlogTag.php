@@ -6,6 +6,7 @@ use App\Concerns\HasTranslations;
 use App\Concerns\Translatable;
 use Database\Factories\BlogTagFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +24,7 @@ use Illuminate\Support\Carbon;
  * table's DELETE, and a soft delete is an UPDATE, so the cascade would never fire.
  *
  * @property string $id
+ * @property-read Collection<int, BlogTagTranslation> $translations
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -55,6 +57,17 @@ class BlogTag extends Model implements Translatable
     public function posts(): BelongsToMany
     {
         return $this->belongsToMany(BlogPost::class, 'blog_post_tag', 'blog_tag_id', 'blog_post_id');
+    }
+
+    /**
+     * The name to show: the default-language one, else whichever stored translation exists, so a tag
+     * left without a default-language name (after the store default changes) is never rendered
+     * nameless or dropped from a form that would then detach it. Needs `translations` eager-loaded.
+     */
+    public function displayName(): ?string
+    {
+        return $this->translated('name')
+            ?? $this->translations->map(fn (BlogTagTranslation $translation): string => $translation->name)->first();
     }
 
     protected function translationModel(): string

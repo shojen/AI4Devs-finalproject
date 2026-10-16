@@ -139,8 +139,7 @@ class Editor extends Component
 
         // A tag with no name in the default language (after a default change) still shows, under
         // whichever stored translation it has: dropping the chip would make Save detach the tag.
-        $nameOf = fn (BlogTag $tag): ?string => $tag->translated('name')
-            ?? $tag->translations->first()?->name;
+        $nameOf = fn (BlogTag $tag): ?string => $tag->displayName();
 
         $this->tagNames = array_values($blogPost->tags()
             ->with('translations')
