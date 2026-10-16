@@ -144,3 +144,154 @@ test('a real run gives every existing tag a default-language translation copied 
         DB::table('store_languages')->delete();
     }
 });
+
+// Runs $callback with the legacy columns re-added, then removes every row and both columns again
+// (see the DDL note on the real-run test above).
+function withLegacyBlogTagColumns(Closure $callback): void
+{
+    Schema::table('blog_tags', function ($table): void {
+        $table->string('name', 100)->nullable();
+        $table->string('normalized_name', 100)->nullable();
+    });
+
+    try {
+        $callback();
+    } finally {
+        DB::table('blog_tag_translations')->delete();
+        DB::table('blog_tags')->delete();
+        Schema::table('blog_tags', function ($table): void {
+            $table->dropColumn(['name', 'normalized_name']);
+        });
+        DB::table('store_languages')->delete();
+    }
+}
+
+/**
+ * @return list<string> the inserted tag ids, in insertion order
+ */
+function insertLegacyBlogTags(int $count): array
+{
+    $ids = [];
+    $rows = [];
+
+    for ($i = 0; $i < $count; $i++) {
+        $ids[] = $id = (string) Str::uuid7();
+        $rows[] = [
+            'id' => $id,
+            'name' => 'Tag '.$i,
+            'normalized_name' => 'tag '.$i,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+
+        if (count($rows) === 500) {
+            DB::table('blog_tags')->insert($rows);
+            $rows = [];
+        }
+    }
+
+    if ($rows !== []) {
+        DB::table('blog_tags')->insert($rows);
+    }
+
+    return $ids;
+}
+
+test('a second run returns 0 and leaves the translation rows untouched', function () {
+    StoreLanguage::factory()->default()->create();
+
+    withLegacyBlogTagColumns(function (): void {
+        insertLegacyBlogTags(3);
+
+        expect(app(BackfillBlogTagTranslations::class)())->toBe(3);
+
+        $before = DB::table('blog_tag_translations')->orderBy('id')->get()->map(fn ($row) => (array) $row)->all();
+
+        expect(app(BackfillBlogTagTranslations::class)())->toBe(0);
+
+        $after = DB::table('blog_tag_translations')->orderBy('id')->get()->map(fn ($row) => (array) $row)->all();
+
+        expect($after)->toHaveCount(3)->and($after)->toBe($before);
+    });
+});
+
+test('a re-run over a partially translated catalogue writes only the missing rows and never overwrites existing text', function () {
+    $default = StoreLanguage::factory()->default()->create();
+    $other = StoreLanguage::factory()->create();
+
+    withLegacyBlogTagColumns(function () use ($default, $other): void {
+        $ids = insertLegacyBlogTags(5);
+        $now = now();
+
+        // Tags 0 and 1 already have a default-language row with different text.
+        foreach ([0, 1] as $index) {
+            DB::table('blog_tag_translations')->insert([
+                'id' => (string) Str::uuid7(),
+                'blog_tag_id' => $ids[$index],
+                'store_language_id' => $default->id,
+                'name' => 'Edited '.$index,
+                'normalized_name' => 'edited '.$index,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        // Tag 2 only has a non-default translation: it still lacks the default-language one.
+        DB::table('blog_tag_translations')->insert([
+            'id' => (string) Str::uuid7(),
+            'blog_tag_id' => $ids[2],
+            'store_language_id' => $other->id,
+            'name' => 'Otro',
+            'normalized_name' => 'otro',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        expect(app(BackfillBlogTagTranslations::class)())->toBe(3);
+
+        foreach ([0, 1] as $index) {
+            $rows = DB::table('blog_tag_translations')->where('blog_tag_id', $ids[$index])->get();
+
+            expect($rows)->toHaveCount(1)
+                ->and($rows[0]->name)->toBe('Edited '.$index)
+                ->and($rows[0]->normalized_name)->toBe('edited '.$index);
+        }
+
+        foreach ([2, 3, 4] as $index) {
+            $rows = DB::table('blog_tag_translations')
+                ->where('blog_tag_id', $ids[$index])
+                ->where('store_language_id', $default->id)
+                ->get();
+
+            expect($rows)->toHaveCount(1)
+                ->and($rows[0]->name)->toBe('Tag '.$index)
+                ->and($rows[0]->normalized_name)->toBe('tag '.$index);
+        }
+
+        expect(DB::table('blog_tag_translations')->where('blog_tag_id', $ids[2])->count())->toBe(2)
+            ->and(DB::table('blog_tag_translations')->count())->toBe(6);
+    });
+});
+
+test('a catalogue larger than one chunk gets exactly one default-language translation per tag', function () {
+    $default = StoreLanguage::factory()->default()->create();
+
+    withLegacyBlogTagColumns(function () use ($default): void {
+        $ids = insertLegacyBlogTags(1201);
+
+        expect(app(BackfillBlogTagTranslations::class)())->toBe(1201)
+            ->and(DB::table('blog_tag_translations')->count())->toBe(1201)
+            ->and(DB::table('blog_tag_translations')->distinct()->count('blog_tag_id'))->toBe(1201)
+            ->and(DB::table('blog_tag_translations')->where('store_language_id', $default->id)->count())->toBe(1201);
+
+        // Spot-check rows on both sides of each chunk boundary for byte-identical copies.
+        foreach ([0, 499, 500, 999, 1000, 1200] as $index) {
+            $row = DB::table('blog_tag_translations')->where('blog_tag_id', $ids[$index])->first();
+
+            expect($row->name)->toBe('Tag '.$index)
+                ->and($row->normalized_name)->toBe('tag '.$index);
+        }
+
+        expect(app(BackfillBlogTagTranslations::class)())->toBe(0);
+    });
+});
