@@ -17,6 +17,7 @@
 // compensates for exactly that: the DOM has not yet re-rendered from the server response.
 
 use App\Models\BlogTag;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Spatie\Permission\PermissionRegistrar;
@@ -57,6 +58,8 @@ test('opening the create form shows a blank field, with no stale prefill from a 
 
 test('creating a tag through a real fill and click round trip adds it to the list', function () {
     $this->actingAs(blogTagsBrowserActor());
+    // A new tag is authored in the store default language, so one must exist (no factory seeds it here).
+    StoreLanguage::factory()->default()->create();
 
     visit('/blog/tags')
         ->assertNoJavaScriptErrors()
