@@ -66,7 +66,7 @@ test('creating a tag through a real fill and click round trip adds it to the lis
         ->wait(1)
         ->assertNoJavaScriptErrors();
 
-    $tag = BlogTag::query()->where('name', 'Marathon')->sole();
+    $tag = BlogTag::query()->whereHas('translations', fn ($query) => $query->where('name', 'Marathon'))->sole();
 
     visit('/blog/tags')->assertPresent('@edit-blog-tag-'.$tag->id);
 });
@@ -82,7 +82,7 @@ test('editing prefills the name, and re-saving it unchanged preserves it', funct
         ->wait(1)
         ->assertNoJavaScriptErrors();
 
-    expect($tag->fresh()->name)->toBe('Marathon');
+    expect($tag->fresh()->translated('name'))->toBe('Marathon');
 });
 
 test('renaming through the real input persists the new name', function () {
@@ -96,7 +96,7 @@ test('renaming through the real input persists the new name', function () {
         ->wait(1)
         ->assertNoJavaScriptErrors();
 
-    expect($tag->fresh()->name)->toBe('Ultratrail');
+    expect($tag->fresh()->translated('name'))->toBe('Ultratrail');
 });
 
 test('cancelling the create form adds nothing', function () {
