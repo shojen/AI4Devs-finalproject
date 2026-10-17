@@ -5,6 +5,7 @@ use App\Enums\BlogPostStatus;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Models\BlogTag;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -26,6 +27,8 @@ beforeEach(function () {
     $this->actingAs($this->actor);
 
     $this->category = BlogCategory::factory()->named('Guías')->create();
+
+    StoreLanguage::factory()->default()->create();
 });
 
 afterEach(function () {
@@ -46,7 +49,7 @@ function updateBlogPostWith(BlogPost $post, array $overrides = []): BlogPost
         'blogCategoryId' => $post->blog_category_id,
         'status' => $post->status->value,
         'publishedAt' => $post->published_at?->toDateTimeString(),
-        'tagNames' => $post->tags()->pluck('name')->all(),
+        'tagNames' => $post->tags()->get()->map(fn (BlogTag $tag): ?string => $tag->translated('name'))->all(),
     ], $overrides));
 }
 
@@ -282,7 +285,7 @@ test('a status the caller dirtied on the instance is discarded in favour of the 
 });
 
 test('tag names omitted from an update are detached and the tag rows survive', function () {
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
     $post = BlogPost::factory()->create();
     $post->tags()->attach($tag->id);
 

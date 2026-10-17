@@ -5,6 +5,8 @@ use App\Actions\Blog\DeleteBlogTag;
 use App\Actions\Blog\FindOrCreateBlogTag;
 use App\Models\BlogPost;
 use App\Models\BlogTag;
+use App\Models\BlogTagTranslation;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -18,10 +20,12 @@ beforeEach(function () {
     $this->actor = User::factory()->create();
     $this->actor->givePermissionTo(['blog.delete', 'blog.create', 'blog.view']);
     $this->actingAs($this->actor);
+
+    $this->defaultLanguage = StoreLanguage::factory()->default()->create();
 });
 
 test('deleting a tag removes the row outright, not as a soft delete', function () {
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
 
     $deleted = app(DeleteBlogTag::class)($tag);
 
@@ -29,15 +33,31 @@ test('deleting a tag removes the row outright, not as a soft delete', function (
     $this->assertDatabaseMissing('blog_tags', ['id' => $tag->id]);
 });
 
+// Story 0074: the child table's FK cascades, so the delete leaves no translation row behind in ANY
+// language -- an orphan would keep holding the per-language unique index and block reusing the name.
+test('deleting a tag removes its translation rows in every language', function () {
+    $other = StoreLanguage::factory()->create();
+    $tag = BlogTag::factory()->named('running')->create();
+    BlogTagTranslation::factory()->forLanguage($other)->create(['blog_tag_id' => $tag->id, 'name' => 'correr']);
+    $kept = BlogTag::factory()->named('invierno')->create();
+
+    expect(BlogTagTranslation::where('blog_tag_id', $tag->id)->count())->toBe(2);
+
+    app(DeleteBlogTag::class)($tag);
+
+    expect(BlogTagTranslation::where('blog_tag_id', $tag->id)->count())->toBe(0)
+        ->and(BlogTagTranslation::where('blog_tag_id', $kept->id)->count())->toBe(1);
+});
+
 // Nothing lingers to hold the unique index -- exactly what a soft delete would have broken (D-5).
 test('the freed name can immediately be reused by a new tag and by FindOrCreateBlogTag', function () {
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
 
     app(DeleteBlogTag::class)($tag);
 
     $reused = app(CreateBlogTag::class)('running');
 
-    expect($reused->fresh()->name)->toBe('running')
+    expect($reused->fresh()->translated('name'))->toBe('running')
         ->and(BlogTag::count())->toBe(1);
 
     app(DeleteBlogTag::class)($reused);
@@ -52,7 +72,7 @@ test('the freed name can immediately be reused by a new tag and by FindOrCreateB
 // The action takes an already-resolved model, so an unknown id cannot reach it directly; what CAN
 // reach it is an instance whose row has since gone. A silent no-op reported as success is the failure.
 test('deleting a tag whose row is already gone fails cleanly instead of reporting success', function () {
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
     app(DeleteBlogTag::class)($tag);
 
     expect(fn () => app(DeleteBlogTag::class)($tag))->toThrow(ModelNotFoundException::class);
@@ -64,12 +84,14 @@ test('a malformed or unknown id never resolves to a tag to delete', function () 
 });
 
 test('deleting one tag leaves the others untouched', function () {
-    $doomed = BlogTag::factory()->create(['name' => 'running']);
-    $kept = BlogTag::factory()->create(['name' => 'invierno']);
+    $doomed = BlogTag::factory()->named('running')->create();
+    $kept = BlogTag::factory()->named('invierno')->create();
 
     app(DeleteBlogTag::class)($doomed);
 
-    $this->assertDatabaseHas('blog_tags', ['id' => $kept->id, 'name' => 'invierno']);
+    $this->assertDatabaseHas('blog_tags', ['id' => $kept->id]);
+    $this->assertDatabaseHas('blog_tag_translations', ['blog_tag_id' => $kept->id, 'name' => 'invierno']);
+    $this->assertDatabaseMissing('blog_tag_translations', ['blog_tag_id' => $doomed->id]);
 });
 
 // D-8: the ABSENCE of an in-use guard is this story's contract, so it is asserted positively. A tag
@@ -95,8 +117,8 @@ test('deleting is unconditional: a tag that has been reused many times is still 
 // blog_tag_id is cascadeOnDelete(), and these tests go red if anyone writes restrictOnDelete() there.
 
 test('deleting a tag attached to several posts removes exactly its pivot rows', function () {
-    $running = BlogTag::factory()->create(['name' => 'running']);
-    $invierno = BlogTag::factory()->create(['name' => 'invierno']);
+    $running = BlogTag::factory()->named('running')->create();
+    $invierno = BlogTag::factory()->named('invierno')->create();
 
     foreach (BlogPost::factory()->count(3)->create() as $post) {
         $post->tags()->attach([$running->id, $invierno->id]);
@@ -112,8 +134,8 @@ test('deleting a tag attached to several posts removes exactly its pivot rows', 
 // The control: without it, a bug that deletes the POST instead of detaching the tag still passes a
 // "the pivot row is gone" assertion.
 test('every post that carried the deleted tag survives, untouched, with its other tags intact', function () {
-    $running = BlogTag::factory()->create(['name' => 'running']);
-    $invierno = BlogTag::factory()->create(['name' => 'invierno']);
+    $running = BlogTag::factory()->named('running')->create();
+    $invierno = BlogTag::factory()->named('invierno')->create();
     $posts = BlogPost::factory()->count(3)->create();
 
     foreach ($posts as $post) {
@@ -132,8 +154,8 @@ test('every post that carried the deleted tag survives, untouched, with its othe
 });
 
 test('deleting a tag leaves another post\'s unrelated tag associations alone', function () {
-    $running = BlogTag::factory()->create(['name' => 'running']);
-    $other = BlogTag::factory()->create(['name' => 'invierno']);
+    $running = BlogTag::factory()->named('running')->create();
+    $other = BlogTag::factory()->named('invierno')->create();
     $decoy = BlogPost::factory()->create();
     $decoy->tags()->attach($other->id);
     BlogPost::factory()->create()->tags()->attach($running->id);
@@ -146,7 +168,7 @@ test('deleting a tag leaves another post\'s unrelated tag associations alone', f
 // D-7c: the tag-side cascade is unaffected by the post-side soft delete, because tags still
 // hard-delete. Otherwise a restored post would come back carrying a tag the catalog no longer has.
 test('deleting a tag also detaches it from a trashed post', function () {
-    $running = BlogTag::factory()->create(['name' => 'running']);
+    $running = BlogTag::factory()->named('running')->create();
     $post = BlogPost::factory()->create();
     $post->tags()->attach($running->id);
     $post->delete();

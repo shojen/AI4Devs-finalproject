@@ -17,6 +17,7 @@
 // compensates for exactly that: the DOM has not yet re-rendered from the server response.
 
 use App\Models\BlogTag;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Spatie\Permission\PermissionRegistrar;
@@ -42,7 +43,7 @@ function blogTagsBrowserActor(array $permissions = ['blog.view', 'blog.create', 
 
 test('opening the create form shows a blank field, with no stale prefill from a previous edit', function () {
     $this->actingAs(blogTagsBrowserActor());
-    $tag = BlogTag::factory()->create(['name' => 'Marathon']);
+    $tag = BlogTag::factory()->named('Marathon')->create();
 
     visit('/blog/tags')
         ->assertNoJavaScriptErrors()
@@ -57,6 +58,8 @@ test('opening the create form shows a blank field, with no stale prefill from a 
 
 test('creating a tag through a real fill and click round trip adds it to the list', function () {
     $this->actingAs(blogTagsBrowserActor());
+    // A new tag is authored in the store default language, so one must exist (no factory seeds it here).
+    StoreLanguage::factory()->default()->create();
 
     visit('/blog/tags')
         ->assertNoJavaScriptErrors()
@@ -66,14 +69,14 @@ test('creating a tag through a real fill and click round trip adds it to the lis
         ->wait(1)
         ->assertNoJavaScriptErrors();
 
-    $tag = BlogTag::query()->where('name', 'Marathon')->sole();
+    $tag = BlogTag::query()->whereHas('translations', fn ($query) => $query->where('name', 'Marathon'))->sole();
 
     visit('/blog/tags')->assertPresent('@edit-blog-tag-'.$tag->id);
 });
 
 test('editing prefills the name, and re-saving it unchanged preserves it', function () {
     $this->actingAs(blogTagsBrowserActor());
-    $tag = BlogTag::factory()->create(['name' => 'Marathon']);
+    $tag = BlogTag::factory()->named('Marathon')->create();
 
     visit('/blog/tags')
         ->click('@edit-blog-tag-'.$tag->id)
@@ -82,12 +85,12 @@ test('editing prefills the name, and re-saving it unchanged preserves it', funct
         ->wait(1)
         ->assertNoJavaScriptErrors();
 
-    expect($tag->fresh()->name)->toBe('Marathon');
+    expect($tag->fresh()->translated('name'))->toBe('Marathon');
 });
 
 test('renaming through the real input persists the new name', function () {
     $this->actingAs(blogTagsBrowserActor());
-    $tag = BlogTag::factory()->create(['name' => 'Marathon']);
+    $tag = BlogTag::factory()->named('Marathon')->create();
 
     visit('/blog/tags')
         ->click('@edit-blog-tag-'.$tag->id)
@@ -96,7 +99,7 @@ test('renaming through the real input persists the new name', function () {
         ->wait(1)
         ->assertNoJavaScriptErrors();
 
-    expect($tag->fresh()->name)->toBe('Ultratrail');
+    expect($tag->fresh()->translated('name'))->toBe('Ultratrail');
 });
 
 test('cancelling the create form adds nothing', function () {
@@ -117,7 +120,7 @@ test('deleting a tag through the confirmation modal removes it in one click, wit
     // categories one: only a real DOM click proves the confirm control was never wired to a guard
     // that does not exist server-side.
     $this->actingAs(blogTagsBrowserActor());
-    $tag = BlogTag::factory()->create(['name' => 'Marathon']);
+    $tag = BlogTag::factory()->named('Marathon')->create();
 
     visit('/blog/tags')
         ->assertNoJavaScriptErrors()
@@ -136,7 +139,7 @@ test('deleting a tag through the confirmation modal removes it in one click, wit
 
 test('creating a duplicate name through the real form shows the inline error', function () {
     $this->actingAs(blogTagsBrowserActor());
-    BlogTag::factory()->create(['name' => 'Marathon']);
+    BlogTag::factory()->named('Marathon')->create();
 
     visit('/blog/tags')
         ->click('@create-blog-tag-button')
@@ -151,7 +154,7 @@ test('creating a duplicate name through the real form shows the inline error', f
 
 test('a smoke pass through create, edit and delete openers and cancels raises no JavaScript error', function () {
     $this->actingAs(blogTagsBrowserActor());
-    $tag = BlogTag::factory()->create(['name' => 'Marathon']);
+    $tag = BlogTag::factory()->named('Marathon')->create();
 
     visit('/blog/tags')
         ->assertNoJavaScriptErrors()

@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
-use App\Actions\NormalizeForSearch;
+use App\Concerns\HasTranslations;
+use App\Concerns\Translatable;
 use Database\Factories\BlogTagFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,24 +17,26 @@ use Illuminate\Support\Carbon;
  * A blog tag -- deliberately a standalone taxonomy, sharing no table, model or namespace with
  * App\Models\BlogCategory or App\Models\ProductCategory (story 0059).
  *
+ * Story 0074 (D-2): identity-only -- every tag's name lives in App\Models\BlogTagTranslation, one
+ * row per store language, read through HasTranslations::translated('name').
+ *
  * Not soft-deleted, on purpose (D-5): the `blog_post_tag` pivot story 0061 adds cascades on this
  * table's DELETE, and a soft delete is an UPDATE, so the cascade would never fire.
  *
  * @property string $id
- * @property string $name
- * @property string $normalized_name
+ * @property-read Collection<int, BlogTagTranslation> $translations
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name'])]
-class BlogTag extends Model
+#[Fillable([])]
+class BlogTag extends Model implements Translatable
 {
     /** @use HasFactory<BlogTagFactory> */
-    use HasFactory, HasUuids;
+    use HasFactory, HasTranslations, HasUuids;
 
     /**
-     * Length of `name` in the migration and the `max:` its validation rule enforces (R-4). Kept in
-     * one place so the two cannot drift apart.
+     * Length of `name` on `blog_tag_translations` and the `max:` its validation rule enforces
+     * (R-4). Kept in one place so the two cannot drift apart.
      */
     public const NAME_MAX_LENGTH = 100;
 
@@ -56,25 +60,18 @@ class BlogTag extends Model
     }
 
     /**
-     * `normalized_name` is the folded key the UNIQUE index guards and every lookup compares
-     * against. It is derived from the mutable `name`, so it is locked at the model layer rather
-     * than left to each of its writers to remember (D-4): omitted from #[Fillable], and rewritten
-     * here whenever a save touches either column.
-     *
-     * `booted()`, not `boot()`: App\Models\Role's `boot()` is a vendor-hook-ordering workaround
-     * that does not apply to a model extending Eloquent's Model directly.
-     *
-     * Also re-derived when `normalized_name` itself was assigned, not only when `name` was --
-     * otherwise `$tag->normalized_name = 'x'` followed by a save that leaves `name` clean would
-     * persist a key that no longer matches the name. An unrelated save (neither column dirty)
-     * still leaves the column alone.
+     * The name to show: the default-language one, else whichever stored translation exists, so a tag
+     * left without a default-language name (after the store default changes) is never rendered
+     * nameless or dropped from a form that would then detach it. Needs `translations` eager-loaded.
      */
-    protected static function booted(): void
+    public function displayName(): ?string
     {
-        static::saving(function (self $tag): void {
-            if ($tag->isDirty('name') || $tag->isDirty('normalized_name')) {
-                $tag->normalized_name = app(NormalizeForSearch::class)($tag->name);
-            }
-        });
+        return $this->translated('name')
+            ?? $this->translations->map(fn (BlogTagTranslation $translation): string => $translation->name)->first();
+    }
+
+    protected function translationModel(): string
+    {
+        return BlogTagTranslation::class;
     }
 }

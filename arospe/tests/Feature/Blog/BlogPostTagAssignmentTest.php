@@ -5,6 +5,8 @@ use App\Actions\Blog\UpdateBlogPost;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Models\BlogTag;
+use App\Models\BlogTagTranslation;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -22,6 +24,8 @@ beforeEach(function () {
     $this->category = BlogCategory::factory()->named('Guías')->create();
 
     $this->actingAs(tagAssignmentActor(['blog.create', 'blog.edit', 'blog.view']));
+
+    StoreLanguage::factory()->default()->create();
 });
 
 /**
@@ -76,15 +80,15 @@ function retagPost(BlogPost $post, array $tagNames, ?string $title = null): Blog
 function attachedTagNames(BlogPost $post): array
 {
     return DB::table('blog_post_tag')
-        ->join('blog_tags', 'blog_tags.id', '=', 'blog_post_tag.blog_tag_id')
+        ->join('blog_tag_translations', 'blog_tag_translations.blog_tag_id', '=', 'blog_post_tag.blog_tag_id')
         ->where('blog_post_tag.blog_post_id', $post->id)
-        ->orderBy('blog_tags.name')
-        ->pluck('blog_tags.name')
+        ->orderBy('blog_tag_translations.name')
+        ->pluck('blog_tag_translations.name')
         ->all();
 }
 
 test('saving with an existing tag name attaches that row and creates no duplicate', function () {
-    $existing = BlogTag::factory()->create(['name' => 'running']);
+    $existing = BlogTag::factory()->named('running')->create();
 
     $post = createTaggedPost($this->category, ['running']);
 
@@ -95,7 +99,7 @@ test('saving with an existing tag name attaches that row and creates no duplicat
 // The assertion that proves the save path calls FindOrCreateBlogTag and not CreateBlogTag: the wrong one
 // throws a ValidationException on a case-differing name, invisible to every exact-match test.
 test('a name differing only by case attaches the existing tag', function () {
-    $existing = BlogTag::factory()->create(['name' => 'running']);
+    $existing = BlogTag::factory()->named('running')->create();
 
     $post = createTaggedPost($this->category, ['Running']);
 
@@ -104,7 +108,7 @@ test('a name differing only by case attaches the existing tag', function () {
 });
 
 test('a name differing only by accent attaches the existing tag', function () {
-    $existing = BlogTag::factory()->create(['name' => 'Niño']);
+    $existing = BlogTag::factory()->named('Niño')->create();
 
     $post = createTaggedPost($this->category, ['nino']);
 
@@ -113,7 +117,7 @@ test('a name differing only by accent attaches the existing tag', function () {
 });
 
 test('surrounding whitespace in a submitted name does not defeat the match', function () {
-    $existing = BlogTag::factory()->create(['name' => 'running']);
+    $existing = BlogTag::factory()->named('running')->create();
 
     $post = createTaggedPost($this->category, ['  running  ']);
 
@@ -126,7 +130,7 @@ test('an unknown name creates the tag and attaches it', function () {
 
     $post = createTaggedPost($this->category, ['invierno']);
 
-    $tag = BlogTag::where('name', 'invierno')->first();
+    $tag = BlogTag::query()->whereHas('translations', fn ($query) => $query->where('name', 'invierno'))->first();
 
     expect($tag)->not->toBeNull()
         ->and(BlogTag::count())->toBe(1);
@@ -134,7 +138,7 @@ test('an unknown name creates the tag and attaches it', function () {
 });
 
 test('three distinct names attach three pivot rows in one save', function () {
-    BlogTag::factory()->create(['name' => 'running']);
+    BlogTag::factory()->named('running')->create();
 
     $post = createTaggedPost($this->category, ['running', 'invierno', 'trail']);
 
@@ -166,7 +170,7 @@ test('on update, a name omitted from the submitted set is detached from that pos
 
     expect(attachedTagNames($post))->toBe(['running'])
         ->and(attachedTagNames($sibling))->toBe(['invierno']);
-    $this->assertDatabaseHas('blog_tags', ['name' => 'invierno']);
+    $this->assertDatabaseHas('blog_tag_translations', ['name' => 'invierno']);
     expect(BlogTag::count())->toBe(2);
 });
 
@@ -181,7 +185,7 @@ test('on update, adding a name keeps the tags the post already had', function ()
 // D-13 / 0059's D-11: the per-branch ability exercised through its first real caller. Reusing an
 // existing tag needs only the ability to read the catalog; minting a new one needs blog.create.
 test('an actor holding blog.edit but not blog.create can attach an existing tag', function () {
-    BlogTag::factory()->create(['name' => 'running']);
+    BlogTag::factory()->named('running')->create();
     $post = createTaggedPost($this->category, []);
 
     $this->actingAs(tagAssignmentActor(['blog.edit', 'blog.view']));
@@ -192,21 +196,21 @@ test('an actor holding blog.edit but not blog.create can attach an existing tag'
 });
 
 test('the same actor is refused the moment a submitted name is new, and no tag is minted', function () {
-    BlogTag::factory()->create(['name' => 'running']);
+    BlogTag::factory()->named('running')->create();
     $post = createTaggedPost($this->category, []);
 
     $this->actingAs(tagAssignmentActor(['blog.edit', 'blog.view']));
 
     expect(fn () => retagPost($post, ['running', 'invierno']))->toThrow(AuthorizationException::class);
 
-    expect(BlogTag::where('name', 'invierno')->exists())->toBeFalse();
+    expect(BlogTagTranslation::where('name', 'invierno')->exists())->toBeFalse();
 });
 
 // D-15: a half-saved post with two of three tags attached is a worse state than an outright failure,
 // and nothing else in the suite would catch it. The refusal must roll back the post's own columns too.
 test('that refusal rolls the whole save back: the post is unchanged and no pivot row from the valid names survives', function () {
-    BlogTag::factory()->create(['name' => 'running']);
-    BlogTag::factory()->create(['name' => 'trail']);
+    BlogTag::factory()->named('running')->create();
+    BlogTag::factory()->named('trail')->create();
     $post = createTaggedPost($this->category, [], 'Título original');
 
     $this->actingAs(tagAssignmentActor(['blog.edit', 'blog.view']));
@@ -223,7 +227,7 @@ test('that refusal rolls the whole save back: the post is unchanged and no pivot
 });
 
 test('an actor holding blog.create but not blog.view can still attach existing tags through create', function () {
-    $existing = BlogTag::factory()->create(['name' => 'running']);
+    $existing = BlogTag::factory()->named('running')->create();
 
     $this->actingAs(tagAssignmentActor(['blog.create']));
 

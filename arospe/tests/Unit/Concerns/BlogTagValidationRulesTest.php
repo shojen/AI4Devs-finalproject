@@ -27,9 +27,9 @@ function blogTagValidationRulesHarness(): object
         /**
          * @return array<int, mixed>
          */
-        public function exposedNameRules(NormalizeForSearch $normalizeForSearch, ?string $blogTagId = null): array
+        public function exposedNameRules(NormalizeForSearch $normalizeForSearch, string $storeLanguageId, ?string $blogTagId = null): array
         {
-            return $this->nameRules($normalizeForSearch, $blogTagId);
+            return $this->nameRules($normalizeForSearch, $storeLanguageId, $blogTagId);
         }
     };
 }
@@ -50,7 +50,7 @@ it('nameFormatRules() carries no uniqueness rule: it is nameRules() minus exactl
     $harness = blogTagValidationRulesHarness();
 
     $format = $harness->exposedNameFormatRules($normalizeForSearch);
-    $full = $harness->exposedNameRules($normalizeForSearch);
+    $full = $harness->exposedNameRules($normalizeForSearch, 'a-language-id');
 
     expect($full)->toHaveCount(count($format) + 1)
         ->and(array_slice($full, 0, count($format)))->toEqual($format)
@@ -60,15 +60,16 @@ it('nameFormatRules() carries no uniqueness rule: it is nameRules() minus exactl
         ->filter(fn (mixed $rule): bool => $rule instanceof Closure)
         ->flatMap(fn (Closure $rule): array => array_keys((new ReflectionFunction($rule))->getStaticVariables()));
 
-    expect($capturedByFormat)->not->toContain('blogTagId');
+    expect($capturedByFormat)->not->toContain('blogTagId')
+        ->and($capturedByFormat)->not->toContain('storeLanguageId');
 });
 
 it('nameRules($id) threads the id into the uniqueness closure\'s captured state, distinct from nameRules(null)', function () {
     $normalizeForSearch = app(NormalizeForSearch::class);
     $harness = blogTagValidationRulesHarness();
 
-    $withoutIdRules = $harness->exposedNameRules($normalizeForSearch, null);
-    $withIdRules = $harness->exposedNameRules($normalizeForSearch, 'a-blog-tag-id');
+    $withoutIdRules = $harness->exposedNameRules($normalizeForSearch, 'a-language-id', null);
+    $withIdRules = $harness->exposedNameRules($normalizeForSearch, 'a-language-id', 'a-blog-tag-id');
 
     $withoutId = (new ReflectionFunction($withoutIdRules[array_key_last($withoutIdRules)]))->getStaticVariables();
     $withId = (new ReflectionFunction($withIdRules[array_key_last($withIdRules)]))->getStaticVariables();
@@ -76,4 +77,13 @@ it('nameRules($id) threads the id into the uniqueness closure\'s captured state,
     expect($withoutId)->toHaveKey('blogTagId')
         ->and($withoutId['blogTagId'])->toBeNull()
         ->and($withId['blogTagId'])->toBe('a-blog-tag-id');
+});
+
+// Story 0074 (D-6): uniqueness is per store language, so the language id is part of the closure's state.
+it('nameRules() threads the store language id into the uniqueness closure\'s captured state', function () {
+    $rules = blogTagValidationRulesHarness()->exposedNameRules(app(NormalizeForSearch::class), 'language-one');
+
+    $captured = (new ReflectionFunction($rules[array_key_last($rules)]))->getStaticVariables();
+
+    expect($captured['storeLanguageId'])->toBe('language-one');
 });

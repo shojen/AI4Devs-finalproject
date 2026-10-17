@@ -17,12 +17,14 @@
 // authorize BEFORE they validate, so an unauthenticated direct call throws AuthorizationException
 // rather than ValidationException and would pass for the wrong reason.
 //
-// Written against the pre-Epic-5 schema (`blog_posts.title/body`, `blog_tags.name`).
+// Written against the pre-Epic-5 schema (`blog_posts.title/body`, `blog_tag_translations.name`).
 
 use App\Livewire\BlogPosts\Editor;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Models\BlogTag;
+use App\Models\BlogTagTranslation;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -38,6 +40,8 @@ use Spatie\Permission\PermissionRegistrar;
 beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
+
+    StoreLanguage::factory()->default()->create();
 });
 
 /**
@@ -83,10 +87,10 @@ function blogPostsEditorFill(Testable $component, BlogCategory $category, array 
 function blogPostsEditorAttachedTagNames(BlogPost $post): array
 {
     return DB::table('blog_post_tag')
-        ->join('blog_tags', 'blog_tags.id', '=', 'blog_post_tag.blog_tag_id')
+        ->join('blog_tag_translations', 'blog_tag_translations.blog_tag_id', '=', 'blog_post_tag.blog_tag_id')
         ->where('blog_post_tag.blog_post_id', $post->id)
-        ->orderBy('blog_tags.name')
-        ->pluck('blog_tags.name')
+        ->orderBy('blog_tag_translations.name')
+        ->pluck('blog_tag_translations.name')
         ->all();
 }
 
@@ -161,7 +165,7 @@ test('edit loads every field, including the complete tag set, and never a null',
         'status' => 'scheduled',
         'published_at' => '2027-03-15 10:20:33',
     ]);
-    $post->tags()->attach(BlogTag::factory()->count(3)->sequence(['name' => 'zeta'], ['name' => 'alfa'], ['name' => 'medio'])->create()->modelKeys());
+    $post->tags()->attach(collect(['zeta', 'alfa', 'medio'])->map(fn (string $name): string => BlogTag::factory()->named($name)->create()->id)->all());
 
     $component = Livewire::test(Editor::class, ['blogPost' => $post]);
 
@@ -172,6 +176,25 @@ test('edit loads every field, including the complete tag set, and never a null',
         ->assertSet('publishedAt', '2027-03-15T10:20:33')
         ->assertSet('body', '<p>Contenido</p>')
         ->assertSet('tagNames', ['alfa', 'medio', 'zeta']);
+});
+
+test('a tag with no name in the default language still shows as a chip and survives a save', function () {
+    $this->actingAs(blogPostsEditorActor());
+    $category = BlogCategory::factory()->create();
+    $post = BlogPost::factory()->create(['blog_category_id' => $category->id, 'status' => 'draft']);
+    $tag = BlogTag::factory()->named('invierno')->create();
+    $post->tags()->attach($tag->id);
+
+    $newDefault = StoreLanguage::factory()->create();
+    StoreLanguage::query()->update(['is_default' => false]);
+    $newDefault->forceFill(['is_default' => true])->save();
+
+    $component = Livewire::test(Editor::class, ['blogPost' => $post])
+        ->assertSet('tagNames', ['invierno']);
+
+    $component->set('title', 'Retitulado')->call('save')->assertHasNoErrors();
+
+    expect($post->fresh()->tags()->pluck('blog_tags.id')->all())->toContain($tag->id);
 });
 
 test('a bodiless draft with no date loads empty strings, never null', function () {
@@ -660,7 +683,7 @@ test('re-saving an already published post keeps its own date and does not re-sta
 test('a name matching an existing tag exactly, by case or by accent attaches that row and creates no duplicate', function (string $existing, string $typed) {
     $this->actingAs(blogPostsEditorActor());
     $category = BlogCategory::factory()->create();
-    $tag = BlogTag::factory()->create(['name' => $existing]);
+    $tag = BlogTag::factory()->named($existing)->create();
 
     blogPostsEditorFill(Livewire::test(Editor::class), $category)->call('addTag', $typed)->call('save')->assertHasNoErrors();
 
@@ -679,14 +702,14 @@ test('an unknown name creates the tag and attaches it', function () {
 
     blogPostsEditorFill(Livewire::test(Editor::class), $category)->call('addTag', 'invierno')->call('save')->assertHasNoErrors();
 
-    $tag = BlogTag::where('name', 'invierno')->sole();
+    $tag = BlogTag::query()->whereHas('translations', fn ($query) => $query->where('name', 'invierno'))->sole();
     $this->assertDatabaseHas('blog_post_tag', ['blog_post_id' => BlogPost::sole()->id, 'blog_tag_id' => $tag->id]);
 });
 
 test('three names attach three pivot rows in one save', function () {
     $this->actingAs(blogPostsEditorActor());
     $category = BlogCategory::factory()->create();
-    BlogTag::factory()->create(['name' => 'running']);
+    BlogTag::factory()->named('running')->create();
 
     blogPostsEditorFill(Livewire::test(Editor::class), $category)
         ->call('addTag', 'running')
@@ -702,8 +725,8 @@ test('three names attach three pivot rows in one save', function () {
 
 test('a removed name is detached from the post while the tag row survives, shared with a second post', function () {
     $this->actingAs(blogPostsEditorActor());
-    $keep = BlogTag::factory()->create(['name' => 'running']);
-    $drop = BlogTag::factory()->create(['name' => 'invierno']);
+    $keep = BlogTag::factory()->named('running')->create();
+    $drop = BlogTag::factory()->named('invierno')->create();
     $post = BlogPost::factory()->create();
     $post->tags()->attach([$keep->id, $drop->id]);
     $other = BlogPost::factory()->create();
@@ -739,7 +762,7 @@ test('saving an edit without touching the chips keeps every tag: the whole set i
 
 test('an actor holding blog.edit but not blog.create attaches an existing tag successfully', function () {
     $this->actingAs(blogPostsEditorActor(['blog.view', 'blog.edit']));
-    $existing = BlogTag::factory()->create(['name' => 'running']);
+    $existing = BlogTag::factory()->named('running')->create();
     $post = BlogPost::factory()->create();
 
     Livewire::test(Editor::class, ['blogPost' => $post])
@@ -755,8 +778,8 @@ test('the same actor is refused when one name is new, and the whole save rolls b
     $this->withoutExceptionHandling();
     $actor = blogPostsEditorActor(['blog.view', 'blog.edit']);
     $this->actingAs($actor);
-    $kept = BlogTag::factory()->create(['name' => 'kept']);
-    $valid = BlogTag::factory()->create(['name' => 'running']);
+    $kept = BlogTag::factory()->named('kept')->create();
+    $valid = BlogTag::factory()->named('running')->create();
     $post = BlogPost::factory()->create(['title' => 'Original']);
     $post->tags()->attach([$kept->id]);
 
@@ -778,7 +801,7 @@ test('the same actor is refused when one name is new, and the whole save rolls b
     // old set survives, and no tag row was minted.
     expect($post->fresh()->title)->toBe('Original')
         ->and(blogPostsEditorAttachedTagNames($post))->toBe(['kept'])
-        ->and(BlogTag::where('name', 'brand-new')->exists())->toBeFalse()
+        ->and(BlogTagTranslation::where('name', 'brand-new')->exists())->toBeFalse()
         ->and(BlogTag::count())->toBe(2)
         ->and($valid->posts()->count())->toBe(0);
 });
@@ -796,8 +819,8 @@ test('an actor who cannot create tags cannot add a NEW name as a chip from the k
 
 test('the same actor still adds an existing name (by case or accent) from the input and from a suggestion', function () {
     $this->actingAs(blogPostsEditorActor(['blog.view', 'blog.edit']));
-    BlogTag::factory()->create(['name' => 'Niño']);
-    BlogTag::factory()->create(['name' => 'running']);
+    BlogTag::factory()->named('Niño')->create();
+    BlogTag::factory()->named('running')->create();
 
     Livewire::test(Editor::class, ['blogPost' => BlogPost::factory()->create()])
         ->set('tagInput', 'NINO')
@@ -888,8 +911,8 @@ test('removing a chip removes exactly that name and keeps the order of the rest'
 
 test('suggestions match what is typed, case- and accent-insensitively', function () {
     $this->actingAs(blogPostsEditorActor());
-    BlogTag::factory()->create(['name' => 'Niño']);
-    BlogTag::factory()->create(['name' => 'Trail']);
+    BlogTag::factory()->named('Niño')->create();
+    BlogTag::factory()->named('Trail')->create();
 
     $component = Livewire::test(Editor::class)->set('tagInput', 'NIN');
 
@@ -898,7 +921,7 @@ test('suggestions match what is typed, case- and accent-insensitively', function
 
 test('nothing is suggested for an empty or whitespace-only input', function () {
     $this->actingAs(blogPostsEditorActor());
-    BlogTag::factory()->create(['name' => 'running']);
+    BlogTag::factory()->named('running')->create();
 
     expect(Livewire::test(Editor::class)->set('tagInput', '   ')->get('tagSuggestions'))->toBe([]);
 });
@@ -906,7 +929,7 @@ test('nothing is suggested for an empty or whitespace-only input', function () {
 test('LIKE wildcards typed by the editor are matched literally', function (string $typed, array $expected) {
     $this->actingAs(blogPostsEditorActor());
     foreach (['a_b', 'axb', '100%', '1000', 'back\\slash', 'backxslash'] as $name) {
-        BlogTag::factory()->create(['name' => $name]);
+        BlogTag::factory()->named($name)->create();
     }
 
     expect(Livewire::test(Editor::class)->set('tagInput', $typed)->get('tagSuggestions'))->toBe($expected);
@@ -919,8 +942,8 @@ test('LIKE wildcards typed by the editor are matched literally', function (strin
 
 test('names already on the post are never suggested, compared case-insensitively', function () {
     $this->actingAs(blogPostsEditorActor());
-    BlogTag::factory()->create(['name' => 'running']);
-    BlogTag::factory()->create(['name' => 'runner']);
+    BlogTag::factory()->named('running')->create();
+    BlogTag::factory()->named('runner')->create();
 
     $component = Livewire::test(Editor::class)->call('addTag', 'RUNNING')->set('tagInput', 'run');
 
@@ -929,7 +952,9 @@ test('names already on the post are never suggested, compared case-insensitively
 
 test('the suggestion list is small and bounded however many tags match', function () {
     $this->actingAs(blogPostsEditorActor());
-    BlogTag::factory()->count(30)->sequence(fn ($sequence) => ['name' => 'tag'.str_pad((string) $sequence->index, 2, '0', STR_PAD_LEFT)])->create();
+    foreach (range(0, 29) as $index) {
+        BlogTag::factory()->named('tag'.str_pad((string) $index, 2, '0', STR_PAD_LEFT))->create();
+    }
 
     $suggestions = Livewire::test(Editor::class)->set('tagInput', 'tag')->get('tagSuggestions');
 
@@ -940,7 +965,7 @@ test('the suggestion query is gated on viewing the tag catalog, and a refusal is
     $this->withoutExceptionHandling();
     $actor = blogPostsEditorActor(['blog.view', 'blog.edit']);
     $this->actingAs($actor);
-    BlogTag::factory()->create(['name' => 'running']);
+    BlogTag::factory()->named('running')->create();
     $post = BlogPost::factory()->create();
 
     $component = Livewire::test(Editor::class, ['blogPost' => $post]);
@@ -962,7 +987,7 @@ test('the suggestion query is gated on viewing the tag catalog, and a refusal is
 
 test('a forged tagNames (non-strings, oversized names, far more than the maximum) does not break suggestions, rendering or the chip mutations', function () {
     $this->actingAs(blogPostsEditorActor());
-    BlogTag::factory()->create(['name' => 'running']);
+    BlogTag::factory()->named('running')->create();
 
     $forged = [123, ['x'], null, str_repeat('a', 300), ...array_map(fn (int $n): string => 'tag'.$n, range(1, 60))];
 

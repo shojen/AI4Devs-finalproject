@@ -1,12 +1,13 @@
 # Database Schema — Blog
 
-Part of [Database Schema](schema.md) — see [schema.md](schema.md#er-diagram) for the full ER diagram and [schema.md#notes](schema.md#notes) for the UUID/ADR-0001 status notes. This file covers the Blog domain (PRD Epic 4): `blog_categories` (story 0058; its name moved to `blog_category_translations` in story 0072), `blog_tags` (story 0059), `blog_posts` and the `blog_post_tag` pivot (story 0061).
+Part of [Database Schema](schema.md) — see [schema.md](schema.md#er-diagram) for the full ER diagram and [schema.md#notes](schema.md#notes) for the UUID/ADR-0001 status notes. This file covers the Blog domain (PRD Epic 4): `blog_categories` (story 0058; its name moved to `blog_category_translations` in story 0072), `blog_tags` (story 0059; its name moved to `blog_tag_translations` in story 0074), `blog_posts` and the `blog_post_tag` pivot (story 0061).
 
 ## Table of Contents
 
 - [`blog_categories`](#blog_categories)
 - [`blog_category_translations`](#blog_category_translations)
 - [`blog_tags`](#blog_tags)
+- [`blog_tag_translations`](#blog_tag_translations)
 - [`blog_posts`](#blog_posts)
 - [`blog_post_tag`](#blog_post_tag)
 
@@ -35,7 +36,7 @@ Model: [`App\Models\BlogCategory`](../../app/Models/BlogCategory.php) (`#[Fillab
 
 **The in-use delete guard is shipped by story 0061, in `DeleteBlogCategory` itself.** The action counts `$category->posts()->withTrashed()->count()` and refuses with a `ValidationException` keyed `blogCategoryId` and a `trans_choice()` message (`blog.categories.delete_blocked`) when the count is above zero — a hard block with the count and no confirm-and-proceed path, at every privilege level including Super Admin (it is a domain invariant, not an authorization rule). The count is unfiltered by status (a draft occupies the category) **and unfiltered by `deleted_at`**: a trashed post is still a physical row holding a live foreign key, so `restrictOnDelete()` refuses regardless, and an unscoped count would read 0, pass the guard, hit the FK and report "used by 0 posts". The FK is the last word behind the count: a `1451` from a post assigned between the count and the `DELETE` is converted to the same refusal (`deleteOrFail()` rather than `delete()` so Larastan can trace the `QueryException`, and the recount is floored at 1 because a failed `deleteOrFail()` rolls back the racing assignment it ran inside). The refusal is logged with the snake_case reason `category_still_in_use`. See [`blog_posts`](#blog_posts).
 
-**Translatable names shipped in story 0072** (PRD assumption 14): see [`blog_category_translations`](#blog_category_translations). [`blog_tags`](#blog_tags) and `blog_posts` follow in stories 0074 and 0078.
+**Translatable names shipped in story 0072** (PRD assumption 14): see [`blog_category_translations`](#blog_category_translations). [`blog_tags`](#blog_tags) followed in story 0074 ([`blog_tag_translations`](#blog_tag_translations)); `blog_posts` follows in story 0078.
 
 ### `blog_category_translations`
 
@@ -67,8 +68,8 @@ Model: [`App\Models\BlogTag`](../../app/Models/BlogTag.php). Columns in real phy
 | Column | Type | Notes |
 | --- | --- | --- |
 | `id` | `CHAR(36)` PK | UUIDv7 (`HasUuids`), per [ADR 0001](../decisions/0001-uuid-primary-keys.md) — `Blog Tags` is one of the ADR's seven *named* entities, so no amendment to the policy was needed (see [Amendment 8](../decisions/0001-uuid-primary-keys.md#amendment-8-2026-09-24--blog_tags-is-the-fifth-of-the-original-seven-to-ship)) |
-| `name` | `VARCHAR(100)` | the editable display name, stored as typed after the same Unicode-aware trim `blog_categories` uses (`BlogTagValidationRules::trimName()`). `BlogTag::NAME_MAX_LENGTH` (100) is the PHP-side constant this length and the validation `max:` must move with. 100 rather than `blog_categories`' 255: a tag is a short label typed into an autocomplete, not free-text prose |
-| `normalized_name` | `VARCHAR(255)`, **unique** | the folded key the `UNIQUE` index guards and every lookup compares against. Omitted from `#[Fillable]`; derived by a `saving` hook, never supplied. `BlogTag::NORMALIZED_NAME_MAX_LENGTH` (255) |
+| ~~`name`~~ | — | **dropped by story 0074** (second migration); now `blog_tag_translations.name`, `VARCHAR(100)`, still stored as typed after `BlogTagValidationRules::trimName()`. `BlogTag::NAME_MAX_LENGTH` (100) stays the PHP-side constant the translation column and the validation `max:` must move with |
+| ~~`normalized_name`~~ | — | **dropped by story 0074** together with its `blog_tags_normalized_name_unique` index; now `blog_tag_translations.normalized_name`, `BlogTag::NORMALIZED_NAME_MAX_LENGTH` (255) |
 | `created_at` / `updated_at` | `TIMESTAMP` nullable | standard Eloquent timestamps |
 
 Every mechanism `blog_categories` documents above applies unchanged, and is not restated: uniqueness on `normalized_name` with no `unique('name')`, the shared [`NormalizeForSearch`](../../app/Actions/NormalizeForSearch.php) as the only fold, the `saving` hook in `booted()` (not `boot()`) that also re-derives when `normalized_name` itself is dirty, the `23000` → `ValidationException` race guard, and no `SoftDeletes`. What is different, or additional:
@@ -81,9 +82,34 @@ Every mechanism `blog_categories` documents above applies unchanged, and is not 
 
 **Deleting is unconditional, and the cascade that makes "removed from every post that used it" true belongs to the [`blog_post_tag`](#blog_post_tag) pivot.** There is no in-use guard, and `DeleteBlogTag` is complete as shipped — no later story extends it, unlike `DeleteBlogCategory`. PRD's *"removed from every post that used it"* is honoured by the database, not by the action, which is why the hard delete matters: a soft delete is an `UPDATE`, so a cascading foreign key would never fire. **Kept by story 0061:** `blog_post_tag` declares `foreignUuid('blog_tag_id')->constrained()->cascadeOnDelete()` (`DeleteBlogTagTest` asserts it against the real pivot, including for a trashed post). Copying `sales_regions.parent_id`'s `restrictOnDelete()` habit would turn every in-use tag deletion into a database error and silently contradict this story's shipped "an in-use tag deletes" behaviour — a pivot row carries no state of its own (the `passkeys.user_id` case, not the `sales_regions.parent_id` one). The promise is written into `DeleteBlogTag`'s own docblock, where 0061's author will be reading.
 
-**Indexes — exactly two on `blog_tags` itself.** `primary` on `id` and `blog_tags_normalized_name_unique`, the same list `blog_categories` has. The post editor's tag suggestions (story 0063) match `WHERE normalized_name LIKE '%term%'` (LIKE wildcards in the typed text escaped, at most 8 rows): a *contains* match, so the leading wildcard cannot use the BTREE and it scans the small lookup table; only the exact-name lookups (`WHERE normalized_name = ?`, the add-tag existence check and `FindOrCreateBlogTag`) use the unique index. `tests/Feature/Models/BlogTagTest.php` asserts the exact column and index list via `Schema::getIndexes()`.
+**Indexes — only `primary` on `blog_tags` itself since story 0074** (the `blog_tags_normalized_name_unique` index went with the column). Name lookups use [`blog_tag_translations`](#blog_tag_translations)' per-language `UNIQUE(store_language_id, normalized_name)`: exact lookups (the add-tag existence check, `FindOrCreateBlogTag`) use it; the post editor's contains-match suggestions (story 0063, `WHERE normalized_name LIKE '%term%'`, wildcards escaped, at most 8 rows) cannot use a BTREE with a leading wildcard and scan the small table. `tests/Feature/Models/BlogTagTest.php` asserts the exact column and index list via `Schema::getIndexes()`.
 
 **A later story owns translatable names.** PRD assumption 14 lists category and tag names as translatable content; story 0074 moves `name`/`normalized_name` onto a translations table with per-locale uniqueness, which is why this file records the single-language shape as a starting point rather than a final one.
+
+### `blog_tag_translations`
+
+Source: `database/migrations/2026_10_15_100000_create_blog_tag_translations_table.php` (create + backfill) and `2026_10_15_100001_drop_name_columns_from_blog_tags_table.php` (drop), story 0074 — one row per `(blog_tag_id, store_language_id)`, the same shape as [`blog_category_translations`](#blog_category_translations) (story 0072), whose `HasTranslations` / `SetTranslation` mechanism is not restated. In the [ER diagram](schema.md#er-diagram) as `BLOG_TAG_TRANSLATIONS`.
+
+Model: [`App\Models\BlogTagTranslation`](../../app/Models/BlogTagTranslation.php). `BlogTag` is now identity-only (`#[Fillable([])]`, implements `Translatable`, uses `HasTranslations`) and reads its name through `translated('name')`. Columns in real physical order:
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `CHAR(36)` PK | UUIDv7 (`HasUuids`) |
+| `blog_tag_id` | `CHAR(36)` FK → `blog_tags.id`, NOT NULL | `cascadeOnDelete()`; not fillable |
+| `store_language_id` | `CHAR(36)` FK → `store_languages.id`, NOT NULL | `restrictOnDelete()`; not fillable |
+| `name` | `VARCHAR(100)` | display name; the only fillable column |
+| `normalized_name` | `VARCHAR(255)` | folded key; derived by the model's `saving` hook (re-derived when `name` or `normalized_name` is dirty), never fillable |
+| `created_at` / `updated_at` | `TIMESTAMP` nullable | |
+
+**Indexes — exactly three:** `primary`; `UNIQUE(blog_tag_id, store_language_id)`; `UNIQUE(store_language_id, normalized_name)` (both named explicitly, default names exceed 64 characters). Uniqueness is per store language: two tags may share a name in different languages. `BlogTagValidationRules::nameRules()` takes the language id and an optional tag id and excludes the tag's own translation by `blog_tag_id` (not `->ignore()` on the translation key, which never equals a tag id).
+
+**Write path.** `CreateBlogTag` and `RenameBlogTag` write the store **default-language** translation through `SetTranslation`; `FindOrCreateBlogTag` does the same for a new tag. Create and find-or-create write the parent row and its translation **in one transaction**, which overrides story 0059's D-10 ("no transaction"): that decision held while a tag was a single row, and a separate parent insert would now leave a permanently translationless tag when the translation insert loses a race. A `QueryException` is routed through `App\Actions\Blog\TranslateBlogTagNameUniqueViolation`, which converts only a MySQL 1062 on the language/`normalized_name` index into a `ValidationException` on `name` and rethrows everything else (two `UNIQUE`s and two FKs). Non-default-language authoring has no entry point yet.
+
+**`FindOrCreateBlogTag` lookup (amends 0059 D-8).** It matches `normalized_name` in the **default language only**. One bounded fallback: a tag that has **no** default-language translation at all (left behind when the store default changed) is reused by the name it does have, oldest translation first, instead of minting a duplicate and detaching the original from the post. A tag that does have a default-language name is never matched through another language. A lost insert race (`23000`) re-fetches the winner with a shared lock and the whole write rolls back, parent included.
+
+**Reads.** `BlogTags/Index`, `BlogPosts/Index` and `BlogPosts/Editor` read names via `translated('name')`. The editor and the list fall back to any stored translation when the default-language one is missing, so a save (which resubmits the whole tag set by name) never detaches a tag it could not label.
+
+**Backfilled by the creating migration.** `App\Actions\Blog\BackfillBlogTagTranslations` copies every tag's `name` **and** `normalized_name` byte-for-byte into the default language with the query builder (no model events) — *copied*, not recomputed, unlike 0072: the old global `UNIQUE` already proves the values pairwise distinct, so they cannot violate the new composite index. `assertCanBackfill()` runs before any DDL and refuses only when tags exist and no default store language does. The drop migration removes the unique index, then both columns; its `down()` restores them `nullable()` without the index (data-lossy, as in 0072). `config('store-languages.translation_relations')` gained `['table' => 'blog_tag_translations', 'column' => 'store_language_id']`. Deleting a tag cascades its translations; the `blog_post_tag` pivot cascade is unchanged. No new permission or policy: the catalog is unchanged.
 
 ### `blog_posts`
 
@@ -131,4 +157,4 @@ Source: `database/migrations/2026_09_24_162609_create_blog_post_tag_table.php` (
 
 **Written by exactly one class**, `App\Actions\Blog\SyncBlogPostTags`, shared by `CreateBlogPost` and `UpdateBlogPost`, which resolves every submitted name through `FindOrCreateBlogTag` and then `sync()`s. `sync()` is a full replace: a name omitted from the submitted set is detached from that post (the tag row survives). That is safe only while the editor's tag field shows every tag the post holds; a filtered or paginated tag field would turn an omission into a silent revoke. The post write and the tag sync are one transaction, so a refusal while resolving a tag (an actor with `blog.edit` but not `blog.create` naming a new tag) leaves neither the post's columns nor any pivot row.
 
-_Last updated: 2026-10-07 — Story 0072 (blog categories translatable retrofit, backend): `blog_categories` lost `name`/`normalized_name`; new `blog_category_translations` section. Still current from story 0064b: `blog_posts.created_by` (nullable FK to `users.id`, `nullOnDelete()`) and the five-index count; story 0061b: a body with no visible text and no image is stored as null._
+_Last updated: 2026-10-15 — Story 0074 (blog tags translatable retrofit, backend): `blog_tags` lost `name`/`normalized_name`; new `blog_tag_translations` section. Still current from story 0072 (`blog_category_translations`) and story 0064b._

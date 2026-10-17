@@ -6,6 +6,7 @@ use App\Actions\Auth\LogRefusedPrivilegedAttempt;
 use App\Actions\Blog\CreateBlogTag;
 use App\Actions\Blog\DeleteBlogTag;
 use App\Actions\Blog\RenameBlogTag;
+use App\Actions\Translations\CompareTranslatedNames;
 use App\Models\BlogTag;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Locked;
@@ -111,7 +112,7 @@ class Index extends Component
         $logRefusedPrivilegedAttempt->authorize('update', $target, targetType: 'blog_tag', targetId: $target->id);
 
         $this->editingTagId = $target->id;
-        $this->name = $target->name;
+        $this->name = $target->translated('name') ?? '';
         $this->resetValidation('name');
         $this->showModal = true;
     }
@@ -156,12 +157,12 @@ class Index extends Component
 
     public function confirmDelete(string $tagId, LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt): void
     {
-        $target = BlogTag::query()->findOrFail($tagId);
+        $target = BlogTag::query()->withTranslationsFor()->findOrFail($tagId);
 
         $logRefusedPrivilegedAttempt->authorize('delete', $target, targetType: 'blog_tag', targetId: $target->id);
 
         $this->deletingTagId = $target->id;
-        $this->deletingTagName = $target->name;
+        $this->deletingTagName = $target->translated('name') ?? '—';
         $this->showDeleteModal = true;
     }
 
@@ -198,13 +199,21 @@ class Index extends Component
      */
     private function loadTags(): void
     {
+        $compareTranslatedNames = app(CompareTranslatedNames::class);
+
         $this->tags = BlogTag::query()
-            ->orderBy('name')
-            ->orderBy('id')
+            ->withTranslationsFor()
             ->get()
+            ->sort(fn (BlogTag $a, BlogTag $b): int => $compareTranslatedNames(
+                $a->translated('name'),
+                $a->id,
+                $b->translated('name'),
+                $b->id,
+            ))
+            ->values()
             ->map(fn (BlogTag $tag): array => [
                 'id' => $tag->id,
-                'name' => $tag->name,
+                'name' => $tag->translated('name') ?? '—',
                 'canEdit' => Gate::allows('update', $tag),
                 'canDelete' => Gate::allows('delete', $tag),
             ])

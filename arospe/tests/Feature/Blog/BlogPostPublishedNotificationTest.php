@@ -71,7 +71,7 @@ function bpnUpdate(BlogPost $post, array $overrides = []): BlogPost
         $post->blog_category_id,
         $overrides['status'] ?? $post->status->value,
         array_key_exists('published_at', $overrides) ? $overrides['published_at'] : $post->published_at?->toDateTimeString(),
-        $overrides['tag_names'] ?? $post->tags->pluck('name')->all(),
+        $overrides['tag_names'] ?? $post->tags->map(fn (BlogTag $tag): ?string => $tag->translated('name'))->all(),
     );
 }
 
@@ -116,13 +116,13 @@ test('re-saving an already-published post with a title-only edit dispatches zero
 });
 
 test('re-saving an already-published post with a tag-only edit dispatches zero times', function () {
-    BlogTag::factory()->create(['name' => 'running']);
+    BlogTag::factory()->named('running')->create();
     $post = BlogPost::factory()->published()->create();
 
     bpnUpdate($post, ['tag_names' => ['running']]);
 
     $this->notifier->shouldNotHaveReceived('__invoke');
-    expect($post->fresh()->tags->pluck('name')->all())->toBe(['running']);
+    expect($post->fresh()->tags->map(fn (BlogTag $tag): ?string => $tag->translated('name'))->all())->toBe(['running']);
 });
 
 // Proves the guard reads the pre-save value rather than a one-time flag.

@@ -12,6 +12,7 @@
 
 use App\Livewire\BlogTags\Index;
 use App\Models\BlogTag;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Livewire\Livewire;
@@ -20,6 +21,8 @@ use Spatie\Permission\PermissionRegistrar;
 beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
+
+    StoreLanguage::factory()->default()->create();
 });
 
 /**
@@ -55,8 +58,8 @@ function blogTagsControlExists(string $html, string $hook): bool
 }
 
 test('the list renders each tag\'s name', function () {
-    BlogTag::factory()->create(['name' => 'running']);
-    BlogTag::factory()->create(['name' => 'invierno']);
+    BlogTag::factory()->named('running')->create();
+    BlogTag::factory()->named('invierno')->create();
     $this->actingAs(blogTagsRenderingActor(['blog.view']));
 
     Livewire::test(Index::class)->assertSee('running')->assertSee('invierno')
@@ -86,7 +89,7 @@ test('the create modal contains exactly one input and no select', function () {
 });
 
 test('the edit modal prefills the one field and offers a single Cancel control', function () {
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
     $this->actingAs(blogTagsRenderingActor());
 
     $html = Livewire::test(Index::class)->call('openEditModal', $tag->id)->html();
@@ -117,7 +120,7 @@ test('a refused name renders its message beside the field and the modal stays op
 });
 
 test('a duplicate name renders its message beside the field', function () {
-    BlogTag::factory()->create(['name' => 'running']);
+    BlogTag::factory()->named('running')->create();
     $this->actingAs(blogTagsRenderingActor());
 
     Livewire::test(Index::class)
@@ -132,7 +135,7 @@ test('a duplicate name renders its message beside the field', function () {
 // =====================================================================
 
 test('the delete confirmation is plain: it names the tag and renders no usage count, blocked state, reassign step or disabled confirm button', function () {
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
     $this->actingAs(blogTagsRenderingActor());
 
     $html = Livewire::test(Index::class)->call('confirmDelete', $tag->id)->html();
@@ -156,7 +159,7 @@ test('the delete confirmation is plain: it names the tag and renders no usage co
 });
 
 test('the delete confirmation renders the same plain modal for a tag that has never been used, and for one with a long name', function () {
-    $tag = BlogTag::factory()->create(['name' => str_repeat('a', 100)]);
+    $tag = BlogTag::factory()->named(str_repeat('a', 100))->create();
     $this->actingAs(blogTagsRenderingActor());
 
     $html = Livewire::test(Index::class)->call('confirmDelete', $tag->id)->html();
@@ -207,7 +210,7 @@ test('a view-only actor sees the create control unavailable too', function () {
 });
 
 test('every row action carries an accessible name', function () {
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
     $this->actingAs(blogTagsRenderingActor());
 
     $html = Livewire::test(Index::class)->html();
@@ -230,7 +233,7 @@ test('each row\'s wire:click hands its id to the component as a quoted JS litera
 });
 
 test('a tag name that looks like markup is escaped, not rendered', function () {
-    BlogTag::factory()->create(['name' => '<script>alert(1)</script>']);
+    BlogTag::factory()->named('<script>alert(1)</script>')->create();
     $this->actingAs(blogTagsRenderingActor(['blog.view']));
 
     $html = Livewire::test(Index::class)->html();

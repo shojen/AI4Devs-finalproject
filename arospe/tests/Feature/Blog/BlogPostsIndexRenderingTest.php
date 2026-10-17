@@ -154,8 +154,8 @@ test('each row renders its title, its category name and its tags through row-sco
     $decoyCategory = BlogCategory::factory()->named('Novedades')->create();
     $post = BlogPost::factory()->create(['title' => 'Botas de invierno', 'blog_category_id' => $category->id]);
     $post->tags()->attach([
-        BlogTag::factory()->create(['name' => 'running'])->id,
-        BlogTag::factory()->create(['name' => 'invierno'])->id,
+        BlogTag::factory()->named('running')->create()->id,
+        BlogTag::factory()->named('invierno')->create()->id,
     ]);
     $decoy = BlogPost::factory()->create(['title' => 'Otra entrada', 'blog_category_id' => $decoyCategory->id]);
     $this->actingAs(blogPostsRenderingActor(['blog.view']));
@@ -271,7 +271,7 @@ test('a filter that matches nothing says so, instead of claiming that no post ex
 test('both filters render as live selects offering an all option plus every category and tag', function () {
     BlogCategory::factory()->named('Guías')->create();
     BlogCategory::factory()->named('Novedades')->create();
-    BlogTag::factory()->create(['name' => 'running']);
+    BlogTag::factory()->named('running')->create();
     $this->actingAs(blogPostsRenderingActor(['blog.view']));
 
     $html = Livewire::test(Index::class)->html();
@@ -365,7 +365,7 @@ test('a trashed row shows its title and category, and offers no edit link (its e
 test('restoring resolves the trashed row, brings it back to the list with its category and tags, and empties the section', function () {
     $category = BlogCategory::factory()->named('Guías')->create();
     $post = BlogPost::factory()->create(['title' => 'Botas de invierno', 'blog_category_id' => $category->id]);
-    $post->tags()->attach(BlogTag::factory()->create(['name' => 'running'])->id);
+    $post->tags()->attach(BlogTag::factory()->named('running')->create()->id);
     $post->delete();
     $this->actingAs(blogPostsRenderingActor());
 

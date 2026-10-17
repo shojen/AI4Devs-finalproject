@@ -81,8 +81,8 @@ test('choosing a category in the filter narrows the visible rows, and choosing A
 
 test('choosing a tag in the filter narrows the visible rows', function () {
     $this->actingAs(blogPostsBrowserActor());
-    $running = BlogTag::factory()->create(['name' => 'running']);
-    $winter = BlogTag::factory()->create(['name' => 'invierno']);
+    $running = BlogTag::factory()->named('running')->create();
+    $winter = BlogTag::factory()->named('invierno')->create();
     $runner = BlogPost::factory()->create(['title' => 'Para correr']);
     $runner->tags()->attach($running->id);
     $skier = BlogPost::factory()->create(['title' => 'Para esquiar']);

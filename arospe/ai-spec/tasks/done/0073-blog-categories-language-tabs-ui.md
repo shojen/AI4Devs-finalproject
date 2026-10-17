@@ -20,7 +20,7 @@ story by number.
 >
 > This debate began while `ai-spec/tasks/in-progress/0071-product-categories-language-tabs-ui.md` **did not
 > exist** — verified by directory listing at the time, and corroborated by
-> [0074](../0074-translatable-content-retrofit-blog-tags-backend.md)'s own Provenance, which records
+> [0074](0074-translatable-content-retrofit-blog-tags-backend.md)'s own Provenance, which records
 > `0071`–`0073` as absent. 0071 was written **concurrently** and landed mid-debate. Its decisions
 > were then read in full and **this file was rewritten to follow them**, because two taxonomy tab
 > screens diverging on tab mechanics, error routing and hook naming is exactly the outcome

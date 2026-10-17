@@ -4,6 +4,7 @@ namespace App\Concerns;
 
 use App\Actions\NormalizeForSearch;
 use App\Models\BlogTag;
+use App\Models\BlogTagTranslation;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 
@@ -34,11 +35,14 @@ trait BlogTagValidationRules
      *
      * @return array<int, ValidationRule|Closure|array<mixed>|string>
      */
-    protected function nameRules(NormalizeForSearch $normalizeForSearch, ?string $blogTagId = null): array
-    {
+    protected function nameRules(
+        NormalizeForSearch $normalizeForSearch,
+        string $storeLanguageId,
+        ?string $blogTagId = null,
+    ): array {
         return [
             ...$this->nameFormatRules($normalizeForSearch),
-            $this->uniqueNormalisedName($normalizeForSearch, $blogTagId),
+            $this->uniqueNormalisedName($normalizeForSearch, $storeLanguageId, $blogTagId),
         ];
     }
 
@@ -96,21 +100,25 @@ trait BlogTagValidationRules
     /**
      * A closure-based rule, not a bare Rule::unique() (D-3): the value compared must be the
      * candidate's NORMALISED form, produced by the same shared App\Actions\NormalizeForSearch call
-     * BlogTag's saving hook uses to write the column, against the `normalized_name` column the
+     * BlogTagTranslation's saving hook uses to write the column, against the `normalized_name` column the
      * UNIQUE index guards -- so the pre-flight check and the constraint can never disagree. A bare
-     * `Rule::unique('blog_tags', 'name')` would compare the RAW submitted string against the wrong
-     * column.
+     * `Rule::unique('blog_tag_translations', 'name')` would compare the RAW submitted string against
+     * the wrong column.
      *
-     * $blogTagId excludes that row from the comparison, which is what makes saving a tag under its
+     * $blogTagId excludes that tag's OWN translations by the blog_tag_id FK (never the translation primary key, 0074 D-6), which is what makes saving a tag under its
      * own unchanged name succeed (R-1). It must stay server-authoritative when a component feeds it
      * (docs/security/livewire-authorization.md).
      */
-    protected function uniqueNormalisedName(NormalizeForSearch $normalizeForSearch, ?string $blogTagId = null): Closure
-    {
-        return function (string $attribute, mixed $value, Closure $fail) use ($normalizeForSearch, $blogTagId): void {
-            $taken = BlogTag::query()
+    protected function uniqueNormalisedName(
+        NormalizeForSearch $normalizeForSearch,
+        string $storeLanguageId,
+        ?string $blogTagId = null,
+    ): Closure {
+        return function (string $attribute, mixed $value, Closure $fail) use ($normalizeForSearch, $storeLanguageId, $blogTagId): void {
+            $taken = BlogTagTranslation::query()
+                ->where('store_language_id', $storeLanguageId)
                 ->where('normalized_name', $normalizeForSearch((string) $value))
-                ->when($blogTagId !== null, fn ($query) => $query->whereKeyNot($blogTagId))
+                ->when($blogTagId !== null, fn ($query) => $query->where('blog_tag_id', '!=', $blogTagId))
                 ->exists();
 
             if ($taken) {

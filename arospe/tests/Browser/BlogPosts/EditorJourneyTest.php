@@ -29,6 +29,7 @@
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Models\BlogTag;
+use App\Models\BlogTagTranslation;
 use App\Models\Media;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
@@ -95,7 +96,7 @@ test('a blog editor writes a scheduled post with a body, an image and tags, save
     // the case the null-<select> desync swallowed.
     $first = BlogCategory::factory()->named('Aaa primera')->create();
     BlogCategory::factory()->named('Zzz última')->create();
-    BlogTag::factory()->create(['name' => 'running']);
+    BlogTag::factory()->named('running')->create();
     $media = Media::factory()->withRealFiles()->create(['title' => 'Journey Widget', 'description' => null]);
     $bodyText = 'Texto escrito en el navegador';
     $scheduledFor = now()->addDays(30)->format('Y-m-d\TH:i:s');
@@ -180,8 +181,8 @@ test('a blog editor writes a scheduled post with a body, an image and tags, save
                 ->and($post->published_at->format('Y-m-d\TH:i:s'))->toBe($scheduledFor)
                 ->and($post->body)->toContain($bodyText)
                 ->and($post->body)->toContain('<img')
-                ->and(DB::table('blog_post_tag')->join('blog_tags', 'blog_tags.id', '=', 'blog_post_tag.blog_tag_id')
-                    ->where('blog_post_id', $post->id)->orderBy('blog_tags.name')->pluck('blog_tags.name')->all())
+                ->and(DB::table('blog_post_tag')->join('blog_tag_translations', 'blog_tag_translations.blog_tag_id', '=', 'blog_post_tag.blog_tag_id')
+                    ->where('blog_post_id', $post->id)->orderBy('blog_tag_translations.name')->pluck('blog_tag_translations.name')->all())
                 ->toBe(['invierno', 'running']);
 
             // (7) Reopen: every field survived the round trip, the date field is revealed by the
@@ -210,8 +211,8 @@ test('a blog editor writes a scheduled post with a body, an image and tags, save
             expect($fresh->title)->toBe($title.' bis')
                 ->and($fresh->status->value)->toBe('scheduled')
                 ->and($fresh->body)->toContain($bodyText)
-                ->and($fresh->tags()->pluck('name')->all())->toBe(['running'])
-                ->and(BlogTag::where('name', 'invierno')->exists())->toBeTrue();
+                ->and($fresh->tags()->with('translations')->get()->map(fn (BlogTag $tag) => $tag->translated('name'))->all())->toBe(['running'])
+                ->and(BlogTagTranslation::where('name', 'invierno')->exists())->toBeTrue();
         }, 250);
     } finally {
         Storage::disk('public')->delete([$media->path, $media->webp_path, $media->avif_path]);

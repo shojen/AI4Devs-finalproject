@@ -6,6 +6,7 @@ use App\Actions\Blog\FindOrCreateBlogTag;
 use App\Actions\Blog\RenameBlogTag;
 use App\Livewire\ProductCategories\Index as ProductCategoriesIndex;
 use App\Models\BlogTag;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -21,6 +22,8 @@ use Spatie\Permission\PermissionRegistrar;
 beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
+
+    StoreLanguage::factory()->default()->create();
 });
 
 /**
@@ -38,7 +41,7 @@ function blogTagResolverActor(array $permissions): User
 }
 
 test('an actor holding blog.view but not blog.create reuses an existing tag', function () {
-    $existing = BlogTag::factory()->create(['name' => 'running']);
+    $existing = BlogTag::factory()->named('running')->create();
     $this->actingAs(blogTagResolverActor(['blog.view']));
 
     $resolved = app(FindOrCreateBlogTag::class)('Running');
@@ -48,7 +51,7 @@ test('an actor holding blog.view but not blog.create reuses an existing tag', fu
 });
 
 test('the same actor is refused when the name does not exist, and no row is written', function () {
-    BlogTag::factory()->create(['name' => 'running']);
+    BlogTag::factory()->named('running')->create();
     $this->actingAs(blogTagResolverActor(['blog.view']));
 
     expect(fn () => app(FindOrCreateBlogTag::class)('invierno'))->toThrow(AuthorizationException::class);
@@ -56,7 +59,7 @@ test('the same actor is refused when the name does not exist, and no row is writ
 });
 
 test('an actor holding blog.create succeeds on both branches', function (array $permissions) {
-    $existing = BlogTag::factory()->create(['name' => 'running']);
+    $existing = BlogTag::factory()->named('running')->create();
     $this->actingAs(blogTagResolverActor($permissions));
 
     expect(app(FindOrCreateBlogTag::class)('running')->id)->toBe($existing->id);
@@ -71,7 +74,7 @@ test('an actor holding blog.create succeeds on both branches', function (array $
 ]);
 
 test('an actor holding neither is refused on both branches and no row is written', function (array $permissions) {
-    BlogTag::factory()->create(['name' => 'running']);
+    BlogTag::factory()->named('running')->create();
     $this->actingAs(blogTagResolverActor($permissions));
 
     expect(fn () => app(FindOrCreateBlogTag::class)('running'))->toThrow(AuthorizationException::class)
@@ -98,7 +101,7 @@ test('an unauthenticated caller is refused', function () {
 test('every refusal site writes exactly one warning with target_type blog_tag and the same context keys as an existing screen', function () {
     Log::spy();
 
-    $tag = BlogTag::factory()->create(['name' => 'running']);
+    $tag = BlogTag::factory()->named('running')->create();
 
     // Site 1: CreateBlogTag.
     $this->actingAs($creator = blogTagResolverActor(['blog.view']));

@@ -39,9 +39,9 @@ use Livewire\WithPagination;
  * abilities those methods authorize against, so a disabled control can never drift from what a click
  * would actually do -- and they are hints, never the control.
  *
- * Written against the pre-Epic-5 schema (`blog_posts.title`, `blog_tags.name`); category names are
+ * Written against the pre-Epic-5 schema (`blog_posts.title`, `blog_tags.name`, since moved to `blog_tag_translations`); category names are
  * already read through `translated('name')` (story 0072). Whatever still reads the other columns
- * does so in the two private row mappers below, so the remaining retrofits (0074, 0078) have one
+ * does so in the two private row mappers below, so the remaining retrofit (0078) has one
  * place to change.
  */
 #[Title('Blog posts')]
@@ -213,7 +213,7 @@ class Index extends Component
     {
         $query = BlogPost::query()
             ->select(['id', 'blog_category_id', 'title', 'status', 'published_at', 'created_at'])
-            ->with(['category' => fn ($query) => $query->select('id')->withTranslationsFor(), 'tags:id,name'])
+            ->with(['category' => fn ($query) => $query->select('id')->withTranslationsFor(), 'tags' => fn ($query) => $query->select('blog_tags.id')->with('translations')])
             ->when($this->categoryFilter !== '', fn ($query) => $query->forCategory($this->categoryFilter))
             ->when($this->tagFilter !== '', fn ($query) => $query->forTag($this->tagFilter))
             ->orderByDesc('created_at')
@@ -235,7 +235,7 @@ class Index extends Component
             'categoryName' => $post->category->translated('name') ?? '—',
             'status' => $post->status,
             'date' => $this->formatDate($post->published_at ?? $post->created_at),
-            'tags' => $post->tags->pluck('name')->all(),
+            'tags' => $this->tagNamesFor($post),
             'canEdit' => Gate::allows('update', $post),
             'canDelete' => Gate::allows('delete', $post),
         ]);
@@ -303,18 +303,43 @@ class Index extends Component
     }
 
     /**
+     * A row's tag names, sorted accent- and case-insensitively. A tag with no name in the default
+     * language falls back to any stored translation rather than vanishing from the row.
+     *
+     * @return list<string>
+     */
+    private function tagNamesFor(BlogPost $post): array
+    {
+        $compareTranslatedNames = app(CompareTranslatedNames::class);
+        $nameOf = fn (BlogTag $tag): ?string => $tag->displayName();
+
+        return array_values($post->tags
+            ->sort(fn (BlogTag $a, BlogTag $b): int => $compareTranslatedNames($nameOf($a), $a->id, $nameOf($b), $b->id))
+            ->map(fn (BlogTag $tag): string => $nameOf($tag) ?? '—')
+            ->values()
+            ->all());
+    }
+
+    /**
      * @return array<int, array{id: string, name: string}>
      */
     #[Computed]
     public function tagOptions(): array
     {
+        $compareTranslatedNames = app(CompareTranslatedNames::class);
+
         return BlogTag::query()
-            ->select(['id', 'name'])
-            ->orderBy('name')
-            ->orderBy('id')
-            ->limit(self::FILTER_OPTIONS_LIMIT)
+            ->withTranslationsFor()
             ->get()
-            ->map(fn (BlogTag $tag): array => ['id' => $tag->id, 'name' => $tag->name])
+            ->sort(fn (BlogTag $a, BlogTag $b): int => $compareTranslatedNames(
+                $a->translated('name'),
+                $a->id,
+                $b->translated('name'),
+                $b->id,
+            ))
+            ->take(self::FILTER_OPTIONS_LIMIT)
+            ->map(fn (BlogTag $tag): array => ['id' => $tag->id, 'name' => $tag->translated('name') ?? '—'])
+            ->values()
             ->all();
     }
 
