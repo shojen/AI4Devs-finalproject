@@ -10,6 +10,7 @@ use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -313,6 +314,17 @@ test('the wrong-id canary: with two tags named in French, re-saving the first on
     expect($keys)->toBe([])
         ->and(storedBlogTagTranslationName($tagA, $this->french))->toBe('course à pied')
         ->and(storedBlogTagTranslationName($tagB, $this->french))->toBe('randonnée');
+});
+
+test('a tag deleted after it was loaded is a clean not-found, never a foreign-key error', function () {
+    $tag = BlogTag::factory()->named('running')->create();
+    $this->actingAs(setBlogTagTranslationActor());
+    $stale = BlogTag::query()->findOrFail($tag->id);
+
+    $tag->delete();
+
+    expect(fn () => app(SetBlogTagTranslation::class)($stale, $this->french, 'course à pied'))
+        ->toThrow(ModelNotFoundException::class);
 });
 
 test('a 1062 on the name index is re-keyed to names.{language id}', function () {

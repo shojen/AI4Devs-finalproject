@@ -132,6 +132,30 @@ test('saving with an untranslated tab left empty creates no translation row for 
         ->and(blogTagTabsStoredName($tag, $this->spanish))->toBe('jogging');
 });
 
+test('an untranslated tab holding only a non-breaking space counts as blank: no error and no row', function () {
+    $tag = BlogTag::factory()->named('running')->create();
+
+    Livewire::test(Index::class)
+        ->call('openEditModal', $tag->id)
+        ->set('names.'.$this->french->id, "\u{00A0}\u{200B}")
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(blogTagTabsStoredName($tag, $this->french))->toBeNull();
+});
+
+test('a forged non-string $names value is treated as blank and never written', function () {
+    $tag = BlogTag::factory()->named('running')->create();
+
+    Livewire::test(Index::class)
+        ->call('openEditModal', $tag->id)
+        ->set('names.'.$this->french->id, ['x'])
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(blogTagTabsStoredName($tag, $this->french))->toBeNull();
+});
+
 test('an untouched save copies the default language\'s name into no other language', function () {
     $tag = BlogTag::factory()->named('running')->create();
 

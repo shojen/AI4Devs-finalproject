@@ -112,7 +112,6 @@ test('an untranslated tab renders an empty field with the default name as a plac
     $spanish = blogTagTabsRenderingTag($html, 'blog-tag-name-input-'.$this->spanish->id, 'input');
 
     expect($french)->toContain('placeholder="'.__('blog-tags.index.tabs.default_guidance', ['name' => 'running']).'"')
-        ->and($french)->not->toContain('value="running"')
         ->and($spanish)->not->toContain('placeholder=')
         ->and($html)->toContain('data-test="language-untranslated-'.$this->french->id.'"')
         ->and($html)->not->toContain('data-test="language-untranslated-'.$this->spanish->id.'"');

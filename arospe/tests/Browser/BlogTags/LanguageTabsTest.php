@@ -65,7 +65,9 @@ test('clicking a language tab reveals its panel and hides the previous one', fun
         ->wait(1)
         ->assertNoJavaScriptErrors()
         ->assertVisible('@language-panel-'.$this->french->id)
-        ->assertMissing('@language-panel-'.$this->spanish->id);
+        ->assertMissing('@language-panel-'.$this->spanish->id)
+        // An untranslated tab shows the default's name as guidance only, never as its value (D-2).
+        ->assertValue('@blog-tag-name-input-'.$this->french->id, '');
 });
 
 // Scenario: A blog editor translates a tag into an additional language
