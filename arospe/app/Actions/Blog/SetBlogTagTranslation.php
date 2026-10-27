@@ -63,6 +63,10 @@ class SetBlogTagTranslation
             targetId: $blogTag->id,
         );
 
+        // The passed tag is untrusted too: once authorized it is re-read, and everything below
+        // goes through the fresh copy (a tag deleted meanwhile is a clean 404, not an FK error).
+        $blogTag = BlogTag::query()->whereKey($blogTag->getKey())->firstOrFail();
+
         $errorKey = "names.{$language->id}";
         $attributeLabel = __('blog-tags.index.tabs.name_attribute');
 

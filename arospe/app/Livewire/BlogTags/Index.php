@@ -96,9 +96,10 @@ class Index extends Component
     public array $names = [];
 
     /**
-     * The language ids this tag already held a translation in when the edit modal opened. Locked
-     * because it feeds the conditional-requiredness branch: a forged value would let an actor
-     * blank an existing translation without tripping the blank-is-refused rule.
+     * The language ids this tag already held a translation in when the edit modal opened. Drives
+     * only the "untranslated" hint and the default-name placeholder in the view; save() decides
+     * what to write from the stored rows it re-reads itself, never from this property. Locked
+     * anyway, as everything the client has no business setting.
      *
      * @var array<int, string>
      */
@@ -164,17 +165,6 @@ class Index extends Component
         $language = StoreLanguage::query()->active()->findOrFail($languageId);
 
         $this->activeLanguageId = $language->id;
-    }
-
-    /**
-     * Map every `names.<id>` key to the localized "name", so a validation message never shows the
-     * internal key.
-     *
-     * @return array<string, string>
-     */
-    protected function validationAttributes(): array
-    {
-        return ['names.*' => __('blog-tags.index.tabs.name_attribute')];
     }
 
     /**
@@ -274,7 +264,7 @@ class Index extends Component
             DB::transaction(function () use ($languages, $defaultId, $target, $storedNames, $renameBlogTag, $setBlogTagTranslation): void {
                 foreach ($languages as $language) {
                     $typed = $this->names[$language->id] ?? '';
-                    $typed = is_string($typed) ? trim($typed) : '';
+                    $typed = is_string($typed) ? $this->trimTypedName($typed) : '';
                     $this->names[$language->id] = $typed;
 
                     $stored = $storedNames[$language->id] ?? null;
@@ -353,6 +343,17 @@ class Index extends Component
     {
         $this->showDeleteModal = false;
         $this->reset(['deletingTagId', 'deletingTagName']);
+    }
+
+    /**
+     * Only decides whether a typed value differs from the stored one or is blank; the actions
+     * re-trim and validate every value they write. Mirrors their Unicode-aware trim (a
+     * non-breaking space is not "content") without composing the validation trait, which this
+     * component deliberately does not use (D-1).
+     */
+    private function trimTypedName(string $name): string
+    {
+        return preg_replace('/\A[\s\p{Z}\p{Cf}]++|(?<![\s\p{Z}\p{Cf}])[\s\p{Z}\p{Cf}]++\z/u', '', $name) ?? '';
     }
 
     /**
