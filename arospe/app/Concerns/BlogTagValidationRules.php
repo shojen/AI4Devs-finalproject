@@ -83,16 +83,13 @@ trait BlogTagValidationRules
             $folded = $normalizeForSearch((string) $value);
 
             if ($folded === '' || $folded !== trim($folded)) {
-                $fail(trans('validation.required', ['attribute' => $attribute]));
+                $fail('validation.required')->translate();
 
                 return;
             }
 
             if (mb_strlen($folded) > BlogTag::NORMALIZED_NAME_MAX_LENGTH) {
-                $fail(trans('validation.max.string', [
-                    'attribute' => $attribute,
-                    'max' => BlogTag::NAME_MAX_LENGTH,
-                ]));
+                $fail('validation.max.string')->translate(['max' => BlogTag::NAME_MAX_LENGTH]);
             }
         };
     }
@@ -122,7 +119,7 @@ trait BlogTagValidationRules
                 ->exists();
 
             if ($taken) {
-                $fail(trans('validation.unique', ['attribute' => $attribute]));
+                $fail('validation.unique')->translate();
             }
         };
     }
