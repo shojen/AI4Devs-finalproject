@@ -15,6 +15,7 @@ use App\Actions\Blog\CreateBlogTag;
 use App\Actions\Blog\DeleteBlogTag;
 use App\Actions\Blog\FindOrCreateBlogTag;
 use App\Actions\Blog\RenameBlogTag;
+use App\Actions\Blog\SetBlogTagTranslation;
 use App\Concerns\BlogTagValidationRules;
 use App\Livewire\BlogTags\Index;
 use App\Livewire\Roles\Index as RolesIndex;
@@ -34,7 +35,7 @@ beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
 
-    StoreLanguage::factory()->default()->create();
+    $this->spanish = StoreLanguage::factory()->default()->create();
 });
 
 /**
@@ -193,7 +194,7 @@ test('save() in edit mode is refused when blog.edit is revoked after the modal o
     $actor = blogTagsIndexTestActor();
     $this->actingAs($actor);
 
-    $component = Livewire::test(Index::class)->call('openEditModal', $tag->id)->set('name', 'jogging');
+    $component = Livewire::test(Index::class)->call('openEditModal', $tag->id)->set('names.'.$this->spanish->id, 'jogging');
 
     blogTagsIndexRevoke($actor, 'blog.edit');
 
@@ -224,7 +225,7 @@ test('a Super Admin holding zero permission rows can create, rename and delete',
 
     Livewire::test(Index::class)
         ->call('openCreateModal')->set('name', 'invierno')->call('save')
-        ->call('openEditModal', $tag->id)->set('name', 'trail running')->call('save')
+        ->call('openEditModal', $tag->id)->set('names.'.$this->spanish->id, 'trail running')->call('save')
         ->call('confirmDelete', $tag->id)->call('deleteTag')
         ->assertHasNoErrors();
 
@@ -320,7 +321,7 @@ test('opening the create form after an edit shows a blank field, never the previ
 
     Livewire::test(Index::class)
         ->call('openEditModal', $tag->id)
-        ->assertSet('name', 'running')
+        ->assertSet('names.'.$this->spanish->id, 'running')
         ->call('closeModal')
         ->call('openCreateModal')
         ->assertSet('name', '')
@@ -370,10 +371,12 @@ test('save() validates through the injected actions, never the find-or-create ac
 
     expect($injected)->toContain(CreateBlogTag::class)
         ->toContain(RenameBlogTag::class)
+        ->toContain(SetBlogTagTranslation::class)
         ->not->toContain(FindOrCreateBlogTag::class)
         ->and(class_uses(Index::class))->not->toContain(BlogTagValidationRules::class)
         ->and(blogTagsIndexCodeWithoutComments())
         ->not->toContain('FindOrCreateBlogTag')
+        ->not->toContain('SetTranslation;')
         ->not->toContain('->validate(');
 });
 
@@ -396,10 +399,10 @@ test('renaming a tag to a free name updates the row and closes the modal', funct
 
     $component = Livewire::test(Index::class)
         ->call('openEditModal', $tag->id)
-        ->assertSet('name', 'running')
+        ->assertSet('names.'.$this->spanish->id, 'running')
         ->assertSet('editingTagId', $tag->id)
         ->assertSet('showModal', true)
-        ->set('name', 'trail running')
+        ->set('names.'.$this->spanish->id, 'trail running')
         ->call('save')
         ->assertHasNoErrors()
         ->assertSet('showModal', false);
@@ -424,9 +427,9 @@ test('renaming a tag onto another tag\'s exact name is refused and the tag keeps
 
     Livewire::test(Index::class)
         ->call('openEditModal', $other->id)
-        ->set('name', 'running')
+        ->set('names.'.$this->spanish->id, 'running')
         ->call('save')
-        ->assertHasErrors(['name'])
+        ->assertHasErrors(['names.'.$this->spanish->id])
         ->assertSet('showModal', true);
 
     expect($other->fresh()->translated('name'))->toBe('invierno');
@@ -445,7 +448,7 @@ test('the id feeding the uniqueness exclusion is server-authoritative: a forged 
 
     expect(fn () => $component->set('editingTagId', $b->id))->toThrow(CannotUpdateLockedPropertyException::class);
 
-    $component->set('name', 'renamed')->call('save');
+    $component->set('names.'.$this->spanish->id, 'renamed')->call('save');
 
     expect($a->fresh()->translated('name'))->toBe('renamed')->and($b->fresh()->translated('name'))->toBe('beta');
 });
@@ -455,7 +458,7 @@ test('saving an edit for a tag deleted in the meantime fails cleanly rather than
     $tag = BlogTag::factory()->create();
     $this->actingAs(blogTagsIndexTestActor());
 
-    $component = Livewire::test(Index::class)->call('openEditModal', $tag->id)->set('name', 'x');
+    $component = Livewire::test(Index::class)->call('openEditModal', $tag->id)->set('names.'.$this->spanish->id, 'x');
     $tag->delete();
 
     expect(fn () => $component->call('save'))->toThrow(ModelNotFoundException::class);

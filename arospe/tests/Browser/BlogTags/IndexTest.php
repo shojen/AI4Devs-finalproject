@@ -49,7 +49,7 @@ test('opening the create form shows a blank field, with no stale prefill from a 
         ->assertNoJavaScriptErrors()
         ->click('@edit-blog-tag-'.$tag->id)
         ->assertNoJavaScriptErrors()
-        ->assertValue('@blog-tag-name-input', 'Marathon')
+        ->assertValue('@blog-tag-name-input-'.StoreLanguage::defaultStoreLanguage()->id, 'Marathon')
         ->click('Cancel')
         ->click('@create-blog-tag-button')
         ->assertNoJavaScriptErrors()
@@ -80,7 +80,7 @@ test('editing prefills the name, and re-saving it unchanged preserves it', funct
 
     visit('/blog/tags')
         ->click('@edit-blog-tag-'.$tag->id)
-        ->assertValue('@blog-tag-name-input', 'Marathon')
+        ->assertValue('@blog-tag-name-input-'.StoreLanguage::defaultStoreLanguage()->id, 'Marathon')
         ->click('Save')
         ->wait(1)
         ->assertNoJavaScriptErrors();
@@ -94,7 +94,7 @@ test('renaming through the real input persists the new name', function () {
 
     visit('/blog/tags')
         ->click('@edit-blog-tag-'.$tag->id)
-        ->fill('name', 'Ultratrail')
+        ->fill('@blog-tag-name-input-'.StoreLanguage::defaultStoreLanguage()->id, 'Ultratrail')
         ->click('Save')
         ->wait(1)
         ->assertNoJavaScriptErrors();
