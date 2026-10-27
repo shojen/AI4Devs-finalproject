@@ -2,13 +2,13 @@
 
 > ## ⚠️ Read first — one resolved decision, and three questions still open
 >
-> Per [contracts.md](../../docs/contracts.md)'s Uncertainty Handling Rule, these are escalated rather
+> Per [contracts.md](../../../docs/contracts.md)'s Uncertainty Handling Rule, these are escalated rather
 > than silently assumed. **Q-1 was blocking and is now RESOLVED** (human decision, 2026-08-30); it is
 > kept rather than deleted because two sibling stories briefly shipped different answers, and a later
 > reader needs to know which won. **Q-2, Q-3 and Q-4 remain open**, and are unaffected by that
 > resolution. Full options are in [§5's open questions](#open-questions-for-the-product-owner).
 >
-> 0. **Sibling story [0071](done/0071-product-categories-language-tabs-ui.md) was written while this debate
+> 0. **Sibling story [0071](0071-product-categories-language-tabs-ui.md) was written while this debate
 >    was running, and this file has been reconciled against it.** It did not exist when this debate
 >    began — verified then, and the file's own timestamp is **57 seconds** before this one's. It is
 >    the same pattern for Product Categories, it names 0075 by number as a consumer, and **most of its
@@ -37,20 +37,20 @@
 ## Description
 
 Add per-store-language name editing to the Blog Tags management screen that story
-[0060](done/0060-blog-tags-ui.md) specifies, so an administrator can provide a tag's `name` in every
-**active** store language through language tabs — [PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization):
+[0060](0060-blog-tags-ui.md) specifies, so an administrator can provide a tag's `name` in every
+**active** store language through language tabs — [PRD Epic 5, Layer 2](../../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization):
 *"Each active store language then appears as a **tab** … (and in the taxonomy management screens),
 switching the translatable fields in place"*, and *"**Category and tag names** … each becomes a
 per-store-language field with the same tab-based editor UX."*
 
-It consumes story [0074](done/0074-translatable-content-retrofit-blog-tags-backend.md)'s
-`blog_tag_translations` retrofit and story [0070](done/0070-translatable-content-mechanism-product-categories-backend.md)'s
-`HasTranslations` / `SetTranslation` mechanism, and story [0068](done/0068-store-languages-catalog-backend.md)'s
+It consumes story [0074](0074-translatable-content-retrofit-blog-tags-backend.md)'s
+`blog_tag_translations` retrofit and story [0070](0070-translatable-content-mechanism-product-categories-backend.md)'s
+`HasTranslations` / `SetTranslation` mechanism, and story [0068](0068-store-languages-catalog-backend.md)'s
 `StoreLanguage::active()` scope. It adds **one** backend artifact — the authorizing, validating write
 path none of those three ships (**Q-1**, **D-3**).
 
 > **This story answers a question three backend stories left open, and it is the *second* to do so.**
-> [0070's **Q3**](done/0070-translatable-content-mechanism-product-categories-backend.md) — *"which story
+> [0070's **Q3**](0070-translatable-content-mechanism-product-categories-backend.md) — *"which story
 > owns the language-tabs UI for the taxonomy screens?"* — was recorded with **no recommendation**,
 > explicitly because that debate could not see the 14-story plan. 0072, 0076 and 0078 each re-raise it
 > unresolved. This story closes it for Blog Tags with 0070's option **(a)**, a dedicated Epic 5 UI
@@ -71,7 +71,7 @@ index — `blog_tag_translations` is 0074's)
 
 > ✅ **Confirmed, not proposed.** The brief fixed this as **frontend** and it was debated as such
 > (`frontend-expert` + `frontend-qa`, per
-> [workflow.md](../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule)'s Frontend rule). The human's
+> [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule)'s Frontend rule). The human's
 > 2026-08-30 decision on **Q-1** settles it the other way: **D-3** adds
 > `App\Actions\Blog\SetBlogTagTranslation`, so this is not frontend-only work by this project's own
 > definitions. The shape is not unprecedented — 0060 is typed `frontend | fullstack
@@ -94,7 +94,7 @@ index — `blog_tag_translations` is 0074's)
 ## Three Amigos participants
 
 `product-owner` (facilitator) + `frontend-expert` + `frontend-qa`, per
-[workflow.md](../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule)'s Frontend classification. **Both were
+[workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule)'s Frontend classification. **Both were
 dispatched as real subagents and both returned.** No `backend-expert` or `database-expert` was
 convened — which, given **D-3**, is itself a finding and is recorded as **Q-1** rather than papered
 over: the one backend artifact this story needs was designed by a frontend expert and has had no
@@ -119,7 +119,7 @@ Nothing outside this file was created or modified. Stories 0060, 0071, 0073 and 
 
 Every scenario opens with a named business-role actor — **"a blog editor"**, the actor PRD Epic 4,
 0059, 0060 and 0074 all already use — and carries exactly one `When`, per
-[gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3.
+[gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3.
 
 ```gherkin
 Feature: Per-store-language names on the blog tag screen
@@ -260,7 +260,7 @@ Feature: Per-store-language names on the blog tag screen
 ```
 
 > **Two scenarios deliberately absent, both of which would be ghost scenarios under
-> [rule 6](../../docs/testing/frontend/gherkin-guidelines.md#6-no-ghost-scenarios).**
+> [rule 6](../../../docs/testing/frontend/gherkin-guidelines.md#6-no-ghost-scenarios).**
 > **(a) "A blog editor creates a tag in several languages at once."** `frontend-qa` flagged this
 > explicitly and declined to write it; `frontend-expert` reached the same place from the other
 > direction. `CreateBlogTag::__invoke(string $name)` writes the default language only and 0074's
@@ -318,7 +318,7 @@ and is the **only** class in the story that imports `SetTranslation`.
 
 ## 3. QA test cases / validation scenarios
 
-Levels per [coverage-policy.md](../../docs/testing/frontend/coverage-policy.md). **The calibration
+Levels per [coverage-policy.md](../../../docs/testing/frontend/coverage-policy.md). **The calibration
 0060 set still binds and is inherited deliberately**: this plan does not re-run 0074's suite one layer
 up. 0074 proves normalisation, trimming, boundary, race and per-language uniqueness exhaustively at
 the action layer; this story asserts that the **screen routes into the same shared rule**, with named
@@ -378,7 +378,7 @@ under test has leaked back into the caller.
 - [ ] Blank / whitespace-only refused on **every** language path, not only the default.
 - [ ] **The error key is `names.{storeLanguageId}` and is *derived* from the passed language, not
       accepted as a parameter** (**D-3**, 0071 **D-13**). *Why it can fail:* a caller-supplied key is
-      the shape [errors-log.md](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
+      the shape [errors-log.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
       records as making a guard only as strong as its call sites, and it would let the component
       silently point a refusal at the wrong tab.
 - [ ] Every refusal writes exactly one `Log::warning('Privileged action refused', …)` with
@@ -391,7 +391,7 @@ under test has leaked back into the caller.
       the Spanish string. ***The single most important test in this story*** — see **D-2** and **R-2**.
 - [ ] `$names` holds a key for **every** active store language, including untranslated ones, and every
       value is a string. *Why:* an omitted key desyncs Livewire's array dehydration; a `null` is the
-      generalised form of the hazard [errors-log-archive.md](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16) records.
+      generalised form of the hazard [errors-log-archive.md](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16) records.
 - [ ] `$names` holds **no** key for an inactive store language.
 - [ ] **Saving with an untranslated tab left empty creates no translation row for it.** Assert the
       tag's translation **count** is unchanged. *Why it can fail:* any implementation that submits
@@ -462,7 +462,7 @@ goes through a compiled `wire:model` or `wire:click`.
       `assertNoJavaScriptErrors()` after every step.
 
 > **Browser rules that bind this file**, from
-> [playwright-setup.md](../../docs/testing/frontend/playwright-setup/waiting-rules.md#waiting-one-call-is-banned-in-this-repo-and-one-is-bounded):
+> [playwright-setup.md](../../../docs/testing/frontend/playwright-setup/waiting-rules.md#waiting-one-call-is-banned-in-this-repo-and-one-is-bounded):
 > `->waitForEvent('networkidle')` is **banned outright**; a short bounded `->wait(n)` with a stated
 > reason is the one accepted mitigation. Read the DOM's own `[wire:snapshot]` ground truth rather than
 > waiting longer.
@@ -524,75 +524,75 @@ no tab, and cannot be written to even by a forged payload.
 
 ## Acceptance criteria
 
-- [ ] The edit form renders **0071's shared `<x-language-tab-strip>`**, one tab per
+- [x] The edit form renders **0071's shared `<x-language-tab-strip>`**, one tab per
       `StoreLanguage::active()` row, ordered default-first, each carrying the strip's own generic
       `data-test="language-tab-{storeLanguageId}"`; a removed language has no tab and no input.
-- [ ] `App\Livewire\BlogTags\Index` exposes **`setActiveLanguageTab(string $languageId)`**, the method
+- [x] `App\Livewire\BlogTags\Index` exposes **`setActiveLanguageTab(string $languageId)`**, the method
       name the shared strip hardcodes, and tab switching is a server round trip (**D-7**).
-- [ ] Each per-language input carries `data-test="blog-tag-name-input-{storeLanguageId}"`, and **no
+- [x] Each per-language input carries `data-test="blog-tag-name-input-{storeLanguageId}"`, and **no
       assertion anywhere in this story matches on a language name or a two-letter code** (0071 **D-11**).
-- [ ] **The form is populated from raw `blog_tag_translations` rows. `translated()`'s fallback is
+- [x] **The form is populated from raw `blog_tag_translations` rows. `translated()`'s fallback is
       never used to fill an input** — an untranslated language's field is empty, and the default's
       value appears only as a `placeholder`.
-- [ ] Saving writes only the languages whose value changed; an untouched untranslated tab creates no
+- [x] Saving writes only the languages whose value changed; an untouched untranslated tab creates no
       row. Blanking follows **D-8**'s three branches — the default language and any
       previously-translated language are `required`, so clearing either is **refused**, never a silent
       no-op and never a delete.
-- [ ] A validation refusal in any language leaves **every** language unwritten, and the errored
+- [x] A validation refusal in any language leaves **every** language unwritten, and the errored
       language becomes the active tab.
-- [ ] Name uniqueness is enforced per store language, through `nameRules()` at its post-0074 signature;
+- [x] Name uniqueness is enforced per store language, through `nameRules()` at its post-0074 signature;
       the same name in two languages is accepted and a tag re-saving its own name is accepted.
-- [ ] **`App\Actions\Blog\SetBlogTagTranslation` is self-sufficient**: it authorizes
+- [x] **`App\Actions\Blog\SetBlogTagTranslation` is self-sufficient**: it authorizes
       `BlogTagPolicy::update` through `LogRefusedPrivilegedAttempt` **above** its `SetTranslation`
       call, runs its own `Validator` using 0074's re-signed `nameRules()`, derives its error key as
       `names.{storeLanguageId}` rather than accepting one, and refuses an inactive store language —
       all of it true when called directly, with no component involved.
-- [ ] **The component authorizes the whole batch before any action runs**, as layer 1, and does **not**
+- [x] **The component authorizes the whole batch before any action runs**, as layer 1, and does **not**
       validate (0060 **D-1**). Deleting the component must not leave the operation unprotected.
-- [ ] **No component imports `SetTranslation`** — it is reached only from
+- [x] **No component imports `SetTranslation`** — it is reached only from
       `SetBlogTagTranslation` (0071 **D-13**).
-- [ ] A refused **default-language** edit is re-keyed `name` → `names.{defaultId}` so it renders on the
+- [x] A refused **default-language** edit is re-keyed `name` → `names.{defaultId}` so it renders on the
       default tab (**D-12**); the create path keeps the bare `name` key and gains no adapter.
-- [ ] Per-row `canEdit`/`canDelete` still come from the same policy methods the mutating methods use.
-- [ ] The list resolves each name for the **store default** language — never the admin UI locale — and
+- [x] Per-row `canEdit`/`canDelete` still come from the same policy methods the mutating methods use.
+- [x] The list resolves each name for the **store default** language — never the admin UI locale — and
       renders a placeholder when it resolves to `null`.
-- [ ] The create form is unchanged: one field, `CreateBlogTag`, no tabs.
-- [ ] `closeModal()` resets the tab state and the whole `$names` array, and calls `resetValidation()`.
-- [ ] No `wire:model`-bound value is ever `null`, and every active language has an explicit `''` key.
-- [ ] `FindOrCreateBlogTag` is not referenced anywhere in this story.
-- [ ] No migration, model, policy, factory, seeder, permission, route or `config/modules.php` change;
+- [x] The create form is unchanged: one field, `CreateBlogTag`, no tabs.
+- [x] `closeModal()` resets the tab state and the whole `$names` array, and calls `resetValidation()`.
+- [x] No `wire:model`-bound value is ever `null`, and every active language has an explicit `''` key.
+- [x] `FindOrCreateBlogTag` is not referenced anywhere in this story.
+- [x] No migration, model, policy, factory, seeder, permission, route or `config/modules.php` change;
       the catalog stays at **42**.
-- [ ] Copy lives in `lang/{en,es}/blog-tags.php`, key-for-key identical across both locales.
+- [x] Copy lives in `lang/{en,es}/blog-tags.php`, key-for-key identical across both locales.
 
 ## Definition of Done
 
-- [ ] Tests written and green, plus the **full** suite in a single isolated run, per
-      [contracts.md](../../docs/contracts/testing-and-parallel-agents.md#full-test-suite-gate-rule)'s Full Test Suite Gate Rule.
-- [ ] **All three quality gates run unscoped and each result recorded, including "not run"** —
+- [x] Tests written and green, plus the **full** suite in a single isolated run, per
+      [contracts.md](../../../docs/contracts/testing-and-parallel-agents.md#full-test-suite-gate-rule)'s Full Test Suite Gate Rule.
+- [x] **All three quality gates run unscoped and each result recorded, including "not run"** —
       `php artisan test`, `vendor/bin/pint --format agent`, `vendor/bin/phpstan analyse` (Larastan
       level 7). The third is the one nothing else prompts you to run; see
-      [errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
-- [ ] **Stories 0060, 0068, 0070 and 0074 are closed first**, and **every** interface claim in this
+      [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26).
+- [x] **Stories 0060, 0068, 0070 and 0074 are closed first**, and **every** interface claim in this
       file re-verified against `HEAD` with its disposition recorded — **R-4**, and the
-      [deferred-findings rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
-- [ ] **Q-1 answered before Phase 3**, since it decides whether `SetBlogTagTranslation` is built here
+      [deferred-findings rule](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23).
+- [x] **Q-1 answered before Phase 3**, since it decides whether `SetBlogTagTranslation` is built here
       or consumed.
-- [ ] Code reviewed (code-reviewer). Point the review at **D-2** (the population rule), **D-9**
+- [x] Code reviewed (code-reviewer). Point the review at **D-2** (the population rule), **D-9**
       (atomicity) and **D-1** (the tab mechanism, once Flux's real component set is known).
-- [ ] No security findings (appsec-auditor). Point the audit at: `SetBlogTagTranslation`'s gate sitting
+- [x] No security findings (appsec-auditor). Point the audit at: `SetBlogTagTranslation`'s gate sitting
       **above** the `SetTranslation` call; authorization firing once **per language written**; the
       inactive-language refusal living in the **action**, not only the view; and `$activeLanguageId` /
       `$editingTagId` staying `#[Locked]`.
-- [ ] Documentation updated (docs-keeper) — at minimum
-      [api/routes.md](../../docs/api/routes.md) (the `blog-tags.index` subsection gains the tab
-      contract and its hooks), [architecture/authorization.md](../../docs/architecture/authorization.md)
+- [x] Documentation updated (docs-keeper) — at minimum
+      [api/routes.md](../../../docs/api/routes.md) (the `blog-tags.index` subsection gains the tab
+      contract and its hooks), [architecture/authorization.md](../../../docs/architecture/authorization.md)
       (recording again that translated content adds **no** ability, and that
       `SetBlogTagTranslation` is the first action to authorize a write it delegates to a primitive that
-      does not), and [conventions/naming.md](../../docs/conventions/naming.md) if `SetBlogTagTranslation`
+      does not), and [conventions/naming.md](../../../docs/conventions/naming.md) if `SetBlogTagTranslation`
       sets a naming precedent for its two siblings.
-- [ ] **0070's Q3 marked answered** for Blog Tags, so 0071/0073 inherit a decision rather than
+- [x] **0070's Q3 marked answered** for Blog Tags, so 0071/0073 inherit a decision rather than
       re-litigating it.
-- [ ] Acceptance criteria met.
+- [x] Acceptance criteria met.
 
 ## 4. Documented functional decisions
 
@@ -607,7 +607,7 @@ exactly that name (**D-7**); and the strip owns its own `data-test="language-tab
 generic rather than domain-prefixed (**D-10**).
 
 *What this decision replaced.* This debate had independently concluded — on `frontend-expert`'s
-analysis and story [0069](done/0069-store-languages-settings-ui.md)'s **D-3** precedent — that the strip
+analysis and story [0069](0069-store-languages-settings-ui.md)'s **D-3** precedent — that the strip
 should be built from `flux:button`, because `composer.json` requires only the **free** `livewire/flux`
 `^2.13.1` (no `flux-pro`, no private repository), `vendor/` is absent, and a repo-wide grep finds **no
 `flux:tab` anywhere**. That reasoning is not withdrawn — it is now **0071's to own**, and it should be
@@ -667,7 +667,7 @@ adds it"*.
 case that looks like an exception and is not"*: 0059 already made the tag actions responsible for their
 own validation, so adding a component-side copy would duplicate a rule the action owns and invite the
 two to drift — exactly what
-[base-standards.md](../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
+[base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)'s
 *"move the rule, never copy it"* forbids. The principle is *"the operation is protected without relying
 on its caller"*, not *"the check appears in exactly two files"*. ⚠️ **The asymmetry is the whole rule
 and is easy to invert:** component-only is **never** acceptable (0008a's finding — every non-dashboard
@@ -704,7 +704,7 @@ the **`BlogTag`**, never on the translation row (0074 **D-12** — translated co
 there is deliberately no `BlogTagTranslationPolicy`); the `Gate` check sits **above** the
 `SetTranslation` call (0074 **D-12**'s ordering constraint, since the primitive is not a checkpoint);
 collaborators are **constructor-injected** because `__invoke()` is a public contract
-([code-style.md](../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)),
+([code-style.md](../../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)),
 while the action itself is **method-injected** into `save()`; the error key is **derived, never passed
 in** (**D-12**); and **no component imports `SetTranslation`** — 0071 **D-13**'s explicit
 must-not-re-derive list.
@@ -756,6 +756,8 @@ two competing owners of "which panel is visible", so its own error-focusing miti
 worked. A plain `public string $activeLanguageId` driving `@if` lets `save()` set the active tab to the
 first erroring language *before* the failed-validation re-render.
 
+> ⚠️ Phase 6 note: shipped with `#[Locked] $activeLanguageId` (switching is server-side only, so nothing client-side needs to write it), not `public` as written above.
+
 The data-loss concern is answered rather than dismissed: Livewire sends every dirty deferred
 `wire:model` property on any action call, so text typed into a hidden tab survives the switch.
 ⚠️ **That is 0071's own explicitly-unverified claim** (`vendor/` absent), and its named fallback binds
@@ -765,7 +767,7 @@ render with `x-show` (kept in the DOM) rather than `@if` (removed from it). That
 
 One obligation survives from the original decision unchanged: every active language must have an
 explicit `''` key in `$names` — never omitted, never `null` — the generalised form of the
-[`<select>` desync hazard](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16).
+[`<select>` desync hazard](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16).
 0060's *"no `<select>` here, so that trap does not apply"* stops being true and must not be carried
 forward.
 
@@ -778,6 +780,8 @@ renders the em-dash-style placeholder `users.blade.php` / `roles.blade.php` / `s
 already use, never a blank and never an error. ⚠️ **0060's D-9 `orderBy('name')` is no longer
 executable**, because there is no `name` column to sort — `frontend-expert`'s correction. Sort after
 fetch, keeping the `id` tiebreak.
+
+> ⚠️ Phase 6 note: `save()` decides blank/changed from the stored translation rows it re-reads, not from `$originalTranslatedLanguageIds`, which is a view-only hint (placeholder/untranslated marker). The Q-4 badge was not implemented (placeholder only).
 
 **Blank handling is 0071's D-7, adopted verbatim rather than re-derived**, and it **corrects** what
 this debate had written. This file's first draft made a blanked field a silent no-op in every case;
@@ -805,11 +809,13 @@ Spanish edit — which is why it is **Q-3** as well as a decision. Mitigated by 
 returned to the failing tab with their typed values still on screen, so the correction is one edit away
 rather than a re-entry. *Rejected: per-language independent commits*, which leave the editor guessing
 which of five tabs actually saved. ⚠️ Per
-[errors-log.md](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21),
+[errors-log.md](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21),
 a transaction wrapper is a change to **every** side effect the wrapped code performs — here that
 includes `LogRefusedPrivilegedAttempt`'s writes. Confirm at Phase 3 that a rolled-back save still
 leaves its refusal log line committed; an audit trail that disappears with the rollback would be a
 silent regression of the whole refusal-logging convention.
+
+> ⚠️ Phase 6 note: the refusal log is `Log::warning`, outside the database, so a rolled-back save keeps it; in practice no refusal is logged inside the transaction because the component authorizes the batch before opening it. No test added for that.
 
 **D-10 — The *tab* hook is the shared, generic `language-tab-{storeLanguageId}`; the *panel* hooks are
 domain-prefixed, `blog-tag-name-input-{storeLanguageId}`.** ⚠️ **Half of this is a reconciliation with
@@ -870,24 +876,24 @@ renders. The mismatch is a property of the *edit* form's array binding, not of t
 
 ### Dependencies
 
-- **[0074](done/0074-translatable-content-retrofit-blog-tags-backend.md)** — hard, **not implemented**.
+- **[0074](0074-translatable-content-retrofit-blog-tags-backend.md)** — hard, **not implemented**.
   `blog_tag_translations`, `BlogTagTranslation`, the re-signed `nameRules()`, per-language uniqueness.
-- **[0060](done/0060-blog-tags-ui.md)** — hard, **not implemented**. The screen, the route, the sidebar
+- **[0060](0060-blog-tags-ui.md)** — hard, **not implemented**. The screen, the route, the sidebar
   group, the lang files, the policy call site. This story modifies its component and view.
-- **[0070](done/0070-translatable-content-mechanism-product-categories-backend.md)** — hard, **not
+- **[0070](0070-translatable-content-mechanism-product-categories-backend.md)** — hard, **not
   implemented**. `HasTranslations`, `SetTranslation`, `defaultStoreLanguage()` and its memo.
-- **[0068](done/0068-store-languages-catalog-backend.md)** — hard, **not implemented**. `StoreLanguage`,
+- **[0068](0068-store-languages-catalog-backend.md)** — hard, **not implemented**. `StoreLanguage`,
   `scopeActive()`, and the factory states every fixture here uses.
-- **[0071](done/0071-product-categories-language-tabs-ui.md)** — **new, hard, and unusual**: this story
+- **[0071](0071-product-categories-language-tabs-ui.md)** — **new, hard, and unusual**: this story
   consumes the shared `language-tab-strip.blade.php` component 0071's **D-1** extracts, and inherits
   its **D-2**, **D-6**, **D-7**, **D-8** and **D-11** rather than re-deriving them (**R-1**). ⚠️ **This
   is a *frontend-to-frontend* dependency between two same-epic UI stories, which this project has no
   precedent for** — every prior pairing is backend-before-frontend. It also inverts the numeric
   ordering convention only in appearance: 0071 < 0075, so
-  [workflow.md](../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule)'s rule is satisfied, but the *reason* is a
+  [workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule)'s rule is satisfied, but the *reason* is a
   shared component rather than an interface contract. Phase 2 should confirm the sequencing explicitly
   — **0071 must reach Phase 3 first**, or this story has no strip to consume.
-- **[0059](done/0059-blog-tags-backend.md)** — transitively, via 0060 and 0074.
+- **[0059](0059-blog-tags-backend.md)** — transitively, via 0060 and 0074.
 - Already-shipped: the seeded `blog.*` permissions (**verified**), `Gate::before`, policy
   auto-discovery, `LogRefusedPrivilegedAttempt` (0015b), the sidebar registry (0013), the wired-up
   browser suite (0006b).
@@ -895,7 +901,7 @@ renders. The mismatch is a property of the *edit* form's array binding, not of t
 
 ### Risks
 
-- **R-1 — Reconciled against sibling story [0071](done/0071-product-categories-language-tabs-ui.md), which
+- **R-1 — Reconciled against sibling story [0071](0071-product-categories-language-tabs-ui.md), which
   was written concurrently and landed 57 seconds before this file was saved.** It did not exist when
   the debate opened, so **neither amigo saw it** and both contributed as if this were the first
   language-tabs story. The reconciliation was done by the facilitator after the fact, by reading 0071
@@ -936,13 +942,13 @@ renders. The mismatch is a property of the *edit* form's array binding, not of t
   byte-identical, so any assertion claiming a translation was *written* must check the row, not the
   rendered text. *(c)* Asserting a tab is "active" by CSS class substring is fragile against Blaze/Alpine
   — use a structural hook, and verify against **compiled** output rather than the Blade source, which
-  is the lesson [both 2026-08-16 Flux/Blaze entries](../../docs/errors-log.md) and the 2026-08-26
+  is the lesson [both 2026-08-16 Flux/Blaze entries](../../../docs/errors-log.md) and the 2026-08-26
   `@js()` correction all teach.
 - **R-4 — Every interface claim in this file is a claim about four unimplemented task files.**
   0059, 0060, 0068, 0070 and 0074 are all Phase 1 documents; `app/Models/BlogTag.php`,
   `app/Models/StoreLanguage.php` and `App\Concerns\HasTranslations` do not exist, and `vendor/` is
   absent so nothing could be verified by execution. Both amigos flagged this independently. Per the
-  [deferred-findings rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
+  [deferred-findings rule](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
   **re-verify each against `HEAD` before Phase 3 and record every disposition, including "already
   closed"**. The claims most likely to have moved: `nameRules()`'s exact signature (0074 **D-6** says
   Phase 3 settles the Laravel expression), whether `SetTranslation` can write `store_language_id` at all
@@ -968,7 +974,7 @@ renders. The mismatch is a property of the *edit* form's array binding, not of t
   `load('translations')` **unscoped**, because that scope narrows to two languages and the form needs
   all of them. Do not "optimise" the edit path onto the list path's scope.
 - **R-9 — The Gherkin domain glossary has no i18n vocabulary.**
-  [gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md#domain-glossary)'s glossary
+  [gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md#domain-glossary)'s glossary
   covers auth only and carries an explicit `TODO` for the content domain. This story introduces *store
   language*, *store default language*, *language tab* and *translation* into project Gherkin for the
   first time. Terms used here follow PRD Epic 5's own wording; the glossary should absorb them
@@ -976,7 +982,7 @@ renders. The mismatch is a property of the *edit* form's array binding, not of t
 
 ### Open questions for the product owner
 
-Each carries a recommendation, per [contracts.md](../../docs/contracts.md)'s Uncertainty Handling Rule.
+Each carries a recommendation, per [contracts.md](../../../docs/contracts.md)'s Uncertainty Handling Rule.
 
 **Q-1 — ✅ RESOLVED by the human, 2026-08-30. Kept, with the resolution recorded rather than deleted,
 because two sibling stories briefly shipped different answers and a later reader needs to know which
@@ -992,7 +998,7 @@ it authorizes and validates regardless of any caller. The component still author
 - **Adopted: (a)** — `App\Actions\Blog\SetBlogTagTranslation`, and the story is reclassified
   **fullstack**. This is what **D-3** had proposed independently, on three grounds the resolution
   confirms: 0070's **D-12** literally anticipated it (*"called by whichever UI story adds it"*);
-  [base-standards.md](../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
+  [base-standards.md](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers)
   requires the rule to live in the class performing the operation, since otherwise no queued job or
   Artisan caller inherits it (0008a's finding); and it is the only option compatible with 0060's D-1.
 - **Rejected: (b)**, the component calling `SetTranslation` directly — 0071's original shape, overruled
@@ -1135,14 +1141,14 @@ and no `flux:tab` appears anywhere in `resources/` — which, with `vendor/` abs
 a decision under uncertainty rather than a component choice.
 
 **One decision was found already made elsewhere rather than re-derived.** `frontend-expert` correctly
-reported it could not verify whether `<flux:tabs>` exists. Story [0069](done/0069-store-languages-settings-ui.md)'s
+reported it could not verify whether `<flux:tabs>` exists. Story [0069](0069-store-languages-settings-ui.md)'s
 **D-3** had already faced the identical question for `flux:card`, on identical evidence, days earlier —
 so **D-1** follows an established Epic 5 precedent instead of inventing one.
 
 **Two things this debate could not verify and deliberately did not assert**: whether `<flux:tabs>` ships
 in Flux Free (**D-1**, **R-4**), and whether `wire:model` against a dynamic UUID array key round-trips
 correctly under Livewire 4 in a hidden Alpine block (**R-5**). Both are recorded as Phase 3 execution
-obligations, per this project's [standing rule](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
+obligations, per this project's [standing rule](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24)
 that an unverified mechanism written up confidently is worse than an open question written up plainly.
 
 **Human architectural decision, 2026-08-30 — recorded after the debate and after the 0071
@@ -1182,7 +1188,7 @@ overturn also exposed a genuine incoherence in this file's own first draft, reco
 than quietly fixed: it had specified a `#[Locked] $activeLanguageId` *and* Alpine switching, leaving
 two owners of "which panel is visible", so its own error-focusing mitigation could not have worked.
 
-⚠️ **This is the [Parallel Agent File-Ownership Rule](../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule)
+⚠️ **This is the [Parallel Agent File-Ownership Rule](../../../docs/contracts/testing-and-parallel-agents.md#parallel-agent-file-ownership-rule)
 arriving in a form that rule does not currently cover.** No file was written twice — 0071 and 0075
 touched disjoint paths, so the rule as written was satisfied. What collided was **design authority**:
 two debates independently deciding one shared pattern, each believing itself the first, one minute
@@ -1190,5 +1196,18 @@ apart. The rule reasons about *files an agent will write*; this cost was incurre
 would **decide about**. Raised as backlog item 7, since a 14-story epic with four sibling UI stories
 will reproduce it.
 
-**Not run by this phase**, per [workflow.md](../../docs/workflow.md): the INVEST check (Phase 2), TDD
+**Not run by this phase**, per [workflow.md](../../../docs/workflow.md): the INVEST check (Phase 2), TDD
 implementation (Phase 3), security audit (Phase 4), code review (Phase 5), or the docs pass (Phase 6).
+
+## Approval record
+
+- **Phase 1 (Three Amigos):** done 2026-08-30 (see Provenance).
+- **Phase 2 (INVEST):** never run as a formal `code-reviewer` pass for this file; it was skipped or implicit, so no approval is recorded here. Flagged deliberately rather than back-filled. Phase 5 re-validated the delivered work against the acceptance criteria.
+- **Phase 3 (TDD):** commits b69c7ff (feat), fe78eee (tests), fe80c69 (fix), a40ccdd (tests). Task moved to `in-progress/`.
+- **Phase 4 (appsec-auditor): APPROVE.** No Critical/High/Medium; two Lows fixed in fe80c69 (unicode-aware trim in `save()`; tag re-read inside `SetBlogTagTranslation`), one regression test each.
+- **Phase 5 (code-reviewer): APPROVE.** Fixed: stale docblock, unused `validationAttributes()` removed, never-failing assertion replaced by a browser `assertValue`. Left as optional: duplicated `defaultLanguageId` computation.
+- **Phase 6 (docs-keeper):** done; `docs/api/blog.md`, authorization, action-level authorization, directory-structure/actions, epic-5 digest updated. 0070's Q3 was already closed there and names 0075, so no edit was needed. No new errors-log entry: the `trans(..., ['attribute' => ...])` leak is already logged (2026-10-08).
+- **Gates (unscoped, in 5 directory chunks, all green):** Unit+Feature(Actions, Auth, Authorization, Blog, Components, Console, Customers) 1806; Feature(Dashboard, DashboardTest, ExampleTest, Database, Http, Layout, Localization, Media, Models, Navigation, Notifications) 1255 (5 skipped); Feature(Orders, PaymentMethods, Policies, ProductCategories, Products, Providers, Roles) 1995; Feature(SalesRegions, Seeders, Settings, Shipping, ShippingRates, ShippingZones, StoreLanguages, Translations, Users) 1012; Browser 279 (3 skipped). Total 6347, 0 failures. Pint unscoped passed. Larastan (`vendor/bin/phpstan analyse`) level 7: 0 errors.
+- **Deviations from the debate:** (1) `$activeLanguageId` is `#[Locked]` (D-7 said public); (2) `save()` reads stored rows, not `$originalTranslatedLanguageIds` (D-8); (3) refusal log outside the DB transaction (D-9); (4) `SetBlogTagTranslation` refuses an inactive language while the 0071/0073 siblings accept (and pin) it; fixing the siblings is story [0087](../0087-translation-write-actions-refuse-inactive-store-language.md), a human decision; (5) Q-4 badge not implemented; (6) tab tests live in separate `BlogTagLanguageTabs*Test` files, like 0073.
+- **Still open at closure:** the strip's error-marker `aria-label` still uses `products.categories.index.tabs.error_marker` (not generalised here).
+- **Not yet done (Phase 7):** move to `done/`, link-integrity check, PR, `/watch-ci after-push`.

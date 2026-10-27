@@ -33,6 +33,14 @@ return [
         'delete_heading' => 'Delete tag',
         'delete_body' => 'Are you sure you want to delete ":name"? The tag will be removed from any post that uses it. This cannot be undone.',
         'delete_confirm' => 'Delete :name',
+
+        // Story 0075 -- the per-language name tabs on the edit form.
+        'tabs' => [
+            'name_attribute' => 'name',
+            'untranslated' => 'This tag has no name in this language yet.',
+            'language_inactive' => 'This language is no longer active for the store.',
+            'default_guidance' => 'Default language: :name',
+        ],
     ],
 
 ];

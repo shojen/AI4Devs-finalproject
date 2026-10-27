@@ -3,20 +3,6 @@
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
     {
-      "id": "0075",
-      "slug": "0075-blog-tags-language-tabs-ui",
-      "title": "Blog Tags screen — language tabs",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "app/Livewire/BlogTags/Index.php",
-        "resources/views/livewire/blog-tags.blade.php"
-      ],
-      "conflict_risk_with": []
-    },
-    {
       "id": "0076",
       "slug": "0076-translatable-content-retrofit-products-backend",
       "title": "Translatable content retrofit — Products backend",
@@ -91,7 +77,31 @@
         "lang/es/blog.php"
       ],
       "conflict_risk_with": [
-        "0077"
+        "0077",
+        "0087"
+      ]
+    },
+    {
+      "id": "0087",
+      "slug": "0087-translation-write-actions-refuse-inactive-store-language",
+      "title": "Translation write actions refuse an inactive store language",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Actions/Blog/SetBlogCategoryTranslation.php",
+        "app/Actions/ProductCategories/SetProductCategoryTranslation.php",
+        "lang/en/blog.php",
+        "lang/es/blog.php",
+        "lang/en/products.php",
+        "lang/es/products.php",
+        "tests/Feature/Blog/SetBlogCategoryTranslationTest.php",
+        "tests/Feature/ProductCategories/SetProductCategoryTranslationTest.php",
+        "tests/Unit/ArchitectureTest.php"
+      ],
+      "conflict_risk_with": [
+        "0079"
       ]
     }
   ]

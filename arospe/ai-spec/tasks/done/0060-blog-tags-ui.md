@@ -16,7 +16,7 @@
 >   false, in three places: the [interface contract](#interface-contract-consumed-from-0059), the row
 >   shape in the [component public surface](#component-public-surface), and `loadTags()`'s
 >   `orderBy('name')` (**D-9**).
-> - **[0075](../0075-blog-tags-language-tabs-ui.md) — Blog Tags screen, language tabs (fullstack, Phase 1).**
+> - **[0075](0075-blog-tags-language-tabs-ui.md) — Blog Tags screen, language tabs (fullstack, Phase 1).**
 >   It **modifies this story's own component, view, lang files and tests** to add one name input **per
 >   active store language** behind a shared tab strip, and adds one backend class,
 >   `App\Actions\Blog\SetBlogTagTranslation`. It is the story that owns the language-tabs UI; **this
@@ -226,7 +226,7 @@ Feature: Blog tag management screen
 > render on the default tab. The delete and authorization scenarios are unaffected in every respect.
 > **The per-language scenarios — one tab per active store language, an untranslated field showing the
 > default's name only as guidance, the same name accepted in two different languages, a refusal
-> bringing a hidden tab forward — belong to [0075](../0075-blog-tags-language-tabs-ui.md)** and are
+> bringing a hidden tab forward — belong to [0075](0075-blog-tags-language-tabs-ui.md)** and are
 > written there. Adding them here would duplicate a scripted contract across two files, which is the
 > drift this project's conventions spend most of their effort preventing.
 >
@@ -397,7 +397,7 @@ class Index extends Component
 }
 ```
 
-> ⚠️ **Correction, 2026-08-30 — three items in the surface above are affected by [0074](0074-translatable-content-retrofit-blog-tags-backend.md) / [0075](../0075-blog-tags-language-tabs-ui.md). The class is otherwise unchanged**, and in particular `$editingTagId` / `$deletingTagId` / `$deletingTagName` stay `#[Locked]`, every method still authorizes through `LogRefusedPrivilegedAttempt`, and `mount()` stays the one deliberate unlogged exclusion.
+> ⚠️ **Correction, 2026-08-30 — three items in the surface above are affected by [0074](0074-translatable-content-retrofit-blog-tags-backend.md) / [0075](0075-blog-tags-language-tabs-ui.md). The class is otherwise unchanged**, and in particular `$editingTagId` / `$deletingTagId` / `$deletingTagName` stay `#[Locked]`, every method still authorizes through `LogRefusedPrivilegedAttempt`, and `mount()` stays the one deliberate unlogged exclusion.
 >
 > **(a) The `$tags` row shape.** It is declared `array{id: string, name: string, canEdit: bool, canDelete: bool}`, and `name` reads as a column. **It is no longer one.** After 0074 there is no `blog_tags.name`, so the row's `name` is **derived** — `translated('name')` resolved for the **store default** store language (0075 **D-8**: the store default, *never* the admin UI locale, which PRD is explicit must not be conflated with it). It can legitimately be **absent**: 0074's **R-9** records that immediately after a store-default change this may be true of *most of the catalog*, and 0075 **D-8** renders that as the em-dash-style placeholder `users.blade.php` / `roles.blade.php` / `sales-regions.blade.php` already use — never a blank and never an error. **The four keys are otherwise unchanged, and the D-5 "no post/usage-count key" assertion is unaffected.** ⚠️ **Undecided, and flagged rather than guessed:** whether the PHP type becomes `name: ?string` (the component surfaces `null` and the view branches) or stays `name: string` (the component maps a missing translation to `''` and the view branches on empty). 0075 states the *behaviour* — placeholder, no error — but not the array shape, and this file cannot settle a property of a component 0075 rewrites. **Phase 2 decides**; whichever is chosen, 0060's own "no `wire:model`-bound property is ever `null`" rule does not reach it, because `$tags` is `#[Locked]` and bound to nothing.
 >
@@ -433,7 +433,7 @@ public function save(CreateBlogTag $createBlogTag, RenameBlogTag $renameBlogTag,
 }
 ```
 
-> ⚠️ **Correction, 2026-08-30 — the *create* branch above survives verbatim; the *rename* branch becomes one write per language, and [0075](../0075-blog-tags-language-tabs-ui.md) owns that rewrite.**
+> ⚠️ **Correction, 2026-08-30 — the *create* branch above survives verbatim; the *rename* branch becomes one write per language, and [0075](0075-blog-tags-language-tabs-ui.md) owns that rewrite.**
 >
 > **What stays true, and is the reason this is a correction rather than a redesign.** `CreateBlogTag` and `RenameBlogTag` are called exactly as written, with exactly these signatures, for the **default store language** — 0074 **D-7** keeps both deliberately, and 0075 **D-12** explicitly *rejects* routing the default language through the new action, so `RenameBlogTag` stays the named writer of the default-language name. **D-1** below is unchanged: there is still no `$this->validate()` and no manual `trim()` here.
 >
@@ -481,7 +481,7 @@ grouping, no nested rows:
 - **Create/edit modal** — one `flux:input` bound to `name`, its inner content wrapped in
   `@if ($showModal)` so only one "Cancel" control is ever in the DOM (the pattern
   `users.blade.php` / `roles.blade.php` / `sales-regions.blade.php` all use).
-  ⚠️ **Correction, 2026-08-30 — true of the *create* modal only.** [0075](../0075-blog-tags-language-tabs-ui.md)
+  ⚠️ **Correction, 2026-08-30 — true of the *create* modal only.** [0075](0075-blog-tags-language-tabs-ui.md)
   **D-4** keeps the create form exactly as described (one field, no tabs); the **edit** modal becomes
   0071's shared `<x-language-tab-strip>` plus **one `flux:input` per active store language**, every one
   of them present in the DOM regardless of which tab is active. The `@if ($showModal)` wrapper and the
@@ -505,7 +505,7 @@ so a test selects the same control either way:
 
 The hook names carry the **full** domain (`blog-tag`, not `tag`) — see **V-2**.
 
-> ⚠️ **Correction, 2026-08-30 — one row of that table changes, and [0075](../0075-blog-tags-language-tabs-ui.md) adds two hook families this file cannot name.** Every other hook above (`create-blog-tag-button`, `edit-blog-tag-{id}`, `delete-blog-tag-{id}`, `confirm-delete-blog-tag`, and both sidebar hooks) is **unchanged**, and **V-2**'s full-domain rule is unchanged with them.
+> ⚠️ **Correction, 2026-08-30 — one row of that table changes, and [0075](0075-blog-tags-language-tabs-ui.md) adds two hook families this file cannot name.** Every other hook above (`create-blog-tag-button`, `edit-blog-tag-{id}`, `delete-blog-tag-{id}`, `confirm-delete-blog-tag`, and both sidebar hooks) is **unchanged**, and **V-2**'s full-domain rule is unchanged with them.
 >
 > - **`blog-tag-name-input` becomes `blog-tag-name-input-{storeLanguageId}`** on the edit form — one per active language, keyed on the **store-language id**, never on the ISO code or the language name (0075 **D-10**, and its **D-11** inheritance from 0071: *no assertion in that story may match on a language name or a two-letter code*). Every browser test that fills this hook is rewritten there.
 > - **A tab hook this file's own V-2 rule deliberately does *not* govern.** The tab strip is a **shared** anonymous Blade component extracted by sibling story [0071](0071-product-categories-language-tabs-ui.md) and consumed by four screens, so it emits its own **generic** `data-test="language-tab-{storeLanguageId}"` — not a `blog-tag-`-prefixed one. 0075 **D-10** records this as a deliberate split rather than an inconsistency: *the shared strip's hooks are generic, this screen's own panel hooks are domain-prefixed*. Both of 0075's amigos independently proposed the prefixed form on V-2's reasoning before the reconciliation overturned it, so a reviewer arriving from V-2 will expect the wrong answer — which is why it is written down here.
@@ -560,7 +560,7 @@ proves normalisation, trimming, boundary and race behaviour exhaustively at the 
 story asserts only that the **component routes into the same shared rule**, with named canaries
 rather than the full matrix.
 
-> ⚠️ **Correction, 2026-08-30 — the calibration above is unchanged and is inherited by [0075](../0075-blog-tags-language-tabs-ui.md) verbatim, but several cases below stop being valid once 0074/0075 land.** 0075's own §3 carries the authoritative disposition table and **that table is the source of truth**, not this note; it is summarised here only so a reader of *this* file does not write a test against a column that no longer exists. 0075's `frontend-qa` records the rewrite as **real scope rather than a byproduct** — the same warning 0074's **R-7** issues about 0059's suite, arriving one layer up.
+> ⚠️ **Correction, 2026-08-30 — the calibration above is unchanged and is inherited by [0075](0075-blog-tags-language-tabs-ui.md) verbatim, but several cases below stop being valid once 0074/0075 land.** 0075's own §3 carries the authoritative disposition table and **that table is the source of truth**, not this note; it is summarised here only so a reader of *this* file does not write a test against a column that no longer exists. 0075's `frontend-qa` records the rewrite as **real scope rather than a byproduct** — the same warning 0074's **R-7** issues about 0059's suite, arriving one layer up.
 >
 > | Case in this plan | Disposition |
 > | --- | --- |
@@ -909,7 +909,7 @@ product taxonomy.
   the component after all, this whole `save()` design is rewritten. Raised as **OQ-3**.
 
   > ✅ **Amended, 2026-08-30 — D-1 is *unchanged and load-bearing*, not superseded, and this note exists
-  > because a reader of [0075](../0075-blog-tags-language-tabs-ui.md) could easily conclude the opposite.**
+  > because a reader of [0075](0075-blog-tags-language-tabs-ui.md) could easily conclude the opposite.**
   > That story adds a **third** action, `App\Actions\Blog\SetBlogTagTranslation`, and a human
   > architectural decision (2026-08-30) confirmed the project-wide rule behind it: *a per-language write
   > is authorized and validated on both the front and the back — defence in depth, not either/or*.
@@ -1043,7 +1043,7 @@ product taxonomy.
 - **D-9 — Ordered `name ASC, id ASC`; no pagination, no search, no sort picker.**
   ⚠️ **Correction, 2026-08-30 — the *SQL* half of this decision is no longer executable.**
   [0074](0074-translatable-content-retrofit-blog-tags-backend.md) deletes `blog_tags.name`, so there is
-  no column to `orderBy`. [0075](../0075-blog-tags-language-tabs-ui.md) **D-8** carries the correction and
+  no column to `orderBy`. [0075](0075-blog-tags-language-tabs-ui.md) **D-8** carries the correction and
   it is `frontend-expert`'s: **sort after fetch, keeping the `id` tiebreak** — the same shape sibling
   story 0071 reached independently for Product Categories (its **D-12**), which is the strongest signal
   either file offers. The *intent* is unchanged: alphabetical by the name an editor actually sees,
@@ -1089,7 +1089,7 @@ product taxonomy.
   screen.** The fence is unchanged as a scope rule: 0060 creates no translations table and no language
   tabs. But the screen does not stay monolingual —
   [0074](0074-translatable-content-retrofit-blog-tags-backend.md) creates `blog_tag_translations` and
-  [0075](../0075-blog-tags-language-tabs-ui.md) adds the tabs by **modifying this story's own component,
+  [0075](0075-blog-tags-language-tabs-ui.md) adds the tabs by **modifying this story's own component,
   view, lang files and tests**. Read this bullet as *"not here, not by this story"*, never as *"this
   screen is single-language"* — the second reading is what would make someone rewrite 0075's work back
   out during a later pass.

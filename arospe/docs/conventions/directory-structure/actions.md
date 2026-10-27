@@ -155,6 +155,7 @@ app/
                        (logged `update`, first statement), self-validating (nested data against `names.{languageId}`) wrapper
                        over the unguarded Translations\SetTranslation primitive; the second of its kind after
                        ProductCategories/SetProductCategoryTranslation, and the only blog code that may import the primitive;
+                       SetBlogTagTranslation (story 0075) is the tag counterpart: same shape, plus it refuses an inactive store language (siblings do not; story 0087);
                        DeleteBlogTag, FindOrCreateBlogTag — story 0059 (story 0074: CreateBlogTag, RenameBlogTag and FindOrCreateBlogTag write the default-language `blog_tag_translations` row through SetTranslation, parent + translation in one transaction; BackfillBlogTagTranslations and TranslateBlogTagNameUniqueViolation are the migration backfill and 1062 translator); CreateBlogPost, UpdateBlogPost,
                        DeleteBlogPost (a soft delete), RestoreBlogPost, SyncBlogPostTags (the single writer of
                        blog_post_tag; authorizes nothing, its callers did) — story 0061; each other action self-authorizes as its first

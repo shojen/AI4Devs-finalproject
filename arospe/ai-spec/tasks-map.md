@@ -44,6 +44,12 @@ was never implemented — nothing in `app/` writes `PaymentStatus::Paid`, so no 
 (0083 edits the orders *list* view; 0085 the *detail* view), so no `conflict_risk_with` entries. Pending count moves from 13 to 15
 numbered files; `done/` unchanged at 92.
 
+**Update (2026-10-27): `0075-blog-tags-language-tabs-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** -- the Blog Tags language tabs story, claimed by `worktree-0075-blog-tags-language-tabs-ui`. Its node, its inventory row and its `tasks-status.json` entry (the `claimed` one) are dropped because the task is closed; it had no pending dependent, so no other task's `depends_on`/`status` changes. The new pending `0087` (found while implementing it) stays `ready`. Link-integrity check, both directions: same-depth move, so the file's `](../done/…)` links became bare siblings and its `../../../docs/…` and `../00NN-…` links needed no change (all 45 resolve); inbound links were repointed from `../in-progress/0075-…` to the bare sibling in `done/0060` (10) and `done/0063` (1), and from `in-progress/0075-…` to `done/0075-…` in `0087` (2). `ai-spec/tasks/in-progress/` is empty again. One pre-existing broken link outside this story (`docs/api/blog.md` -> `ai-spec/tasks/0064-…`, the file now lives in `done/`) was left untouched.
+
+**Update (2026-10-27): `0087-translation-write-actions-refuse-inactive-store-language.md` added as a new pending file** (Phase 1 Three Amigos done; Phase 2 not run). Found while implementing `0075` (its D-5 refuses an inactive store language, while `SetBlogCategoryTranslation` and `SetProductCategoryTranslation` accept one and pin it with a test); the human chose a separate backend story. Node `P0087` in the green `ready` class, `depends_on: []`, a soft edge `P0087 -.-> P0079` (the pending blog post editor story must follow the same rule and shares `lang/{en,es}/blog.php`), `conflict_risk_with: ["0079"]` both ways. Amendment notes for `0077`/`0079` live in `0087`'s own backlog section; neither file is edited here. Link check: all of `0087`'s relative links resolve.
+
+**Update (2026-10-27): `0075-blog-tags-language-tabs-ui.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 3 step 0, claimed by `worktree-0075-blog-tags-language-tabs-ui`). It is still pending work, so it keeps its node; the node moves from the green `ready` class to the blue `claimed` class and its `tasks-status.json` entry becomes `"claimed"` with `touches` widened to the story's *Files to create/modify* set. The link-integrity check ran both directions: the moved file's outbound relative links were repointed one level deeper (`](done/…)` to `](../done/…)`, `](../../docs/…)` to `](../../../docs/…)`) and all resolve; inbound links were repointed (`](../0075-…md)` to `](../in-progress/0075-…md)`) in `done/0060` (10) and `done/0063` (1). `ai-spec/tasks/in-progress/` holds exactly this one file.
+
 **Update (2026-10-08): `0073-blog-categories-language-tabs-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** -- the eighth Epic 5 story to close. Its node, its `tasks-status.json` entry (the `claimed` one) and its `claimed` class membership are dropped because the task is closed; it joins the flat `done/` inventory (97 -> 98). It had no pending dependent (`0075`/`0079` name the shared strip from 0071, not this story), so no other task's `depends_on`/`status` changes; `0073` is removed from every `conflict_risk_with` list. Link-integrity check, both directions: same-depth move, so the file's own outbound links still resolve unchanged; inbound links were repointed from `../in-progress/0073-...` to the bare sibling in `done/0062` (13) and `done/0063` (2). `ai-spec/tasks/in-progress/` is empty again.
 
 **Update (2026-10-15): `0074-translatable-content-retrofit-blog-tags-backend.md` completed Phase 7 and moved from `ai-spec/tasks/` to `ai-spec/tasks/done/`** -- the Blog Tags backend retrofit (claimed by `worktree-0074-blog-tags-translatable-retrofit`). Its node and its `tasks-status.json` entry were removed; its only dependent, `0075`, drops `"0074"` from `depends_on` and moves from `blocked` to `ready`. The link-integrity check ran both directions: the moved file's 12 outbound links were repointed one level deeper (`](../../docs/…)` to `](../../../docs/…)`, `](done/…)` to `](…)`) and all resolve; inbound links were repointed in `0075` (2, to `](done/0074-…md)`), `done/0060` (6), `done/0063` (3) and `done/0073` (1).
@@ -495,7 +501,7 @@ appears as a node in the dependency graph below:
 | --- | --- | --- |
 | 0072 | Translatable content retrofit — Blog Categories backend | Epic 5 — i18n |
 | 0074 | Translatable content retrofit — Blog Tags backend | Epic 5 — i18n |
-| 0075 | Blog Tags screen — language tabs | Epic 5 — i18n |
+| 0087 | Translation write actions refuse an inactive store language | Epic 5 — i18n |
 | 0076 | Translatable content retrofit — Products backend | Epic 5 — i18n |
 | 0077 | Product editor — language tabs (UI) | Epic 5 — i18n |
 | 0078 | Translatable content retrofit — Blog Posts backend | Epic 5 — i18n |
@@ -534,7 +540,7 @@ flowchart LR
 
     subgraph PEND_I18N["Epic 5 — Internationalization"]
         direction TB
-        P0075["0075 Blog Tags i18n UI"]
+        P0087["0087 Refuse inactive language in translation write actions"]
         P0076["0076 Products retrofit BE"]
         P0077["0077 Product editor i18n UI"]
         P0078["0078 Blog Posts retrofit BE"]
@@ -612,8 +618,9 @@ flowchart LR
     %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
     class P0077,P0079 pending;
-    class P0075,P0076,P0078 ready;
-    %% (P0073 closed to done/ 2026-10-08; no node remains `claimed`.)
+    class P0076,P0078,P0087 ready;
+    P0087 -.-> P0079
+    %% (P0075 closed to done/ 2026-10-27; P0073 closed to done/ 2026-10-08; no node remains `claimed`.)
     %% (P0071 --> P0073/P0075/P0079 dropped: 0071 closed to done/ 2026-10-07.)
 ```
 

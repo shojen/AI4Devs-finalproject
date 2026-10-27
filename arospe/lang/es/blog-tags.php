@@ -33,6 +33,14 @@ return [
         'delete_heading' => 'Eliminar etiqueta',
         'delete_body' => '¿Seguro que quieres eliminar ":name"? La etiqueta se quitará de cualquier entrada que la use. Esta acción no se puede deshacer.',
         'delete_confirm' => 'Eliminar :name',
+
+        // Story 0075 -- the per-language name tabs on the edit form.
+        'tabs' => [
+            'name_attribute' => 'nombre',
+            'untranslated' => 'Esta etiqueta aún no tiene nombre en este idioma.',
+            'language_inactive' => 'Este idioma ya no está activo en la tienda.',
+            'default_guidance' => 'Idioma por defecto: :name',
+        ],
     ],
 
 ];

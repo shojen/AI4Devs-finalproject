@@ -132,12 +132,68 @@
                     {{ $editingTagId === null ? __('blog-tags.index.create_heading') : __('blog-tags.index.edit_heading') }}
                 </flux:heading>
 
-                <flux:input
-                    wire:model="name"
-                    data-test="blog-tag-name-input"
-                    :label="__('blog-tags.index.name_label')"
-                    autofocus
-                />
+                @if ($editingTagId === null)
+                    {{-- Create stays single-language (D-4): CreateBlogTag writes the store default only. --}}
+                    <flux:input
+                        wire:model="name"
+                        data-test="blog-tag-name-input"
+                        :label="__('blog-tags.index.name_label')"
+                        autofocus
+                    />
+                @else
+                    @php
+                        $defaultLanguageId = (string) $this->languages->first(fn ($language) => (bool) $language->is_default)?->id;
+                        $defaultName = (string) ($names[$defaultLanguageId] ?? '');
+                    @endphp
+
+                    <div class="space-y-4">
+                        <x-language-tab-strip
+                            :languages="$this->languages"
+                            :active="$activeLanguageId"
+                            :error-language-ids="$this->languages->pluck('id')->filter(fn ($languageId) => $errors->has('names.'.$languageId))->values()->all()"
+                        />
+
+                        {{-- Every panel stays mounted and is hidden with x-show, never @if (0071 D-2): an @if
+                        would destroy the unsaved text typed into the hidden tabs on every switch. --}}
+                        @foreach ($this->languages as $language)
+                            @php
+                                $isDefaultLanguage = (bool) $language->is_default;
+                                $isUntranslated = ! in_array($language->id, $originalTranslatedLanguageIds, true);
+                            @endphp
+
+                            <div
+                                x-show="$wire.activeLanguageId === {{ Js::from($language->id) }}"
+                                x-cloak
+                                role="tabpanel"
+                                data-test="language-panel-{{ $language->id }}"
+                                class="space-y-2"
+                            >
+                                <flux:field>
+                                    <flux:label>{{ __('blog-tags.index.name_label') }}</flux:label>
+
+                                    {{-- The default language's name is offered as a placeholder on an untranslated
+                                    tab -- guidance the editor can see, never a value that gets submitted (D-2). --}}
+                                    <flux:input
+                                        wire:model="names.{{ $language->id }}"
+                                        data-test="blog-tag-name-input-{{ $language->id }}"
+                                        :placeholder="! $isDefaultLanguage && $isUntranslated && $defaultName !== '' ? __('blog-tags.index.tabs.default_guidance', ['name' => $defaultName]) : null"
+                                        :required="$isDefaultLanguage"
+                                    />
+
+                                    @error('names.'.$language->id)
+                                        <p class="text-sm font-medium text-red-500" data-test="language-name-error-{{ $language->id }}">{{ $message }}</p>
+                                    @enderror
+                                </flux:field>
+
+                                @if ($isUntranslated)
+                                    <flux:text size="sm" data-test="language-untranslated-{{ $language->id }}">
+                                        {{ __('blog-tags.index.tabs.untranslated') }}
+                                    </flux:text>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
 
                 <div class="flex gap-3 justify-end">
                     <flux:button variant="outline" wire:click="closeModal">

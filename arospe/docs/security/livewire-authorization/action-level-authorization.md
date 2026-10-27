@@ -55,7 +55,7 @@ copy. Confirmed safe in the 0071 audit:
   Story 0074 (blog tags) adds three more importers in `app/Actions/Blog/` — `CreateBlogTag`,
   `RenameBlogTag`, `FindOrCreateBlogTag` — each calling the primitive only *below* its own
   authorization gate (`create`/`update`, or `viewAny`/`create` for find-or-create), and only for the
-  default language. There is no per-language tag wrapper yet; no Livewire file imports the primitive.
+  default language. Story 0075 adds the per-language tag wrapper `App\Actions\Blog\SetBlogTagTranslation` (logged `update` on the tag via `target_type: 'blog_tag'` first, then it re-reads the tag and the language through `StoreLanguage::query()->active()`, **refuses an inactive language** with a `names.{languageId}` `ValidationException`, validates on its own and re-keys the 1062). It is the only tag importer of the primitive besides the three above; no Livewire file imports it. The inactive-language refusal is a deliberate divergence from the product/blog category wrappers above, which accept one and pin it in tests; story 0087 proposes aligning them. `BlogTags\Index::save()` authorizes the whole batch before opening its transaction, so no refusal is logged inside it (and the log is `Log::warning`, outside the database, so a rollback would not erase it anyway).
 - **The wrapper authorizes first, logs the refusal, then validates on its own.**
   `SetProductCategoryTranslation::__invoke()` calls `LogRefusedPrivilegedAttempt::authorize('update', …)`
   as its first statement. It validates nested data (`['names' => [$language->id => $name]]`) against
