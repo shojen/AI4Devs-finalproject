@@ -63,3 +63,14 @@ closed earlier and are not backfilled here (read their `done/` files or `docs/`)
 - `BlogTagValidationRules::nameRules()/uniqueNormalisedName()` take a required `string $storeLanguageId` before the optional `?string $blogTagId`; own-row exclusion is `blog_tag_id !=`, never `->ignore()` — story 0074 (D-6).
 - `FindOrCreateBlogTag` looks up the default language only, plus a bounded fallback that reuses a tag holding NO default-language name (after a default change), so a post save never mints a duplicate or detaches a tag; the editor/list show such a tag under any stored translation — story 0074 (D-8 amended).
 - Non-default-language authoring and its French Gherkin scenarios belong to 0075; `TranslateBlogTagNameUniqueViolation` already accepts `$errorKey`/`$attributeLabel` for it — story 0074.
+
+## Story 0075 — Blog tags language tabs (frontend)
+
+- `app/Actions/Blog/SetBlogTagTranslation` is the self-sufficient non-default-language tag writer: logged `update` (target_type `blog_tag`) first, re-reads the tag and the language via `StoreLanguage::query()->active()`, **refuses an inactive language** (`names.{languageId}`, message `blog-tags.index.tabs.language_inactive`), own `Validator` with `nameRules()`, derived key, 1062 re-keyed — story 0075 (D-3).
+- The 0071/0073 sibling actions still accept an inactive language and pin it in tests; aligning them is story 0087 (human decision) — story 0075.
+- `BlogTags\Index`: `public array $names` keyed by language id; `#[Locked] $activeLanguageId` and `$originalTranslatedLanguageIds` (view-only hint, `save()` decides from re-read rows); `setActiveLanguageTab(string)`; edit modal only, create form keeps bare `blog-tag-name-input` with no tabs — story 0075 (D-7, D-8).
+- `save()` authorizes the batch, writes changed languages only in one `DB::transaction()`; default language via `RenameBlogTag` with `name` re-keyed to `names.{defaultId}`; blank untranslated non-default tab skipped; blank default/previously translated refused; errored tab becomes active — story 0075 (D-9, D-12).
+- Hooks: `blog-tag-name-input-{languageId}` plus the strip's `language-tab-*`/`language-name-error-*`/`language-untranslated-*`; list shows the store-default name or `—` — story 0075.
+- `BlogTagValidationRules` now fails with `$fail('validation.x')->translate()` so attribute labels apply (same fix as categories) — story 0075.
+- Refusal logging is `Log::warning` (outside the DB), so a rolled-back save keeps it; no refusal is logged inside the transaction in practice — story 0075 (D-9).
+- Strip `aria-label` still uses the products key (not generalised); Q-4 badge not built; tab tests are in `BlogTagLanguageTabs*Test` — story 0075.
