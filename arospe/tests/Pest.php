@@ -25,6 +25,10 @@ pest()->extend(TestCase::class)
     ->beforeEach(fn () => StoreLanguage::flushDefaultStoreLanguage())
     ->in('Feature', 'Browser');
 
+// Playwright's default 5 s timeout is too tight for a loaded CI runner; a real failure still
+// surfaces, only later.
+pest()->browser()->timeout(15_000);
+
 /*
 |--------------------------------------------------------------------------
 | Expectations

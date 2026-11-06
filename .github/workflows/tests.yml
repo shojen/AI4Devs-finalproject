@@ -109,5 +109,10 @@ jobs:
       - name: Run Type Analysis
         run: composer types:check
 
-      - name: Run Tests
-        run: php artisan test --parallel
+      - name: Run Unit and Feature Tests
+        run: php artisan test --parallel --testsuite=Unit,Feature
+
+      # Browser tests run apart, with fewer workers: sharing the runner with four heavy
+      # workers made Chromium click timeouts flaky.
+      - name: Run Browser Tests
+        run: php artisan test --parallel --processes=2 --testsuite=Browser
