@@ -18,6 +18,8 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-11-06): `0076-translatable-content-retrofit-products-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 2 fourth pass APPROVED, then Phase 3 step 0; claimed by `worktree-0076-translatable-content-retrofit-products-backend`). It is still pending work, so it keeps its node (blue `claimed` class) and its `tasks-status.json` entry, whose live claim (`claimed_by`/`claimed_at`) is carried forward unchanged. `ai-spec/tasks/in-progress/` now holds this one file; `ai-spec/tasks/` still holds the other pending files and `done/` the closed ones. Link check: the moved file's own outbound relative links gained one `../` level (and `done/…` became `../done/…`), and the inbound links in `0076a`, `0077`, `done/0025`, `done/0027` and `done/0082` now point at `in-progress/0076-…`; all resolve.
+
 **Update (2026-11-06): `0076` split after its Phase 2 rejection; new pending file `0076a-product-slug-and-seo-fields-backend.md`.** The project owner decided to split `0076`: it keeps `name`/`description` and every live reader of them, and the slug/SEO fields move to `0076a`. That story is numbered with a suffix rather than `0088` so that it sorts below its dependent `0077`, per the task ordering rule. Graph changes:
 - New node `P0076a` in the yellow `pending` class (`blocked` on `0076`).
 - The edge `P0076 --> P0077` is replaced by `P0076 --> P0076a --> P0077`. `0077`'s own Dependencies section now names both, so its `depends_on` is `["0076", "0076a"]`.
@@ -513,7 +515,7 @@ Re-derived 2026-11-06 from the files actually present in `ai-spec/tasks/`. The e
 
 | ID | Title | Epic area |
 | --- | --- | --- |
-| 0076 | Translatable content retrofit — Products backend (claimed; Phase 2 re-run pending after the split) | Epic 5 — i18n |
+| 0076 | Translatable content retrofit — Products backend (claimed; in-progress, Phase 2 approved 2026-11-06) | Epic 5 — i18n |
 | 0076a | Product slug and SEO fields — per-store-language (backend) | Epic 5 — i18n |
 | 0077 | Product editor — language tabs (UI) | Epic 5 — i18n |
 | 0078 | Translatable content retrofit — Blog Posts backend | Epic 5 — i18n |

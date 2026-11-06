@@ -1,11 +1,11 @@
 # [0076] Translatable content retrofit — Products backend
 
 ## Description
-Applies story [0070](done/0070-translatable-content-mechanism-product-categories-backend.md)'s per-store-language translatable-content mechanism to **Products** ([PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization); [assumption 14](../../docs/PRD/sections/foundations.md#assumptions--confirmed-decisions) names *"product title/description"* as translatable content). Story [0024](done/0024-products-core-crud-backend.md)'s `products.name` and `products.description` move to a new `product_translations` child table, one row per `(product, store language)`; existing rows are backfilled into the store default language; and **every live reader of the two dropped columns is migrated in this same story**, following the precedent of story [0074](done/0074-translatable-content-retrofit-blog-tags-backend.md) (commit `d8a6be2`, which migrated its Livewire readers alongside the retrofit).
+Applies story [0070](../done/0070-translatable-content-mechanism-product-categories-backend.md)'s per-store-language translatable-content mechanism to **Products** ([PRD Epic 5, Layer 2](../../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization); [assumption 14](../../../docs/PRD/sections/foundations.md#assumptions--confirmed-decisions) names *"product title/description"* as translatable content). Story [0024](../done/0024-products-core-crud-backend.md)'s `products.name` and `products.description` move to a new `product_translations` child table, one row per `(product, store language)`; existing rows are backfilled into the store default language; and **every live reader of the two dropped columns is migrated in this same story**, following the precedent of story [0074](../done/0074-translatable-content-retrofit-blog-tags-backend.md) (commit `d8a6be2`, which migrated its Livewire readers alongside the retrofit).
 
-**Split on 2026-11-06 (project owner's decision after the Phase 2 rejection recorded in the review log below).** The slug and SEO fields (`slug`, `meta_title`, `meta_description`), their validation rules, the `CreateProduct`/`UpdateProduct` signature widening, slug canonicalisation and the 1062 disambiguation by index name moved to the follow-up story [0076a](0076a-product-slug-and-seo-fields-backend.md). This story adds **no** slug or meta column and **does not change any action signature**.
+**Split on 2026-11-06 (project owner's decision after the Phase 2 rejection recorded in the review log below).** The slug and SEO fields (`slug`, `meta_title`, `meta_description`), their validation rules, the `CreateProduct`/`UpdateProduct` signature widening, slug canonicalisation and the 1062 disambiguation by index name moved to the follow-up story [0076a](../0076a-product-slug-and-seo-fields-backend.md). This story adds **no** slug or meta column and **does not change any action signature**.
 
-**This story consumes a recipe; it does not write one.** `App\Concerns\HasTranslations`, `App\Actions\Translations\SetTranslation` and `StoreLanguage::defaultStoreLanguage()` are 0070's, shipped, and used **unmodified**. Every upstream story this one builds on — [0024](done/0024-products-core-crud-backend.md), [0024a](done/0024a-product-description-html-sanitization.md), [0068](done/0068-store-languages-catalog-backend.md), [0070](done/0070-translatable-content-mechanism-product-categories-backend.md), [0072](done/0072-translatable-content-retrofit-blog-categories-backend.md), [0074](done/0074-translatable-content-retrofit-blog-tags-backend.md) and [0082](done/0082-dashboard-home-overview-backend.md) — is **shipped** (`done/`). Every signature named below was re-verified against `HEAD` on 2026-11-06.
+**This story consumes a recipe; it does not write one.** `App\Concerns\HasTranslations`, `App\Actions\Translations\SetTranslation` and `StoreLanguage::defaultStoreLanguage()` are 0070's, shipped, and used **unmodified**. Every upstream story this one builds on — [0024](../done/0024-products-core-crud-backend.md), [0024a](../done/0024a-product-description-html-sanitization.md), [0068](../done/0068-store-languages-catalog-backend.md), [0070](../done/0070-translatable-content-mechanism-product-categories-backend.md), [0072](../done/0072-translatable-content-retrofit-blog-categories-backend.md), [0074](../done/0074-translatable-content-retrofit-blog-tags-backend.md) and [0082](../done/0082-dashboard-home-overview-backend.md) — is **shipped** (`done/`). Every signature named below was re-verified against `HEAD` on 2026-11-06.
 
 > **What genuinely does not port from the single-field siblings** (each is a decision below rather than a silent carry-forward):
 >
@@ -26,13 +26,13 @@ backend | includes database-expert: **yes** (one new table with an idempotent da
 
 > **As** the engineer applying story 0070's recipe to the first entity with two translatable fields,
 > **I want** per-field fallback proven against real fields, the description sanitizer bound to every writer, and every reader of the moved columns migrated in the same change,
-> **so that** dropping the columns breaks nothing that ships today and the language-tab UI story ([0077](0077-product-editor-language-tabs-ui.md)) builds on a safe mechanism.
+> **so that** dropping the columns breaks nothing that ships today and the language-tab UI story ([0077](../0077-product-editor-language-tabs-ui.md)) builds on a safe mechanism.
 
-**Scope fence.** This story ships **no new screen, route, language tab or `config/modules.php` entry**. It **does** edit the existing Livewire readers of the dropped columns (listed under *Modify*), minimally, so they keep their current behaviour against the new storage. Non-default-language authoring (the tabs, and the per-entity `SetProductTranslation` action that validates and authorizes such a write) belongs to [0077](0077-product-editor-language-tabs-ui.md); slug/SEO belong to [0076a](0076a-product-slug-and-seo-fields-backend.md).
+**Scope fence.** This story ships **no new screen, route, language tab or `config/modules.php` entry**. It **does** edit the existing Livewire readers of the dropped columns (listed under *Modify*), minimally, so they keep their current behaviour against the new storage. Non-default-language authoring (the tabs, and the per-entity `SetProductTranslation` action that validates and authorizes such a write) belongs to [0077](../0077-product-editor-language-tabs-ui.md); slug/SEO belong to [0076a](../0076a-product-slug-and-seo-fields-backend.md).
 
 ## Gherkin — 2. Detailed acceptance criteria (Given/When/Then)
 
-Every scenario opens with a named business-role actor and carries exactly one `When`, per [gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3. Every **write** below goes through `CreateProduct`/`UpdateProduct`, which write the **default store language only** (0072 **D-7** / 0074 precedent); French content in a `Given` is arranged fixture data, not a write path this story ships.
+Every scenario opens with a named business-role actor and carries exactly one `When`, per [gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3. Every **write** below goes through `CreateProduct`/`UpdateProduct`, which write the **default store language only** (0072 **D-7** / 0074 precedent); French content in a `Given` is arranged fixture data, not a write path this story ships.
 
 ```gherkin
 Feature: Per-store-language product content
@@ -173,7 +173,7 @@ Feature: Per-store-language product content
     Then the count includes the French product translations
 ```
 
-**Moved out of this story at the split (not deleted):** writing, re-translating, refusing a blank title in, or sanitizing a description in a **non-default** language, and the store-language-permission scenario for a French write, all need a validating and authorizing non-default write path, which only [0077](0077-product-editor-language-tabs-ui.md) ships (its scenarios *"A catalog administrator translates a product into an additional language"*, *"A blank title in a language being authored is refused"*, *"A description written in a non-default language is stored safely"* and *"Translating a product is refused without the editor, not only within it"* already cover them). The slug scenarios moved to [0076a](0076a-product-slug-and-seo-fields-backend.md). The bare `SetTranslation` sanitization proof is a technical test, not a business scenario, and stays below under *Tests to perform*.
+**Moved out of this story at the split (not deleted):** writing, re-translating, refusing a blank title in, or sanitizing a description in a **non-default** language, and the store-language-permission scenario for a French write, all need a validating and authorizing non-default write path, which only [0077](../0077-product-editor-language-tabs-ui.md) ships (its scenarios *"A catalog administrator translates a product into an additional language"*, *"A blank title in a language being authored is refused"*, *"A description written in a non-default language is stored safely"* and *"Translating a product is refused without the editor, not only within it"* already cover them). The slug scenarios moved to [0076a](../0076a-product-slug-and-seo-fields-backend.md). The bare `SetTranslation` sanitization proof is a technical test, not a business scenario, and stays below under *Tests to perform*.
 
 ## Files to create/modify
 
@@ -280,7 +280,7 @@ Feature: Per-store-language product content
   - Right after the existing `authorize('create', …)` first statement, it resolves `StoreLanguage::defaultStoreLanguage()` and `throw_if`s a `RuntimeException` when there is none (`CreateBlogTag` precedent).
   - It keeps trim, then sanitize, then `validate()` (layer 1 of **D-8**).
   - `forceCreate()` loses `name` and `description`. Inside the **existing** `DB::transaction(…, attempts: 3)` closure, after `forceCreate()` and before `SyncProductGallery`, it calls `SetTranslation($product, $default, ['name' => $name, 'description' => $description])` (**D-15**).
-  - The existing blanket `1062 → sku` catch stays correct, because the only new unique (the natural key) cannot collide on a freshly minted product id. Narrowing that catch by index name is [0076a](0076a-product-slug-and-seo-fields-backend.md)'s job, once a second translation unique exists.
+  - The existing blanket `1062 → sku` catch stays correct, because the only new unique (the natural key) cannot collide on a freshly minted product id. Narrowing that catch by index name is [0076a](../0076a-product-slug-and-seo-fields-backend.md)'s job, once a second translation unique exists.
 - **`app/Actions/Products/UpdateProduct.php`**: **the signature is unchanged.**
   - It keeps the same authorize-first, default-language guard and sanitize-before-validate order.
   - `$product->update([...])` loses `name` and `description`. The `SetTranslation` call goes **inside the existing `DB::transaction()`** (which deliberately has **no** `attempts:`; see the in-code R-1 comment and `docs/security/derived-column-invariants.md`), next to the parent update and before `SyncProductGallery` / `reDeriveVariantSkus()`.
@@ -301,7 +301,7 @@ Feature: Per-store-language product content
 ### Deliberately not touched
 
 - `app/Concerns/HasTranslations.php`, `app/Actions/Translations/SetTranslation.php`, `App\Models\StoreLanguage` and `App\Actions\Translations\CompareTranslatedNames`: consumed unmodified.
-- `app/Concerns/ProductValidationRules.php`: `productNameRules()`, `productDescriptionRules()` and `productSkuRules()` are byte-identical (**D-4**, **D-7**). The slug/meta rule methods are [0076a](0076a-product-slug-and-seo-fields-backend.md)'s.
+- `app/Concerns/ProductValidationRules.php`: `productNameRules()`, `productDescriptionRules()` and `productSkuRules()` are byte-identical (**D-4**, **D-7**). The slug/meta rule methods are [0076a](../0076a-product-slug-and-seo-fields-backend.md)'s.
 - `app/Actions/Products/SanitizeProductDescription.php` and `config/html-sanitizer.php`: this story adds a second **call site**, never a second allow-list.
 - `app/Actions/Products/DeleteProduct.php`, `SyncProductGallery.php`, `SyncProductSalesRegions.php` and the variant actions: none reads or writes `name`/`description` (verified by grep at `HEAD`).
 - `database/seeders/RolePermissionSeeder.php` and `app/Policies/ProductPolicy.php`: no new permission, ability or policy (**D-16**).
@@ -383,8 +383,8 @@ Feature and Unit tests. The existing browser tests that seed product names are *
 - [ ] Feature: `CreateOrder` and `AddOrderItem` freeze the **default-language** name even when the product has a French row.
 - [ ] Feature: renaming the product afterwards leaves `order_items.product_name` unchanged (existing `PriceSnapshotTest` intent, migrated).
 - [ ] Feature: the **Q-5** edge (no default-language row; Q-5 resolved as (a) on 2026-11-06). The oldest stored translation's name (by `created_at`, then `id`) is frozen, and no error is raised.
-- [ ] Feature: `snapshotName()` reads the **full** `translations` relation. A product loaded through `withTranslationsFor($someOtherLanguage)` (a filtered relation) still freezes the correct default-language name, or the oldest-translation fallback. It never resolves from the filtered subset.
-- [ ] Feature: a product with **zero** translations (`Product::factory()->withoutTranslations()`) makes `snapshotName()` throw `LogicException`, and no order line is written.
+- [ ] Feature: `snapshotName()` reads the **full** `translations` relation. A product loaded through `withTranslationsFor($someOtherLanguage)` (a filtered relation) still freezes the correct default-language name, or the oldest-translation fallback. It never returns a wrong name because the relation was filtered. Test: a product with only an FR (older) and a DE row and no default row, loaded through `withTranslationsFor(DE)`, must freeze FR.
+- [ ] Feature: a product with **no usable name** (zero translations, or only blank names; e.g. `Product::factory()->withoutTranslations()`) makes `snapshotName()` throw `LogicException`, and no order line is written.
 - [ ] Feature: `CreateOrder` with N lines issues a bounded number of translation queries (the bulk `findOrFail()` eager-loads `translations`).
 
 ### Cascade, registry and authorization
@@ -398,7 +398,7 @@ Feature and Unit tests. The existing browser tests that seed product names are *
 ### Deliberately NOT tested here
 - SKU canonicalisation, uniqueness and its race catch (**D-7**). `ProductSkuUniquenessTest.php` is the regression check: only its raw-insert column list loses `name`, and no assertion changes.
 - `HasTranslations`' generic mechanics, the default-language memo and `SetTranslation` in isolation (0070), and `StoreLanguage` CRUD (0068).
-- Slug/SEO behaviour ([0076a](0076a-product-slug-and-seo-fields-backend.md)) and non-default-language authoring ([0077](0077-product-editor-language-tabs-ui.md)).
+- Slug/SEO behaviour ([0076a](../0076a-product-slug-and-seo-fields-backend.md)) and non-default-language authoring ([0077](../0077-product-editor-language-tabs-ui.md)).
 
 ### Disposition of existing test files (re-derived against `HEAD`, 2026-11-06)
 
@@ -436,12 +436,12 @@ Feature and Unit tests. The existing browser tests that seed product names are *
   - `grep -nE "'name'|orderBy\('name'\)" app/Livewire/Products/Index.php app/Livewire/Products/Editor.php app/Livewire/Orders/Show.php app/Actions/Orders/CreateOrder.php app/Actions/Orders/AddOrderItem.php app/Actions/Dashboard/GetLowStockProducts.php database/factories/ProductFactory.php database/factories/OrderItemFactory.php` (the eight **D-20** files only) leaves no hit that reads a **product** column.
 
   An unscoped `orderBy('name')` grep would match about 20 unrelated models (**D-20**).
-- [ ] `order_items.product_name` freezes the **store default language's** name through `Product::snapshotName()`, which reads the full `translations` relation. A product with no default-language row freezes its oldest translation, and a product with zero translations throws `LogicException` (**D-21**; Q-3 and Q-5 resolved as (a)).
+- [ ] `order_items.product_name` freezes the **store default language's** name through `Product::snapshotName()`, which reads the full `translations` relation. A product with no default-language row freezes its oldest non-blank translation, and a product with no usable name (zero translations or all-blank names) throws `LogicException` (**D-21**; Q-3 and Q-5 resolved as (a)).
 - [ ] No `App\Livewire\Products\*` or `App\Livewire\Orders\*` class uses `SetTranslation`, enforced by `arch()` tests (**D-16**).
 - [ ] No new permission, ability, policy or lang key. The permission catalog is unchanged at **43** (`RolePermissionSeederTest`; 42 is the Administrator grant), and `RolePermissionSeeder` is untouched (**D-16**).
 - [ ] `config/store-languages.php` gains exactly one appended literal and survives `config:cache`.
 - [ ] The full suite (`RefreshDatabase`, empty `store_languages` at migration time) is green.
-- [ ] Optional manual check: `php artisan migrate:fresh --seed` against a **named scratch database** (for example `DB_DATABASE=scratch_0076`). It runs only with the **user's explicit authorization for that run**, per [docs/contracts/safety-rules.md](../../docs/contracts/safety-rules.md), and never against the dev or testing database.
+- [ ] Optional manual check: `php artisan migrate:fresh --seed` against a **named scratch database** (for example `DB_DATABASE=scratch_0076`). It runs only with the **user's explicit authorization for that run**, per [docs/contracts/safety-rules.md](../../../docs/contracts/safety-rules.md), and never against the dev or testing database.
 
 ## Definition of Done
 - [ ] Tests written and green: the **full suite unscoped** (`php artisan test`, or in directory chunks in a worktree session), because this story adds a model event and drops two columns that dozens of test files read
@@ -458,13 +458,13 @@ Feature and Unit tests. The existing browser tests that seed product names are *
 
 **D-2 — Column types track the parent's.** `name` is `VARCHAR(255) NOT NULL` and `description` is `MEDIUMTEXT NULL`, matching `2026_09_01_142007_create_products_table` exactly, because narrowing a column during a data move risks silent truncation. `name` stays `NOT NULL`, since a translation row without a name is not meaningfully a translation. 0024's **R-9** rule (a `MEDIUMTEXT` fattens the clustered index, so list queries never `SELECT *`) now applies to `product_translations` too; see **R-7**.
 
-**D-3 — This story owns the first real-field per-field fallback test, and it is a wiring test.** `HasTranslations::translated()` already resolves per field (it reads `$field` from the requested row, then from the default row). What has never existed is a test against a real two-field table. **One fixture with one field present and one absent already distinguishes both wrong shapes**: a per-row resolver that picks the requested row returns `null` for the absent field, and one that picks the default row returns the wrong present field. So the test proves that `Product` is **wired** to the per-field resolver; it does not re-specify the resolver. *Correction:* an earlier draft claimed a two-field fixture "only approximates" the proof, which was wrong. The four-field fixture (name, description, slug, meta_title) moves to [0076a](0076a-product-slug-and-seo-fields-backend.md), where it serves as a regression extension once those columns exist.
+**D-3 — This story owns the first real-field per-field fallback test, and it is a wiring test.** `HasTranslations::translated()` already resolves per field (it reads `$field` from the requested row, then from the default row). What has never existed is a test against a real two-field table. **One fixture with one field present and one absent already distinguishes both wrong shapes**: a per-row resolver that picks the requested row returns `null` for the absent field, and one that picks the default row returns the wrong present field. So the test proves that `Product` is **wired** to the per-field resolver; it does not re-specify the resolver. *Correction:* an earlier draft claimed a two-field fixture "only approximates" the proof, which was wrong. The four-field fixture (name, description, slug, meta_title) moves to [0076a](../0076a-product-slug-and-seo-fields-backend.md), where it serves as a regression extension once those columns exist.
 
 **D-4 — There is no name uniqueness to re-scope, and none is invented.** `productNameRules()` at `HEAD` is `['required', 'string', 'max:255']`, and `products` carries no unique on `name`. So there is no fold column, no `NormalizeForSearch`, no `->ignore()` question for `name`, and no `dropUnique()` in the drop migration. The absence gets a positive test (two products sharing a title both save). Nothing stops two products carrying the same French title, and nothing did before this story either.
 
-**D-5 — Moved to [0076a](0076a-product-slug-and-seo-fields-backend.md)** (the SEO field set and widths; Q-1 resolved there as (a)).
+**D-5 — Moved to [0076a](../0076a-product-slug-and-seo-fields-backend.md)** (the SEO field set and widths; Q-1 resolved there as (a)).
 
-**D-6 — Moved to [0076a](0076a-product-slug-and-seo-fields-backend.md)** (the slug: administrator-supplied, canonicalised, per-language unique).
+**D-6 — Moved to [0076a](../0076a-product-slug-and-seo-fields-backend.md)** (the slug: administrator-supplied, canonicalised, per-language unique).
 
 **D-7 — `sku` is not translatable and does not move.** PRD Epic 5 lists SKU among the fields shown once, outside the tabs. `productSkuRules()`, the global `UNIQUE`, canonicalisation on write, and the 1062 catch are unchanged. In `ProductSkuUniquenessTest.php`, only the raw-insert column list (line ~99) loses `name`. No assertion changes, and any other diff to that file is a signal that something leaked across the boundary.
 
@@ -478,7 +478,7 @@ Sanitizing twice on the action path is safe only because 0024a's constraint 2 al
 
 **D-10 — `products` keeps six fillable columns.** At `HEAD` the `#[Fillable]` list holds eight columns: `name`, `sku`, `product_category_id`, `type`, `status`, `price`, `stock` and `description`. `featured_media_id` is deliberately **not** fillable; only `SyncProductGallery` writes it. After the retrofit, **six** remain: `sku`, `product_category_id`, `type`, `status`, `price` and `stock`. Before the retrofit, `products` has **nine** non-key, non-timestamp columns. After it, **seven** remain: the six fillable columns plus `featured_media_id`. The siblings reach `#[Fillable([])]` and Products does not, which pattern-matching readers tend to get wrong, so this decision has its own test.
 
-**D-11 — Three indexes on `product_translations` in this story.** They are `primary(id)`, `UNIQUE(product_id, store_language_id)` (which also serves the `product_id` FK, being leftmost there), and an auto-created index for the `store_language_id` FK (leftmost of nothing, so InnoDB creates one). [0076a](0076a-product-slug-and-seo-fields-backend.md) adds `UNIQUE(store_language_id, slug)`. MySQL then silently drops the implicit FK index, so the count stays three but the composition changes; that story asserts its own count. Verify with `php artisan db:table`, never by reading the migration.
+**D-11 — Three indexes on `product_translations` in this story.** They are `primary(id)`, `UNIQUE(product_id, store_language_id)` (which also serves the `product_id` FK, being leftmost there), and an auto-created index for the `store_language_id` FK (leftmost of nothing, so InnoDB creates one). [0076a](../0076a-product-slug-and-seo-fields-backend.md) adds `UNIQUE(store_language_id, slug)`. MySQL then silently drops the implicit FK index, so the count stays three but the composition changes; that story asserts its own count. Verify with `php artisan db:table`, never by reading the migration.
 
 **D-12 — `down()` is knowingly not an inverse.** The values now live per language, so there is no single value to restore into a scalar column. Both columns come back **nullable** with no data, and no index is re-added because none existed. This matches 0072/0074.
 
@@ -514,7 +514,7 @@ Callers qualify their own columns and tie-breakers with `products.` because of t
 
 **D-17 — UUIDv7 primary key** (ADR 0001 Amendment 1), as for every sibling translation table. Not reopened.
 
-**D-18 — The action signatures do not change in this story.** `CreateProduct::__invoke(string $name, string $sku, ?string $productCategoryId, ?string $type, ?string $status, mixed $price, mixed $stock, ?string $featuredMediaId, array $orderedGalleryMediaIds, ?string $description = null)` and `UpdateProduct::__invoke(Product $product, string $name, …, ?string $description)` are byte-identical to `HEAD`; `$name` and `$description` narrow in meaning to "the default store language's". The widening for slug/meta is [0076a](0076a-product-slug-and-seo-fields-backend.md)'s **D-18**. Because the signatures are unchanged, `Products\Editor::save()` and every action-calling test keep their call shape.
+**D-18 — The action signatures do not change in this story.** `CreateProduct::__invoke(string $name, string $sku, ?string $productCategoryId, ?string $type, ?string $status, mixed $price, mixed $stock, ?string $featuredMediaId, array $orderedGalleryMediaIds, ?string $description = null)` and `UpdateProduct::__invoke(Product $product, string $name, …, ?string $description)` are byte-identical to `HEAD`; `$name` and `$description` narrow in meaning to "the default store language's". The widening for slug/meta is [0076a](../0076a-product-slug-and-seo-fields-backend.md)'s **D-18**. Because the signatures are unchanged, `Products\Editor::save()` and every action-calling test keep their call shape.
 
 **D-19 — The `products` FK cascade is genuinely live.** `products` has no `SoftDeletes` and `DeleteProduct` performs an instance `->delete()`, so `cascadeOnDelete()` really fires, consistent with `product_media.product_id`. The `store_languages` FK is `restrictOnDelete()` and defensive only, because removal is an `is_active` flip (0068 **D5**).
 
@@ -538,7 +538,7 @@ The minimal migration changes no screen's behaviour while the default language i
 
 **D-21 — `order_items.product_name` freezes the store default language's name (Q-3 resolved as (a), project owner, 2026-11-06).** The default language is the one guaranteed to exist for every product written through the actions, and an order denominated consistently is easier to reconcile. One seam serves all three writers (`CreateOrder`, `AddOrderItem`, `OrderItemFactory`): `Product::snapshotName(): string`. **Mechanism.** `scopeWithTranslationsFor()` always includes the default-language id (`HasTranslations.php`), so any loaded relation, filtered or not, contains the default row whenever one exists. Steps:
 1. Read the loaded (or lazily loaded) `translations` relation. If it holds the default-language row with a **non-blank** `name`, return it. This is the common path: **no extra query**.
-2. Otherwise, re-query `translations()` **unfiltered** and return the oldest translation **with a non-blank `name`**, ordered by `created_at` then `id` (**Q-5** resolved as (a), 2026-11-06). `''` can be stored, as the D-3 mirror test does, and is skipped.
+2. Otherwise, re-query `translations()` **unfiltered**, look first for the **default-language row with a non-blank `name`** (guards against a stale or custom-`with()` filtered relation), and otherwise return the oldest translation **with a non-blank `name`**, ordered by `created_at` then `id` (**Q-5** resolved as (a), 2026-11-06). `''` can be stored, as the D-3 mirror test does, and is skipped.
 3. Otherwise, when the product has **no usable name** (zero translations, or only blank names; reachable only through `factory()->withoutTranslations()` or raw writes), throw `LogicException`. The user delegated this edge to the recommended option on 2026-11-06.
 
 Tests pin both the filtered-relation case and the no-usable-name case.
@@ -547,15 +547,15 @@ The column is `NOT NULL`, so the seam never returns `null`. `CreateOrder` eager-
 
 **D-22 — The factory follows the shipped `BlogTagFactory` shape.** `definition()` holds only parent columns. `configure()`'s `afterCreating` writes a default-language translation (creating a default `StoreLanguage` if none exists), so every `Product::factory()->create()` keeps producing a named product. `named(string $name, ?string $description = null)` supplies specific content, and `withoutTranslations()` creates a bare parent for the guard and fallback tests.
 
-**Deviation from `BlogTagFactory`, required.** `BlogTagFactory::named()`/`withoutTranslations()` (lines 40–53) use `newInstance(['afterCreating' => new Collection([...])])`, which **replaces the whole `afterCreating` collection**. `ProductFactory::withGallery()` is itself an `afterCreating` callback, so copying that shape would make `withGallery()->named('X')` or `withGallery()->withoutTranslations()` silently drop the gallery. Instead, the two states change only the translation step. They set factory state (for example a translation name/description and a `writesTranslation` flag, carried through `newInstance()`'s own state), and a **single** `configure()` callback reads that state. Test: `Product::factory()->withGallery(2)->named('X')->create()` yields both the two-image gallery and the name `X`, and `withGallery(2)->withoutTranslations()` yields the gallery and zero translations. *Rejected:* an `afterMaking` shim that silently strips `name`/`description` out of `create([...])` attributes so the 20 mechanism-(1) files keep working unedited. It would hide that these are no longer columns, and a forged-attribute test could then pass vacuously.
+**Deviation from `BlogTagFactory`, required.** `BlogTagFactory::named()`/`withoutTranslations()` (lines 40–53) use `newInstance(['afterCreating' => new Collection([...])])`, which **replaces the whole `afterCreating` collection**. `ProductFactory::withGallery()` is itself an `afterCreating` callback, so copying that shape would make `withGallery()->named('X')` or `withGallery()->withoutTranslations()` silently drop the gallery. Instead, the two states change only the translation step. Mechanism (corrected in Phase 2 fourth pass, N-1): factory *state cannot carry the data*, because `Factory::newInstance()` only carries the constructor's fixed arguments, and a closure registered in `configure()` is bound to the instance `new()` built, so later instances can never read their own state. Instead the translation step is an **identifiable callback** (an invokable class or a tagged closure). `named()` rebuilds `afterCreating` by rejecting that callback and appending a new one with the given name/description; `withoutTranslations()` only rejects it; `withGallery()`'s callback survives in any order. Test: `Product::factory()->withGallery(2)->named('X')->create()` yields both the two-image gallery and the name `X`, and `withGallery(2)->withoutTranslations()` yields the gallery and zero translations. *Rejected:* an `afterMaking` shim that silently strips `name`/`description` out of `create([...])` attributes so the 20 mechanism-(1) files keep working unedited. It would hide that these are no longer columns, and a forged-attribute test could then pass vacuously.
 
 ## 5. Dependencies, risks, open technical questions
 
 ### Dependencies
 
-All hard dependencies are **shipped** (`done/`): [0024](done/0024-products-core-crud-backend.md) (products, model, actions, validation trait), [0024a](done/0024a-product-description-html-sanitization.md) (`SanitizeProductDescription`), [0068](done/0068-store-languages-catalog-backend.md) (`store_languages`, the usage registry), [0070](done/0070-translatable-content-mechanism-product-categories-backend.md) (`HasTranslations`, `SetTranslation`, drift guard), [0074](done/0074-translatable-content-retrofit-blog-tags-backend.md) (the backfill, guard and factory shapes copied here), and [0082](done/0082-dashboard-home-overview-backend.md) (the `resolveName()` seam). So `depends_on` is empty.
+All hard dependencies are **shipped** (`done/`): [0024](../done/0024-products-core-crud-backend.md) (products, model, actions, validation trait), [0024a](../done/0024a-product-description-html-sanitization.md) (`SanitizeProductDescription`), [0068](../done/0068-store-languages-catalog-backend.md) (`store_languages`, the usage registry), [0070](../done/0070-translatable-content-mechanism-product-categories-backend.md) (`HasTranslations`, `SetTranslation`, drift guard), [0074](../done/0074-translatable-content-retrofit-blog-tags-backend.md) (the backfill, guard and factory shapes copied here), and [0082](../done/0082-dashboard-home-overview-backend.md) (the `resolveName()` seam). So `depends_on` is empty.
 
-**Dependents:** [0076a](0076a-product-slug-and-seo-fields-backend.md) (slug/SEO; hard) and [0077](0077-product-editor-language-tabs-ui.md) (language tabs; hard, through 0076a). **File-sharing sibling:** [0078](0078-translatable-content-retrofit-blog-posts-backend.md) also appends to `config/store-languages.php` and edits dashboard readers. No new Composer package.
+**Dependents:** [0076a](../0076a-product-slug-and-seo-fields-backend.md) (slug/SEO; hard) and [0077](../0077-product-editor-language-tabs-ui.md) (language tabs; hard, through 0076a). **File-sharing sibling:** [0078](../0078-translatable-content-retrofit-blog-posts-backend.md) also appends to `config/store-languages.php` and edits dashboard readers. No new Composer package.
 
 ### Risks
 
@@ -573,9 +573,9 @@ Removed at the split: the old R-4 (sequencing against unshipped 0024, now moot),
 
 ### Open questions for the product owner
 
-**Q-1 — Moved to [0076a](0076a-product-slug-and-seo-fields-backend.md)** (✅ resolved 2026-08-30 as (a)).
+**Q-1 — Moved to [0076a](../0076a-product-slug-and-seo-fields-backend.md)** (✅ resolved 2026-08-30 as (a)).
 
-**Q-2 — Moved to [0076a](0076a-product-slug-and-seo-fields-backend.md)** (✅ resolved 2026-08-30 as (a), per-language).
+**Q-2 — Moved to [0076a](../0076a-product-slug-and-seo-fields-backend.md)** (✅ resolved 2026-08-30 as (a), per-language).
 
 **Q-3 — Which store language does `order_items.product_name` freeze? ✅ RESOLVED 2026-11-06 as (a): the store default language.** Recorded as **D-21**.
 
@@ -588,14 +588,14 @@ Removed at the split: the old R-4 (sequencing against unshipped 0024, now moot),
 - **(b) Refuse the order line with a validation message** ("this product has no name in the store default language"). This is stricter, but it blocks order work until someone translates the catalog.
 
 ### Inherited open questions — listed, not resolved here
-0070's **Q2** (per-language name uniqueness) is moot here, since Products has no name uniqueness. 0070's **Q3** (which story owns the tabs) is answered by [0077](0077-product-editor-language-tabs-ui.md).
+0070's **Q2** (per-language name uniqueness) is moot here, since Products has no name uniqueness. 0070's **Q3** (which story owns the tabs) is answered by [0077](../0077-product-editor-language-tabs-ui.md).
 
 ## 6. Technical tasks for later backlog creation
 
 None of these are in scope for 0076.
 
-1. **Slug and SEO fields**: [0076a](0076a-product-slug-and-seo-fields-backend.md) (created at the split).
-2. **Non-default-language authoring and the per-entity `SetProductTranslation` action**: [0077](0077-product-editor-language-tabs-ui.md).
+1. **Slug and SEO fields**: [0076a](../0076a-product-slug-and-seo-fields-backend.md) (created at the split).
+2. **Non-default-language authoring and the per-entity `SetProductTranslation` action**: [0077](../0077-product-editor-language-tabs-ui.md).
 3. **A UI-locale to store-language mapping for dashboard readers**: a separate follow-up story, since **Q-4** was resolved as (a) on 2026-11-06. It would activate `GetLowStockProductsTest`'s two `->todo()` tests.
 4. **An optional column list on `scopeWithTranslationsFor()`** (**R-7**), if a future list needs eager loading rather than a join.
 5. **`ModuleRouteAccessTest.php` route coverage**, inherited and unrelated, untouched here.
@@ -604,7 +604,7 @@ None of these are in scope for 0076.
 
 **Phase 1 Three Amigos debate, 2026-08-29** (facilitator `product-owner`; `backend-expert`, `database-expert` and `backend-qa` all returned). The original debate's still-valid contributions are retained above: `database-expert`'s column types, cascade analysis and UUID argument (**D-2**, **D-17**, **D-19**); `backend-qa`'s sanitizer bypass test, never-re-sanitize backfill and no-uniqueness tripwire (**D-8**, **D-9**, **D-4**); and `backend-expert`'s observation that the hook is a pure addition (**D-8**). The original file also recorded a facilitator process failure (composing before two amigos had returned, then being contradicted on **D-16** and **D-18**); that lesson stands and is why this rewrite re-verified every claim against `HEAD`.
 
-**Rewrite, 2026-11-06 (product-owner), after the Phase 2 rejection below.** The slug/SEO half was split into [0076a](0076a-product-slug-and-seo-fields-backend.md). Every signature and line number above was verified against `HEAD` (`app/Models/Product.php`, `app/Actions/Products/{Create,Update}Product.php`, `app/Actions/Blog/BackfillBlogTagTranslations.php`, `database/migrations/2026_10_15_10000{0,1}_*`, `app/Concerns/{HasTranslations,ProductValidationRules}.php`, `app/Actions/Translations/SetTranslation.php`, and the eight reader sites in **D-20**). No application code, migration or test was written.
+**Rewrite, 2026-11-06 (product-owner), after the Phase 2 rejection below.** The slug/SEO half was split into [0076a](../0076a-product-slug-and-seo-fields-backend.md). Every signature and line number above was verified against `HEAD` (`app/Models/Product.php`, `app/Actions/Products/{Create,Update}Product.php`, `app/Actions/Blog/BackfillBlogTagTranslations.php`, `database/migrations/2026_10_15_10000{0,1}_*`, `app/Concerns/{HasTranslations,ProductValidationRules}.php`, `app/Actions/Translations/SetTranslation.php`, and the eight reader sites in **D-20**). No application code, migration or test was written.
 
 ## Review log
 
@@ -615,7 +615,7 @@ Findings (all verified by the reviewer against `HEAD`):
 2. The "neither the parent nor the mechanism exists" callout, R-4 and R-12 were false or stale, because 0024, 0068 and 0070 are shipped. **Fixed:** removed, and signatures re-verified.
 3. The scope fence was false: dropping the columns breaks eight reader sites. **Fixed:** all are now under *Modify* (**D-20**), Q-3 is resolved as (a) (**D-21**), and the old R-1 and backlog items 1–2 are in scope.
 4. The test disposition table was stale (93 files reference products, 56 touch name/description). **Fixed:** the table was re-derived by mechanism against `HEAD`.
-5. The story was too large (slug/SEO). **Decision (project owner): split.** Slug/SEO moved to [0076a](0076a-product-slug-and-seo-fields-backend.md).
+5. The story was too large (slug/SEO). **Decision (project owner): split.** Slug/SEO moved to [0076a](../0076a-product-slug-and-seo-fields-backend.md).
 6. Gherkin scenarios needed a non-default write path that this story does not ship. **Fixed:** they are restated against the default language through `UpdateProduct`, and the rest are pointed at 0077. No `SetProductTranslation` action is invented here.
 7. The `#[Fillable]` and relation figures were wrong. **Fixed:** six fillable columns and five relations (**D-10**).
 8. D-15 was stale (both actions already use transactions). **Fixed:** the write goes inside the existing transactions, and `UpdateProduct` keeps no `attempts:`.
@@ -671,3 +671,14 @@ Non-blocking findings, folded in:
 **Decision:** text fixed. Ready for a fourth Phase 2 run. Not approved, and not moved to `in-progress/`.
 
 **INVEST note (Small).** This story is **large but atomic**. Dropping `products.name`/`description` forces every reader to move in the same change. Splitting further would need an expand/contract migration with dual writes (keep the columns, write both stores, migrate the readers, then drop), which costs more than it saves for a single-tenant admin app with no zero-downtime requirement.
+
+### Phase 2 — INVEST validation (code-reviewer), fourth pass, 2026-11-06: **APPROVED** (2026-11-06, code-reviewer)
+
+No blocking findings. The story is ready for Phase 3 and moves to `in-progress/`.
+
+#### Phase 3 starting notes (non-blocking; they bind the implementer)
+
+- **N-1 (do FIRST): D-22's original factory mechanism cannot work in Laravel.** `Factory::newInstance()` (`vendor/laravel/framework/src/Illuminate/Database/Eloquent/Factories/Factory.php` ~919-933) only carries the constructor's fixed arguments, so a custom property or flag is lost; and a callback registered in `configure()` is a closure bound to the instance `new()` built (~line 216), so later instances returned by `named()` reuse it and can never read their state. Followed literally, `named('X')` is silently ignored and the `withGallery(2)->named('X')` test fails (the test and the intent are correct). Workable mechanism: make the translation step an identifiable callback (invokable class or tagged closure); `named()` rebuilds `afterCreating` by rejecting that callback and appending a new one with the given name/description; `withoutTranslations()` only rejects it; `withGallery()`'s callback survives in any order. D-22's wording has been replaced accordingly.
+- **N-2:** for the update-atomicity test use the FIXED collision (an existing product whose sku is `0009-M`; the in-transaction pre-check `UpdateProduct.php` ~290-311 throws `ValidationException` `parent_sku_change_collides` after `SetTranslation`), not the F-6 `DB::listen` race. Assert the caught exception's type and message as F-6 does (`ProductVariantSkuUniquenessTest.php` ~707-709). Change `price` in the call too, so "price unchanged" proves something.
+- **N-3:** `snapshotName()` step 2: the unfiltered re-query must look for the default-language row with a non-blank name before falling back to the oldest non-blank translation (guards against a stale or custom-`with()` filtered relation). D-21 now says so.
+- **N-4:** text aligned after the D-21 edit: the filtered-relation test now reads "never returns a wrong name because the relation was filtered" (product with only FR (older) and DE rows and no default row, loaded through `withTranslationsFor(DE)`, must freeze FR); the acceptance criterion and the zero-translations test now say "oldest non-blank" and `LogicException` for no usable name (includes all-blank names).

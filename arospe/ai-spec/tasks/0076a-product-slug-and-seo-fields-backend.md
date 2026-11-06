@@ -1,7 +1,7 @@
 # [0076a] Product slug and SEO fields — per-store-language (backend)
 
 ## Description
-Adds the product **slug** and **SEO meta fields** (`slug`, `meta_title`, `meta_description`) to the per-store-language `product_translations` table that [0076](0076-translatable-content-retrofit-products-backend.md) creates ([PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization); [assumption 14](../../docs/PRD/sections/foundations.md#assumptions--confirmed-decisions) names *"slug/SEO fields … on products"* as translatable content). It covers the columns, their validation rules, the `CreateProduct`/`UpdateProduct` signature widening, slug canonicalisation in two layers, per-language slug uniqueness, and a 1062 race catch that is disambiguated by index name.
+Adds the product **slug** and **SEO meta fields** (`slug`, `meta_title`, `meta_description`) to the per-store-language `product_translations` table that [0076](in-progress/0076-translatable-content-retrofit-products-backend.md) creates ([PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization); [assumption 14](../../docs/PRD/sections/foundations.md#assumptions--confirmed-decisions) names *"slug/SEO fields … on products"* as translatable content). It covers the columns, their validation rules, the `CreateProduct`/`UpdateProduct` signature widening, slug canonicalisation in two layers, per-language slug uniqueness, and a 1062 race catch that is disambiguated by index name.
 
 **Origin.** This story was split out of 0076 on 2026-11-06 (project owner's decision after 0076's Phase 2 rejection; see that file's review log). The text below reuses 0076's original Phase 1 debate (2026-08-29) where it is still valid. Its decision numbers keep 0076's original ones (**D-5**, **D-6**, **D-18**) so that [0077](0077-product-editor-language-tabs-ui.md)'s references still resolve. New decisions start at **D-30**.
 
@@ -241,7 +241,7 @@ Each `product_translations` row can carry a slug, a meta title and a meta descri
 ## 5. Dependencies, risks, open technical questions
 
 ### Dependencies
-- **[0076](0076-translatable-content-retrofit-products-backend.md)**: hard. It supplies `product_translations`, `ProductTranslation` and its `saving` hook, the default-language write in both actions, and the editor's raw-row read.
+- **[0076](in-progress/0076-translatable-content-retrofit-products-backend.md)**: hard. It supplies `product_translations`, `ProductTranslation` and its `saving` hook, the default-language write in both actions, and the editor's raw-row read.
 - Shipped: [0024](done/0024-products-core-crud-backend.md) (the actions and their 1062 catches), [0070](done/0070-translatable-content-mechanism-product-categories-backend.md) (`SetTranslation`), [0068](done/0068-store-languages-catalog-backend.md).
 - **Dependents:** [0077](0077-product-editor-language-tabs-ui.md) (hard: rule methods, widened signatures).
 - **File-sharing:** [0087](0087-translation-write-actions-refuse-inactive-store-language.md) also edits `lang/{en,es}/products.php`.
@@ -267,7 +267,7 @@ Each `product_translations` row can carry a slug, a meta title and a meta descri
 2. Move `TranslateProductVariantUniqueViolation`'s internal `getMessage()` match to the anchored `errorInfo[2]` rule the next time that file is touched (per the security doc).
 
 ## Provenance
-Split from [0076](0076-translatable-content-retrofit-products-backend.md) on 2026-11-06 by `product-owner`, at the project owner's decision after 0076's Phase 2 rejection (its findings 5, 9, 10 and 12 land here). **D-5**, **D-6**, **D-9b**, **D-18**, **R-5**, **R-14**, **Q-1** and **Q-2** are carried from 0076's Phase 1 debate (2026-08-29: `backend-expert`, `database-expert`, `backend-qa`), and were re-verified against `HEAD` on 2026-11-06 (`CreateProduct`'s blanket 1062 catch, `UpdateProduct`'s `getMessage()` matching, and the trait's `product*Rules()` naming). **D-30** to **D-33**, **R-20**, **R-21** and **Q-3** are new at the split. No Three Amigos re-run was performed for the new decisions, so Phase 2 should weigh them accordingly.
+Split from [0076](in-progress/0076-translatable-content-retrofit-products-backend.md) on 2026-11-06 by `product-owner`, at the project owner's decision after 0076's Phase 2 rejection (its findings 5, 9, 10 and 12 land here). **D-5**, **D-6**, **D-9b**, **D-18**, **R-5**, **R-14**, **Q-1** and **Q-2** are carried from 0076's Phase 1 debate (2026-08-29: `backend-expert`, `database-expert`, `backend-qa`), and were re-verified against `HEAD` on 2026-11-06 (`CreateProduct`'s blanket 1062 catch, `UpdateProduct`'s `getMessage()` matching, and the trait's `product*Rules()` naming). **D-30** to **D-33**, **R-20**, **R-21** and **Q-3** are new at the split. No Three Amigos re-run was performed for the new decisions, so Phase 2 should weigh them accordingly.
 
 ## Review log
 - Phase 1 (split), 2026-11-06: created. **Awaiting Phase 2** (not run).
