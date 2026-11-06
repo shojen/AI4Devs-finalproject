@@ -67,7 +67,8 @@ class ProductFactory extends Factory
     }
 
     /**
-     * Create the parent row and no translation (and no default StoreLanguage).
+     * Create the parent row and no product translation. The category that `definition()` creates still
+     * brings its own default StoreLanguage unless that category is also created `withoutTranslations()`.
      */
     public function withoutTranslations(): static
     {

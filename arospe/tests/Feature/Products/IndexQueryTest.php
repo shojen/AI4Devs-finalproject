@@ -1,14 +1,12 @@
 <?php
 
-// The list query's own shape -- a named risk per the story's D-4, split into its own file. WRITTEN
-// AGAINST THE ORIGINAL (pre-0076) query shape, which is still what runs today: an explicit-column
-// select() naming `products.name` directly, `orderBy('name')->orderBy('id')`, and two eager loads
+// The list query's own shape -- a named risk per the story's D-4, split into its own file. Since
+// story 0076 the list orders through `orderByTranslatedName()` (qualified `products.*` columns and a
+// `products.id` tie-breaker) and reads the name from the joined `translated_name` alias, because
+// `products` no longer carries `name` or `description`. Two eager loads remain
 // (`category:id` -- narrowed from `category:id,name` by story 0070's D-15, since
 // `product_categories` no longer carries a `name` column -- and
-// `featuredImage:id,title,path,webp_path,avif_path`). The 0076 correction that replaces
-// `orderBy('name')` with `orderByTranslatedName()` does not apply -- 0076 is not built.
-//
-// Written at TDD Phase 3 step 1 (red), before App\Livewire\Products\Index exists.
+// `featuredImage:id,title,path,webp_path,avif_path`).
 
 use App\Livewire\Products\Index;
 use App\Models\Media;

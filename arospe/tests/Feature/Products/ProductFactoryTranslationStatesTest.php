@@ -76,7 +76,8 @@ test('withGallery(2)->withoutTranslations() and the reverse yield the gallery an
 });
 
 test('forging name or description as a create() attribute fails loudly because they are no longer columns', function () {
-    expect(fn () => Product::factory()->create(['name' => 'Forjado']))->toThrow(QueryException::class);
+    expect(fn () => Product::factory()->create(['name' => 'Forjado']))
+        ->toThrow(fn (QueryException $exception) => expect($exception->errorInfo[1])->toBe(1054));
 });
 
 test('ProductTranslation::factory()->forLanguage() binds the row to that language', function () {
