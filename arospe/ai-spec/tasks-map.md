@@ -18,6 +18,18 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-11-06): `0076` split after its Phase 2 rejection; new pending file `0076a-product-slug-and-seo-fields-backend.md`.** The project owner decided to split `0076`: it keeps `name`/`description` and every live reader of them, and the slug/SEO fields move to `0076a`. That story is numbered with a suffix rather than `0088` so that it sorts below its dependent `0077`, per the task ordering rule. Graph changes:
+- New node `P0076a` in the yellow `pending` class (`blocked` on `0076`).
+- The edge `P0076 --> P0077` is replaced by `P0076 --> P0076a --> P0077`. `0077`'s own Dependencies section now names both, so its `depends_on` is `["0076", "0076a"]`.
+- `P0076` moves to the blue `claimed` class (its live claim by `worktree-0076-…` was already in `tasks-status.json` and is carried forward unchanged).
+
+`tasks-status.json` changes:
+- `0076`'s `touches` are widened to the real write set (the Livewire, order, dashboard and factory readers).
+- `0076a` lists `conflict_risk_with: ["0087"]` and `0087` lists it back (both edit `lang/{en,es}/products.php`).
+- `0077`↔`0087` is added for the same file.
+
+Link check: every relative link in `0076`, `0076a` and the edited `0077` line resolves. No file moved, so there are no inbound links to repoint.
+
 **This pass is story 0081's closure (Demo data seeder command, standalone, no PRD epic).** Its
 task file moved `ai-spec/tasks/in-progress/` -> `ai-spec/tasks/done/`, its `tasks-status.json`
 entry was deleted, its node and its `claimed` class membership were removed from the graph, and it
@@ -495,19 +507,18 @@ appears as a node in the dependency graph below:
   0084 — Order mark as paid (backend), closed 2026-10-02: adds `MarkOrderAsPaid` and the `order_payments` table; its one
   dependent, 0085, drops it and moves to `ready`.
 
-### Pending — not started (10 numbered + 1 infra doc)
+### Pending — not started (6 numbered + 1 infra doc)
+
+Re-derived 2026-11-06 from the files actually present in `ai-spec/tasks/`. The earlier table still listed `0072`, `0074`, `0084` and `0085`, all of which are in `done/`.
 
 | ID | Title | Epic area |
 | --- | --- | --- |
-| 0072 | Translatable content retrofit — Blog Categories backend | Epic 5 — i18n |
-| 0074 | Translatable content retrofit — Blog Tags backend | Epic 5 — i18n |
-| 0087 | Translation write actions refuse an inactive store language | Epic 5 — i18n |
-| 0076 | Translatable content retrofit — Products backend | Epic 5 — i18n |
+| 0076 | Translatable content retrofit — Products backend (claimed; Phase 2 re-run pending after the split) | Epic 5 — i18n |
+| 0076a | Product slug and SEO fields — per-store-language (backend) | Epic 5 — i18n |
 | 0077 | Product editor — language tabs (UI) | Epic 5 — i18n |
 | 0078 | Translatable content retrofit — Blog Posts backend | Epic 5 — i18n |
 | 0079 | Blog post editor — language tabs (frontend) | Epic 5 — i18n |
-| 0084 | Order — mark as paid manually (backend) | Standalone (Epic 3 follow-up) |
-| 0085 | Orders — "Mark as paid" control in the orders list and the order detail (frontend) | Standalone (Epic 3 follow-up) |
+| 0087 | Translation write actions refuse an inactive store language | Epic 5 — i18n |
 | _(no number)_ | Infrastructure fix: no test suite can open a database connection (local fresh setup or CI) — **status: already fixed and documented**, kept out of the numbering and out of the dependency graph below | Infrastructure |
 
 ## Dependency graph (pending tasks only)
@@ -542,6 +553,7 @@ flowchart LR
         direction TB
         P0087["0087 Refuse inactive language in translation write actions"]
         P0076["0076 Products retrofit BE"]
+        P0076a["0076a Product slug + SEO BE"]
         P0077["0077 Product editor i18n UI"]
         P0078["0078 Blog Posts retrofit BE"]
         P0079["0079 Blog post editor i18n UI"]
@@ -610,16 +622,22 @@ flowchart LR
     %% (P0067 -.-> P0069 dropped: 0067 closed to done/ 2026-10-02, the fourth Epic 5 story to close; its node and the conflict edge are removed.)
     %% (P0072 --> P0073 dropped: 0072 closed to done/ 2026-10-07; 0073 is now ready.)
     %% (P0074 --> P0075 dropped: 0074 closed to done/ 2026-10-15; 0075 is now ready.)
+    P0076 --> P0076a
+    P0076a --> P0077
+    %% (P0076 --> P0077 is kept as a direct hard edge too: 0077 consumes 0076's table and scope.)
     P0076 --> P0077
+    P0076a -.-> P0087
     P0078 --> P0079
     P0077 -.-> P0079
     %% (P0082 --> P0083 and P0082 -.-> P0076/P0078 dropped: 0082 is done; 0083 is now ready.)
     %% (P0084 --> P0085 dropped: 0084 is done; 0085 is done too.)
     %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
-    class P0077,P0079 pending;
-    class P0076,P0078,P0087 ready;
+    class P0076a,P0077,P0079 pending;
+    class P0078,P0087 ready;
+    class P0076 claimed;
     P0087 -.-> P0079
+    P0087 -.-> P0077
     %% (P0075 closed to done/ 2026-10-27; P0073 closed to done/ 2026-10-08; no node remains `claimed`.)
     %% (P0071 --> P0073/P0075/P0079 dropped: 0071 closed to done/ 2026-10-07.)
 ```
@@ -627,7 +645,7 @@ flowchart LR
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(no `claimed` node remains in this snapshot; `0067`, the prior sole `claimed` node, closed to
+(as of 2026-11-06 `0076` is the one `claimed` node, held by `worktree-0076-…`; earlier: `0067`, the prior sole `claimed` node, closed to
 `done/` this pass — see the update at the top of this file; `0066` and `0070`, the `claimed` nodes
 before that, both closed to `done/` in an earlier pass, on separate branches reconciled together
 here); yellow (`pending`) = still blocked on at least one open pending dependency.
