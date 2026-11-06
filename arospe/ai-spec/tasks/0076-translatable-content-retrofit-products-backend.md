@@ -271,7 +271,7 @@ Feature: Per-store-language product content
 
 ### Modify
 
-- **`app/Models/Product.php`**: `use HasTranslations;` plus `translationModel(): string { return ProductTranslation::class; }`.
+- **`app/Models/Product.php`**: `class Product extends Model implements Translatable` (`App\Concerns\Translatable`), `use HasTranslations;`, plus `translationModel(): string { return ProductTranslation::class; }`. The interface is required, not optional: `SetTranslation::__invoke()` type-hints `Model&Translatable` (`SetTranslation.php:34`), and `ProductCategory`, `BlogCategory` and `BlogTag` all implement it. Without it, both actions fail Larastan level 7, which is a DoD gate.
   - `#[Fillable]` goes from `['name', 'sku', 'product_category_id', 'type', 'status', 'price', 'stock', 'description']` to **`['sku', 'product_category_id', 'type', 'status', 'price', 'stock']`**, which is **six** columns (**D-10**). `featured_media_id` was never fillable and stays that way.
   - The `@property` block loses `$name` and `$description` and gains `@property-read Collection<int, ProductTranslation> $translations`.
   - `casts()`, `isOutOfStock()`, `displayStatus()` and the **five** existing relations (`category`, `featuredImage`, `gallery`, `salesRegions`, `variants`) are unchanged. The trait adds a sixth, `translations()`.
@@ -293,8 +293,8 @@ Feature: Per-store-language product content
 - **`app/Livewire/Orders/Show.php`**: `productOptions()` replaces `->orderBy('name')->orderBy('id')->…->get(['id', 'name', 'sku'])` with `->select(['products.id', 'products.sku'])->orderByTranslatedName()->orderBy('products.id')->…->get()`, and reads `getAttribute('translated_name') ?? '—'`. Both the `select` and the `orderBy` must be qualified: after the scope's join, a bare `id` is ambiguous, and Laravel ignores `get([...])`'s column list once columns are already set. The ordering must happen in SQL, not in PHP after the fetch, because the query is capped at `PRODUCT_PICKER_LIMIT` and sorting after the limit would change *which* products are offered.
 - **`app/Actions/Orders/CreateOrder.php`** (line ~245) and **`app/Actions/Orders/AddOrderItem.php`** (line ~173): `'product_name' => $product->snapshotName()` (**D-21**). `CreateOrder` resolves its products in one bulk `Product::query()->findOrFail($productIds)` (line ~176), and that query gains `->with('translations')` (the **full** relation) so `snapshotName()` causes no N+1. `AddOrderItem` loads one product, so `snapshotName()`'s lazy load is a single query.
 - **`database/factories/OrderItemFactory.php`** (line ~85): `$orderItem->product_name = $product->snapshotName();`.
-- **`app/Actions/Dashboard/GetLowStockProducts.php`**: the private `resolveName()` seam (line ~107) returns `$product->translated('name')`, the query eager-loads through `withTranslationsFor()` (the result set is bounded by the action's own limit), and the row's `name` becomes nullable as its docblock already anticipates. It resolves the **store default language** (**Q-4** resolved as (a) on 2026-11-06).
-- **`database/factories/ProductFactory.php`**: `definition()` loses `name` (line 39) and `description` (line 45). Following the **shipped `BlogTagFactory` shape**, `configure()` adds an `afterCreating` that writes the default-language translation (creating a default `StoreLanguage` if none exists). New states: `named(string $name, ?string $description = null)` for tests that need specific content, and `withoutTranslations()` (**D-22**).
+- **`app/Actions/Dashboard/GetLowStockProducts.php`**: the private `resolveName()` seam (line ~107) returns `$product->translated('name')`, and its return type changes from `string` to **`?string`**; the query eager-loads through `withTranslationsFor()` (the result set is bounded by the action's own limit), and the row's `name` becomes nullable as its docblock already anticipates. It resolves the **store default language** (**Q-4** resolved as (a) on 2026-11-06).
+- **`database/factories/ProductFactory.php`**: `definition()` loses `name` (line 39) and `description` (line 45). Following the **shipped `BlogTagFactory` shape**, `configure()` adds an `afterCreating` that writes the default-language translation (creating a default `StoreLanguage` if none exists). New states: `named(string $name, ?string $description = null)` for tests that need specific content, and `withoutTranslations()`. Both change **only the translation step**, never the other `afterCreating` callbacks, so `withGallery()` (line ~121, itself an `afterCreating` callback) survives in any order (**D-22**).
 - **`config/store-languages.php`**: append `['table' => 'product_translations', 'column' => 'store_language_id'],`. That is the entire diff (0068 **D8**).
 - **The test files in the disposition table below.**
 
@@ -314,7 +314,7 @@ Feature: Per-store-language product content
 | --- | --- |
 | 1. Create `<entity>_translations` with the FK pair, the natural-key unique, and optionally a unique on the formerly-unique field | FK pair and natural key applied. There is **no candidate** for the optional unique (**D-4**). |
 | 2. Create `<Entity>Translation` with `HasFactory, HasUuids` and a translatable-fields-only `#[Fillable]` | Applied. It has one `saving` hook (the sanitizer, **D-8**), which is not a fold. |
-| 3. On the parent: `use HasTranslations;` + `translationModel()`; drop translated columns from `#[Fillable]` | Applied, but the parent keeps **six** fillable columns (**D-10**). |
+| 3. On the parent: `use HasTranslations;` + `translationModel()`; drop translated columns from `#[Fillable]` | Applied, plus `implements Translatable`, which `SetTranslation`'s `Model&Translatable` type-hint requires. The parent keeps **six** fillable columns (**D-10**). |
 | 4. Re-scope `<Noun>ValidationRules` uniqueness by `store_language_id` | **Not applied, deliberately**: there is no uniqueness on `name` (**D-4**). |
 | 5. Reuse `SetTranslation` unmodified | Applied. |
 | 6. Append exactly one `{table, column}` literal to `config/store-languages.php` | Applied. 0070's drift guard picks up `product_translations` through the `*_translations` suffix, so **do not rename the table**. |
@@ -345,13 +345,18 @@ Feature and Unit tests. The existing browser tests that seed product names are *
 - [ ] Feature: a whitespace-only name is refused before any write (`products` and `product_translations` unchanged).
 - [ ] Feature: with **no default store language**, both actions throw `RuntimeException` **after** authorization and write nothing.
 - [ ] Feature: two products with byte-identical names in the same language both save (**D-4** tripwire).
+- [ ] Feature: a catalog administrator holding `products.edit` and **no** `store-languages.*` permission updates a product's title through `UpdateProduct`, and the default-language translation is updated (Gherkin: *"A catalog administrator needs no store-language permission to change a product's title"*; **D-16**).
+- [ ] **Triage note for Phase 3.** The default-language guard in `CreateProduct`/`UpdateProduct` runs **before** `validate()`. Most existing action tests pass only because their payload helpers call `ProductCategory::factory()->create()`, which creates a default `StoreLanguage` (`ProductCategoryFactory.php:78`). A test that builds its fixtures through `withoutTranslations()` (or otherwise without a default language) and expects a `ValidationException` will now get a `RuntimeException`. Fix the fixture, not the order of the checks.
 - [ ] Unit: `productNameRules()` still carries no uniqueness rule.
 
 ### Atomicity (D-15), rescoped to the existing transactions
 - [ ] Feature (create): a test-registered `ProductTranslation::saving` listener that throws makes `CreateProduct` leave **zero** rows in `products`, `product_translations` **and** `product_media`, all asserted in one block.
 - [ ] Feature (create): a failure inside `SyncProductGallery` (a media row deleted between validation and the pivot insert) leaves **zero** `product_translations` rows as well as zero products.
 - [ ] Feature (update): a failing translation write rolls back the parent `update()` (the `sku`/`price` change is not persisted).
-- [ ] Feature (update): a failure injected **after** `reDeriveVariantSkus()` (for example a throwing `ProductVariant::saved` listener on the last variant) rolls back the translation row too. Because `SetTranslation` runs before the re-derivation, only a failure that comes *later* proves the translation write is not committed early.
+- [ ] Feature (update): a `reDeriveVariantSkus()` failure rolls back the translation row too. Because `SetTranslation` runs *before* the re-derivation, only a failure that comes later proves the translation write is not committed early.
+  - **Setup:** reuse the setup of `ProductVariantSkuUniquenessTest`'s *"F-6: a variant-cascade collision surfaces via the parent_sku_change_collides message…"* test (lines ~662–716, whose line ~716 asserts that the whole update rolled back). Change the product's SKU **and** its name in one `UpdateProduct` call, arranged so a re-derived variant SKU collides with another product's SKU. `reDeriveVariantSkus()` then throws a `ValidationException` after `SetTranslation` has already run.
+  - **Assert:** the default-language translation row (name and description) is unchanged, and so are the parent's `sku` and `price`.
+  - **Why this route:** a model-event listener cannot be used. `reDeriveVariantSkus()` writes through `DB::table('product_variants')->update()` (`UpdateProduct.php:320`), which fires no model event, and it runs only when the SKU changes.
 - [ ] Feature: a `ValidationException` is raised before the transaction opens (no rows, no savepoint).
 - [ ] **Not added:** a test that `attempts: 3` retries the translation write. That retry behaviour is shipped and tested by 0024/0029. The only new obligation is that the translation write sits **inside** that closure, and the rollback tests above prove it.
 
@@ -427,7 +432,7 @@ Feature and Unit tests. The existing browser tests that seed product names are *
 - [ ] `Product`'s `#[Fillable]` is exactly `['sku', 'product_category_id', 'type', 'status', 'price', 'stock']` (**D-10**).
 - [ ] `CreateProduct`/`UpdateProduct` signatures are byte-identical to `HEAD`. Each calls `SetTranslation` **below** its `LogRefusedPrivilegedAttempt::authorize()` first statement and **inside** its existing `DB::transaction()`. `CreateProduct` keeps `attempts: 3` and `UpdateProduct` keeps no `attempts:`. A failure anywhere in the transaction leaves no partial write (**D-15**, **D-16**).
 - [ ] Every live reader of the dropped columns at `HEAD` is migrated (`Products\Index`, `Products\Editor`, `Orders\Show`, `CreateOrder`, `AddOrderItem`, `OrderItemFactory`, `GetLowStockProducts`, `ProductFactory`), Two checks confirm it:
-  - `grep -rnE "product->(name|description)" app database` finds nothing.
+  - `grep -rnE "(product|target)->(name|description)" app database` finds nothing. The `target` alternative covers `Products\Index::confirmDelete()`'s `$target->name` (line 84).
   - `grep -nE "'name'|orderBy\('name'\)" app/Livewire/Products/Index.php app/Livewire/Products/Editor.php app/Livewire/Orders/Show.php app/Actions/Orders/CreateOrder.php app/Actions/Orders/AddOrderItem.php app/Actions/Dashboard/GetLowStockProducts.php database/factories/ProductFactory.php database/factories/OrderItemFactory.php` (the eight **D-20** files only) leaves no hit that reads a **product** column.
 
   An unscoped `orderBy('name')` grep would match about 20 unrelated models (**D-20**).
@@ -531,14 +536,18 @@ Read rules:
 
 The minimal migration changes no screen's behaviour while the default language is unchanged. The earlier draft's claim that this story "ships no screen and touches no Livewire file" was false and is withdrawn, along with its R-1 hand-off.
 
-**D-21 — `order_items.product_name` freezes the store default language's name (Q-3 resolved as (a), project owner, 2026-11-06).** The default language is the one guaranteed to exist for every product written through the actions, and an order denominated consistently is easier to reconcile. One seam serves all three writers (`CreateOrder`, `AddOrderItem`, `OrderItemFactory`): `Product::snapshotName(): string`. It reads the **full** `translations` relation: it lazy-loads the relation when it is not loaded and **never** trusts a relation filtered by `withTranslationsFor()`. To be safe, it re-queries, or loads unfiltered, whenever the loaded relation might be filtered; Phase 3 picks the mechanism, and a test pins it. It returns:
-1. the default-language row's non-blank `name`;
-2. otherwise, the oldest stored translation's name, ordered by `created_at` then `id` (**Q-5** resolved as (a), 2026-11-06);
-3. otherwise, for a product with **zero** translations (reachable only through `factory()->withoutTranslations()` or raw writes), it throws `LogicException`. The user delegated this edge to the recommended option on 2026-11-06.
+**D-21 — `order_items.product_name` freezes the store default language's name (Q-3 resolved as (a), project owner, 2026-11-06).** The default language is the one guaranteed to exist for every product written through the actions, and an order denominated consistently is easier to reconcile. One seam serves all three writers (`CreateOrder`, `AddOrderItem`, `OrderItemFactory`): `Product::snapshotName(): string`. **Mechanism.** `scopeWithTranslationsFor()` always includes the default-language id (`HasTranslations.php`), so any loaded relation, filtered or not, contains the default row whenever one exists. Steps:
+1. Read the loaded (or lazily loaded) `translations` relation. If it holds the default-language row with a **non-blank** `name`, return it. This is the common path: **no extra query**.
+2. Otherwise, re-query `translations()` **unfiltered** and return the oldest translation **with a non-blank `name`**, ordered by `created_at` then `id` (**Q-5** resolved as (a), 2026-11-06). `''` can be stored, as the D-3 mirror test does, and is skipped.
+3. Otherwise, when the product has **no usable name** (zero translations, or only blank names; reachable only through `factory()->withoutTranslations()` or raw writes), throw `LogicException`. The user delegated this edge to the recommended option on 2026-11-06.
+
+Tests pin both the filtered-relation case and the no-usable-name case.
 
 The column is `NOT NULL`, so the seam never returns `null`. `CreateOrder` eager-loads `translations` (the full relation) on its bulk `findOrFail($productIds)` collection to avoid N+1 queries.
 
-**D-22 — The factory follows the shipped `BlogTagFactory` shape.** `definition()` holds only parent columns. `configure()`'s `afterCreating` writes a default-language translation (creating a default `StoreLanguage` if none exists), so every `Product::factory()->create()` keeps producing a named product. `named(string $name, ?string $description = null)` supplies specific content, and `withoutTranslations()` creates a bare parent for the guard and fallback tests. *Rejected:* an `afterMaking` shim that silently strips `name`/`description` out of `create([...])` attributes so the 20 mechanism-(1) files keep working unedited. It would hide that these are no longer columns, and a forged-attribute test could then pass vacuously.
+**D-22 — The factory follows the shipped `BlogTagFactory` shape.** `definition()` holds only parent columns. `configure()`'s `afterCreating` writes a default-language translation (creating a default `StoreLanguage` if none exists), so every `Product::factory()->create()` keeps producing a named product. `named(string $name, ?string $description = null)` supplies specific content, and `withoutTranslations()` creates a bare parent for the guard and fallback tests.
+
+**Deviation from `BlogTagFactory`, required.** `BlogTagFactory::named()`/`withoutTranslations()` (lines 40–53) use `newInstance(['afterCreating' => new Collection([...])])`, which **replaces the whole `afterCreating` collection**. `ProductFactory::withGallery()` is itself an `afterCreating` callback, so copying that shape would make `withGallery()->named('X')` or `withGallery()->withoutTranslations()` silently drop the gallery. Instead, the two states change only the translation step. They set factory state (for example a translation name/description and a `writesTranslation` flag, carried through `newInstance()`'s own state), and a **single** `configure()` callback reads that state. Test: `Product::factory()->withGallery(2)->named('X')->create()` yields both the two-image gallery and the name `X`, and `withGallery(2)->withoutTranslations()` yields the gallery and zero translations. *Rejected:* an `afterMaking` shim that silently strips `name`/`description` out of `create([...])` attributes so the 20 mechanism-(1) files keep working unedited. It would hide that these are no longer columns, and a forged-attribute test could then pass vacuously.
 
 ## 5. Dependencies, risks, open technical questions
 
@@ -623,7 +632,7 @@ Findings (all verified by the reviewer against `HEAD`):
 Findings (all verified by the reviewer against `HEAD`), each followed by its fix:
 1. "`ProductSkuUniquenessTest` passes unmodified" was false, because its line 99 raw-inserts `'name'`. **Fixed:** D-7, the disposition table, *Deliberately NOT tested* and the regression line now say that only the raw-insert column list loses `name` and no assertion changes.
 2. The raw `DB::table('products')->insert(['name' => …])` breakage was missing. **Fixed:** it is now mechanism (5), listing its five files. The two `toThrow` tests must assert the specific error code: 1452 for the FK case, and 1364/1048 for the NOT NULL case.
-3. The disposition counts were wrong: eight mechanism-(1) files use `'name'` only for `ProductAttributeType`, and `GetLowStockProductsTest` is not unchanged. **Fixed:** mechanism (1) now has 19 files, `GetLowStockProductsTest` is under (1) and (2), `OrderModelTest` was verified to need no change, and the totals are corrected wherever they repeat (the table and **R-1**).
+3. The disposition counts were wrong: eight mechanism-(1) files use `'name'` only for `ProductAttributeType`, and `GetLowStockProductsTest` is not unchanged. **Fixed:** mechanism (1) now has 20 files (the reviewer's 19 plus `GetLowStockProductsTest`'s helper), `GetLowStockProductsTest` is under (1) and (2), `OrderModelTest` was verified to need no change, and the totals are corrected wherever they repeat (the table and **R-1**).
 4. D-14's SQL details were incomplete. **Fixed:** the scope selects `products.*` when no columns are set and otherwise uses `addSelect`; `Orders\Show` uses a qualified `select`/`orderBy`; the `COALESCE` uses `NULLIF(…, '')`; and `NULL` names sort first.
 5. The D-16 architecture-guard claim was false. **Fixed:** the claim is corrected, and two `arch()` tests (`App\Livewire\Products`, `App\Livewire\Orders`) are added.
 6. The permission catalog is 43, not 42. **Fixed:** "unchanged at 43" (the 42 figure is the Administrator grant).
@@ -633,7 +642,7 @@ Findings (all verified by the reviewer against `HEAD`), each followed by its fix
 
 Non-blocking findings, folded in:
 - (i) The INVEST note now reads "large but atomic".
-- (ii) The update-atomicity test injects its failure after `reDeriveVariantSkus()`.
+- (ii) The update-atomicity test injects its failure after `reDeriveVariantSkus()`. *(Superseded in the third pass: the listener route does not work, see below.)*
 - (iii) The natural key is named `product_translations_product_language_unique`.
 - (iv) The drop-guard test requires the migration file and calls `up()`.
 - (v) `translated_name` is read through `getAttribute()`.
@@ -642,5 +651,23 @@ Non-blocking findings, folded in:
 - (viii) The Editor docblock at lines 41–42 is refreshed.
 
 **Decision:** text fixed. Ready for a third Phase 2 run. Not approved, and not moved to `in-progress/`.
+
+### Phase 2 — INVEST validation (code-reviewer), third pass, 2026-11-06: **REJECTED** (three small text fixes; the rest was re-verified at `HEAD`)
+
+Blocking findings, each followed by its fix:
+1. The update-atomicity test relied on a `ProductVariant::saved` listener that can never fire (`reDeriveVariantSkus()` writes with `DB::table()->update()`, `UpdateProduct.php:320`, and runs only when the SKU changes). **Fixed:** the test now changes the SKU so that a re-derived variant SKU collides with another product's SKU, reusing the F-6 setup in `ProductVariantSkuUniquenessTest` (lines ~662–716). It asserts that the translation row and the parent's `sku`/`price` are unchanged.
+2. `Product` must implement `App\Concerns\Translatable` (`SetTranslation` type-hints `Model&Translatable`). **Fixed:** added to the `Product.php` Modify bullet and to recipe step 3.
+3. Copying `BlogTagFactory`'s `newInstance(['afterCreating' => …])` would drop `withGallery()`. **Fixed:** D-22 and the factory bullet say the states change only the translation step, through factory state read by a single `configure()` callback. A `withGallery(2)->named('X')` test is added.
+
+Non-blocking findings, folded in:
+- The second-pass log now says 20 files in mechanism (1), not 19.
+- D-21's step 2 now takes the oldest translation with a non-blank name, and step 3 explicitly names the no-usable-name case as the `LogicException` rule.
+- The `snapshotName()` mechanism is stated: it uses the loaded default row when present, otherwise one unfiltered re-query, and never queries again in the common path.
+- The acceptance grep gains `target->(name|description)`.
+- A Tests-to-perform bullet is added for the no-store-language-permission scenario.
+- The triage note on `RuntimeException` versus `ValidationException` (`ProductCategoryFactory.php:78`) is added.
+- `GetLowStockProducts::resolveName()` is now typed `?string`.
+
+**Decision:** text fixed. Ready for a fourth Phase 2 run. Not approved, and not moved to `in-progress/`.
 
 **INVEST note (Small).** This story is **large but atomic**. Dropping `products.name`/`description` forces every reader to move in the same change. Splitting further would need an expand/contract migration with dual writes (keep the columns, write both stores, migrate the readers, then drop), which costs more than it saves for a single-tenant admin app with no zero-downtime requirement.
