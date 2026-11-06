@@ -7,9 +7,9 @@
       "slug": "0076-translatable-content-retrofit-products-backend",
       "title": "Translatable content retrofit — Products backend",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree-0076-translatable-content-retrofit-products-backend",
+      "claimed_at": "2026-11-06T13:17:02+01:00",
       "touches": [
         "database/migrations/*_create_product_translations_table.php",
         "database/migrations/*_drop_name_from_products_table.php",
