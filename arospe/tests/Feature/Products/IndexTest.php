@@ -96,8 +96,7 @@ test('the list renders every product with its name, sku, price and stock', funct
     $actor = productsIndexFullActor();
     $this->actingAs($actor);
 
-    $product = Product::factory()->create([
-        'name' => 'Zapatillas Runner Pro',
+    $product = Product::factory()->named('Zapatillas Runner Pro')->create([
         'sku' => 'RNR-001',
         'price' => '119.95',
         'stock' => 42,
@@ -116,9 +115,9 @@ test('ordering is deterministic and asserted as an exact sequence, never toConta
     $actor = productsIndexFullActor();
     $this->actingAs($actor);
 
-    Product::factory()->create(['name' => 'Zapatillas']);
-    Product::factory()->create(['name' => 'Abrigos']);
-    Product::factory()->create(['name' => 'Mochilas']);
+    Product::factory()->named('Zapatillas')->create();
+    Product::factory()->named('Abrigos')->create();
+    Product::factory()->named('Mochilas')->create();
 
     $names = collect(Livewire::test(Index::class)->get('products')->items())
         ->pluck('name')
@@ -135,7 +134,7 @@ test('confirmDelete() populates deletingProductName from the database, not from 
     $actor = productsIndexFullActor();
     $this->actingAs($actor);
 
-    $product = Product::factory()->create(['name' => 'Runner Pro']);
+    $product = Product::factory()->named('Runner Pro')->create();
 
     Livewire::test(Index::class)
         ->call('confirmDelete', $product->id)

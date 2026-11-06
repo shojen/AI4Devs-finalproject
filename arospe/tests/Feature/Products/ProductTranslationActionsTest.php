@@ -43,7 +43,7 @@ function p76Payload(array $overrides = []): array
     return array_merge([
         'name' => 'Zapatillas Running',
         'sku' => 'P76-'.Str::upper(Str::random(8)),
-        'productCategoryId' => ProductCategory::factory()->create()->id,
+        'productCategoryId' => $overrides['productCategoryId'] ?? ProductCategory::factory()->create()->id,
         'type' => 'physical',
         'status' => 'active',
         'price' => '19.99',
@@ -241,8 +241,8 @@ test('updating a product that has no default-language row inserts one and keeps 
     ProductTranslation::factory()->forLanguage($oldDefault)->create(['product_id' => $product->id, 'name' => 'Solo antiguo']);
 
     $newDefault = StoreLanguage::factory()->create(['code' => 'fr']);
-    $oldDefault->update(['is_default' => false]);
-    $newDefault->update(['is_default' => true]);
+    $oldDefault->forceFill(['is_default' => false])->save();
+    $newDefault->forceFill(['is_default' => true])->save();
     StoreLanguage::flushDefaultStoreLanguage();
 
     p76UpdateProduct($product, ['name' => 'Nouveau nom']);

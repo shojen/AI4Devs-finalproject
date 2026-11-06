@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Product;
+use App\Models\ProductCategory;
 use App\Models\ProductTranslation;
 use App\Models\StoreLanguage;
 
@@ -26,8 +27,9 @@ test('the registry holds only plain data, so it survives config:cache', function
 test('translationUsageCount counts the French product translations and only those', function () {
     $default = StoreLanguage::factory()->default()->create();
     $fr = StoreLanguage::factory()->create();
-    $productA = Product::factory()->withoutTranslations()->create();
-    $productB = Product::factory()->withoutTranslations()->create();
+    $category = ProductCategory::factory()->withoutTranslations()->create();
+    $productA = Product::factory()->withoutTranslations()->create(['product_category_id' => $category->id]);
+    $productB = Product::factory()->withoutTranslations()->create(['product_category_id' => $category->id]);
 
     ProductTranslation::factory()->forLanguage($fr)->create(['product_id' => $productA->id]);
     ProductTranslation::factory()->forLanguage($fr)->create(['product_id' => $productB->id]);

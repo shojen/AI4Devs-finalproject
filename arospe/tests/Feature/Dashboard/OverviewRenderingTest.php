@@ -277,7 +277,11 @@ test('the blog empty state is absent when there are posts', function () {
  */
 function overviewStockProduct(int $stock, array $variantStocks = [], array $attributes = []): Product
 {
-    $product = Product::factory()->active()->physical()->create(array_merge(['stock' => $stock], $attributes));
+    $name = $attributes['name'] ?? null;
+    unset($attributes['name']);
+
+    $factory = Product::factory()->active()->physical();
+    $product = ($name === null ? $factory : $factory->named($name))->create(array_merge(['stock' => $stock], $attributes));
 
     foreach ($variantStocks as $variantStock) {
         ProductVariant::factory()->create(['product_id' => $product->id, 'stock' => $variantStock]);
@@ -291,7 +295,7 @@ test('the low-stock widget lists the emptiest products with the right badge and 
     $two = overviewStockProduct(2, [], ['name' => 'Two product']);
     $zero = overviewStockProduct(0, [], ['name' => 'Zero product']);
     $seven = overviewStockProduct(7, [], ['name' => 'Seven product']);
-    $virtual = Product::factory()->active()->virtual()->create(['stock' => 0, 'name' => 'Virtual product']);
+    $virtual = Product::factory()->active()->virtual()->named('Virtual product')->create(['stock' => 0]);
 
     $html = overviewRenderHtml(['products.view']);
 

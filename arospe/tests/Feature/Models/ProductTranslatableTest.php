@@ -163,7 +163,7 @@ test('an inactive requested language still resolves, because removal preserves s
     $product = Product::factory()->withoutTranslations()->create();
     p76Translate($product, $default, 'Zapatillas Running');
     p76Translate($product, $fr, 'Chaussures de course');
-    $fr->update(['is_active' => false]);
+    $fr->forceFill(['is_active' => false])->save();
 
     expect($product->fresh()->translated('name', $fr->id))->toBe('Chaussures de course');
 });
@@ -175,8 +175,8 @@ test('after the store default changes, a product translated only into the old de
 
     expect($product->fresh()->translated('name'))->toBe('Zapatillas Running');
 
-    $old->update(['is_default' => false]);
-    $fr->update(['is_default' => true]);
+    $old->forceFill(['is_default' => false])->save();
+    $fr->forceFill(['is_default' => true])->save();
     StoreLanguage::flushDefaultStoreLanguage();
 
     $product = $product->fresh();
@@ -201,6 +201,8 @@ test('snapshotName() on the common path issues no query once translations are lo
     $product = Product::factory()->withoutTranslations()->create();
     p76Translate($product, $default, 'Zapatillas Running');
     $product = Product::query()->with('translations')->findOrFail($product->id);
+
+    StoreLanguage::defaultStoreLanguage();
 
     DB::enableQueryLog();
     $name = $product->snapshotName();

@@ -89,9 +89,8 @@ function wysiwygHtmlTestActor(): User
  */
 function wysiwygHtmlTestProduct(): Product
 {
-    return Product::factory()->create([
+    return Product::factory()->named('Wysiwyg Test Product', '<p>BEFORE AFTER</p>')->create([
         'product_category_id' => ProductCategory::factory()->create()->id,
-        'description' => '<p>BEFORE AFTER</p>',
     ]);
 }
 

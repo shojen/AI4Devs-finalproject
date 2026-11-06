@@ -207,7 +207,7 @@ test('a blog row links to its editor only when the actor may edit posts, otherwi
 ]);
 
 test('a product row links to the parent editor only when the actor may edit products, otherwise it is plain text', function (array $permissions, bool $linked) {
-    $parent = Product::factory()->active()->physical()->create(['stock' => 40, 'name' => 'Parent product']);
+    $parent = Product::factory()->active()->physical()->named('Parent product')->create(['stock' => 40]);
     ProductVariant::factory()->create(['product_id' => $parent->id, 'stock' => 1]);
     $this->actingAs(Ui::actor($permissions));
     Log::spy();

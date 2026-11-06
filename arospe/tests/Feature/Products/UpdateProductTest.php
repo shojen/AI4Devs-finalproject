@@ -127,7 +127,7 @@ test('updating a product changes its stored values', function () {
 
     $updated = updateProductWith($product, ['name' => 'Runner Pro II', 'sku' => 'RNR-001']);
 
-    expect($updated->fresh()->name)->toBe('Runner Pro II');
+    expect($updated->fresh()->translated('name'))->toBe('Runner Pro II');
 });
 
 // Phase 4 audit finding F-1: two tests pinning that removing the defaults from $featuredMediaId /
@@ -151,7 +151,7 @@ test('re-passing the product\'s current gallery and featured image on an unrelat
         'orderedGalleryMediaIds' => [$galleryA->id, $galleryB->id],
     ]);
 
-    expect($updated->fresh()->name)->toBe('Runner Pro II')
+    expect($updated->fresh()->translated('name'))->toBe('Runner Pro II')
         ->and($updated->fresh()->featured_media_id)->toBe($featured->id)
         ->and($updated->fresh()->gallery->pluck('id')->all())->toBe([$galleryA->id, $galleryB->id]);
 });
@@ -182,7 +182,7 @@ test('a description containing a script is stored clean on update', function () 
 
     $updated = updateProductWith($product, ['description' => 'Before text <script>alert(1)</script> After text']);
 
-    $stored = $updated->fresh()->description;
+    $stored = $updated->fresh()->translated('description');
 
     expect($stored)->not->toContain('<script')
         ->and($stored)->toContain('Before text')

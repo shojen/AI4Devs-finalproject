@@ -142,7 +142,7 @@ test('Editor::save() updating an existing product is refused for an actor lackin
     $this->withoutExceptionHandling();
     $creator = screenAuthActor(['products.view', 'products.create', 'products.edit']);
     $this->actingAs($creator);
-    $product = Product::factory()->create(['name' => 'Original Name']);
+    $product = Product::factory()->named('Original Name')->create();
 
     $deniedActor = screenAuthActor(['products.view']);
     $this->actingAs($deniedActor);
@@ -150,7 +150,7 @@ test('Editor::save() updating an existing product is refused for an actor lackin
     expect(fn () => Livewire::test(Editor::class, ['product' => $product]))
         ->toThrow(AuthorizationException::class);
 
-    expect($product->fresh()->name)->toBe('Original Name');
+    expect($product->fresh()->translated('name'))->toBe('Original Name');
 });
 
 test('Editor::setFeaturedImage() is refused for an actor holding every products permission but lacking media.view', function () {

@@ -186,7 +186,7 @@ test('adding a line item for an existing product lists it and updates the totals
     ordersUiLineEditor();
 
     $order = Order::factory()->withItems(1)->create();
-    $product = Product::factory()->active()->create(['name' => 'Producto Añadido', 'price' => '7.50']);
+    $product = Product::factory()->active()->named('Producto Añadido')->create(['price' => '7.50']);
 
     $html = Livewire::test(Show::class, ['order' => $order])
         ->set('newProductId', $product->id)
@@ -254,9 +254,9 @@ test('a quantity below the refunded units renders the refusal against the quanti
 test('the picker lists active products only, ordered by name; a draft product is not offered', function () {
     ordersUiLineEditor();
 
-    Product::factory()->active()->create(['name' => 'Zeta Active']);
-    Product::factory()->active()->create(['name' => 'Alfa Active']);
-    Product::factory()->draft()->create(['name' => 'Beta Draft']);
+    Product::factory()->active()->named('Zeta Active')->create();
+    Product::factory()->active()->named('Alfa Active')->create();
+    Product::factory()->draft()->named('Beta Draft')->create();
     $order = Order::factory()->withItems(1)->create();
 
     $component = Livewire::test(Show::class, ['order' => $order]);

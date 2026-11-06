@@ -34,7 +34,7 @@ function p76PlaceOrder(array $products): Order
 {
     return app(CreateOrder::class)([
         'customer_id' => Customer::factory()->create()->id,
-        'payment_method_id' => PaymentMethod::factory()->create()->id,
+        'payment_method_id' => PaymentMethod::query()->first()?->id ?? PaymentMethod::factory()->create()->id,
         'items' => array_map(fn (Product $product): array => ['product_id' => $product->id, 'quantity' => 1], $products),
     ]);
 }

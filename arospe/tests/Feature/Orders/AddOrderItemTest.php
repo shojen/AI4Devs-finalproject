@@ -80,7 +80,7 @@ test('a newly added line item snapshots the product current price, name and sku 
     actingOrderEditor();
 
     $order = Order::factory()->create();
-    $product = Product::factory()->create(['name' => 'Widget', 'sku' => 'WID-001', 'price' => '25.00']);
+    $product = Product::factory()->named('Widget')->create(['sku' => 'WID-001', 'price' => '25.00']);
 
     $item = app(AddOrderItem::class)($order, $product->id, null, 1);
 
@@ -135,7 +135,7 @@ test('a line item naming a variant snapshots the variant own price and sku, not 
     actingOrderEditor();
 
     $order = Order::factory()->create();
-    $product = Product::factory()->create(['name' => 'Shirt', 'sku' => 'SHIRT-BASE', 'price' => '15.00']);
+    $product = Product::factory()->named('Shirt')->create(['sku' => 'SHIRT-BASE', 'price' => '15.00']);
     // ProductVariantFactory::configure()'s afterMaking() hook unconditionally re-derives `sku`
     // from the parent product's own sku (DeriveVariantSku, per FP13) regardless of what is
     // passed to create() here — 'SHIRT-RED-M' is never actually persisted. Assert against the
@@ -312,7 +312,7 @@ test('adding a line item with a blank-string product_variant_id behaves exactly 
     actingOrderEditor();
 
     $order = Order::factory()->create();
-    $product = Product::factory()->create(['name' => 'Widget', 'sku' => 'WID-001', 'price' => '25.00']);
+    $product = Product::factory()->named('Widget')->create(['sku' => 'WID-001', 'price' => '25.00']);
 
     $item = app(AddOrderItem::class)($order, $product->id, '', 1);
 

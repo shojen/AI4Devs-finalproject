@@ -27,7 +27,11 @@ beforeEach(function () {
  */
 function lowStockProduct(int $stock, array $variantStocks = [], array $attributes = []): Product
 {
-    $product = Product::factory()->active()->physical()->create(array_merge(['stock' => $stock], $attributes));
+    $name = $attributes['name'] ?? null;
+    unset($attributes['name']);
+
+    $factory = Product::factory()->active()->physical();
+    $product = ($name === null ? $factory : $factory->named($name))->create(array_merge(['stock' => $stock], $attributes));
 
     foreach ($variantStocks as $variantStock) {
         ProductVariant::factory()->create(['product_id' => $product->id, 'stock' => $variantStock]);
@@ -101,7 +105,7 @@ it('breaks equal stock ties by id ascending, never by name, and lists the same p
 
     // Names run opposite to id order, so a name tie-break would pick different products.
     foreach ($products as $index => $product) {
-        $product->forceFill(['name' => chr(ord('D') - $index)])->save();
+        DB::table('product_translations')->where('product_id', $product->id)->update(['name' => chr(ord('D') - $index)]);
     }
 
     $expected = $products->take(3)->pluck('id')->all();

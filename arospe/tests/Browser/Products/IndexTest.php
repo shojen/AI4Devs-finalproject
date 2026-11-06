@@ -36,7 +36,7 @@ test('clicking a rows edit action navigates to the editor url for that product',
     $actor = productsIndexBrowserActor();
     $this->actingAs($actor);
 
-    $product = Product::factory()->create(['name' => 'Runner Pro']);
+    $product = Product::factory()->named('Runner Pro')->create();
 
     visit(route('products.index'))
         ->assertNoJavaScriptErrors()
@@ -49,7 +49,7 @@ test('the delete confirmation modal opens, names the product, and cancelling lea
     $actor = productsIndexBrowserActor();
     $this->actingAs($actor);
 
-    $product = Product::factory()->create(['name' => 'Runner Pro']);
+    $product = Product::factory()->named('Runner Pro')->create();
 
     visit(route('products.index'))
         ->assertNoJavaScriptErrors()
@@ -99,7 +99,7 @@ test('the products list screen produces no javascript errors across one continuo
     $actor = productsIndexBrowserActor();
     $this->actingAs($actor);
 
-    $product = Product::factory()->create(['name' => 'Runner Pro']);
+    $product = Product::factory()->named('Runner Pro')->create();
 
     visit(route('products.index'))
         ->assertNoJavaScriptErrors()

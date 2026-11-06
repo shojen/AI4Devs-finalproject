@@ -83,7 +83,6 @@ test('the product_category_id foreign key is a real database constraint', functi
     expect(fn () => DB::table('products')->insert([
         'id' => (string) Str::uuid7(),
         'product_category_id' => (string) Str::uuid7(),
-        'name' => 'Orphan Product',
         'sku' => 'RNR-'.Str::random(10),
         'type' => 'physical',
         'status' => 'draft',
@@ -91,5 +90,5 @@ test('the product_category_id foreign key is a real database constraint', functi
         'stock' => 0,
         'created_at' => now(),
         'updated_at' => now(),
-    ]))->toThrow(QueryException::class);
+    ]))->toThrow(fn (QueryException $exception) => expect($exception->errorInfo[1])->toBe(1452));
 });
