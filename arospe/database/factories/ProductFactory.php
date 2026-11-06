@@ -7,9 +7,12 @@ use App\Enums\ProductType;
 use App\Models\Media;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use Closure;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use ReflectionFunction;
 
 /**
  * @extends Factory<Product>
@@ -36,14 +39,52 @@ class ProductFactory extends Factory
     {
         return [
             'product_category_id' => ProductCategory::factory(),
-            'name' => fake()->words(3, true),
             'sku' => Str::upper('SKU-'.fake()->unique()->bothify('??####')),
             'type' => ProductType::Physical,
             'status' => ProductStatus::Draft,
             'price' => fake()->randomFloat(2, 1, 500),
             'stock' => fake()->numberBetween(0, 100),
-            'description' => fake()->optional()->paragraph(),
         ];
+    }
+
+    /**
+     * Story 0076 (D-22, N-1): `products` carries no name/description column any more. The
+     * default-language translation is written by an identifiable callback (a first-class-callable closure bound to the step)
+     * (WritesDefaultProductTranslation), so named()/withoutTranslations() swap only that step and
+     * leave every other afterCreating callback (e.g. withGallery()'s) in place.
+     */
+    public function configure(): static
+    {
+        return $this->afterCreating((new WritesDefaultProductTranslation)->__invoke(...));
+    }
+
+    /**
+     * Write the given default-language name/description instead of fake ones.
+     */
+    public function named(string $name, ?string $description = null): static
+    {
+        return $this->withTranslationStep(new WritesDefaultProductTranslation($name, $description));
+    }
+
+    /**
+     * Create the parent row and no translation (and no default StoreLanguage).
+     */
+    public function withoutTranslations(): static
+    {
+        return $this->withTranslationStep(null);
+    }
+
+    private function withTranslationStep(?WritesDefaultProductTranslation $step): static
+    {
+        $callbacks = $this->afterCreating
+            ->reject(fn (Closure $callback): bool => (new ReflectionFunction($callback))->getClosureThis() instanceof WritesDefaultProductTranslation)
+            ->values();
+
+        if ($step !== null) {
+            $callbacks->push($step->__invoke(...));
+        }
+
+        return $this->newInstance(['afterCreating' => new Collection($callbacks->all())]);
     }
 
     /**

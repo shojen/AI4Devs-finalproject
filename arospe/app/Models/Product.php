@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Concerns\HasTranslations;
+use App\Concerns\Translatable;
 use App\Enums\ProductDisplayStatus;
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use LogicException;
 
 /**
  * A product in the catalog (story 0024).
@@ -29,27 +34,26 @@ use Illuminate\Support\Carbon;
  * left live and reachable against a trashed parent.
  *
  * @property string $id
- * @property string $name
  * @property string $sku
  * @property string $product_category_id
  * @property ProductType|null $type
  * @property ProductStatus $status
  * @property string $price 'decimal:2' casts to a STRING, not a float
  * @property int $stock
- * @property string|null $description
  * @property string|null $featured_media_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read ProductCategory|null $category
+ * @property-read Collection<int, ProductTranslation> $translations
  * @property-read Media|null $featuredImage
  * @property-read Collection<int, Media> $gallery
  * @property-read Collection<int, SalesRegion> $salesRegions
  */
-#[Fillable(['name', 'sku', 'product_category_id', 'type', 'status', 'price', 'stock', 'description'])]
-class Product extends Model
+#[Fillable(['sku', 'product_category_id', 'type', 'status', 'price', 'stock'])]
+class Product extends Model implements Translatable
 {
     /** @use HasFactory<ProductFactory> */
-    use HasFactory, HasUuids;
+    use HasFactory, HasTranslations, HasUuids;
 
     /**
      * Get the attributes that should be cast.
@@ -168,5 +172,72 @@ class Product extends Model
         }
 
         return ProductDisplayStatus::from($this->status->value);
+    }
+
+    protected function translationModel(): string
+    {
+        return ProductTranslation::class;
+    }
+
+    /**
+     * The name frozen onto an order line (D-21, N-3): the default-language name, else the oldest
+     * non-blank translation. The common path reads the loaded relation with no extra query.
+     *
+     * @throws LogicException when the product has no usable name in any language
+     */
+    public function snapshotName(): string
+    {
+        $defaultId = StoreLanguage::defaultStoreLanguage()?->id;
+
+        $name = $this->translations->firstWhere('store_language_id', $defaultId)?->name;
+
+        if ($name !== null && $name !== '') {
+            return $name;
+        }
+
+        /** @var Collection<int, ProductTranslation> $all */
+        $all = $this->translations()->orderBy('created_at')->orderBy('id')->get();
+
+        $name = $all->firstWhere('store_language_id', $defaultId)?->name;
+
+        if ($name !== null && $name !== '') {
+            return $name;
+        }
+
+        $oldest = $all->first(fn (ProductTranslation $translation): bool => $translation->name !== '');
+
+        if ($oldest === null) {
+            throw new LogicException("Product [{$this->id}] has no usable name to snapshot.");
+        }
+
+        return $oldest->name;
+    }
+
+    /**
+     * Order by the name in the requested language, falling back per row to the default one (D-14),
+     * and expose the resolved name as `translated_name`. Callers qualify their own columns with
+     * `products.` because of the joins.
+     *
+     * @param  Builder<Product>  $query
+     */
+    public function scopeOrderByTranslatedName(Builder $query, ?string $storeLanguageId = null): void
+    {
+        $defaultId = StoreLanguage::defaultStoreLanguage()?->id;
+        $requestedId = $storeLanguageId ?? $defaultId;
+
+        $query->leftJoin('product_translations as requested_translation', function ($join) use ($requestedId): void {
+            $join->on('requested_translation.product_id', '=', 'products.id')
+                ->where('requested_translation.store_language_id', '=', $requestedId ?? '');
+        })->leftJoin('product_translations as default_translation', function ($join) use ($defaultId): void {
+            $join->on('default_translation.product_id', '=', 'products.id')
+                ->where('default_translation.store_language_id', '=', $defaultId ?? '');
+        });
+
+        if ($query->getQuery()->columns === null) {
+            $query->select('products.*');
+        }
+
+        $query->addSelect(DB::raw("COALESCE(NULLIF(requested_translation.name, ''), default_translation.name) AS translated_name"))
+            ->orderBy('translated_name');
     }
 }
