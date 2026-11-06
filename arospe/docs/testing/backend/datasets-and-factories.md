@@ -79,6 +79,13 @@ Note the factory reuses one hashed `password` across every created user (`static
 
 When a new model needs its own state variant (e.g. a future `expired()` state), add it to that model's factory rather than constructing the raw attribute array inline at each test call site — same reasoning as the shared validation traits in [conventions/code-style.md](../../conventions/code-style.md#centralize-shared-validation-in-traits): one definition, not N call sites to keep in sync.
 
+### A factory that writes a child row (story 0076)
+
+`ProductFactory` has no `name`/`description` any more: `configure()` registers an `afterCreating` step, `Database\Factories\WritesDefaultProductTranslation`, that writes the default-language `product_translations` row (creating a default `StoreLanguage` if none exists). Two states adjust it: `Product::factory()->named('Mug', 'Description')` and `Product::factory()->withoutTranslations()` (the category from `definition()` still brings its own default language unless it is also created without translations).
+
+✅ Per-instance state lives in the callback object: `named()` and `withoutTranslations()` replace only the callback whose closure `$this` is a `WritesDefaultProductTranslation`, leaving `withGallery()`'s callbacks in place.
+❌ A `configure()` closure reading a factory property: `Factory::newInstance()` only carries constructor arguments, so the value is lost on the next state call. See [errors-log](../../errors-log/2026-09-25-to-2026-09-26.md#a-factory-configure-closure-cannot-read-per-instance-state-because-factorynewinstance-only-carries-constructor-arguments--2026-11-06).
+
 ## Seeders
 
 [`database/seeders/DatabaseSeeder.php`](../../../database/seeders/DatabaseSeeder.php) does two different things, and only one of them is fixture data:
@@ -90,4 +97,4 @@ Don't rely on either inside a test by default; `RefreshDatabase` gives each test
 
 The one legitimate exception is a test **about** authorization: a permission check against an unseeded name throws `PermissionDoesNotExist`, so such a test must seed the catalog explicitly (`$this->seed(RolePermissionSeeder::class)`) rather than fabricate ad-hoc `Role`/`Permission` rows — see `tests/Feature/Authorization/`. When it does, flush the permission cache in `beforeEach()` with `app(PermissionRegistrar::class)->forgetCachedPermissions()`, or role/permission lookups leak across tests through the shared cache store.
 
-_Last updated: 2026-10-01 — Story 0082: added the rule that dataset rows carry plain tokens (Pest evaluates datasets at collection time, so an enum or method reference to a not-yet-existing class crashes the run). Earlier: task 0002 documented the one legitimate case for seeding inside a test (authorization tests) and the `DatabaseSeeder` environment gate._
+_Last updated: 2026-11-06 — Story 0076: added "A factory that writes a child row" (`ProductFactory::named()`/`withoutTranslations()`). Earlier content current from story 0082 (dataset rows carry plain tokens)._
