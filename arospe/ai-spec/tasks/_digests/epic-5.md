@@ -74,3 +74,15 @@ closed earlier and are not backfilled here (read their `done/` files or `docs/`)
 - `BlogTagValidationRules` now fails with `$fail('validation.x')->translate()` so attribute labels apply (same fix as categories) — story 0075.
 - Refusal logging is `Log::warning` (outside the DB), so a rolled-back save keeps it; no refusal is logged inside the transaction in practice — story 0075 (D-9).
 - Strip `aria-label` still uses the products key (not generalised); Q-4 badge not built; tab tests are in `BlogTagLanguageTabs*Test` — story 0075.
+
+## Story 0076 — Products retrofit (backend)
+
+- Split into 0076 (this) and 0076a (slug and SEO fields, `UNIQUE(store_language_id, slug)`, 1062 attribution by index name) after a Phase 2 rejection; large but kept atomic because the column drop, readers, order snapshots and factory must change together — story 0076.
+- `product_translations`: UUID PK, `product_id` cascade, `store_language_id` restrict, `name` VARCHAR(255) NOT NULL, `description` MEDIUMTEXT NULL, three indexes (`product_translations_product_language_unique` named); first table with two translatable columns; migration pair `2026_11_06_100000/100001` with assert-before-DDL, a drop guard and a data-lossy `down()` — story 0076 (D-2, D-11, D-12).
+- `ProductTranslation` `saving` hook sanitizes `description` when dirty (second layer after the actions); the backfill uses the query builder and never re-sanitizes — story 0076 (D-8, D-9, D-13).
+- D-14: `Product::scopeOrderByTranslatedName(?string $storeLanguageId = null)` orders in SQL (paginated and limited consumers) with per-row fallback to the default language and exposes `translated_name`; callers qualify columns with `products.` — story 0076.
+- D-21: `Product::snapshotName()` is the only source of `order_items.product_name` (default-language name from the loaded relation, else unfiltered re-query, else oldest non-blank, else `LogicException`); `CreateOrder` eager-loads `translations` — story 0076.
+- D-22: `ProductFactory::configure()` registers `WritesDefaultProductTranslation` as an identifiable `afterCreating` step; `named()`/`withoutTranslations()` swap only it (`Factory::newInstance()` carries constructor arguments only, so a closure cannot read per-instance state, N-1) — story 0076.
+- Lesson: a raw `DB::table('products')->insert()` that still sends `name` fails with 1054 (unknown column) before any FK or NOT NULL error, so a test asserting 1452/1364 must drop `name` first — story 0076.
+- `GetLowStockProducts` resolves the name in the store default language (Q-4 (a)); UI-locale mapping is a follow-up story. `UpdateProduct` concurrent-save 1062 on the natural key is deferred to 0076a (R-22) — story 0076.
+

@@ -251,6 +251,7 @@ Each `product_translations` row can carry a slug, a meta title and a meta descri
 - **R-14 — The canonicalisation mechanism is a synthesis**, not an inherited decision (**D-6**), so Phase 2 should confirm it.
 - **R-20 — The `UpdateProduct` signature change is wide:** every direct caller and test must pass three more arguments. It is mechanical but broad.
 - **R-21 — The implicit-FK-index drop (D-11b) is MySQL behaviour, not something Laravel declares.** Assert the count after migrating, never from the migration text.
+- **R-22 — Deferred from 0076 (Phase 4, Low): a raw 1062 on `product_translations_product_language_unique`.** After the default store language switches to one with no rows for a product, two administrators saving that same product concurrently both try to insert the default-language row; `UpdateProduct` has no catch for this and surfaces a raw 1062. `CreateProduct` cannot hit it (fresh product id) but its blanket catch maps **every** 1062 to "sku taken". **D-31's index-name attribution must include `product_translations_product_language_unique`** (rethrown or mapped to a retry message, not reported as `sku` or `slug`). 0076 deliberately did not fix it.
 
 ### Open questions for the product owner
 
