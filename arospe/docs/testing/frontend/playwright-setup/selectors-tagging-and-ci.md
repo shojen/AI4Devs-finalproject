@@ -22,7 +22,7 @@ Rationale: a test that asserts "the user sees `Remove passkey`" survives markup 
 
 ## CI integration
 
-**CI runs the browser suite — on Chromium only.** `.github/workflows/tests.yml` runs `php artisan test --parallel`, pinned to a single PHP version (**`8.5`** since 2026-09-06 — see [../ci/pipeline-integration.md](../../ci/pipeline-integration.md#current-state-real-as-of-this-writing)), and since the `Browser` testsuite is declared in `phpunit.xml`, that single command now executes browser tests too. Task 0006b added the step that makes this possible, immediately after `Install Node Dependencies`:
+**CI runs the browser suite — on Chromium only.** `.github/workflows/tests.yml` runs the `Browser` testsuite in its own step (`php artisan test --parallel --processes=2 --testsuite=Browser`), after the Unit/Feature step, pinned to a single PHP version (**`8.5`** since 2026-09-06 — see [../ci/pipeline-integration.md](../../ci/pipeline-integration.md#current-state-real-as-of-this-writing)), and since the `Browser` testsuite is declared in `phpunit.xml`, that step executes the browser tests. Task 0006b added the step that makes this possible, immediately after `Install Node Dependencies`:
 
 ```yaml
 # .github/workflows/tests.yml

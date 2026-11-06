@@ -21,13 +21,18 @@
 - name: Run Type Analysis
   run: composer types:check
 
-- name: Run Tests
-  run: php artisan test --parallel
+- name: Run Unit and Feature Tests
+  run: php artisan test --parallel --testsuite=Unit,Feature
+
+- name: Run Browser Tests
+  run: php artisan test --parallel --processes=2 --testsuite=Browser
 ```
 
-A coverage driver (`xdebug`) is already installed by the `setup-php` step, but **the `Run Tests` step does not currently request coverage or enforce a threshold** — it's `php artisan test --parallel` with no `--coverage`/`--min`. There is no coverage gate blocking merges today. This file documents what adding one would look like; it is a proposal, not a change that has been made to `tests.yml`.
+The browser suite runs in its own step with two workers because sharing the runner with the full set of workers made Chromium click timeouts flaky; `tests/Pest.php` also raises Playwright's timeout to 15 s (`pest()->browser()->timeout(15_000)`).
 
-**`--parallel` since the test-performance review that measured this repo's real suite times** (see [commands.md#run-in-parallel](commands.md#run-in-parallel) for the numbers). No `--processes` is passed, so paratest auto-detects the runner's core count — `ubuntu-latest`'s standard hosted runner rather than a number hardcoded here that could silently stop matching if GitHub changes it. Unlike the Sail/WSL2-specific fix `--parallel` needed locally (`storage/framework/views` moved off the bind-mounted volume — see [errors-log.md](../../errors-log.md)), CI's runner has no bind mount in the loop at all: `actions/checkout` writes directly to the runner's own native filesystem, so this workflow was never exposed to that failure mode and needed no equivalent change.
+A coverage driver (`xdebug`) is already installed by the `setup-php` step, but **the test steps do not currently request coverage or enforce a threshold** — they are `php artisan test --parallel` with no `--coverage`/`--min`. There is no coverage gate blocking merges today. This file documents what adding one would look like; it is a proposal, not a change that has been made to `tests.yml`.
+
+**`--parallel` since the test-performance review that measured this repo's real suite times** (see [commands.md#run-in-parallel](commands.md#run-in-parallel) for the numbers). No `--processes` is passed to the Unit/Feature step, so paratest auto-detects the runner's core count — `ubuntu-latest`'s standard hosted runner rather than a number hardcoded here that could silently stop matching if GitHub changes it. Unlike the Sail/WSL2-specific fix `--parallel` needed locally (`storage/framework/views` moved off the bind-mounted volume — see [errors-log.md](../../errors-log.md)), CI's runner has no bind mount in the loop at all: `actions/checkout` writes directly to the runner's own native filesystem, so this workflow was never exposed to that failure mode and needed no equivalent change.
 
 **Database provisioning.** The job declares a `services.mysql` container (`mysql:8.4`, matching `compose.yaml`), gated behind a `mysqladmin ping` healthcheck the runner waits on before any step runs, plus a job-level `env:` block pointing `DB_CONNECTION`/`DB_HOST`/`DB_PORT`/`DB_DATABASE`/`DB_USERNAME`/`DB_PASSWORD` at it (`127.0.0.1:3306`, database `testing`, user `root`, empty password). Those are real process environment variables, so they take precedence over whatever the `Copy Environment File` step (`cp .env.example .env`) writes to disk — no `.env` edit happens in CI. `phpunit.xml`'s own `<env name="DB_CONNECTION" value="mysql"/>` / `<env name="DB_DATABASE" value="testing"/>` pins the same target for local runs, so CI and a local `php artisan test` always hit the same MySQL `testing` database regardless of a contributor's real `.env`. See [`ai-spec/tasks/ci-database-connection-gap.md`](../../../ai-spec/tasks/ci-database-connection-gap.md) for why this was needed — before this fix, neither CI nor a fresh local clone could open a database connection at all. What a contributor must provision locally to satisfy the same pin — and the `.env.testing` subtlety that trips up more than one `git worktree` sharing one MySQL instance — is in [commands.md's Database prerequisite section](commands.md#database-prerequisite).
 
@@ -73,6 +78,6 @@ Nothing else in the workflow needs to change — `coverage: xdebug` is already c
 
 Since this repo's PR contract ([`docs/contracts.md`](../../contracts.md)) calls for asking before taking non-obvious actions rather than assuming: adding `--min=80` to the real workflow is a deliberate decision for whoever owns CI to make (it will start failing PRs the moment coverage is under 80%, which may or may not be true today — nobody has measured it yet with `php artisan test --coverage` locally). Run that locally first to see where this repo actually stands before wiring the gate into `tests.yml`.
 
-_Last updated: 2026-10-15 — `tests.yml` and `lint.yml` now accept a manual `workflow_dispatch`, and the `prod.yml` gate section documents how to recover when no CI run exists for the commit being deployed._
+_Last updated: 2026-11-06 — the single `Run Tests` step is split into a Unit/Feature step and a Browser step (2 workers), and Playwright's timeout is raised to 15 s, to stop flaky browser timeouts._
 
 _Earlier revision notes: [testing--ci--pipeline-integration.md](../../history/testing--ci--pipeline-integration.md)._
