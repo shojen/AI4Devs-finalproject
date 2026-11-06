@@ -82,7 +82,7 @@ class OrderItemFactory extends Factory
                 ? ProductVariant::query()->find($orderItem->product_variant_id)
                 : null;
 
-            $orderItem->product_name = $product->name;
+            $orderItem->product_name = $product->snapshotName();
             // A plain `->` (not `?->`) on the left of `??` is intentional, not an oversight -- matching
             // App\Actions\Orders\CreateOrder's own identical pattern and its docblock: PHP's `??` uses
             // isset()-like semantics for a bare property-access chain, so it never throws "Attempt to
