@@ -7,9 +7,9 @@
       "slug": "0076a-product-slug-and-seo-fields-backend",
       "title": "Product slug and SEO fields — per-store-language (backend)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree-0076a-product-slug-and-seo-fields-backend",
+      "claimed_at": "2026-11-07T00:00:00Z",
       "touches": [
         "database/migrations/*_add_slug_and_seo_columns_to_product_translations_table.php",
         "app/Models/ProductTranslation.php",

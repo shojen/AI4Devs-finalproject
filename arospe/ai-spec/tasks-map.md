@@ -18,6 +18,8 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-11-07): `0076a-product-slug-and-seo-fields-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 2 third pass APPROVED, then Phase 3 step 0; claimed by `worktree-0076a-product-slug-and-seo-fields-backend`). It is still pending work, so it keeps its node and edges (`P0076a --> P0077`, `P0076a -.-> P0087`); its node moves from the green `ready` class to the blue `claimed` class and its `tasks-status.json` entry becomes `"claimed"` (`claimed_at` 2026-11-07), with `depends_on` still empty. `ai-spec/tasks/in-progress/` now holds this one file; `ai-spec/tasks/` still holds the other pending files and `done/` the closed ones. Link check: the moved file's own outbound relative links gained one `../` level (`../../docs/…` to `../../../docs/…`, bare `](0077-…)`/`](0087-…)` to `](../…)`, `](done/…)` to `](../done/…)`); inbound links were repointed in `0077` (`](0076a-…)` to `](in-progress/0076a-…)` and in `done/0076` (`](../0076a-…)` to `](../in-progress/0076a-…)`); all resolve.
+
 **Update (2026-11-07): `0076-translatable-content-retrofit-products-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0076-translatable-content-retrofit-products-backend`). Its node, its inventory row, its `claimed` class membership and every edge touching it (`0076 -> 0076a`, `0076 -> 0077`) are dropped from the graph, it joins the flat `done/` inventory (Epic 5 list; `done/` 98 -> 99), and its `tasks-status.json` entry (the `claimed` one) is deleted. Dependents recomputed: `0076a` had `0076` as its only dependency, so `depends_on` is now empty and it moves `blocked` -> `ready`; `0077` drops `0076` and stays `blocked` on `0076a`; `0078` drops `0076` from `conflict_risk_with`. `ai-spec/tasks/in-progress/` is now empty. Link check: the moved file stays at the same depth (`in-progress/` -> `done/`), so its outbound links were re-verified only; inbound links in `0076a` and `0077` (`in-progress/0076-…` -> `done/0076-…`) and in `done/0025`, `done/0027` and `done/0082` (`../in-progress/0076-…` -> `0076-…`) were repointed; all resolve.
 
 **Update (2026-11-06): `0076-translatable-content-retrofit-products-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 2 fourth pass APPROVED, then Phase 3 step 0; claimed by `worktree-0076-translatable-content-retrofit-products-backend`). It is still pending work, so it keeps its node (blue `claimed` class) and its `tasks-status.json` entry, whose live claim (`claimed_by`/`claimed_at`) is carried forward unchanged. `ai-spec/tasks/in-progress/` now holds this one file; `ai-spec/tasks/` still holds the other pending files and `done/` the closed ones. Link check: the moved file's own outbound relative links gained one `../` level (and `done/…` became `../done/…`), and the inbound links in `0076a`, `0077`, `done/0025`, `done/0027` and `done/0082` now point at `in-progress/0076-…`; all resolve.
@@ -634,7 +636,8 @@ flowchart LR
     %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
     class P0077,P0079 pending;
-    class P0076a,P0078,P0087 ready;
+    class P0078,P0087 ready;
+    class P0076a claimed;
     P0087 -.-> P0079
     P0087 -.-> P0077
     %% (P0075 closed to done/ 2026-10-27; P0073 closed to done/ 2026-10-08; no node remains `claimed`.)
