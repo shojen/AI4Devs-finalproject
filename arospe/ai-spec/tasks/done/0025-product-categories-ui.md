@@ -436,7 +436,7 @@ class Index extends Component
 >
 > **Coordination gap, checked rather than assumed: 0070 ships no ordering helper for this model.**
 > A `scopeOrderByTranslatedName()` **does** exist in the Epic 5 plan — but it is
-> [0076](../in-progress/0076-translatable-content-retrofit-products-backend.md)'s **D-14**, written for
+> [0076](0076-translatable-content-retrofit-products-backend.md)'s **D-14**, written for
 > **`Product`** specifically because `products` is the first table here with no natural size bound
 > and is paginated. Nothing equivalent is specified for `ProductCategory`, and 0071 deliberately
 > does not ask for one. **So do not "reuse the scope" here — it will not exist on this model.** If a
@@ -820,7 +820,7 @@ component. Nothing on the screen references, links to, or shares anything with a
   > *why* that replacement is acceptable** — 0071 cites this decision by name for exactly that
   > reason: the whole table is already in PHP, so sorting there costs nothing extra. If a later story
   > ever adds pagination to this screen, the PHP sort becomes wrong (it can only order the page it
-  > has) and an ordering scope like [0076](../in-progress/0076-translatable-content-retrofit-products-backend.md)'s
+  > has) and an ordering scope like [0076](0076-translatable-content-retrofit-products-backend.md)'s
   > `scopeOrderByTranslatedName()` — which exists for `Product`, not `ProductCategory` — would have
   > to be written for this model first. The 0023 **D-4** uniqueness argument for the `id` tiebreak is
   > also narrowed by 0070's **D-7**: uniqueness is now per *store language*, so two categories

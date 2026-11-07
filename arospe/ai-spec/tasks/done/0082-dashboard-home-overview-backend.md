@@ -225,7 +225,7 @@ D-6 (`cancelled ∈ $statuses`). The owner's 2026-09-30 request adds filtering t
 
 ### D-9 — Translatable-content seam (risk: pending 0076 / 0078)
 
-**Risk found in the debate.** Pending stories [0076](../in-progress/0076-translatable-content-retrofit-products-backend.md) and
+**Risk found in the debate.** Pending stories [0076](0076-translatable-content-retrofit-products-backend.md) and
 [0078](../0078-translatable-content-retrofit-blog-posts-backend.md) (both `ready`, unclaimed) **delete `products.name` and
 `blog_posts.title/body`** and move them into translation tables. Neither knows about this story. Decision (**⚑ owner to
 confirm**): **no hard dependency** on them (they are large and would stall the dashboard) — instead **one read seam**:

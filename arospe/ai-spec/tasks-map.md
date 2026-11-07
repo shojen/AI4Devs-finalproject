@@ -18,6 +18,8 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-11-07): `0076-translatable-content-retrofit-products-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0076-translatable-content-retrofit-products-backend`). Its node, its inventory row, its `claimed` class membership and every edge touching it (`0076 -> 0076a`, `0076 -> 0077`) are dropped from the graph, it joins the flat `done/` inventory (Epic 5 list; `done/` 98 -> 99), and its `tasks-status.json` entry (the `claimed` one) is deleted. Dependents recomputed: `0076a` had `0076` as its only dependency, so `depends_on` is now empty and it moves `blocked` -> `ready`; `0077` drops `0076` and stays `blocked` on `0076a`; `0078` drops `0076` from `conflict_risk_with`. `ai-spec/tasks/in-progress/` is now empty. Link check: the moved file stays at the same depth (`in-progress/` -> `done/`), so its outbound links were re-verified only; inbound links in `0076a` and `0077` (`in-progress/0076-…` -> `done/0076-…`) and in `done/0025`, `done/0027` and `done/0082` (`../in-progress/0076-…` -> `0076-…`) were repointed; all resolve.
+
 **Update (2026-11-06): `0076-translatable-content-retrofit-products-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 2 fourth pass APPROVED, then Phase 3 step 0; claimed by `worktree-0076-translatable-content-retrofit-products-backend`). It is still pending work, so it keeps its node (blue `claimed` class) and its `tasks-status.json` entry, whose live claim (`claimed_by`/`claimed_at`) is carried forward unchanged. `ai-spec/tasks/in-progress/` now holds this one file; `ai-spec/tasks/` still holds the other pending files and `done/` the closed ones. Link check: the moved file's own outbound relative links gained one `../` level (and `done/…` became `../done/…`), and the inbound links in `0076a`, `0077`, `done/0025`, `done/0027` and `done/0082` now point at `in-progress/0076-…`; all resolve.
 
 **Update (2026-11-06): `0076` split after its Phase 2 rejection; new pending file `0076a-product-slug-and-seo-fields-backend.md`.** The project owner decided to split `0076`: it keeps `name`/`description` and every live reader of them, and the slug/SEO fields move to `0076a`. That story is numbered with a suffix rather than `0088` so that it sorts below its dependent `0077`, per the task ordering rule. Graph changes:
@@ -384,8 +386,8 @@ graph and from the parallelization analysis below.
 ## Table of contents
 
 - [Inventory](#inventory)
-  - [Done (98) — shipped, out of scope for this graph](#done-98--shipped-out-of-scope-for-this-graph)
-  - [Pending — not started (10 numbered + 1 infra doc)](#pending--not-started-10-numbered--1-infra-doc)
+  - [Done (99) — shipped, out of scope for this graph](#done-99--shipped-out-of-scope-for-this-graph)
+  - [Pending — not started (5 numbered + 1 infra doc)](#pending--not-started-5-numbered--1-infra-doc)
 - [Dependency graph (pending tasks only)](#dependency-graph-pending-tasks-only)
 - [Analysis](#analysis)
   - [Pending tasks that are independent of each other and safe to parallelize](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
@@ -395,7 +397,7 @@ graph and from the parallelization analysis below.
 
 ## Inventory
 
-### Done (98) — shipped, out of scope for this graph
+### Done (99) — shipped, out of scope for this graph
 
 Already merged into `main`/`finalproject-ARP` and closed via the workflow's Phase 7; see
 [`ai-spec/tasks/done/`](tasks/done/) for each story's full file. Listed here only as IDs, grouped
@@ -464,7 +466,7 @@ appears as a node in the dependency graph below:
   0055 — Orders list + detail/editor UI, the eighteenth story to close and the epic's terminal node:
   nothing named it as a hard dependent, so its closure re-derives no `depends_on`/`status` change
   against this pending list.
-- **Epic 5 — Internationalization (6):** 0073 — Blog Categories screen language tabs (frontend), the eighth Epic 5 story to close (2026-10-08): per-language names through tabs, no pending dependent. 0071 — Product Categories taxonomy screen language tabs (frontend), the sixth Epic 5 story to close (2026-10-07): ships the shared `<x-language-tab-strip>`; its dependents 0073/0075/0079 drop it from `depends_on`. 0067 — Admin UI language switcher (frontend), the fourth Epic 5 story to close (2026-10-02): the first personal-language control (account-menu switcher plus a Settings Language tab); it had no hard dependent, and its only pairing, `0069`, drops it from `conflict_risk_with`. 0068 — Store Languages catalog + the app's two
+- **Epic 5 — Internationalization (6):** 0076 — Translatable content retrofit, Products backend (closed 2026-11-07): `product_translations` replaces `products.name`/`description`; its dependent `0076a` drops it and moves to `ready`, `0077` drops it and stays `blocked` on `0076a`. 0073 — Blog Categories screen language tabs (frontend), the eighth Epic 5 story to close (2026-10-08): per-language names through tabs, no pending dependent. 0071 — Product Categories taxonomy screen language tabs (frontend), the sixth Epic 5 story to close (2026-10-07): ships the shared `<x-language-tab-strip>`; its dependents 0073/0075/0079 drop it from `depends_on`. 0067 — Admin UI language switcher (frontend), the fourth Epic 5 story to close (2026-10-02): the first personal-language control (account-menu switcher plus a Settings Language tab); it had no hard dependent, and its only pairing, `0069`, drops it from `conflict_risk_with`. 0068 — Store Languages catalog + the app's two
   default-locale settings, the first Epic 5 story to close, and the root of the entire i18n chain.
   Its two dependents that had it as their *only* pending dependency — 0066 (Admin UI locale
   preference backend) and 0070 (translatable-content mechanism backend) — move from `blocked` to
@@ -509,13 +511,12 @@ appears as a node in the dependency graph below:
   0084 — Order mark as paid (backend), closed 2026-10-02: adds `MarkOrderAsPaid` and the `order_payments` table; its one
   dependent, 0085, drops it and moves to `ready`.
 
-### Pending — not started (6 numbered + 1 infra doc)
+### Pending — not started (5 numbered + 1 infra doc)
 
-Re-derived 2026-11-06 from the files actually present in `ai-spec/tasks/`. The earlier table still listed `0072`, `0074`, `0084` and `0085`, all of which are in `done/`.
+Re-derived 2026-11-07 from the files actually present in `ai-spec/tasks/`. The earlier table still listed `0072`, `0074`, `0084` and `0085`, all of which are in `done/`.
 
 | ID | Title | Epic area |
 | --- | --- | --- |
-| 0076 | Translatable content retrofit — Products backend (claimed; in-progress, Phase 2 approved 2026-11-06) | Epic 5 — i18n |
 | 0076a | Product slug and SEO fields — per-store-language (backend) | Epic 5 — i18n |
 | 0077 | Product editor — language tabs (UI) | Epic 5 — i18n |
 | 0078 | Translatable content retrofit — Blog Posts backend | Epic 5 — i18n |
@@ -554,7 +555,6 @@ flowchart LR
     subgraph PEND_I18N["Epic 5 — Internationalization"]
         direction TB
         P0087["0087 Refuse inactive language in translation write actions"]
-        P0076["0076 Products retrofit BE"]
         P0076a["0076a Product slug + SEO BE"]
         P0077["0077 Product editor i18n UI"]
         P0078["0078 Blog Posts retrofit BE"]
@@ -624,10 +624,8 @@ flowchart LR
     %% (P0067 -.-> P0069 dropped: 0067 closed to done/ 2026-10-02, the fourth Epic 5 story to close; its node and the conflict edge are removed.)
     %% (P0072 --> P0073 dropped: 0072 closed to done/ 2026-10-07; 0073 is now ready.)
     %% (P0074 --> P0075 dropped: 0074 closed to done/ 2026-10-15; 0075 is now ready.)
-    P0076 --> P0076a
+    %% (P0076 --> P0076a and P0076 --> P0077 dropped: 0076 closed to done/ 2026-11-07; 0076a is now ready, 0077 stays blocked on 0076a.)
     P0076a --> P0077
-    %% (P0076 --> P0077 is kept as a direct hard edge too: 0077 consumes 0076's table and scope.)
-    P0076 --> P0077
     P0076a -.-> P0087
     P0078 --> P0079
     P0077 -.-> P0079
@@ -635,9 +633,8 @@ flowchart LR
     %% (P0084 --> P0085 dropped: 0084 is done; 0085 is done too.)
     %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
-    class P0076a,P0077,P0079 pending;
-    class P0078,P0087 ready;
-    class P0076 claimed;
+    class P0077,P0079 pending;
+    class P0076a,P0078,P0087 ready;
     P0087 -.-> P0079
     P0087 -.-> P0077
     %% (P0075 closed to done/ 2026-10-27; P0073 closed to done/ 2026-10-08; no node remains `claimed`.)
@@ -647,7 +644,7 @@ flowchart LR
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(as of 2026-11-06 `0076` is the one `claimed` node, held by `worktree-0076-…`; earlier: `0067`, the prior sole `claimed` node, closed to
+(as of 2026-11-07 no node is `claimed`; `0076`, the prior sole `claimed` node, closed to `done/` this pass; earlier: `0067`, the prior sole `claimed` node, closed to
 `done/` this pass — see the update at the top of this file; `0066` and `0070`, the `claimed` nodes
 before that, both closed to `done/` in an earlier pass, on separate branches reconciled together
 here); yellow (`pending`) = still blocked on at least one open pending dependency.
@@ -855,7 +852,7 @@ in [`ai-spec/tasks-status.json`](tasks-status.json):
 ### Scope and known limitations of this map
 
 - **The `done/` tasks are omitted from the graph entirely, on purpose** (see the note at the top of
-  this file). They are still listed as flat IDs in the [inventory](#done-76--shipped-out-of-scope-for-this-graph)
+  this file). They are still listed as flat IDs in the [inventory](#done-99--shipped-out-of-scope-for-this-graph)
   above and are still referenced by ID in this analysis' prose where they explain *why* a pending
   task has no incoming edge (i.e. all its real prerequisites already shipped) — but re-deriving a
   full internal dependency graph for 63 already-merged stories would not change anything actionable
