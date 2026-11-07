@@ -170,7 +170,7 @@ class AddOrderItem
                 'order_id' => $lockedOrder->id,
                 'product_id' => $product->id,
                 'product_variant_id' => $variant?->id,
-                'product_name' => $product->name,
+                'product_name' => $product->snapshotName(),
                 'product_sku' => $productSku,
                 'quantity' => $quantity,
                 'unit_price' => $unitPrice,

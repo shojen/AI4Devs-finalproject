@@ -16,8 +16,6 @@ on:
       - main
       - master
       - workos
-      - feature-entrega2-ARP
-      - finalproject-ARP
     paths:
       - 'arospe/**'
       - '.github/workflows/lint.yml'

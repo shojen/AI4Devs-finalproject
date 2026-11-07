@@ -119,7 +119,7 @@ test('a full valid payload creates exactly one product carrying every submitted 
 
     $product = Product::where('sku', $sku)->firstOrFail();
 
-    expect($product->name)->toBe('Zapatillas Runner Pro')
+    expect($product->translated('name'))->toBe('Zapatillas Runner Pro')
         ->and($product->product_category_id)->toBe($category->id)
         ->and($product->type->value)->toBe('physical')
         ->and($product->status->value)->toBe('active')
@@ -220,12 +220,10 @@ test('opening an existing product populates every field from the database', func
     $actor = productsEditorFullActor();
     $this->actingAs($actor);
 
-    $product = Product::factory()->active()->create([
-        'name' => 'Runner Pro',
+    $product = Product::factory()->active()->named('Runner Pro', '<p>Stored description.</p>')->create([
         'sku' => 'RNR-001',
         'price' => '99.00',
         'stock' => 7,
-        'description' => '<p>Stored description.</p>',
     ]);
 
     Livewire::test(Editor::class, ['product' => $product])
@@ -289,7 +287,7 @@ test('a stale region id refuses the whole save with zero database writes', funct
     $regionA = SalesRegion::factory()->create();
     $regionB = SalesRegion::factory()->create();
 
-    $product = Product::factory()->create(['name' => 'Original Name', 'price' => '10.00']);
+    $product = Product::factory()->named('Original Name')->create(['price' => '10.00']);
     $product->salesRegions()->sync([$regionA->id]);
 
     $regionBId = $regionB->id;
@@ -308,7 +306,7 @@ test('a stale region id refuses the whole save with zero database writes', funct
     $component->call('save')->assertHasErrors();
 
     $fresh = $product->fresh();
-    expect($fresh->name)->toBe('Original Name')
+    expect($fresh->translated('name'))->toBe('Original Name')
         ->and($fresh->price)->toBe('10.00')
         ->and($fresh->salesRegions->pluck('id')->all())->toBe([$regionA->id]);
 });
@@ -327,7 +325,7 @@ test('a since-deactivated preserved region does not block the save', function ()
     $component = fillEditorForm(
         Livewire::test(Editor::class, ['product' => $product]),
         editorValidPayload([
-            'name' => $product->name,
+            'name' => $product->translated('name'),
             'sku' => $product->sku,
             'productCategoryId' => $product->product_category_id,
             'price' => '25.00',
@@ -354,7 +352,7 @@ test('a since-deactivated region that is newly added is still refused', function
     $component = fillEditorForm(
         Livewire::test(Editor::class, ['product' => $product]),
         editorValidPayload([
-            'name' => $product->name,
+            'name' => $product->translated('name'),
             'sku' => $product->sku,
             'productCategoryId' => $product->product_category_id,
             'regionIds' => [$region->id],
@@ -383,7 +381,7 @@ test('the preserved region set cannot be supplied by the client', function () {
     $component = fillEditorForm(
         Livewire::test(Editor::class, ['product' => $product]),
         editorValidPayload([
-            'name' => $product->name,
+            'name' => $product->translated('name'),
             'sku' => $product->sku,
             'productCategoryId' => $product->product_category_id,
             'regionIds' => [$neverAssigned->id],
@@ -475,8 +473,7 @@ test('a save that fails mid-flight leaves nothing partially written', function (
     $newFeatured = Media::factory()->create();
     $region = SalesRegion::factory()->create();
 
-    $product = Product::factory()->create([
-        'name' => 'Original Name',
+    $product = Product::factory()->named('Original Name')->create([
         'featured_media_id' => $originalFeatured->id,
     ]);
     $product->salesRegions()->sync([$region->id]);
@@ -510,7 +507,7 @@ test('a save that fails mid-flight leaves nothing partially written', function (
     expect($caught)->not->toBeNull();
 
     $fresh = $product->fresh();
-    expect($fresh->name)->toBe('Original Name')
+    expect($fresh->translated('name'))->toBe('Original Name')
         ->and($fresh->featured_media_id)->toBe($originalFeatured->id)
         ->and($fresh->salesRegions->pluck('id')->all())->toBe([$region->id]);
 });
@@ -572,7 +569,7 @@ test('the gallery strips array order is persisted as the 0-based position, and s
     $component = fillEditorForm(
         Livewire::test(Editor::class, ['product' => $product]),
         editorValidPayload([
-            'name' => $product->name,
+            'name' => $product->translated('name'),
             'sku' => $product->sku,
             'productCategoryId' => $product->product_category_id,
         ]),
@@ -612,7 +609,7 @@ test('a reorder is expressed as a resubmitted array, not a swap, with one save c
     $component = fillEditorForm(
         Livewire::test(Editor::class, ['product' => $product]),
         editorValidPayload([
-            'name' => $product->name,
+            'name' => $product->translated('name'),
             'sku' => $product->sku,
             'productCategoryId' => $product->product_category_id,
         ]),
@@ -662,7 +659,7 @@ test('a removal leaves no position gap', function () {
     $component = fillEditorForm(
         Livewire::test(Editor::class, ['product' => $product]),
         editorValidPayload([
-            'name' => $product->name,
+            'name' => $product->translated('name'),
             'sku' => $product->sku,
             'productCategoryId' => $product->product_category_id,
         ]),
@@ -828,7 +825,7 @@ test('save authorizes update as its first statement for a denied actor, on an ex
     $this->withoutExceptionHandling();
     $creator = productsEditorFullActor();
     $this->actingAs($creator);
-    $product = Product::factory()->create(['name' => 'Original Name']);
+    $product = Product::factory()->named('Original Name')->create();
 
     $deniedActor = User::factory()->create();
     $deniedActor->givePermissionTo('products.view');
@@ -843,7 +840,7 @@ test('save authorizes update as its first statement for a denied actor, on an ex
         ]),
     )->call('save'))->toThrow(AuthorizationException::class);
 
-    expect($product->fresh()->name)->toBe('Original Name');
+    expect($product->fresh()->translated('name'))->toBe('Original Name');
 });
 
 test('a save by a denied actor writes nothing across products, product_media and product_sales_region', function () {

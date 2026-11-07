@@ -99,7 +99,6 @@ test('a duplicate that bypasses validation via a simulated race surfaces as a Va
         DB::table('products')->insert([
             'id' => (string) Str::uuid7(),
             'product_category_id' => $category->id,
-            'name' => 'Racer',
             'sku' => $sku,
             'type' => 'physical',
             'status' => 'draft',

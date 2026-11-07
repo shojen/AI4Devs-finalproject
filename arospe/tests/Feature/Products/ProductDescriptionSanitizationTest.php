@@ -66,7 +66,7 @@ use Spatie\Permission\PermissionRegistrar;
 //
 // (4) Per the task's own instruction ("Every case asserts the PERSISTED value ... never the
 //     action's return value"), every test in this file goes through CreateProduct/UpdateProduct
-//     and reads `->fresh()->description`, never asserts on SanitizeProductDescription's return
+//     and reads `->fresh()->translated('description')`, never asserts on SanitizeProductDescription's return
 //     value as the target of the test -- with one narrow exception (the null/empty-string
 //     pass-through tests, which additionally probe the action directly in isolation, since "no
 //     sanitizer error" is a claim about the action's own contract as well as about persistence).
@@ -114,7 +114,7 @@ function updateProductDescription(Product $product, ?string $description): Produ
 {
     return app(UpdateProduct::class)(
         product: $product,
-        name: $product->name,
+        name: $product->translated('name'),
         sku: $product->sku,
         productCategoryId: $product->product_category_id,
         type: $product->type?->value,
@@ -142,7 +142,7 @@ function updateProductDescription(Product $product, ?string $description): Produ
 test('each tag the WYSIWYG toolbar can produce survives a round-trip unchanged', function (string $html, string $expected) {
     $product = createProductWithDescription($html);
 
-    expect($product->fresh()->description)->toBe($expected);
+    expect($product->fresh()->translated('description'))->toBe($expected);
 })->with([
     // Phase 5 code review finding F-2: story 0021's WYSIWYG editor's real, execution-verified
     // output for the Bold/Italic toolbar buttons is <b>/<i> (see done/0021's D2 table, verified
@@ -184,7 +184,7 @@ test('each tag the WYSIWYG toolbar can produce survives a round-trip unchanged',
 test('an out-of-list code-block class is stripped, but the element and its text survive', function () {
     $product = createProductWithDescription('<pre><code class="not-a-real-language">x</code></pre>');
 
-    expect($product->fresh()->description)->toBe('<pre><code>x</code></pre>');
+    expect($product->fresh()->translated('description'))->toBe('<pre><code>x</code></pre>');
 });
 
 // A loop inside the test body, not a ->with() dataset -- Pest/PHPUnit evaluates a dataset
@@ -200,7 +200,7 @@ test('every allowed_code_languages entry survives as a code-block class, and not
     foreach ($allowedLanguages as $language) {
         $product = createProductWithDescription('<pre><code class="language-'.$language.'">x</code></pre>');
 
-        expect($product->fresh()->description)
+        expect($product->fresh()->translated('description'))
             ->toBe('<pre><code class="language-'.$language.'">x</code></pre>', "Expected language [{$language}] to survive.");
     }
 });
@@ -210,7 +210,7 @@ test('every allowed_code_languages entry survives as a code-block class, and not
 test('a script block does not survive, and the surrounding legitimate text is still there', function () {
     $product = createProductWithDescription('Before text <script>alert(1)</script> After text');
 
-    $stored = $product->fresh()->description;
+    $stored = $product->fresh()->translated('description');
 
     expect($stored)->not->toContain('<script')
         ->and($stored)->toContain('Before text')
@@ -227,7 +227,7 @@ test('a script block does not survive, and the surrounding legitimate text is st
 test('a script block is dropped tag-and-content, not merely unwrapped -- its text does not survive either', function () {
     $product = createProductWithDescription('Before text <script>alert(1)</script> After text');
 
-    expect($product->fresh()->description)->toBe('Before text  After text');
+    expect($product->fresh()->translated('description'))->toBe('Before text  After text');
 });
 
 // Phase 4 security audit finding F-1's own residual, pinned rather than assumed away.
@@ -243,7 +243,7 @@ test('a script block is dropped tag-and-content, not merely unwrapped -- its tex
 test('a style tag in the body is stripped, but its inert CSS text survives -- a documented, unavoidable residual', function () {
     $product = createProductWithDescription('<p>A</p><style>body { color: red }</style><p>B</p>');
 
-    $stored = $product->fresh()->description;
+    $stored = $product->fresh()->translated('description');
 
     expect($stored)->not->toContain('<style')
         ->and($stored)->toContain('body { color: red }');
@@ -258,7 +258,7 @@ test('a style tag in the body is stripped, but its inert CSS text survives -- a 
 test('a dangerous vector never reaches the stored description', function (string $description, string $mustNotContain) {
     $product = createProductWithDescription($description);
 
-    expect($product->fresh()->description)->not->toContain($mustNotContain);
+    expect($product->fresh()->translated('description'))->not->toContain($mustNotContain);
 })->with([
     'on* handler on an otherwise-allowed img' => [
         '<img src="https://example.com/x.png" onerror="alert(1)" alt="x">', 'onerror',
@@ -285,7 +285,7 @@ test('a dangerous vector never reaches the stored description', function (string
 test('a mangled, unclosed script vector does not reassemble into a live tag', function () {
     $product = createProductWithDescription('<scr<script>ipt>alert(1)</script>');
 
-    $stored = $product->fresh()->description;
+    $stored = $product->fresh()->translated('description');
 
     expect($stored)->not->toContain('<script')
         ->and($stored)->not->toContain('<scr');
@@ -303,11 +303,11 @@ test('sanitizing an already-sanitized description is a no-op, so an edit round-t
         .'<script>alert(1)</script> and <img src="https://example.com/x.png" onerror="alert(1)" alt="pic">'
     );
 
-    $onceSanitized = $product->fresh()->description;
+    $onceSanitized = $product->fresh()->translated('description');
 
     $updated = updateProductDescription($product, $onceSanitized);
 
-    expect($updated->fresh()->description)->toBe($onceSanitized);
+    expect($updated->fresh()->translated('description'))->toBe($onceSanitized);
 });
 
 // Phase 4 security audit finding F-2 (Low): fuzzing 4,000 randomized markup-soup inputs against
@@ -324,22 +324,30 @@ test('sanitizing an already-sanitized description is a no-op, so an edit round-t
 test('sanitizing twice always converges, even for malformed nesting where one pass does not', function () {
     $raw = '<ul><li>A<center><li>B</li></center></li></ul>';
 
-    $product = createProductWithDescription($raw);
-    $firstPass = $product->fresh()->description;
+    $sanitize = app(SanitizeProductDescription::class);
+
+    // Story 0076 (D-8): a stored description now passes through the action AND the model-event
+    // layer, so the stored value is already the converged one. The one-pass premise is therefore
+    // pinned against the action itself.
+    $firstPass = $sanitize($raw);
 
     // Confirms the premise this test exists to guard: the first pass alone is NOT yet the stable
     // value (proves the counter-example still reproduces against the shipped config, rather than
     // silently testing nothing if a library upgrade changes this).
     expect($firstPass)->toBe('<ul><li>A<li>B</li></li></ul>');
 
-    $secondPassProduct = updateProductDescription($product, $firstPass);
-    $secondPass = $secondPassProduct->fresh()->description;
-
-    $thirdPassProduct = updateProductDescription($secondPassProduct, $secondPass);
-    $thirdPass = $thirdPassProduct->fresh()->description;
+    $secondPass = $sanitize($firstPass);
+    $thirdPass = $sanitize($secondPass);
 
     expect($secondPass)->not->toBe($firstPass)
         ->and($secondPass)->toBe($thirdPass);
+
+    $product = createProductWithDescription($raw);
+    $storedPass = $product->fresh()->translated('description');
+    $updated = updateProductDescription($product, $storedPass);
+
+    expect($storedPass)->toBe($secondPass)
+        ->and($updated->fresh()->translated('description'))->toBe($secondPass);
 });
 
 // D-16 constraint 1, and the one test that fails if the two steps are ever swapped. The raw
@@ -359,7 +367,7 @@ test('a description over the length limit only because of markup the sanitizer r
 
     expect(Product::count())->toBe(1);
 
-    $stored = $product->fresh()->description;
+    $stored = $product->fresh()->translated('description');
 
     expect($stored)->not->toBeNull()
         ->and(mb_strlen($stored))->toBeLessThanOrEqual(65_535);
@@ -374,7 +382,7 @@ test('a null description passes through untouched, with no sanitizer error', fun
 
     $product = createProductWithDescription(null);
 
-    expect($product->fresh()->description)->toBeNull();
+    expect($product->fresh()->translated('description'))->toBeNull();
 });
 
 test('an empty-string description passes through untouched, with no sanitizer error', function () {
@@ -382,7 +390,7 @@ test('an empty-string description passes through untouched, with no sanitizer er
 
     $product = createProductWithDescription('');
 
-    expect($product->fresh()->description)->toBe('');
+    expect($product->fresh()->translated('description'))->toBe('');
 });
 
 // The update path sanitizes too, asserted completely independently of the create-path tests above
@@ -393,7 +401,7 @@ test('the update path sanitizes the description too, independently of create', f
 
     $updated = updateProductDescription($product, 'Before <script>alert(1)</script> After');
 
-    $stored = $updated->fresh()->description;
+    $stored = $updated->fresh()->translated('description');
 
     expect($stored)->not->toContain('<script')
         ->and($stored)->toContain('Before')
@@ -418,7 +426,7 @@ test('a realistic Word-style paste is sanitized to the pinned, verified output (
 
     $product = createProductWithDescription($wordPaste);
 
-    expect($product->fresh()->description)->toBe(
+    expect($product->fresh()->translated('description'))->toBe(
         "<p>This is \u{201C}quoted\u{201D} text with an \u{2018}apostrophe\u{2019}.\u{00A0}</p>"
     );
 });

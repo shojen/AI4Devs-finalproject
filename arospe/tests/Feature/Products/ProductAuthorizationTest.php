@@ -117,7 +117,7 @@ test('UpdateProduct is refused for an actor lacking products.edit, is logged, an
     }
 
     expect($caught)->toBeInstanceOf(AuthorizationException::class);
-    expect($product->fresh()->name)->toBe('Original Name');
+    expect($product->fresh()->translated('name'))->toBe('Original Name');
 
     Log::shouldHaveReceived('warning')
         ->withArgs(fn (string $message, array $context): bool => $message === 'Privileged action refused'
@@ -147,7 +147,7 @@ test('UpdateProduct succeeds for an actor holding products.edit, as the control'
         ]),
     ));
 
-    expect($updated->fresh()->name)->toBe('Updated Name');
+    expect($updated->fresh()->translated('name'))->toBe('Updated Name');
 });
 
 // =====================================================================
@@ -223,7 +223,7 @@ test('a Super Admin actor holding zero permission rows passes create, update and
             'productCategoryId' => $product->product_category_id,
         ]),
     ));
-    expect($updated->fresh()->name)->toBe('Super Admin Update');
+    expect($updated->fresh()->translated('name'))->toBe('Super Admin Update');
 
     $result = app(DeleteProduct::class)($product);
     expect($result)->toBeTrue();

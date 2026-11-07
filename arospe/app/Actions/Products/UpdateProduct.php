@@ -3,16 +3,19 @@
 namespace App\Actions\Products;
 
 use App\Actions\Auth\LogRefusedPrivilegedAttempt;
+use App\Actions\Translations\SetTranslation;
 use App\Concerns\ProductValidationRules;
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
 use App\Models\Product;
+use App\Models\StoreLanguage;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class UpdateProduct
 {
@@ -38,6 +41,7 @@ class UpdateProduct
         private readonly SanitizeProductDescription $sanitizeProductDescription,
         private readonly TranslateProductVariantUniqueViolation $translateProductVariantUniqueViolation,
         private readonly DeriveVariantSku $deriveVariantSku,
+        private readonly SetTranslation $setTranslation,
     ) {}
 
     /**
@@ -92,6 +96,14 @@ class UpdateProduct
             $product,
             targetType: 'product',
             targetId: $product->id,
+        );
+
+        $defaultLanguage = StoreLanguage::defaultStoreLanguage();
+
+        throw_if(
+            $defaultLanguage === null,
+            RuntimeException::class,
+            'Cannot update a product: no default store language is configured.',
         );
 
         $name = trim($name);
@@ -149,6 +161,7 @@ class UpdateProduct
                 $description,
                 $featuredMediaId,
                 $orderedGalleryMediaIds,
+                $defaultLanguage,
             ): Product {
                 // Story 0029 D-4.5/D-4.7: SKUs are one namespace across `products` AND
                 // `product_variants`. ALWAYS this order -- products (excluding this row), then
@@ -174,13 +187,17 @@ class UpdateProduct
                 $skuChanged = $product->sku !== $sku;
 
                 $product->update([
-                    'name' => $name,
                     'sku' => $sku,
                     'product_category_id' => (string) $productCategoryId,
                     'type' => $resolvedType,
                     'status' => $resolvedStatus,
                     'price' => $price,
                     'stock' => (int) $stock,
+                ]);
+
+                // Story 0076 D-15: default-language name/description, same transaction, no attempts:.
+                ($this->setTranslation)($product, $defaultLanguage, [
+                    'name' => $name,
                     'description' => $description,
                 ]);
 

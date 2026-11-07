@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\PermissionRegistrar;
 
 // Story 0045, Phase 3 (TDD "red" step): App\Actions\Orders\CreateOrder does not exist yet -- every
@@ -129,7 +130,7 @@ test('a line item for a variant stores the variant own SKU, while product_name c
 
     $customer = Customer::factory()->create();
     $paymentMethod = PaymentMethod::factory()->create();
-    $product = Product::factory()->create(['name' => 'Camiseta', 'sku' => 'CAM-BASE', 'price' => '10.00']);
+    $product = Product::factory()->named('Camiseta')->create(['sku' => 'CAM-BASE', 'price' => '10.00']);
     // ProductVariantFactory::configure() ALWAYS overwrites `sku` with a real
     // DeriveVariantSku() derivation, regardless of a `create(['sku' => ...])`
     // override (see the factory's own file banner) -- so the expected value
@@ -157,7 +158,7 @@ test('the line item stores the product name and code at the time of order', func
 
     $customer = Customer::factory()->create();
     $paymentMethod = PaymentMethod::factory()->create();
-    $product = Product::factory()->create(['name' => 'Silla de oficina', 'sku' => 'SIL-001', 'price' => '10.00']);
+    $product = Product::factory()->named('Silla de oficina')->create(['sku' => 'SIL-001', 'price' => '10.00']);
 
     $order = app(CreateOrder::class)([
         'customer_id' => $customer->id,
@@ -180,7 +181,7 @@ test('renaming or re-coding a product after the order exists does not move the e
 
     $customer = Customer::factory()->create();
     $paymentMethod = PaymentMethod::factory()->create();
-    $product = Product::factory()->create(['name' => 'Original Name', 'sku' => 'ORIG-SKU', 'price' => '10.00']);
+    $product = Product::factory()->named('Original Name')->create(['sku' => 'ORIG-SKU', 'price' => '10.00']);
 
     $order = app(CreateOrder::class)([
         'customer_id' => $customer->id,
@@ -190,9 +191,9 @@ test('renaming or re-coding a product after the order exists does not move the e
         ],
     ]);
 
-    $product->name = 'Renamed Name';
     $product->sku = 'NEW-SKU';
     $product->save();
+    DB::table('product_translations')->where('product_id', $product->id)->update(['name' => 'Renamed Name']);
 
     $fresh = $order->fresh();
     $item = $fresh->items()->sole();
@@ -231,7 +232,7 @@ test('deleting the catalog product nulls order_items.product_id while the snapsh
 
     $customer = Customer::factory()->create();
     $paymentMethod = PaymentMethod::factory()->create();
-    $product = Product::factory()->create(['name' => 'Doomed Product', 'sku' => 'DOOM-1', 'price' => '10.00']);
+    $product = Product::factory()->named('Doomed Product')->create(['sku' => 'DOOM-1', 'price' => '10.00']);
 
     $order = app(CreateOrder::class)([
         'customer_id' => $customer->id,

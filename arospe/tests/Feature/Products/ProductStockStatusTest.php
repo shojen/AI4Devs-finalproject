@@ -90,7 +90,6 @@ test('a raw insert of an out-of-stock status string succeeds at the database lay
     DB::table('products')->insert([
         'id' => (string) Str::uuid7(),
         'product_category_id' => $category->id,
-        'name' => 'Raw Insert Product',
         'sku' => 'RNR-'.Str::random(10),
         'type' => 'physical',
         'status' => 'agotado',

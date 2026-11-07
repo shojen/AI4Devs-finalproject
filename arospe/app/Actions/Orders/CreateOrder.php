@@ -173,7 +173,7 @@ class CreateOrder
         )));
 
         /** @var Collection<string, Product> $products */
-        $products = Product::query()->findOrFail($productIds)->keyBy('id');
+        $products = Product::query()->with('translations')->findOrFail($productIds)->keyBy('id');
 
         $variantIds = array_values(array_unique(array_filter(array_map(
             fn (array $item): ?string => isset($item['product_variant_id']) ? (string) $item['product_variant_id'] : null,
@@ -242,7 +242,7 @@ class CreateOrder
             $resolvedItems[] = [
                 'product_id' => $product->id,
                 'product_variant_id' => $variant?->id,
-                'product_name' => $product->name,
+                'product_name' => $product->snapshotName(),
                 'product_sku' => (string) ($variant->sku ?? $product->sku),
                 'quantity' => $quantity,
                 'unit_price' => $unitPrice,

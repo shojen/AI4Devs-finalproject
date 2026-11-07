@@ -30,7 +30,7 @@ use App\Models\ProductVariant;
  * however large the catalog: the ranking query, then one grouped count for the returned parents.
  *
  * D-9 -- translatable-content seam: the name is read ONLY through `resolveName()`; the query
- * selects `products.*` and never names, filters or orders on `name` (story 0076 swaps that method).
+ * selects `products.*` and never names, filters or orders on `name` (story 0076 swapped that method).
  */
 class GetLowStockProducts
 {
@@ -61,6 +61,7 @@ class GetLowStockProducts
             ->orderBy('effective_stock')
             ->orderBy('products.id')
             ->limit(self::LIMIT)
+            ->withTranslationsFor()
             ->get();
 
         if ($products->isEmpty()) {
@@ -99,11 +100,11 @@ class GetLowStockProducts
     }
 
     /**
-     * D-9 seam: the product's name. Today the plain attribute; the translatable-content retrofit may
-     * return null when no translation exists, which is why the row shape types it nullable.
+     * D-9 seam: the product's name in the store default language (story 0076, Q-4), null when no
+     * translation exists, which is why the row shape types it nullable.
      */
-    private function resolveName(Product $product): string
+    private function resolveName(Product $product): ?string
     {
-        return $product->name;
+        return $product->translated('name');
     }
 }

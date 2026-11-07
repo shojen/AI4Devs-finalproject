@@ -101,9 +101,8 @@ function wysiwygUiTestActor(): User
  */
 function wysiwygUiTestProduct(string $description = '<p>BEFORE AFTER</p>'): Product
 {
-    return Product::factory()->create([
+    return Product::factory()->named('Wysiwyg Test Product', $description)->create([
         'product_category_id' => ProductCategory::factory()->create()->id,
-        'description' => $description,
     ]);
 }
 
@@ -626,7 +625,7 @@ test('an edit made in HTML source mode survives a save and reload, sanitized lik
         ->assertNoJavaScriptErrors()
         ->assertUrlIs(route('products.index'));
 
-    expect($product->fresh()->description)
+    expect($product->fresh()->translated('description'))
         ->toBe('<h2>Allowed</h2>Not allowed as a div');
 });
 
@@ -983,7 +982,7 @@ test('typing inside a code block colours it live, per keystroke, while the caret
         ->assertNoJavaScriptErrors()
         ->assertUrlIs(route('products.index'));
 
-    expect($product->fresh()->description)
+    expect($product->fresh()->translated('description'))
         ->toContain('<pre><code class="language-php">echo$xBEFORE</code></pre>')
         ->not->toContain('hljs-');
 });
@@ -1180,6 +1179,6 @@ test('pressing Enter inside a code block inserts a real line break, live and aft
     // The PERSISTED value carries the real line break too -- proving buildCleanValue()'s own fix
     // (it reads a code block's plain text through the same `<br>`-aware helper), not only the
     // live editor's.
-    expect($product->fresh()->description)
+    expect($product->fresh()->translated('description'))
         ->toContain("<pre><code class=\"language-php\">ab\nXcd</code></pre>");
 });

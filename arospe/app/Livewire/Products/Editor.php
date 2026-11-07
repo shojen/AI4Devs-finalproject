@@ -15,6 +15,7 @@ use App\Exceptions\UnresolvedSelectionException;
 use App\Models\Media;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\StoreLanguage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -37,9 +38,10 @@ use Livewire\Component;
  * finer `create`/`update`/`delete` abilities authorized here as the SECOND layer over
  * CreateProduct/UpdateProduct's own self-authorization (0024's D-15 was reversed at its split).
  *
- * WRITTEN AGAINST THE ORIGINAL (pre-0076/0077 translatable-content-retrofit) contract: `$name` and
- * `$description` are plain scalar properties, matching the still-scalar `products.name` /
- * `products.description` columns. See the story file's own "predates Epic 5" blockquotes.
+ * Story 0076: `$name` and `$description` are plain scalar properties holding the store DEFAULT
+ * language's translation row (`product_translations`), read raw in mount() -- never through
+ * `translated()`, so a fallback is not silently saved back as a translation -- and written back
+ * through CreateProduct/UpdateProduct, whose signatures are unchanged.
  */
 #[Title('Product editor')]
 class Editor extends Component
@@ -157,14 +159,25 @@ class Editor extends Component
         }
 
         $this->productId = $product->id;
-        $this->name = $product->name;
+        $defaultLanguageId = StoreLanguage::defaultStoreLanguage()?->id;
+        $this->name = '';
+        $this->description = '';
+
+        foreach ($product->translations as $translation) {
+            if ($translation->store_language_id === $defaultLanguageId) {
+                $this->name = $translation->name;
+                $this->description = $translation->description ?? '';
+
+                break;
+            }
+        }
+
         $this->sku = $product->sku;
         $this->productCategoryId = $product->product_category_id;
         $this->type = $product->type->value;
         $this->status = $product->status->value;
         $this->price = $product->price;
         $this->stock = (string) $product->stock;
-        $this->description = $product->description ?? '';
         $this->regionIds = array_values($product->salesRegions->pluck('id')->all());
 
         $featuredImage = $product->featuredImage;

@@ -7,6 +7,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -105,11 +106,12 @@ test('changing a quantity re-multiplies the stored unit_price and never re-reads
 test('changing a quantity does not touch the line items product_name or product_sku, even after the product is renamed', function () {
     actingOrderEditorForQuantity();
 
-    $product = Product::factory()->create(['name' => 'Widget', 'sku' => 'WID-001', 'price' => '10.00']);
+    $product = Product::factory()->named('Widget')->create(['sku' => 'WID-001', 'price' => '10.00']);
     $order = Order::factory()->create();
     $item = OrderItem::factory()->for($order)->create(['product_id' => $product->id, 'quantity' => 1]);
 
-    $product->update(['name' => 'Renamed Widget', 'sku' => 'WID-002']);
+    $product->update(['sku' => 'WID-002']);
+    DB::table('product_translations')->where('product_id', $product->id)->update(['name' => 'Renamed Widget']);
 
     app(UpdateOrderItemQuantity::class)($order, $item->id, 2);
 

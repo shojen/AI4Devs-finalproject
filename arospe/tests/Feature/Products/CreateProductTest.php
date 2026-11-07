@@ -123,14 +123,14 @@ test('creating with every required field persists exactly one row with every val
 
     $fresh = $product->fresh();
 
-    expect($fresh->name)->toBe('Runner Pro')
+    expect($fresh->translated('name'))->toBe('Runner Pro')
         ->and($fresh->sku)->toBe('RNR-001')
         ->and($fresh->product_category_id)->toBe($category->id)
         ->and($fresh->type)->toBe(ProductType::Physical)
         ->and($fresh->status)->toBe(ProductStatus::Active)
         ->and($fresh->price)->toBe('19.99')
         ->and($fresh->stock)->toBe(5)
-        ->and($fresh->description)->toBe('A great running shoe.')
+        ->and($fresh->translated('description'))->toBe('A great running shoe.')
         ->and($fresh->created_at)->not->toBeNull()
         ->and($fresh->updated_at)->not->toBeNull();
 });
@@ -151,12 +151,11 @@ test('a raw insert omitting type throws QueryException at the database layer', f
     expect(fn () => DB::table('products')->insert([
         'id' => (string) Str::uuid7(),
         'product_category_id' => $category->id,
-        'name' => 'Raw Insert Product',
         'sku' => 'RAW-'.Str::random(10),
         'price' => '19.99',
         'created_at' => now(),
         'updated_at' => now(),
-    ]))->toThrow(QueryException::class);
+    ]))->toThrow(fn (QueryException $exception) => expect($exception->errorInfo[1])->toBeIn([1364, 1048]));
 });
 
 // (c) the model layer — no model-level attribute default exists either.
@@ -204,7 +203,7 @@ test('invalid input is refused on the named field, with zero rows written', func
 test('leading and trailing whitespace on name and sku is stored trimmed', function () {
     $product = createProductWith(['name' => '  Runner Pro  ', 'sku' => '  TRIM-SKU-001  ']);
 
-    expect($product->fresh()->name)->toBe('Runner Pro')
+    expect($product->fresh()->translated('name'))->toBe('Runner Pro')
         ->and($product->fresh()->sku)->toBe('TRIM-SKU-001');
 });
 
@@ -214,7 +213,7 @@ test('a name of exactly the maximum length (255) is accepted', function () {
 
     $product = createProductWith(['name' => $name]);
 
-    expect($product->fresh()->name)->toBe($name);
+    expect($product->fresh()->translated('name'))->toBe($name);
 });
 
 test('a name one character over the maximum length (256) is refused', function () {
@@ -242,7 +241,7 @@ test('a SKU one character over the maximum length (65) is refused', function () 
 test('a description containing a script is stored clean', function () {
     $product = createProductWith(['description' => 'Before text <script>alert(1)</script> After text']);
 
-    $stored = $product->fresh()->description;
+    $stored = $product->fresh()->translated('description');
 
     expect($stored)->not->toContain('<script')
         ->and($stored)->toContain('Before text')

@@ -116,7 +116,7 @@ test('REGRESSION: changing the customer address after the order exists does not 
 
 test('line items render product name, sku, quantity, unit price, line total and refunded quantity', function () {
     // OrderItemFactory snapshots name/sku/price FROM the product it is given, so the fixture is the product.
-    $product = Product::factory()->create(['name' => 'Camiseta Azul', 'sku' => 'SKU-AZUL-1', 'price' => '12.50']);
+    $product = Product::factory()->named('Camiseta Azul')->create(['sku' => 'SKU-AZUL-1', 'price' => '12.50']);
     $order = Order::factory()->create();
     OrderItem::factory()->for($order)->create(['product_id' => $product->id, 'quantity' => 3, 'refunded_quantity' => 1]);
 

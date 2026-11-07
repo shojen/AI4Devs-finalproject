@@ -13,7 +13,9 @@ database/
                         classes (iso-3166-countries.json, shared read-only with story 0032's own
                         GeographyCatalogSeeder; es-municipalities.csv, story 0032's ~8,130-row
                         Spanish municipio fixture; plus its own README stating provenance for both)
-  factories/
+  factories/            Model factories, plus the odd non-factory test-support collaborator that a
+                        factory registers (WritesDefaultProductTranslation, story 0076: an invokable
+                        afterCreating step, see testing/backend/datasets-and-factories.md)
   migrations/
   seeders/
 lang/                   Published translation files, one folder per locale (en/, es/), plus

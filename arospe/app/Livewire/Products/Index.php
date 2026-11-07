@@ -76,12 +76,12 @@ class Index extends Component
      */
     public function confirmDelete(string $productId, LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt): void
     {
-        $target = Product::findOrFail($productId);
+        $target = Product::query()->withTranslationsFor()->findOrFail($productId);
 
         $logRefusedPrivilegedAttempt->authorize('delete', $target, targetType: 'product', targetId: $target->id);
 
         $this->deletingProductId = $target->id;
-        $this->deletingProductName = $target->name;
+        $this->deletingProductName = $target->translated('name') ?? '—';
         $this->showDeleteModal = true;
     }
 
@@ -147,8 +147,8 @@ class Index extends Component
         $disk = Storage::disk('public');
 
         return Product::query()
-            ->select(['id', 'product_category_id', 'featured_media_id', 'name', 'sku',
-                'type', 'status', 'price', 'stock', 'created_at'])
+            ->select(['products.id', 'products.product_category_id', 'products.featured_media_id', 'products.sku',
+                'products.type', 'products.status', 'products.price', 'products.stock', 'products.created_at'])
             ->with([
                 // Story 0070 (D-15): `name` no longer lives on `product_categories`, and this
                 // row mapping below never reads `category` at all -- confirmed by grep before
@@ -158,12 +158,12 @@ class Index extends Component
                 'category:id',
                 'featuredImage:id,title,path,webp_path,avif_path',
             ])
-            ->orderBy('name')
-            ->orderBy('id')
+            ->orderByTranslatedName()
+            ->orderBy('products.id')
             ->paginate(self::PER_PAGE)
             ->through(fn (Product $product) => [
                 'id' => $product->id,
-                'name' => $product->name,
+                'name' => $product->getAttribute('translated_name') ?? '—',
                 'sku' => $product->sku,
                 'price' => $product->price,
                 'stock' => $product->stock,

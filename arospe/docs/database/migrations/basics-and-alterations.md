@@ -214,5 +214,13 @@ Two things worth naming explicitly:
 
 **Third use (story 0074, `blog_tags`):** same two-migration pair and `down()` shape as 0072, with one deliberate difference — `BackfillBlogTagTranslations` **copies** `name` *and* `normalized_name` byte-for-byte rather than recomputing, because the old global `UNIQUE(normalized_name)` already proves the values pairwise distinct and so cannot violate the new per-language composite index. Choose copy vs recompute per table by whether the old key was globally unique. The drop migration removes the unique index before the columns.
 
+**Fourth use (story 0076, `products`):** the pair `2026_11_06_100000_create_product_translations_table` / `2026_11_06_100001_drop_translatable_columns_from_products_table`, and the first to move **two** columns (`name`, `description`) into one child table. Three details to copy:
+
+- **Assert before DDL.** `create…` calls `BackfillProductTranslations::assertCanBackfill()` before `Schema::create()`, then runs the backfill (query builder, copy byte-for-byte, idempotent).
+- **A drop guard.** The drop migration first checks that no `products` row lacks a `product_translations` row and throws a `RuntimeException` otherwise, so a product written by old code between the two migrations never loses its only copy.
+- **No `dropUnique()`**: `products.name` never had a unique index, and the drop is a bare `dropColumn(['name', 'description'])`.
+
+> ⚠️ **Rollback warning (D-12, by design).** Rolling back both migrations drops `product_translations` and restores `products.name`/`description` as nullable and **empty** (not an inverse: the values lived per language on the child table). Take a database backup before running or rolling back these migrations.
+
 ✅ Good — two migrations, the precondition before any DDL, the backfill extracted and testable, and a `down()` that says in a comment exactly what it does not restore.
 ❌ Bad — a single migration that creates the child table, backfills, and drops the parent column all at once: a mid-migration failure (a bad backfill row, a lock timeout) then leaves the schema in a state neither `up()` nor `down()` was written to handle.
