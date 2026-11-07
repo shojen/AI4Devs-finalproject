@@ -1,19 +1,18 @@
 <?php
 
-// The list query's own shape -- a named risk per the story's D-4, split into its own file. WRITTEN
-// AGAINST THE ORIGINAL (pre-0076) query shape, which is still what runs today: an explicit-column
-// select() naming `products.name` directly, `orderBy('name')->orderBy('id')`, and two eager loads
+// The list query's own shape -- a named risk per the story's D-4, split into its own file. Since
+// story 0076 the list orders through `orderByTranslatedName()` (qualified `products.*` columns and a
+// `products.id` tie-breaker) and reads the name from the joined `translated_name` alias, because
+// `products` no longer carries `name` or `description`. Two eager loads remain
 // (`category:id` -- narrowed from `category:id,name` by story 0070's D-15, since
 // `product_categories` no longer carries a `name` column -- and
-// `featuredImage:id,title,path,webp_path,avif_path`). The 0076 correction that replaces
-// `orderBy('name')` with `orderByTranslatedName()` does not apply -- 0076 is not built.
-//
-// Written at TDD Phase 3 step 1 (red), before App\Livewire\Products\Index exists.
+// `featuredImage:id,title,path,webp_path,avif_path`).
 
 use App\Livewire\Products\Index;
 use App\Models\Media;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\DB;
@@ -81,6 +80,10 @@ test('the list query eager-loads the category and featured image with no N+1', f
             ]);
         }
 
+        // Story 0076: the store default language is resolved once and memoized; warm it so the
+        // counted run measures the list query's own shape, not that one-time lookup.
+        StoreLanguage::defaultStoreLanguage();
+
         $queries = 0;
         DB::listen(function () use (&$queries): void {
             $queries++;
@@ -99,9 +102,7 @@ test('the list query eager-loads the category and featured image with no N+1', f
 
 test('pagination returns the next pages rows and the correct total', function () {
     // D-4: paginate(25). 30 products across two pages -- page 2 holds exactly the remaining 5.
-    Product::factory()->count(30)->sequence(fn ($sequence) => [
-        'name' => sprintf('Product %03d', $sequence->index),
-    ])->create();
+    Product::factory()->count(30)->create();
 
     $page1 = Livewire::test(Index::class)->get('products');
     expect($page1->total())->toBe(30)

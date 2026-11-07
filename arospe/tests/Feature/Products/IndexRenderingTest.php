@@ -44,7 +44,7 @@ test('an active product with stock renders the active badge', function () {
     $actor = productsIndexRenderingActor();
     $this->actingAs($actor);
 
-    Product::factory()->active()->create(['name' => 'In Stock Widget', 'stock' => 42]);
+    Product::factory()->active()->named('In Stock Widget')->create(['stock' => 42]);
 
     Livewire::test(Index::class)->assertSee(__('products.statuses.active'));
 });
@@ -53,7 +53,7 @@ test('an active product with zero stock renders the out-of-stock badge, never th
     $actor = productsIndexRenderingActor();
     $this->actingAs($actor);
 
-    Product::factory()->active()->create(['name' => 'Sold Out Widget', 'stock' => 0]);
+    Product::factory()->active()->named('Sold Out Widget')->create(['stock' => 0]);
 
     Livewire::test(Index::class)
         ->assertSee(__('products.display_statuses.out_of_stock'));
@@ -63,7 +63,7 @@ test('a draft product with zero stock still reads draft, not out of stock', func
     $actor = productsIndexRenderingActor();
     $this->actingAs($actor);
 
-    Product::factory()->draft()->create(['name' => 'Draft Empty Widget', 'stock' => 0]);
+    Product::factory()->draft()->named('Draft Empty Widget')->create(['stock' => 0]);
 
     Livewire::test(Index::class)
         ->assertSee(__('products.statuses.draft'))
@@ -91,7 +91,7 @@ test('stock at 0, 8 and 42 renders the out, low and ok treatment respectively', 
     $actor = productsIndexRenderingActor();
     $this->actingAs($actor);
 
-    Product::factory()->create(['name' => 'Stock Band Widget', 'stock' => $stock]);
+    Product::factory()->named('Stock Band Widget')->create(['stock' => $stock]);
 
     $html = Livewire::test(Index::class)->html();
 

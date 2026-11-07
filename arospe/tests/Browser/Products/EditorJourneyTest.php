@@ -178,7 +178,7 @@ test('filling every field, choosing imagery and regions, saving, and reopening p
 
         $product = Product::where('sku', $canonicalSku)->firstOrFail();
 
-        expect($product->name)->toBe('Zapatillas Runner Pro')
+        expect($product->translated('name'))->toBe('Zapatillas Runner Pro')
             ->and($product->price)->toBe('119.95')
             ->and($product->stock)->toBe(42)
             ->and($product->featured_media_id)->toBe($featured->id)

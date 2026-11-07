@@ -59,7 +59,7 @@ test('price, stock, status and type round-trip through their declared casts', fu
 // `is_default`/`is_active`.
 test('the fillable set is exactly the columns a plain create/update payload may set directly', function () {
     expect((new Product)->getFillable())->toBe([
-        'name', 'sku', 'product_category_id', 'type', 'status', 'price', 'stock', 'description',
+        'sku', 'product_category_id', 'type', 'status', 'price', 'stock',
     ]);
 });
 

@@ -253,7 +253,7 @@ test('renaming the parent product\'s SKU re-derives every one of its variants, i
     app(UpdateProduct::class)(...array_merge(
         ['product' => $product],
         skuUniquenessTestProductPayload([
-            'name' => $product->name,
+            'name' => $product->translated('name'),
             'sku' => '0009',
             'productCategoryId' => $product->product_category_id,
         ]),
@@ -276,7 +276,7 @@ test('re-derivation on a parent SKU change is all-or-nothing: a colliding case a
         app(UpdateProduct::class)(...array_merge(
             ['product' => $product],
             skuUniquenessTestProductPayload([
-                'name' => $product->name,
+                'name' => $product->translated('name'),
                 'sku' => '0009',
                 'productCategoryId' => $product->product_category_id,
             ]),
@@ -344,7 +344,7 @@ test('every stored SKU equals the derivation of its current parent SKU and curre
     app(UpdateProduct::class)(...array_merge(
         ['product' => $productA],
         skuUniquenessTestProductPayload([
-            'name' => $productA->name,
+            'name' => $productA->translated('name'),
             'sku' => '0009',
             'productCategoryId' => $productA->product_category_id,
         ]),
@@ -451,7 +451,7 @@ test('F-1: changing the parent product\'s SKU to a length that pushes a variant 
         app(UpdateProduct::class)(...array_merge(
             ['product' => $product],
             skuUniquenessTestProductPayload([
-                'name' => $product->name,
+                'name' => $product->translated('name'),
                 'sku' => str_repeat('9', 64),
                 'productCategoryId' => $product->product_category_id,
             ]),
@@ -614,7 +614,7 @@ test('R-4: a parent SKU change that makes one variant\'s new SKU equal a sibling
     app(UpdateProduct::class)(...array_merge(
         ['product' => $product],
         skuUniquenessTestProductPayload([
-            'name' => $product->name,
+            'name' => $product->translated('name'),
             'sku' => 'P-X',
             'productCategoryId' => $product->product_category_id,
         ]),
@@ -699,7 +699,7 @@ test('F-6: a variant-cascade collision surfaces via the parent_sku_change_collid
         app(UpdateProduct::class)(...array_merge(
             ['product' => $product],
             skuUniquenessTestProductPayload([
-                'name' => $product->name,
+                'name' => $product->translated('name'),
                 'sku' => '0009',
                 'productCategoryId' => $product->product_category_id,
             ]),
@@ -752,7 +752,6 @@ test('a race landing between validation and CreateProductVariant\'s cross-table 
         DB::table('products')->insert([
             'id' => (string) Str::uuid7(),
             'product_category_id' => $category->id,
-            'name' => 'Racer Product',
             'sku' => '0005-RACE',
             'type' => 'physical',
             'status' => 'draft',

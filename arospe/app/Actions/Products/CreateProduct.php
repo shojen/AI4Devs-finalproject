@@ -3,15 +3,18 @@
 namespace App\Actions\Products;
 
 use App\Actions\Auth\LogRefusedPrivilegedAttempt;
+use App\Actions\Translations\SetTranslation;
 use App\Concerns\ProductValidationRules;
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
 use App\Models\Product;
+use App\Models\StoreLanguage;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class CreateProduct
 {
@@ -28,6 +31,7 @@ class CreateProduct
         private readonly LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt,
         private readonly SyncProductGallery $syncProductGallery,
         private readonly SanitizeProductDescription $sanitizeProductDescription,
+        private readonly SetTranslation $setTranslation,
     ) {}
 
     /**
@@ -95,6 +99,14 @@ class CreateProduct
     ): Product {
         $this->logRefusedPrivilegedAttempt->authorize('create', Product::class, targetType: 'product');
 
+        $defaultLanguage = StoreLanguage::defaultStoreLanguage();
+
+        throw_if(
+            $defaultLanguage === null,
+            RuntimeException::class,
+            'Cannot create a product: no default store language is configured.',
+        );
+
         $name = trim($name);
         $sku = Str::upper(trim($sku));
         // 0024a D-16/D-A1: sanitize BEFORE validating, so max:65535 measures the
@@ -143,6 +155,7 @@ class CreateProduct
                 $description,
                 $featuredMediaId,
                 $orderedGalleryMediaIds,
+                $defaultLanguage,
             ): Product {
                 // Story 0029 D-4.5/D-4.7: SKUs are one namespace across `products` AND
                 // `product_variants` -- a product may not claim a string some variant already
@@ -162,13 +175,18 @@ class CreateProduct
                 }
 
                 $product = Product::forceCreate([
-                    'name' => $name,
                     'sku' => $sku,
                     'product_category_id' => (string) $productCategoryId,
                     'type' => $resolvedType,
                     'status' => $resolvedStatus,
                     'price' => $price,
                     'stock' => (int) $stock,
+                ]);
+
+                // Story 0076 D-15: the default store language's name/description live in
+                // product_translations, written in this same transaction, below authorize().
+                ($this->setTranslation)($product, $defaultLanguage, [
+                    'name' => $name,
                     'description' => $description,
                 ]);
 

@@ -60,7 +60,7 @@ test('a blog editor opens a post editor from the dashboard blog widget', functio
 
 test('a catalog manager opens the parent product editor from the low-stock widget', function () {
     $this->actingAs(dashboardJourneyActor(['products.view', 'products.edit']));
-    $parent = Product::factory()->active()->physical()->create(['name' => 'Journey parent', 'stock' => 90]);
+    $parent = Product::factory()->active()->physical()->named('Journey parent')->create(['stock' => 90]);
     // The low-stock variant is what ranks the parent; the link must still go to the PARENT's editor.
     ProductVariant::factory()->create(['product_id' => $parent->id, 'stock' => 1]);
 
@@ -101,7 +101,7 @@ test('a blog viewer who may not edit sees the post title as plain text, not a li
 
 test('a product viewer who may not edit sees the product name as plain text, not a link', function () {
     $this->actingAs(dashboardJourneyActor(['products.view']));
-    $product = Product::factory()->active()->physical()->create(['name' => 'View only product', 'stock' => 2]);
+    $product = Product::factory()->active()->physical()->named('View only product')->create(['stock' => 2]);
 
     visit('/dashboard')
         ->assertNoJavaScriptErrors()
@@ -113,7 +113,7 @@ test('a product viewer who may not edit sees the product name as plain text, not
 test('the dashboard fits a 375px phone in light mode with no horizontal scroll', function () {
     $this->actingAs(dashboardJourneyActor(['blog.view', 'products.view', 'orders.view', 'customers.view', 'users.view', 'media.view']));
     BlogPost::factory()->scheduled()->create(['title' => 'Phone post with a rather long title that must wrap instead of overflowing']);
-    Product::factory()->active()->physical()->create(['name' => 'Phone product with a rather long name that must wrap', 'stock' => 0]);
+    Product::factory()->active()->physical()->named('Phone product with a rather long name that must wrap')->create(['stock' => 0]);
     Order::factory()->create(['order_number' => 'ORD-PHONE-1']);
 
     visit('/dashboard')
@@ -130,7 +130,7 @@ test('the dashboard fits a 375px phone in light mode with no horizontal scroll',
 test('the dashboard fits a 375px phone in dark mode with no horizontal scroll', function () {
     $this->actingAs(dashboardJourneyActor(['blog.view', 'products.view', 'orders.view', 'customers.view', 'users.view', 'media.view']));
     BlogPost::factory()->published()->create(['title' => 'Dark post']);
-    Product::factory()->active()->physical()->create(['name' => 'Dark product', 'stock' => 3]);
+    Product::factory()->active()->physical()->named('Dark product')->create(['stock' => 3]);
     Order::factory()->create(['order_number' => 'ORD-DARK-1']);
 
     visit('/dashboard')

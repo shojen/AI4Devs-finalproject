@@ -13,4 +13,4 @@ This document is split into parts so an agent reads only the one its task touche
 | [product-attribute-types.index](products/product-attribute-types.md) | the task touches the product attribute types screen. | `product-attribute-types.index` |
 | [Media Gallery and WYSIWYG editor (routeless components)](products/routeless-components.md) | you embed the shared media gallery modal or the WYSIWYG editor in another screen. | `App\Livewire\Media\Gallery`; `App\Livewire\Components\WysiwygEditor` |
 
-_Last updated: 2026-10-07 — Story 0071: [product-categories.index](products/product-categories.md#the-tabbed-createedit-modal-story-0071) gained the tabbed create/edit modal (component surface, tab order, `data-test` hooks, atomic `save()`). Otherwise split into the parts above (docs optimization pass); the prior revision-history footer, if any, stays at the end of the last part._
+_Last updated: 2026-11-06 — Story 0076: no route changed; [products.index / .create / .edit](products/products-index-and-editor.md) now reads names from `product_translations` (default language, `—` placeholder). Earlier content current from stories 0027-0071._

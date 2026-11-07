@@ -300,12 +300,17 @@ class Show extends Component
         }
 
         return Product::query()
-            ->where('status', ProductStatus::Active)
-            ->orderBy('name')
-            ->orderBy('id')
+            ->select(['products.id', 'products.sku'])
+            ->where('products.status', ProductStatus::Active)
+            ->orderByTranslatedName()
+            ->orderBy('products.id')
             ->limit(self::PRODUCT_PICKER_LIMIT)
-            ->get(['id', 'name', 'sku'])
-            ->map(fn (Product $product): array => ['id' => $product->id, 'name' => $product->name, 'sku' => $product->sku])
+            ->get()
+            ->map(fn (Product $product): array => [
+                'id' => $product->id,
+                'name' => $product->getAttribute('translated_name') ?? '—',
+                'sku' => $product->sku,
+            ])
             ->all();
     }
 

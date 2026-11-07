@@ -31,8 +31,7 @@ const OVERVIEW_SENTINELS = [
 function overviewSeedSentinels(): void
 {
     BlogPost::factory()->published()->create(['title' => 'SENTINEL-POST-TITLE-4711', 'body' => '<p>Body of the sentinel post</p>']);
-    Product::factory()->active()->physical()->create([
-        'name' => 'Sentinel Product Name 4711',
+    Product::factory()->active()->physical()->named('Sentinel Product Name 4711')->create([
         'sku' => 'SENTINEL-SKU-4711',
         'stock' => 0,
     ]);

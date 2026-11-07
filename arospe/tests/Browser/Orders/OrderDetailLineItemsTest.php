@@ -33,7 +33,7 @@ test('adding a line item through the picker updates the order on the server', fu
     $this->actingAs(orderLineItemsBrowserActor());
 
     $order = Order::factory()->withItems(1)->create();
-    $product = Product::factory()->active()->create(['name' => 'Producto Navegador', 'sku' => 'SKU-NAV-1', 'price' => '9.00']);
+    $product = Product::factory()->active()->named('Producto Navegador')->create(['sku' => 'SKU-NAV-1', 'price' => '9.00']);
 
     visit('/orders/'.$order->id)
         ->assertNoJavaScriptErrors()

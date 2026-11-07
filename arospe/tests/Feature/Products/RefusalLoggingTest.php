@@ -197,7 +197,7 @@ test('Editor::save() update-path authorization refusal is logged when the permis
 
     $creator = productsRefusalTestActor(['products.view', 'products.create', 'products.edit']);
     $this->actingAs($creator);
-    $target = Product::factory()->create(['name' => 'Original Name']);
+    $target = Product::factory()->named('Original Name')->create();
 
     $component = Livewire::test(Editor::class, ['product' => $target]);
 
@@ -219,5 +219,5 @@ test('Editor::save() update-path authorization refusal is logged when the permis
             && productsRefusalLogContextHasNoSecretLookingKey($context))
         ->once();
 
-    expect($target->fresh()->name)->toBe('Original Name');
+    expect($target->fresh()->translated('name'))->toBe('Original Name');
 });

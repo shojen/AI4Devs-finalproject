@@ -160,13 +160,25 @@ guarantees.
   toolbar can produce (verified across 15 real shapes), and **convergent** otherwise: a third pass
   never differs from the second, which is what 0076/0077/0079 actually depend on.
 
+## Two layers since story 0076
+
+The description now lives in `product_translations.description`, and two layers sanitize it:
+
+1. **Action layer** (unchanged): `CreateProduct`/`UpdateProduct` run `SanitizeProductDescription` before `validate()`, so `max:65535` measures the stored value.
+2. **Model layer**: `ProductTranslation::booted()` registers a `saving` hook that sanitizes `description` whenever `isDirty('description')`. A bare `SetTranslation` call (a seeder, a command, a future language-tab action) is therefore sanitized without its caller remembering to.
+
+The stored value is already converged after one pass, so layer 2 over layer 1's output is a no-op (the convergence guarantee above). **The backfill is the deliberate exception (D-9):** `BackfillProductTranslations` uses the query builder, fires no model event and copies the old column byte-for-byte; the existing values were sanitized when they were written.
+
+✅ `SetTranslation` on a `ProductTranslation` with `<script>` in `description` stores the sanitized value.
+❌ Writing `product_translations` through `DB::table()` bypasses the hook; only a migration-style copy of already-sanitized data may do that.
+
 ## Two residual exposures, recorded rather than assumed closed (R-12)
 
 1. **A future writer that bypasses the two actions re-opens the hole.** The guarantee lives in
    `CreateProduct`/`UpdateProduct`, not in the column — a seeder, an Artisan command, an import, or a
    raw `Product::query()->update([...])` call would write unsanitized HTML with nothing to stop it.
-   Story 0076's later model-event layer is the acknowledgement that this is real, not a
-   hypothetical.
+   Story 0076's model-event layer (below) closes this for the product description: the
+   `ProductTranslation` `saving` hook sanitizes every writer. It does not cover any other column.
 2. **The allow-list itself is now the control.** A tag added to `config/html-sanitizer.php` later
    without the same scrutiny this page documents (is its *content* safe on its own, does it need
    `dropped_elements` rather than the `block` default, does it need a scheme restriction) is a new
@@ -196,9 +208,4 @@ own scope fence forbidding any code from rendering, echoing or returning `produc
 for the correction to that page's own prior, speculative attribution of this class to stories other
 than the one that actually created it.
 
-_Last updated: 2026-09-25 — Story 0061b (blog post body must show something): added the visibility rule that runs after the sanitizer. The rest of the page is Story 0024a's (Product
-description — HTML sanitization on write), written after Phase 4's audit and re-audit closed both findings it documents
-(F-1, the `block`-vs-`drop` distinction; F-2, the idempotence-to-convergence correction), so both are
-recorded here as ❌/✅ pairs describing the shipped, closed state from the outset rather than the
-vulnerable state the audit found — per [errors-log.md](../errors-log/archive-2026-08-17-to-2026-08-21.md#a-security-page-documented-the-vulnerable-code-as-current-because-it-was-written-before-its-own-fix--2026-08-20)'s
-rule for an audit-authored page._
+_Last updated: 2026-11-06 — Story 0076: added "Two layers since story 0076" (action layer plus the `ProductTranslation` `saving` hook; the backfill never re-sanitizes) and narrowed residual 1. The rest is Story 0024a's, with Story 0061b's visibility rule. Story 0024a's audit findings F-1 (`block` vs `drop`) and F-2 (idempotence became convergence) are recorded as shipped-state pairs._
