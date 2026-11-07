@@ -68,7 +68,7 @@ function p76CreateProduct(array $overrides = []): Product
 function p76UpdateProduct(Product $product, array $overrides = []): Product
 {
     return app(UpdateProduct::class)(...array_merge(
-        ['product' => $product],
+        ['product' => $product, 'slug' => null, 'metaTitle' => null, 'metaDescription' => null],
         p76Payload(array_merge([
             'sku' => $product->sku,
             'productCategoryId' => $product->product_category_id,
