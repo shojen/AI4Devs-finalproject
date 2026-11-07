@@ -5,6 +5,7 @@ namespace App\Concerns;
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
 use App\Models\Product;
+use App\Models\ProductTranslation;
 use App\Models\ProductVariant;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Database\Query\Builder;
@@ -203,6 +204,49 @@ trait ProductValidationRules
     protected function productDescriptionRules(): array
     {
         return ['nullable', 'string', 'max:65535'];
+    }
+
+    /**
+     * Get the validation rules used to validate a product's per-language slug (story 0076a, D-6).
+     * The caller canonicalises the slug first. The own-row exclusion is by `product_id`, never
+     * `->ignore()`: a slug written into a language without a row is an insert, so there is no
+     * translation-row id to ignore.
+     *
+     * @return array<int, ValidationRule|array<mixed>|string>
+     */
+    protected function productSlugRules(string $storeLanguageId, ?string $productId = null): array
+    {
+        return [
+            'nullable',
+            'string',
+            'max:160',
+            Rule::unique(ProductTranslation::class, 'slug')->where(
+                fn (Builder $query): Builder => $query
+                    ->where('store_language_id', $storeLanguageId)
+                    ->when($productId !== null, fn (Builder $query): Builder => $query->where('product_id', '!=', $productId))
+            ),
+        ];
+    }
+
+    /**
+     * Get the validation rules used to validate a product's per-language meta title (story 0076a).
+     *
+     * @return array<int, ValidationRule|array<mixed>|string>
+     */
+    protected function productMetaTitleRules(): array
+    {
+        return ['nullable', 'string', 'max:160'];
+    }
+
+    /**
+     * Get the validation rules used to validate a product's per-language meta description
+     * (story 0076a).
+     *
+     * @return array<int, ValidationRule|array<mixed>|string>
+     */
+    protected function productMetaDescriptionRules(): array
+    {
+        return ['nullable', 'string', 'max:500'];
     }
 
     /**

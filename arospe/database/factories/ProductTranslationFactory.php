@@ -33,4 +33,13 @@ class ProductTranslationFactory extends Factory
             'store_language_id' => $language->id,
         ]);
     }
+
+    public function withSeo(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'slug' => fake()->unique()->slug(3),
+            'meta_title' => fake()->sentence(4),
+            'meta_description' => fake()->sentence(12),
+        ]);
+    }
 }

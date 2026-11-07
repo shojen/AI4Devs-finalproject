@@ -42,6 +42,8 @@ class UpdateProduct
         private readonly TranslateProductVariantUniqueViolation $translateProductVariantUniqueViolation,
         private readonly DeriveVariantSku $deriveVariantSku,
         private readonly SetTranslation $setTranslation,
+        private readonly CanonicalizeProductSlug $canonicalizeProductSlug,
+        private readonly TranslateProductUniqueViolation $translateProductUniqueViolation,
     ) {}
 
     /**
@@ -90,6 +92,9 @@ class UpdateProduct
         ?string $featuredMediaId,
         array $orderedGalleryMediaIds,
         ?string $description,
+        ?string $slug,
+        ?string $metaTitle,
+        ?string $metaDescription,
     ): Product {
         $this->logRefusedPrivilegedAttempt->authorize(
             'update',
@@ -116,6 +121,8 @@ class UpdateProduct
         // sanitizer wired into one action only is a silent hole reachable by
         // editing any product.
         $description = ($this->sanitizeProductDescription)($description);
+        // 0076a D-6: canonicalise BEFORE validating so the unique rule compares the stored form.
+        $slug = ($this->canonicalizeProductSlug)($slug);
 
         Validator::make(
             [
@@ -129,8 +136,15 @@ class UpdateProduct
                 'description' => $description,
                 'featured_media_id' => $featuredMediaId,
                 'gallery_media_ids' => $orderedGalleryMediaIds,
+                'slug' => $slug,
+                'meta_title' => $metaTitle,
+                'meta_description' => $metaDescription,
             ],
-            $this->productRules($product->id),
+            $this->productRules($product->id) + [
+                'slug' => $this->productSlugRules($defaultLanguage->id, $product->id),
+                'meta_title' => $this->productMetaTitleRules(),
+                'meta_description' => $this->productMetaDescriptionRules(),
+            ],
         )->validate();
 
         $resolvedType = ProductType::from((string) $type);
@@ -162,6 +176,9 @@ class UpdateProduct
                 $featuredMediaId,
                 $orderedGalleryMediaIds,
                 $defaultLanguage,
+                $slug,
+                $metaTitle,
+                $metaDescription,
             ): Product {
                 // Story 0029 D-4.5/D-4.7: SKUs are one namespace across `products` AND
                 // `product_variants`. ALWAYS this order -- products (excluding this row), then
@@ -199,6 +216,9 @@ class UpdateProduct
                 ($this->setTranslation)($product, $defaultLanguage, [
                     'name' => $name,
                     'description' => $description,
+                    'slug' => $slug,
+                    'meta_title' => $metaTitle,
+                    'meta_description' => $metaDescription,
                 ]);
 
                 ($this->syncProductGallery)($product, $featuredMediaId, $orderedGalleryMediaIds);
@@ -233,40 +253,24 @@ class UpdateProduct
             // parent_sku_change_collides, since here the collision is on a
             // variant SKU re-derived because the PARENT product's own SKU
             // changed, not on a newly-created variant.
-            if (($e->errorInfo[1] ?? null) === 1062) {
-                if (str_contains($e->getMessage(), 'products_sku_unique')) {
-                    throw ValidationException::withMessages([
-                        'sku' => trans('validation.unique', ['attribute' => 'sku']),
-                    ]);
-                }
+            $isVariantIndexViolation = ($e->errorInfo[1] ?? null) === 1062
+                && preg_match(
+                    "/for key '(?:[^']+\\.)?(?:product_variants_sku_unique|product_variants_product_id_combination_hash_unique)'$/",
+                    (string) ($e->errorInfo[2] ?? ''),
+                ) === 1;
 
-                if ($e instanceof UniqueConstraintViolationException
-                    && (str_contains($e->getMessage(), 'product_variants_sku_unique')
-                        || str_contains($e->getMessage(), 'product_variants_product_id_combination_hash_unique'))) {
-                    throw ($this->translateProductVariantUniqueViolation)(
-                        $e,
-                        $sku,
-                        overrideMessage: trans('products.variants.parent_sku_change_collides'),
-                    );
-                }
+            if ($isVariantIndexViolation && $e instanceof UniqueConstraintViolationException) {
+                throw ($this->translateProductVariantUniqueViolation)(
+                    $e,
+                    $sku,
+                    overrideMessage: trans('products.variants.parent_sku_change_collides'),
+                );
             }
 
-            throw $e;
+            throw ($this->translateProductUniqueViolation)($e);
         }
     }
 
-    /**
-     * D-4.6: a change to the parent product's SKU re-derives every one of
-     * its variants, in the SAME transaction as the product update, and
-     * re-checks each new value under D-4.5's own fixed lock order. Any
-     * single collision aborts the whole update -- this method throws
-     * from inside the caller's still-open DB::transaction(), so every
-     * write (the product's own SKU included) rolls back with it.
-     *
-     * Computed and checked for every variant FIRST, written only after
-     * every one has passed -- so a collision on variant 3 of 5 leaves
-     * variants 1 and 2 untouched rather than partially re-derived.
-     */
     private function reDeriveVariantSkus(Product $product, string $newProductSku): void
     {
         $variants = $product->variants()->with('values')->get();

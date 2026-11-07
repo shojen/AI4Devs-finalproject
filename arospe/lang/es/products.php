@@ -163,7 +163,14 @@ return [
     ],
 
     // Historia 0027 -- clave por clave idéntico a lang/en/products.php.
+    'attributes' => [
+        'slug' => 'slug',
+        'meta_title' => 'título meta',
+        'meta_description' => 'descripción meta',
+    ],
+
     'editor' => [
+        'concurrent_save_retry' => 'Otra persona ha guardado este producto al mismo tiempo. Recarga la página e inténtalo de nuevo.',
         'title_create' => 'Nuevo producto',
         'title_edit' => 'Editar producto',
         'name_label' => 'Nombre',

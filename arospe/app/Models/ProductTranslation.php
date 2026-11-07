@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Actions\Products\CanonicalizeProductSlug;
 use App\Actions\Products\SanitizeProductDescription;
 use Database\Factories\ProductTranslationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -21,10 +22,13 @@ use Illuminate\Support\Carbon;
  * @property string $store_language_id
  * @property string $name
  * @property string|null $description
+ * @property string|null $slug
+ * @property string|null $meta_title
+ * @property string|null $meta_description
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'description'])]
+#[Fillable(['name', 'description', 'slug', 'meta_title', 'meta_description'])]
 class ProductTranslation extends Model
 {
     /** @use HasFactory<ProductTranslationFactory> */
@@ -41,6 +45,18 @@ class ProductTranslation extends Model
         static::saving(function (self $translation): void {
             if ($translation->isDirty('description')) {
                 $translation->description = app(SanitizeProductDescription::class)($translation->description);
+            }
+
+            if ($translation->isDirty('slug')) {
+                $translation->slug = app(CanonicalizeProductSlug::class)($translation->slug);
+            }
+
+            foreach (['meta_title', 'meta_description'] as $metaColumn) {
+                if ($translation->isDirty($metaColumn)) {
+                    $value = $translation->{$metaColumn};
+                    $value = is_string($value) ? trim($value) : null;
+                    $translation->{$metaColumn} = $value === '' ? null : $value;
+                }
             }
         });
     }
