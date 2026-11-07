@@ -271,6 +271,18 @@ class UpdateProduct
         }
     }
 
+    /**
+     * D-4.6: a change to the parent product's SKU re-derives every one of
+     * its variants, in the SAME transaction as the product update, and
+     * re-checks each new value under D-4.5's own fixed lock order. Any
+     * single collision aborts the whole update -- this method throws
+     * from inside the caller's still-open DB::transaction(), so every
+     * write (the product's own SKU included) rolls back with it.
+     *
+     * Computed and checked for every variant FIRST, written only after
+     * every one has passed -- so a collision on variant 3 of 5 leaves
+     * variants 1 and 2 untouched rather than partially re-derived.
+     */
     private function reDeriveVariantSkus(Product $product, string $newProductSku): void
     {
         $variants = $product->variants()->with('values')->get();
