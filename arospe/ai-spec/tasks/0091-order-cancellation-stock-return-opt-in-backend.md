@@ -2,7 +2,7 @@
 
 > **Status: New — Phase 1 output, rewritten after the Phase 2 INVEST review of 2026-11-08; pending re-review.** Epic 3
 > follow-up bug fix, order-stock series. Fullstack pair: **related_task_id 0095** (the cancel dialog). Blocked on
-> [0088](0088-order-stock-adjustment-foundation-backend.md) (which now includes the automatic deduction formerly planned as 0089).
+> [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (automatic deduction and `AdjustOrderStock`) and, through it, [0088](0088-order-stock-adjustment-foundation-backend.md) (counters).
 
 ## Description
 `CancelOrder` gains `bool $adjustStock = false`. With `true`, every line returns its returnable units to its variant or product
@@ -33,10 +33,11 @@ backend (related_task_id: 0095) | includes database-expert: no
   guards against the locked row** (after `Gate::authorize`, which stays first and outside the transaction). Refusal order and
   types unchanged. The class docblock's "no transaction" note is rewritten with the reason (a second write now exists).
 - **D-3 (user D4 superseded by 0088 D8, two counters user-confirmed 2026-11-08)** — Returnable units per line =
-  `OrderItem::returnableStockUnits()` = `max(0, (quantity − refunded_quantity) − stock_undeducted_quantity)`. A cancellable order is never `PartiallyRefunded`; a
+  `OrderItem::returnableStockUnits()` = `(quantity − refunded_quantity) − stock_undeducted_quantity` (never negative: 0088
+  keeps `U <= Q − F`). A cancellable order is never `PartiallyRefunded`; a
   fully refunded order in the window before `AutoCancelFullyRefundedOrder` runs returns 0 per line.
-- **D-4** — Lines locked `orderBy('id')->lockForUpdate()` after the order row; then stock rows (0088 FD-7). **`stock_undeducted_quantity`
-  = `U + R` per applied line; unchanged for skipped or null-target lines; `stock_refund_returned_quantity` never touched** (only ids returned by `AdjustOrderStock` are updated).
+- **D-4** — Lines locked `orderBy('id')->lockForUpdate()` after the order row; then stock rows (0088a FD-7). **`stock_undeducted_quantity`
+  = `U + R` per applied line; unchanged for skipped or null-target lines; `stock_refunded_not_out_quantity` never touched** (only ids returned by `AdjustOrderStock` are updated).
 - **D-5 (user D5)** — `AutoCancelFullyRefundedOrder` is **not** changed; a regression test pins that it never moves stock.
 - **D-6 (user D7)** — No authorization change.
 
@@ -105,7 +106,7 @@ Feature: Cancelling an order returns stock only when the order administrator ask
     And no product or variant stock changes
 
   Scenario: The automatic cancellation after a full refund never moves stock
-    Given a paid order holding 2 units of "Mug", fully refunded by an order administrator without returning stock
+    Given an order administrator who may refund, with a paid order holding 2 units of "Mug", fully refunded without returning stock
     When the automatic cancellation of fully refunded orders runs for it
     Then the order is cancelled
     And "Mug" stock is unchanged
@@ -124,8 +125,8 @@ Feature: Cancelling an order returns stock only when the order administrator ask
 
 ## Tests to perform
 - [ ] Every Gherkin scenario, product and variant lines.
-- [ ] `stock_undeducted_quantity` = `U + R` per applied line after cancel-with-return; unchanged for skipped or null-target lines and after cancel-without-return; `stock_refund_returned_quantity` unchanged.
-- [ ] 0088 sequences 1 (round trip, returns 2) and 8 (raise with deduction, returns 5) end at stock 10 through the real actions; after a cancel with return, `returnableStockUnits()` and `refundedUnitsOutOfStock()` of every line are 0 for an unrefunded order.
+- [ ] `stock_undeducted_quantity` = `U + R` per applied line after cancel-with-return; unchanged for skipped or null-target lines and after cancel-without-return; `stock_refunded_not_out_quantity` unchanged.
+- [ ] 0088 sequences 1 (round trip, returns 2) and 10 (raise with deduction, returns 5) end at stock 10 through the real actions; after a cancel with return, `returnableStockUnits()` is 0 for every line and `refundedUnitsOutOfStock()` (`F − K`) is unchanged.
 - [ ] **Both refusal paths:** an ordinary administrator holding `orders.edit` + `orders.refund` → `AuthorizationException` for partially refunded, shipped and already-cancelled orders (policy state clause); a super administrator → `ValidationException` (already cancelled) / `OrderCancellationBlockedException` (shipped) from the action's guards re-run under the lock. Stock untouched in every case.
 - [ ] Authorization refusal is still first (an unauthorized caller learns nothing).
 - [ ] Concurrency: two cancellations of the same order serialized by the order lock — the second is refused and stock is returned once (pattern of `MarkOrderAsPaidConcurrencyTest`).
@@ -151,12 +152,12 @@ refunded-and-written-off or already returned.
 - [ ] Acceptance criteria met
 
 ## INVEST note
-Independent: needs 0088 only. Negotiable: AutoCancel explicitly excluded (D-5). Valuable: a cancelled order can give its goods
+Independent: needs 0088a (and 0088) only. Negotiable: AutoCancel explicitly excluded (D-5). Valuable: a cancelled order can give its goods
 back to inventory. Estimable/Small: one action gains a transaction, a lock and one stock call, plus one rewritten test.
 Testable: stock asserted per scenario, both refusal paths, a concurrency test.
 
 ## Dependencies, risks, open technical questions
-**Depends on:** [0088](0088-order-stock-adjustment-foundation-backend.md) (hard). **Blocks:**
+**Depends on:** [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (hard) and [0088](0088-order-stock-adjustment-foundation-backend.md) (transitively). **Blocks:**
 [0095](0095-order-cancellation-stock-dialog-ui.md). Soft: [0090](0090-order-line-quantity-and-removal-stock-opt-in-backend.md)
 (shared test file; the remove-after-cancel case uses its parameter).
 
@@ -172,3 +173,5 @@ Testable: stock asserted per scenario, both refusal paths, a concurrency test.
 - Phase 1: complete 2026-11-08 (product-owner).
 - Phase 2: INVEST review 2026-11-08: findings received → rewritten, pending re-review.
 - Phase 2: INVEST re-review 2026-11-08: helper and counter names aligned with the two-counter model (0088 D8) → rewritten, pending re-review.
+- Phase 2: INVEST re-review #3 2026-11-08 → rewritten, pending re-review (K and helper names aligned with the corrected two-counter model, sequence numbers updated, last scenario opens with a named actor).
+- Phase 2: INVEST re-review #4 2026-11-08 → rewritten, pending re-review (dependency moved to 0088a after the 0088 split, FD reference renumbered).

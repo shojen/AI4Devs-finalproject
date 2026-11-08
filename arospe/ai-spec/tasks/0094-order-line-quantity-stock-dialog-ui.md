@@ -59,11 +59,13 @@ frontend (related_task_id: 0090) | includes database-expert: no
 - **D-8 — Hooks.** Dialog prefix `line-stock` → `confirm-dialog-line-stock`, `-confirm`, `-secondary`, `-dismiss`; preview row
   `stock-preview-row-{itemId}`; warning `stock-negative-warning`; note `stock-nothing-to-return`. Existing hooks
   `save-quantity-{id}` and `quantity-input-{id}` stay.
-- **D-9 — Errors and pending state.** Every action refusal closes the dialog, refreshes and renders inline — never a 500.
-  **Pending state (`pendingStockAction`, `pendingItemId`, `pendingQuantity`, `pendingFromQuantity`, `showStockConfirm`) is
-  cleared on every exit path of `applyStockChoice()`**: success, every refusal (`OrderNotEditableException`,
-  `ValidationException`, authorization failure, not-found item) and the stale-guard path — as well as by `dismissStockConfirm()`.
-  An apply call with empty pending state (no prior request) is refused like a stale one.
+- **D-9 — Errors and pending state.** Every rendered action refusal closes the dialog, refreshes and renders inline — never
+  a 500. **Pending state (`pendingStockAction`, `pendingItemId`, `pendingQuantity`, `pendingFromQuantity`, `showStockConfirm`) is
+  cleared on every exit path of `applyStockChoice()`**: success, every rendered refusal (`OrderNotEditableException`,
+  `ValidationException`, not-found item) and the stale-guard path, plus `dismissStockConfirm()`. **A failed re-authorization is
+  a 403** (the `Gate::authorize` exception propagates; tests assert `assertForbidden()`); it does not clear pending state, which
+  is harmless because the next apply re-authorizes first. An apply call with empty pending state (no prior request) is refused
+  like a stale one.
 - **D-10 (user D7)** — `orders.edit` gates request and apply; no new permission.
 
 ## Gherkin
@@ -155,7 +157,7 @@ Feature: The order administrator decides whether a quantity change moves stock
 - [ ] Livewire: `applyStockChoice(true|false)` calls the action with the matching `adjustStock` (assert stock and counters, not a mock); dismiss clears state and changes nothing.
 - [ ] Livewire: zero-returnable decrease shows the note, no confirm button, and the two remaining options (OQ-3).
 - [ ] Livewire: invalid input (`0`, below refunded, empty string) reaches the action on apply and is rendered inline; the request step adds no validation of its own.
-- [ ] Pending state is empty after success, after each refusal type and after the stale-guard path; `applyStockChoice()` with empty pending state is refused and changes nothing.
+- [ ] Pending state is empty after success, after each rendered refusal type (authorization failure asserted as forbidden instead, `assertForbidden()`) and after the stale-guard path; `applyStockChoice()` with empty pending state is refused and changes nothing.
 - [ ] Security: `#[Locked]` props cannot be set by the client; `applyStockChoice` re-authorizes (revoke permission between request and apply → refused); an item id of another order → not found, nothing written; stale guard fires.
 - [ ] Preview from a fresh read (stock changed after opening → re-render shows the new value); `willGoNegative` only when resulting < 0.
 - [ ] Lang parity.
@@ -200,3 +202,4 @@ edit. Estimable/Small: one flow on one component after the removal split. Testab
 - Phase 1: complete 2026-11-08 (product-owner).
 - Phase 2: INVEST review 2026-11-08: findings received → split and rewritten, pending re-review.
 - Phase 2: INVEST re-review 2026-11-08: pending state cleared on every refusal and stale-guard path, leftover app() alternative removed → rewritten, pending re-review.
+- Phase 2: INVEST re-review #3 2026-11-08 → rewritten, pending re-review (D-9 pending-state wording: rendered refusals clear it, failed re-authorization is a 403 asserted with assertForbidden(), next apply re-authorizes).

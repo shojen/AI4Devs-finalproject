@@ -40,6 +40,14 @@ frontend (related_task_id: 0090) | includes database-expert: no
   (`orders.stock.*`, en + es).
 - **D-7 — Hooks.** Same `line-stock` dialog hooks as 0094; `remove-line-item-{id}` stays on the same button.
 - **D-8 (user D7)** — `orders.edit` gates request and apply.
+- **D-9 — Errors and pending state.** Every rendered action refusal closes the dialog, refreshes and renders inline — never
+  a 500. **Pending state (`pendingStockAction`, `pendingItemId`, `pendingFromQuantity`, `showStockConfirm`) is
+  cleared on every exit path of `applyStockChoice()`**: success, every rendered refusal (`OrderNotEditableException`,
+  `ValidationException`, not-found item) and the stale-guard path, plus `dismissStockConfirm()`. **A failed re-authorization is
+  a 403** (the `Gate::authorize` exception propagates; tests assert `assertForbidden()`); it does not clear pending state, which
+  is harmless because the next apply re-authorizes first. An apply call with empty pending state (no prior request) is refused
+  like a stale one.
+  (Same rule as 0094 D-9, applied to the `remove` branch.)
 
 ## Gherkin
 ```gherkin
@@ -105,6 +113,7 @@ Feature: The order administrator decides whether removing a line returns its uni
 - [ ] Livewire: both choices call `RemoveOrderItem` with the matching `adjustStock` (assert stock and line deletion); dismiss changes nothing.
 - [ ] Livewire: zero-returnable removal shows the note and only two options (OQ-3).
 - [ ] Refusals (last line, refunded line, shipped order) close the dialog and render inline.
+- [ ] Pending state is empty after success, after each rendered refusal type (authorization failure asserted as forbidden instead, `assertForbidden()`) and after the stale-guard path; an apply with empty pending state is refused and changes nothing.
 - [ ] Security: locked pending state; re-authorization on apply; item of another order → not found; stale guard (line already removed or quantity changed).
 - [ ] Lang parity; browser: removal dialog labels and abort paths.
 
@@ -140,3 +149,4 @@ keep inventory. Estimable/Small: one request method and one branch on an existin
 - Phase 1: complete 2026-11-08 (product-owner, split from 0094).
 - Phase 2: INVEST review 2026-11-08 (of former 0094): findings received → split and rewritten, pending re-review.
 - Phase 2: INVEST re-review 2026-11-08: helper wording aligned with the two-counter model (0088 D8) → rewritten, pending re-review.
+- Phase 2: INVEST re-review #3 2026-11-08 → rewritten, pending re-review (same D-9 pending-state wording as 0094).

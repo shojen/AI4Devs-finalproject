@@ -36,7 +36,7 @@ frontend (related_task_id: 0092b) | includes database-expert: no
 - **D-4** — `partial` with a mapped total of 0 blocks submit with `orders.refunds.stock_partial_empty` ("Choose at least one unit
   to return, or pick None").
 - **D-5 — Copy.** Group label "Return to stock"; options "None", "All refunded units", "Some units"; keys under
-  `orders.refunds.stock_*` (en + es). Backend refusals (e.g. units already back in stock, 0088 D8 cap) render as the `refund` error.
+  `orders.refunds.stock_*` (en + es). Backend refusals (e.g. `orders.refunds.stock_return_not_out_of_stock`, 0088 D8 cap enforced by 0092b) render as the `refund` error.
 - **D-6 — Hooks.** `refund-stock-return` (group), `refund-stock-return-{none|all|partial}`, `refund-stock-quantity-{id}`.
 - **D-7 (user D7)** — `orders.refund` only; no new permission.
 
@@ -100,7 +100,7 @@ Feature: The refund modal lets the order administrator return refunded units to 
   Scenario: A backend refusal is shown in the modal
     Given an order administrator who may refund, with the refund modal open for units that were already returned to stock on cancellation and "All refunded units" chosen
     When the order administrator confirms the refund
-    Then the modal explains that those units are already back in stock
+    Then the modal explains that those units are not out of stock
     And no refund is recorded
 ```
 
@@ -114,7 +114,7 @@ Feature: The refund modal lets the order administrator return refunded units to 
 ## Tests to perform
 - [ ] Livewire: default `none` on every open; reopen after close resets both properties (via `syncRefundInputs()`).
 - [ ] Livewire mapping: `all` → every refunded stock-target line's units; `partial` clamps silently, drops lines not refunded now and foreign ids; `partial` total 0 blocked; unknown mode refused.
-- [ ] Livewire: stock and both counters asserted after each mode (real action, not a mock); the backend cap is `refundedUnitsOutOfStock()` (0088 D8, two counters) and the UI does not pre-compute it.
+- [ ] Livewire: stock and both counters asserted after each mode (real action, not a mock); the backend cap is `min(refunded units, returnableStockUnits())` (0088 D8, two counters, corrected after review #3) and the UI does not pre-compute it.
 - [ ] Inputs rendered for every refundable stock-target line in `partial`, none for null-target lines; no `wire:model.live` on refund quantities.
 - [ ] Security: forged `refundStockQuantities` keys never reach a stock write.
 - [ ] Backend refusal rendered as the `refund` error; modal stays open; nothing written. Lang parity.
@@ -157,3 +157,4 @@ and [0095](0095-order-cancellation-stock-dialog-ui.md) — run sequentially.
 - Phase 1: complete 2026-11-08 (product-owner).
 - Phase 2: INVEST review 2026-11-08: findings received → rewritten, pending re-review.
 - Phase 2: INVEST re-review 2026-11-08: counter references aligned with the two-counter model (0088 D8) → rewritten, pending re-review.
+- Phase 2: INVEST re-review #3 2026-11-08 → rewritten, pending re-review (backend cap name, refusal wording and copy reference aligned with 0092b's `stock_return_not_out_of_stock`).

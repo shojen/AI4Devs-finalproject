@@ -1,33 +1,34 @@
-# [0088] Order stock foundation — stock-tracking columns, `AdjustOrderStock` and automatic deduction on create / add line (backend)
+# [0088] Order stock foundation — stock-tracking columns, counter helpers and counter maintenance, no stock movement (backend)
 
-> **Status: New — Phase 1 output, rewritten after the Phase 2 INVEST review of 2026-11-08; pending re-review.**
+> **Status: New — Phase 1 output, rewritten after four Phase 2 INVEST reviews of 2026-11-08; pending re-review.**
 > Epic 3 follow-up bug fix (Orders, Payments & Fulfilment), no new PRD requirement: no order flow touches stock today
 > (`CreateOrder`, `AddOrderItem`, `UpdateOrderItemQuantity`, `RemoveOrderItem`, `CancelOrder`,
 > `AutoCancelFullyRefundedOrder`, `RecordRefund` — verified against `main`).
-> First story of the order-stock series (0088, 0090, 0091, 0092a, 0092b, 0093, 0094, 0094a, 0095, 0096).
+> First story of the order-stock series (0088, 0088a, 0090, 0091, 0092a, 0092b, 0093, 0094, 0094a, 0095, 0096).
 >
-> **Merged with former story 0089 (user decision 2026-11-08, Phase 2 review).** 0089 ("Orders deduct stock automatically
-> when an order is created or a line is added") is merged into this story so that the counter columns and the first
-> deductions ship together. The 0089 file was deleted and its number is retired. This removes the old release-window
-> risk, where lines created between the two releases would get a counter of 0 without a deduction.
+> **History of the scope.** Former story 0089 (automatic deduction) was merged into this story at the first Phase 2 review
+> (its number is retired). At the fourth review **the user decided to split it again (OQ-5 option (a), 2026-11-08)**:
+> this story keeps the **counters only** and moves **no stock**; [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md)
+> adds `AdjustOrderStock` and the automatic deduction. **This story is safe to ship on its own:** every line it creates is
+> written stock-neutral (`stock_undeducted_quantity = quantity`, exactly like a legacy line), so a line created before 0088a
+> can never return stock it did not take — there is no release window between the two stories.
 >
-> **User-confirmed decisions (2026-11-08):** OQ-1 → D8, OQ-2 → D9 (option (a) each). **D8 was revised after the Phase 2
-> re-review: user-confirmed 2026-11-08 (two counters)** — a single counter could not tell "raised without deducting" from
-> "refunded and restocked"; see the [counter model](#counter-model-d8-two-counters-user-confirmed-2026-11-08). OQ-4 runs on an
-> assumed default that the user has not confirmed yet.
+> **User-confirmed decisions (2026-11-08):** OQ-1 → D8 (two counters, corrected after review #3), OQ-2 → D9, OQ-4 → keep D1
+> for virtual products, OQ-5 → split. See the [counter model](#counter-model-d8-two-counters-user-confirmed-2026-11-08-corrected-after-review-3).
 
 ## Description
 Add three stock-tracking columns to `order_items`:
-- `stock_undeducted_quantity`: non-refunded units of the line not currently taken out of inventory (never deducted, or
-  given back on cancellation). Its backfill makes every existing order "stock-neutral".
-- `stock_refund_returned_quantity`: refunded units of the line already put back in stock through a refund.
+- `stock_undeducted_quantity` (U): **non-refunded** units of the line that are not currently taken out of inventory (never
+  deducted, or given back on cancellation).
+- `stock_refunded_not_out_quantity` (K): **refunded** units of the line that are not out of inventory (never deducted, or put
+  back in stock through a refund).
 - `ordered_as_variant`: a flag that recognises a line whose variant was later deleted.
 
-Add the `OrderItem` helpers that name a line's stock target and its returnable units. Add the transaction-bound action
-`App\Actions\Orders\AdjustOrderStock`, which applies signed stock deltas to products and variants atomically, with
-deterministic locking, and skips lines whose catalog row no longer exists. Finally, make `CreateOrder` and `AddOrderItem`
-deduct every new line's units **automatically**, with no prompt, in the same transaction. This story fixes the core bug:
-orders finally consume inventory.
+The backfill makes every existing order "stock-neutral". Add the `OrderItem` helpers that name a line's stock target, its
+returnable units and the refund rule. Make every **existing** order writer keep both counters correct from the moment the
+columns exist: `CreateOrder` and `AddOrderItem` write new lines stock-neutral, `RecordRefund` applies the refund rule (refunds
+without restock exist today), and `UpdateOrderItemQuantity` applies the "stock not changed" rules (quantity changes exist
+today). **No stock row is read or written by this story.**
 
 ## Type
 backend | includes database-expert: **yes** (three new columns + data backfill migration)
@@ -37,285 +38,244 @@ backend | includes database-expert: **yes** (three new columns + data backfill m
   business state ([categories-and-products.md](../../docs/database/schema-products/categories-and-products.md),
   [variants.md](../../docs/database/schema-products/variants.md)).
 - **No stock-tracking flag exists** on `Product` or `ProductVariant`, so no line is skipped for that reason. `Product::$type` is
-  `physical`/`virtual` — see [OQ-4](#oq-4--virtual-products--assumed-default-not-yet-user-confirmed).
+  `physical`/`virtual` — see [OQ-4](#oq-4--virtual-products--resolved-user-confirmed-2026-11-08).
 - `Product` and `ProductVariant` have **no `SoftDeletes`**. A deleted catalog row is gone, and `order_items.product_id` /
   `product_variant_id` are `nullOnDelete()`. After its variant is deleted, a line looks exactly like a plain-product line.
   D9 resolves this.
 - `OrderItem::#[Fillable]` is `product_id`, `product_variant_id`, `quantity`; every derived column is written with
   `forceFill()`/`forceCreate()` ([items-and-refunds.md#order_items](../../docs/database/schema-orders/items-and-refunds.md#order_items)).
-- **Existing catalog lock order: `products` before `product_variants`.** `CreateProduct`, `UpdateProduct`, `CreateProductVariant`
-  and `SyncProductAttributeValues` all lock `products` rows before `product_variants` rows (story 0029). This story follows
-  the same order, so an order write and a catalog write can never deadlock on each other.
-- Existing order lock order: the line-item actions lock **`orders` → `order_items`**. `RecordRefund` is the known
-  exception ([docs/api/orders.md — orders.show, "Known concurrency gap"](../../docs/api/orders.md#ordersshow--the-twelfth-permission-gated-route-and-the-first-screen-governed-by-three-abilities));
-  [0092a](0092a-record-refund-lock-order-backend.md) fixes it.
-- `CreateOrder` has **no stock validation** today. It writes the order and its lines inside `DB::transaction()`, within a
-  retry loop for `order_number` collisions (MySQL 1062). Each retry is a **new** transaction, so a deduction made by a
-  rolled-back attempt is rolled back with it.
-- `AddOrderItem` **always creates a new line** and never merges into an existing one. Inside its transaction it locks the
-  `orders` row first (F-4), then counts and inserts items, then calls `RecalculateOrderTotals`.
-- There is **no order-creation screen** today; `CreateOrder` is reached from code paths and tests only.
+- `RecordRefund` already records refunds without any stock effect, and `UpdateOrderItemQuantity` already changes quantities
+  without any stock effect — both happen today, so the counter rules for them must ship with the columns (D10).
+- `CreateOrder` writes the order and its lines inside `DB::transaction()` (with a retry loop for `order_number` collisions);
+  `AddOrderItem` always creates a new line and never merges into an existing one.
 
 ## Decisions (user-confirmed, binding for the whole series)
-- **D1 — Stock target.** A line moves `product_variants.stock` when it names a variant, otherwise `products.stock`. When
-  the line's variant (on a variant line) or its product was deleted, **nothing** is adjusted for that line, and the stock
-  dialogs do not list it.
-- **D2 — Automatic deduction on create / add.** `CreateOrder` and `AddOrderItem` deduct the units they create, in the same
-  transaction, row-locked, with no prompt. Lock order:
-  - `AddOrderItem`: `orders` lock → `order_items` insert → `products` locks (by id) → `product_variants` locks (by id) →
-    `UPDATE … stock = stock + ?`.
-  - `CreateOrder`: `orders` insert → `order_items` inserts → the same stock locks and `UPDATE`s.
-
-  If a later story makes `AddOrderItem` merge into an existing line, it deducts only the added units.
-- **D6 — Counters (revised by D8).** Two new columns, both `INT UNSIGNED NOT NULL DEFAULT 0`:
-  `order_items.stock_undeducted_quantity` (U) and `order_items.stock_refund_returned_quantity` (K). The migration backfills
-  every existing row with `U = quantity` and `K = 0`: a legacy order's units were never deducted, so nothing is ever
-  returned for it, whether it is later cancelled, re-quantified or refunded.
-- **D7 — Authorization unchanged.** `AdjustOrderStock` has **no** `Gate` call of its own. It runs only inside a caller's
-  transaction that is already authorized (the same shape as `RecalculateOrderTotals`). `CreateOrder` keeps its own gate and
-  `AddOrderItem` keeps `orders.edit`. No new permission, and no `products.edit` requirement.
-- **D8 — Returnable units, two counters (OQ-1 option (a); user-confirmed 2026-11-08 (two counters)).** With Q = `quantity`,
-  F = `refunded_quantity`, U = `stock_undeducted_quantity`, K = `stock_refund_returned_quantity`:
-  - **Returnable units** (non-refunded units still out of inventory): R = `max(0, (Q − F) − U)`.
-  - **Refunded units still out of inventory** (the refund-restock cap): H = `max(0, F − K − max(0, U − (Q − F)))` — refunded
-    units, minus those already returned by a refund, minus never-deducted units that overflow the non-refunded part.
-    Undeducted units are attributed to the non-refunded part first (equivalently: a refund is taken from deducted units
-    first), which is the most generous reading that can never return a unit that was not taken out.
-  - Invariant: units actually out of inventory for the line = R + H.
-  - This replaces D4's literal formula and the earlier single-counter D8 everywhere.
-  - **Why two counters:** with one counter S, "raised without deducting" and "refunded and restocked" both increased S, so
-    the formula could not tell them apart. Failing sequence (single counter): stock 10; line of 5 (stock 5); refund 2 without
-    restock; raise to 7 without deducting; lower to 2 with return → the old R = 7 − max(2, 2) = 5 returned 5 (stock 10),
-    but only 3 non-refunded units were ever taken out (correct stock 8). The old refund cap `quantity − S` also let 2 extra
-    units back in through a refund.
-  - **Naming:** `stock_undeducted_quantity` rather than "never deducted", because a cancellation with return also moves units
-    into it (they are no longer deducted and behave exactly like never-deducted ones in every later formula).
+- **D1 — Stock target.** A line moves `product_variants.stock` when it names a variant, otherwise `products.stock`
+  (**virtual products included — OQ-4, user-confirmed 2026-11-08**). When the line's variant (on a variant line) or its
+  product was deleted, **nothing** is adjusted for that line, and the stock dialogs do not list it.
+- **D2** — automatic deduction on create / add: **moved to [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md)**
+  (split, user decision 2026-11-08). In this story new lines are written stock-neutral (FD-4).
+- **D6 — Counters.** Two new columns, both `INT UNSIGNED NOT NULL DEFAULT 0`: `order_items.stock_undeducted_quantity` (U) and
+  `order_items.stock_refunded_not_out_quantity` (K). The migration backfills every existing row with
+  **`U = quantity − refunded_quantity` and `K = refunded_quantity`**: a legacy order's units were never deducted (refunded or
+  not), so nothing is ever returned for it, whether it is later cancelled, re-quantified or refunded.
+- **D7 — Authorization unchanged.** No new permission, no `products.edit`; every touched action keeps its own gate.
+- **D8 — Returnable units, two counters (OQ-1 option (a); user-confirmed 2026-11-08 (two counters); corrected after the
+  third Phase 2 review).** With Q = `quantity`, F = `refunded_quantity`, U = `stock_undeducted_quantity`,
+  K = `stock_refunded_not_out_quantity`:
+  - **Invariants:** `0 <= U <= Q − F`; `0 <= K <= F`.
+  - **Returnable units** (non-refunded units out of inventory): R = `(Q − F) − U`.
+  - **Refunded units still out of inventory:** H = `F − K`. Invariant: units actually out of inventory for the line = R + H.
+  - **Every refund of f units** (any caller, with or without restock; k = units restocked by that refund, `k <= min(f, R)`
+    with R taken **before** the refund): `over = max(0, f − R)`; `U' = U − over`; `K' = K + k + over`. A refund takes units
+    that are out of inventory first; the `over` units it has to take from the undeducted ones move from U to K, so U keeps
+    holding only non-refunded units.
+  - **Refund-restock cap:** `k <= min(f, R)` with R read on the locked line before the refund.
+  - This replaces D4's literal formula, the single-counter D8 and the first two-counter D8 everywhere.
+  - **Why two counters:** with one counter S, "raised without deducting" and "refunded and restocked" both increased S, so the
+    formula could not tell them apart (stock 10; line of 5; refund 2 without restock; raise to 7 without deducting; lower to 2
+    with return → old formula stock 10, correct 8).
+  - **Why the third correction:** the first two-counter version let U also hold refunded never-deducted units. Counterexample
+    found by the reviewer's 300 000-sequence ledger simulation: stock 10; line of 2 → stock 8; raise to 5 without deducting
+    (U 3); refund 3 without restock (F 3); raise to 7 deducting 2 → stock 6; then Q − F = 4, U = 3 → R = 1, but 2
+    non-refunded units are out; lowering to 3 with return gave stock 7, correct 8. The corrected rule was re-simulated
+    (300 000 random sequences, 0 mismatches against a unit-level ledger; re-run by the facilitator with the same result).
+  - **Naming:** `stock_undeducted_quantity` (not "never deducted") because a cancellation with return also moves units into
+    it; `stock_refunded_not_out_quantity` (not "refund returned") because it also holds refunded units that were never
+    deducted.
 - **D9 — Deleted-variant detection (OQ-2 option (a)).** New column `order_items.ordered_as_variant`
   (`BOOLEAN NOT NULL DEFAULT false`).
-  - **Written at creation:** `true` whenever the new line names a variant.
+  - **Written at creation:** `true` whenever the new line names a variant (this story, FD-4).
   - **Backfill:** `true` where `product_variant_id IS NOT NULL` **or** the `product_sku` snapshot differs from the product's
     current SKU.
   - **Effect:** a line with `ordered_as_variant = true` and a `null` variant id adjusts nothing (D1).
   - **Accepted blind spot:** the backfill also flags a *legacy plain-product line whose product SKU was edited after the
     order*. That line then adjusts nothing. The impact is limited to a later quantity increase with deduction on that legacy
-    line: its returnable units are 0 anyway (D6), so returns are unaffected. The owner accepted this at the Phase 2 review,
-    and a migration test pins it.
+    line: its returnable units are 0 anyway (D6), so returns are unaffected. Accepted; pinned by a migration test.
   - **Second accepted blind spot:** a line whose variant was deleted before the upgrade **and whose variant SKU equals its
     product's SKU** is backfilled as a plain-product line (`ordered_as_variant = false`) and would move the product's stock on
-    a later increase with deduction. Returns are unaffected (legacy U = quantity). Accepted; pinned by a migration test.
+    a later increase with deduction. Returns are unaffected (legacy R = 0). Accepted; pinned by a migration test.
+- **D10 — The counter rules ship with the columns.** Refunds without restock and quantity changes without stock adjustment
+  already exist today. If the counters only started being maintained by later stories, every refund or quantity change made
+  in between would corrupt U and K. So this story implements, with **no stock movement**:
+  - `RecordRefund`: the D8 refund rule with k = 0 for every refunded line (null-target lines included);
+  - `UpdateOrderItemQuantity`: increase → `U + d`; decrease → `U' = max(0, U − d)` (the "stock not changed" rows);
+  - `CreateOrder` / `AddOrderItem`: new lines stock-neutral (`U = quantity`, `K = 0`) until 0088a makes them deduct.
+  0088a, 0090 and 0092b add the stock-moving branches; none of them changes these rules.
 
 ## Technical design (backend-expert, accepted)
-- **FD-1 — Signature.** `AdjustOrderStock::__invoke(Order $order, array $deltas): array`, with
-  `@param list<array{order_item: OrderItem, delta: int}> $deltas` (positive = units back into stock, negative = units out)
-  and `@return list<string>` = ids of the order items whose delta was actually applied. Resolved from the container.
-- **FD-2 — Transaction precondition.** The first statement checks `DB::transactionLevel() > 0`, or else throws `LogicException`
-  (a programming error). The caller already holds the `orders` row lock. For `RecordRefund` (0092b), that holds only after
-  [0092a](0092a-record-refund-lock-order-backend.md)'s lock-order fix.
-- **FD-3 — Ownership guard.** Every `order_item` must belong to `$order`, or else `LogicException`.
-- **FD-4 — Aggregation.** Deltas are summed per target key (`variant:<id>` / `product:<id>`). A net-zero target is not
-  written, and lines whose `stockTarget()` is `null` are skipped.
-- **FD-5 — Deterministic stock-row locking.** `products` first, then `product_variants`, each locked with
-  `whereIn(...)->orderBy('id')->lockForUpdate()`. A target row that no longer exists at lock time is skipped like a `null`
-  target, never thrown.
-- **FD-6 — Atomic write.** One `UPDATE … SET stock = stock + ?` per target (`increment('stock', $delta)`). It is **never** a
-  read-modify-write, and there is no lower bound.
-- **FD-7 — Project-wide lock-order convention** (docs-keeper documents it): `orders` → `order_items` (by id) → `products` (by id) →
-  `product_variants` (by id).
-- **FD-8 — Stock target helper.**
+- **FD-1 — Stock target helper.**
   ```php
   /** @return array{type: 'variant'|'product', id: string}|null */
   public function stockTarget(): ?array
   ```
-  It is pure, with no query:
-  - `variant` when `product_variant_id` is set;
-  - `null` when `ordered_as_variant` is true and the variant id is null (D9);
-  - `product` when `product_id` is set on a non-variant line;
-  - `null` when the product is gone (D1).
-- **FD-9 — Unit helpers** (the one copy of D8's formulas).
-  - `OrderItem::returnableStockUnits(): int` = R. 0090, 0091, 0094, 0094a and 0095 read it.
-  - `OrderItem::refundedUnitsOutOfStock(int $additionallyRefunded = 0): int` = H, computed with
-    F + `$additionallyRefunded` (so 0092b can bound a stock return by the units being refunded in the same call before
-    writing anything). The refund cap in 0092b reads it.
-- **FD-10 — Counter ownership.** `AdjustOrderStock` moves `stock` only; each caller owns the counter rule for its operation
-  (see the table below). All three new columns stay out of `#[Fillable]` (`integer` / `boolean` casts) and are written with
-  `forceFill()` / `forceCreate()`.
-- **FD-11 — `CreateOrder` integration.**
-  - Inside the transaction closure, `CreateOrder` collects the `OrderItem` models it creates (`forceCreate` returns them).
-  - It then passes them to **one** `AdjustOrderStock` call, with `delta = -quantity` each, after all lines are inserted.
-  - Each line is written with `stock_undeducted_quantity = 0`, `stock_refund_returned_quantity = 0` and `ordered_as_variant`.
-- **FD-12 — `AddOrderItem` integration.**
-  - It writes `stock_undeducted_quantity = 0`, `stock_refund_returned_quantity = 0` and `ordered_as_variant` in its `forceCreate`.
-  - It calls `AdjustOrderStock` with `delta = -$quantity` after the insert and before `RecalculateOrderTotals`.
-  - Every existing refusal (hard block, line ceiling, column ceiling) runs first, so a refused add never moves stock.
-- **FD-13 — Factory.** `OrderItemFactory` sets:
-  - `stock_undeducted_quantity` and `stock_refund_returned_quantity` default `0`;
-  - `ordered_as_variant` default `true` when the factory line names a variant, `false` otherwise.
-
-  New states:
-  - `legacyStockUntracked()` — `stock_undeducted_quantity = quantity`, `stock_refund_returned_quantity = 0`;
+  It is pure, with no query: `variant` when `product_variant_id` is set; `null` when `ordered_as_variant` is true and the
+  variant id is null (D9); `product` when `product_id` is set on a non-variant line; `null` when the product is gone (D1).
+- **FD-2 — Unit helpers** (the one copy of D8's formulas).
+  - `OrderItem::returnableStockUnits(): int` = R = `(Q − F) − U`. 0090, 0091, 0094, 0094a, 0095 read it; 0092b uses it as the
+    refund-restock cap (`min($items[key], returnableStockUnits())`, read before the refund).
+  - `OrderItem::refundedUnitsOutOfStock(): int` = H = `F − K` (no parameter; used by the invariant tests and documentation).
+  - `OrderItem::applyRefundToStockCounters(int $refunded, int $restocked): void` — the one copy of the refund rule
+    (`over = max(0, f − R)`, `U − over`, `K + k + over`), called by `RecordRefund` for every refunded line before
+    `refunded_quantity` is incremented; throws `LogicException` when `$restocked > min($refunded, R)`.
+- **FD-3 — Columns on the model.** All three new columns stay out of `#[Fillable]` (`integer` / `boolean` casts) and are
+  written with `forceFill()` / `forceCreate()`. Each caller owns the counter rule for its operation (see the table below).
+- **FD-4 — Stock-neutral new lines (until 0088a).** `CreateOrder` and `AddOrderItem` write each new line with
+  `stock_undeducted_quantity = quantity`, `stock_refunded_not_out_quantity = 0` and `ordered_as_variant` (true when the line
+  names a variant). Nothing else in either action changes.
+- **FD-5 — Factory.** `OrderItemFactory` sets `stock_undeducted_quantity` and `stock_refunded_not_out_quantity` default `0`
+  (a line as it is after 0088a, i.e. fully deducted — what later stories' tests need) and `ordered_as_variant` from whether
+  the factory line names a variant. New states:
+  - `legacyStockUntracked()` — `stock_undeducted_quantity = quantity − refunded_quantity`,
+    `stock_refunded_not_out_quantity = refunded_quantity` (also the shape this story's `CreateOrder` / `AddOrderItem` write);
   - `orphanedVariant()` — `ordered_as_variant = true`, `product_variant_id = null`, `product_id` set.
+- **FD-6 — `RecordRefund` counter maintenance (D10).** Inside its existing transaction, for every refunded line (null-target
+  lines included), before incrementing `refunded_quantity`: `applyRefundToStockCounters($quantityToRefund, 0)`; persisted with
+  the same `forceFill()->save()` as `refunded_quantity`. No stock movement, no new parameter, no new refusal.
+- **FD-7 — `UpdateOrderItemQuantity` counter maintenance (D10).** Inside its existing transaction, after the existing guards:
+  increase by d → `U + d`; decrease by d → `max(0, U − d)`; persisted with the same `forceFill()->save()` as `quantity`. No
+  stock movement, no new parameter.
 
-## Counter model (D8, two counters, user-confirmed 2026-11-08)
-- **Meaning:** Q = `quantity`, F = `refunded_quantity`, U = `stock_undeducted_quantity` (non-refunded-side units not taken out
-  of inventory: never deducted, or given back on cancellation), K = `stock_refund_returned_quantity` (refunded units put back
-  through a refund). Invariants: `0 <= U <= Q`, `0 <= K <= F`, `K + max(0, U − (Q − F)) <= F`.
-- **Derived:** R = `max(0, (Q − F) − U)` (returnable); H = `max(0, F − K − max(0, U − (Q − F)))` (refunded, still out).
-- **Per operation** (d = units removed or added, `newQty` = quantity after the change; a decrease never goes below F):
+## Counter model (D8, two counters, user-confirmed 2026-11-08, corrected after review #3)
+- **Meaning:** Q = `quantity`, F = `refunded_quantity`, U = `stock_undeducted_quantity` (non-refunded units not out of
+  inventory), K = `stock_refunded_not_out_quantity` (refunded units not out of inventory). Invariants: `0 <= U <= Q − F`,
+  `0 <= K <= F`.
+- **Derived:** R = `(Q − F) − U` (returnable); H = `F − K` (refunded, still out). Units out of inventory = R + H.
+- **Per operation** (d = units removed or added, `newQty` = quantity after the change; a decrease never goes below F; f =
+  units refunded, k = units restocked by that refund, R read before the operation):
 
   | Operation | Stock delta | U after | K after |
   | --- | --- | --- | --- |
-  | Create order / add line (this story) | `-quantity` | `0` | `0` |
+  | Create order / add line, before 0088a (this story) | none | `quantity` | `0` |
+  | Create order / add line, after 0088a | `-quantity` | `0` | `0` |
   | Quantity +d, admin deducts (0090) | `-d` | `U` | `K` |
-  | Quantity +d, admin does not change stock (0090) | none | `U + d` | `K` |
-  | Quantity −d, admin returns units (0090) | `+k`, `k = max(0, R − (newQty − F))` | `U − d + k` (never negative) | `K` |
-  | Quantity −d, admin does not change stock (0090) | none | `max(0, U − d)` | `K` |
+  | Quantity +d, stock not changed (this story, D10) | none | `U + d` | `K` |
+  | Quantity −d, admin returns units (0090) | `+k`, `k = max(0, d − U)` (= `R − (newQty − F)`) | `max(0, U − d)` | `K` |
+  | Quantity −d, stock not changed (this story, D10) | none | `max(0, U − d)` | `K` |
   | Remove line, admin returns units (0090; only lines with F = 0) | `+R` (= Q − U) | row deleted | — |
-  | Cancel, admin returns units (0091) | `+R` per line | `U + R` | `K` |
+  | Cancel, admin returns units (0091) | `+R` per line | `U + R` (= Q − F) | `K` |
   | Cancel, admin does not change stock (0091) | none | `U` | `K` |
-  | Refund of f units with stock return of k (0092b) | `+k`, `k <= min(f, refundedUnitsOutOfStock(f))` | `U` | `K + k` |
+  | **Refund f, any caller** (this story with k = 0; 0092b with k > 0) | `+k`, `k <= min(f, R)` | `U − over`, `over = max(0, f − R)` | `K + k + over` |
   | Automatic cancellation after a full refund | none | `U` | `K` |
 
-  A decrease removes undeducted units first (that is what both decrease rows encode), so a raise that was never deducted is
-  never "returned". A line with a `null` stock target never moves stock; on a quantity change (0090) its counters still follow
-  the table, while a cancellation (0091) or a refund (0092b) updates counters only for the lines `AdjustOrderStock` reports as
-  applied, so a null-target line keeps its counters there. Either way such a line can never move stock again.
+  A decrease removes undeducted units first, so a raise that was never deducted is never "returned"; both decrease rows give
+  `U' = max(0, U − d)`. A line with a `null` stock target never moves stock; its counters still follow every row above (the
+  refund rule runs for every refunded line), except a cancellation, which updates only the lines `AdjustOrderStock` reports
+  as applied. Either way such a line can never move stock again. A line created before 0088a has R = 0 (U = Q), so nothing is
+  ever returned for it, exactly like a legacy line.
 
-- **Every row re-verified against these sequences** (stock of "Mug" starts at 10 unless stated):
-  1. **Round trip:** line of 2 (stock 8, U 0) → raise to 5 without deducting (U 3) → lower to 2 with return: R = `5 − 3 = 2`,
-     k = `max(0, 2 − 2) = 0`, U = `3 − 3 + 0 = 0` → cancel with return: R = `2 − 0 = 2` → stock 10. ✔
-  2. **The failing single-counter sequence:** line of 5 (stock 5, U 0) → refund 2 without restock (F 2, K 0) → raise to 7
-     without deducting (U 2) → lower to 2 with return: R = `(7 − 2) − 2 = 3`, k = `max(0, 3 − (2 − 2)) = 3` → **stock 8** ✔;
-     U = `2 − 5 + 3 = 0`; now R = `0`, H = `2 − 0 − 0 = 2` (the 2 refunded units are still out, correctly). ✔
-  3. **Refund with restock, then lower:** line of 5 (stock 5) → refund 2 returning 2 (F 2, K 2, stock 7) → lower to 3 with
-     return: R = `3 − 0 = 3`, k = `max(0, 3 − (3 − 2)) = 2` → stock 9, U = `0 − 2 + 2 = 0`; now R = `1`, H = `0`; 1 unit
-     out = stock 10 − 9. ✔
-  4. **Refund then cancel:** a partially refunded order cannot be cancelled. A fully refunded order (F = Q) in the window
-     before the automatic cancellation: R = `max(0, 0 − U) = 0` → nothing returned. ✔
-  5. **Refund after cancel:** line of 4 (stock 6) → cancel with return (R 4, U 4, stock 10) → refund 4 asking to return 4:
-     H with f = 4 is `max(0, 4 − 0 − max(0, 4 − 0)) = 0` → refused, stock stays 10. ✔
-  6. **Legacy line:** U = Q, K = 0 → R = 0 and H = 0 for any F → nothing ever returns. ✔
-  7. **Raise without deducting, then refund with restock:** line of 2 (stock 8) → raise to 5 without deducting (U 3) →
-     refund 3 returning 3: H(f = 3) = `max(0, 3 − 0 − max(0, 3 − 2)) = 2` → only 2 may return (stock 10, K 2); then
-     R = `max(0, 2 − 3) = 0`, H = `3 − 2 − 1 = 0` → nothing more can return. ✔
-  8. **Increase with deduction, then cancel:** line of 2 (stock 8) → raise to 5 deducting (stock 5, U 0) → cancel with
-     return: R = 5 → stock 10. ✔
+- **Every row re-verified** (stock of "Mug" starts at 10 unless stated; lines are deducted at creation, i.e. after 0088a,
+  unless stated; the reviewer's simulation scripts were re-run with 0 mismatches):
+  1. **Round trip:** line of 2 (stock 8, U 0) → raise to 5 without deducting (U 3) → lower to 2 with return: k =
+     `max(0, 3 − 3) = 0`, U 0 → cancel with return: R = 2 → stock 10. ✔
+  2. **Single-counter failing sequence:** line of 5 (stock 5) → refund 2 without restock (R 5, over 0; F 2, K 0) → raise to 7
+     without deducting (U 2) → lower to 2 with return: k = `max(0, 5 − 2) = 3` → **stock 8** ✔; U 0; R 0, H 2. ✔
+  3. **Review #3 counterexample:** line of 2 (stock 8) → raise to 5 without deducting (U 3) → refund 3 without restock
+     (R 2, over 1; U 2, F 3, K 1) → raise to 7 deducting 2 (stock 6) → R = `(7 − 3) − 2 = 2` ✔ → lower to 3 with return:
+     k = `max(0, 4 − 2) = 2` → **stock 8** ✔; U 0; Q 3, F 3 → R 0, H `3 − 1 = 2`: 2 units out (10 − 8). ✔
+  4. **Legacy variant:** legacy line of 3 (backfill U 3, K 0; stock 7) → refund 3 without restock (R 0, over 3; U 0, F 3,
+     K 3) → raise to 4 deducting 1 (stock 6) → R = `1 − 0 = 1` ✔ → lower to 3 with return: k = `max(0, 1 − 0) = 1` →
+     **stock 7** ✔.
+  5. **Refund with restock, then lower:** line of 5 (stock 5) → refund 2 returning 2 (R 5, k 2, over 0; F 2, K 2, stock 7)
+     → lower to 3 with return: k = `max(0, 2 − 0) = 2` → stock 9; R 1, H 0; 1 unit out. ✔
+  6. **Refund then cancel:** a partially refunded order cannot be cancelled; a fully refunded order before the automatic
+     cancellation has Q − F = 0 → R = 0 → nothing returned. ✔
+  7. **Refund after cancel:** line of 4 (stock 6) → cancel with return (R 4, U 4, stock 10) → refund 4 asking to return 4:
+     cap `min(4, R = 0) = 0` → refused; the same refund without restock: over 4 → U 0, K 4; R 0, H 0. ✔
+  8. **Legacy line, no refund:** U = Q, K = 0 → R 0, H 0 → nothing ever returns. Legacy line with F refunded: U = Q − F,
+     K = F → R 0, H 0. ✔
+  9. **Raise without deducting, then refund with restock:** line of 2 (stock 8) → raise to 5 without deducting (U 3) →
+     refund 3 returning 3: cap `min(3, R = 2) = 2` → only 2 may return (stock 10); over 1 → U 2, K `0 + 2 + 1 = 3`; R 0, H 0. ✔
+  10. **Increase with deduction, then cancel:** line of 2 (stock 8) → raise to 5 deducting (stock 5) → cancel with return:
+      R 5 → stock 10. ✔
+  11. **Line created before 0088a (this story alone):** line of 3 written stock-neutral (U 3; stock 10, nothing deducted) →
+      refund 1 without restock (R 0, over 1; U 2, K 1) → cancel with return after 0091 ships: R = `(3 − 1) − 2 = 0` → stock
+      10. ✔
 
 ## Gherkin
 ```gherkin
-Feature: Order lines hold their units out of stock
+Feature: Order lines track which units are out of stock
 
   Scenario: Legacy order lines are marked as never deducted
     Given an order administrator, with an order recorded before stock tracking existed, holding a line of 3 units
     When the stock-tracking upgrade is applied to the store
-    Then that line counts all 3 units as not held out of inventory
+    Then that line counts all 3 units as not taken out of inventory
 
   Scenario: A line whose variant was deleted before the upgrade is recognised as a variant line
     Given an order administrator, with an order recorded before stock tracking existed, holding a line of a variant that was deleted before the upgrade
     When the stock-tracking upgrade is applied to the store
     Then that line is recognised as a variant line that moves no stock
 
-  Scenario: Creating an order takes its units out of stock
+  Scenario: A line created before automatic deduction exists never claims units out of stock
     Given an order administrator, and the product "Mug" has 10 units in stock
     When the order administrator creates an order with 3 units of "Mug"
-    Then "Mug" has 7 units in stock
+    Then "Mug" still has 10 units in stock
+    And the new line counts all 3 units as not taken out of inventory
 
-  Scenario: Creating an order with a variant takes the units out of that variant
-    Given an order administrator, and the "Red / M" variant of "T-shirt" has 5 units in stock
-    When the order administrator creates an order with 2 units of the "Red / M" variant
-    Then the "Red / M" variant has 3 units in stock
-    And the "T-shirt" product's own stock is unchanged
-
-  Scenario: Two lines of the same variant are deducted as one total
-    Given an order administrator, and the "Red / M" variant has 5 units in stock
-    When the order administrator creates an order with two separate lines of the "Red / M" variant, of 1 and 2 units
-    Then the "Red / M" variant has 2 units in stock
-
-  Scenario: Creating an order with more units than in stock is allowed
-    Given an order administrator, and the product "Mug" has 1 unit in stock
-    When the order administrator creates an order with 4 units of "Mug"
-    Then the order is created
-    And "Mug" has -3 units in stock
-
-  Scenario: A refused order creation takes nothing out of stock
-    Given an order administrator, and the product "Mug" has 10 units in stock
-    When the order administrator creates an order whose line total exceeds the allowed amount
-    Then the order is refused
-    And "Mug" still has 10 units in stock
-
-  Scenario: Adding a line to an open order takes its units out of stock
+  Scenario: A line added to an open order is also stock-neutral for now
     Given an order administrator, with a pending order, and the product "Mug" has 10 units in stock
     When the order administrator adds 2 units of "Mug" to the order
-    Then "Mug" has 8 units in stock
+    Then "Mug" still has 10 units in stock
+    And the new line counts both units as not taken out of inventory
 
-  Scenario: A refused line addition takes nothing out of stock
-    Given an order administrator, with a shipped order, and the product "Mug" has 10 units in stock
-    When the order administrator adds 2 units of "Mug" to the order
-    Then the line is refused because the order can no longer be edited
-    And "Mug" still has 10 units in stock
+  Scenario: Raising a quantity keeps the added units counted as not taken out
+    Given an order administrator, with a pending order whose 2-unit "Mug" line was deducted at creation
+    When the order administrator changes the line to 5 units
+    Then no stock changes
+    And the line counts 2 units as able to go back to stock
 
-  Scenario: An administrator who may not edit orders cannot add a line or move stock
-    Given an administrator who may not edit orders, with a pending order, and "Mug" has 10 units in stock
-    When the administrator adds 2 units of "Mug" to the order
-    Then the action is refused as not authorized
-    And "Mug" still has 10 units in stock
+  Scenario: A refund without restock keeps the line's counts of units out of stock right
+    Given an order administrator who may refund, with a paid order whose 2-unit "Mug" line, deducted at creation, was raised to 5 units without deducting
+    When the order administrator refunds 3 units of "Mug" without returning stock
+    Then no non-refunded unit of that line is counted as out of stock
+    And the 2 refunded units that were taken out are counted as still out of stock
 
-  Scenario: A line counts only the units actually taken out as returnable
-    Given an order administrator, with an order whose 5-unit "Mug" line had 2 units refunded without returning stock and was then raised to 7 units without deducting
-    When the units of that line still out of stock are worked out
-    Then 3 non-refunded units can go back to stock
+  Scenario: A line raised with deduction after such a refund counts the newly deducted units as returnable
+    Given an order administrator, with a paid order whose 2-unit "Mug" line was raised to 5 without deducting, refunded 3 units without returning stock, and then raised to 7 deducting the 2 added units
+    When the units of that line that can go back to stock are worked out
+    Then 2 non-refunded units can go back to stock
     And 2 refunded units are still out of stock
 
-  Scenario: A line whose variant was deleted moves no stock
-    Given an order administrator, with an order holding a line of a variant that has since been deleted from the catalog
-    When the order's stock is adjusted by returning that line's units
-    Then no product or variant stock changes
-    And the line is reported as not adjusted
+  Scenario: A legacy line refunded and then raised with deduction counts only the new unit as returnable
+    Given an order administrator, with an order recorded before stock tracking existed whose 3-unit "Mug" line was fully refunded and then raised to 4 deducting the added unit
+    When the units of that line that can go back to stock are worked out
+    Then 1 non-refunded unit can go back to stock
+    And no refunded unit is counted as out of stock
 
-  Scenario: A line whose product was deleted moves no stock
-    Given an order administrator, with an order holding a line of a product that has since been deleted from the catalog
-    When the order's stock is adjusted by returning that line's units
-    Then no product or variant stock changes
-
-  Scenario: A line of another order is rejected
-    Given an order administrator, with two orders
-    When the first order's stock is adjusted with a line that belongs to the second order
-    Then the adjustment is refused as a programming error
-    And no stock changes
-
-  Scenario: Stock is never adjusted outside an order's protected write
-    Given an order administrator, with an order holding a line of "Mug"
-    When the order's stock is adjusted without an open database transaction
-    Then the adjustment is refused as a programming error
-    And no stock changes
+  Scenario: A refused refund leaves the counts unchanged
+    Given an order administrator who may refund, with an order still awaiting payment
+    When the order administrator tries to refund 1 unit of "Mug"
+    Then the refund is refused
+    And the line's counts of units out of stock are unchanged
 ```
 
 ## Files to create/modify
 - `database/migrations/<timestamp>_add_stock_tracking_columns_to_order_items_table.php` — new (database-expert). In `up()`:
   - `boolean('ordered_as_variant')->default(false)->after('product_variant_id')`.
   - `unsignedInteger('stock_undeducted_quantity')->default(0)->after('refunded_quantity')`.
-  - `unsignedInteger('stock_refund_returned_quantity')->default(0)->after('stock_undeducted_quantity')`.
-  - Backfill `stock_undeducted_quantity = quantity` (and `stock_refund_returned_quantity = 0`) for every row.
+  - `unsignedInteger('stock_refunded_not_out_quantity')->default(0)->after('stock_undeducted_quantity')`.
+  - Backfill, for every row: `stock_undeducted_quantity = quantity − refunded_quantity`, `stock_refunded_not_out_quantity =
+    refunded_quantity` (one `UPDATE … SET … = …` statement).
   - Backfill `ordered_as_variant` (D9) with `UPDATE order_items LEFT JOIN products … SET ordered_as_variant = true WHERE
     product_variant_id IS NOT NULL OR (products.id IS NOT NULL AND order_items.product_sku <> products.sku)`.
 
   `down()` drops the three columns. Follow [docs/database/migrations.md](../../docs/database/migrations.md).
-- `app/Models/OrderItem.php` — `@property int $stock_undeducted_quantity`, `@property int $stock_refund_returned_quantity`,
-  `@property bool $ordered_as_variant`, casts, `stockTarget()`, `returnableStockUnits()`, `refundedUnitsOutOfStock()`; all
-  three columns stay out of `#[Fillable]`.
-- `app/Actions/Orders/AdjustOrderStock.php` — new action (FD-1 … FD-7).
-- `app/Actions/Orders/CreateOrder.php` — FD-11; docblock update.
-- `app/Actions/Orders/AddOrderItem.php` — FD-12; docblock update (merge rule).
-- `database/factories/OrderItemFactory.php` — FD-13: both counters default `0`, `ordered_as_variant` default from
-  the variant, states `legacyStockUntracked()` and `orphanedVariant()`.
-- `tests/Feature/Orders/AdjustOrderStockTest.php` — new.
+- `app/Models/OrderItem.php` — `@property int $stock_undeducted_quantity`, `@property int $stock_refunded_not_out_quantity`,
+  `@property bool $ordered_as_variant`, casts, `stockTarget()`, `returnableStockUnits()`, `refundedUnitsOutOfStock()`,
+  `applyRefundToStockCounters()`; all three columns stay out of `#[Fillable]`.
+- `app/Actions/Orders/CreateOrder.php` — FD-4 (stock-neutral new lines, `ordered_as_variant`); docblock update.
+- `app/Actions/Orders/AddOrderItem.php` — FD-4; docblock update.
+- `app/Actions/Orders/RecordRefund.php` — FD-6: counter maintenance for every refunded line (no stock movement); docblock step.
+- `app/Actions/Orders/UpdateOrderItemQuantity.php` — FD-7: counter maintenance on increase/decrease (no stock movement).
+- `database/factories/OrderItemFactory.php` — FD-5.
 - `tests/Feature/Orders/OrderStockMigrationTest.php` — new.
-- `tests/Feature/Orders/CreateOrderStockTest.php` — new.
-- `tests/Feature/Orders/AddOrderItemStockTest.php` — new.
+- `tests/Feature/Orders/OrderStockCountersTest.php` — new (create/add/refund/quantity counter maintenance, sequences, property test).
 - `tests/Feature/Orders/OrderModelTest.php` — extend with the helper cases.
 
 ## Tests to perform
-- [ ] Migration: existing rows get `stock_undeducted_quantity = quantity` and `stock_refund_returned_quantity = 0`; a later row
-  defaults both to `0`; columns `unsigned`, `NOT NULL`.
+- [ ] Migration: existing rows get `stock_undeducted_quantity = quantity − refunded_quantity` and
+  `stock_refunded_not_out_quantity = refunded_quantity` (rows with and without refunds); a later row defaults both to `0`;
+  columns `unsigned`, `NOT NULL`; after the backfill every row has `returnableStockUnits() = 0` and `refundedUnitsOutOfStock() = 0`.
 - [ ] Migration (D9 backfill): `ordered_as_variant` is
   - true for a row with a variant id;
   - true for a row with a null variant id whose SKU snapshot differs from its product's SKU;
@@ -324,131 +284,113 @@ Feature: Order lines hold their units out of stock
   - **true for a legacy plain-product row whose product SKU was edited later** (accepted blind spot, pinned);
   - **false for a row whose variant was deleted and whose variant SKU equalled the product SKU** (second accepted blind spot, pinned).
 - [ ] Unit: `stockTarget()` — variant line → variant; product line → product; deleted product → `null`; `orphanedVariant()` → `null`.
-- [ ] Unit (D8): `returnableStockUnits()` — fresh line (Q); legacy (0); 5 with 2 refunded and 2 restocked (3); 5 with 2
-  refunded not restocked (3); 7 with F 2, U 2 (3); never negative. `refundedUnitsOutOfStock()` — fresh 5 with F 2, K 0 (2);
-  F 2, K 2 (0); legacy (0); after cancel-with-return (0); U 3 on Q 5 with f = 3 (2); never negative.
-- [ ] **Sequence tests** (via the real actions where they exist in this story, otherwise by arranging the counters with the
-  factory and asserting the helpers): every numbered sequence of the counter model, including the failing single-counter
-  sequence ending at stock **8** and the 2 → 5 → 2 → cancel round trip ending at stock 10.
-- [ ] `AdjustOrderStock`:
-  - positive and negative deltas, variant vs product target;
-  - aggregation of two lines of the same target; a net-zero target writes nothing;
-  - negative resulting stock allowed;
-  - returns only the ids actually applied; null targets and rows deleted before locking are skipped.
-- [ ] Negative: outside a transaction → `LogicException`; a line of another order → `LogicException`; stock untouched.
-- [ ] Atomicity: the write is `UPDATE … stock = stock + ?`, and the final value is correct when another write changed the row
-  between the caller's read and this call.
-- [ ] Lock order (query log):
-  - `AdjustOrderStock` locks `products` before `product_variants`, each by id;
-  - **`AddOrderItem`**: `orders` lock → `order_items` insert → product/variant locks → `UPDATE stock`;
-  - **`CreateOrder`**: `orders` insert → `order_items` inserts → stock locks → `UPDATE stock`.
-- [ ] `CreateOrder`:
-  - product, variant and mixed lines; same-target aggregation in **one** `AdjustOrderStock` call;
-  - negative stock allowed;
-  - both counters `0` and correct `ordered_as_variant` per line.
-- [ ] `CreateOrder` refusals and retry:
-  - refused by validation, by the column ceiling, or by a non-1062 `QueryException` → stock unchanged;
-  - a forced 1062 then success → stock deducted **once**.
-- [ ] `AddOrderItem`:
-  - deducts, with both counters `0` and the correct flag;
-  - refused by the hard block, the line ceiling, the column ceiling, or authorization → stock unchanged.
-- [ ] End to end (D9): after the variant of a line created here is deleted, `stockTarget()` is `null`.
-- [ ] Architecture: `AdjustOrderStock` has no `Gate`/`authorize` call and is used only from `App\Actions\Orders\*`.
-- [ ] Regression: `CreateOrderTest`, `AddOrderItemTest`, `HardBlockTest`, `PriceSnapshotTest` green unchanged.
+- [ ] Unit (D8): `returnableStockUnits()` = `(Q − F) − U` and `refundedUnitsOutOfStock()` = `F − K` on: factory line (Q, 0);
+  legacy without refunds (0, 0); legacy with F refunded (0, 0); stock-neutral new line (0, 0).
+- [ ] Unit (D8): `applyRefundToStockCounters(f, k)` — R before; `over = max(0, f − R)`; U − over; K + k + over; refuses
+  `k > min(f, R)`; keeps `0 <= U <= Q − F` and `K <= F`. Cases: R 5, f 2, k 0 → U, K+0; R 2 (U 3, Q 5), f 3, k 0 → U 2, K 1;
+  R 0 (after cancel, U 4), f 4, k 0 → U 0, K 4; R 2, f 3, k 2 → U 2, K 3.
+- [ ] `CreateOrder` / `AddOrderItem` (FD-4): no stock row read or written (query log); every new line has U = quantity, K = 0
+  and the correct `ordered_as_variant`; refused or rolled-back writes leave no line; existing results unchanged.
+- [ ] `RecordRefund` (FD-6): every refunded line's counters follow the rule (null-target lines included); no stock change;
+  refused refunds leave the counters unchanged; existing refund behaviour and results unchanged.
+- [ ] `UpdateOrderItemQuantity` (FD-7): increase → U + d; decrease → `max(0, U − d)`; no stock change; existing refusals
+  leave the counters unchanged.
+- [ ] **Sequence tests** — through the real actions this story touches (refund without restock, quantity changes), with the
+  deducted starting lines and the deducting steps arranged with the factory (deduction ships in 0088a/0090), asserting the
+  helpers:
+  - the review #3 counterexample: after line of 2 (deducted) → raise to 5 → refund 3 → (arranged) raise to 7 deducting 2,
+    `returnableStockUnits() === 2` and `refundedUnitsOutOfStock() === 2` (0090 asserts the final stock 8 through its action);
+  - the legacy variant: legacy line of 3 → refund 3 → (arranged) raise to 4 deducting 1 → `returnableStockUnits() === 1`;
+  - sequence 11 (a stock-neutral line refunded then cancelled returns nothing);
+  - every other numbered sequence of the counter model, at helper level.
+- [ ] Invariant property test (seeded random sequences of create / raise / lower / refund / cancel with a unit-level ledger,
+  mirroring the reviewer's simulation, small sample in CI): `R = ledger non-refunded out`, `H = ledger refunded out`,
+  `0 <= U <= Q − F`, `K <= F`.
+- [ ] Regression: `CreateOrderTest`, `AddOrderItemTest`, `HardBlockTest`, `PriceSnapshotTest`, `RecordRefundTest`,
+  `UpdateOrderItemQuantityTest` green unchanged.
 
 ## Expected outcome
-Every order or added line created from now on holds its units out of the right stock row, atomically with the write. Legacy
-lines are stock-neutral, and every later stock change in the series goes through one tested action.
+Every order line — legacy, new, refunded or re-quantified — carries correct counts of which units are out of stock, without
+any stock change yet. Shipping this story alone is safe; 0088a then starts deducting new lines.
 
 ## Acceptance criteria
 - [ ] The three columns exist and are backfilled per D6 / D9.
-- [ ] `stockTarget()`, `returnableStockUnits()` and `refundedUnitsOutOfStock()` implement D1, D8 and D9; every sequence in the
-  counter model holds.
-- [ ] `AdjustOrderStock` implements FD-1 … FD-7 and touches neither `order_items` nor `orders`.
-- [ ] `CreateOrder` and `AddOrderItem` deduct created units in their own transaction, in the FD-7 lock order.
-- [ ] A refused or rolled-back create/add never changes stock; insufficient stock never refuses a write.
-- [ ] No authorization change; the full suite is green.
+- [ ] `stockTarget()`, `returnableStockUnits()`, `refundedUnitsOutOfStock()` and `applyRefundToStockCounters()` implement D1,
+  D8 and D9; every sequence in the counter model holds at helper level, including the review #3 counterexample and the
+  legacy variant.
+- [ ] `CreateOrder` / `AddOrderItem` write stock-neutral lines; `RecordRefund` and `UpdateOrderItemQuantity` keep both counters
+  correct (D10).
+- [ ] No stock row is read or written by any code in this story; no behaviour change; no authorization change; the full suite
+  is green.
 
 ## Definition of Done
 - [ ] Tests written and green (full suite, unscoped)
 - [ ] Code reviewed (code-reviewer)
 - [ ] No security findings (appsec-auditor)
 - [ ] Documentation updated (docs-keeper):
-  - `docs/database/schema-orders/items-and-refunds.md#order_items` — the three columns, their backfills, D8 (two counters) and D9 with both blind spots;
+  - `docs/database/schema-orders/items-and-refunds.md#order_items` — the three columns, their backfills, D8 (two counters, refund rule), D10 and D9 with both blind spots;
   - the ER diagram in `docs/database/schema.md`;
-  - `docs/database/schema-orders/snapshots-totals-and-rules.md` — stock side effect of create / add line;
-  - `docs/api/orders.md` — `AdjustOrderStock` contract, stock side effect of create/add, lock-order convention FD-7;
+  - `docs/api/orders.md` — counter side effects of create/add (stock-neutral), refund and quantity change;
   - `ai-spec/tasks/_digests/epic-3.md`.
 - [ ] Acceptance criteria met
 
 ## INVEST note
-- **Independent:** no pending dependency.
-- **Negotiable:** counter model and orphan detection were negotiated and settled with the user (D8, D9).
-- **Valuable:** it fixes the core bug (orders consume inventory) and ships the counter with the first deductions. The
-  merge with former 0089 removed the release-window risk.
-- **Estimable:** one migration, one model, one new action, two action integrations, one factory.
-- **Small:** the largest backend story in the series. Its additions are mechanical and each is covered by its own test file.
-- **Testable:** every rule has a feature or migration test; no UI.
+- **Independent:** no pending dependency; safe to ship alone (new lines are stock-neutral).
+- **Negotiable:** counter model and orphan detection were settled with the user (D8, D9).
+- **Valuable:** every later stock feature depends on correct counts; shipping them first means no order written from now on
+  can be miscounted.
+- **Estimable:** one migration, one model (four helpers), one factory, four small action edits (no stock call).
+- **Small:** yes after the split — no new action, no stock writes, no lock-order change.
+- **Testable:** migration, unit, action and property tests; no UI.
 
 ## Dependencies, risks, open technical questions
-**Depends on:** nothing pending.
+**Depends on:** nothing pending. **Blocks:** [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (and, through it,
+[0090](0090-order-line-quantity-and-removal-stock-opt-in-backend.md), [0091](0091-order-cancellation-stock-return-opt-in-backend.md),
+[0092b](0092b-order-refund-stock-return-backend.md)).
+**File overlap without a dependency:** [0092a](0092a-record-refund-lock-order-backend.md) also edits `RecordRefund.php` —
+`conflict_risk_with`; run them in sequence or coordinate.
 
-**Blocks:**
-- [0090](0090-order-line-quantity-and-removal-stock-opt-in-backend.md)
-- [0091](0091-order-cancellation-stock-return-opt-in-backend.md)
-- [0092b](0092b-order-refund-stock-return-backend.md)
-
-**Risks:**
-- **R-2 — Product editor lost update.** The product and variant editors save `stock` from a form value, so an editor left
-  open overwrites a deduction made in the meantime. This is a pre-existing shape and out of scope (backlog B-1).
-- **R-3 — Low-stock notifications** (PRD foundations) are not implemented. This action is the natural trigger point
-  (backlog B-2).
-- **R-4 — Price read vs deduction.** `CreateOrder` reads prices without locking catalog rows. The stock lock happens only at
-  the deduction step. Acceptable, because the price snapshot rule is unchanged.
+- **R-1 — Two stories touch `CreateOrder` / `AddOrderItem` in a row** (this one, then 0088a). Expected; 0088a's diff is the
+  deduction only.
 
 ### OQ-1 — The returned-units counter and the cancel formula — resolved (option a, then two counters)
 **Resolved 2026-11-08 by the user: option (a)** (D8). **Revised after the Phase 2 re-review: user-confirmed 2026-11-08 (two
-counters)** — see D8 for the failing sequence that a single counter could not handle.
-
-The decrease row was corrected after the Phase 2 review. Under the earlier rule (return `min(d, R)`, clamp the counter to
-`min(S, newQty)`), lowering a line whose raised units were never deducted could return units it never took out. It also
-left a later cancel short. The corrected rule returns only the held-out non-refunded units that no longer fit in the new
-quantity.
-
-Original analysis, kept for the record:
-- D4's `quantity - refunded_quantity - S` subtracts refunded-and-restocked units twice. It under-returns when a line is
-  lowered after a refund with restock.
-- Without a held-out cap, a refund restock after a cancel-with-return returns the same units twice.
+counters)**, and **corrected after review #3** (U holds only non-refunded units; every refund moves its `over` units from U
+to K; K renamed `stock_refunded_not_out_quantity`) — see D8. Original analysis, kept for the record: D4's
+`quantity − refunded_quantity − S` subtracted refunded-and-restocked units twice, and without a cap a refund restock after a
+cancel-with-return returned the same units twice.
 
 ### OQ-2 — How a deleted-variant line is recognised — resolved (option a)
-**Resolved 2026-11-08 by the user: option (a)** (D9, including the accepted backfill blind spot).
+**Resolved 2026-11-08 by the user: option (a)** (D9, including both accepted backfill blind spots).
 
 ### OQ-3 — A line with zero returnable units — resolved (user-confirmed 2026-11-08)
 The dialog is still shown, with a note and only "Save without changing stock" / "Keep editing". See
 [0094](0094-order-line-quantity-stock-dialog-ui.md) and [0094a](0094a-order-line-removal-stock-dialog-ui.md).
 
-### OQ-4 — Virtual products — assumed default, not yet user-confirmed
-D1 makes every product line move `products.stock`, including `virtual` products.
-- **Assumed default (recommended):** keep D1 as written.
-- **Alternative:** skip `virtual` products entirely.
+### OQ-4 — Virtual products — resolved (user-confirmed 2026-11-08)
+D1 applies as written: every product line moves `products.stock`, including `virtual` products.
+
+### OQ-5 — Story size — resolved (user-confirmed 2026-11-08: split, option (a))
+This story keeps the counters (no stock movement); [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md) adds
+`AdjustOrderStock` and the automatic deduction; 0090, 0091 and 0092b depend on 0088a.
 
 ### Backlog (technical tasks for later)
-- **B-1:** make the product and variant editors write stock as a delta, or with optimistic locking (R-2).
-- **B-2:** low/zero-stock notifications triggered from `AdjustOrderStock`'s applied targets (R-3).
+- **B-1:** make the product and variant editors write stock as a delta, or with optimistic locking (see 0088a R-2).
+- **B-2:** low/zero-stock notifications triggered from `AdjustOrderStock`'s applied targets (see 0088a R-3).
 - **B-3:** a per-line stock movement history, if an audit trail is wanted (not requested).
 
 ## Debate record
 - **2026-11-08 — Three Amigos.** Facilitated by product-owner from the backend-expert and frontend-expert designs and user
   decisions D1–D9. backend-qa test list folded in; database-expert designed the migration shape and backfills.
-- **2026-11-08 — Phase 2 review applied.**
-  - Merged former 0089 into this story.
-  - Corrected the lock order to products → variants and the decrease formula.
-  - Pinned the `stockTarget()` signature and documented the D9 blind spot.
-  - Renamed the migration, completed the factory and renumbered the FD items.
-  - Removed an untestable "was not asked" assertion.
+- **2026-11-08 — Phase 2 reviews #1–#3 applied.** 0089 merged in; lock order and decrease formula corrected; `stockTarget()`
+  signature pinned; two counters, then the review #3 refund rule; D10 counter maintenance.
+- **2026-11-08 — Phase 2 review #4 applied.** Split per the user's OQ-5 decision: deduction and `AdjustOrderStock` moved to
+  0088a; new lines stock-neutral here; FD items renumbered (FD-1 … FD-7); OQ-4 user-confirmed.
 
 ## Approval record
 - **Phase 1:** complete 2026-11-08 (product-owner). OQ-1 and OQ-2 resolved by the user 2026-11-08.
 - **Phase 2:** INVEST review 2026-11-08, findings received (including the user's merge decision) → rewritten, pending re-review.
 - **Phase 2:** INVEST re-review 2026-11-08: single-counter model found unsound (user decision: two counters, D8 revised), second
   D9 blind spot added → rewritten, pending re-review.
+- **Phase 2:** INVEST re-review #3 2026-11-08: refund rule corrected (U only non-refunded, `over` transfer on every refund), K renamed, backfill U = Q − F / K = F, `RecordRefund` and `UpdateOrderItemQuantity` counter maintenance added (D10), sequences and property test added, size concern raised as OQ-5 → rewritten, pending re-review.
+- **Phase 2:** INVEST re-review #4 2026-11-08 → rewritten, pending re-review (split into 0088 + 0088a per the user's OQ-5 decision; this story is counters only and safe alone; OQ-4 user-confirmed).

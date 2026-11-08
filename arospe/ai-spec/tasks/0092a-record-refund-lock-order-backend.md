@@ -30,8 +30,8 @@ backend | includes database-expert: no
   `$order` instance is still refreshed**: the action keeps returning `$order->refresh()` after the writes, exactly as today, so
   a caller that reuses its instance (e.g. `Orders\Show`) sees the same state as before. Every persisted value and the returned
   `Order` are identical to today.
-- **D-3** — This lock order is the one 0088 FD-7 documents (`orders → order_items → products → product_variants`); 0092b's stock
-  call relies on it (0088 FD-2).
+- **D-3** — This lock order is the one 0088a FD-7 documents (`orders → order_items → products → product_variants`); 0092b's stock
+  call relies on it (0088a FD-2). 0088 also edits `RecordRefund.php` (counter maintenance, no dependency either way) — `conflict_risk_with`; coordinate.
 
 ## Gherkin
 ```gherkin
@@ -90,3 +90,4 @@ screen. Estimable/Small: one method's lock sequence. Testable: query-log asserti
 - Phase 1: complete 2026-11-08 (product-owner, split from 0092).
 - Phase 2: INVEST review 2026-11-08 (of former 0092): findings received → split and rewritten, pending re-review.
 - Phase 2: INVEST re-review 2026-11-08: two-connection test replaced by query-log assertions on both actions (optional deterministic hook test), acceptance criterion and scenario 2 rephrased, D-2 states the caller's instance is still refreshed → rewritten, pending re-review.
+- Phase 2: INVEST re-review #4 2026-11-08 → rewritten, pending re-review (FD references point at 0088a after the split; file overlap with 0088 noted).
