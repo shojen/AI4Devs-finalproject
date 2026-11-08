@@ -1,40 +1,13 @@
 {
-  "generated_at": "2026-11-07T00:00:00Z",
+  "generated_at": "2026-11-08T00:00:00Z",
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
-    {
-      "id": "0076a",
-      "slug": "0076a-product-slug-and-seo-fields-backend",
-      "title": "Product slug and SEO fields — per-store-language (backend)",
-      "depends_on": [],
-      "status": "claimed",
-      "claimed_by": "worktree-0076a-product-slug-and-seo-fields-backend",
-      "claimed_at": "2026-11-07T00:00:00Z",
-      "touches": [
-        "database/migrations/*_add_slug_and_seo_columns_to_product_translations_table.php",
-        "app/Models/ProductTranslation.php",
-        "app/Actions/Products/CanonicalizeProductSlug.php",
-        "app/Concerns/ProductValidationRules.php",
-        "app/Actions/Products/CreateProduct.php",
-        "app/Actions/Products/UpdateProduct.php",
-        "app/Livewire/Products/Editor.php",
-        "database/factories/ProductTranslationFactory.php",
-        "lang/en/products.php",
-        "lang/es/products.php",
-        "tests/Feature/Products/**"
-      ],
-      "conflict_risk_with": [
-        "0087"
-      ]
-    },
     {
       "id": "0077",
       "slug": "0077-product-editor-language-tabs-ui",
       "title": "Product editor — language tabs (UI)",
-      "depends_on": [
-        "0076a"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -107,7 +80,6 @@
         "tests/Unit/ArchitectureTest.php"
       ],
       "conflict_risk_with": [
-        "0076a",
         "0077",
         "0079"
       ]
