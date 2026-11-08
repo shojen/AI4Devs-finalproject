@@ -47,7 +47,7 @@ function blogPostsBrowserActor(array $permissions = ['blog.view', 'blog.create',
 test('the list renders its rows, filters and trashed section with no JavaScript error', function () {
     $this->actingAs(blogPostsBrowserActor());
     $category = BlogCategory::factory()->named('Guías')->create();
-    $post = BlogPost::factory()->published()->create(['title' => 'Botas de invierno', 'blog_category_id' => $category->id]);
+    $post = BlogPost::factory()->published()->titled('Botas de invierno')->create(['blog_category_id' => $category->id]);
     BlogPost::factory()->create()->delete();
 
     visit('/blog/posts')
@@ -62,8 +62,8 @@ test('choosing a category in the filter narrows the visible rows, and choosing A
     $this->actingAs(blogPostsBrowserActor());
     $guides = BlogCategory::factory()->named('Guías')->create();
     $news = BlogCategory::factory()->named('Novedades')->create();
-    $guide = BlogPost::factory()->create(['title' => 'Una guía', 'blog_category_id' => $guides->id]);
-    $newsPost = BlogPost::factory()->create(['title' => 'Una novedad', 'blog_category_id' => $news->id]);
+    $guide = BlogPost::factory()->titled('Una guía')->create(['blog_category_id' => $guides->id]);
+    $newsPost = BlogPost::factory()->titled('Una novedad')->create(['blog_category_id' => $news->id]);
 
     retry(3, function () use ($guides, $guide, $newsPost): void {
         visit('/blog/posts')
@@ -83,9 +83,9 @@ test('choosing a tag in the filter narrows the visible rows', function () {
     $this->actingAs(blogPostsBrowserActor());
     $running = BlogTag::factory()->named('running')->create();
     $winter = BlogTag::factory()->named('invierno')->create();
-    $runner = BlogPost::factory()->create(['title' => 'Para correr']);
+    $runner = BlogPost::factory()->titled('Para correr')->create();
     $runner->tags()->attach($running->id);
-    $skier = BlogPost::factory()->create(['title' => 'Para esquiar']);
+    $skier = BlogPost::factory()->titled('Para esquiar')->create();
     $skier->tags()->attach($winter->id);
 
     retry(3, function () use ($running, $runner, $skier): void {
@@ -102,7 +102,7 @@ test('choosing a tag in the filter narrows the visible rows', function () {
 test('the trashed section starts closed, expands on a click, and restoring a post returns it to the main table', function () {
     $this->actingAs(blogPostsBrowserActor());
     $category = BlogCategory::factory()->named('Guías')->create();
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno', 'blog_category_id' => $category->id]);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create(['blog_category_id' => $category->id]);
     $post->delete();
 
     visit('/blog/posts')
@@ -122,7 +122,7 @@ test('the trashed section starts closed, expands on a click, and restoring a pos
 
 test('deleting a post through the confirmation modal removes its row and moves it to the trashed section', function () {
     $this->actingAs(blogPostsBrowserActor());
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno']);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create();
 
     visit('/blog/posts')
         ->assertNoJavaScriptErrors()
@@ -139,7 +139,7 @@ test('deleting a post through the confirmation modal removes its row and moves i
 
 test('cancelling the delete confirmation keeps the row and deletes nothing', function () {
     $this->actingAs(blogPostsBrowserActor());
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno']);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create();
 
     visit('/blog/posts')
         ->click('@delete-blog-post-'.$post->id)

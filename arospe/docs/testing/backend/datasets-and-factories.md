@@ -86,6 +86,8 @@ When a new model needs its own state variant (e.g. a future `expired()` state), 
 ✅ Per-instance state lives in the callback object: `named()` and `withoutTranslations()` replace only the callback whose closure `$this` is a `WritesDefaultProductTranslation`, leaving `withGallery()`'s callbacks in place.
 ❌ A `configure()` closure reading a factory property: `Factory::newInstance()` only carries constructor arguments, so the value is lost on the next state call. See [errors-log](../../errors-log/2026-09-25-to-2026-09-26.md#a-factory-configure-closure-cannot-read-per-instance-state-because-factorynewinstance-only-carries-constructor-arguments--2026-11-06).
 
+`BlogPostFactory` (story 0078) follows the same shape with `WritesDefaultBlogPostTranslation`, `titled(string $title, ?string $body = null)` and `withoutTranslations()`. `titled()` without a body stores a NULL body, so a fixture driving the editor (which requires a body for Published/Scheduled) must pass one. `BlogPost::factory()` also creates a category translation as a side effect, so assert counts as a baseline/delta.
+
 ## Seeders
 
 [`database/seeders/DatabaseSeeder.php`](../../../database/seeders/DatabaseSeeder.php) does two different things, and only one of them is fixture data:
@@ -97,4 +99,4 @@ Don't rely on either inside a test by default; `RefreshDatabase` gives each test
 
 The one legitimate exception is a test **about** authorization: a permission check against an unseeded name throws `PermissionDoesNotExist`, so such a test must seed the catalog explicitly (`$this->seed(RolePermissionSeeder::class)`) rather than fabricate ad-hoc `Role`/`Permission` rows — see `tests/Feature/Authorization/`. When it does, flush the permission cache in `beforeEach()` with `app(PermissionRegistrar::class)->forgetCachedPermissions()`, or role/permission lookups leak across tests through the shared cache store.
 
-_Last updated: 2026-11-06 — Story 0076: added "A factory that writes a child row" (`ProductFactory::named()`/`withoutTranslations()`). Earlier content current from story 0082 (dataset rows carry plain tokens)._
+_Last updated: 2026-11-08 - Story 0078: noted `BlogPostFactory::titled()`/`withoutTranslations()` under "A factory that writes a child row". Story 0076 added that section; earlier content current from story 0082 (dataset rows carry plain tokens)._

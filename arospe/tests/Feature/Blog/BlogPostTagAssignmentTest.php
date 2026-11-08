@@ -63,8 +63,8 @@ function retagPost(BlogPost $post, array $tagNames, ?string $title = null): Blog
 {
     return app(UpdateBlogPost::class)(
         $post,
-        title: $title ?? $post->title,
-        body: $post->body,
+        title: $title ?? $post->translated('title'),
+        body: $post->translated('body'),
         blogCategoryId: $post->blog_category_id,
         status: $post->status->value,
         publishedAt: null,
@@ -220,8 +220,8 @@ test('that refusal rolls the whole save back: the post is unchanged and no pivot
 
     $fresh = $post->fresh();
 
-    expect($fresh->title)->toBe('Título original')
-        ->and($fresh->slug)->toBe('titulo-original')
+    expect($fresh->translated('title'))->toBe('Título original')
+        ->and($fresh->translations->first()->slug)->toBe('titulo-original')
         ->and(DB::table('blog_post_tag')->where('blog_post_id', $post->id)->count())->toBe(0)
         ->and(BlogTag::count())->toBe(2);
 });

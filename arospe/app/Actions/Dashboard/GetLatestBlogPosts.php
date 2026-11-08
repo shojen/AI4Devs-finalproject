@@ -22,9 +22,9 @@ use Illuminate\Support\Str;
  * never models. `publishAt` is `published_at` only for a scheduled post.
  *
  * D-9 -- translatable-content seam: `title` and `body` are read ONLY through `resolveTitle()` and
- * `resolveBody()`, and the query selects `blog_posts.*` without naming, filtering or ordering on
- * either column, so the pending translatable-content retrofit (story 0078) swaps those two methods
- * and nothing else.
+ * `resolveBody()`, and the query never names, filters or orders on either column. Since story 0078
+ * they live on `blog_post_translations`, so the query eager-loads `withTranslationsFor()` (the
+ * seam methods read the loaded relation; without it every post would lazy-load, an N+1).
  */
 class GetLatestBlogPosts
 {
@@ -48,6 +48,7 @@ class GetLatestBlogPosts
 
         $posts = BlogPost::query()
             ->select('blog_posts.*')
+            ->withTranslationsFor()
             ->whereIn('blog_posts.status', [BlogPostStatus::Published, BlogPostStatus::Scheduled])
             ->orderByDesc('blog_posts.created_at')
             ->orderByDesc('blog_posts.id')
@@ -74,20 +75,20 @@ class GetLatestBlogPosts
     }
 
     /**
-     * D-9 seam: the post's title. Today the plain attribute; the translatable-content retrofit may
-     * return null when no translation exists, which is why the row shape types it nullable.
+     * D-9 seam: the post's default-language title, null when no translation exists (which is why the
+     * row shape types it nullable).
      */
-    private function resolveTitle(BlogPost $post): string
+    private function resolveTitle(BlogPost $post): ?string
     {
-        return $post->title;
+        return $post->translated('title');
     }
 
     /**
-     * D-9 seam: the post's body. Today the plain attribute.
+     * D-9 seam: the post's default-language body.
      */
     private function resolveBody(BlogPost $post): ?string
     {
-        return $post->body;
+        return $post->translated('body');
     }
 
     /**

@@ -27,7 +27,14 @@ beforeEach(function () {
  */
 function restoreTestTrashedPost(User $editor, array $attributes = []): BlogPost
 {
-    $post = BlogPost::factory()->create($attributes);
+    $factory = BlogPost::factory();
+
+    if (array_key_exists('title', $attributes)) {
+        $factory = $factory->titled($attributes['title']);
+        unset($attributes['title']);
+    }
+
+    $post = $factory->create($attributes);
 
     test()->actingAs(User::factory()->create()->givePermissionTo('blog.delete'));
     app(DeleteBlogPost::class)($post);
@@ -50,12 +57,14 @@ test('the round trip preserves title, body, category and tags', function () {
     $category = BlogCategory::factory()->named('Guías')->create();
     $running = BlogTag::factory()->named('running')->create();
     $invierno = BlogTag::factory()->named('invierno')->create();
-    $original = BlogPost::factory()->create([
-        'title' => 'Botas de invierno',
-        'body' => '<p>Cuerpo <img src="https://example.com/a.jpg" alt="a"></p>',
+    $original = BlogPost::factory()->titled('Botas de invierno', '<p>Cuerpo <img src="https://example.com/a.jpg" alt="a"></p>')->create([
         'blog_category_id' => $category->id,
     ]);
     $original->tags()->attach([$running->id, $invierno->id]);
+    // The child-model hook sanitizes (and re-serializes) the body on save, so the round trip is measured
+    // against what was actually stored before the delete, not against the raw factory input.
+    $storedBody = $original->fresh()->translated('body');
+    expect($storedBody)->toContain('<img src="https://example.com/a.jpg"');
 
     test()->actingAs(User::factory()->create()->givePermissionTo('blog.delete'));
     app(DeleteBlogPost::class)($original);
@@ -65,8 +74,8 @@ test('the round trip preserves title, body, category and tags', function () {
 
     $restored = BlogPost::query()->findOrFail($original->id);
 
-    expect($restored->title)->toBe('Botas de invierno')
-        ->and($restored->body)->toBe('<p>Cuerpo <img src="https://example.com/a.jpg" alt="a"></p>')
+    expect($restored->translated('title'))->toBe('Botas de invierno')
+        ->and($restored->translated('body'))->toBe($storedBody)
         ->and($restored->blog_category_id)->toBe($category->id)
         ->and($restored->tags->pluck('id')->sort()->values()->all())->toBe(collect([$running->id, $invierno->id])->sort()->values()->all());
 });
@@ -84,12 +93,12 @@ test('a restored post is still in the category it had', function () {
 // red instead of a restore silently 404-ing later.
 test('a restored post reclaims its own slug, unchanged', function () {
     $post = restoreTestTrashedPost($this->editor, ['title' => 'Botas de invierno']);
-    $slug = $post->slug;
+    $slug = $post->translations->first()->slug;
 
     app(RestoreBlogPost::class)($post);
 
     expect($slug)->toBe('botas-de-invierno')
-        ->and($post->fresh()->slug)->toBe('botas-de-invierno');
+        ->and($post->fresh()->translations->first()->slug)->toBe('botas-de-invierno');
 });
 
 // D-7c / R-17: a tag hard-deleted while the post was trashed cascaded through the pivot, so the post
@@ -137,13 +146,13 @@ test('an actor holding neither permission is refused and the post stays trashed'
 });
 
 test('restoring a post that is not trashed is a harmless no-op rather than an error', function () {
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno']);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create();
 
     expect(app(RestoreBlogPost::class)($post))->toBeTrue();
 
     $fresh = $post->fresh();
 
-    expect($fresh->title)->toBe('Botas de invierno')
+    expect($fresh->translated('title'))->toBe('Botas de invierno')
         ->and($fresh->deleted_at)->toBeNull();
 });
 
@@ -178,8 +187,8 @@ test('the refusal is logged with target_type blog_post', function () {
 // instance would persist an attribute the caller dirtied -- unsanitized body HTML included.
 test('a dirtied caller instance cannot smuggle a column through a restore', function () {
     $post = restoreTestTrashedPost($this->editor, ['title' => 'Botas de invierno']);
-    $bodyBefore = $post->body;
-    $slugBefore = $post->slug;
+    $bodyBefore = $post->translated('body');
+    $slugBefore = $post->translations->first()->slug;
 
     $post->body = '<script>alert(1)</script>';
     $post->slug = 'hijacked';
@@ -188,8 +197,8 @@ test('a dirtied caller instance cannot smuggle a column through a restore', func
 
     $fresh = BlogPost::query()->findOrFail($post->id);
 
-    expect($fresh->body)->toBe($bodyBefore)
-        ->and($fresh->slug)->toBe($slugBefore);
+    expect($fresh->translated('body'))->toBe($bodyBefore)
+        ->and($fresh->translations->first()->slug)->toBe($slugBefore);
 });
 
 test('restoring a post whose row is gone fails cleanly', function () {

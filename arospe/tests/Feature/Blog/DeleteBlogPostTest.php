@@ -22,14 +22,14 @@ beforeEach(function () {
 
 // Nothing else pins that this action is non-destructive, which is the entire confirmed decision.
 test('deleting a post soft-deletes it and the row is still physically present', function () {
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno']);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create();
 
     $deleted = app(DeleteBlogPost::class)($post);
 
     expect($deleted)->toBeTrue();
     $this->assertSoftDeleted('blog_posts', ['id' => $post->id]);
     expect(DB::table('blog_posts')->where('id', $post->id)->count())->toBe(1)
-        ->and(DB::table('blog_posts')->where('id', $post->id)->value('title'))->toBe('Botas de invierno');
+        ->and(DB::table('blog_post_translations')->where('blog_post_id', $post->id)->value('title'))->toBe('Botas de invierno');
 });
 
 test('a deleted post disappears from a default query and from both scopes, and withTrashed still finds it', function () {

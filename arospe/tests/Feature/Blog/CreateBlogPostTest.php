@@ -74,11 +74,11 @@ test('a valid create persists title, body, category and status and returns the m
     $fresh = BlogPost::findOrFail($post->id);
 
     expect($post)->toBeInstanceOf(BlogPost::class)
-        ->and($fresh->title)->toBe('Botas de invierno')
-        ->and($fresh->body)->toBe('<p>Contenido</p>')
+        ->and($fresh->translated('title'))->toBe('Botas de invierno')
+        ->and($fresh->translated('body'))->toBe('<p>Contenido</p>')
         ->and($fresh->blog_category_id)->toBe($this->category->id)
         ->and($fresh->status)->toBe(BlogPostStatus::Draft)
-        ->and($fresh->slug)->toBe('botas-de-invierno');
+        ->and($fresh->translations->first()->slug)->toBe('botas-de-invierno');
 });
 
 test('omitting the status persists Draft, never Published', function () {
@@ -116,7 +116,7 @@ test('a blank title is refused and no post is added', function (string $title) {
 test('a title exactly at the maximum length is accepted and one character over is refused', function () {
     $atMaximum = str_repeat('a', BlogPost::TITLE_MAX_LENGTH);
 
-    expect(createBlogPostWith($this->category, ['title' => $atMaximum])->fresh()->title)->toBe($atMaximum);
+    expect(createBlogPostWith($this->category, ['title' => $atMaximum])->fresh()->translated('title'))->toBe($atMaximum);
 
     expect(createBlogPostErrorKeys($this->category, ['title' => $atMaximum.'a']))->toContain('title');
     expect(BlogPost::count())->toBe(1);
@@ -152,7 +152,7 @@ test('the body is stored sanitized and an image from the shared gallery survives
         'body' => '<p>Antes</p><img src="https://cdn.example.com/media/bota.jpg" alt="Bota"><p>Después</p>',
     ]);
 
-    $body = $post->fresh()->body;
+    $body = $post->fresh()->translated('body');
 
     expect($body)->toContain('<img')
         ->and($body)->toContain('src="https://cdn.example.com/media/bota.jpg"')
@@ -166,7 +166,7 @@ test('a script tag, an event handler and a javascript URI never reach the column
         'body' => '<p onclick="steal()">Hola</p><script>steal()</script><a href="javascript:steal()">enlace</a>',
     ]);
 
-    $body = $post->fresh()->body;
+    $body = $post->fresh()->translated('body');
 
     expect($body)->not->toContain('<script')
         ->and($body)->not->toContain('onclick')
@@ -178,7 +178,7 @@ test('a draft may be saved without a body, and the persisted value is null', fun
     $post = createBlogPostWith($this->category, ['status' => 'draft', 'body' => $body]);
 
     expect($post->fresh()->status)->toBe(BlogPostStatus::Draft)
-        ->and($post->fresh()->body)->toBeNull();
+        ->and($post->fresh()->translated('body'))->toBeNull();
 })->with([
     'null body' => [null],
     'empty body' => [''],
@@ -211,7 +211,7 @@ test('a whitespace-only body on a published post is refused', function () {
 // OQ-2 (resolved): a slug collision is refused with a validation error keyed on `title`, and the check
 // must see TRASHED rows too -- a trashed post keeps its slug reserved (D-7b).
 test('a title whose slug is already taken by a live post is refused on title', function (string $title) {
-    BlogPost::factory()->create(['title' => 'Botas de invierno']);
+    BlogPost::factory()->titled('Botas de invierno')->create();
 
     expect(createBlogPostErrorKeys($this->category, ['title' => $title]))->toContain('title');
     expect(BlogPost::count())->toBe(1);
@@ -221,22 +221,22 @@ test('a title whose slug is already taken by a live post is refused on title', f
 ]);
 
 test('a title whose slug is held by a trashed post is refused, and the trashed post keeps its slug', function () {
-    $trashed = BlogPost::factory()->create(['title' => 'Botas de invierno']);
+    $trashed = BlogPost::factory()->titled('Botas de invierno')->create();
     $trashed->delete();
 
     expect(createBlogPostErrorKeys($this->category, ['title' => 'Botas de invierno']))->toContain('title');
 
     expect(BlogPost::withTrashed()->count())->toBe(1)
-        ->and(BlogPost::withTrashed()->find($trashed->id)->slug)->toBe('botas-de-invierno');
+        ->and(BlogPost::withTrashed()->find($trashed->id)->translations->first()->slug)->toBe('botas-de-invierno');
 });
 
 test('a different title still saves alongside a trashed post, as the positive control', function () {
-    $trashed = BlogPost::factory()->create(['title' => 'Botas de invierno']);
+    $trashed = BlogPost::factory()->titled('Botas de invierno')->create();
     $trashed->delete();
 
     $post = createBlogPostWith($this->category, ['title' => 'Botas de verano']);
 
-    expect($post->fresh()->slug)->toBe('botas-de-verano')
+    expect($post->fresh()->translations->first()->slug)->toBe('botas-de-verano')
         ->and(BlogPost::withTrashed()->count())->toBe(2);
 });
 
@@ -294,7 +294,7 @@ test('a draft whose body renders nothing is saved with no body', function (strin
     $post = createBlogPostWith($this->category, ['status' => 'draft', 'body' => $body]);
 
     expect($post->status)->toBe(BlogPostStatus::Draft)
-        ->and($post->fresh()->body)->toBeNull();
+        ->and($post->fresh()->translated('body'))->toBeNull();
 })->with([
     'line break in a paragraph' => ['<p><br></p>'],
     'non-breaking space' => ['<p>&nbsp;</p>'],
@@ -306,7 +306,7 @@ test('a draft whose body renders nothing is saved with no body', function (strin
 test('a published post with visible text is saved', function () {
     $post = createBlogPostWith($this->category, ['status' => 'published', 'body' => '<p>Botas de invierno</p>']);
 
-    expect($post->fresh()->body)->toBe('<p>Botas de invierno</p>')
+    expect($post->fresh()->translated('body'))->toBe('<p>Botas de invierno</p>')
         ->and($post->status)->toBe(BlogPostStatus::Published);
 });
 
@@ -316,7 +316,7 @@ test('a published post whose body is only an image from the shared gallery is sa
         'body' => '<img src="https://cdn.example.com/media/bota.jpg" alt="Bota">',
     ]);
 
-    expect($post->fresh()->body)->toContain('src="https://cdn.example.com/media/bota.jpg"');
+    expect($post->fresh()->translated('body'))->toContain('src="https://cdn.example.com/media/bota.jpg"');
 });
 
 // Pinned on purpose: the sanitizer drops `style` and unwraps `<div>`, so the text survives and is judged as what
@@ -327,7 +327,7 @@ test('text hidden by markup the sanitizer removes is judged as what remains', fu
         'body' => '<div style="display:none">hola</div>',
     ]);
 
-    $body = $post->fresh()->body;
+    $body = $post->fresh()->translated('body');
 
     expect($body)->toContain('hola')
         ->and($body)->not->toContain('style')

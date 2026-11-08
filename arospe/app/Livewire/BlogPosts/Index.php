@@ -39,10 +39,9 @@ use Livewire\WithPagination;
  * abilities those methods authorize against, so a disabled control can never drift from what a click
  * would actually do -- and they are hints, never the control.
  *
- * Written against the pre-Epic-5 schema (`blog_posts.title`, `blog_tags.name`, since moved to `blog_tag_translations`); category names are
- * already read through `translated('name')` (story 0072). Whatever still reads the other columns
- * does so in the two private row mappers below, so the remaining retrofit (0078) has one
- * place to change.
+ * Titles live on `blog_post_translations` (story 0078) and tag names on `blog_tag_translations`; category names are
+ * read through `translated('name')` (story 0072). Row titles come from `withListTranslations()`: the
+ * default-language title, else any stored one, else a dash.
  */
 #[Title('Blog posts')]
 class Index extends Component
@@ -128,12 +127,12 @@ class Index extends Component
      */
     public function confirmDelete(string $blogPostId, LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt): void
     {
-        $target = BlogPost::findOrFail($blogPostId);
+        $target = BlogPost::query()->with('translations')->findOrFail($blogPostId);
 
         $logRefusedPrivilegedAttempt->authorize('delete', $target, targetType: 'blog_post', targetId: $target->id);
 
         $this->deletingBlogPostId = $target->id;
-        $this->deletingBlogPostTitle = $target->title;
+        $this->deletingBlogPostTitle = $target->displayTitle() ?? '';
         $this->showDeleteModal = true;
     }
 
@@ -212,7 +211,8 @@ class Index extends Component
     public function posts(): LengthAwarePaginator
     {
         $query = BlogPost::query()
-            ->select(['id', 'blog_category_id', 'title', 'status', 'published_at', 'created_at'])
+            ->select(['id', 'blog_category_id', 'status', 'published_at', 'created_at'])
+            ->withListTranslations()
             ->with(['category' => fn ($query) => $query->select('id')->withTranslationsFor(), 'tags' => fn ($query) => $query->select('blog_tags.id')->with('translations')])
             ->when($this->categoryFilter !== '', fn ($query) => $query->forCategory($this->categoryFilter))
             ->when($this->tagFilter !== '', fn ($query) => $query->forTag($this->tagFilter))
@@ -231,7 +231,7 @@ class Index extends Component
 
         return $paginator->through(fn (BlogPost $post): array => [
             'id' => $post->id,
-            'title' => $post->title,
+            'title' => $post->translated('title') ?? $post->displayTitle() ?? '—',
             'categoryName' => $post->category->translated('name') ?? '—',
             'status' => $post->status,
             'date' => $this->formatDate($post->published_at ?? $post->created_at),
@@ -254,7 +254,8 @@ class Index extends Component
     public function trashedPosts(): array
     {
         return BlogPost::onlyTrashed()
-            ->select(['id', 'blog_category_id', 'title', 'deleted_at'])
+            ->select(['id', 'blog_category_id', 'deleted_at'])
+            ->withListTranslations()
             ->with(['category' => fn ($query) => $query->select('id')->withTranslationsFor()])
             ->orderByDesc('deleted_at')
             ->orderBy('id')
@@ -262,7 +263,7 @@ class Index extends Component
             ->get()
             ->map(fn (BlogPost $post): array => [
                 'id' => $post->id,
-                'title' => $post->title,
+                'title' => $post->translated('title') ?? $post->displayTitle() ?? '—',
                 'categoryName' => $post->category->translated('name') ?? '—',
                 'deletedAt' => $this->formatDate($post->deleted_at),
                 'canRestore' => Gate::allows('restore', $post),

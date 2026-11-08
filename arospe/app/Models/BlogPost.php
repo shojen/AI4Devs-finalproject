@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Concerns\HasTranslations;
+use App\Concerns\Translatable;
 use App\Enums\BlogPostStatus;
 use Database\Factories\BlogPostFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -14,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 /**
  * A blog post -- Epic 4's central entity (story 0061).
@@ -23,13 +25,10 @@ use Illuminate\Support\Str;
  * (D-7 called it the second; Customer landed in between): a post is authored
  * content whose accidental deletion must be recoverable, unlike the two blog taxonomies, which
  * hard-delete. There is deliberately NO `delete()` override: unlike User, a trashed post keeps its
- * slug, so a restore returns it to its own URL and the unique index keeps the slug reserved (D-7b).
+ * translation rows, so a restore returns it to its own URL and the per-language unique index keeps the slug reserved (D-7b, 0078 D-5).
  *
  * @property string $id
  * @property string $blog_category_id
- * @property string $title
- * @property string $slug
- * @property string|null $body
  * @property BlogPostStatus $status
  * @property Carbon|null $published_at
  * @property string|null $created_by
@@ -39,15 +38,16 @@ use Illuminate\Support\Str;
  * @property-read BlogCategory $category
  * @property-read Collection<int, BlogTag> $tags
  * @property-read User|null $creator
+ * @property-read Collection<int, BlogPostTranslation> $translations
  */
-#[Fillable(['title', 'body', 'blog_category_id', 'status'])]
-class BlogPost extends Model
+#[Fillable(['blog_category_id', 'status'])]
+class BlogPost extends Model implements Translatable
 {
     /** @use HasFactory<BlogPostFactory> */
-    use HasFactory, HasUuids, SoftDeletes;
+    use HasFactory, HasTranslations, HasUuids, SoftDeletes;
 
     /**
-     * Length of `title` and of `slug` in the migration, and the `max:` its validation rule enforces
+     * Length of `title` and of `slug` on `blog_post_translations`, and the `max:` its validation rule enforces
      * (R-4). Kept in one place so the three cannot drift apart.
      */
     public const TITLE_MAX_LENGTH = 255;
@@ -67,23 +67,6 @@ class BlogPost extends Model
      * transaction, so an unbounded list is an unbounded write.
      */
     public const MAX_TAGS = 50;
-
-    /**
-     * `slug` is derived from the mutable `title`, so it is locked at the model layer rather than
-     * left to every writer to remember (D-3): omitted from #[Fillable], and rewritten here whenever
-     * a save changes `title`. `Str::slug()`, explicitly not App\Actions\NormalizeForSearch (D-10).
-     *
-     * `booted()`, not `boot()`: App\Models\Role's `boot()` is a vendor-hook-ordering workaround that
-     * does not apply to a model extending Eloquent's Model directly.
-     */
-    protected static function booted(): void
-    {
-        static::saving(function (self $post): void {
-            if ($post->isDirty('title')) {
-                $post->slug = Str::slug($post->title);
-            }
-        });
-    }
 
     /**
      * @return array<string, string>
@@ -132,6 +115,49 @@ class BlogPost extends Model
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(BlogTag::class, 'blog_post_tag', 'blog_post_id', 'blog_tag_id');
+    }
+
+    /**
+     * The title to show: the default-language one, else whichever stored translation exists, so a post
+     * left without a default-language title is never rendered nameless. Needs `translations` loaded.
+     */
+    public function displayTitle(): ?string
+    {
+        return $this->translated('title')
+            ?? $this->translations->map(fn (BlogPostTranslation $translation): string => $translation->title)->first();
+    }
+
+    /**
+     * Eager-load the requested and default languages (plus one fallback row for a post holding neither), with the columns a list needs (D-13):
+     * `blog_post_id, store_language_id, title`. No `body` and no `slug`.
+     *
+     * Footgun: `translated('body')` on this partial relation returns null even when a body is stored.
+     *
+     * @param  Builder<BlogPost>  $query
+     */
+    public function scopeWithListTranslations(Builder $query, ?string $storeLanguageId = null): void
+    {
+        $ids = array_unique(array_filter([$storeLanguageId, StoreLanguage::defaultStoreLanguage()?->id]));
+
+        $query->with(['translations' => fn ($q) => $q
+            ->select(['blog_post_id', 'store_language_id', 'title'])
+            ->where(function ($rows) use ($ids): void {
+                $rows->whereIn('store_language_id', $ids)
+                    ->orWhere(function ($fallback) use ($ids): void {
+                        // A post with no requested/default row keeps ONE row of any language (the
+                        // first stored), so displayTitle() never renders it nameless. Same query.
+                        $fallback->whereNotExists(fn ($sub) => $sub->select(DB::raw(1))
+                            ->from('blog_post_translations as present')
+                            ->whereColumn('present.blog_post_id', 'blog_post_translations.blog_post_id')
+                            ->whereIn('present.store_language_id', $ids))
+                            ->whereRaw('blog_post_translations.id = (select min(first_row.id) from blog_post_translations as first_row where first_row.blog_post_id = blog_post_translations.blog_post_id)');
+                    });
+            })]);
+    }
+
+    protected function translationModel(): string
+    {
+        return BlogPostTranslation::class;
     }
 
     /**

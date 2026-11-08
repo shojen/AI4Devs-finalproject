@@ -44,8 +44,8 @@ afterEach(function () {
 function updateBlogPostWith(BlogPost $post, array $overrides = []): BlogPost
 {
     return app(UpdateBlogPost::class)($post, ...array_merge([
-        'title' => $post->title,
-        'body' => $post->body,
+        'title' => $post->translated('title'),
+        'body' => $post->translated('body'),
         'blogCategoryId' => $post->blog_category_id,
         'status' => $post->status->value,
         'publishedAt' => $post->published_at?->toDateTimeString(),
@@ -69,9 +69,7 @@ function updateBlogPostErrorKeys(BlogPost $post, array $overrides = []): array
 }
 
 test('a valid update persists every changed field', function () {
-    $post = BlogPost::factory()->create([
-        'title' => 'Botas de invierno',
-        'body' => '<p>Original</p>',
+    $post = BlogPost::factory()->titled('Botas de invierno', '<p>Original</p>')->create([
         'blog_category_id' => $this->category->id,
     ]);
     $other = BlogCategory::factory()->named('Novedades')->create();
@@ -85,8 +83,8 @@ test('a valid update persists every changed field', function () {
 
     $fresh = $post->fresh();
 
-    expect($fresh->title)->toBe('Botas de invierno 2026')
-        ->and($fresh->body)->toBe('<p>Nuevo cuerpo</p>')
+    expect($fresh->translated('title'))->toBe('Botas de invierno 2026')
+        ->and($fresh->translated('body'))->toBe('<p>Nuevo cuerpo</p>')
         ->and($fresh->blog_category_id)->toBe($other->id)
         ->and($fresh->status)->toBe(BlogPostStatus::Published);
 });
@@ -109,25 +107,25 @@ test('removing the category is refused', function () {
 });
 
 test('a blank title is refused on the update path and the row is left as it was', function (string $title) {
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno']);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create();
 
     expect(updateBlogPostErrorKeys($post, ['title' => $title]))->toContain('title');
-    expect($post->fresh()->title)->toBe('Botas de invierno');
+    expect($post->fresh()->translated('title'))->toBe('Botas de invierno');
 })->with([
     'empty' => [''],
     'whitespace only' => ['   '],
 ]);
 
 test('a title exactly at the maximum length is accepted on update and one character over is refused', function () {
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno']);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create();
     $atMaximum = str_repeat('a', BlogPost::TITLE_MAX_LENGTH);
 
     updateBlogPostWith($post, ['title' => $atMaximum]);
 
-    expect($post->fresh()->title)->toBe($atMaximum);
+    expect($post->fresh()->translated('title'))->toBe($atMaximum);
 
     expect(updateBlogPostErrorKeys($post, ['title' => $atMaximum.'a']))->toContain('title');
-    expect($post->fresh()->title)->toBe($atMaximum);
+    expect($post->fresh()->translated('title'))->toBe($atMaximum);
 });
 
 test('an unrecognised status is refused on the update path as a validation error, never a ValueError', function (string $status) {
@@ -141,9 +139,7 @@ test('an unrecognised status is refused on the update path as a validation error
 ]);
 
 test('re-saving with no changes at all succeeds and leaves the row genuinely unchanged', function () {
-    $post = BlogPost::factory()->create([
-        'title' => 'Botas de invierno',
-        'body' => '<p>Hello</p>',
+    $post = BlogPost::factory()->titled('Botas de invierno', '<p>Hello</p>')->create([
         'blog_category_id' => $this->category->id,
     ]);
     $before = $post->fresh()->getAttributes();
@@ -154,45 +150,45 @@ test('re-saving with no changes at all succeeds and leaves the row genuinely unc
 });
 
 test('retitling re-derives the slug at the action call site', function () {
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno']);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create();
 
     updateBlogPostWith($post, ['title' => 'Botas de invierno 2026']);
 
-    expect($post->fresh()->slug)->toBe('botas-de-invierno-2026');
+    expect($post->fresh()->translations->first()->slug)->toBe('botas-de-invierno-2026');
 });
 
 test('an edit that leaves the title alone does not rewrite the slug', function () {
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno']);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create();
 
     updateBlogPostWith($post, ['body' => '<p>Otro cuerpo</p>']);
 
-    expect($post->fresh()->slug)->toBe('botas-de-invierno');
+    expect($post->fresh()->translations->first()->slug)->toBe('botas-de-invierno');
 });
 
 // OQ-2: the collision check must exclude the post's OWN row, or saving a post under its own unchanged
 // title (which is every save) would refuse itself -- and must include everyone else's, trashed included.
 test('a post saved under its own unchanged title does not collide with its own slug', function () {
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno']);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create();
 
     expect(updateBlogPostErrorKeys($post, ['body' => '<p>Otro cuerpo</p>']))->toBe([]);
 });
 
 test('retitling to a title whose slug belongs to another post is refused on title', function () {
-    BlogPost::factory()->create(['title' => 'Botas de verano']);
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno']);
+    BlogPost::factory()->titled('Botas de verano')->create();
+    $post = BlogPost::factory()->titled('Botas de invierno')->create();
 
     expect(updateBlogPostErrorKeys($post, ['title' => 'Botas de verano']))->toContain('title');
-    expect($post->fresh()->title)->toBe('Botas de invierno')
-        ->and($post->fresh()->slug)->toBe('botas-de-invierno');
+    expect($post->fresh()->translated('title'))->toBe('Botas de invierno')
+        ->and($post->fresh()->translations->first()->slug)->toBe('botas-de-invierno');
 });
 
 test('retitling to a title whose slug belongs to a trashed post is refused on title', function () {
-    $trashed = BlogPost::factory()->create(['title' => 'Botas de verano']);
+    $trashed = BlogPost::factory()->titled('Botas de verano')->create();
     $trashed->delete();
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno']);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create();
 
     expect(updateBlogPostErrorKeys($post, ['title' => 'Botas de verano']))->toContain('title');
-    expect($post->fresh()->slug)->toBe('botas-de-invierno');
+    expect($post->fresh()->translations->first()->slug)->toBe('botas-de-invierno');
 });
 
 test('the body is sanitized on the update path too, keeping gallery images', function () {
@@ -202,7 +198,7 @@ test('the body is sanitized on the update path too, keeping gallery images', fun
         'body' => '<p onclick="steal()">Hola</p><script>steal()</script><img src="https://cdn.example.com/media/bota.jpg" alt="Bota">',
     ]);
 
-    $body = $post->fresh()->body;
+    $body = $post->fresh()->translated('body');
 
     expect($body)->not->toContain('<script')
         ->and($body)->not->toContain('onclick')
@@ -221,7 +217,7 @@ test('a whitespace-only body is refused when the post is published', function ()
 // the create-path body tests cannot reach, and the one where a bodiless post would go public.
 test('promoting a bodiless draft to published is refused and the post is still a draft afterwards', function () {
     Carbon::setTestNow('2026-06-15 12:00:00');
-    $post = BlogPost::factory()->create(['body' => null]);
+    $post = BlogPost::factory()->titled('Sin cuerpo')->create();
 
     expect(updateBlogPostErrorKeys($post, ['status' => 'published']))->toContain('body');
 
@@ -229,22 +225,22 @@ test('promoting a bodiless draft to published is refused and the post is still a
 
     expect($fresh->status)->toBe(BlogPostStatus::Draft)
         ->and($fresh->published_at)->toBeNull()
-        ->and($fresh->body)->toBeNull();
+        ->and($fresh->translated('body'))->toBeNull();
 });
 
 test('the same promotion succeeds once a body is supplied in the same save', function () {
     Carbon::setTestNow('2026-06-15 12:00:00');
-    $post = BlogPost::factory()->create(['body' => null]);
+    $post = BlogPost::factory()->titled('Sin cuerpo')->create();
 
     updateBlogPostWith($post, ['status' => 'published', 'body' => '<p>Ya escrito</p>']);
 
     expect($post->fresh()->status)->toBe(BlogPostStatus::Published)
-        ->and($post->fresh()->body)->toBe('<p>Ya escrito</p>');
+        ->and($post->fresh()->translated('body'))->toBe('<p>Ya escrito</p>');
 });
 
 test('scheduling a bodiless draft is refused as well', function () {
     Carbon::setTestNow('2026-06-15 12:00:00');
-    $post = BlogPost::factory()->create(['body' => null]);
+    $post = BlogPost::factory()->titled('Sin cuerpo')->create();
 
     expect(updateBlogPostErrorKeys($post, ['status' => 'scheduled', 'publishedAt' => '2026-07-01 09:00:00']))->toContain('body');
     expect($post->fresh()->status)->toBe(BlogPostStatus::Draft);
@@ -255,7 +251,7 @@ test('scheduling a bodiless draft is refused as well', function () {
 // so a column the action does not own would persist. A refactor moving the refresh() line would reopen
 // this silently -- this test is what stops that.
 test('a dirtied caller instance cannot smuggle a column the action does not own through the update', function () {
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno']);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create();
     $originalCreatedAt = $post->fresh()->created_at->toDateTimeString();
 
     $post->slug = 'hijacked';
@@ -265,9 +261,9 @@ test('a dirtied caller instance cannot smuggle a column the action does not own 
 
     $fresh = $post->fresh();
 
-    expect($fresh->slug)->toBe('botas-de-invierno')
+    expect($fresh->translations->first()->slug)->toBe('botas-de-invierno')
         ->and($fresh->created_at->toDateTimeString())->toBe($originalCreatedAt)
-        ->and($fresh->body)->toBe('<p>Editado</p>');
+        ->and($fresh->translated('body'))->toBe('<p>Editado</p>');
 });
 
 test('a status the caller dirtied on the instance is discarded in favour of the submitted one', function () {
@@ -297,13 +293,15 @@ test('tag names omitted from an update are detached and the tag rows survive', f
 
 // Review finding: refresh() neither fails on a non-persisted instance nor skips a trashed one.
 test('updating a trashed post is refused and leaves it trashed and unchanged', function () {
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno']);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create();
     $post->delete();
 
     expect(fn () => updateBlogPostWith($post, ['title' => 'Otro título']))
         ->toThrow(ModelNotFoundException::class);
 
-    $this->assertSoftDeleted('blog_posts', ['id' => $post->id, 'title' => 'Botas de invierno']);
+    $this->assertSoftDeleted('blog_posts', ['id' => $post->id]);
+    $this->assertDatabaseHas('blog_post_translations', ['blog_post_id' => $post->id, 'title' => 'Botas de invierno']);
+    $this->assertDatabaseMissing('blog_post_translations', ['blog_post_id' => $post->id, 'title' => 'Otro título']);
 });
 
 test('updating a never-persisted instance cannot create a post with only blog.edit', function () {
@@ -325,9 +323,7 @@ test('updating a never-persisted instance cannot create a post with only blog.ed
 // Story 0061b. The same "what a reader would see" rule on the update path, including promoting a draft.
 test('a published or scheduled update whose body renders nothing is refused and changes nothing', function (string $status, string $body) {
     Carbon::setTestNow('2026-06-15 12:00:00');
-    $post = BlogPost::factory()->create([
-        'title' => 'Botas de invierno',
-        'body' => '<p>Original</p>',
+    $post = BlogPost::factory()->titled('Botas de invierno', '<p>Original</p>')->create([
         'blog_category_id' => $this->category->id,
     ]);
 
@@ -337,7 +333,7 @@ test('a published or scheduled update whose body renders nothing is refused and 
         'publishedAt' => $status === 'scheduled' ? '2026-07-01 09:00:00' : null,
     ]))->toContain('body');
 
-    expect($post->fresh()->body)->toBe('<p>Original</p>');
+    expect($post->fresh()->translated('body'))->toBe('<p>Original</p>');
 })->with([
     'published, line break' => ['published', '<p><br></p>'],
     'published, non-breaking space' => ['published', '<p>&nbsp;</p>'],
@@ -348,10 +344,9 @@ test('a published or scheduled update whose body renders nothing is refused and 
 ]);
 
 test('promoting a draft whose body renders nothing is refused and the post is still a draft', function () {
-    $post = BlogPost::factory()->create([
+    $post = BlogPost::factory()->titled('Entrada de prueba', '<p><br></p>')->create([
         'status' => BlogPostStatus::Draft,
         'published_at' => null,
-        'body' => '<p><br></p>',
         'blog_category_id' => $this->category->id,
     ]);
 
@@ -361,31 +356,29 @@ test('promoting a draft whose body renders nothing is refused and the post is st
 });
 
 test('a draft saved with a body that renders nothing carries no body', function () {
-    $post = BlogPost::factory()->create([
+    $post = BlogPost::factory()->titled('Entrada de prueba', '<p>Antes</p>')->create([
         'status' => BlogPostStatus::Draft,
         'published_at' => null,
-        'body' => '<p>Antes</p>',
         'blog_category_id' => $this->category->id,
     ]);
 
     $updated = updateBlogPostWith($post, ['body' => '<p><br></p>']);
 
-    expect($updated->fresh()->body)->toBeNull()
+    expect($updated->fresh()->translated('body'))->toBeNull()
         ->and($updated->fresh()->status)->toBe(BlogPostStatus::Draft);
 });
 
 test('an update whose body has visible text or only an image is accepted', function (string $body) {
-    $post = BlogPost::factory()->create([
+    $post = BlogPost::factory()->titled('Entrada de prueba', null)->create([
         'status' => BlogPostStatus::Draft,
         'published_at' => null,
-        'body' => null,
         'blog_category_id' => $this->category->id,
     ]);
 
     $updated = updateBlogPostWith($post, ['status' => 'published', 'body' => $body]);
 
     expect($updated->fresh()->status)->toBe(BlogPostStatus::Published)
-        ->and($updated->fresh()->body)->not->toBeNull();
+        ->and($updated->fresh()->translated('body'))->not->toBeNull();
 })->with([
     'visible text' => ['<p>Botas de invierno</p>'],
     'only an image' => ['<img src="https://cdn.example.com/media/bota.jpg" alt="Bota">'],

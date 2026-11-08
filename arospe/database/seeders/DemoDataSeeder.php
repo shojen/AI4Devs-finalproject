@@ -23,7 +23,7 @@ use Illuminate\Support\Str;
  * builds only on pools already created by an earlier step, so nothing ever references a row that
  * does not exist yet.
  *
- * Deliberately does NOT use `WithoutModelEvents` (unlike `DatabaseSeeder`): `BlogPost::booted()`
+ * Deliberately does NOT use `WithoutModelEvents` (unlike `DatabaseSeeder`): `BlogPostTranslation::booted()`
  * has a `saving()` listener that derives `slug` from `title`, and suppressing model events would
  * silently create posts with empty/invalid slugs. The environment guard lives in the console
  * command (`App\Console\Commands\GenerateDemoData`), not here -- this seeder has none of its own.
