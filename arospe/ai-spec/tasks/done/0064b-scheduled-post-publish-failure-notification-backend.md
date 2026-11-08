@@ -1114,7 +1114,7 @@ Read against this worktree at `HEAD` = `d1e507f`; nothing here was run. **Re-ver
 | [0061](0061-blog-posts-core-crud-backend.md) — blog posts core CRUD | **shipped** | `BlogPost`, `CreateBlogPost`, the factory |
 | [0065](0065-blog-post-published-notification-backend.md) | **not a dependency for class 1; must be amended (H-1, H-2)** | Its listener must not swallow errors (**D-0**) |
 | [0057](0057-notification-bell-ui.md) — the bell | **not a dependency** | Renders this type generically until it gains an arm (**H-3**) |
-| [0078](../0078-translatable-content-retrofit-blog-posts-backend.md) | **later** | Changes the single title read; its migration must sort after this one |
+| [0078](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md) | **later** | Changes the single title read; its migration must sort after this one |
 | [0066](0066-admin-ui-locale-preference-backend.md) (shipped) / [0067](0067-admin-ui-language-switcher-ui.md) | **later** | Replace the app locale with the recipient's preference |
 
 ### Risks

@@ -50,7 +50,7 @@ table is story [0043](0043-customers-new-customer-notification-backend.md)'s), *
 
 > ### ⚠️ Epic 5 amendments — 2026-08-30
 >
-> Story [0078](../0078-translatable-content-retrofit-blog-posts-backend.md) (translatable-content retrofit
+> Story [0078](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md) (translatable-content retrofit
 > for blog posts) **drops `blog_posts.title`, `blog_posts.slug` and `blog_posts.body` entirely**, moving
 > all three to a `blog_post_translations` child table read through
 > `BlogPost::translated('title', $languageId)`. Its **R-1(c)** names this story as the one the retrofit
@@ -84,7 +84,7 @@ table is story [0043](0043-customers-new-customer-notification-backend.md)'s), *
 > `ScheduledBlogPostPublished` and the sweep that dispatches it). 0061 and 0064 transitively require
 > [0058](0058-blog-categories-backend.md) and [0059](0059-blog-tags-backend.md).
 >
-> ⚠️ *(added 2026-08-30)* **[0078](../0078-translatable-content-retrofit-blog-posts-backend.md) is a
+> ⚠️ *(added 2026-08-30)* **[0078](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md) is a
 > conditional fourth**: it is not a blocker if it ships *after* this story, but it **is** one the moment
 > it ships first, because `$post->title` will not exist and **D-4a**'s `translated('title')` needs
 > `HasTranslations` (0070) and `StoreLanguage` (0068) to be present. Check the order at Phase 2 rather
@@ -327,7 +327,7 @@ Feature: Blog post published notification
 > ⚠️ **Correction, 2026-08-30 — two scenarios changed for the Epic 5 retrofit.**
 > *"The notification identifies the post that was published"* previously ended *"…carries that post's
 > identifier and title"*, which stops being a single value once story
-> [0078](../0078-translatable-content-retrofit-blog-posts-backend.md) makes the title per store language;
+> [0078](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md) makes the title per store language;
 > it now names the language. The second scenario is **new** and is the only one that can fail if the
 > language choice is wrong — a post translated into exactly one language makes every candidate
 > resolution identical, which is precisely why **D-4a** could otherwise ship untested. Both are the
@@ -376,7 +376,7 @@ class BlogPostPublished extends Notification
 ```
 
 > ⚠️ **Correction, 2026-08-30 — `$this->post->title` does not exist after story
-> [0078](../0078-translatable-content-retrofit-blog-posts-backend.md).** The block above is left as
+> [0078](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md).** The block above is left as
 > written, because what replaces it is a *decision* and not a substitution. The shipped shape is:
 >
 > ```php
@@ -666,7 +666,7 @@ triggers
 
       > ⚠️ **Correction, 2026-08-30 — "rename the post" is now a write to a translation row, and this
       > case splits into three.** After story
-      > [0078](../0078-translatable-content-retrofit-blog-posts-backend.md) a rename goes through
+      > [0078](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md) a rename goes through
       > `SetTranslation` against one `(post, store language)` pair, so the original one-line case cannot
       > distinguish the property it is meant to pin from two neighbouring ones:
       >
@@ -1040,7 +1040,7 @@ would reintroduce the staleness window that hedge names.
 
   > ⚠️ **Correction, 2026-08-30 — the argument survives the retrofit and gets *stronger*; only the
   > column reference is wrong.** `blog_posts.title` no longer exists (story
-  > [0078](../0078-translatable-content-retrofit-blog-posts-backend.md)); read the sentence as
+  > [0078](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md)); read the sentence as
   > *"a post's title is administrator-editable after publication"*, which is now true one table over,
   > in `blog_post_translations`. The snapshot argument gains a second, independent reason it did not
   > have: a live join would have to re-resolve **which language** to render at every future page load,
@@ -1077,7 +1077,7 @@ actually holds.
 
 ### D-4a — The frozen `title` snapshot resolves in the **store default** language *(2026-08-30)*
 
-**Added because story [0078](../0078-translatable-content-retrofit-blog-posts-backend.md) makes it
+**Added because story [0078](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md) makes it
 unavoidable, and its own R-1(c) refuses to decide it on this story's behalf** — *"recorded as a
 coordination item because it is a **product** choice hiding inside a mechanical rename."* Once
 `title` is per store language, `$this->post->title` has no single answer, and **D-4**'s entire snapshot
@@ -1298,7 +1298,7 @@ change to 0064**: it fixes an open choice in a story that has not shipped, rathe
 code.
 
 > ⚠️ **Correction, 2026-08-30 — reason 1's "costs nothing" clause weakens, and the resolution stands.**
-> After story [0078](../0078-translatable-content-retrofit-blog-posts-backend.md), reading a title is not
+> After story [0078](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md), reading a title is not
 > an attribute read: `translated('title')` reads the `translations` **relation** (0070's implementation
 > reads `$this->translations`, the property), so a model arriving with that relation unloaded costs one
 > lazy load. Carrying the model therefore spares the `find()` but **not** the relation load.
@@ -1490,7 +1490,7 @@ none.
 | [0043](0043-customers-new-customer-notification-backend.md) — new-customer notification | **hard, `new`** | Owns the `notifications` table and its `uuidMorphs('notifiable')` correction. This story adds **no** migration and cannot run one Feature test without it |
 | [0061](0061-blog-posts-core-crud-backend.md) — blog posts core CRUD | **hard, `new`** | Owns `BlogPost`, `BlogPostStatus`, `BlogPostFactory`, `RestoreBlogPost`, and — since **OQ-1** was confirmed — **both manual dispatch sites**, `UpdateBlogPost` and `CreateBlogPost` (its revised **D-19**, **V-9**). The coupling is now one-way: 0061 calls this story's action, and this story edits nothing of 0061's |
 | [0064](0064-scheduled-post-auto-publish-backend.md) — scheduled auto-publish | **hard, `new`** | Owns `App\Events\Blog\ScheduledBlogPostPublished` and the only automatic transition. **D-9** resolves its **OQ-2** |
-| [0078](../0078-translatable-content-retrofit-blog-posts-backend.md) — translatable-content retrofit (Epic 5) | **hard once it lands, `new`** *(added 2026-08-30)* | Removes `blog_posts.title` and supplies `BlogPost::translated()`, which **D-4a**'s payload calls. Ordering is one-directional but **either order works**: if 0078 ships first this story is written against `translated()` from the outset; if this story ships first, 0078's retrofit changes one line here and the amendments above describe the end state. What must **not** happen is this story implementing `$post->title` after 0078 has landed — the property would be undefined and the payload would silently store `null` on a `?string` type. Transitively brings [0068](0068-store-languages-catalog-backend.md) (`StoreLanguage`) and [0070](0070-translatable-content-mechanism-product-categories-backend.md) (`HasTranslations`) |
+| [0078](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md) — translatable-content retrofit (Epic 5) | **hard once it lands, `new`** *(added 2026-08-30)* | Removes `blog_posts.title` and supplies `BlogPost::translated()`, which **D-4a**'s payload calls. Ordering is one-directional but **either order works**: if 0078 ships first this story is written against `translated()` from the outset; if this story ships first, 0078's retrofit changes one line here and the amendments above describe the end state. What must **not** happen is this story implementing `$post->title` after 0078 has landed — the property would be undefined and the payload would silently store `null` on a `?string` type. Transitively brings [0068](0068-store-languages-catalog-backend.md) (`StoreLanguage`) and [0070](0070-translatable-content-mechanism-product-categories-backend.md) (`HasTranslations`) |
 | [0058](0058-blog-categories-backend.md) / [0059](0059-blog-tags-backend.md) | **transitive, via 0061** | No direct use |
 | [0046](0046-orders-new-order-notification-backend.md) | **not a dependency** | This story copies its *shape*, not its code. Sequencing is free either way |
 | [0056](0056-notification-viewing-backend.md) / [0057](0057-notification-bell-ui.md) | **not a dependency, either direction** | 0056's **D-5** means the bell needs zero change for a new producer — verified for this payload (**R-8**) |
@@ -1572,7 +1572,7 @@ Per the [task ordering rule](../../../docs/workflow/task-files-links-and-orderin
   orders and negligible at backoffice scale; `model:prune` is deliberately not wired, consistent with
   0043's **R-3** and 0046's **R-5**. Recorded so it is a known consequence rather than a surprise.
 - **R-11 — A stale `translations` relation can freeze a pre-edit title *(2026-08-30)*.** New with story
-  [0078](../0078-translatable-content-retrofit-blog-posts-backend.md), and it is the answer to *"is the
+  [0078](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md), and it is the answer to *"is the
   snapshot taken at a fixed enough point?"* — which turns out to be **yes on two triggers and
   not-provably-yes on the third**, so it is recorded rather than asserted either way.
 

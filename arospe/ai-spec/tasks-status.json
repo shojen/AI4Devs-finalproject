@@ -53,9 +53,9 @@
       "slug": "0078-translatable-content-retrofit-blog-posts-backend",
       "title": "Translatable content retrofit — Blog Posts backend",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree-0078-translatable-content-retrofit-blog-posts-backend",
+      "claimed_at": "2026-11-08T00:00:00Z",
       "touches": [
         "database/migrations/*_create_blog_post_translations_table.php",
         "database/migrations/*_drop_translatable_columns_from_blog_posts_table.php",
