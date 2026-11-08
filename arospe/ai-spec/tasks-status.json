@@ -87,7 +87,9 @@
         "tests/Feature/StoreLanguages/**",
         "tests/Unit/**"
       ],
-      "conflict_risk_with": []
+      "conflict_risk_with": [
+        "0087"
+      ]
     },
     {
       "id": "0079",
@@ -132,7 +134,8 @@
       "conflict_risk_with": [
         "0076a",
         "0077",
-        "0079"
+        "0079",
+        "0078"
       ]
     }
   ]
