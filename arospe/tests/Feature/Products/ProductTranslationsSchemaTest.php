@@ -36,11 +36,11 @@ function p76MigrationPath(string $suffix): string
     return $matches[0];
 }
 
-test('product_translations has the declared columns, types and nullability and no slug or meta column', function () {
+test('product_translations has the declared columns, types and nullability, including the slug and SEO columns story 0076a adds', function () {
     $columns = p76Columns('product_translations');
 
     expect(array_keys($columns))->toEqualCanonicalizing([
-        'id', 'product_id', 'store_language_id', 'name', 'description', 'created_at', 'updated_at',
+        'id', 'product_id', 'store_language_id', 'name', 'description', 'slug', 'meta_title', 'meta_description', 'created_at', 'updated_at',
     ])
         ->and($columns['id']['type'])->toBe('char(36)')
         ->and($columns['product_id']['type'])->toBe('char(36)')

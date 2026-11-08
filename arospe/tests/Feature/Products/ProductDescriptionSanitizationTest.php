@@ -124,6 +124,9 @@ function updateProductDescription(Product $product, ?string $description): Produ
         featuredMediaId: null,
         orderedGalleryMediaIds: [],
         description: $description,
+        slug: null,
+        metaTitle: null,
+        metaDescription: null,
     );
 }
 

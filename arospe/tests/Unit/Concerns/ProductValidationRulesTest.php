@@ -187,3 +187,60 @@ test('ProductValidationRules composes with ProfileValidationRules with no method
 
     expect($harness)->toBeObject();
 });
+
+// Story 0076a (D-6, D-32): the three SEO rule methods, named in the trait's product*Rules() style.
+// Rule COMPOSITION only; the per-language scope and own-row exclusion by product_id are proved by
+// behaviour in tests/Feature/Products/ProductSlugAndSeoTest.php.
+function productSeoRulesHarness(): object
+{
+    return new class
+    {
+        use ProductValidationRules;
+
+        /**
+         * @return array<int, mixed>
+         */
+        public function slug(string $storeLanguageId, ?string $productId = null): array
+        {
+            return $this->productSlugRules($storeLanguageId, $productId);
+        }
+
+        /**
+         * @return array<int, mixed>
+         */
+        public function metaTitle(): array
+        {
+            return $this->productMetaTitleRules();
+        }
+
+        /**
+         * @return array<int, mixed>
+         */
+        public function metaDescription(): array
+        {
+            return $this->productMetaDescriptionRules();
+        }
+    };
+}
+
+test('productSlugRules() is nullable, a string capped at 160, and carries one unique rule on the translations slug column', function () {
+    $rules = productSeoRulesHarness()->slug('a-language-id');
+    $unique = findUniqueRuleAmong($rules);
+
+    expect($rules)->toContain('nullable')
+        ->and($rules)->toContain('string')
+        ->and($rules)->toContain('max:160')
+        ->and((string) $unique)->toContain('product_translations,slug');
+});
+
+test('productMetaTitleRules() is nullable, a string, capped at 160 and carries no uniqueness rule', function () {
+    $rules = productSeoRulesHarness()->metaTitle();
+
+    expect($rules)->toBe(['nullable', 'string', 'max:160']);
+});
+
+test('productMetaDescriptionRules() is nullable, a string, capped at 500 and carries no uniqueness rule', function () {
+    $rules = productSeoRulesHarness()->metaDescription();
+
+    expect($rules)->toBe(['nullable', 'string', 'max:500']);
+});

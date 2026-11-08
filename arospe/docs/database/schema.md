@@ -182,6 +182,9 @@ erDiagram
         uuid store_language_id FK
         string name
         text description
+        string slug "nullable, 160"
+        string meta_title "nullable, 160"
+        string meta_description "nullable, 500"
     }
     PRODUCT_MEDIA {
         uuid product_id FK
@@ -451,6 +454,6 @@ Split by domain into separate files, per [contracts.md](../contracts/token-and-d
 - For migration authoring conventions (naming, `down()` requirements, real examples), see [database/migrations.md](migrations.md).
 - **UUID (v7) primary keys.** Each table's PK type (`uuid` vs `bigint`) is already visible directly in the ER diagram above, and each per-domain schema file states its own table's status against [ADR 0001](../decisions/0001-uuid-primary-keys.md) at the point that table is documented — so this section no longer restates a consolidated status list. The ADR is the single source of truth for the policy and its full history: which entities it covers, the one named `bigint` exception (`geography_entries`), and every amendment since. The model-side convention (`HasUuids`, `@property string $id`, no restated `$keyType`/`$incrementing`) is in [conventions/base-standards.md](../conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys); the migration-side pattern is in [database/migrations.md](migrations/uuid-primary-keys.md#uuid-primary-keys).
 
-_Last updated: 2026-11-06 — Story 0076 (products retrofit, backend): `PRODUCT_TRANSLATIONS` joined the diagram (`PRODUCTS ||--o{`, `STORE_LANGUAGES ||--o{`) and `PRODUCTS` lost `name`/`description`; the **Notes** model-class inventory counts twenty-eight. Earlier diagram changes (0070-0084) remain current. Every application table is diagrammed, relationships or not — since story 0058._
+_Last updated: 2026-11-08 — Story 0076a: `PRODUCT_TRANSLATIONS` gained `slug`, `meta_title` and `meta_description` in the diagram (relationships unchanged; `PRODUCT_TRANSLATIONS`, `PRODUCTS ||--o{`, `STORE_LANGUAGES ||--o{` joined in story 0076). The **Notes** model-class inventory counts twenty-eight. Earlier diagram changes (0070-0084) remain current. Every application table is diagrammed, relationships or not — since story 0058._
 
 _Earlier revision notes: [database--schema.md](../history/database--schema.md)._

@@ -105,7 +105,7 @@ test('UpdateProduct is refused for an actor lacking products.edit, is logged, an
 
     try {
         app(UpdateProduct::class)(...array_merge(
-            ['product' => $product],
+            ['product' => $product, 'slug' => null, 'metaTitle' => null, 'metaDescription' => null],
             authTestProductPayload([
                 'name' => 'Should Not Persist',
                 'sku' => $product->sku,
@@ -139,7 +139,7 @@ test('UpdateProduct succeeds for an actor holding products.edit, as the control'
     $this->actingAs($actor);
 
     $updated = app(UpdateProduct::class)(...array_merge(
-        ['product' => $product],
+        ['product' => $product, 'slug' => null, 'metaTitle' => null, 'metaDescription' => null],
         authTestProductPayload([
             'name' => 'Updated Name',
             'sku' => $product->sku,
@@ -216,7 +216,7 @@ test('a Super Admin actor holding zero permission rows passes create, update and
     expect($product)->not->toBeNull();
 
     $updated = app(UpdateProduct::class)(...array_merge(
-        ['product' => $product],
+        ['product' => $product, 'slug' => null, 'metaTitle' => null, 'metaDescription' => null],
         authTestProductPayload([
             'name' => 'Super Admin Update',
             'sku' => $product->sku,
