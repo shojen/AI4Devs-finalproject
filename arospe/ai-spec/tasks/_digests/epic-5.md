@@ -86,3 +86,14 @@ closed earlier and are not backfilled here (read their `done/` files or `docs/`)
 - Lesson: a raw `DB::table('products')->insert()` that still sends `name` fails with 1054 (unknown column) before any FK or NOT NULL error, so a test asserting 1452/1364 must drop `name` first — story 0076.
 - `GetLowStockProducts` resolves the name in the store default language (Q-4 (a)); UI-locale mapping is a follow-up story. `UpdateProduct` concurrent-save 1062 on the natural key is deferred to 0076a (R-22) — story 0076.
 
+## Story 0078 - Blog posts retrofit (backend)
+
+- `blog_post_translations`: UUID PK, `blog_post_id` cascade (never fires on soft delete, so trashed posts keep slugs reserved; child has no `SoftDeletes`), `store_language_id` restrict, `title` 255 NOT NULL, `slug` 255 NOT NULL, `body` MEDIUMTEXT NULL; exactly three indexes, `blog_post_translations_post_language_unique` and `blog_post_translations_language_slug_unique` (`BlogPostTranslation::LANGUAGE_SLUG_UNIQUE_INDEX`); migrations `2026_11_07_100000/100001`, drop `down()` re-adds nullable columns, so `migrate:rollback --step=2` loses title/slug/body (accepted F-4) - story 0078 (D-2, D-3, D-5, D-7).
+- Slug is derived by the child's `saving` hook per language, when `title` OR `slug` is dirty, always from the title; the parent hook is deleted; `BlogPost` `#[Fillable]` is `['blog_category_id','status']` - story 0078 (D-4, D-9).
+- Two-layer body sanitization: actions sanitize then validate and re-check the limit on the sanitized body UNTRIMMED; the child hook throws `LogicException` instead of letting the sanitizer truncate. `ProductTranslation`'s hook has the unfixed truncation shape (follow-up) - story 0078 (D-8, audit F-1).
+- Lists use `BlogPost::scopeWithListTranslations()` (requested + default language + one fallback row, columns `blog_post_id, store_language_id, title`, no body/slug); `displayTitle()` falls back to any stored title; `translated('body')` on that partial relation is null - story 0078 (D-13, D-14).
+- Factory: `WritesDefaultBlogPostTranslation` step, `titled($title, ?$body)` (NULL body by default) and `withoutTranslations()`; `config/store-languages.php` registers `blog_post_translations` - story 0078 (D-15).
+- Actions keep their signatures (meaning the default language's) and write the translation inside the existing transaction; notification titles are a frozen `displayTitle()` snapshot - story 0078 (D-12, D-16, D-17).
+- Accepted: F-3 concurrent first update of a post lacking a default row gives an unhandled 1062 on the post/language unique (500) - story 0078.
+- Test lessons recorded in `docs/errors-log.md` (Pest helper-name clashes, derived expectations, `??=` defaults, failure injection via a model `saving` hook, serial chunks) - story 0078.
+

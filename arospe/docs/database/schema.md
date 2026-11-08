@@ -62,6 +62,8 @@ erDiagram
     BLOG_TAGS ||--o{ BLOG_POST_TAG : blog_tag_id
     BLOG_TAGS ||--o{ BLOG_TAG_TRANSLATIONS : blog_tag_id
     STORE_LANGUAGES ||--o{ BLOG_TAG_TRANSLATIONS : store_language_id
+    BLOG_POSTS ||--o{ BLOG_POST_TRANSLATIONS : blog_post_id
+    STORE_LANGUAGES ||--o{ BLOG_POST_TRANSLATIONS : store_language_id
     BLOG_POSTS ||--o{ BLOG_POST_TAG : blog_post_id
 
     STORE_LANGUAGES {
@@ -367,13 +369,18 @@ erDiagram
     BLOG_POSTS {
         uuid id PK
         uuid blog_category_id FK
-        string title
-        string slug UK
-        mediumtext body
         string status
         timestamp published_at
         uuid created_by FK
         timestamp deleted_at
+    }
+    BLOG_POST_TRANSLATIONS {
+        uuid id PK
+        uuid blog_post_id FK
+        uuid store_language_id FK
+        string title
+        string slug
+        mediumtext body
     }
     BLOG_POST_TAG {
         uuid blog_tag_id FK
@@ -447,10 +454,10 @@ Split by domain into separate files, per [contracts.md](../contracts/token-and-d
 
 ## Notes
 
-- `app/Models/` holds twenty-eight classes (`ls app/Models/*.php`, recounted rather than incremented blind): `User` (Epic 1); twenty-three Epic 2/3/4/5 domain models — `SalesRegion`, `Media`, `ProductCategory`, `ProductTranslation` (story 0076, [schema-products/categories-and-products.md](schema-products/categories-and-products.md#product_translations) — the first translation model with two translatable columns), `ProductCategoryTranslation` (story 0070, [schema-products/categories-and-products.md](schema-products/categories-and-products.md#product_category_translations) — this app's first model whose rows are per-language content), `BlogCategory` (story 0058, [schema-blog.md](schema-blog.md)), `BlogCategoryTranslation` (story 0072, same file), `BlogTag` (story 0059, same file), `BlogTagTranslation` (story 0074, same file), `BlogPost` (story 0061, same file), `Product`, `ProductAttributeType`, `ProductAttributeValue`, `ProductVariant`, `GeographyEntry` (the only `bigint`-PK model with an auto-increment key), `ShippingZone`, `ShippingCarrier`, `ShippingRate`, `PaymentMethod`, `Customer`, `Order`, `OrderItem` (story 0045), `Refund` (story 0051, [schema-orders.md](schema-orders.md)), `StoreLanguage` and `LocaleSetting` (story 0068, [schema-localization.md](schema-localization.md) — `LocaleSetting` is the only model with a fixed, non-incrementing `TINYINT` key); and `Role`, a `spatie/laravel-permission` subclass over the package's own `roles` table — no column, no migration of its own (see [architecture/authorization.md](../architecture/authorization/super-admin.md#the-super-admin-roles-invariants)). **Five pivot tables have no model class at all** — `product_media`, `product_sales_region`, `product_variant_values`, `shipping_zone_geography_entry`, `blog_post_tag` — reached only through the owning models' `BelongsToMany`, the same shape the vendored `role_has_permissions`/`model_has_roles` pivots use.
+- `app/Models/` holds twenty-nine classes (`ls app/Models/*.php`, recounted rather than incremented blind): `User` (Epic 1); twenty-three Epic 2/3/4/5 domain models — `SalesRegion`, `Media`, `ProductCategory`, `ProductTranslation` (story 0076, [schema-products/categories-and-products.md](schema-products/categories-and-products.md#product_translations) — the first translation model with two translatable columns), `ProductCategoryTranslation` (story 0070, [schema-products/categories-and-products.md](schema-products/categories-and-products.md#product_category_translations) — this app's first model whose rows are per-language content), `BlogCategory` (story 0058, [schema-blog.md](schema-blog.md)), `BlogCategoryTranslation` (story 0072, same file), `BlogTag` (story 0059, same file), `BlogTagTranslation` (story 0074, same file), `BlogPost` (story 0061, same file), `BlogPostTranslation` (story 0078, same file), `Product`, `ProductAttributeType`, `ProductAttributeValue`, `ProductVariant`, `GeographyEntry` (the only `bigint`-PK model with an auto-increment key), `ShippingZone`, `ShippingCarrier`, `ShippingRate`, `PaymentMethod`, `Customer`, `Order`, `OrderItem` (story 0045), `Refund` (story 0051, [schema-orders.md](schema-orders.md)), `StoreLanguage` and `LocaleSetting` (story 0068, [schema-localization.md](schema-localization.md) — `LocaleSetting` is the only model with a fixed, non-incrementing `TINYINT` key); and `Role`, a `spatie/laravel-permission` subclass over the package's own `roles` table — no column, no migration of its own (see [architecture/authorization.md](../architecture/authorization/super-admin.md#the-super-admin-roles-invariants)). **Five pivot tables have no model class at all** — `product_media`, `product_sales_region`, `product_variant_values`, `shipping_zone_geography_entry`, `blog_post_tag` — reached only through the owning models' `BelongsToMany`, the same shape the vendored `role_has_permissions`/`model_has_roles` pivots use.
 - For migration authoring conventions (naming, `down()` requirements, real examples), see [database/migrations.md](migrations.md).
 - **UUID (v7) primary keys.** Each table's PK type (`uuid` vs `bigint`) is already visible directly in the ER diagram above, and each per-domain schema file states its own table's status against [ADR 0001](../decisions/0001-uuid-primary-keys.md) at the point that table is documented — so this section no longer restates a consolidated status list. The ADR is the single source of truth for the policy and its full history: which entities it covers, the one named `bigint` exception (`geography_entries`), and every amendment since. The model-side convention (`HasUuids`, `@property string $id`, no restated `$keyType`/`$incrementing`) is in [conventions/base-standards.md](../conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys); the migration-side pattern is in [database/migrations.md](migrations/uuid-primary-keys.md#uuid-primary-keys).
 
-_Last updated: 2026-11-06 — Story 0076 (products retrofit, backend): `PRODUCT_TRANSLATIONS` joined the diagram (`PRODUCTS ||--o{`, `STORE_LANGUAGES ||--o{`) and `PRODUCTS` lost `name`/`description`; the **Notes** model-class inventory counts twenty-eight. Earlier diagram changes (0070-0084) remain current. Every application table is diagrammed, relationships or not — since story 0058._
+_Last updated: 2026-11-08 - Story 0078 (blog posts retrofit, backend): `BLOG_POST_TRANSLATIONS` joined the diagram (`BLOG_POSTS ||--o{`, `STORE_LANGUAGES ||--o{`), `BLOG_POSTS` lost `title`/`slug`/`body`, and the **Notes** model-class inventory counts twenty-nine. Earlier diagram changes (0070-0084, 0076) remain current. Every application table is diagrammed, relationships or not - since story 0058.
 
 _Earlier revision notes: [database--schema.md](../history/database--schema.md)._
