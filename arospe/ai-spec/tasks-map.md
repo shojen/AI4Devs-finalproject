@@ -18,6 +18,8 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-11-08): nine new pending files `0088`–`0096` added — the order-stock series** (Phase 1 Three Amigos output; Phase 2 not run). Epic 3 follow-up bug fix: no order flow touched stock. Backend first: `0088` (counter column + backfill + `AdjustOrderStock`, `ready`, includes `database-expert`), `0089` (auto-deduct on create/add, blocked on `0088`), `0090` (quantity/removal opt-in), `0091` (cancel opt-in), `0092` (refund stock return + lock-order fix) — each of `0090`–`0092` blocked on `0088` and `0089`. Frontend: `0093` (confirm-dialog second choice, `ready`), `0094` (line stock dialog, blocked on `0090` + `0093`), `0095` (cancel stock dialog, blocked on `0091` + `0093` + `0094`), `0096` (refund modal, blocked on `0092`). Fullstack pairs (`related_task_id`): `0090`/`0094`, `0091`/`0095`, `0092`/`0096`. `conflict_risk_with`: `0090`↔`0091` (one shared test file), and `0092`/`0094`/`0095`/`0096` pairwise on `app/Livewire/Orders/Show.php`, `show.blade.php` and `lang/{en,es}/orders.php`. OQ-1 (counter model) and OQ-2 (deleted-variant detection, new `order_items.ordered_as_variant` column) were resolved by the user the same day as option (a) and are recorded as decisions D8/D9 in `0088`; no story in the series has a blocking question left, and OQ-3–OQ-5 run on assumed defaults not yet user-confirmed. Dependencies unchanged. Link check: every relative link in the nine new files resolves (anchors verified); no file moved, so no inbound links to repoint.
+
 **Update (2026-11-08): `0076a-product-slug-and-seo-fields-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0076a-product-slug-and-seo-fields-backend`). Its node, its inventory row, its `claimed` class membership and every edge touching it (`0076a -> 0077`, `0076a -.-> 0087`) are dropped from the graph, it joins the flat `done/` inventory (Epic 5; `done/` 99 -> 100), and its `tasks-status.json` entry (the `claimed` one) is deleted. Dependents recomputed: `0077` had `0076a` as its only pending dependency, so `depends_on` is now empty and it moves `blocked` -> `ready` (green); `0087` drops `0076a` from `conflict_risk_with`, and so does `0077`'s list of it. `ai-spec/tasks/in-progress/` is now empty. Link check: the moved file stays at the same depth (`in-progress/` -> `done/`), so its outbound links were re-verified only; inbound links in `0077` (`in-progress/0076a-...` -> `done/0076a-...`) and `done/0076` (`../in-progress/0076a-...` -> `0076a-...`) were repointed; all resolve, fragments included.
 
 **Update (2026-11-07): `0076a-product-slug-and-seo-fields-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 2 third pass APPROVED, then Phase 3 step 0; claimed by `worktree-0076a-product-slug-and-seo-fields-backend`). It is still pending work, so it keeps its node and edges (`P0076a --> P0077`, `P0076a -.-> P0087`); its node moves from the green `ready` class to the blue `claimed` class and its `tasks-status.json` entry becomes `"claimed"` (`claimed_at` 2026-11-07), with `depends_on` still empty. `ai-spec/tasks/in-progress/` now holds this one file; `ai-spec/tasks/` still holds the other pending files and `done/` the closed ones. Link check: the moved file's own outbound relative links gained one `../` level (`../../docs/…` to `../../../docs/…`, bare `](0077-…)`/`](0087-…)` to `](../…)`, `](done/…)` to `](../done/…)`); inbound links were repointed in `0077` (`](0076a-…)` to `](in-progress/0076a-…)` and in `done/0076` (`](../0076a-…)` to `](../in-progress/0076a-…)`); all resolve.
@@ -391,7 +393,7 @@ graph and from the parallelization analysis below.
 
 - [Inventory](#inventory)
   - [Done (100) — shipped, out of scope for this graph](#done-100--shipped-out-of-scope-for-this-graph)
-  - [Pending — not started (4 numbered + 1 infra doc)](#pending--not-started-4-numbered--1-infra-doc)
+  - [Pending — not started (13 numbered + 1 infra doc)](#pending--not-started-13-numbered--1-infra-doc)
 - [Dependency graph (pending tasks only)](#dependency-graph-pending-tasks-only)
 - [Analysis](#analysis)
   - [Pending tasks that are independent of each other and safe to parallelize](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
@@ -515,9 +517,9 @@ appears as a node in the dependency graph below:
   0084 — Order mark as paid (backend), closed 2026-10-02: adds `MarkOrderAsPaid` and the `order_payments` table; its one
   dependent, 0085, drops it and moves to `ready`.
 
-### Pending — not started (4 numbered + 1 infra doc)
+### Pending — not started (13 numbered + 1 infra doc)
 
-Re-derived 2026-11-07 from the files actually present in `ai-spec/tasks/`. The earlier table still listed `0072`, `0074`, `0084` and `0085`, all of which are in `done/`.
+Re-derived 2026-11-07 from the files actually present in `ai-spec/tasks/`; `0088`–`0096` added 2026-11-08. The earlier table still listed `0072`, `0074`, `0084` and `0085`, all of which are in `done/`.
 
 | ID | Title | Epic area |
 | --- | --- | --- |
@@ -525,6 +527,15 @@ Re-derived 2026-11-07 from the files actually present in `ai-spec/tasks/`. The e
 | 0078 | Translatable content retrofit — Blog Posts backend | Epic 5 — i18n |
 | 0079 | Blog post editor — language tabs (frontend) | Epic 5 — i18n |
 | 0087 | Translation write actions refuse an inactive store language | Epic 5 — i18n |
+| 0088 | Order stock adjustment foundation — returned-units counter and `AdjustOrderStock` (backend) | Epic 3 — Orders (stock) |
+| 0089 | Orders deduct stock automatically on create / add line (backend) | Epic 3 — Orders (stock) |
+| 0090 | Line quantity changes and removal adjust stock only on request (backend) | Epic 3 — Orders (stock) |
+| 0091 | Order cancellation returns stock only on request (backend) | Epic 3 — Orders (stock) |
+| 0092 | Refund stock return + refund lock-order fix (backend) | Epic 3 — Orders (stock) |
+| 0093 | Confirmation dialog — optional second choice (frontend) | Epic 3 — Orders (stock) |
+| 0094 | Order detail — line quantity/removal stock dialog (frontend) | Epic 3 — Orders (stock) |
+| 0095 | Order detail — cancel stock dialog (frontend) | Epic 3 — Orders (stock) |
+| 0096 | Order detail — refund modal stock return (frontend) | Epic 3 — Orders (stock) |
 | _(no number)_ | Infrastructure fix: no test suite can open a database connection (local fresh setup or CI) — **status: already fixed and documented**, kept out of the numbering and out of the dependency graph below | Infrastructure |
 
 ## Dependency graph (pending tasks only)
@@ -562,6 +573,38 @@ flowchart LR
         P0078["0078 Blog Posts retrofit BE"]
         P0079["0079 Blog post editor i18n UI"]
     end
+
+    subgraph PEND_STOCK["Epic 3 — Order stock (bug fix)"]
+        direction TB
+        P0088["0088 Stock foundation BE (+DB)"]
+        P0089["0089 Auto-deduct create/add BE"]
+        P0090["0090 Quantity/removal opt-in BE"]
+        P0091["0091 Cancel opt-in BE"]
+        P0092["0092 Refund stock return BE"]
+        P0093["0093 Confirm dialog 2nd choice UI"]
+        P0094["0094 Line stock dialog UI"]
+        P0095["0095 Cancel stock dialog UI"]
+        P0096["0096 Refund modal stock UI"]
+    end
+    P0088 --> P0089
+    P0088 --> P0090
+    P0088 --> P0091
+    P0088 --> P0092
+    P0089 --> P0090
+    P0089 --> P0091
+    P0089 --> P0092
+    P0090 --> P0094
+    P0093 --> P0094
+    P0091 --> P0095
+    P0093 --> P0095
+    P0094 --> P0095
+    P0092 --> P0096
+    P0090 -.-> P0091
+    P0094 -.-> P0096
+    P0095 -.-> P0096
+    P0092 -.-> P0094
+    class P0088,P0093 ready;
+    class P0089,P0090,P0091,P0092,P0094,P0095,P0096 pending;
 
     %% Standalone (no PRD epic)
     %% (P0082's own node dropped: 0082 closed to done/ this pass, per the update at the top of this file.)
@@ -655,7 +698,7 @@ here); yellow (`pending`) = still blocked on at least one open pending dependenc
 ### Pending tasks that are independent of each other and safe to parallelize
 
 These are the tasks whose **entire dependency chain is already `done/`** — nothing pending blocks
-them — the seven green `ready` nodes in the diagram above. (`0046`–`0054` and `0057` all had the
+them — the five green `ready` nodes in the diagram above (`0076a`, `0078`, `0087`, `0088`, `0093` as of 2026-11-08). (`0046`–`0054` and `0057` all had the
 identical property in their own turn — but none of them is listed anywhere in this section any
 more: each closed to `done/` in this or a prior regeneration pass, so per this file's own "`done/`
 tasks are omitted from the graph" rule none has a node at all any more. See the note at the top of
@@ -747,6 +790,8 @@ into `ready` (**0067** has since closed too, 2026-10-02); **0070**'s closure
 freed **0071**, **0072**, **0074**, **0076** and **0078** into `ready`, all five with zero pending
 dependencies of their own left.
 
+**Order-stock series (added 2026-11-08):** `0088` (backend foundation) and `0093` (shared dialog UI) have no pending dependency and touch disjoint files, so they can run in parallel with each other and with the Epic 5 `ready` tasks. Once `0089` is done, `0091` and `0092` can run in parallel (disjoint files); `0090` and `0091` share one test file, so coordinate them or run them in sequence.
+
 ### Pending tasks that must be sequenced
 
 The dependency graph above makes most of the backlog a strict sequencing problem rather than a
@@ -807,6 +852,8 @@ parallelization one. The major chains, in the order they must be executed:
    queries need a follow-up correction once each retrofit lands. It is drawn dashed in the graph to
    reflect that it is a "will need revisiting" relationship, not a blocking prerequisite.
 
+**Order-stock chain (added 2026-11-08):** `0088` → `0089` → {`0090`, `0091`, `0092`}; then `0090` + `0093` → `0094` → `0095` (`0095` also needs `0091`); `0092` → `0096`. Ship `0088` and `0089` together: lines created between the two would get a counter of 0 without a deduction (0088 R-1).
+
 ### File/merge-conflict risk even where no formal dependency exists
 
 Flagged explicitly in the source task files, even though no hard dependency edge connects the two
@@ -849,6 +896,8 @@ in [`ai-spec/tasks-status.json`](tasks-status.json):
   pairing; `0046` is `done/` as of this pass, so its entry was dropped from `0056`'s and `0057`'s
   own `conflict_risk_with` arrays in [`ai-spec/tasks-status.json`](tasks-status.json) rather than
   left pointing at a task the registry no longer lists at all.)
+
+- **Order-stock UI stories share the order detail screen** (added 2026-11-08) — `0094`, `0095` and `0096` all edit `app/Livewire/Orders/Show.php`, `resources/views/livewire/orders/show.blade.php` and `lang/{en,es}/orders.php`; `0092` edits the same lang files. They are paired in `conflict_risk_with`, and should run one at a time. `0090`↔`0091` share `tests/Feature/Orders/RemoveOrderItemStockTest.php`.
 
 ### Scope and known limitations of this map
 

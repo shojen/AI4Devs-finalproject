@@ -83,6 +83,201 @@
         "0077",
         "0079"
       ]
+    },
+    {
+      "id": "0088",
+      "slug": "0088-order-stock-adjustment-foundation-backend",
+      "title": "Order stock adjustment foundation — returned-units counter and AdjustOrderStock (backend)",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "database/migrations/*_add_stock_returned_quantity_to_order_items_table.php",
+        "app/Models/OrderItem.php",
+        "app/Actions/Orders/AdjustOrderStock.php",
+        "database/factories/OrderItemFactory.php",
+        "tests/Feature/Orders/AdjustOrderStockTest.php",
+        "tests/Feature/Orders/OrderStockMigrationTest.php",
+        "tests/Feature/Orders/OrderModelTest.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0089",
+      "slug": "0089-order-stock-auto-deduct-on-create-and-add-backend",
+      "title": "Orders deduct stock automatically when an order is created or a line is added (backend)",
+      "depends_on": [
+        "0088"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Actions/Orders/CreateOrder.php",
+        "app/Actions/Orders/AddOrderItem.php",
+        "tests/Feature/Orders/CreateOrderStockTest.php",
+        "tests/Feature/Orders/AddOrderItemStockTest.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0090",
+      "slug": "0090-order-line-quantity-and-removal-stock-opt-in-backend",
+      "title": "Line quantity changes and line removal adjust stock only on request (backend)",
+      "depends_on": [
+        "0088",
+        "0089"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Actions/Orders/UpdateOrderItemQuantity.php",
+        "app/Actions/Orders/RemoveOrderItem.php",
+        "tests/Feature/Orders/UpdateOrderItemQuantityStockTest.php",
+        "tests/Feature/Orders/RemoveOrderItemStockTest.php"
+      ],
+      "conflict_risk_with": [
+        "0091"
+      ]
+    },
+    {
+      "id": "0091",
+      "slug": "0091-order-cancellation-stock-return-opt-in-backend",
+      "title": "Order cancellation returns stock only on request (backend)",
+      "depends_on": [
+        "0088",
+        "0089"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Actions/Orders/CancelOrder.php",
+        "tests/Feature/Orders/CancelOrderStockTest.php",
+        "tests/Feature/Orders/AutoCancelFullyRefundedOrderTest.php",
+        "tests/Feature/Orders/RemoveOrderItemStockTest.php"
+      ],
+      "conflict_risk_with": [
+        "0090"
+      ]
+    },
+    {
+      "id": "0092",
+      "slug": "0092-order-refund-stock-return-backend",
+      "title": "Refunds can return refunded units to stock, and the refund lock order is fixed (backend)",
+      "depends_on": [
+        "0088",
+        "0089"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Actions/Orders/RecordRefund.php",
+        "app/Concerns/OrderValidationRules.php",
+        "lang/en/orders.php",
+        "lang/es/orders.php",
+        "tests/Feature/Orders/RecordRefundStockTest.php",
+        "tests/Feature/Orders/RecordRefundLockOrderTest.php"
+      ],
+      "conflict_risk_with": [
+        "0094",
+        "0095"
+      ]
+    },
+    {
+      "id": "0093",
+      "slug": "0093-confirm-dialog-secondary-action-ui",
+      "title": "Confirmation dialog — optional second choice (frontend)",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "resources/views/components/confirm-dialog.blade.php",
+        "tests/Feature/Components/ConfirmDialogTest.php",
+        "tests/Browser/Components/ConfirmDialogSecondaryActionTest.php"
+      ],
+      "conflict_risk_with": []
+    },
+    {
+      "id": "0094",
+      "slug": "0094-order-line-quantity-and-removal-stock-dialog-ui",
+      "title": "Order detail — ask about stock when a line's quantity changes or a line is removed (frontend)",
+      "depends_on": [
+        "0090",
+        "0093"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/Orders/Show.php",
+        "resources/views/livewire/orders/show.blade.php",
+        "lang/en/orders.php",
+        "lang/es/orders.php",
+        "tests/Feature/Orders/ShowLineItemStockTest.php",
+        "tests/Feature/Orders/ShowLineItemsTest.php",
+        "tests/Browser/Orders/OrderLineItemStockDialogTest.php",
+        "tests/Browser/Orders/OrderDetailLineItemsTest.php"
+      ],
+      "conflict_risk_with": [
+        "0092",
+        "0095",
+        "0096"
+      ]
+    },
+    {
+      "id": "0095",
+      "slug": "0095-order-cancellation-stock-dialog-ui",
+      "title": "Order detail — the cancel confirmation asks whether to return stock (frontend)",
+      "depends_on": [
+        "0091",
+        "0093",
+        "0094"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/Orders/Show.php",
+        "resources/views/livewire/orders/show.blade.php",
+        "lang/en/orders.php",
+        "lang/es/orders.php",
+        "tests/Feature/Orders/ShowCancellationTest.php",
+        "tests/Browser/Orders/OrderCancellationTest.php"
+      ],
+      "conflict_risk_with": [
+        "0092",
+        "0094",
+        "0096"
+      ]
+    },
+    {
+      "id": "0096",
+      "slug": "0096-order-refund-modal-stock-return-ui",
+      "title": "Order detail — the refund modal asks whether to return stock (frontend)",
+      "depends_on": [
+        "0092"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/Orders/Show.php",
+        "resources/views/livewire/orders/show.blade.php",
+        "lang/en/orders.php",
+        "lang/es/orders.php",
+        "tests/Feature/Orders/ShowRefundStockTest.php",
+        "tests/Feature/Orders/ShowRefundTest.php",
+        "tests/Browser/Orders/OrderRefundStockReturnTest.php"
+      ],
+      "conflict_risk_with": [
+        "0094",
+        "0095"
+      ]
     }
   ]
 }
