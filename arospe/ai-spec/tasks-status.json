@@ -82,7 +82,10 @@
         "tests/Feature/Seeders/DemoDataSeederTest.php",
         "tests/Unit/Concerns/BlogPostValidationRulesTest.php",
         "tests/Browser/BlogPosts/**",
-        "tests/Browser/Dashboard/**"
+        "tests/Browser/Dashboard/**",
+        "tests/Support/Dashboard/DomainQueryLog.php",
+        "tests/Feature/StoreLanguages/**",
+        "tests/Unit/**"
       ],
       "conflict_risk_with": []
     },

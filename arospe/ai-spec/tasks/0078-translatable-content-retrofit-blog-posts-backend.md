@@ -213,7 +213,6 @@ Feature: Per-store-language blog post content
     When they open the post in the editor
     Then the title and body fields are empty, so a fallback is never saved as a translation
 
-
   Scenario: The posts list shows the default-language title
     Given a blog editor, with a post titled "Botas de invierno" in the default language and "Bottes d'hiver" in French
     When they open the posts list
@@ -417,4 +416,4 @@ None in scope for 0078.
 - **`backend-expert` — feasible with listed changes, no design blockers.** Folded in: the slug scenario rewrite, the `GetLatestBlogPosts` eager load and the query-count blind spot, the notification-title freshness and the failure-notifier silent-drop risk, action ordering and the index-name constant, `Index`/`Editor` details, the migration drop shape.
 - **`backend-qa` — not ready for TDD as first written.** Folded in: the real test-migration scope (31 files including 3 Browser, rewrites not migrations), missing tests for D-9/D-12/D-15/D-17/D-18 and the missing-default-language path, un-drivable and vacuous Gherkin scenarios, and the placement/running conventions. Not taken: nothing was declined.
 
-**Status after the amendments above: the three reviewers' findings are incorporated; a re-confirmation by `code-reviewer` of the amended file is the remaining Phase 2 step** (the first verdict was given on the pre-amendment text). **Not run:** TDD (Phase 3), security audit (Phase 4), code review (Phase 5), docs pass (Phase 6).
+**Re-confirmation by `code-reviewer`, 2026-11-08, on `19ed416`: REJECTED on one point only, since fixed.** All eight earlier findings were confirmed resolved in the text, the amendments were found free of contradiction, and the code claims spot-checked held. The single blocker was in the coordination file, not the story: `tasks-status.json` `touches` omitted `tests/Support/Dashboard/DomainQueryLog.php`, `tests/Feature/StoreLanguages/**` and `tests/Unit/**`, which the story says it writes. Those three paths were added in the same pass as the map note; `conflict_risk_with` stays empty (0076a and 0087 write none of them). The reviewer was not re-run for this coordination-file fix; the rest of its verdict stands as **APPROVED to proceed to Phase 3**. **Not run:** TDD (Phase 3), security audit (Phase 4), code review (Phase 5), docs pass (Phase 6).
