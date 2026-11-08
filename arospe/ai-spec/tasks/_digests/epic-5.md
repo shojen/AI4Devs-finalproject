@@ -86,3 +86,13 @@ closed earlier and are not backfilled here (read their `done/` files or `docs/`)
 - Lesson: a raw `DB::table('products')->insert()` that still sends `name` fails with 1054 (unknown column) before any FK or NOT NULL error, so a test asserting 1452/1364 must drop `name` first — story 0076.
 - `GetLowStockProducts` resolves the name in the store default language (Q-4 (a)); UI-locale mapping is a follow-up story. `UpdateProduct` concurrent-save 1062 on the natural key is deferred to 0076a (R-22) — story 0076.
 
+
+## Story 0076a — Product slug and SEO fields (backend)
+
+- `product_translations` gained `slug` VARCHAR(160), `meta_title` VARCHAR(160), `meta_description` VARCHAR(500), all nullable, no backfill; `UNIQUE(store_language_id, slug)` named `product_translations_language_slug_unique`; still exactly three indexes because the composite supports the `store_language_id` FK and the migration drops `product_translations_store_language_id_foreign` when present; `down()` restores a plain index before dropping the unique (1553) — story 0076a (D-5, D-6, D-11b, D-34).
+- `App\Actions\Products\CanonicalizeProductSlug` is the single slug canonicaliser (trim, `Str::slug`, blank becomes `NULL`), used by the actions before validating and by the `ProductTranslation` `saving` hook (which also trims meta fields) — story 0076a (D-6, D-30).
+- `ProductValidationRules::productSlugRules(string $storeLanguageId, ?string $productId = null)` excludes the own row by `product_id !=`, never `->ignore()`; plus `productMetaTitleRules()` / `productMetaDescriptionRules()` — story 0076a.
+- `CreateProduct`/`UpdateProduct` take trailing `?string $slug, $metaTitle, $metaDescription` (defaults `null` on create, required on update); `SetTranslation` writes them with name/description in the same transaction — story 0076a.
+- `TranslateProductUniqueViolation` maps a 1062 by index name (`products_sku_unique` to `sku`, language-slug to `slug`, product-language natural key to `name` with `products.editor.concurrent_save_retry`); otherwise rethrows. Resolves 0076's deferred R-22 — story 0076a (D-31).
+- `Products\Editor` has `#[Locked] ?string $slug/$metaTitle/$metaDescription` (default language) passed unchanged on edit, `null` on create, until 0077 adds inputs — story 0076a (D-33).
+- New lang keys: `products.attributes.{slug,meta_title,meta_description}`, `products.editor.concurrent_save_retry` (en/es) — story 0076a.

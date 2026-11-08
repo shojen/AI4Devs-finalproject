@@ -214,7 +214,7 @@ app/
                        dependency-free, never-`new`-ed classes (the combination hash, the SKU
                        derivation formula plus its `checked()` validating entry point, and the
                        shared disambiguator for product_variants' two unique-index race guards)
-                       filed here rather than under an unapproved app/Support/ base folder, per the
+                       filed here (alongside story 0076a's CanonicalizeProductSlug — the single slug canonicaliser shared by the actions and the ProductTranslation `saving` hook — and TranslateProductUniqueViolation, the index-name 1062 translator for sku/slug/natural-key) rather than under an unapproved app/Support/ base folder, per the
                        "or directly under app/Actions/ if it belongs to none" branch below applied
                        one level narrower — domain-scoped rather than app-wide, so app/Actions/
                        Products/ rather than app/Actions/ itself (story 0029); GenerateProductVariant
