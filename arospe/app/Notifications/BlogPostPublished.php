@@ -27,10 +27,10 @@ use Illuminate\Queue\SerializesModels;
  * `$post` into `jobs.payload`. With it, a future queued form stores only the
  * model's key.
  *
- * `title` is frozen at construction time (Phase 2 resolution, 2026-09-27):
- * story 0078 (translatable-content retrofit) has not shipped, so
- * `BlogPost::$title` is still a native column and this reads it directly,
- * per this story's D-4.
+ * `title` is a frozen snapshot of `BlogPost::displayTitle()` (story 0078,
+ * D-17): the default-language title, else any stored one. The publishing
+ * actions unset the post's loaded `translations` before building this, so the
+ * title is the one just written.
  */
 class BlogPostPublished extends Notification
 {
@@ -58,7 +58,7 @@ class BlogPostPublished extends Notification
     {
         return [
             'blog_post_id' => $this->post->id,
-            'title' => $this->post->title,
+            'title' => $this->post->displayTitle() ?? '',
         ];
     }
 }

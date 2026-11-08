@@ -4,9 +4,12 @@ namespace App\Actions\Blog;
 
 use App\Actions\Auth\LogRefusedPrivilegedAttempt;
 use App\Actions\Products\SanitizeProductDescription;
+use App\Actions\Translations\SetTranslation;
 use App\Concerns\BlogPostValidationRules;
 use App\Enums\BlogPostStatus;
 use App\Models\BlogPost;
+use App\Models\BlogPostTranslation;
+use App\Models\StoreLanguage;
 use Carbon\CarbonInterface;
 use Carbon\Exceptions\InvalidFormatException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -15,6 +18,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class UpdateBlogPost
 {
@@ -31,6 +35,7 @@ class UpdateBlogPost
         private readonly SanitizeProductDescription $sanitizeBody,
         private readonly BlogBodyHasVisibleContent $bodyHasVisibleContent,
         private readonly NotifyBlogPostPublished $notifyBlogPostPublished,
+        private readonly SetTranslation $setTranslation,
     ) {}
 
     /**
@@ -91,6 +96,8 @@ class UpdateBlogPost
             throw (new ModelNotFoundException)->setModel(BlogPost::class, [$blogPost->getKey()]);
         }
 
+        $defaultLanguage = $this->defaultStoreLanguage();
+
         $wasPublished = $blogPost->getRawOriginal('status') === BlogPostStatus::Published->value;
         $wasScheduled = $blogPost->getRawOriginal('status') === BlogPostStatus::Scheduled->value;
         $storedPublishedAt = $blogPost->published_at;
@@ -118,7 +125,7 @@ class UpdateBlogPost
                 'tag_names' => $tagNames,
             ],
             [
-                'title' => [...$this->titleRules(), ...$this->titleSlugRules($blogPost->id)],
+                'title' => [...$this->titleRules(), ...$this->titleSlugRules($defaultLanguage->id, $blogPost->id)],
                 'body' => $this->bodyRules($ruleStatus),
                 'blog_category_id' => $this->blogCategoryIdRules(),
                 'status' => $this->statusRules(),
@@ -152,20 +159,20 @@ class UpdateBlogPost
         }
 
         try {
-            DB::transaction(function () use ($blogPost, $title, $body, $blogCategoryId, $resolvedStatus, $resolvedPublishedAt, $tagNames): void {
+            DB::transaction(function () use ($blogPost, $defaultLanguage, $title, $body, $blogCategoryId, $resolvedStatus, $resolvedPublishedAt, $tagNames): void {
                 $blogPost->forceFill([
-                    'title' => $title,
-                    'body' => $body,
                     'blog_category_id' => (string) $blogCategoryId,
                     'status' => $resolvedStatus,
                     'published_at' => $resolvedPublishedAt,
                 ])->save();
 
+                ($this->setTranslation)($blogPost, $defaultLanguage, ['title' => $title, 'body' => $body]);
+
                 ($this->syncBlogPostTags)($blogPost, $tagNames);
             });
         } catch (QueryException $e) {
             // The slug's unique index is the last word behind the pre-flight check (OQ-2).
-            if (($e->errorInfo[1] ?? null) === 1062 && str_contains($e->getMessage(), 'slug')) {
+            if (($e->errorInfo[1] ?? null) === 1062 && str_contains($e->getMessage(), BlogPostTranslation::LANGUAGE_SLUG_UNIQUE_INDEX)) {
                 throw ValidationException::withMessages([
                     'title' => trans('validation.unique', ['attribute' => 'title']),
                 ]);
@@ -174,11 +181,24 @@ class UpdateBlogPost
             throw $e;
         }
 
+        // refresh() may have loaded `translations` before the write above; the notification must see the new title (D-17).
+        $blogPost->unsetRelation('translations');
+
         if (! $wasPublished && $blogPost->status === BlogPostStatus::Published) {
             DB::afterCommit(fn () => ($this->notifyBlogPostPublished)($blogPost));
         }
 
         return $blogPost;
+    }
+
+    /**
+     * The default store language, resolved once per save (0078 D-12); a missing one is a clear
+     * failure, never a null dereference.
+     */
+    private function defaultStoreLanguage(): StoreLanguage
+    {
+        return StoreLanguage::query()->where('is_default', true)->first()
+            ?? throw new RuntimeException('Cannot save a blog post: no default store language is configured.');
     }
 
     /**

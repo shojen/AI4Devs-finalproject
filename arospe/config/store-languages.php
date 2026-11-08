@@ -33,6 +33,7 @@ return [
         ['table' => 'blog_category_translations', 'column' => 'store_language_id'],
         ['table' => 'blog_tag_translations', 'column' => 'store_language_id'],
         ['table' => 'product_translations', 'column' => 'store_language_id'],
+        ['table' => 'blog_post_translations', 'column' => 'store_language_id'],
     ],
 
 ];

@@ -4,6 +4,7 @@ namespace App\Concerns;
 
 use App\Enums\BlogPostStatus;
 use App\Models\BlogPost;
+use App\Models\BlogPostTranslation;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Str;
@@ -28,19 +29,20 @@ trait BlogPostValidationRules
     /**
      * Refuses a title whose slug is unusable: empty (a title of only punctuation or emoji), wider
      * than the `slug` column (Str::slug() transliterates, so it is not length-preserving), or already
-     * held by ANOTHER post -- trashed ones included, because a trashed post keeps its slug reserved
-     * (D-7b) and the check must see the same rows the unique index does. The slug is derived, never
+     * held, IN THE GIVEN LANGUAGE, by ANOTHER post -- trashed ones included, because a trashed post's
+     * translation rows stay physically present (0078 D-5) and the check must see the same rows the
+     * unique index does. The slug is derived, never
      * submitted, so the refusal is keyed on `title`, the field the editor can change (OQ-2).
      *
-     * $ignoreBlogPostId excludes the post being edited, so re-saving a post under its own title
-     * succeeds. This is a pre-flight only: the unique index has the last word under a race.
+     * $ignoreBlogPostId excludes the post being edited by its parent id (`blog_post_id`, never the
+     * translation row's own id, D-11), so re-saving a post under its own title succeeds. This is a pre-flight only: the unique index has the last word under a race.
      *
      * @return array<int, Closure>
      */
-    protected function titleSlugRules(?string $ignoreBlogPostId = null): array
+    protected function titleSlugRules(string $storeLanguageId, ?string $ignoreBlogPostId = null): array
     {
         return [
-            function (string $attribute, mixed $value, Closure $fail) use ($ignoreBlogPostId): void {
+            function (string $attribute, mixed $value, Closure $fail) use ($storeLanguageId, $ignoreBlogPostId): void {
                 if (! is_string($value)) {
                     return;
                 }
@@ -62,9 +64,10 @@ trait BlogPostValidationRules
                     return;
                 }
 
-                $taken = BlogPost::withTrashed()
+                $taken = BlogPostTranslation::query()
+                    ->where('store_language_id', $storeLanguageId)
                     ->where('slug', $slug)
-                    ->when($ignoreBlogPostId !== null, fn ($query) => $query->whereKeyNot($ignoreBlogPostId))
+                    ->when($ignoreBlogPostId !== null, fn ($query) => $query->where('blog_post_id', '!=', $ignoreBlogPostId))
                     ->exists();
 
                 if ($taken) {
