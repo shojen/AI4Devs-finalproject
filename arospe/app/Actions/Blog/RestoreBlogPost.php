@@ -36,7 +36,7 @@ class RestoreBlogPost
         );
 
         // Restore a fresh copy, never the caller's instance: restore() ends in save(), which writes the
-        // whole dirty set, so an attribute the caller dirtied (body, slug, status) would ride along.
+        // whole dirty set, so an attribute the caller dirtied (status, published_at) would ride along.
         // withTrashed() because a default query cannot see the trashed row this action exists for.
         $current = BlogPost::withTrashed()->whereKey($blogPost->getKey())->firstOrFail();
 

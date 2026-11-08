@@ -11,6 +11,15 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class StoreLanguageFactory extends Factory
 {
     /**
+     * Codes that tests create by hand (`['code' => 'fr']`). A random code must never equal one of
+     * them, or a test that also creates a factory-made language (every `Product::factory()`
+     * brings its own default one) intermittently hits the unique index (about 1 in 676).
+     *
+     * @var list<string>
+     */
+    public const RESERVED_CODES = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ca', 'eu', 'gl', 'zz', 'xx'];
+
+    /**
      * Define the model's default state: a plain, active, non-default entry.
      *
      * `code` uses `fake()->unique()->lexify('??')` because it is the table's only unique column
@@ -23,11 +32,23 @@ class StoreLanguageFactory extends Factory
     public function definition(): array
     {
         return [
-            'code' => fake()->unique()->lexify('??'),
+            'code' => $this->randomUnreservedCode(),
             'name' => fake()->unique()->word(),
             'is_default' => false,
             'is_active' => true,
         ];
+    }
+
+    /**
+     * A unique two-letter code that is not one of {@see self::RESERVED_CODES}.
+     */
+    private function randomUnreservedCode(): string
+    {
+        do {
+            $code = fake()->unique()->lexify('??');
+        } while (in_array($code, self::RESERVED_CODES, true));
+
+        return $code;
     }
 
     /**

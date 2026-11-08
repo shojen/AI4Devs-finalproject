@@ -47,7 +47,7 @@ function dashboardJourneyIsPlainText(string $hook): string
 
 test('a blog editor opens a post editor from the dashboard blog widget', function () {
     $this->actingAs(dashboardJourneyActor(['blog.view', 'blog.edit']));
-    $post = BlogPost::factory()->published()->create(['title' => 'Journey post']);
+    $post = BlogPost::factory()->published()->titled('Journey post')->create();
 
     visit('/dashboard')
         ->assertNoJavaScriptErrors()
@@ -90,7 +90,7 @@ test('an order manager opens an order from the latest orders widget', function (
 
 test('a blog viewer who may not edit sees the post title as plain text, not a link', function () {
     $this->actingAs(dashboardJourneyActor(['blog.view']));
-    $post = BlogPost::factory()->published()->create(['title' => 'View only post']);
+    $post = BlogPost::factory()->published()->titled('View only post')->create();
 
     visit('/dashboard')
         ->assertNoJavaScriptErrors()
@@ -112,7 +112,7 @@ test('a product viewer who may not edit sees the product name as plain text, not
 
 test('the dashboard fits a 375px phone in light mode with no horizontal scroll', function () {
     $this->actingAs(dashboardJourneyActor(['blog.view', 'products.view', 'orders.view', 'customers.view', 'users.view', 'media.view']));
-    BlogPost::factory()->scheduled()->create(['title' => 'Phone post with a rather long title that must wrap instead of overflowing']);
+    BlogPost::factory()->scheduled()->titled('Phone post with a rather long title that must wrap instead of overflowing')->create();
     Product::factory()->active()->physical()->named('Phone product with a rather long name that must wrap')->create(['stock' => 0]);
     Order::factory()->create(['order_number' => 'ORD-PHONE-1']);
 
@@ -129,7 +129,7 @@ test('the dashboard fits a 375px phone in light mode with no horizontal scroll',
 
 test('the dashboard fits a 375px phone in dark mode with no horizontal scroll', function () {
     $this->actingAs(dashboardJourneyActor(['blog.view', 'products.view', 'orders.view', 'customers.view', 'users.view', 'media.view']));
-    BlogPost::factory()->published()->create(['title' => 'Dark post']);
+    BlogPost::factory()->published()->titled('Dark post')->create();
     Product::factory()->active()->physical()->named('Dark product')->create(['stock' => 3]);
     Order::factory()->create(['order_number' => 'ORD-DARK-1']);
 

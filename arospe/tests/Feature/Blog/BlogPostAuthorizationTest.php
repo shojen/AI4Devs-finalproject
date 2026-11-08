@@ -51,7 +51,7 @@ function blogPostAuthCreate(): BlogPost
  */
 function blogPostAuthUpdate(BlogPost $post): BlogPost
 {
-    return app(UpdateBlogPost::class)($post, 'Otro título', $post->body, $post->blog_category_id, 'draft', null, []);
+    return app(UpdateBlogPost::class)($post, 'Otro título', $post->translated('body'), $post->blog_category_id, 'draft', null, []);
 }
 
 test('CreateBlogPost refuses an actor without blog.create and writes nothing', function () {
@@ -62,11 +62,11 @@ test('CreateBlogPost refuses an actor without blog.create and writes nothing', f
 });
 
 test('UpdateBlogPost refuses an actor without blog.edit and writes nothing', function () {
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno']);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create();
     $this->actingAs(blogPostActorWithout('blog.edit'));
 
     expect(fn () => blogPostAuthUpdate($post))->toThrow(AuthorizationException::class);
-    expect($post->fresh()->title)->toBe('Botas de invierno');
+    expect($post->fresh()->translated('title'))->toBe('Botas de invierno');
 });
 
 test('DeleteBlogPost refuses an actor without blog.delete and writes nothing', function () {
@@ -96,7 +96,7 @@ test('each action is allowed for an actor holding exactly its own permission', f
     expect(blogPostAuthCreate())->toBeInstanceOf(BlogPost::class);
 
     $this->actingAs(User::factory()->create()->givePermissionTo('blog.edit'));
-    expect(blogPostAuthUpdate($post)->title)->toBe('Otro título');
+    expect(blogPostAuthUpdate($post)->translated('title'))->toBe('Otro título');
 
     $this->actingAs(User::factory()->create()->givePermissionTo('blog.delete'));
     expect(app(DeleteBlogPost::class)($post))->toBeTrue();

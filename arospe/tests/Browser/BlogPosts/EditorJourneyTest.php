@@ -174,13 +174,13 @@ test('a blog editor writes a scheduled post with a body, an image and tags, save
                 ->assertNoJavaScriptErrors()
                 ->assertUrlIs(route('blog-posts.index'));
 
-            $post = BlogPost::where('title', $title)->firstOrFail();
+            $post = BlogPost::whereHas('translations', fn ($query) => $query->where('title', $title))->firstOrFail();
 
             expect($post->status->value)->toBe('scheduled')
                 ->and($post->blog_category_id)->toBe($first->id)
                 ->and($post->published_at->format('Y-m-d\TH:i:s'))->toBe($scheduledFor)
-                ->and($post->body)->toContain($bodyText)
-                ->and($post->body)->toContain('<img')
+                ->and($post->translated('body'))->toContain($bodyText)
+                ->and($post->translated('body'))->toContain('<img')
                 ->and(DB::table('blog_post_tag')->join('blog_tag_translations', 'blog_tag_translations.blog_tag_id', '=', 'blog_post_tag.blog_tag_id')
                     ->where('blog_post_id', $post->id)->orderBy('blog_tag_translations.name')->pluck('blog_tag_translations.name')->all())
                 ->toBe(['invierno', 'running']);
@@ -208,9 +208,9 @@ test('a blog editor writes a scheduled post with a body, an image and tags, save
                 ->assertUrlIs(route('blog-posts.index'));
 
             $fresh = $post->fresh();
-            expect($fresh->title)->toBe($title.' bis')
+            expect($fresh->translated('title'))->toBe($title.' bis')
                 ->and($fresh->status->value)->toBe('scheduled')
-                ->and($fresh->body)->toContain($bodyText)
+                ->and($fresh->translated('body'))->toContain($bodyText)
                 ->and($fresh->tags()->with('translations')->get()->map(fn (BlogTag $tag) => $tag->translated('name'))->all())->toBe(['running'])
                 ->and(BlogTagTranslation::where('name', 'invierno')->exists())->toBeTrue();
         }, 250);

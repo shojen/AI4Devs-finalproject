@@ -189,7 +189,7 @@ test('the no-categories callout is absent once a category exists', function () {
 
 test('the publication-date wrapper and input are rendered for every status, gated only by the exact x-show expression', function (string $status) {
     $this->actingAs(blogPostsEditorRenderingActor());
-    $post = BlogPost::factory()->create(['status' => $status, 'published_at' => $status === 'draft' ? null : now()->subDay(), 'body' => '<p>x</p>']);
+    $post = BlogPost::factory()->titled('Entrada de prueba', '<p>x</p>')->create(['status' => $status, 'published_at' => $status === 'draft' ? null : now()->subDay()]);
 
     $html = Livewire::test(Editor::class, ['blogPost' => $post])->html();
 

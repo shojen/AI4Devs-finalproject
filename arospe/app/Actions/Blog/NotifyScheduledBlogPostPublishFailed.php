@@ -48,7 +48,7 @@ class NotifyScheduledBlogPostPublishFailed
     public function __invoke(string $blogPostId): void
     {
         try {
-            $post = BlogPost::query()->find($blogPostId);
+            $post = BlogPost::query()->with('translations')->find($blogPostId);
             $stage = $post === null ? null : $this->stageFor($post);
 
             if ($post === null || $stage === null) {
@@ -75,7 +75,7 @@ class NotifyScheduledBlogPostPublishFailed
             }
 
             try {
-                Notification::send($recipients, new ScheduledBlogPostPublishFailed($post->id, $post->title, $stage));
+                Notification::send($recipients, new ScheduledBlogPostPublishFailed($post->id, $post->displayTitle(), $stage));
             } catch (Throwable $e) {
                 Cache::forget($key);
 

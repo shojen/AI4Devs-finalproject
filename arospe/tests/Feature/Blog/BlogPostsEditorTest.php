@@ -17,7 +17,7 @@
 // authorize BEFORE they validate, so an unauthenticated direct call throws AuthorizationException
 // rather than ValidationException and would pass for the wrong reason.
 //
-// Written against the pre-Epic-5 schema (`blog_posts.title/body`, `blog_tag_translations.name`).
+// Title and body live on `blog_post_translations` (story 0078); tag names on `blog_tag_translations`.
 
 use App\Livewire\BlogPosts\Editor;
 use App\Models\BlogCategory;
@@ -147,10 +147,10 @@ test('create persists the title, category, status, body and tags, and redirects 
 
     $post = BlogPost::sole();
 
-    expect($post->title)->toBe('Botas de invierno')
+    expect($post->translated('title'))->toBe('Botas de invierno')
         ->and($post->blog_category_id)->toBe($category->id)
         ->and($post->status->value)->toBe('draft')
-        ->and($post->body)->toContain('largo')
+        ->and($post->translated('body'))->toContain('largo')
         ->and($post->published_at)->toBeNull()
         ->and(blogPostsEditorAttachedTagNames($post))->toBe(['invierno', 'running']);
 });
@@ -158,10 +158,8 @@ test('create persists the title, category, status, body and tags, and redirects 
 test('edit loads every field, including the complete tag set, and never a null', function () {
     $this->actingAs(blogPostsEditorActor());
     $category = BlogCategory::factory()->create();
-    $post = BlogPost::factory()->create([
-        'title' => 'Botas de invierno',
+    $post = BlogPost::factory()->titled('Botas de invierno', '<p>Contenido</p>')->create([
         'blog_category_id' => $category->id,
-        'body' => '<p>Contenido</p>',
         'status' => 'scheduled',
         'published_at' => '2027-03-15 10:20:33',
     ]);
@@ -199,7 +197,7 @@ test('a tag with no name in the default language still shows as a chip and survi
 
 test('a bodiless draft with no date loads empty strings, never null', function () {
     $this->actingAs(blogPostsEditorActor());
-    $post = BlogPost::factory()->create(['body' => null]);
+    $post = BlogPost::factory()->titled('Sin cuerpo')->create();
 
     $component = Livewire::test(Editor::class, ['blogPost' => $post]);
 
@@ -211,7 +209,7 @@ test('a bodiless draft with no date loads empty strings, never null', function (
 
 test('editing an existing post retitles it and redirects to the list', function () {
     $this->actingAs(blogPostsEditorActor());
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno']);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create();
 
     Livewire::test(Editor::class, ['blogPost' => $post])
         ->set('title', 'Botas de invierno 2026')
@@ -219,7 +217,7 @@ test('editing an existing post retitles it and redirects to the list', function 
         ->assertHasNoErrors()
         ->assertRedirect(route('blog-posts.index'));
 
-    expect($post->fresh()->title)->toBe('Botas de invierno 2026')
+    expect($post->fresh()->translated('title'))->toBe('Botas de invierno 2026')
         ->and(BlogPost::count())->toBe(1);
 });
 
@@ -312,7 +310,7 @@ test('save() re-authorizes an edit: an actor who lost blog.edit after mounting i
     $this->withoutExceptionHandling();
     $actor = blogPostsEditorActor();
     $this->actingAs($actor);
-    $post = BlogPost::factory()->create(['title' => 'Original']);
+    $post = BlogPost::factory()->titled('Original')->create();
 
     $component = Livewire::test(Editor::class, ['blogPost' => $post])->set('title', 'Cambiado');
     $actor->revokePermissionTo('blog.edit');
@@ -322,7 +320,7 @@ test('save() re-authorizes an edit: an actor who lost blog.edit after mounting i
         expect(fn () => $component->call('save'))->toThrow(AuthorizationException::class);
     });
 
-    expect($post->fresh()->title)->toBe('Original')
+    expect($post->fresh()->translated('title'))->toBe('Original')
         ->and($contexts)->not->toBeEmpty()
         ->and($contexts[0]['ability'])->toBe('update')
         ->and($contexts[0]['target_type'])->toBe('blog_post')
@@ -331,13 +329,13 @@ test('save() re-authorizes an edit: an actor who lost blog.edit after mounting i
 
 test('saving a post that was deleted while the editor was open is a 404, never a resurrection', function () {
     $this->actingAs(blogPostsEditorActor());
-    $post = BlogPost::factory()->create(['title' => 'Original']);
+    $post = BlogPost::factory()->titled('Original')->create();
 
     $component = Livewire::test(Editor::class, ['blogPost' => $post])->set('title', 'Cambiado');
     $post->delete();
 
     expect(fn () => $component->call('save'))->toThrow(ModelNotFoundException::class);
-    expect(BlogPost::withTrashed()->sole()->title)->toBe('Original')
+    expect(BlogPost::withTrashed()->sole()->translated('title'))->toBe('Original')
         ->and(BlogPost::count())->toBe(0);
 });
 
@@ -479,7 +477,7 @@ test('a Draft with an empty body is accepted and stores no body', function () {
 
     blogPostsEditorFill(Livewire::test(Editor::class), $category, ['body' => ''])->call('save')->assertHasNoErrors();
 
-    expect(BlogPost::sole()->body)->toBeNull();
+    expect(BlogPost::sole()->translated('body'))->toBeNull();
 });
 
 test('a Published post with an empty body is refused', function () {
@@ -518,12 +516,12 @@ test('a body that renders nothing counts as no body: refused when published, sto
     blogPostsEditorFill(Livewire::test(Editor::class), $category, ['status' => 'draft', 'body' => '<p><br></p>'])
         ->call('save')
         ->assertHasNoErrors();
-    expect(BlogPost::sole()->body)->toBeNull();
+    expect(BlogPost::sole()->translated('body'))->toBeNull();
 });
 
 test('promoting a bodiless draft to published is refused and the post is still a draft afterwards', function () {
     $this->actingAs(blogPostsEditorActor());
-    $post = BlogPost::factory()->create(['body' => null]);
+    $post = BlogPost::factory()->titled('Sin cuerpo')->create();
 
     Livewire::test(Editor::class, ['blogPost' => $post])
         ->set('status', 'published')
@@ -536,7 +534,7 @@ test('promoting a bodiless draft to published is refused and the post is still a
 
 test('the same promotion succeeds when a body is supplied in the same save', function () {
     $this->actingAs(blogPostsEditorActor());
-    $post = BlogPost::factory()->create(['body' => null]);
+    $post = BlogPost::factory()->titled('Sin cuerpo')->create();
 
     Livewire::test(Editor::class, ['blogPost' => $post])
         ->set('status', 'published')
@@ -577,8 +575,7 @@ test('retitling an overdue scheduled post succeeds, because its date is hydrated
     $this->travelTo(Carbon::parse('2026-06-01 09:00:00'));
     // A date with NON-ZERO seconds: a minute-precision hydration would resubmit 10:20:00, which is
     // not the stored instant, so the action's "same date" exemption would not apply.
-    $post = BlogPost::factory()->create([
-        'title' => 'Programada',
+    $post = BlogPost::factory()->titled('Programada', '<p>Cuerpo</p>')->create([
         'status' => 'scheduled',
         'published_at' => '2026-06-01 10:20:33',
     ]);
@@ -592,21 +589,21 @@ test('retitling an overdue scheduled post succeeds, because its date is hydrated
         ->assertHasNoErrors();
 
     $fresh = $post->fresh();
-    expect($fresh->title)->toBe('Programada y retitulada')
+    expect($fresh->translated('title'))->toBe('Programada y retitulada')
         ->and($fresh->status->value)->toBe('scheduled')
         ->and($fresh->published_at->format('Y-m-d H:i:s'))->toBe('2026-06-01 10:20:33');
 });
 
 test('the same retitle still succeeds when the editor was opened BEFORE the date passed', function () {
     $this->actingAs(blogPostsEditorActor());
-    $post = BlogPost::factory()->scheduled()->create(['title' => 'Programada']);
+    $post = BlogPost::factory()->scheduled()->titled('Programada', '<p>Cuerpo</p>')->create();
 
     $component = Livewire::test(Editor::class, ['blogPost' => $post]);
     $this->travel(2)->days();
 
     $component->set('title', 'Retitulada')->call('save')->assertHasNoErrors();
 
-    expect($post->fresh()->title)->toBe('Retitulada');
+    expect($post->fresh()->translated('title'))->toBe('Retitulada');
 });
 
 test('a Published post with no date is stamped with the current instant', function () {
@@ -780,7 +777,7 @@ test('the same actor is refused when one name is new, and the whole save rolls b
     $this->actingAs($actor);
     $kept = BlogTag::factory()->named('kept')->create();
     $valid = BlogTag::factory()->named('running')->create();
-    $post = BlogPost::factory()->create(['title' => 'Original']);
+    $post = BlogPost::factory()->titled('Original')->create();
     $post->tags()->attach([$kept->id]);
 
     $component = Livewire::test(Editor::class, ['blogPost' => $post])
@@ -799,7 +796,7 @@ test('the same actor is refused when one name is new, and the whole save rolls b
 
     // Rolled back: the post's columns are unchanged, the valid name 'running' was NOT attached, the
     // old set survives, and no tag row was minted.
-    expect($post->fresh()->title)->toBe('Original')
+    expect($post->fresh()->translated('title'))->toBe('Original')
         ->and(blogPostsEditorAttachedTagNames($post))->toBe(['kept'])
         ->and(BlogTagTranslation::where('name', 'brand-new')->exists())->toBeFalse()
         ->and(BlogTag::count())->toBe(2)
