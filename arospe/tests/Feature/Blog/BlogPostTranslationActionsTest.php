@@ -4,6 +4,7 @@ use App\Actions\Blog\CreateBlogPost;
 use App\Actions\Blog\DeleteBlogPost;
 use App\Actions\Blog\RestoreBlogPost;
 use App\Actions\Blog\UpdateBlogPost;
+use App\Actions\Products\SanitizeProductDescription;
 use App\Actions\Translations\SetTranslation;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
@@ -646,4 +647,143 @@ test('an editor holding blog.create and no store-languages permission creates a 
     $post = bpaCreate(['blogCategoryId' => $categoryId]);
 
     expect(bpaRow($post, bpaDefaultLanguage()))->not->toBeNull();
+});
+
+// --- Sanitized-body size limit (audit F-1) -------------------------------------------------
+// Pass 1 (the action's cleanBody) can ENLARGE a body: `=`, `+`, `@` and the backtick become 5-byte
+// entities. Pass 2 (the model hook) would then truncate or blank it, so the actions must measure the
+// SANITIZED body too and refuse it with a ValidationException on `body`, writing nothing.
+
+/**
+ * Raw bodies under the 262144-byte limit whose sanitized form is over it.
+ *
+ * @return array<string, array{string}>
+ */
+function bpaEnlargingBodies(): array
+{
+    return [
+        'ascii entities cut mid-body' => ['<p>'.str_repeat('a=b ', 60000).'</p>'],
+        'multibyte cut that would blank the body' => ['<p>xxxx'.str_repeat('é=', 80000).'</p>'],
+    ];
+}
+
+dataset('bpaEnlargingBodies', fn () => bpaEnlargingBodies());
+
+test('creating a post whose body only exceeds the limit once sanitized is refused on body and writes nothing', function (string $body, string $status) {
+    $categoryId = BlogCategory::factory()->create()->id;
+    $publishedAt = $status === 'scheduled' ? now()->addDay()->toDateTimeString() : null;
+    $before = bpaSnapshot();
+
+    expect(strlen($body))->toBeLessThan((int) config('html-sanitizer.max_input_length'));
+
+    try {
+        bpaCreate(['blogCategoryId' => $categoryId, 'body' => $body, 'status' => $status, 'publishedAt' => $publishedAt]);
+        $this->fail('Expected a ValidationException on body.');
+    } catch (ValidationException $e) {
+        expect($e->errors())->toHaveKey('body');
+    }
+
+    expect(bpaSnapshot())->toBe($before);
+})->with('bpaEnlargingBodies')->with(['draft', 'published', 'scheduled']);
+
+test('updating a post with a body that only exceeds the limit once sanitized is refused on body and changes nothing', function (string $body, string $status) {
+    $post = bpaCreate(['title' => 'Original', 'body' => '<p>original</p>']);
+    $publishedAt = $status === 'scheduled' ? now()->addDay()->toDateTimeString() : null;
+    $parentBefore = DB::table('blog_posts')->where('id', $post->id)->first();
+    $rowBefore = bpaRow($post, bpaDefaultLanguage());
+
+    try {
+        bpaUpdate($post, ['title' => 'Cambiado', 'body' => $body, 'status' => $status, 'publishedAt' => $publishedAt]);
+        $this->fail('Expected a ValidationException on body.');
+    } catch (ValidationException $e) {
+        expect($e->errors())->toHaveKey('body');
+    }
+
+    expect(DB::table('blog_posts')->where('id', $post->id)->first())->toEqual($parentBefore)
+        ->and(bpaRow($post, bpaDefaultLanguage()))->toBe($rowBefore);
+})->with('bpaEnlargingBodies')->with(['draft', 'published', 'scheduled']);
+
+test('a body that stays just under the limit after sanitizing still saves, on create and on update', function () {
+    $max = (int) config('html-sanitizer.max_input_length');
+    $body = '<p>'.str_repeat('a=', 43000).'</p>';
+
+    $post = bpaCreate(['body' => $body, 'status' => 'published']);
+    $stored = bpaRow($post, bpaDefaultLanguage())['body'];
+
+    expect(strlen($stored))->toBeLessThanOrEqual($max)->toBeGreaterThan(strlen($body))
+        ->and($stored)->toEndWith('a&#61;</p>');
+
+    bpaUpdate($post, ['body' => $body, 'status' => 'published']);
+
+    expect(bpaRow($post, bpaDefaultLanguage())['body'])->toBe($stored);
+});
+
+// --- Trailing whitespace left by a dropped element (audit R-1) -----------------------------
+// cleanBody() trims the RAW input, but the sanitized output can end in a space (a dropped trailing
+// <script> leaves the space before it). The hook measures that stored body untrimmed, so the action
+// must too, or a boundary body becomes a LogicException (500) instead of a `body` validation error.
+
+/**
+ * A raw body (trimmed length under the limit) that sanitizes to exactly $sanitizedBytes bytes,
+ * the last of which is the space left behind by a dropped trailing <script>.
+ */
+function bpaBodyEndingInDroppedScriptSpace(int $sanitizedBytes): string
+{
+    // 100 `=` become 5-byte entities, which makes the sanitized form longer than the raw one.
+    $entities = 100;
+    $filler = $sanitizedBytes - 8 - ($entities * 5);
+
+    return '<p>'.str_repeat('a', $filler).str_repeat('=', $entities).'</p> <script>x</script>';
+}
+
+test('a body that exceeds the limit by one byte only through a trailing space is refused on body on create, not a LogicException', function () {
+    $max = (int) config('html-sanitizer.max_input_length');
+    $body = bpaBodyEndingInDroppedScriptSpace($max + 1);
+    $categoryId = BlogCategory::factory()->create()->id;
+    $before = bpaSnapshot();
+
+    expect(strlen(trim($body)))->toBeLessThanOrEqual($max)
+        ->and(strlen(app(SanitizeProductDescription::class)(trim($body))))->toBe($max + 1);
+
+    try {
+        bpaCreate(['blogCategoryId' => $categoryId, 'body' => $body, 'status' => 'published']);
+        $this->fail('Expected a ValidationException on body.');
+    } catch (ValidationException $e) {
+        expect($e->errors())->toHaveKey('body');
+    }
+
+    expect(bpaSnapshot())->toBe($before);
+});
+
+test('a body that exceeds the limit by one byte only through a trailing space is refused on body on update, not a LogicException', function () {
+    $max = (int) config('html-sanitizer.max_input_length');
+    $body = bpaBodyEndingInDroppedScriptSpace($max + 1);
+    $post = bpaCreate(['title' => 'Original', 'body' => '<p>original</p>']);
+    $parentBefore = DB::table('blog_posts')->where('id', $post->id)->first();
+    $rowBefore = bpaRow($post, bpaDefaultLanguage());
+    $before = bpaSnapshot();
+
+    try {
+        bpaUpdate($post, ['title' => 'Cambiado', 'body' => $body, 'status' => 'published']);
+        $this->fail('Expected a ValidationException on body.');
+    } catch (ValidationException $e) {
+        expect($e->errors())->toHaveKey('body');
+    }
+
+    expect(bpaSnapshot())->toBe($before)
+        ->and(DB::table('blog_posts')->where('id', $post->id)->first())->toEqual($parentBefore)
+        ->and(bpaRow($post, bpaDefaultLanguage()))->toBe($rowBefore);
+});
+
+test('a body whose sanitized output, trailing space included, is exactly the limit still saves on create and update', function () {
+    $max = (int) config('html-sanitizer.max_input_length');
+    $body = bpaBodyEndingInDroppedScriptSpace($max);
+
+    $post = bpaCreate(['body' => $body, 'status' => 'published']);
+
+    expect(strlen(bpaRow($post, bpaDefaultLanguage())['body']))->toBe($max);
+
+    bpaUpdate($post, ['title' => 'Otro', 'body' => $body, 'status' => 'published']);
+
+    expect(strlen(bpaRow($post, bpaDefaultLanguage())['body']))->toBe($max);
 });

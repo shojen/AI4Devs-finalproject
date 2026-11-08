@@ -44,12 +44,31 @@ test('a slug forced together with a dirty title is overwritten by the derived on
     expect($translation->fresh()->slug)->toBe('botas');
 });
 
-test('a slug forced with a non-dirty title is not overwritten, which pins the hook limit', function () {
+test('a slug forced without touching the title is overwritten by the one derived from the title', function () {
     $translation = BlogPostTranslation::factory()->create(['title' => 'Botas']);
 
     $translation->forceFill(['slug' => 'forced'])->save();
 
-    expect($translation->fresh()->slug)->toBe('forced');
+    expect($translation->fresh()->slug)->toBe('botas');
+});
+
+test('saving a body longer than the sanitizer input limit throws instead of silently truncating it', function () {
+    $max = (int) config('html-sanitizer.max_input_length');
+    $translation = BlogPostTranslation::factory()->create(['body' => '<p>original</p>']);
+
+    $translation->body = '<p>'.str_repeat('a', $max).'</p>';
+
+    expect(fn () => $translation->save())->toThrow(LogicException::class)
+        ->and($translation->fresh()->body)->toBe('<p>original</p>');
+});
+
+test('inserting a body longer than the sanitizer input limit throws and writes no row', function () {
+    $max = (int) config('html-sanitizer.max_input_length');
+    $before = DB::table('blog_post_translations')->count();
+
+    expect(fn () => BlogPostTranslation::factory()->create(['body' => '<p>'.str_repeat('a', $max).'</p>']))
+        ->toThrow(LogicException::class)
+        ->and(DB::table('blog_post_translations')->count())->toBe($before);
 });
 
 test('a bare SetTranslation call with a title that has no usable slug stores an empty slug, which pins the missing guard', function () {
