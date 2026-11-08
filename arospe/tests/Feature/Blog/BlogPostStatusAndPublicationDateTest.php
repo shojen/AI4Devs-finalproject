@@ -54,8 +54,8 @@ function createDatedPost(BlogCategory $category, array $overrides = []): BlogPos
 function updateDatedPost(BlogPost $post, array $overrides = []): BlogPost
 {
     return app(UpdateBlogPost::class)($post, ...array_merge([
-        'title' => $post->title,
-        'body' => $post->body,
+        'title' => $post->translated('title'),
+        'body' => $post->translated('body'),
         'blogCategoryId' => $post->blog_category_id,
         'status' => $post->status->value,
         'publishedAt' => $post->published_at?->toDateTimeString(),
@@ -244,7 +244,7 @@ test('retitling a scheduled post whose date has already passed is still accepted
 
     $fresh = $post->fresh();
 
-    expect($fresh->title)->toBe('Botas de invierno 2026')
+    expect($fresh->translated('title'))->toBe('Botas de invierno 2026')
         ->and($fresh->status)->toBe(BlogPostStatus::Scheduled)
         ->and($fresh->published_at->toDateTimeString())->toBe('2026-06-16 12:00:00');
 });
@@ -448,7 +448,7 @@ test('editing a published post to a future date is refused and leaves the post u
 
     expect($keys)->toBe(['published_at']);
     expect($post->fresh()->status)->toBe(BlogPostStatus::Published)
-        ->and($post->fresh()->title)->not->toBe('Botas de invierno 2026')
+        ->and($post->fresh()->translated('title'))->not->toBe('Botas de invierno 2026')
         ->and($post->fresh()->published_at->toDateTimeString())->toBe('2026-06-10 10:00:00');
 });
 

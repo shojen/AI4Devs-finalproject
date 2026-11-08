@@ -152,12 +152,12 @@ test('the date cell renders the row\'s own date through its hook, beside a decoy
 test('each row renders its title, its category name and its tags through row-scoped hooks', function () {
     $category = BlogCategory::factory()->named('Guías')->create();
     $decoyCategory = BlogCategory::factory()->named('Novedades')->create();
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno', 'blog_category_id' => $category->id]);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create(['blog_category_id' => $category->id]);
     $post->tags()->attach([
         BlogTag::factory()->named('running')->create()->id,
         BlogTag::factory()->named('invierno')->create()->id,
     ]);
-    $decoy = BlogPost::factory()->create(['title' => 'Otra entrada', 'blog_category_id' => $decoyCategory->id]);
+    $decoy = BlogPost::factory()->titled('Otra entrada')->create(['blog_category_id' => $decoyCategory->id]);
     $this->actingAs(blogPostsRenderingActor(['blog.view']));
 
     $html = Livewire::test(Index::class)->html();
@@ -170,7 +170,7 @@ test('each row renders its title, its category name and its tags through row-sco
 });
 
 test('a title carrying markup is escaped, never rendered', function () {
-    $post = BlogPost::factory()->create(['title' => '<script>alert(1)</script> Botas']);
+    $post = BlogPost::factory()->titled('<script>alert(1)</script> Botas')->create();
     $this->actingAs(blogPostsRenderingActor(['blog.view']));
 
     $html = Livewire::test(Index::class)->html();
@@ -299,7 +299,7 @@ test('pagination links render once the list outgrows a page', function () {
 // =====================================================================
 
 test('the delete modal renders nothing until opened, then names the post and offers one Cancel', function () {
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno']);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create();
     $this->actingAs(blogPostsRenderingActor());
 
     $closed = Livewire::test(Index::class)->html();
@@ -351,7 +351,7 @@ test('with trashed posts the section renders closed on first paint and its count
 
 test('a trashed row shows its title and category, and offers no edit link (its edit URL is a 404)', function () {
     $category = BlogCategory::factory()->named('Guías')->create();
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno', 'blog_category_id' => $category->id]);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create(['blog_category_id' => $category->id]);
     $post->delete();
     $this->actingAs(blogPostsRenderingActor());
 
@@ -364,7 +364,7 @@ test('a trashed row shows its title and category, and offers no edit link (its e
 
 test('restoring resolves the trashed row, brings it back to the list with its category and tags, and empties the section', function () {
     $category = BlogCategory::factory()->named('Guías')->create();
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno', 'blog_category_id' => $category->id]);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create(['blog_category_id' => $category->id]);
     $post->tags()->attach(BlogTag::factory()->named('running')->create()->id);
     $post->delete();
     $this->actingAs(blogPostsRenderingActor());
@@ -383,8 +383,8 @@ test('restoring resolves the trashed row, brings it back to the list with its ca
 });
 
 test('restoring one of two trashed posts leaves the other listed and the count at one', function () {
-    $restored = BlogPost::factory()->create(['title' => 'Restored']);
-    $left = BlogPost::factory()->create(['title' => 'Left behind']);
+    $restored = BlogPost::factory()->titled('Restored')->create();
+    $left = BlogPost::factory()->titled('Left behind')->create();
     $restored->delete();
     $left->delete();
     $this->actingAs(blogPostsRenderingActor());
@@ -396,7 +396,7 @@ test('restoring one of two trashed posts leaves the other listed and the count a
 });
 
 test('a deleted post lands in the trashed section in the same request', function () {
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno']);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create();
     $this->actingAs(blogPostsRenderingActor());
 
     $html = Livewire::test(Index::class)

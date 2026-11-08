@@ -10,8 +10,8 @@
 // Deliberately NOT re-run here: 0061's action-level delete/restore semantics
 // (DeleteBlogPostTest / RestoreBlogPostTest). This file only proves the SCREEN routes into them.
 //
-// Written against the pre-Epic-5 schema (`blog_posts.title`, `blog_categories.name`), which is
-// what ships today.
+// Titles are read from `blog_post_translations` (story 0078), category names from
+// `blog_category_translations`.
 
 use App\Livewire\BlogPosts\Index;
 use App\Models\BlogCategory;
@@ -218,7 +218,7 @@ test('mounting the component with blog.view succeeds', function () {
 
 test('each row carries the documented shape, with the category name and the tag names resolved', function () {
     $category = BlogCategory::factory()->named('Guías')->create();
-    $post = BlogPost::factory()->published()->create(['title' => 'Botas de invierno', 'blog_category_id' => $category->id]);
+    $post = BlogPost::factory()->published()->titled('Botas de invierno')->create(['blog_category_id' => $category->id]);
     $post->tags()->attach([
         BlogTag::factory()->named('running')->create()->id,
         BlogTag::factory()->named('invierno')->create()->id,
@@ -266,12 +266,12 @@ test('canEdit and canDelete agree with BlogPostPolicy for each permission combin
 ]);
 
 test('a soft-deleted post is not among the rows', function () {
-    $live = BlogPost::factory()->create(['title' => 'Live post']);
-    BlogPost::factory()->create(['title' => 'Trashed post'])->delete();
+    $live = BlogPost::factory()->titled('Live post')->create();
+    BlogPost::factory()->titled('Trashed post')->create()->delete();
     $this->actingAs(blogPostsIndexActor(['blog.view']));
 
     expect(blogPostsIndexTitles(Livewire::test(Index::class)))->toBe(['Live post'])
-        ->and(BlogPost::onlyTrashed()->pluck('title')->all())->toBe(['Trashed post'])
+        ->and(BlogPost::onlyTrashed()->get()->map(fn (BlogPost $post): ?string => $post->translated('title'))->all())->toBe(['Trashed post'])
         ->and(BlogPost::query()->pluck('id')->all())->toBe([$live->id]);
 });
 
@@ -312,9 +312,9 @@ test('the truncation notice is absent while every deleted post is listed', funct
 test('rows are ordered newest created first, with a decoy created between the two ends', function () {
     // Inserted OLDEST last on purpose: an implementation ordering by insertion order / id would
     // return the reverse of what the created_at ordering must.
-    BlogPost::factory()->create(['title' => 'Newest', 'created_at' => '2026-03-03 12:00:00']);
-    BlogPost::factory()->create(['title' => 'Decoy', 'created_at' => '2026-03-02 12:00:00']);
-    BlogPost::factory()->create(['title' => 'Oldest', 'created_at' => '2026-03-01 12:00:00']);
+    BlogPost::factory()->titled('Newest')->create(['created_at' => '2026-03-03 12:00:00']);
+    BlogPost::factory()->titled('Decoy')->create(['created_at' => '2026-03-02 12:00:00']);
+    BlogPost::factory()->titled('Oldest')->create(['created_at' => '2026-03-01 12:00:00']);
     $this->actingAs(blogPostsIndexActor(['blog.view']));
 
     expect(blogPostsIndexTitles(Livewire::test(Index::class)))->toBe(['Newest', 'Decoy', 'Oldest']);
@@ -322,11 +322,11 @@ test('rows are ordered newest created first, with a decoy created between the tw
 
 test('two posts sharing a creation instant fall back to id ascending, so pages never reshuffle', function () {
     $sharedInstant = '2026-03-03 12:00:00';
-    $first = BlogPost::factory()->create(['title' => 'Created first', 'created_at' => $sharedInstant]);
-    $second = BlogPost::factory()->create(['title' => 'Created second', 'created_at' => $sharedInstant]);
+    $first = BlogPost::factory()->titled('Created first')->create(['created_at' => $sharedInstant]);
+    $second = BlogPost::factory()->titled('Created second')->create(['created_at' => $sharedInstant]);
     $this->actingAs(blogPostsIndexActor(['blog.view']));
 
-    $expected = collect([$first, $second])->sortBy('id')->pluck('title')->values()->all();
+    $expected = collect([$first, $second])->sortBy('id')->map(fn (BlogPost $post): ?string => $post->fresh()->translated('title'))->values()->all();
 
     expect(blogPostsIndexTitles(Livewire::test(Index::class)))->toBe($expected);
 });
@@ -418,9 +418,9 @@ test('a valid filter id is accepted even when the option dropdown is capped belo
 test('the category filter narrows the list to that category, leaving a decoy category out', function () {
     $guides = BlogCategory::factory()->named('Guías')->create();
     $news = BlogCategory::factory()->named('Novedades')->create();
-    BlogPost::factory()->create(['title' => 'Guide one', 'blog_category_id' => $guides->id, 'created_at' => '2026-03-02 00:00:00']);
-    BlogPost::factory()->create(['title' => 'Guide two', 'blog_category_id' => $guides->id, 'created_at' => '2026-03-01 00:00:00']);
-    BlogPost::factory()->create(['title' => 'News one', 'blog_category_id' => $news->id]);
+    BlogPost::factory()->titled('Guide one')->create(['blog_category_id' => $guides->id, 'created_at' => '2026-03-02 00:00:00']);
+    BlogPost::factory()->titled('Guide two')->create(['blog_category_id' => $guides->id, 'created_at' => '2026-03-01 00:00:00']);
+    BlogPost::factory()->titled('News one')->create(['blog_category_id' => $news->id]);
     $this->actingAs(blogPostsIndexActor(['blog.view']));
 
     $component = Livewire::test(Index::class)->set('categoryFilter', $guides->id);
@@ -431,9 +431,9 @@ test('the category filter narrows the list to that category, leaving a decoy cat
 test('the tag filter narrows the list to posts carrying that tag, leaving a decoy tag out', function () {
     $running = BlogTag::factory()->named('running')->create();
     $winter = BlogTag::factory()->named('invierno')->create();
-    BlogPost::factory()->create(['title' => 'Runner'])->tags()->attach($running->id);
-    BlogPost::factory()->create(['title' => 'Winter'])->tags()->attach($winter->id);
-    BlogPost::factory()->create(['title' => 'Untagged']);
+    BlogPost::factory()->titled('Runner')->create()->tags()->attach($running->id);
+    BlogPost::factory()->titled('Winter')->create()->tags()->attach($winter->id);
+    BlogPost::factory()->titled('Untagged')->create();
     $this->actingAs(blogPostsIndexActor(['blog.view']));
 
     $component = Livewire::test(Index::class)->set('tagFilter', $running->id);
@@ -445,9 +445,9 @@ test('the two filters compose: category AND tag narrow further, they do not repl
     $guides = BlogCategory::factory()->named('Guías')->create();
     $news = BlogCategory::factory()->named('Novedades')->create();
     $running = BlogTag::factory()->named('running')->create();
-    BlogPost::factory()->create(['title' => 'Guide + running', 'blog_category_id' => $guides->id])->tags()->attach($running->id);
-    BlogPost::factory()->create(['title' => 'Guide only', 'blog_category_id' => $guides->id]);
-    BlogPost::factory()->create(['title' => 'News + running', 'blog_category_id' => $news->id])->tags()->attach($running->id);
+    BlogPost::factory()->titled('Guide + running')->create(['blog_category_id' => $guides->id])->tags()->attach($running->id);
+    BlogPost::factory()->titled('Guide only')->create(['blog_category_id' => $guides->id]);
+    BlogPost::factory()->titled('News + running')->create(['blog_category_id' => $news->id])->tags()->attach($running->id);
     $this->actingAs(blogPostsIndexActor(['blog.view']));
 
     $component = Livewire::test(Index::class)
@@ -536,7 +536,7 @@ test('a forged filter arriving through the URL, even as an array, renders the fu
 
 test('a filter naming a trashed post\'s category still degrades cleanly and never surfaces the trashed post', function () {
     $category = BlogCategory::factory()->named('Guías')->create();
-    BlogPost::factory()->create(['title' => 'Trashed', 'blog_category_id' => $category->id])->delete();
+    BlogPost::factory()->titled('Trashed')->create(['blog_category_id' => $category->id])->delete();
     $this->actingAs(blogPostsIndexActor(['blog.view']));
 
     expect(blogPostsIndexTitles(Livewire::test(Index::class)->set('categoryFilter', $category->id)))->toBe([]);
@@ -547,7 +547,7 @@ test('a filter naming a trashed post\'s category still degrades cleanly and neve
 // =====================================================================
 
 test('confirmDelete() names the target from a freshly read row and opens the modal', function () {
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno']);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create();
     $this->actingAs(blogPostsIndexActor());
 
     Livewire::test(Index::class)
@@ -558,8 +558,8 @@ test('confirmDelete() names the target from a freshly read row and opens the mod
 });
 
 test('deleting a post soft-deletes it, closes the modal and removes it from the list', function () {
-    $post = BlogPost::factory()->create(['title' => 'Botas de invierno']);
-    $keeper = BlogPost::factory()->create(['title' => 'Keeper']);
+    $post = BlogPost::factory()->titled('Botas de invierno')->create();
+    $keeper = BlogPost::factory()->titled('Keeper')->create();
     $this->actingAs(blogPostsIndexActor());
 
     $component = Livewire::test(Index::class)

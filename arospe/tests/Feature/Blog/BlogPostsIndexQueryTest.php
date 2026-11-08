@@ -115,7 +115,7 @@ test('the list query fetches exactly the columns the row needs', function () {
     $lists = blogPostsQuerySelectedColumns(blogPostsQueryCapture(fn () => Livewire::test(Index::class)));
 
     // The first row-fetching select is the live list; the second is the trashed section's.
-    expect($lists[0])->toEqualCanonicalizing(['id', 'blog_category_id', 'title', 'status', 'published_at', 'created_at']);
+    expect($lists[0])->toEqualCanonicalizing(['id', 'blog_category_id', 'status', 'published_at', 'created_at']);
 });
 
 test('the trashed query is explicit too, and selects only trashed rows', function () {
@@ -234,9 +234,9 @@ test('neither scope returns a trashed post', function () {
 test('the trashed section\'s own query returns only trashed posts and ignores the active filters', function () {
     $guides = BlogCategory::factory()->create();
     $news = BlogCategory::factory()->create();
-    BlogPost::factory()->create(['title' => 'Live', 'blog_category_id' => $guides->id]);
-    BlogPost::factory()->create(['title' => 'Trashed in guides', 'blog_category_id' => $guides->id])->delete();
-    BlogPost::factory()->create(['title' => 'Trashed in news', 'blog_category_id' => $news->id])->delete();
+    BlogPost::factory()->titled('Live')->create(['blog_category_id' => $guides->id]);
+    BlogPost::factory()->titled('Trashed in guides')->create(['blog_category_id' => $guides->id])->delete();
+    BlogPost::factory()->titled('Trashed in news')->create(['blog_category_id' => $news->id])->delete();
 
     $component = Livewire::test(Index::class)->set('categoryFilter', $guides->id);
 
@@ -245,9 +245,9 @@ test('the trashed section\'s own query returns only trashed posts and ignores th
 });
 
 test('the trashed section is ordered most recently deleted first', function () {
-    BlogPost::factory()->create(['title' => 'Deleted long ago', 'deleted_at' => '2026-01-01 00:00:00']);
-    BlogPost::factory()->create(['title' => 'Deleted yesterday', 'deleted_at' => '2026-03-02 00:00:00']);
-    BlogPost::factory()->create(['title' => 'Deleted last week', 'deleted_at' => '2026-02-20 00:00:00']);
+    BlogPost::factory()->titled('Deleted long ago')->create(['deleted_at' => '2026-01-01 00:00:00']);
+    BlogPost::factory()->titled('Deleted yesterday')->create(['deleted_at' => '2026-03-02 00:00:00']);
+    BlogPost::factory()->titled('Deleted last week')->create(['deleted_at' => '2026-02-20 00:00:00']);
 
     expect(collect(Livewire::test(Index::class)->get('trashedPosts'))->pluck('title')->all())
         ->toBe(['Deleted yesterday', 'Deleted last week', 'Deleted long ago']);

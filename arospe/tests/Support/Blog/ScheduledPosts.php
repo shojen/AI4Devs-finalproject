@@ -23,6 +23,9 @@ final class ScheduledPosts
      * still works too (factory creation is unguarded, so a raw id override is honoured either way),
      * but $createdBy is the readable form for a test that already holds the User instance.
      *
+     * Story 0078: `title` and `body` in $overrides are routed to the factory's titled() state, because they
+     * live on blog_post_translations now; every other key stays a blog_posts column.
+     *
      * @param  array<string, mixed>  $overrides
      */
     public static function scheduled(int $secondsFromNow = -60, array $overrides = [], ?User $createdBy = null): BlogPost
@@ -31,7 +34,18 @@ final class ScheduledPosts
             $overrides['created_by'] = $createdBy->id;
         }
 
-        return BlogPost::factory()->scheduled()->create([
+        $factory = BlogPost::factory()->scheduled();
+
+        if (array_key_exists('title', $overrides) || array_key_exists('body', $overrides)) {
+            $factory = $factory->titled(
+                $overrides['title'] ?? fake()->unique()->sentence(4),
+                $overrides['body'] ?? null,
+            );
+        }
+
+        unset($overrides['title'], $overrides['body']);
+
+        return $factory->create([
             'published_at' => now()->addSeconds($secondsFromNow),
             ...$overrides,
         ]);

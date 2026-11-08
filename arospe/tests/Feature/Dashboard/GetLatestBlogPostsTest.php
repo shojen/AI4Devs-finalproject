@@ -32,7 +32,18 @@ afterEach(function () {
  */
 function postCreatedAgo(int $minutesAgo, string $state = 'published', array $attributes = []): BlogPost
 {
-    return BlogPost::factory()->{$state}()->create(array_merge([
+    $factory = BlogPost::factory()->{$state}();
+
+    if (array_key_exists('title', $attributes) || array_key_exists('body', $attributes)) {
+        $factory = $factory->titled(
+            $attributes['title'] ?? fake()->unique()->sentence(4),
+            $attributes['body'] ?? null,
+        );
+    }
+
+    unset($attributes['title'], $attributes['body']);
+
+    return $factory->create(array_merge([
         'created_at' => Carbon::now()->subMinutes($minutesAgo),
     ], $attributes));
 }
@@ -42,7 +53,11 @@ function postCreatedAgo(int $minutesAgo, string $state = 'published', array $att
  */
 function descriptionOfBody(?string $body): string
 {
-    postCreatedAgo(1, 'published', ['body' => $body]);
+    $post = postCreatedAgo(1, 'published', ['body' => $body]);
+
+    // The translation model's sanitizer hook rewrites a body on save (drops <script>, re-serializes
+    // tags), so the RAW body this action must cope with is written below the model layer.
+    DB::table('blog_post_translations')->where('blog_post_id', $post->id)->update(['body' => $body]);
 
     return app(GetLatestBlogPosts::class)()[0]['description'];
 }

@@ -177,7 +177,7 @@ describe('the buttons (D-10)', function () {
     // 0063's own screens.
     test('the primary button reads "Edit post" and points at the edit route; the set of hrefs is exactly the two real URLs', function () {
         $post = BlogPost::factory()->create();
-        $notification = new ScheduledBlogPostPublishFailed($post->id, $post->title, BlogPostPublishFailureStage::Publish);
+        $notification = new ScheduledBlogPostPublishFailed($post->id, $post->translated('title'), BlogPostPublishFailureStage::Publish);
         $mail = $notification->toMail(User::factory()->make());
         $html = (string) $mail->render();
 
@@ -197,7 +197,7 @@ describe('the buttons (D-10)', function () {
 
     test('a plain "All posts" link points at the posts index route', function () {
         $post = BlogPost::factory()->create();
-        $notification = new ScheduledBlogPostPublishFailed($post->id, $post->title, BlogPostPublishFailureStage::Publish);
+        $notification = new ScheduledBlogPostPublishFailed($post->id, $post->translated('title'), BlogPostPublishFailureStage::Publish);
         $html = (string) $notification->toMail(User::factory()->make())->render();
 
         expect($html)->toContain(trans('notifications.mail.blog_post_publish_failed.all_posts_link'))

@@ -81,8 +81,8 @@ test('updating a draft into published stores a real notification for each blog.v
 
     app(UpdateBlogPost::class)(
         $post,
-        $post->title,
-        $post->body,
+        $post->translated('title'),
+        $post->translated('body'),
         $post->blog_category_id,
         'published',
         null,
@@ -156,8 +156,8 @@ test('an update into published wrapped in a caller transaction that rolls back s
         DB::transaction(function () use ($post): void {
             app(UpdateBlogPost::class)(
                 $post,
-                $post->title,
-                $post->body,
+                $post->translated('title'),
+                $post->translated('body'),
                 $post->blog_category_id,
                 'published',
                 null,
@@ -185,8 +185,8 @@ test('updating a draft with no status change dispatches nothing', function () {
 
     app(UpdateBlogPost::class)(
         $post,
-        $post->title,
-        $post->body,
+        $post->translated('title'),
+        $post->translated('body'),
         $post->blog_category_id,
         'draft',
         null,
@@ -203,8 +203,8 @@ test('updating a scheduled post with its date edited but still in the future dis
 
     app(UpdateBlogPost::class)(
         $post,
-        $post->title,
-        $post->body,
+        $post->translated('title'),
+        $post->translated('body'),
         $post->blog_category_id,
         'scheduled',
         now()->addDays(3)->toDateTimeString(),
@@ -221,8 +221,8 @@ test('un-scheduling a post back into draft dispatches nothing', function () {
 
     app(UpdateBlogPost::class)(
         $post,
-        $post->title,
-        $post->body,
+        $post->translated('title'),
+        $post->translated('body'),
         $post->blog_category_id,
         'draft',
         null,
@@ -239,8 +239,8 @@ test('unpublishing a published post back into draft dispatches nothing', functio
 
     app(UpdateBlogPost::class)(
         $post,
-        $post->title,
-        $post->body,
+        $post->translated('title'),
+        $post->translated('body'),
         $post->blog_category_id,
         'draft',
         null,

@@ -4,15 +4,19 @@ namespace App\Actions\Blog;
 
 use App\Actions\Auth\LogRefusedPrivilegedAttempt;
 use App\Actions\Products\SanitizeProductDescription;
+use App\Actions\Translations\SetTranslation;
 use App\Concerns\BlogPostValidationRules;
 use App\Enums\BlogPostStatus;
 use App\Models\BlogPost;
+use App\Models\BlogPostTranslation;
+use App\Models\StoreLanguage;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class CreateBlogPost
 {
@@ -30,6 +34,7 @@ class CreateBlogPost
         private readonly SanitizeProductDescription $sanitizeBody,
         private readonly BlogBodyHasVisibleContent $bodyHasVisibleContent,
         private readonly NotifyBlogPostPublished $notifyBlogPostPublished,
+        private readonly SetTranslation $setTranslation,
     ) {}
 
     /**
@@ -72,10 +77,13 @@ class CreateBlogPost
     ): BlogPost {
         $this->logRefusedPrivilegedAttempt->authorize('create', BlogPost::class, targetType: 'blog_post');
 
+        $defaultLanguage = $this->defaultStoreLanguage();
+
         $title = trim($title);
         $status ??= BlogPostStatus::Draft->value;
         $this->assertBodyWithinSanitizerLimit($body);
         $body = $this->cleanBody($body);
+        $this->assertBodyWithinSanitizerLimit($body, trim: false);
 
         // An unrecognised status still yields a rule set, so every other error is reported in the
         // same pass; statusRules() is what refuses it.
@@ -94,7 +102,7 @@ class CreateBlogPost
                 'tag_names' => $tagNames,
             ],
             [
-                'title' => [...$this->titleRules(), ...$this->titleSlugRules()],
+                'title' => [...$this->titleRules(), ...$this->titleSlugRules($defaultLanguage->id)],
                 'body' => $this->bodyRules($ruleStatus),
                 'blog_category_id' => $this->blogCategoryIdRules(),
                 'status' => $this->statusRules(),
@@ -123,15 +131,15 @@ class CreateBlogPost
         $createdBy = Auth::id();
 
         try {
-            $post = DB::transaction(function () use ($title, $body, $blogCategoryId, $resolvedStatus, $resolvedPublishedAt, $tagNames, $createdBy): BlogPost {
+            $post = DB::transaction(function () use ($defaultLanguage, $title, $body, $blogCategoryId, $resolvedStatus, $resolvedPublishedAt, $tagNames, $createdBy): BlogPost {
                 $post = BlogPost::forceCreate([
-                    'title' => $title,
-                    'body' => $body,
                     'blog_category_id' => (string) $blogCategoryId,
                     'status' => $resolvedStatus,
                     'published_at' => $resolvedPublishedAt,
                     'created_by' => $createdBy,
                 ]);
+
+                ($this->setTranslation)($post, $defaultLanguage, ['title' => $title, 'body' => $body]);
 
                 ($this->syncBlogPostTags)($post, $tagNames);
 
@@ -141,7 +149,7 @@ class CreateBlogPost
             // 1062 = MySQL ER_DUP_ENTRY on the slug's unique index: a concurrent save claimed the
             // same slug between the pre-flight check above and this INSERT. SQLSTATE 23000 alone
             // would be too broad -- the category FK raises it too.
-            if (($e->errorInfo[1] ?? null) === 1062 && str_contains($e->getMessage(), 'slug')) {
+            if (($e->errorInfo[1] ?? null) === 1062 && str_contains($e->getMessage(), BlogPostTranslation::LANGUAGE_SLUG_UNIQUE_INDEX)) {
                 throw ValidationException::withMessages([
                     'title' => trans('validation.unique', ['attribute' => 'title']),
                 ]);
@@ -151,10 +159,23 @@ class CreateBlogPost
         }
 
         if ($post->status === BlogPostStatus::Published) {
+            // Drop any relation loaded before the write so the notification reads the stored title (D-17).
+            $post->unsetRelation('translations');
+
             DB::afterCommit(fn () => ($this->notifyBlogPostPublished)($post));
         }
 
         return $post;
+    }
+
+    /**
+     * The default store language, resolved once per save (0078 D-12); a missing one is a clear
+     * failure, never a null dereference.
+     */
+    private function defaultStoreLanguage(): StoreLanguage
+    {
+        return StoreLanguage::query()->where('is_default', true)->first()
+            ?? throw new RuntimeException('Cannot save a blog post: no default store language is configured.');
     }
 
     /**

@@ -4,6 +4,7 @@ use App\Enums\BlogPostStatus;
 use App\Enums\ProductStatus;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
+use App\Models\BlogPostTranslation;
 use App\Models\BlogTag;
 use App\Models\Customer;
 use App\Models\Order;
@@ -188,10 +189,12 @@ test('no blog post has the same tag attached twice', function () {
 });
 
 // Regression test: guards against a future `WithoutModelEvents` being added to the seeder, which
-// would silently bypass BlogPost::booted()'s `saving()` listener that derives `slug` from `title`.
-test('every seeded blog post has a non-empty slug derived from its title', function () {
+// would silently bypass BlogPostTranslation's `saving()` listener that derives `slug` from `title`.
+test('every seeded blog post has a default-language translation with a non-empty slug derived from its title', function () {
     (new DemoDataSeeder)();
 
-    expect(BlogPost::query()->where('slug', '')->orWhereNull('slug')->exists())->toBeFalse()
-        ->and(BlogPost::count())->toBe(10);
+    expect(BlogPostTranslation::query()->where('slug', '')->orWhereNull('slug')->exists())->toBeFalse()
+        ->and(BlogPost::count())->toBe(10)
+        ->and(BlogPost::query()->doesntHave('translations')->count())->toBe(0)
+        ->and(BlogPostTranslation::count())->toBe(10);
 });

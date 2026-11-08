@@ -66,10 +66,12 @@ describe('core behaviour', function () {
     test('only status and updated_at change on the row', function () {
         $post = ScheduledPosts::scheduled(overrides: ['title' => 'Botas de invierno', 'body' => '<p>Cuerpo</p>']);
         $before = ScheduledPosts::row($post);
+        $translationsBefore = DB::table('blog_post_translations')->where('blog_post_id', $post->id)->get()->map(fn (object $row): array => (array) $row)->all();
 
         Carbon::setTestNow(now()->addMinutes(5));
         app(PublishScheduledBlogPost::class)($post->id);
         $after = ScheduledPosts::row($post);
+        $translationsAfter = DB::table('blog_post_translations')->where('blog_post_id', $post->id)->get()->map(fn (object $row): array => (array) $row)->all();
 
         $changed = array_keys(array_diff_assoc($after, $before));
         sort($changed);
@@ -77,9 +79,10 @@ describe('core behaviour', function () {
         expect($changed)->toBe(['status', 'updated_at'])
             ->and($after['status'])->toBe('published')
             ->and($after['updated_at'])->toBe(now()->format('Y-m-d H:i:s'))
-            ->and($after['title'])->toBe('Botas de invierno')
-            ->and($after['slug'])->toBe($before['slug'])
-            ->and($after['body'])->toBe('<p>Cuerpo</p>')
+            ->and($translationsAfter)->toHaveCount(1)
+            ->and($translationsAfter)->toBe($translationsBefore)
+            ->and($translationsAfter[0]['title'])->toBe('Botas de invierno')
+            ->and($translationsAfter[0]['body'])->toBe('<p>Cuerpo</p>')
             ->and($after['blog_category_id'])->toBe($before['blog_category_id']);
     });
 

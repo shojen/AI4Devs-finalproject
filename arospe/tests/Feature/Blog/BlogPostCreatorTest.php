@@ -62,17 +62,17 @@ describe('migration shape (D-7)', function () {
     });
 
     // V-15 / the facilitator's own correction: blog_posts moves from four indexes to five the moment
-    // this FK lands. Mutation: a hand-written $table->index('created_by') added on top of
-    // constrained()'s own -- this pins the exact, sorted index-name list, so a redundant sixth index
+    // this FK lands; story 0078 then drops the slug unique with the moved column, so the list is
+    // four names again. Mutation: a hand-written $table->index('created_by') added on top of
+    // constrained()'s own -- this pins the exact, sorted index-name list, so a redundant fifth index
     // fails it just as loudly as a missing one.
-    test('blog_posts has exactly five indexes, with no hand-written index on created_by', function () {
+    test('blog_posts has exactly four indexes, with no hand-written index on created_by', function () {
         $indexNames = collect(Schema::getIndexes('blog_posts'))->pluck('name')->sort()->values()->all();
 
         expect($indexNames)->toBe([
             'blog_posts_blog_category_id_foreign',
             'blog_posts_created_by_foreign',
             'blog_posts_deleted_at_status_published_at_index',
-            'blog_posts_slug_unique',
             'primary',
         ]);
     });
@@ -161,9 +161,9 @@ describe('CreateBlogPost stamps the actor (D-7)', function () {
     });
 
     // created_by is deliberately absent from #[Fillable] (D-7): a forged value in a create() payload
-    // must be dropped, exactly like the sibling slug/published_at test in
-    // tests/Feature/Models/BlogPostTest.php ("slug and published_at are not mass-assignable, so
-    // forged values are replaced or dropped") -- this app enables no
+    // must be dropped, exactly like the sibling published_at test in
+    // tests/Feature/Models/BlogPostTest.php ("published_at is not mass-assignable and a forged slug
+    // never reaches the parent, so forged values are dropped") -- this app enables no
     // preventSilentlyDiscardingAttributes(), so the observable behaviour is a silent drop to null,
     // never a MassAssignmentException. Mutation: add created_by to #[Fillable].
     test('created_by is not mass-assignable through a plain create() payload', function () {
@@ -171,7 +171,6 @@ describe('CreateBlogPost stamps the actor (D-7)', function () {
         $other = User::factory()->create();
 
         $post = BlogPost::create([
-            'title' => 'Sandalias de verano',
             'blog_category_id' => $category->id,
             'status' => BlogPostStatus::Draft,
             'created_by' => $other->id,
@@ -231,7 +230,7 @@ describe('created_by is immutable once set (D-7)', function () {
         $other = User::factory()->create();
         $post = BlogPost::factory()->create(['created_by' => $creator->id]);
 
-        $post->update(['title' => 'Nuevo título', 'created_by' => $other->id]);
+        $post->update(['status' => BlogPostStatus::Draft, 'created_by' => $other->id]);
 
         expect($post->fresh()->created_by)->toBe($creator->id);
     });
