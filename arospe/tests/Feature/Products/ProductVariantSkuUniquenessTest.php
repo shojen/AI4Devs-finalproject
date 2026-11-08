@@ -251,7 +251,7 @@ test('renaming the parent product\'s SKU re-derives every one of its variants, i
     $variantS = app(CreateProductVariant::class)($product, [$tallaS->id], '19.99', 5);
 
     app(UpdateProduct::class)(...array_merge(
-        ['product' => $product],
+        ['product' => $product, 'slug' => null, 'metaTitle' => null, 'metaDescription' => null],
         skuUniquenessTestProductPayload([
             'name' => $product->translated('name'),
             'sku' => '0009',
@@ -274,7 +274,7 @@ test('re-derivation on a parent SKU change is all-or-nothing: a colliding case a
 
     try {
         app(UpdateProduct::class)(...array_merge(
-            ['product' => $product],
+            ['product' => $product, 'slug' => null, 'metaTitle' => null, 'metaDescription' => null],
             skuUniquenessTestProductPayload([
                 'name' => $product->translated('name'),
                 'sku' => '0009',
@@ -342,7 +342,7 @@ test('every stored SKU equals the derivation of its current parent SKU and curre
     $assertGlobalConsistency();
 
     app(UpdateProduct::class)(...array_merge(
-        ['product' => $productA],
+        ['product' => $productA, 'slug' => null, 'metaTitle' => null, 'metaDescription' => null],
         skuUniquenessTestProductPayload([
             'name' => $productA->translated('name'),
             'sku' => '0009',
@@ -449,7 +449,7 @@ test('F-1: changing the parent product\'s SKU to a length that pushes a variant 
 
     try {
         app(UpdateProduct::class)(...array_merge(
-            ['product' => $product],
+            ['product' => $product, 'slug' => null, 'metaTitle' => null, 'metaDescription' => null],
             skuUniquenessTestProductPayload([
                 'name' => $product->translated('name'),
                 'sku' => str_repeat('9', 64),
@@ -612,7 +612,7 @@ test('R-4: a parent SKU change that makes one variant\'s new SKU equal a sibling
     // it found variantXQ's still-un-updated row and wrongly refused the whole update, even though
     // variantXQ's own sku moves away from 'P-X-Q' (to 'P-X-X-Q') inside this same batch.
     app(UpdateProduct::class)(...array_merge(
-        ['product' => $product],
+        ['product' => $product, 'slug' => null, 'metaTitle' => null, 'metaDescription' => null],
         skuUniquenessTestProductPayload([
             'name' => $product->translated('name'),
             'sku' => 'P-X',
@@ -697,7 +697,7 @@ test('F-6: a variant-cascade collision surfaces via the parent_sku_change_collid
 
     try {
         app(UpdateProduct::class)(...array_merge(
-            ['product' => $product],
+            ['product' => $product, 'slug' => null, 'metaTitle' => null, 'metaDescription' => null],
             skuUniquenessTestProductPayload([
                 'name' => $product->translated('name'),
                 'sku' => '0009',

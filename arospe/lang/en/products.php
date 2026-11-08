@@ -174,8 +174,16 @@ return [
         ],
     ],
 
+    // Story 0076a -- the per-language slug and SEO field names.
+    'attributes' => [
+        'slug' => 'slug',
+        'meta_title' => 'meta title',
+        'meta_description' => 'meta description',
+    ],
+
     // Story 0027 -- the routed product editor.
     'editor' => [
+        'concurrent_save_retry' => 'Someone else saved this product at the same moment. Reload the page and try again.',
         'title_create' => 'New product',
         'title_edit' => 'Edit product',
         'name_label' => 'Name',

@@ -23,11 +23,13 @@
 // column names ProductValidationRules' own aggregate productRules() uses internally.
 
 use App\Actions\Products\SyncProductSalesRegions;
+use App\Actions\Translations\SetTranslation;
 use App\Livewire\Products\Editor;
 use App\Models\Media;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\SalesRegion;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -859,4 +861,35 @@ test('a save by a denied actor writes nothing across products, product_media and
     expect(Product::count())->toBe(0)
         ->and(DB::table('product_media')->count())->toBe(0)
         ->and(DB::table('product_sales_region')->count())->toBe(0);
+});
+
+// Story 0076a (D-33): UpdateProduct now requires slug and the two meta fields, and the editor has no
+// input for them yet. An edit made today must pass the stored values back instead of clearing them.
+test('saving an existing product through the editor preserves its stored slug and SEO fields', function () {
+    $actor = productsEditorFullActor();
+    $this->actingAs($actor);
+
+    $product = Product::factory()->active()->named('Runner Pro')->create(['sku' => 'RNR-001']);
+    $language = StoreLanguage::query()->where('is_default', true)->sole();
+
+    app(SetTranslation::class)($product, $language, [
+        'slug' => 'runner-pro',
+        'meta_title' => 'Runner Pro title',
+        'meta_description' => 'Runner Pro description',
+    ]);
+
+    fillEditorForm(
+        Livewire::test(Editor::class, ['product' => $product]),
+        editorValidPayload(['name' => 'Runner Pro renamed', 'sku' => 'RNR-001', 'productCategoryId' => $product->product_category_id]),
+    )->call('save')->assertHasNoErrors();
+
+    $row = DB::table('product_translations')
+        ->where('product_id', $product->id)
+        ->where('store_language_id', $language->id)
+        ->first();
+
+    expect($row->name)->toBe('Runner Pro renamed')
+        ->and($row->slug)->toBe('runner-pro')
+        ->and($row->meta_title)->toBe('Runner Pro title')
+        ->and($row->meta_description)->toBe('Runner Pro description');
 });

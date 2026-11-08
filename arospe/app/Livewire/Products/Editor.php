@@ -127,6 +127,16 @@ class Editor extends Component
     #[Locked]
     public array $galleryPreviews = [];
 
+    // --- story 0076a D-33: default-language SEO fields carried through save() until 0077 adds inputs ---
+    #[Locked]
+    public ?string $slug = null;
+
+    #[Locked]
+    public ?string $metaTitle = null;
+
+    #[Locked]
+    public ?string $metaDescription = null;
+
     // --- modal open flags, each the #[Modelable] target of one Gallery instance (D-8) ---
     public bool $showFeaturedGallery = false;
 
@@ -167,6 +177,9 @@ class Editor extends Component
             if ($translation->store_language_id === $defaultLanguageId) {
                 $this->name = $translation->name;
                 $this->description = $translation->description ?? '';
+                $this->slug = $translation->slug;
+                $this->metaTitle = $translation->meta_title;
+                $this->metaDescription = $translation->meta_description;
 
                 break;
             }
@@ -468,6 +481,9 @@ class Editor extends Component
                     $this->featuredMediaId,
                     $this->galleryMediaIds,
                     $this->description,
+                    null,
+                    null,
+                    null,
                 )
                 : $update(
                     $product,
@@ -481,6 +497,9 @@ class Editor extends Component
                     $this->featuredMediaId,
                     $this->galleryMediaIds,
                     $this->description,
+                    $this->slug,
+                    $this->metaTitle,
+                    $this->metaDescription,
                 );
 
             $syncRegions($saved, $this->regionIds);

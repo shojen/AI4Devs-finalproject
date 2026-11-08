@@ -32,6 +32,8 @@ class CreateProduct
         private readonly SyncProductGallery $syncProductGallery,
         private readonly SanitizeProductDescription $sanitizeProductDescription,
         private readonly SetTranslation $setTranslation,
+        private readonly CanonicalizeProductSlug $canonicalizeProductSlug,
+        private readonly TranslateProductUniqueViolation $translateProductUniqueViolation,
     ) {}
 
     /**
@@ -96,6 +98,9 @@ class CreateProduct
         ?string $featuredMediaId,
         array $orderedGalleryMediaIds,
         ?string $description = null,
+        ?string $slug = null,
+        ?string $metaTitle = null,
+        ?string $metaDescription = null,
     ): Product {
         $this->logRefusedPrivilegedAttempt->authorize('create', Product::class, targetType: 'product');
 
@@ -114,6 +119,8 @@ class CreateProduct
         // reassign $description so both the Validator::make() array below and the
         // DB::transaction() closure further down read the sanitized value.
         $description = ($this->sanitizeProductDescription)($description);
+        // 0076a D-6: canonicalise BEFORE validating so the unique rule compares the stored form.
+        $slug = ($this->canonicalizeProductSlug)($slug);
 
         Validator::make(
             [
@@ -127,8 +134,15 @@ class CreateProduct
                 'description' => $description,
                 'featured_media_id' => $featuredMediaId,
                 'gallery_media_ids' => $orderedGalleryMediaIds,
+                'slug' => $slug,
+                'meta_title' => $metaTitle,
+                'meta_description' => $metaDescription,
             ],
-            $this->productRules(),
+            $this->productRules() + [
+                'slug' => $this->productSlugRules($defaultLanguage->id),
+                'meta_title' => $this->productMetaTitleRules(),
+                'meta_description' => $this->productMetaDescriptionRules(),
+            ],
         )->validate();
 
         // Guaranteed non-null by the `required` + Rule::enum() rules above;
@@ -156,6 +170,9 @@ class CreateProduct
                 $featuredMediaId,
                 $orderedGalleryMediaIds,
                 $defaultLanguage,
+                $slug,
+                $metaTitle,
+                $metaDescription,
             ): Product {
                 // Story 0029 D-4.5/D-4.7: SKUs are one namespace across `products` AND
                 // `product_variants` -- a product may not claim a string some variant already
@@ -188,6 +205,9 @@ class CreateProduct
                 ($this->setTranslation)($product, $defaultLanguage, [
                     'name' => $name,
                     'description' => $description,
+                    'slug' => $slug,
+                    'meta_title' => $metaTitle,
+                    'meta_description' => $metaDescription,
                 ]);
 
                 ($this->syncProductGallery)($product, $featuredMediaId, $orderedGalleryMediaIds);
@@ -203,17 +223,7 @@ class CreateProduct
             // Rule::exists() validation and this INSERT would raise a
             // genuine FK violation (also SQLSTATE 23000) that must not be
             // misreported as "the sku is taken".
-            if (($e->errorInfo[1] ?? null) === 1062) {
-                // The unique index is the last-word RACE guard behind the
-                // validation rule above, not the primary defence (D-11) --
-                // converted to the same clean ValidationException shape
-                // App\Actions\Users\CreateUser already uses for `email`.
-                throw ValidationException::withMessages([
-                    'sku' => trans('validation.unique', ['attribute' => 'sku']),
-                ]);
-            }
-
-            throw $e;
+            throw ($this->translateProductUniqueViolation)($e);
         }
     }
 }

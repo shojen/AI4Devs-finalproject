@@ -97,3 +97,13 @@ closed earlier and are not backfilled here (read their `done/` files or `docs/`)
 - Accepted: F-3 concurrent first update of a post lacking a default row gives an unhandled 1062 on the post/language unique (500) - story 0078.
 - Test lessons recorded in `docs/errors-log.md` (Pest helper-name clashes, derived expectations, `??=` defaults, failure injection via a model `saving` hook, serial chunks) - story 0078.
 
+
+## Story 0076a — Product slug and SEO fields (backend)
+
+- `product_translations` gained `slug` VARCHAR(160), `meta_title` VARCHAR(160), `meta_description` VARCHAR(500), all nullable, no backfill; `UNIQUE(store_language_id, slug)` named `product_translations_language_slug_unique`; still exactly three indexes because the composite supports the `store_language_id` FK and the migration drops `product_translations_store_language_id_foreign` when present; `down()` restores a plain index before dropping the unique (1553) — story 0076a (D-5, D-6, D-11b, D-34).
+- `App\Actions\Products\CanonicalizeProductSlug` is the single slug canonicaliser (trim, `Str::slug`, blank becomes `NULL`), used by the actions before validating and by the `ProductTranslation` `saving` hook (which also trims meta fields) — story 0076a (D-6, D-30).
+- `ProductValidationRules::productSlugRules(string $storeLanguageId, ?string $productId = null)` excludes the own row by `product_id !=`, never `->ignore()`; plus `productMetaTitleRules()` / `productMetaDescriptionRules()` — story 0076a.
+- `CreateProduct`/`UpdateProduct` take trailing `?string $slug, $metaTitle, $metaDescription` (defaults `null` on create, required on update); `SetTranslation` writes them with name/description in the same transaction — story 0076a.
+- `TranslateProductUniqueViolation` maps a 1062 by index name (`products_sku_unique` to `sku`, language-slug to `slug`, product-language natural key to `name` with `products.editor.concurrent_save_retry`); otherwise rethrows. Resolves 0076's deferred R-22 — story 0076a (D-31).
+- `Products\Editor` has `#[Locked] ?string $slug/$metaTitle/$metaDescription` (default language) passed unchanged on edit, `null` on create, until 0077 adds inputs — story 0076a (D-33).
+- New lang keys: `products.attributes.{slug,meta_title,meta_description}`, `products.editor.concurrent_save_retry` (en/es) — story 0076a.

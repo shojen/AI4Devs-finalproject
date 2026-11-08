@@ -79,13 +79,13 @@ test('the factory default description is plain text that needs no sanitizing', f
     expect($translation->description === null || app(SanitizeProductDescription::class)($translation->description) === $translation->description)->toBeTrue();
 });
 
-test('only name and description are fillable, and a forged product_id or store_language_id is ignored', function () {
+test('only the content columns are fillable, and a forged product_id or store_language_id is ignored', function () {
     $product = Product::factory()->withoutTranslations()->create();
     $victim = Product::factory()->withoutTranslations()->create();
     $language = StoreLanguage::factory()->default()->create();
     $otherLanguage = StoreLanguage::factory()->create();
 
-    expect((new ProductTranslation)->getFillable())->toBe(['name', 'description']);
+    expect((new ProductTranslation)->getFillable())->toBe(['name', 'description', 'slug', 'meta_title', 'meta_description']);
 
     $translation = new ProductTranslation([
         'name' => 'Forjado',

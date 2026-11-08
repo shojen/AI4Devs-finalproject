@@ -83,7 +83,7 @@ function makeUpdatableProduct(string $sku = 'RNR-001', ?string $categoryId = nul
 function updateProductWith(Product $product, array $overrides = []): Product
 {
     return app(UpdateProduct::class)(...array_merge(
-        ['product' => $product],
+        ['product' => $product, 'slug' => null, 'metaTitle' => null, 'metaDescription' => null],
         updateProductPayload(array_merge(
             ['sku' => $product->sku, 'productCategoryId' => $product->product_category_id],
             $overrides,

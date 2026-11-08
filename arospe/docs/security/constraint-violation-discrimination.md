@@ -76,8 +76,9 @@ $isNameCollision = ($e->errorInfo[1] ?? null) === 1062
   `getMessage()` match between its two `product_variants` indexes. There the effect is limited to
   choosing between two `ValidationException` messages, because the parameter type already guarantees a
   1062. It should be moved to the rule above when that file is next touched.
+- `App\Actions\Products\TranslateProductUniqueViolation` (story 0076a) follows the rule: it checks `errorInfo[1] === 1062`, matches `errorInfo[2]` with the anchored `for key '(?:[^']+\.)?<index>'$` pattern for `products_sku_unique`, `product_translations_language_slug_unique` and `product_translations_product_language_unique`, never `getMessage()`, and rethrows the original `QueryException` for any other index.
 - [derived-column-invariants/retry-and-transaction-hazards.md](derived-column-invariants/retry-and-transaction-hazards.md#confirmed-safe-causedbyconcurrencyerror-matches-a-message-not-a-class)
   records the framework-side form of the same hazard: `causedByConcurrencyError()` matches message
   text, and a validation message can contain that text.
 
-_Last updated: 2026-09-28 — created by story 0070's Phase 4 audit (finding F-1)._
+_Last updated: 2026-11-08 — story 0076a added `TranslateProductUniqueViolation` as a rule-compliant translator; created by story 0070's Phase 4 audit (finding F-1)._

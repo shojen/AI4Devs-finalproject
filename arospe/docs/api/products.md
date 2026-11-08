@@ -13,4 +13,4 @@ This document is split into parts so an agent reads only the one its task touche
 | [product-attribute-types.index](products/product-attribute-types.md) | the task touches the product attribute types screen. | `product-attribute-types.index` |
 | [Media Gallery and WYSIWYG editor (routeless components)](products/routeless-components.md) | you embed the shared media gallery modal or the WYSIWYG editor in another screen. | `App\Livewire\Media\Gallery`; `App\Livewire\Components\WysiwygEditor` |
 
-_Last updated: 2026-11-06 — Story 0076: no route changed; [products.index / .create / .edit](products/products-index-and-editor.md) now reads names from `product_translations` (default language, `—` placeholder). Earlier content current from stories 0027-0071._
+_Last updated: 2026-11-08 — Story 0076a: no route changed; the [Editor](products/products-index-and-editor.md) gained three `#[Locked]` default-language SEO properties (`$slug`, `$metaTitle`, `$metaDescription`). Earlier content current from stories 0027-0076._
