@@ -50,7 +50,8 @@ backend (related_task_id: 0094, 0094a) | includes database-expert: no
 - **D-7** — The stock call runs after the item write and before `RecalculateOrderTotals`, in the same transaction; lock order
   `orders → order_items → products → product_variants` (0088a FD-7).
 - **D-8** — A line with a `null` stock target (0088 D1/D9) moves no stock in either mode; its counters still follow D-2/D-3 (kept
-  consistent in case they are read).
+  consistent in case they are read). R is not meaningful for a null-target line (an orphaned line raised with `adjustStock: true`
+  keeps U, so R grows although nothing was deducted); tests skip the R = ledger-out check for it.
 - **D-9 (user D7)** — No new permission, no `products.edit`.
 
 ## Gherkin

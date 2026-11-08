@@ -95,7 +95,7 @@ Feature: Cancelling an order returns stock only when the order administrator ask
     And "Mug" stock is unchanged
 
   Scenario: Removing a line after a cancellation with stock return returns nothing more
-    Given an order administrator, with a cancelled order whose "Mug" units were returned to stock on cancellation
+    Given an order administrator, with a cancelled order with lines of "Mug" and "Plate", whose units were returned to stock on cancellation
     When the order administrator removes the "Mug" line and adjusts stock
     Then "Mug" stock is unchanged
 

@@ -40,11 +40,11 @@ backend (related_task_id: 0096) | includes database-expert: no
   cannot be returned to it.") — en + es, identical key sets.
 - **D-3** — "All refunded units" and "Some units" are UI modes only (0096); the action always receives explicit per-line units.
 - **D-4** — Stock validation runs after the existing outstanding-units guard and before any write. Writes, in order: refunds rows
-  → **`OrderItem::applyRefundToStockCounters(f, k)` for every refunded line, null-target lines included** (0088 FD-6: the `over`
-  transfer U → K always runs; k is the requested units for lines whose stock was actually adjusted, 0 otherwise — so k depends
-  on the ids `AdjustOrderStock` reports as applied, the `over` transfer does not) + `refunded_quantity` (unchanged) →
-  `AdjustOrderStock` → `refunded_amount` / `payment_status` (unchanged) → commit → dispatch (unchanged). The stock call is made
-  before the counters are persisted so the applied ids are known; all inside the same transaction.
+  → read R per line on the locked items (taken from before this refund) → `AdjustOrderStock` → **`OrderItem::applyRefundToStockCounters(f, k_applied)`
+  for every refunded line, null-target lines included** (0088 FD-2/FD-6: the `over` transfer U → K always runs; `k_applied` is the requested
+  units for lines whose stock was actually adjusted, 0 otherwise — so k depends on the ids `AdjustOrderStock` reports as applied, the
+  `over` transfer does not) + `refunded_quantity` (unchanged) → `refunded_amount` / `payment_status` (unchanged) → commit → dispatch
+  (unchanged). The stock call is made before the counters are persisted so the applied ids are known; all inside the same transaction.
 - **D-5 (user D5)** — `AutoCancelFullyRefundedOrder` unchanged and stock-free.
 - **D-6 (user D7)** — No authorization change; `Gate::authorize('orders.refund')` stays first.
 
