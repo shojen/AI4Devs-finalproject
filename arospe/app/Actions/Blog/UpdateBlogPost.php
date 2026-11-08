@@ -105,6 +105,7 @@ class UpdateBlogPost
         $title = trim($title);
         $this->assertBodyWithinSanitizerLimit($body);
         $body = $this->cleanBody($body);
+        $this->assertBodyWithinSanitizerLimit($body, trim: false);
 
         $ruleStatus = BlogPostStatus::tryFrom($status) ?? BlogPostStatus::Draft;
         $publishedAt = $ruleStatus === BlogPostStatus::Draft || $publishedAt === null || trim($publishedAt) === ''

@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use LogicException;
 
 /**
  * Story 0078: one row per (blog post, store language). `title` and `body` are form-supplied and so
@@ -51,11 +52,19 @@ class BlogPostTranslation extends Model
     protected static function booted(): void
     {
         static::saving(function (self $translation): void {
-            if ($translation->isDirty('title')) {
+            if ($translation->isDirty('title') || $translation->isDirty('slug')) {
                 $translation->slug = Str::slug($translation->title);
             }
 
             if ($translation->isDirty('body')) {
+                // Fail closed: the sanitizer TRUNCATES input past its limit (possibly mid-tag), so an
+                // oversized body is refused here instead of being stored cut off.
+                $max = (int) config('html-sanitizer.max_input_length', -1);
+
+                if ($translation->body !== null && $max > 0 && strlen($translation->body) > $max) {
+                    throw new LogicException('Blog post body exceeds the sanitizer input limit.');
+                }
+
                 $translation->body = app(SanitizeProductDescription::class)($translation->body);
             }
         });

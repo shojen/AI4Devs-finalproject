@@ -83,6 +83,7 @@ class CreateBlogPost
         $status ??= BlogPostStatus::Draft->value;
         $this->assertBodyWithinSanitizerLimit($body);
         $body = $this->cleanBody($body);
+        $this->assertBodyWithinSanitizerLimit($body, trim: false);
 
         // An unrecognised status still yields a rule set, so every other error is reported in the
         // same pass; statusRules() is what refuses it.

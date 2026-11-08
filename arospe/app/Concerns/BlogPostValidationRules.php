@@ -106,13 +106,16 @@ trait BlogPostValidationRules
      * body would be silently cut off, possibly mid-tag. Checked on the raw submission, before
      * sanitizing, so the limit is a visible validation error instead of lost content (D-4b).
      *
+     * Pass `$trim = false` for the SANITIZED body, so the measure is exactly the bytes the translation
+     * model's saving hook sees.
+     *
      * @throws ValidationException
      */
-    protected function assertBodyWithinSanitizerLimit(?string $rawBody): void
+    protected function assertBodyWithinSanitizerLimit(?string $rawBody, bool $trim = true): void
     {
         $max = (int) config('html-sanitizer.max_input_length', -1);
 
-        if ($rawBody !== null && $max > 0 && strlen(trim($rawBody)) > $max) {
+        if ($rawBody !== null && $max > 0 && strlen($trim ? trim($rawBody) : $rawBody) > $max) {
             throw ValidationException::withMessages([
                 'body' => trans('validation.max.string', ['attribute' => 'body', 'max' => $max]),
             ]);
