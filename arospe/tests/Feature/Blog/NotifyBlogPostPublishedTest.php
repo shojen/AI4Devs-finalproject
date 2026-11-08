@@ -158,11 +158,11 @@ test('title is a frozen snapshot: renaming the post after dispatch leaves the st
     $recipient = User::factory()->create();
     $recipient->givePermissionTo('blog.view');
 
-    $post = BlogPost::factory()->published()->create(['title' => 'Guía de invierno']);
+    $post = BlogPost::factory()->published()->titled('Guía de invierno')->create();
 
     app(NotifyBlogPostPublished::class)($post);
 
-    $post->update(['title' => 'Botas de invierno']);
+    $post->translations()->sole()->update(['title' => 'Botas de invierno']);
 
     $row = DB::table('notifications')
         ->where('notifiable_id', $recipient->id)

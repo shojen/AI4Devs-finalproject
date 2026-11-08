@@ -10,7 +10,7 @@ use Tests\TestCase;
 uses(TestCase::class);
 
 // Story 0061. Proves the trait's shape in isolation; the behaviour needing a real row (a colliding
-// slug, an existing category) is pinned in tests/Feature/Blog.
+// per-language slug, an existing category) is pinned in tests/Feature/Blog.
 
 function blogPostValidationRulesHarness(): object
 {
@@ -22,6 +22,12 @@ function blogPostValidationRulesHarness(): object
         public function title(): array
         {
             return $this->titleRules();
+        }
+
+        /** @return array<int, mixed> */
+        public function titleSlug(string $storeLanguageId, ?string $ignoreBlogPostId = null): array
+        {
+            return $this->titleSlugRules($storeLanguageId, $ignoreBlogPostId);
         }
 
         /** @return array<int, mixed> */
@@ -59,6 +65,18 @@ function blogPostValidationRulesHarness(): object
 it('titleRules() is required/string/max at the column width', function () {
     expect(blogPostValidationRulesHarness()->title())->toBe(['required', 'string', 'max:'.BlogPost::TITLE_MAX_LENGTH])
         ->and(BlogPost::TITLE_MAX_LENGTH)->toBe(255);
+});
+
+it('titleSlugRules() takes the store language id as a required first parameter and the ignored post id as an optional second', function () {
+    $parameters = (new ReflectionMethod(BlogPostValidationRules::class, 'titleSlugRules'))->getParameters();
+
+    expect($parameters)->toHaveCount(2)
+        ->and($parameters[0]->getName())->toBe('storeLanguageId')
+        ->and((string) $parameters[0]->getType())->toBe('string')
+        ->and($parameters[0]->isOptional())->toBeFalse()
+        ->and($parameters[1]->getName())->toBe('ignoreBlogPostId')
+        ->and($parameters[1]->isOptional())->toBeTrue()
+        ->and(blogPostValidationRulesHarness()->titleSlug('language-id'))->toHaveCount(1);
 });
 
 it('blogCategoryIdRules() is required/string plus an exists rule on blog_categories.id', function () {

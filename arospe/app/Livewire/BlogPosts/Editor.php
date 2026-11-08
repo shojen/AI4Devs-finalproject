@@ -51,7 +51,7 @@ use Livewire\Component;
  * new tag (`blog.create`) is a UI hint only -- the disabled control changes no server behaviour, and
  * the action's own refusal remains the control.
  *
- * Written against the pre-Epic-5 schema (`blog_posts.title/body`, `blog_tags.name`, since moved to `blog_tag_translations`).
+ * Title and body live on `blog_post_translations` (story 0078) and tag names on `blog_tag_translations`.
  */
 #[Title('Blog post editor')]
 class Editor extends Component
@@ -126,7 +126,14 @@ class Editor extends Component
         }
 
         $this->blogPostId = $blogPost->id;
-        $this->title = $blogPost->title;
+        // The RAW default-language row via a fresh query, never a fallback (0073 D-6, 0078 D-14): a
+        // post with no default-language row opens blank rather than copying another language in.
+        $defaultLanguage = StoreLanguage::query()->where('is_default', true)->first();
+        $defaultTranslation = $defaultLanguage === null
+            ? null
+            : $blogPost->translations()->where('store_language_id', $defaultLanguage->id)->first();
+
+        $this->title = $defaultTranslation->title ?? '';
         $this->blogCategoryId = $blogPost->blog_category_id;
         $this->status = $blogPost->status->value;
         // Seconds precision, on purpose: a minute-precision value would resubmit 10:20:00 for a post
@@ -134,7 +141,7 @@ class Editor extends Component
         // exemption would not apply and retitling an overdue Scheduled post would be refused (R-9).
         // The application timezone is UTC, and so is the value.
         $this->publishedAt = $blogPost->published_at?->format('Y-m-d\TH:i:s') ?? '';
-        $this->body = $blogPost->body ?? '';
+        $this->body = $defaultTranslation->body ?? '';
         $compareTranslatedNames = app(CompareTranslatedNames::class);
 
         // A tag with no name in the default language (after a default change) still shows, under
