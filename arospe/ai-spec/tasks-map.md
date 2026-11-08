@@ -18,6 +18,14 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-11-08, Phase 2 re-review #4): `0088` split; new pending file `0088a-order-stock-auto-deduct-on-create-and-add-backend.md`.** User decision (0088 OQ-5, option (a)): `0088` keeps the counters only (migration, helpers, counter maintenance in `CreateOrder`/`AddOrderItem` — new lines written stock-neutral —, `RecordRefund` and `UpdateOrderItemQuantity`; no stock movement, safe to ship alone), and the new `0088a` (suffix per the `0076a` precedent) adds `AdjustOrderStock` and the automatic deduction. Dependencies re-derived from the files: `0088a` → `0088`; `0090`, `0091` → `0088a` (and `0088`); `0092b` → `0088a` (and `0088`), `0092a`. Graph: new node `P0088a` (yellow `pending`); the edges `P0088 --> P0090/P0091/P0092b` are replaced by `P0088 --> P0088a --> P0090/P0091/P0092b` (the direct `0088` dependency in those files is transitive). Registry: `0088a` entry added (`blocked`), `0088.touches` narrowed (no `AdjustOrderStock`, no stock tests) and `0088.title` updated; `0088` ↔ `0092a` `conflict_risk_with` kept (both edit `RecordRefund.php`). Inventory: 15 numbered pending. Also: 0088 OQ-4 (virtual products) and 0090 OQ-5 (stock adjustment on a cancelled order) are now user-confirmed. Link check: every relative link and anchor in the eleven series files resolves; the new file's inbound links (0088, 0090, 0091, 0092a, 0092b) resolve.
+
+**Update (2026-11-08, Phase 2 re-review #3): order-stock series rewritten in place.** The reviewer's ledger simulation showed the counter `stock_undeducted_quantity` must hold only non-refunded units; every refund now moves the units it takes from the undeducted ones into the second counter, renamed `stock_refunded_not_out_quantity` (formerly `stock_refund_returned_quantity`, mentioned in the note below). Because refunds without restock and quantity changes without stock adjustment already exist, `0088` now also maintains both counters in `RecordRefund` and `UpdateOrderItemQuantity` (no stock movement). Registry: `0088.touches` gains `app/Actions/Orders/RecordRefund.php`, `app/Actions/Orders/UpdateOrderItemQuantity.php` and `tests/Feature/Orders/OrderStockCountersTest.php`; a new symmetric `conflict_risk_with` pair **`0088` ↔ `0092a`** (both edit `RecordRefund.php`, no dependency between them); `0088` → `0090`/`0092b` already sequence the other shared files. A new dashed edge `P0088 -.-> P0092a` is drawn. No file was created, moved, renamed or deleted; dependencies and statuses unchanged. **Open (user decision pending):** 0088's OQ-5 recommends splitting it into `0088` (counters only, new lines stock-neutral) and `0088a` (deduction); if accepted, `0090`, `0091` and `0092b` would depend on `0088a`. Link check: every relative link and anchor in the ten series files resolves (0088's counter-model heading changed again; its inbound anchor from 0090 was updated).
+
+**Update (2026-11-08, Phase 2 re-review): order-stock series rewritten in place, no structural change.** The user replaced the single stock counter with **two counters** (`order_items.stock_undeducted_quantity` and `order_items.stock_refund_returned_quantity`, 0088 D8 revised, user-confirmed 2026-11-08); `0088`, `0090`, `0091`, `0092b`, `0094a` and `0096` were aligned to it, and `0092a`, `0093`, `0094`, `0095` received the re-review's other rewrites. No file was created, moved, renamed or deleted, and no story's "Dependencies" section changed, so the graph, `depends_on`, `status` and `conflict_risk_with` are unchanged (re-derived and verified; only `tasks-status.json`'s `generated_at` moved). `touches` unchanged: the migration file name and the action/test files listed per story are the same. Link check: every relative link and anchor in the ten series files resolves (0088's counter-model heading changed; its two inbound anchors, in 0088 and 0090, were updated). All stories remain pending re-review; none is approved.
+
+**Update (2026-11-08, later): the order-stock series was restructured after its Phase 2 INVEST review** (user decisions; all stories rewritten and pending re-review, none approved). Changes: **`0089` merged into `0088`** — `0088` now also makes `CreateOrder`/`AddOrderItem` deduct stock; the file `0089-order-stock-auto-deduct-on-create-and-add-backend.md` was deleted and the number retired (no stub kept: a stub in `ai-spec/tasks/` would read as pending work and need a registry entry). **`0092` split** into `0092a` (`RecordRefund` locks the order first, no behaviour change, `ready`) and `0092b` (refund stock return, blocked on `0088` + `0092a`); the file `0092-order-refund-stock-return-backend.md` was deleted. **`0094` split** into `0094` (quantity dialog, renamed to `0094-order-line-quantity-stock-dialog-ui.md`) and new `0094a` (removal dialog, blocked on `0090` + `0093` + `0094`), suffix style per the `0076a` precedent. Dependencies re-derived from each file: `0090`, `0091` → `0088`; `0092b` → `0088`, `0092a`; `0094` → `0090`, `0093`; `0094a` → `0090`, `0093`, `0094`; `0095` → `0091`, `0093`, `0094`; `0096` → `0092b`. Pairs: `0090`/`0094`+`0094a`, `0091`/`0095`, `0092b`/`0096`. `conflict_risk_with`: `0090`↔`0091`; `0092b`, `0094`, `0094a`, `0095`, `0096` pairwise on `Show.php` / `show.blade.php` / `lang/{en,es}/orders.php`. Link check, both directions: the three deleted/renamed basenames have no remaining Markdown link anywhere in the repository (only this file's prose and the regenerated registry mention them); every relative link and anchor in the ten series files resolves. No entry was claimed, so no claim was carried or dropped.
+
 **Update (2026-11-08): nine new pending files `0088`–`0096` added — the order-stock series** (Phase 1 Three Amigos output; Phase 2 not run). Epic 3 follow-up bug fix: no order flow touched stock. Backend first: `0088` (counter column + backfill + `AdjustOrderStock`, `ready`, includes `database-expert`), `0089` (auto-deduct on create/add, blocked on `0088`), `0090` (quantity/removal opt-in), `0091` (cancel opt-in), `0092` (refund stock return + lock-order fix) — each of `0090`–`0092` blocked on `0088` and `0089`. Frontend: `0093` (confirm-dialog second choice, `ready`), `0094` (line stock dialog, blocked on `0090` + `0093`), `0095` (cancel stock dialog, blocked on `0091` + `0093` + `0094`), `0096` (refund modal, blocked on `0092`). Fullstack pairs (`related_task_id`): `0090`/`0094`, `0091`/`0095`, `0092`/`0096`. `conflict_risk_with`: `0090`↔`0091` (one shared test file), and `0092`/`0094`/`0095`/`0096` pairwise on `app/Livewire/Orders/Show.php`, `show.blade.php` and `lang/{en,es}/orders.php`. OQ-1 (counter model) and OQ-2 (deleted-variant detection, new `order_items.ordered_as_variant` column) were resolved by the user the same day as option (a) and are recorded as decisions D8/D9 in `0088`; no story in the series has a blocking question left, and OQ-3–OQ-5 run on assumed defaults not yet user-confirmed. Dependencies unchanged. Link check: every relative link in the nine new files resolves (anchors verified); no file moved, so no inbound links to repoint.
 
 **Update (2026-11-08): `0078-translatable-content-retrofit-blog-posts-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0078-translatable-content-retrofit-blog-posts-backend`). Its node, its inventory row, its `claimed` class membership and both edges touching it (`P0078 --> P0079`, `P0078 -.-> P0087`) are dropped from the graph. It joins the flat `done/` inventory: the Epic 5 count was recounted from the directory as 13 once merged with the 0076a closure, and `done/` now holds 107 files. Its `tasks-status.json` entry (the `claimed` one) is deleted. Dependents recomputed: `0079` had `0078` as its only pending dependency, so `depends_on` is now empty and it moves `blocked` -> `ready` (green). `0087` drops `0078` from `conflict_risk_with`, so the pairing stays symmetric. No other entry changed, and no node is `claimed` now. `ai-spec/tasks/in-progress/` is empty again. Link check: this is a same-depth move (`in-progress/` -> `done/`), so the moved file's 31 outbound links were re-verified, and its `](../done/…)` links became bare siblings; all resolve, fragments included. Inbound links were repointed from `in-progress/0078-…` to `done/0078-…` in `0079` (2) and from `../in-progress/0078-…` to the bare sibling in `done/0063` (6), `done/0064` (6), `done/0064b` (1), `done/0065` (10), `done/0076` (1) and `done/0082` (1); all resolve. No `docs/` page, digest or `../readme.md` links to the file.
@@ -399,7 +407,7 @@ graph and from the parallelization analysis below.
 
 - [Inventory](#inventory)
   - [Done (100) — shipped, out of scope for this graph](#done-100--shipped-out-of-scope-for-this-graph)
-  - [Pending — not started (13 numbered + 1 infra doc)](#pending--not-started-13-numbered--1-infra-doc)
+  - [Pending — not started (14 numbered + 1 infra doc)](#pending--not-started-14-numbered--1-infra-doc)
 - [Dependency graph (pending tasks only)](#dependency-graph-pending-tasks-only)
 - [Analysis](#analysis)
   - [Pending tasks that are independent of each other and safe to parallelize](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
@@ -523,7 +531,7 @@ appears as a node in the dependency graph below:
   0084 — Order mark as paid (backend), closed 2026-10-02: adds `MarkOrderAsPaid` and the `order_payments` table; its one
   dependent, 0085, drops it and moves to `ready`.
 
-### Pending — not started (13 numbered + 1 infra doc)
+### Pending — not started (14 numbered + 1 infra doc)
 
 Re-derived 2026-11-08 from the files actually present in `ai-spec/tasks/` (`0078` closed to `done/`); `0088`–`0096` added 2026-11-08. The earlier table still listed `0072`, `0074`, `0084` and `0085`, all of which are in `done/`.
 
@@ -532,13 +540,15 @@ Re-derived 2026-11-08 from the files actually present in `ai-spec/tasks/` (`0078
 | 0077 | Product editor — language tabs (UI) | Epic 5 — i18n |
 | 0079 | Blog post editor — language tabs (frontend) | Epic 5 — i18n |
 | 0087 | Translation write actions refuse an inactive store language | Epic 5 — i18n |
-| 0088 | Order stock adjustment foundation — returned-units counter and `AdjustOrderStock` (backend) | Epic 3 — Orders (stock) |
-| 0089 | Orders deduct stock automatically on create / add line (backend) | Epic 3 — Orders (stock) |
+| 0088 | Order stock foundation — stock-tracking columns, counter helpers and counter maintenance, no stock movement (backend) | Epic 3 — Orders (stock) |
+| 0088a | Orders deduct stock automatically on create / add line — `AdjustOrderStock` (backend; split from 0088) | Epic 3 — Orders (stock) |
 | 0090 | Line quantity changes and removal adjust stock only on request (backend) | Epic 3 — Orders (stock) |
 | 0091 | Order cancellation returns stock only on request (backend) | Epic 3 — Orders (stock) |
-| 0092 | Refund stock return + refund lock-order fix (backend) | Epic 3 — Orders (stock) |
+| 0092a | `RecordRefund` locks the order before its lines — no behaviour change (backend) | Epic 3 — Orders (stock) |
+| 0092b | Refunds can return refunded units to stock (backend) | Epic 3 — Orders (stock) |
 | 0093 | Confirmation dialog — optional second choice (frontend) | Epic 3 — Orders (stock) |
-| 0094 | Order detail — line quantity/removal stock dialog (frontend) | Epic 3 — Orders (stock) |
+| 0094 | Order detail — quantity-change stock dialog (frontend) | Epic 3 — Orders (stock) |
+| 0094a | Order detail — line-removal stock dialog (frontend) | Epic 3 — Orders (stock) |
 | 0095 | Order detail — cancel stock dialog (frontend) | Epic 3 — Orders (stock) |
 | 0096 | Order detail — refund modal stock return (frontend) | Epic 3 — Orders (stock) |
 | _(no number)_ | Infrastructure fix: no test suite can open a database connection (local fresh setup or CI) — **status: already fixed and documented**, kept out of the numbering and out of the dependency graph below | Infrastructure |
@@ -580,35 +590,45 @@ flowchart LR
 
     subgraph PEND_STOCK["Epic 3 — Order stock (bug fix)"]
         direction TB
-        P0088["0088 Stock foundation BE (+DB)"]
-        P0089["0089 Auto-deduct create/add BE"]
+        P0088["0088 Stock counters BE (+DB)"]
+        P0088a["0088a AdjustOrderStock + auto-deduct BE"]
         P0090["0090 Quantity/removal opt-in BE"]
         P0091["0091 Cancel opt-in BE"]
-        P0092["0092 Refund stock return BE"]
+        P0092a["0092a RecordRefund lock order BE"]
+        P0092b["0092b Refund stock return BE"]
         P0093["0093 Confirm dialog 2nd choice UI"]
-        P0094["0094 Line stock dialog UI"]
+        P0094["0094 Quantity stock dialog UI"]
+        P0094a["0094a Removal stock dialog UI"]
         P0095["0095 Cancel stock dialog UI"]
         P0096["0096 Refund modal stock UI"]
     end
-    P0088 --> P0089
-    P0088 --> P0090
-    P0088 --> P0091
-    P0088 --> P0092
-    P0089 --> P0090
-    P0089 --> P0091
-    P0089 --> P0092
+    %% (P0089 merged into P0088 and P0092 split into P0092a/P0092b on 2026-11-08; their nodes and edges are dropped.)
+    %% (P0088 --> P0090/P0091/P0092b replaced by P0088 --> P0088a --> … on 2026-11-08, review #4 split.)
+    P0088 --> P0088a
+    P0088a --> P0090
+    P0088a --> P0091
+    P0088a --> P0092b
+    P0092a --> P0092b
     P0090 --> P0094
     P0093 --> P0094
+    P0090 --> P0094a
+    P0093 --> P0094a
+    P0094 --> P0094a
     P0091 --> P0095
     P0093 --> P0095
     P0094 --> P0095
-    P0092 --> P0096
+    P0092b --> P0096
     P0090 -.-> P0091
+    P0088 -.-> P0092a
+    P0092b -.-> P0094
+    P0092b -.-> P0094a
+    P0092b -.-> P0095
+    P0094a -.-> P0095
     P0094 -.-> P0096
+    P0094a -.-> P0096
     P0095 -.-> P0096
-    P0092 -.-> P0094
-    class P0088,P0093 ready;
-    class P0089,P0090,P0091,P0092,P0094,P0095,P0096 pending;
+    class P0088,P0092a,P0093 ready;
+    class P0088a,P0090,P0091,P0092b,P0094,P0094a,P0095,P0096 pending;
 
     %% Standalone (no PRD epic)
     %% (P0082's own node dropped: 0082 closed to done/ this pass, per the update at the top of this file.)
@@ -702,7 +722,7 @@ here); yellow (`pending`) = still blocked on at least one open pending dependenc
 ### Pending tasks that are independent of each other and safe to parallelize
 
 These are the tasks whose **entire dependency chain is already `done/`** — nothing pending blocks
-them — the five green `ready` nodes in the diagram above (`0076a`, `0078`, `0087`, `0088`, `0093` as of 2026-11-08). (`0046`–`0054` and `0057` all had the
+them — the green `ready` nodes in the diagram above (`0077`, `0078`, `0087`, `0088`, `0092a`, `0093` as of the 2026-11-08 restructure). (`0046`–`0054` and `0057` all had the
 identical property in their own turn — but none of them is listed anywhere in this section any
 more: each closed to `done/` in this or a prior regeneration pass, so per this file's own "`done/`
 tasks are omitted from the graph" rule none has a node at all any more. See the note at the top of
@@ -794,7 +814,7 @@ into `ready` (**0067** has since closed too, 2026-10-02); **0070**'s closure
 freed **0071**, **0072**, **0074**, **0076** and **0078** into `ready`, all five with zero pending
 dependencies of their own left.
 
-**Order-stock series (added 2026-11-08):** `0088` (backend foundation) and `0093` (shared dialog UI) have no pending dependency and touch disjoint files, so they can run in parallel with each other and with the Epic 5 `ready` tasks. Once `0089` is done, `0091` and `0092` can run in parallel (disjoint files); `0090` and `0091` share one test file, so coordinate them or run them in sequence.
+**Order-stock series (added 2026-11-08, restructured the same day):** `0088` (backend counters), `0092a` (`RecordRefund` lock order) and `0093` (shared dialog UI) have no pending dependency, so they can run in parallel with each other and with the Epic 5 `ready` tasks — except that `0088` and `0092a` both edit `app/Actions/Orders/RecordRefund.php` (`conflict_risk_with`), so coordinate those two. Once `0088` and then `0088a` are done, `0090` and `0091` share one test file (coordinate or sequence); `0092b` additionally needs `0092a`.
 
 ### Pending tasks that must be sequenced
 
@@ -856,7 +876,7 @@ parallelization one. The major chains, in the order they must be executed:
    queries need a follow-up correction once each retrofit lands. It is drawn dashed in the graph to
    reflect that it is a "will need revisiting" relationship, not a blocking prerequisite.
 
-**Order-stock chain (added 2026-11-08):** `0088` → `0089` → {`0090`, `0091`, `0092`}; then `0090` + `0093` → `0094` → `0095` (`0095` also needs `0091`); `0092` → `0096`. Ship `0088` and `0089` together: lines created between the two would get a counter of 0 without a deduction (0088 R-1).
+**Order-stock chain (restructured 2026-11-08):** `0088` → `0088a` → {`0090`, `0091`}; `0088a` + `0092a` → `0092b` → `0096`; `0090` + `0093` → `0094` → `0094a`; `0091` + `0093` + `0094` → `0095`. There is no release window between `0088` and `0088a`: `0088` writes new lines stock-neutral, so it is safe to ship alone.
 
 ### File/merge-conflict risk even where no formal dependency exists
 
@@ -901,7 +921,7 @@ in [`ai-spec/tasks-status.json`](tasks-status.json):
   own `conflict_risk_with` arrays in [`ai-spec/tasks-status.json`](tasks-status.json) rather than
   left pointing at a task the registry no longer lists at all.)
 
-- **Order-stock UI stories share the order detail screen** (added 2026-11-08) — `0094`, `0095` and `0096` all edit `app/Livewire/Orders/Show.php`, `resources/views/livewire/orders/show.blade.php` and `lang/{en,es}/orders.php`; `0092` edits the same lang files. They are paired in `conflict_risk_with`, and should run one at a time. `0090`↔`0091` share `tests/Feature/Orders/RemoveOrderItemStockTest.php`.
+- **Order-stock UI stories share the order detail screen** (added 2026-11-08) — `0094`, `0094a`, `0095` and `0096` all edit `app/Livewire/Orders/Show.php`, `resources/views/livewire/orders/show.blade.php` and `lang/{en,es}/orders.php`; `0092b` edits the same lang files; `0092a`/`0092b` both edit `RecordRefund.php` (sequenced by their dependency). They are paired in `conflict_risk_with`, and should run one at a time. `0090`↔`0091` share `tests/Feature/Orders/RemoveOrderItemStockTest.php`.
 
 ### Scope and known limitations of this map
 
