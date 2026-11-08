@@ -1,38 +1,42 @@
 # [0096] Order detail — the refund modal asks whether to return stock (frontend)
 
-> **Status: New — Phase 1 (Three Amigos) output, Phase 2 (INVEST) not run.** Epic 3 follow-up bug fix, part 9 of the
-> order-stock series 0088–0096. Fullstack pair: **related_task_id 0092** (backend `RecordRefund` `stockReturns`). Blocked on
-> [0092](0092-order-refund-stock-return-backend.md).
+> **Status: New — Phase 1 output, rewritten after the Phase 2 INVEST review of 2026-11-08; pending re-review.** Epic 3
+> follow-up bug fix, order-stock series. Fullstack pair: **related_task_id 0092b** (backend `RecordRefund` `stockReturns`).
+> Blocked on [0092b](0092b-order-refund-stock-return-backend.md).
+> **User-confirmed (2026-11-08):** an over-typed stock-return amount is **clamped silently** to the units refunded on that line.
 
 ## Description
-The refund modal gains a "Return to stock" choice: **None** (default), **All refunded units**, or **Some units** — the last one
-shows, for each line being refunded, a number input bounded by the units refunded on that line in this refund. The server
-turns the choice into explicit per-line units, clamps and validates them, and passes them to `RecordRefund`.
+The refund modal gains a "Return to stock" choice: **None** (default), **All refunded units**, or **Some units**. "Some units"
+shows a number input for every refundable line with a stock target; the server clamps each value to the units refunded on that
+line in this refund, validates, and passes explicit per-line units to `RecordRefund`.
 
 ## Type
-frontend (related_task_id: 0092) | includes database-expert: no
+frontend (related_task_id: 0092b) | includes database-expert: no
 
 ## Verified facts that shaped the story
-- Today: `openRefundModal()` (authorizes `orders.refund`, no-op when not `isRefundable()`), `closeRefundModal()`,
-  `recordRefund(RecordRefund)` which builds `$items` from `refundQuantities` (positive ints only), refuses an empty selection with
-  `orders.refunds.nothing_selected`, and renders a `ValidationException` as the `refund` error. Hooks `record-refund`,
-  `refund-modal`, `refund-quantity-{id}`, `refund-confirm`.
-- The refund control is absent when the payment state refuses and disabled without `orders.refund` (story 0055).
+- Today: `openRefundModal()` (authorizes `orders.refund`, no-op when not `isRefundable()`), `closeRefundModal()` (calls
+  `syncRefundInputs()`), `recordRefund(RecordRefund)` which builds `$items` from `refundQuantities` (positive ints only), refuses an
+  empty selection with `orders.refunds.nothing_selected`, and renders a `ValidationException` as the `refund` error. Hooks
+  `record-refund`, `refund-modal`, `refund-quantity-{id}`, `refund-confirm`.
+- `refundQuantities` inputs use **deferred** `wire:model`: the server does not know the refund quantities until submit, so it cannot
+  decide per keystroke which lines get a stock input.
 
-## Decisions (frontend-expert design, accepted)
-- **D-1 (user D5)** — `public string $refundStockReturn = 'none'` (`none|all|partial`) as a `flux:radio.group`; default `none`
-  every time the modal opens (reset in `openRefundModal()` / `closeRefundModal()`).
-- **D-2** — `public array $refundStockQuantities = []` (item id → string, bound per line, shown only in `partial` mode and only for
-  lines with a refund quantity > 0 and a stock target — D1). Strings, not ints (epic-3 digest: a cleared number box unsets an int).
-- **D-3 — Server mapping.** `none` → `[]`; `all` → every refunded line with a stock target → its refund quantity; `partial` →
-  each entry cast to int and clamped to `0 … refund quantity for that line`; ids not in the current refund are dropped. The
-  backend still validates everything (0092 D-2); the UI never relies on the clamp for safety. An unknown mode value is treated as
-  a validation error, never as `none`.
-- **D-4** — `partial` with a total of 0 units blocks submit with `orders.refunds.stock_partial_empty` ("Choose at least one unit to
-  return, or pick None").
-- **D-5 — Copy.** Group label "Return to stock"; options "None", "All refunded units", "Some units"; per-line helper "Up to :max".
-  Keys under `orders.refunds.stock_*` (en + es, identical sets). Backend refusals (e.g. units already back in stock, 0088 D8 cap enforced by 0092)
-  render as the existing `refund` error.
+## Decisions
+- **D-1 (user D5)** — `public string $refundStockReturn = 'none'` (`none|all|partial`) as a `flux:radio.group`. `none` every time
+  the modal opens: `openRefundModal()` and `syncRefundInputs()` (hence `closeRefundModal()`) reset **both** `refundStockReturn`
+  and `refundStockQuantities`.
+- **D-2 — Inputs without live round-trips (chosen over `wire:model.live`).** In `partial` mode, a stock input is rendered for
+  **every refundable line with a stock target** (lines with outstanding units and `stockTarget()` not null), regardless of what is
+  typed in the refund column; helper text "Up to the units you refund on this line". `public array $refundStockQuantities = []`
+  (item id → string; strings, not ints — epic-3 digest). The refund quantities stay deferred; no `.live` binding is added.
+- **D-3 — Server mapping on submit.** `none` → `[]`; `all` → every refunded line with a stock target → its refund quantity;
+  `partial` → each entry cast to int and **clamped silently** to `0 … refund quantity for that line in this submit` (user-confirmed);
+  entries for lines not refunded in this submit or not on this order are dropped. An unknown mode value is a validation error,
+  never treated as `none`. The backend still validates everything (0092b D-2).
+- **D-4** — `partial` with a mapped total of 0 blocks submit with `orders.refunds.stock_partial_empty` ("Choose at least one unit
+  to return, or pick None").
+- **D-5 — Copy.** Group label "Return to stock"; options "None", "All refunded units", "Some units"; keys under
+  `orders.refunds.stock_*` (en + es). Backend refusals (e.g. units already back in stock, 0088 D8 cap) render as the `refund` error.
 - **D-6 — Hooks.** `refund-stock-return` (group), `refund-stock-return-{none|all|partial}`, `refund-stock-quantity-{id}`.
 - **D-7 (user D7)** — `orders.refund` only; no new permission.
 
@@ -41,76 +45,87 @@ frontend (related_task_id: 0092) | includes database-expert: no
 Feature: The refund modal lets the order administrator return refunded units to stock
 
   Scenario: The refund modal returns nothing to stock by default
-    Given an order administrator with refund rights, on a paid order with 4 units of "Mug"
+    Given an order administrator who may refund, on a paid order with 4 units of "Mug"
     When the order administrator opens the refund modal
     Then "Return to stock" is set to none
 
+  Scenario: Reopening the modal forgets a previous stock choice
+    Given an order administrator who may refund, who chose "Some units" with 1 unit for "Mug" and then closed the refund modal
+    When the order administrator opens the refund modal again
+    Then "Return to stock" is set to none and no unit is entered
+
   Scenario: Refunding without returning stock
-    Given an order administrator with refund rights, with the refund modal open for 2 units of "Mug", and "Mug" has 10 units in stock
+    Given an order administrator who may refund, with the refund modal open for 2 units of "Mug", and "Mug" has 10 units in stock
     When the order administrator confirms the refund leaving "Return to stock" at none
     Then the refund is recorded
     And "Mug" still has 10 units in stock
 
   Scenario: Returning all refunded units
-    Given an order administrator with refund rights, with the refund modal open for 2 units of "Mug" and "All refunded units" chosen
+    Given an order administrator who may refund, with the refund modal open for 2 units of "Mug" and "All refunded units" chosen
     When the order administrator confirms the refund
     Then "Mug" stock rises by 2
 
-  Scenario: Choosing some units shows one input per refunded line
-    Given an order administrator with refund rights, with the refund modal open for 2 units of "Mug" and 1 unit of "Plate"
+  Scenario: Choosing some units shows one input per refundable stock-tracked line
+    Given an order administrator who may refund, with the refund modal open on an order with "Mug" and "Plate" lines
     When the order administrator chooses to return some units
-    Then an input up to 2 is shown for "Mug" and an input up to 1 is shown for "Plate"
+    Then an input is shown for "Mug" and an input is shown for "Plate"
 
   Scenario: Returning some units
-    Given an order administrator with refund rights, with the refund modal open for 3 units of "Mug" and "Some units" chosen with 1 unit for "Mug"
+    Given an order administrator who may refund, with the refund modal open for 3 units of "Mug" and "Some units" chosen with 1 unit for "Mug"
     When the order administrator confirms the refund
     Then "Mug" stock rises by 1
 
+  Scenario: A typed amount above the refunded units is limited to the refunded units
+    Given an order administrator who may refund, with the refund modal open for 2 units of "Mug" and "Some units" chosen with 5 units for "Mug"
+    When the order administrator confirms the refund
+    Then "Mug" stock rises by 2
+
+  Scenario: Units entered for a line that is not being refunded are ignored
+    Given an order administrator who may refund, with the refund modal open for 2 units of "Mug" only, and "Some units" chosen with 1 unit for "Mug" and 1 unit for "Plate"
+    When the order administrator confirms the refund
+    Then "Mug" stock rises by 1
+    And "Plate" stock is unchanged
+
   Scenario: Choosing some units but none in total is blocked
-    Given an order administrator with refund rights, with the refund modal open and "Some units" chosen with 0 units on every line
+    Given an order administrator who may refund, with the refund modal open and "Some units" chosen with 0 units on every line
     When the order administrator confirms the refund
     Then the order administrator is asked to choose at least one unit or pick none
     And no refund is recorded
 
-  Scenario: A typed amount above the refunded units is limited to the refunded units
-    Given an order administrator with refund rights, with the refund modal open for 2 units of "Mug" and "Some units" chosen with 5 units for "Mug"
-    When the order administrator confirms the refund
-    Then "Mug" stock rises by 2
-
   Scenario: A line whose variant was deleted is not offered for stock return
-    Given an order administrator with refund rights, with the refund modal open for a line of a variant since deleted
+    Given an order administrator who may refund, with the refund modal open on an order holding a line of a variant since deleted
     When the order administrator chooses to return some units
     Then no input is shown for that line
 
   Scenario: A backend refusal is shown in the modal
-    Given an order administrator with refund rights, with the refund modal open for units that were already returned to stock on cancellation and "All refunded units" chosen
+    Given an order administrator who may refund, with the refund modal open for units that were already returned to stock on cancellation and "All refunded units" chosen
     When the order administrator confirms the refund
     Then the modal explains that those units are already back in stock
     And no refund is recorded
 ```
 
 ## Files to create/modify
-- `app/Livewire/Orders/Show.php` — D-1 … D-4; `recordRefund()` passes `stockReturns:`.
+- `app/Livewire/Orders/Show.php` — D-1 … D-4; `syncRefundInputs()` resets the stock state; `recordRefund()` passes `stockReturns:`.
 - `resources/views/livewire/orders/show.blade.php` — radio group and per-line inputs inside `refund-modal`.
 - `lang/en/orders.php`, `lang/es/orders.php` — `orders.refunds.stock_*`.
 - `tests/Feature/Orders/ShowRefundStockTest.php` — new; `tests/Feature/Orders/ShowRefundTest.php` — regression only.
 - `tests/Browser/Orders/OrderRefundStockReturnTest.php` — new.
 
 ## Tests to perform
-- [ ] Livewire: default `none` on every open; `all` maps to every refunded line's units; `partial` clamps, drops foreign ids, ignores lines not refunded now; `partial` total 0 blocked; unknown mode refused.
+- [ ] Livewire: default `none` on every open; reopen after close resets both properties (via `syncRefundInputs()`).
+- [ ] Livewire mapping: `all` → every refunded stock-target line's units; `partial` clamps silently, drops lines not refunded now and foreign ids; `partial` total 0 blocked; unknown mode refused.
 - [ ] Livewire: stock and counter asserted after each mode (real action, not a mock).
-- [ ] Security: forged `refundStockQuantities` keys (another order's line) never reach a stock write (dropped by mapping, refused by backend).
-- [ ] Backend refusal rendered as the `refund` error; modal stays open; nothing written.
-- [ ] Lang parity.
+- [ ] Inputs rendered for every refundable stock-target line in `partial`, none for null-target lines; no `wire:model.live` on refund quantities.
+- [ ] Security: forged `refundStockQuantities` keys never reach a stock write.
+- [ ] Backend refusal rendered as the `refund` error; modal stays open; nothing written. Lang parity.
 - [ ] Browser: radio group keyboard-operable, inputs appear only in `partial`, explicit labels, 44px targets, mobile stacking, dark mode.
 
 ## Expected outcome
-Recording a refund lets the administrator put none, all or some of the refunded units back in stock, with no way to return more
-than is being refunded.
+Recording a refund lets the administrator put none, all or some of the refunded units back in stock, never more than is refunded.
 
 ## Acceptance criteria
-- [ ] Default is none; stock moves only on an explicit choice.
-- [ ] Partial inputs are bounded per line and a zero total is blocked.
+- [ ] Default is none, reset on every open and close; stock moves only on an explicit choice.
+- [ ] Partial inputs are clamped silently per line (user-confirmed) and a zero total is blocked.
 - [ ] Server-side mapping plus backend validation; no client value trusted.
 - [ ] en/es copy complete; existing refund hooks preserved.
 
@@ -122,22 +137,22 @@ than is being refunded.
 - [ ] Acceptance criteria met
 
 ## INVEST note
-Independent: needs 0092 only (shares files with 0094/0095, no logical dependency). Negotiable: clamp vs error (R-1, assumed default). Valuable: refunded goods can be put back with the refund itself. Estimable/Small: one modal section and one mapping method. Testable: Livewire mapping tests per mode plus browser checks.
+Independent: needs 0092b only (shares files with 0094/0094a/0095, no logical dependency). Negotiable: copy. Valuable: refunded
+goods can be put back with the refund itself. Estimable/Small: one modal section and one mapping method. Testable: Livewire mapping
+tests per mode plus browser checks.
 
 ## Dependencies, risks, open technical questions
-**Depends on:** [0092](0092-order-refund-stock-return-backend.md) (hard). Shares `Show.php`, `show.blade.php` and `lang/*/orders.php`
-with [0094](0094-order-line-quantity-and-removal-stock-dialog-ui.md) and [0095](0095-order-cancellation-stock-dialog-ui.md) — no
-logical dependency, but run sequentially to avoid merge conflicts.
-
-- **Resolved (0088 D8, user decision 2026-11-08)** — the backend caps every stock return at the units still held out of
-  inventory; "All refunded units" on a line already back in stock is refused by 0092 and shown as the `refund` error. The UI
-  does not pre-clamp to that cap (the backend is the only judge).
-- **R-1 — Clamp vs error: assumed default (clamp), not yet user-confirmed.** The clamp in D-3 silently lowers an over-typed
-  value to the line's refund quantity (scenario "limited to the refunded units"). If the owner prefers an explicit error
-  instead, change D-3 before Phase 3.
+**Depends on:** [0092b](0092b-order-refund-stock-return-backend.md) (hard). Shares `Show.php`, `show.blade.php` and
+`lang/*/orders.php` with [0094](0094-order-line-quantity-stock-dialog-ui.md), [0094a](0094a-order-line-removal-stock-dialog-ui.md)
+and [0095](0095-order-cancellation-stock-dialog-ui.md) — run sequentially.
+- **Resolved (0088 D8)** — the backend caps every stock return at the units still held out of inventory; the UI shows its refusal
+  and does not pre-clamp to that cap.
 
 ## Debate record
 - 2026-11-08 — Three Amigos facilitated by product-owner from the frontend-expert design and decisions D1, D5, D7.
+- 2026-11-08 — Phase 2 review applied: inputs for every refundable stock-target line with server-side clamp (no `.live`), stock
+  state reset through `syncRefundInputs()`, silent clamp user-confirmed, actor wording.
 
 ## Approval record
-- Phase 1: complete 2026-11-08 (product-owner). Phase 2: pending.
+- Phase 1: complete 2026-11-08 (product-owner).
+- Phase 2: INVEST review 2026-11-08: findings received → rewritten, pending re-review.
