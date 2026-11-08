@@ -18,7 +18,9 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
-**Update (2026-11-08): `0078-translatable-content-retrofit-blog-posts-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 2 approved after three `code-reviewer` re-confirmations, then Phase 3 step 0; claimed by `worktree-0078-translatable-content-retrofit-blog-posts-backend`). It is still pending work, so it keeps its node and edges (`P0078 --> P0079`, `P0078 -.-> P0087`); its node moves from the green `ready` class to the blue `claimed` class and its `tasks-status.json` entry becomes `"claimed"` (`depends_on` still empty, `touches` and `conflict_risk_with` as set in the previous note). Link check, both directions: the moved file's own relative links were repointed one level deeper (`](done/…)` to `](../done/…)`, `](../../docs/…)` to `](../../../docs/…)`, bare `](00NN…)` sibling links to `](../00NN…)`) and all resolve; inbound links were repointed in `0079` (`](0078-…md)` to `](in-progress/0078-…md)`) and in `done/0063`, `done/0064`, `done/0064b`, `done/0065`, `done/0076`, `done/0082` (`](../0078-…md)` to `](../in-progress/0078-…md)`); a search found no stale link left. `ai-spec/tasks/in-progress/` holds exactly this one file.
+**Update (2026-11-08): `0078-translatable-content-retrofit-blog-posts-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0078-translatable-content-retrofit-blog-posts-backend`). Its node, its inventory row, its `claimed` class membership and both edges touching it (`P0078 --> P0079`, `P0078 -.-> P0087`) are dropped from the graph. It joins the flat `done/` inventory: the Epic 5 count was recounted from the directory as 12, and `done/` now holds 106 files. Its `tasks-status.json` entry (the `claimed` one) is deleted. Dependents recomputed: `0079` had `0078` as its only pending dependency, so `depends_on` is now empty and it moves `blocked` -> `ready` (green). `0087` drops `0078` from `conflict_risk_with`, so the pairing stays symmetric. No other entry changed, and no node is `claimed` now. `ai-spec/tasks/in-progress/` is empty again. Link check: this is a same-depth move (`in-progress/` -> `done/`), so the moved file's 31 outbound links were re-verified, and its `](../done/…)` links became bare siblings; all resolve, fragments included. Inbound links were repointed from `in-progress/0078-…` to `done/0078-…` in `0079` (2) and from `../in-progress/0078-…` to the bare sibling in `done/0063` (6), `done/0064` (6), `done/0064b` (1), `done/0065` (10), `done/0076` (1) and `done/0082` (1); all resolve. No `docs/` page, digest or `../readme.md` links to the file.
+
+**Update (2026-11-08, superseded by the closure above): `0078-translatable-content-retrofit-blog-posts-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 2 approved after three `code-reviewer` re-confirmations, then Phase 3 step 0; claimed by `worktree-0078-translatable-content-retrofit-blog-posts-backend`). It is still pending work, so it keeps its node and edges (`P0078 --> P0079`, `P0078 -.-> P0087`); its node moves from the green `ready` class to the blue `claimed` class and its `tasks-status.json` entry becomes `"claimed"` (`depends_on` still empty, `touches` and `conflict_risk_with` as set in the previous note). Link check, both directions: the moved file's own relative links were repointed one level deeper (`](done/…)` to `](../done/…)`, `](../../docs/…)` to `](../../../docs/…)`, bare `](00NN…)` sibling links to `](../00NN…)`) and all resolve; inbound links were repointed in `0079` (`](0078-…md)` to `](in-progress/0078-…md)`) and in `done/0063`, `done/0064`, `done/0064b`, `done/0065`, `done/0076`, `done/0082` (`](../0078-…md)` to `](../in-progress/0078-…md)`); a search found no stale link left. `ai-spec/tasks/in-progress/` holds exactly this one file.
 
 **Update (2026-11-08): `0078-translatable-content-retrofit-blog-posts-backend.md` rewritten against the shipped Epic 5 code and Phase 2 reviewed** (Q-1 resolved as option (a); no file moved and no hard dependency edge changed; the only graph change is the soft edge described below). Its `tasks-status.json` `touches` is widened to the real write set (the readers, factories, seeder and the affected test directories) and its drop-migration glob corrected to `*_drop_translatable_columns_from_blog_posts_table.php`. It shares no file with `0076a`. The second Phase 2 re-confirmation added `tests/Support/Dashboard/DomainQueryLog.php`, `tests/Feature/StoreLanguages/**` and `tests/Unit/**` to its `touches`; the `tests/Unit/**` and `tests/Feature/Blog/**` globs cover files `0087` writes (`tests/Unit/ArchitectureTest.php`, `tests/Feature/Blog/SetBlogCategoryTranslationTest.php`), so `0078` and `0087` now list each other in `conflict_risk_with` (symmetric) and the graph gains the dashed edge `P0078 -.-> P0087`. The 0078 story does not actually need to edit either file; the entry is a conservative glob overlap.
 
@@ -470,7 +472,7 @@ appears as a node in the dependency graph below:
   0055 — Orders list + detail/editor UI, the eighteenth story to close and the epic's terminal node:
   nothing named it as a hard dependent, so its closure re-derives no `depends_on`/`status` change
   against this pending list.
-- **Epic 5 — Internationalization (6):** 0076 — Translatable content retrofit, Products backend (closed 2026-11-07): `product_translations` replaces `products.name`/`description`; its dependent `0076a` drops it and moves to `ready`, `0077` drops it and stays `blocked` on `0076a`. 0073 — Blog Categories screen language tabs (frontend), the eighth Epic 5 story to close (2026-10-08): per-language names through tabs, no pending dependent. 0071 — Product Categories taxonomy screen language tabs (frontend), the sixth Epic 5 story to close (2026-10-07): ships the shared `<x-language-tab-strip>`; its dependents 0073/0075/0079 drop it from `depends_on`. 0067 — Admin UI language switcher (frontend), the fourth Epic 5 story to close (2026-10-02): the first personal-language control (account-menu switcher plus a Settings Language tab); it had no hard dependent, and its only pairing, `0069`, drops it from `conflict_risk_with`. 0068 — Store Languages catalog + the app's two
+- **Epic 5 — Internationalization (12, recounted 2026-11-08 from `done/`: 0066-0076 and 0078):** 0078 — Translatable content retrofit, Blog Posts backend (closed 2026-11-08): `blog_post_translations` replaces `blog_posts.title`/`slug`/`body`; its dependent `0079` drops it and moves to `ready`, and `0087` drops it from `conflict_risk_with`. 0076 — Translatable content retrofit, Products backend (closed 2026-11-07): `product_translations` replaces `products.name`/`description`; its dependent `0076a` drops it and moves to `ready`, `0077` drops it and stays `blocked` on `0076a`. 0073 — Blog Categories screen language tabs (frontend), the eighth Epic 5 story to close (2026-10-08): per-language names through tabs, no pending dependent. 0071 — Product Categories taxonomy screen language tabs (frontend), the sixth Epic 5 story to close (2026-10-07): ships the shared `<x-language-tab-strip>`; its dependents 0073/0075/0079 drop it from `depends_on`. 0067 — Admin UI language switcher (frontend), the fourth Epic 5 story to close (2026-10-02): the first personal-language control (account-menu switcher plus a Settings Language tab); it had no hard dependent, and its only pairing, `0069`, drops it from `conflict_risk_with`. 0068 — Store Languages catalog + the app's two
   default-locale settings, the first Epic 5 story to close, and the root of the entire i18n chain.
   Its two dependents that had it as their *only* pending dependency — 0066 (Admin UI locale
   preference backend) and 0070 (translatable-content mechanism backend) — move from `blocked` to
@@ -515,15 +517,14 @@ appears as a node in the dependency graph below:
   0084 — Order mark as paid (backend), closed 2026-10-02: adds `MarkOrderAsPaid` and the `order_payments` table; its one
   dependent, 0085, drops it and moves to `ready`.
 
-### Pending — not started (5 numbered + 1 infra doc)
+### Pending — not started (4 numbered + 1 infra doc)
 
-Re-derived 2026-11-07 from the files actually present in `ai-spec/tasks/`. The earlier table still listed `0072`, `0074`, `0084` and `0085`, all of which are in `done/`.
+Re-derived 2026-11-08 from the files actually present in `ai-spec/tasks/` (`0078` closed to `done/`).
 
 | ID | Title | Epic area |
 | --- | --- | --- |
 | 0076a | Product slug and SEO fields — per-store-language (backend) | Epic 5 — i18n |
 | 0077 | Product editor — language tabs (UI) | Epic 5 — i18n |
-| 0078 | Translatable content retrofit — Blog Posts backend | Epic 5 — i18n |
 | 0079 | Blog post editor — language tabs (frontend) | Epic 5 — i18n |
 | 0087 | Translation write actions refuse an inactive store language | Epic 5 — i18n |
 | _(no number)_ | Infrastructure fix: no test suite can open a database connection (local fresh setup or CI) — **status: already fixed and documented**, kept out of the numbering and out of the dependency graph below | Infrastructure |
@@ -561,7 +562,6 @@ flowchart LR
         P0087["0087 Refuse inactive language in translation write actions"]
         P0076a["0076a Product slug + SEO BE"]
         P0077["0077 Product editor i18n UI"]
-        P0078["0078 Blog Posts retrofit BE"]
         P0079["0079 Blog post editor i18n UI"]
     end
 
@@ -631,16 +631,15 @@ flowchart LR
     %% (P0076 --> P0076a and P0076 --> P0077 dropped: 0076 closed to done/ 2026-11-07; 0076a is now ready, 0077 stays blocked on 0076a.)
     P0076a --> P0077
     P0076a -.-> P0087
-    P0078 -.-> P0087
-    P0078 --> P0079
+    %% (P0078 --> P0079 and P0078 -.-> P0087 dropped: 0078 closed to done/ 2026-11-08; 0079 is now ready.)
     P0077 -.-> P0079
     %% (P0082 --> P0083 and P0082 -.-> P0076/P0078 dropped: 0082 is done; 0083 is now ready.)
     %% (P0084 --> P0085 dropped: 0084 is done; 0085 is done too.)
     %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
-    class P0077,P0079 pending;
-    class P0076a,P0087 ready;
-    class P0078 claimed;
+    class P0077 pending;
+    class P0076a,P0079,P0087 ready;
+    %% (P0078 closed to done/ 2026-11-08; no node remains `claimed`.)
     P0087 -.-> P0079
     P0087 -.-> P0077
     %% (P0075 closed to done/ 2026-10-27; P0073 closed to done/ 2026-10-08; no node remains `claimed`.)

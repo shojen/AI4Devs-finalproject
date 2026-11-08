@@ -555,7 +555,7 @@ The column is `NOT NULL`, so the seam never returns `null`. `CreateOrder` eager-
 
 All hard dependencies are **shipped** (`done/`): [0024](../done/0024-products-core-crud-backend.md) (products, model, actions, validation trait), [0024a](../done/0024a-product-description-html-sanitization.md) (`SanitizeProductDescription`), [0068](../done/0068-store-languages-catalog-backend.md) (`store_languages`, the usage registry), [0070](../done/0070-translatable-content-mechanism-product-categories-backend.md) (`HasTranslations`, `SetTranslation`, drift guard), [0074](../done/0074-translatable-content-retrofit-blog-tags-backend.md) (the backfill, guard and factory shapes copied here), and [0082](../done/0082-dashboard-home-overview-backend.md) (the `resolveName()` seam). So `depends_on` is empty.
 
-**Dependents:** [0076a](../0076a-product-slug-and-seo-fields-backend.md) (slug/SEO; hard) and [0077](../0077-product-editor-language-tabs-ui.md) (language tabs; hard, through 0076a). **File-sharing sibling:** [0078](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md) also appends to `config/store-languages.php` and edits dashboard readers. No new Composer package.
+**Dependents:** [0076a](../0076a-product-slug-and-seo-fields-backend.md) (slug/SEO; hard) and [0077](../0077-product-editor-language-tabs-ui.md) (language tabs; hard, through 0076a). **File-sharing sibling:** [0078](0078-translatable-content-retrofit-blog-posts-backend.md) also appends to `config/store-languages.php` and edits dashboard readers. No new Composer package.
 
 ### Risks
 

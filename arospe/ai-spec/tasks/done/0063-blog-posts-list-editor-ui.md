@@ -6,7 +6,7 @@
 > body and **one** slug, a blog category had **one** name and a blog tag had **one** name. **Three
 > separate, already-finalized Epic 5 stories each drop one of those column sets**, and this screen is
 > the only file in the epic that all three break. Per
-> [0078's technical task 1](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md#6-technical-tasks-for-later-backlog-creation)
+> [0078's technical task 1](0078-translatable-content-retrofit-blog-posts-backend.md#6-technical-tasks-for-later-backlog-creation)
 > — *"0063 needs one coherent amendment covering all three Epic 5 taxonomy/content retrofits at once,
 > not three separate ones"* — this is that single amendment.
 >
@@ -16,7 +16,7 @@
 > | --- | --- |
 > | [**0072** — Blog Categories backend](0072-translatable-content-retrofit-blog-categories-backend.md) + [**0073** — Blog Categories language tabs](0073-blog-categories-language-tabs-ui.md) | Drops `blog_categories.name` **and** `normalized_name` into `blog_category_translations`. A category's name is now `translated('name', $languageId)`. |
 > | [**0074** — Blog Tags backend](0074-translatable-content-retrofit-blog-tags-backend.md) + [**0075** — Blog Tags language tabs](0075-blog-tags-language-tabs-ui.md) | Drops `blog_tags.name` **and** `normalized_name` into `blog_tag_translations`, with uniqueness re-scoped per store language. A tag's name is read the same way. |
-> | [**0078** — Blog Posts backend](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md) + [**0079** — Blog post editor language tabs](../0079-blog-post-editor-language-tabs-ui.md) | **The largest.** Drops `blog_posts.title`, `body` **and** `slug` into `blog_post_translations`, one row per `(post, store language)`, with `UNIQUE(store_language_id, slug)`. `BlogPost` narrows to `#[Fillable(['blog_category_id', 'status'])]`. 0079 then turns this story's editor into per-language tabs and adds `App\Actions\Blog\SetBlogPostTranslation`. |
+> | [**0078** — Blog Posts backend](0078-translatable-content-retrofit-blog-posts-backend.md) + [**0079** — Blog post editor language tabs](../0079-blog-post-editor-language-tabs-ui.md) | **The largest.** Drops `blog_posts.title`, `body` **and** `slug` into `blog_post_translations`, one row per `(post, store language)`, with `UNIQUE(store_language_id, slug)`. `BlogPost` narrows to `#[Fillable(['blog_category_id', 'status'])]`. 0079 then turns this story's editor into per-language tabs and adds `App\Actions\Blog\SetBlogPostTranslation`. |
 >
 > **These are corrections, not a redesign.** This story's job is unchanged — the list, the routed
 > editor, the filters, delete, the trashed section, the registry entry — and it does **not** grow the
@@ -34,7 +34,7 @@
 >    below, and 0079's own ⛔ block, which corrects an earlier coordinator brief that said the
 >    opposite.
 > 2. **A slug collision is refused with a validation error, not auto-suffixed** — 0061's **OQ-2**,
->    resolved 2026-08-30 to option **(b)** ([0078 **R-4**](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md), ✅ CLOSED).
+>    resolved 2026-08-30 to option **(b)** ([0078 **R-4**](0078-translatable-content-retrofit-blog-posts-backend.md), ✅ CLOSED).
 >    Since there is no slug field, that refusal must land on the **title** field of whichever language
 >    is being edited (0079 **D-2**, **R-4**).
 > 3. **`status`, `published_at`, `blog_category_id` and the tag set stay *outside* the tabs and render
@@ -1111,7 +1111,7 @@ for the create case, and one route name for two entry points).
 
 > ⛔ **Correction, 2026-08-30 — the query below no longer runs. It names *three* dropped columns, and
 > this is the sharpest break the three Epic 5 retrofits make in this file.** It is
-> [0078's **R-1(a)**](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md) — *"the worst-hit file
+> [0078's **R-1(a)**](0078-translatable-content-retrofit-blog-posts-backend.md) — *"the worst-hit file
 > in the whole Epic 5 plan"* — and 0079's scope fence puts it **outside** that story
 > (*"this story is not the 0063 amendment"*), so **nobody else fixes it**. It is this file's, and the
 > corrected shape is below.
@@ -2003,7 +2003,7 @@ requiring PHP execution was verified and every such claim is flagged at its site
 > | --- | --- | --- |
 > | [**0072**](0072-translatable-content-retrofit-blog-categories-backend.md) | **hard**, not implemented | Drops `blog_categories.name`. Two of this screen's queries and two of its option sets name it. |
 > | [**0074**](0074-translatable-content-retrofit-blog-tags-backend.md) | **hard**, not implemented | Drops `blog_tags.name`. The list's eager load and the editor's chip hydration name it. |
-> | [**0078**](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md) | **hard, blocking, total**, not implemented | Drops `blog_posts.title`/`body`/`slug`. The list query, the editor's two fields, the delete modal's label and the body rules all depend on it. |
+> | [**0078**](0078-translatable-content-retrofit-blog-posts-backend.md) | **hard, blocking, total**, not implemented | Drops `blog_posts.title`/`body`/`slug`. The list query, the editor's two fields, the delete modal's label and the body rules all depend on it. |
 > | [**0079**](../0079-blog-post-editor-language-tabs-ui.md) | **depends on this story**, not the reverse | It builds the language tabs *on top of* this editor and rewrites this list's query. It must land **strictly after** this story and must never be batched with it. |
 > | [**0070**](0070-translatable-content-mechanism-product-categories-backend.md) / [**0068**](0068-store-languages-catalog-backend.md) | hard, transitively | `HasTranslations`, `translated()`, `withTranslationsFor()`, `SetTranslation`, `StoreLanguage` and its `is_default` row. Consumed, never re-implemented. |
 > | [**0071**](0071-product-categories-language-tabs-ui.md) | soft, via 0079 | Owns `<x-language-tab-strip>`, `setActiveLanguageTab()` and the two-layer pattern 0079 consumes. |
@@ -2013,7 +2013,7 @@ requiring PHP execution was verified and every such claim is flagged at its site
 > already required.
 >
 > ⚠️ **There is one ordering the coordinator should decide rather than inherit**, and it is
-> [0078's **R-14**](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md) reaching this file: if
+> [0078's **R-14**](0078-translatable-content-retrofit-blog-posts-backend.md) reaching this file: if
 > **0078 lands before 0061 is implemented**, the far cheaper path is to amend 0061 so `title`, `body`
 > and `slug` are *never created* on `blog_posts` — which deletes 0078's second migration, its
 > backfill and its sharpest hazard (a backfill that silently and permanently empties every

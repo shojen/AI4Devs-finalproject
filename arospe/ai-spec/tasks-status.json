@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-07T00:00:00Z",
+  "generated_at": "2026-11-08T00:00:00Z",
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
     {
@@ -49,56 +49,11 @@
       ]
     },
     {
-      "id": "0078",
-      "slug": "0078-translatable-content-retrofit-blog-posts-backend",
-      "title": "Translatable content retrofit — Blog Posts backend",
-      "depends_on": [],
-      "status": "claimed",
-      "claimed_by": "worktree-0078-translatable-content-retrofit-blog-posts-backend",
-      "claimed_at": "2026-11-08T00:00:00Z",
-      "touches": [
-        "database/migrations/*_create_blog_post_translations_table.php",
-        "database/migrations/*_drop_translatable_columns_from_blog_posts_table.php",
-        "app/Models/BlogPost.php",
-        "app/Models/BlogPostTranslation.php",
-        "app/Concerns/BlogPostValidationRules.php",
-        "app/Actions/Blog/CreateBlogPost.php",
-        "app/Actions/Blog/UpdateBlogPost.php",
-        "app/Actions/Blog/BackfillBlogPostTranslations.php",
-        "app/Actions/Blog/NotifyScheduledBlogPostPublishFailed.php",
-        "app/Actions/Blog/RestoreBlogPost.php",
-        "app/Actions/Dashboard/GetLatestBlogPosts.php",
-        "app/Notifications/BlogPostPublished.php",
-        "app/Livewire/BlogPosts/Index.php",
-        "app/Livewire/BlogPosts/Editor.php",
-        "config/store-languages.php",
-        "database/factories/BlogPostFactory.php",
-        "database/factories/BlogPostTranslationFactory.php",
-        "database/factories/WritesDefaultBlogPostTranslation.php",
-        "database/seeders/DemoDataSeeder.php",
-        "tests/Feature/Blog/**",
-        "tests/Feature/Dashboard/**",
-        "tests/Feature/Models/BlogPostTest.php",
-        "tests/Feature/Seeders/DemoDataSeederTest.php",
-        "tests/Unit/Concerns/BlogPostValidationRulesTest.php",
-        "tests/Browser/BlogPosts/**",
-        "tests/Browser/Dashboard/**",
-        "tests/Support/Dashboard/DomainQueryLog.php",
-        "tests/Feature/StoreLanguages/**",
-        "tests/Unit/**"
-      ],
-      "conflict_risk_with": [
-        "0087"
-      ]
-    },
-    {
       "id": "0079",
       "slug": "0079-blog-post-editor-language-tabs-ui",
       "title": "Blog post editor — language tabs (frontend)",
-      "depends_on": [
-        "0078"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -134,8 +89,7 @@
       "conflict_risk_with": [
         "0076a",
         "0077",
-        "0079",
-        "0078"
+        "0079"
       ]
     }
   ]

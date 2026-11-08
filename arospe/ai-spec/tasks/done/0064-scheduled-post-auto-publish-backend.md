@@ -26,7 +26,7 @@ decomposed** — see [D-0](#d-0--full-auto-publish-is-a-confirmed-product-decisi
 
 > ### ⚠️ Epic 5 amendments — 2026-08-30
 >
-> Story [0078](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md) (translatable-content retrofit
+> Story [0078](0078-translatable-content-retrofit-blog-posts-backend.md) (translatable-content retrofit
 > for blog posts) **drops `blog_posts.title`, `blog_posts.slug` and `blog_posts.body` entirely**, moving
 > all three to a `blog_post_translations` child table read through
 > `BlogPost::translated('title', $languageId)`. Its **R-1(b)** names this story as one of three it
@@ -241,7 +241,7 @@ Backend only — no browser tests, since this story ships no screen.
       > ⚠️ **Correction, 2026-08-30 — this assertion names three columns that no longer exist on
       > `blog_posts`.** As written it reads *"Assert `title`, `slug`, `body` and `blog_category_id` are
       > byte-identical before and after"*, all four against the parent row. Story
-      > [0078](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md) moves `title`, `slug` and
+      > [0078](0078-translatable-content-retrofit-blog-posts-backend.md) moves `title`, `slug` and
       > `body` to `blog_post_translations`, so **the assertion splits in two** and the split is what
       > keeps it able to fail:
       >
@@ -406,7 +406,7 @@ deleted scheduled post never goes live. A post scheduled for the future is untou
 
 > ⚠️ **Correction, 2026-08-30.** The paragraph above says the sweep transitions a post *"without
 > altering the publication date its editor chose, its **title**, **body**, category or tags"*. After
-> story [0078](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md) the title and body are not on
+> story [0078](0078-translatable-content-retrofit-blog-posts-backend.md) the title and body are not on
 > the row this sweep writes at all — they live per store language in `blog_post_translations`. The
 > **outcome is unchanged and the guarantee is stronger**: the sweep leaves every language's title, slug
 > and body untouched, not because it is careful to avoid them but because they are on a table it never
@@ -711,7 +711,7 @@ costs one clustered-index lookup. That is correct and not worth contorting the s
 `pluck('id')` keeps `body` off the wire entirely on the selection pass.
 
 > ⚠️ **Correction, 2026-08-30 — the `body` half of that paragraph stops applying, and the sweep gets
-> cheaper.** After story [0078](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md), `body` (and
+> cheaper.** After story [0078](0078-translatable-content-retrofit-blog-posts-backend.md), `body` (and
 > `title`, and `slug`) are gone from `blog_posts`, which then holds only `id`, `blog_category_id`,
 > `status`, `published_at`, timestamps and `deleted_at` — **no large inline text at all**. 0078's
 > **D-8** states the consequence directly: a parent-only query such as this sweep is *strictly cheaper*
@@ -789,7 +789,7 @@ Three consequences, each verified rather than assumed:
   > conclusion is unchanged.** As written, the slug is safe *conditionally*: the hook lives on
   > `BlogPost`, fires on `save()`, and is guarded on `isDirty('title')`, so a query-builder update that
   > never touches `title` cannot trip it. After story
-  > [0078](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md) the guarantee is
+  > [0078](0078-translatable-content-retrofit-blog-posts-backend.md) the guarantee is
   > **structural instead**: 0078's **D-4** relocates that hook to `BlogPostTranslation`, and this
   > sweep writes only `blog_posts`. The hook is therefore **on a model this action never instantiates
   > and a table it never writes to** — it cannot fire at all, guard or no guard. 0078's own **R-1(b)**
@@ -1113,7 +1113,7 @@ Read or executed against this worktree and the sibling checkout's `vendor/` duri
   > ⚠️ **Correction, 2026-08-30 — one clause of the quoted rationale weakens, and the resolution still
   > holds.** The first reason above says attaching the model *"spares 0065's listener a second `find()`
   > just to read the title"*. After story
-  > [0078](../in-progress/0078-translatable-content-retrofit-blog-posts-backend.md), reading a title is no longer an
+  > [0078](0078-translatable-content-retrofit-blog-posts-backend.md), reading a title is no longer an
   > attribute read: it is `translated('title')`, which reads the `translations` **relation** and
   > lazily loads it when that relation is not already hydrated (0070's own `translated()` reads
   > `$this->translations`, the property). So carrying the model spares the `find()` but **not** the

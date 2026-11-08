@@ -6,7 +6,7 @@ post's **title** and **body** are authored per active store language through lan
 [PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization)'s *"each active store language
 surfaces as a tab in the Product and **Blog editors**"* and its `Switching an editor's language tab
 switches only translatable fields` scenario. Consumes story
-[0078](in-progress/0078-translatable-content-retrofit-blog-posts-backend.md)'s retrofit — which **deletes the
+[0078](done/0078-translatable-content-retrofit-blog-posts-backend.md)'s retrofit — which **deletes the
 `blog_posts.title` and `blog_posts.body` columns this screen currently reads** — and story
 [0071](done/0071-product-categories-language-tabs-ui.md)'s shared tab-strip pattern, both unchanged.
 
@@ -1288,7 +1288,7 @@ a post's French title is neither identity-sensitive nor hard to reverse.
 
 ### Dependencies
 
-- **[0078](in-progress/0078-translatable-content-retrofit-blog-posts-backend.md)** — hard, blocking, **not
+- **[0078](done/0078-translatable-content-retrofit-blog-posts-backend.md)** — hard, blocking, **not
   implemented**. Supplies `blog_post_translations`, `BlogPostTranslation` and its slug hook, the widened
   `titleRules()`, the unchanged `CreateBlogPost`/`UpdateBlogPost` signatures and the registry entry.
   **Its own hard gate — 0061's OQ-2 — is inherited here** (**R-4**).
