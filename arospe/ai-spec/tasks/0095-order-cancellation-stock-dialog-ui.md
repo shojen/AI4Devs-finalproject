@@ -28,13 +28,17 @@ frontend (related_task_id: 0091) | includes database-expert: no
 - **D-2 — A separate dialog, not the shared line dialog (chosen to avoid two dialogs on one `wire:model`).** The cancel dialog
   keeps its own flag `showCancelConfirm`, its own prefix `cancel-order` and its own methods; it only gains the 0093 secondary
   action and a preview slot. `confirmCancel()` authorizes `cancel`, records the stale guard and opens `showCancelConfirm`;
-  `dismissCancelConfirm()` clears it; `cancelOrder(CancelOrder $cancelOrder, bool $adjust)` re-authorizes, checks the stale guard
+  `dismissCancelConfirm()` clears it; `cancelOrder(bool $adjust, CancelOrder $cancelOrder)` re-authorizes, checks the stale guard
   and calls `CancelOrder` with `adjustStock: $adjust` (the confirm button calls it with `true`, the secondary with `false`).
 - **D-3 — Stale guard.** New `#[Locked] public string $pendingCancelFromStatus = ''`, set by `confirmCancel()` to the order's
-  current status. If the status differs at apply time, nothing is applied, the dialog closes, the order refreshes and
-  `orders.stock.cancel_changed_meanwhile` ("This order changed meanwhile. Review it and try again.") is shown.
-- **D-4 — Preview.** `stockPreview` (0094) gains a `cancel` mode, selected by a dedicated argument-free branch on
-  `pendingCancelFromStatus !== ''`: one row per line with `returnableStockUnits() > 0` and a stock target; two lines of the same
+  current status. It is **reset to `''` by `dismissCancelConfirm()` and on every exit path of `cancelOrder()`**: success,
+  `OrderCancellationBlockedException`, `ValidationException` and the stale-guard path. If the status differs at apply time —
+  **or the guard is empty at apply time (a direct `cancelOrder()` call without `confirmCancel()`), which is refused exactly like a
+  stale guard** — nothing is applied, the dialog closes, the order refreshes and `orders.stock.cancel_changed_meanwhile` ("This
+  order changed meanwhile. Review it and try again.") is shown.
+- **D-4 — Preview.** `stockPreview` (0094) chooses its mode from `pendingStockAction`: `'quantity'` / `'remove'` are the line
+  modes (0094/0094a); the **cancel mode applies only when `pendingStockAction === ''`** (and returns rows only while
+  `pendingCancelFromStatus` is set), so the line dialog's preview can never be replaced by the cancel one. Cancel mode: one row per line with `returnableStockUnits() > 0` and a stock target; two lines of the same
   target show the combined resulting stock (same aggregation as the backend).
 - **D-5 — Copy.** Confirm "Cancel and return :count units to stock"; secondary "Cancel without changing stock"; dismiss "Keep
   order"; keys under `orders.stock.cancel_*` (en + es).
@@ -104,7 +108,7 @@ Feature: Cancelling an order asks whether to return its units to stock
 ```
 
 ## Files to create/modify
-- `app/Livewire/Orders/Show.php` — D-2 … D-4, D-6; `cancelOrder()` gains the `bool $adjust` parameter; new locked property.
+- `app/Livewire/Orders/Show.php` — D-2 … D-4, D-6; `cancelOrder(bool $adjust, CancelOrder $cancelOrder)`; new locked property.
 - `resources/views/livewire/orders/show.blade.php` — the cancel `<x-confirm-dialog>` gets the secondary action, preview slot and
   nothing-to-return note.
 - `lang/en/orders.php`, `lang/es/orders.php` — `orders.stock.cancel_*` (incl. `cancel_changed_meanwhile`, `cancel_nothing_to_return`).
@@ -114,6 +118,8 @@ Feature: Cancelling an order asks whether to return its units to stock
 ## Tests to perform
 - [ ] Livewire: `confirmCancel()` opens the dialog with the cancel preview and sets `pendingCancelFromStatus`; both choices call `CancelOrder` with the matching `adjustStock` (asserted on stock); keep-order changes nothing.
 - [ ] Only one modal is bound to `showCancelConfirm`; the `line-stock` dialog's flag is untouched by the cancel flow.
+- [ ] `pendingCancelFromStatus` is `''` after `dismissCancelConfirm()` and after every exit path of `cancelOrder()` (success, blocked, validation, stale guard); a direct `cancelOrder(true)` call without `confirmCancel()` is refused like a stale guard and moves no stock.
+- [ ] `stockPreview` returns the line rows while `pendingStockAction` is `'quantity'`/`'remove'` and the cancel rows only when `pendingStockAction === ''`.
 - [ ] Security: `pendingCancelFromStatus` cannot be set by the client; re-authorization on apply (revoke `orders.refund` → refused); stale guard fires on a status change.
 - [ ] Refusals: super administrator on shipped → rendered blocked message, dialog closed, no stock change; already cancelled (race) → rendered validation message.
 - [ ] Preview excludes null-target lines and lines with 0 returnable units; a fully zero order shows the note and two options (OQ-3).
@@ -152,3 +158,4 @@ Estimable/Small: one existing dialog gains a second action, a preview and a guar
 ## Approval record
 - Phase 1: complete 2026-11-08 (product-owner).
 - Phase 2: INVEST review 2026-11-08: findings received → rewritten, pending re-review.
+- Phase 2: INVEST re-review 2026-11-08: D-3 reset and empty-guard rule, preview mode selection by pendingStockAction, parameter order cancelOrder(bool $adjust, CancelOrder $cancelOrder), matching tests → rewritten, pending re-review.

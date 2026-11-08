@@ -9,7 +9,7 @@
 `RecordRefund` gains `array $stockReturns = []` (order item id → units to put back in stock). By default a refund moves no stock,
 exactly as today. When the administrator chooses to return units, each listed line returns at most the units it is refunding in
 this same call **and** at most the units still held out of inventory, inside the refund's transaction, through
-`AdjustOrderStock`; its counter grows by the same amount.
+`AdjustOrderStock`; its refund-returned counter (`stock_refund_returned_quantity`) grows by the same amount.
 
 ## Type
 backend (related_task_id: 0096) | includes database-expert: no
@@ -23,21 +23,23 @@ backend (related_task_id: 0096) | includes database-expert: no
 ## Decisions
 - **D-1 (user D5)** — Default: no stock movement. New last parameter `array $stockReturns = []`
   (`@param array<string, int> $stockReturns`); every existing caller unchanged.
-- **D-2 (user D5 + 0088 D8)** — Validation, all-or-nothing (a refused stock return refuses the whole refund, nothing written):
+- **D-2 (user D5 + 0088 D8, two counters user-confirmed 2026-11-08)** — Validation, all-or-nothing (a refused stock return refuses the whole refund, nothing written):
   - shape: an array of non-negative integers (`OrderValidationRules::refundStockReturnRules()`);
   - every key is a line of **this** order (under the lock) **and** a key of `$items` in this call;
   - `units <= $items[key]` (refunded in this refund);
-  - `units <= OrderItem::unitsHeldOutOfStock()` (`quantity − stock_returned_quantity`, read on the locked item) — units returned on
-    cancellation, or a legacy line never deducted, cannot go back twice;
+  - `units <= OrderItem::refundedUnitsOutOfStock($items[key])` — the refunded units of the line (counting this refund) that
+    are still out of inventory: `max(0, F' − K − max(0, U − (Q − F')))` with F' = `refunded_quantity + $items[key]`, read on the
+    locked item before any write. Units given back on cancellation, units never deducted (legacy line, or a raise without
+    deduction) and units already returned by an earlier refund can therefore never go back twice;
   - a `0` entry is accepted and ignored.
   Errors: `ValidationException` on `stock_returns`; lang keys `orders.refunds.stock_return_invalid`,
   `orders.refunds.stock_return_not_in_refund`, `orders.refunds.stock_return_exceeds_refunded`,
   `orders.refunds.stock_return_already_in_stock` (en + es, identical key sets).
 - **D-3** — "All refunded units" and "Some units" are UI modes only (0096); the action always receives explicit per-line units.
 - **D-4** — Stock validation runs after the existing outstanding-units guard and before any write. Writes, in order: refunds rows
-  + `refunded_quantity` (unchanged) → `AdjustOrderStock` → counter `S + units` for applied ids (`forceFill`) → `refunded_amount` /
+  + `refunded_quantity` (unchanged) → `AdjustOrderStock` → `stock_refund_returned_quantity` `K + units` for applied ids (`forceFill`; `stock_undeducted_quantity` untouched) → `refunded_amount` /
   `payment_status` (unchanged) → commit → dispatch (unchanged). Lines with a `null` stock target record the refund but move no stock
-  and keep their counter.
+  and keep their counters.
 - **D-5 (user D5)** — `AutoCancelFullyRefundedOrder` unchanged and stock-free.
 - **D-6 (user D7)** — No authorization change; `Gate::authorize('orders.refund')` stays first.
 
@@ -92,6 +94,12 @@ Feature: A refund can return the refunded units to stock
     Then the whole refund is refused because those units are already back in stock
     And "Mug" stock is unchanged
 
+  Scenario: Units added without deducting cannot come back through a refund
+    Given an order administrator who may refund, with a paid order whose 2-unit "Mug" line was raised to 5 units without deducting, and "Mug" has 8 units in stock
+    When the order administrator refunds 3 units of "Mug" and asks to return those 3 units to stock
+    Then the whole refund is refused because more units would return than were taken out of stock
+    And "Mug" stock is unchanged
+
   Scenario: A refund of a line whose variant was deleted records the refund but moves no stock
     Given an order administrator who may refund, with a paid order holding a line of a variant since deleted
     When the order administrator refunds 1 unit of that line and returns it to stock
@@ -112,15 +120,17 @@ Feature: A refund can return the refunded units to stock
 ```
 
 ## Files to create/modify
-- `app/Actions/Orders/RecordRefund.php` — new parameter; stock validation (D-2); `AdjustOrderStock`; counter; docblock steps.
+- `app/Actions/Orders/RecordRefund.php` — new parameter; stock validation (D-2); `AdjustOrderStock`; `stock_refund_returned_quantity`; docblock steps.
 - `app/Concerns/OrderValidationRules.php` — `refundStockReturnRules()`.
 - `lang/en/orders.php`, `lang/es/orders.php` — the four `orders.refunds.stock_return_*` keys.
 - `tests/Feature/Orders/RecordRefundStockTest.php` — new.
 
 ## Tests to perform
 - [ ] Every Gherkin scenario, product and variant lines; `0` entries ignored; a default call unchanged.
-- [ ] **Validation matrix** (each → `ValidationException` on `stock_returns`, and refunds rows, `refunded_quantity`, `refunded_amount`, `payment_status`, stock and counter all unchanged): non-integer; negative; unknown key; key of another order; key not in `$items`; units > refunded now; units > held out (cancel-then-refund); units > held out (legacy line).
-- [ ] Counter = `S + units` for applied lines; unchanged for null-target lines.
+- [ ] **Validation matrix** (each → `ValidationException` on `stock_returns`, and refunds rows, `refunded_quantity`, `refunded_amount`, `payment_status`, stock and both counters all unchanged): non-integer; negative; unknown key; key of another order; key not in `$items`; units > refunded now; units > refunded-still-out (cancel-then-refund, 0088 sequence 5); units > refunded-still-out (legacy line); units > refunded-still-out (raise without deduction then refund 3 asking 3, 0088 sequence 7 — 2 accepted, 3 refused).
+- [ ] A second refund of different units of a line whose earlier refunded units were already returned may return its own units (Q 4: refund 2 returning 2, then refund 2 returning 2 → both accepted, stock +4, K 4).
+- [ ] Accepted boundaries: 0088 sequence 7 with 2 units → accepted, stock +2, K 2; the two-counter sequence (refund 2 without restock, raise to 7 without deducting, then refund 2 more returning 2) → accepted, K 2, and afterwards `returnableStockUnits() + refundedUnitsOutOfStock()` equals the units actually out of stock.
+- [ ] `stock_refund_returned_quantity` = `K + units` for applied lines; unchanged for null-target lines; `stock_undeducted_quantity` never changed.
 - [ ] After commit: `OrderFullyRefunded` still dispatched only when `Refunded`; auto-cancel moves no stock.
 - [ ] Lang parity (`OrdersLangParityTest`).
 - [ ] Regression: `RecordRefundTest`, `RecordRefundLockOrderTest` (0092a), `ShowRefundTest`, `MarkOrderAsPaidRefundInteractionTest` green.
@@ -149,10 +159,10 @@ Estimable/Small: one parameter, one rule set, four lang keys. Testable: a full v
 ## Dependencies, risks, open technical questions
 **Depends on:** [0088](0088-order-stock-adjustment-foundation-backend.md), [0092a](0092a-record-refund-lock-order-backend.md)
 (hard). **Blocks:** [0096](0096-order-refund-modal-stock-return-ui.md). Soft: [0091](0091-order-cancellation-stock-return-opt-in-backend.md)
-(the cancel-then-refund case; if not merged, arrange the counter with the factory). Shares `lang/*/orders.php` with
+(the cancel-then-refund case; if not merged, arrange the counters with the factory). Shares `lang/*/orders.php` with
 [0094](0094-order-line-quantity-stock-dialog-ui.md), [0094a](0094a-order-line-removal-stock-dialog-ui.md) and
 [0095](0095-order-cancellation-stock-dialog-ui.md).
-- **R-1** — The refunds table does not record how many units each refund returned (only the line counter does); a per-refund
+- **R-1** — The refunds table does not record how many units each refund returned (only the line's refund-returned counter does); a per-refund
   history would need a column (0088 B-3) — not requested.
 
 ## Debate record
@@ -162,3 +172,4 @@ Estimable/Small: one parameter, one rule set, four lang keys. Testable: a full v
 ## Approval record
 - Phase 1: complete 2026-11-08 (product-owner, split from 0092).
 - Phase 2: INVEST review 2026-11-08 (of former 0092): findings received → split and rewritten, pending re-review.
+- Phase 2: INVEST re-review 2026-11-08: refund cap redefined for the two-counter model (user decision) and validation matrix extended → rewritten, pending re-review.

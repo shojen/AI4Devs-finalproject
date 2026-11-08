@@ -5,14 +5,16 @@
 > (`UpdateOrderItemQuantity`) **and** removing a line (`RemoveOrderItem`). Fullstack pairs: **related_task_id 0094**
 > (quantity dialog) and **0094a** (removal dialog). Blocked on [0088](0088-order-stock-adjustment-foundation-backend.md)
 > (which now includes the automatic deduction formerly planned as 0089).
-> **User-confirmed (2026-11-08):** the corrected decrease formula in 0088's
-> [counter model](0088-order-stock-adjustment-foundation-backend.md#counter-model-decided-d8-corrected-2026-11-08).
+> **User-confirmed (2026-11-08):** the corrected decrease formula and the **two-counter** model in 0088's
+> [counter model](0088-order-stock-adjustment-foundation-backend.md#counter-model-d8-two-counters-user-confirmed-2026-11-08)
+> (D8 revised: user-confirmed 2026-11-08 (two counters)).
 
 ## Description
 `UpdateOrderItemQuantity` and `RemoveOrderItem` gain `bool $adjustStock = false`. With `false` (default) stock is never touched,
 as today. With `true`, a quantity increase takes the added units out of stock, a decrease returns only the held-out units that
 no longer fit in the new quantity, and a removal returns the line's returnable units — inside the action's existing
-transaction, after its order-row and item-row locks, through `AdjustOrderStock`. The counter is maintained in both modes.
+transaction, after its order-row and item-row locks, through `AdjustOrderStock`. The undeducted-units counter
+(`stock_undeducted_quantity`) is maintained in both modes; the refund-returned counter is never touched here.
 
 ## Type
 backend (related_task_id: 0094, 0094a) | includes database-expert: no
@@ -29,23 +31,24 @@ backend (related_task_id: 0094, 0094a) | includes database-expert: no
 ## Decisions
 - **D-1 (user D3)** — Explicit `bool $adjustStock = false`, appended as the **last** parameter; the default is never `true`; the
   delta is computed from the locked rows, never from the request.
-- **D-2 (user D3) — Increase by d.** With `adjustStock: true`: stock `-d` (may go negative), counter unchanged. Without: counter
-  `S + d` (those units were never taken out).
-- **D-3 (user decision 2026-11-08, corrected formula) — Decrease by d.** With F = `refunded_quantity`, S = counter,
-  R = `returnableStockUnits()` read on the locked item **before** the change, and `newQty = quantity − d`:
-  - with `adjustStock: true`: k = `max(0, R − (newQty − F))`; stock `+k`; counter `max(0, S − d + k)`;
-  - with `adjustStock: false`: stock unchanged; counter `max(0, S − d)`.
-  k returns only the held-out, non-refunded units that no longer fit in the new quantity, so a raised quantity that was never
-  deducted is never "returned" later.
-- **D-4 (user D3) — Removal.** With `adjustStock: true`: stock `+R` (refunded lines cannot be removed, so `R = quantity − S`).
+- **D-2 (user D3) — Increase by d.** With `adjustStock: true`: stock `-d` (may go negative), U unchanged. Without: U `+ d`
+  (those units were never taken out).
+- **D-3 (user decisions 2026-11-08: corrected formula, two counters) — Decrease by d.** With F = `refunded_quantity`,
+  U = `stock_undeducted_quantity`, R = `returnableStockUnits()` = `max(0, (Q − F) − U)` read on the locked item **before** the
+  change, and `newQty = quantity − d` (never below F):
+  - with `adjustStock: true`: k = `max(0, R − (newQty − F))`; stock `+k`; U becomes `U − d + k` (never negative);
+  - with `adjustStock: false`: stock unchanged; U becomes `max(0, U − d)`.
+  A decrease removes undeducted units first: k returns only the taken-out, non-refunded units that no longer fit in the new
+  quantity, so a raise that was never deducted is never "returned" later. `stock_refund_returned_quantity` is untouched.
+- **D-4 (user D3) — Removal.** With `adjustStock: true`: stock `+R` (refunded lines cannot be removed, so `R = quantity − U`).
   Without: stock unchanged. The row is deleted either way.
-- **D-5** — An unchanged quantity is a no-op for stock and counter regardless of `adjustStock`.
+- **D-5** — An unchanged quantity is a no-op for stock and counters regardless of `adjustStock`.
 - **D-6** — Every existing guard keeps its order and runs **before** any stock change; a refused call never moves stock or the
-  counter.
+  counters.
 - **D-7** — The stock call runs after the item write and before `RecalculateOrderTotals`, in the same transaction; lock order
   `orders → order_items → products → product_variants` (0088 FD-7).
-- **D-8** — A line with a `null` stock target (0088 D1/D9) moves no stock in either mode; its counter still follows D-2/D-3 (it is
-  kept consistent in case it is read).
+- **D-8** — A line with a `null` stock target (0088 D1/D9) moves no stock in either mode; its counters still follow D-2/D-3 (kept
+  consistent in case they are read).
 - **D-9 (user D7)** — No new permission, no `products.edit`.
 
 ## Gherkin
@@ -93,6 +96,11 @@ Feature: Stock follows a line change only when the order administrator asks for 
     Given an order administrator who may refund, with a pending order whose 2-unit "Mug" line was raised to 5 without adjusting stock and lowered back to 2 with stock adjustment, and "Mug" has 8 units in stock
     When the order administrator cancels the order and returns its units to stock
     Then "Mug" has 10 units in stock
+
+  Scenario: Lowering a line that was refunded and then raised without deducting returns only units taken out
+    Given an order administrator, with a paid order whose 5-unit "Mug" line had 2 units refunded without returning stock and was then raised to 7 units without deducting, and "Mug" has 5 units in stock
+    When the order administrator changes the line to 2 units and adjusts stock
+    Then "Mug" has 8 units in stock
 
   Scenario: Lowering a quantity after a refund with stock return returns only the units that no longer fit
     Given an order administrator, with a paid order holding 5 units of "Mug" of which 2 were refunded and returned to stock, and "Mug" has 10 units in stock
@@ -142,7 +150,7 @@ Feature: Stock follows a line change only when the order administrator asks for 
 ```
 
 ## Files to create/modify
-- `app/Actions/Orders/UpdateOrderItemQuantity.php` — `bool $adjustStock = false`; delta and counter from the locked item
+- `app/Actions/Orders/UpdateOrderItemQuantity.php` — `bool $adjustStock = false`; delta and counters from the locked item
   (D-2/D-3); `AdjustOrderStock` when `adjustStock` and delta ≠ 0; docblock.
 - `app/Actions/Orders/RemoveOrderItem.php` — `bool $adjustStock = false`; return `R` before `$item->delete()` (D-4); docblock.
 - `tests/Feature/Orders/UpdateOrderItemQuantityStockTest.php` — new.
@@ -150,12 +158,23 @@ Feature: Stock follows a line change only when the order administrator asks for 
 
 ## Tests to perform
 - [ ] Every Gherkin scenario, for a product line and a variant line (dataset).
-- [ ] Counter after each operation matches 0088's corrected table, with and without `adjustStock`, incl. `max(0, S − d + k)` and `max(0, S − d)`.
-- [ ] **Counter round-trip:** 2 → 5 (no adjust, counter 3) → 2 (adjust, k = 0, counter 0) → `CancelOrder` with `adjustStock: true` returns **2** (arrange the cancel through the real action once 0091 is merged; until then assert `returnableStockUnits() === 2`).
-- [ ] D-3 numeric table: (Q 5, F 0, S 0 → 2: +3, S 0); (Q 5, F 0, S 5 → 2: +0, S 2); (Q 5, F 2, S 2 → 3: +2, S 2); (Q 5, F 0, S 3 → 4: +0, S 2).
+- [ ] Counters after each operation match 0088's two-counter table, with and without `adjustStock` (U `U − d + k` and `max(0, U − d)`; K never changed).
+- [ ] **Round trip:** 2 → 5 (no adjust, U 3) → 2 (adjust, k = 0, U 0) → `CancelOrder` with `adjustStock: true` returns **2** (arrange the cancel through the real action once 0091 is merged; until then assert `returnableStockUnits() === 2`).
+- [ ] **Two-counter sequence (0088 sequence 2):** stock 10 → line of 5 (stock 5) → refund 2 without restock → raise to 7 without deducting (U 2) → lower to 2 with adjust → stock **8**, U 0, `returnableStockUnits() === 0`, `refundedUnitsOutOfStock() === 2`. Run through the real actions (`RecordRefund` without `stockReturns` already exists).
+- [ ] D-3 numeric table (all with `adjustStock: true` unless noted):
+
+  | Q | F | K | U | → newQty | Stock delta | U after |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | 5 | 0 | 0 | 0 | 2 | +3 | 0 |
+  | 5 | 0 | 0 | 5 (legacy) | 2 | +0 | 2 |
+  | 5 | 2 | 2 | 0 | 3 | +2 | 0 |
+  | 5 | 0 | 0 | 3 | 4 | +0 | 2 |
+  | 7 | 2 | 0 | 2 | 2 | +3 | 0 |
+  | 5 | 0 | 0 | 0 | 2 (no adjust) | 0 | 0 |
+  | 5 | 0 | 0 | 3 | 4 (no adjust) | 0 | 2 |
 - [ ] A line with `ordered_as_variant = true` and a null variant moves no stock in either action.
-- [ ] Every existing refusal (authorization, hard block, `< refunded`, `< 1`, last line, refunded line, missing item) leaves stock and counter unchanged.
-- [ ] A call without the parameter never touches stock or the counter's semantics for increases (regression for existing callers).
+- [ ] Every existing refusal (authorization, hard block, `< refunded`, `< 1`, last line, refunded line, missing item) leaves stock and counters unchanged.
+- [ ] Without the parameter, stock never changes and the counters follow D-2/D-3 (regression for existing callers).
 - [ ] Lock order (query log): `orders` → `order_items` → `products` → `product_variants`.
 - [ ] Regression: `UpdateOrderItemQuantityTest`, `RemoveOrderItemTest`, `HardBlockTest`, `OrderLineItemAuthorizationTest` green unchanged.
 
@@ -165,10 +184,10 @@ and the backend applies exactly that choice atomically, never returning a unit t
 
 ## Acceptance criteria
 - [ ] Both actions accept `adjustStock` (default `false`) as the last parameter.
-- [ ] With `false`, stock never changes; the counter follows D-2/D-3.
+- [ ] With `false`, stock never changes; the counters follow D-2/D-3.
 - [ ] With `true`, stock changes by exactly D-2/D-3/D-4 through `AdjustOrderStock`; negative allowed.
-- [ ] The 2 → 5 → 2 → cancel round-trip returns exactly 2 units.
-- [ ] A refused call never changes stock or the counter; no authorization change.
+- [ ] The 2 → 5 → 2 → cancel round-trip returns exactly 2 units, and the two-counter sequence ends at stock 8.
+- [ ] A refused call never changes stock or the counters; no authorization change.
 
 ## Definition of Done
 - [ ] Tests written and green (full suite, unscoped)
@@ -200,3 +219,4 @@ Shares `RemoveOrderItemStockTest.php` with [0091](0091-order-cancellation-stock-
 ## Approval record
 - Phase 1: complete 2026-11-08 (product-owner).
 - Phase 2: INVEST review 2026-11-08: findings received → rewritten, pending re-review.
+- Phase 2: INVEST re-review 2026-11-08: two-counter model (user decision), numeric table and sequence test, untestable regression bullet reworded → rewritten, pending re-review.

@@ -114,7 +114,7 @@ Feature: The refund modal lets the order administrator return refunded units to 
 ## Tests to perform
 - [ ] Livewire: default `none` on every open; reopen after close resets both properties (via `syncRefundInputs()`).
 - [ ] Livewire mapping: `all` → every refunded stock-target line's units; `partial` clamps silently, drops lines not refunded now and foreign ids; `partial` total 0 blocked; unknown mode refused.
-- [ ] Livewire: stock and counter asserted after each mode (real action, not a mock).
+- [ ] Livewire: stock and both counters asserted after each mode (real action, not a mock); the backend cap is `refundedUnitsOutOfStock()` (0088 D8, two counters) and the UI does not pre-compute it.
 - [ ] Inputs rendered for every refundable stock-target line in `partial`, none for null-target lines; no `wire:model.live` on refund quantities.
 - [ ] Security: forged `refundStockQuantities` keys never reach a stock write.
 - [ ] Backend refusal rendered as the `refund` error; modal stays open; nothing written. Lang parity.
@@ -156,3 +156,4 @@ and [0095](0095-order-cancellation-stock-dialog-ui.md) — run sequentially.
 ## Approval record
 - Phase 1: complete 2026-11-08 (product-owner).
 - Phase 2: INVEST review 2026-11-08: findings received → rewritten, pending re-review.
+- Phase 2: INVEST re-review 2026-11-08: counter references aligned with the two-counter model (0088 D8) → rewritten, pending re-review.

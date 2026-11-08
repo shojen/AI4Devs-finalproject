@@ -32,7 +32,7 @@ frontend (related_task_id: 0090) | includes database-expert: no
   parameter** (`applyStockChoice(bool $adjust, UpdateOrderItemQuantity $update, RemoveOrderItem $remove)`) — no union type; it
   re-authorizes, runs the stale guard (line still exists with `pendingFromQuantity` units; otherwise `orders.stock.changed_meanwhile`),
   and calls `RemoveOrderItem` with `adjustStock: $adjust`.
-- **D-4** — `stockPreview` gains the removal shape: `units = returnableStockUnits()` (= `quantity − counter`, refunded lines cannot
+- **D-4** — `stockPreview` gains the removal shape: `units = returnableStockUnits()` (= `quantity − stock_undeducted_quantity`, refunded lines cannot
   be removed).
 - **D-5 (OQ-3, user-confirmed)** — When `units` is 0 the dialog shows `orders.stock.nothing_to_return` instead of the confirm
   button and offers only "Remove without changing stock" and "Keep editing".
@@ -139,3 +139,4 @@ keep inventory. Estimable/Small: one request method and one branch on an existin
 ## Approval record
 - Phase 1: complete 2026-11-08 (product-owner, split from 0094).
 - Phase 2: INVEST review 2026-11-08 (of former 0094): findings received → split and rewritten, pending re-review.
+- Phase 2: INVEST re-review 2026-11-08: helper wording aligned with the two-counter model (0088 D8) → rewritten, pending re-review.

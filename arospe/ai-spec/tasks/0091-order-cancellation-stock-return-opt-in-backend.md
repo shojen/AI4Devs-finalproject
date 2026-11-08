@@ -6,7 +6,7 @@
 
 ## Description
 `CancelOrder` gains `bool $adjustStock = false`. With `true`, every line returns its returnable units to its variant or product
-stock and its counter grows by the same amount, in one transaction under the order lock. With `false` stock is untouched, as
+stock and its undeducted-units counter (`stock_undeducted_quantity`) grows by the same amount, in one transaction under the order lock. With `false` stock is untouched, as
 today. `AutoCancelFullyRefundedOrder` stays stock-free (pinned by a regression test).
 
 ## Type
@@ -24,7 +24,7 @@ backend (related_task_id: 0095) | includes database-expert: no
   one** parameter; this story changes that test (see Files).
 - `AutoCancelFullyRefundedOrder` locks the order in its own transaction and writes only `status`.
 - Lines stay editable after cancellation (`isLineItemEditable()` true on `Cancelled`); 0090's rules plus this story's counter
-  update keep that path from returning units twice.
+  update (U + R) keep that path from returning units twice.
 
 ## Decisions
 - **D-1 (user D3)** — `CancelOrder::__invoke(Order $order, bool $adjustStock = false): Order`; default `false`, server-side only.
@@ -32,11 +32,11 @@ backend (related_task_id: 0095) | includes database-expert: no
 - **D-2** — The action opens `DB::transaction()`, re-reads the order under `lockForUpdate()`, and **re-runs both existing state
   guards against the locked row** (after `Gate::authorize`, which stays first and outside the transaction). Refusal order and
   types unchanged. The class docblock's "no transaction" note is rewritten with the reason (a second write now exists).
-- **D-3 (user D4 superseded by 0088 D8)** — Returnable units per line = `OrderItem::returnableStockUnits()`
-  = `max(0, quantity − max(refunded_quantity, stock_returned_quantity))`. A cancellable order is never `PartiallyRefunded`; a
+- **D-3 (user D4 superseded by 0088 D8, two counters user-confirmed 2026-11-08)** — Returnable units per line =
+  `OrderItem::returnableStockUnits()` = `max(0, (quantity − refunded_quantity) − stock_undeducted_quantity)`. A cancellable order is never `PartiallyRefunded`; a
   fully refunded order in the window before `AutoCancelFullyRefundedOrder` runs returns 0 per line.
-- **D-4** — Lines locked `orderBy('id')->lockForUpdate()` after the order row; then stock rows (0088 FD-7). **Counter =
-  `S + R` per applied line; unchanged for skipped or null-target lines** (only ids returned by `AdjustOrderStock` are updated).
+- **D-4** — Lines locked `orderBy('id')->lockForUpdate()` after the order row; then stock rows (0088 FD-7). **`stock_undeducted_quantity`
+  = `U + R` per applied line; unchanged for skipped or null-target lines; `stock_refund_returned_quantity` never touched** (only ids returned by `AdjustOrderStock` are updated).
 - **D-5 (user D5)** — `AutoCancelFullyRefundedOrder` is **not** changed; a regression test pins that it never moves stock.
 - **D-6 (user D7)** — No authorization change.
 
@@ -113,7 +113,7 @@ Feature: Cancelling an order returns stock only when the order administrator ask
 
 ## Files to create/modify
 - `app/Actions/Orders/CancelOrder.php` — `bool $adjustStock = false`; transaction + order lock + both guards re-run on the locked
-  row; lines locked by id; `AdjustOrderStock`; counter (D-4); docblock rewritten (D-1, D-2).
+  row; lines locked by id; `AdjustOrderStock`; `stock_undeducted_quantity` update (D-4); docblock rewritten (D-1, D-2).
 - `tests/Feature/Orders/CancelOrderTest.php` — rewrite the "accepts exactly one parameter" assertion (≈ line 218): `__invoke()`
   has two parameters, the first typed `Order`, the second `bool $adjustStock` with default `false`; keep the assertion that no
   confirmation-bypass parameter exists (no other parameter, a blocked cancellation still throws with `adjustStock: true`).
@@ -124,7 +124,8 @@ Feature: Cancelling an order returns stock only when the order administrator ask
 
 ## Tests to perform
 - [ ] Every Gherkin scenario, product and variant lines.
-- [ ] Counter = `S + R` per applied line after cancel-with-return; unchanged for skipped or null-target lines and after cancel-without-return.
+- [ ] `stock_undeducted_quantity` = `U + R` per applied line after cancel-with-return; unchanged for skipped or null-target lines and after cancel-without-return; `stock_refund_returned_quantity` unchanged.
+- [ ] 0088 sequences 1 (round trip, returns 2) and 8 (raise with deduction, returns 5) end at stock 10 through the real actions; after a cancel with return, `returnableStockUnits()` and `refundedUnitsOutOfStock()` of every line are 0 for an unrefunded order.
 - [ ] **Both refusal paths:** an ordinary administrator holding `orders.edit` + `orders.refund` → `AuthorizationException` for partially refunded, shipped and already-cancelled orders (policy state clause); a super administrator → `ValidationException` (already cancelled) / `OrderCancellationBlockedException` (shipped) from the action's guards re-run under the lock. Stock untouched in every case.
 - [ ] Authorization refusal is still first (an unauthorized caller learns nothing).
 - [ ] Concurrency: two cancellations of the same order serialized by the order lock — the second is refused and stock is returned once (pattern of `MarkOrderAsPaidConcurrencyTest`).
@@ -138,7 +139,7 @@ refunded-and-written-off or already returned.
 ## Acceptance criteria
 - [ ] `CancelOrder` accepts `adjustStock` (default `false`).
 - [ ] Cancellation and stock return are one transaction under the order lock; both guards re-run on the locked row; refusals keep their order and types.
-- [ ] Returnable units come from `returnableStockUnits()`; counter per D-4; no unit is ever returned twice across cancel, refund, quantity change and removal.
+- [ ] Returnable units come from `returnableStockUnits()`; counters per D-4; no unit is ever returned twice across cancel, refund, quantity change and removal.
 - [ ] `AutoCancelFullyRefundedOrder` never moves stock (test).
 - [ ] No authorization change.
 
@@ -170,3 +171,4 @@ Testable: stock asserted per scenario, both refusal paths, a concurrency test.
 ## Approval record
 - Phase 1: complete 2026-11-08 (product-owner).
 - Phase 2: INVEST review 2026-11-08: findings received → rewritten, pending re-review.
+- Phase 2: INVEST re-review 2026-11-08: helper and counter names aligned with the two-counter model (0088 D8) → rewritten, pending re-review.

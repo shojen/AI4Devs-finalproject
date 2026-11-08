@@ -45,9 +45,9 @@ Feature: A confirmation dialog can offer a second choice
     Then the dialog offers only to confirm or to go back, laid out as before
 
   Scenario: A dialog with a second choice shows three explicitly labelled options
-    Given an order administrator, on an order line whose quantity change asks about stock
-    When the order administrator opens the stock question
-    Then the dialog offers the main choice, the second choice and going back, each with its own label
+    Given an order administrator is asked to confirm an action that offers a second choice
+    When the confirmation dialog is shown
+    Then it offers the main choice, the second choice and going back, each with its own label
 ```
 
 ## Files to create/modify
@@ -98,3 +98,4 @@ for existing dialogs. Estimable/Small: one Blade component. Testable: render tes
 ## Approval record
 - Phase 1: complete 2026-11-08 (product-owner).
 - Phase 2: INVEST review 2026-11-08: findings received → rewritten, pending re-review.
+- Phase 2: INVEST re-review 2026-11-08: scenario 2 rewritten without reference to the quantity screen → rewritten, pending re-review.
