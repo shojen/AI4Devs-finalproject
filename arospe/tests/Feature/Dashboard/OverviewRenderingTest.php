@@ -156,11 +156,11 @@ test('the nothing-to-show message is absent as soon as one counter or widget is 
 // =====================================================================
 
 test('the blog widget lists the 3 newest published or scheduled posts with title, badge and no image', function () {
-    $oldest = BlogPost::factory()->published()->create(['title' => 'Oldest post', 'created_at' => '2026-01-01 09:00:00']);
-    $middle = BlogPost::factory()->published()->create(['title' => 'Middle post', 'created_at' => '2026-02-01 09:00:00']);
-    $newest = BlogPost::factory()->published()->create(['title' => 'Newest post', 'created_at' => '2026-03-01 09:00:00']);
-    $scheduled = BlogPost::factory()->scheduled()->create(['title' => 'Scheduled post', 'created_at' => '2026-02-15 09:00:00']);
-    $draft = BlogPost::factory()->draft()->create(['title' => 'Draft post', 'created_at' => '2026-04-01 09:00:00']);
+    $oldest = BlogPost::factory()->published()->titled('Oldest post')->create(['created_at' => '2026-01-01 09:00:00']);
+    $middle = BlogPost::factory()->published()->titled('Middle post')->create(['created_at' => '2026-02-01 09:00:00']);
+    $newest = BlogPost::factory()->published()->titled('Newest post')->create(['created_at' => '2026-03-01 09:00:00']);
+    $scheduled = BlogPost::factory()->scheduled()->titled('Scheduled post')->create(['created_at' => '2026-02-15 09:00:00']);
+    $draft = BlogPost::factory()->draft()->titled('Draft post')->create(['created_at' => '2026-04-01 09:00:00']);
 
     $html = overviewRenderHtml(['blog.view']);
 
@@ -204,11 +204,8 @@ test('the blog badge keeps its English words and colours', function () {
 });
 
 test('the description is plain text of at most 80 characters', function () {
-    $post = BlogPost::factory()->published()->create([
-        'body' => '<h2>Heading</h2><p>'.str_repeat('palabra ', 60).'</p><script>alert(1)</script>',
-    ]);
-    $short = BlogPost::factory()->published()->create([
-        'body' => '<p>Short <b>body</b></p>',
+    $post = BlogPost::factory()->published()->titled('Entrada larga', '<h2>Heading</h2><p>'.str_repeat('palabra ', 60).'</p><script>alert(1)</script>')->create();
+    $short = BlogPost::factory()->published()->titled('Entrada corta', '<p>Short <b>body</b></p>')->create([
         'created_at' => '2025-01-01 00:00:00',
     ]);
 
@@ -222,10 +219,7 @@ test('the description is plain text of at most 80 characters', function () {
 });
 
 test('hostile blog titles and descriptions render as text, never as markup', function (string $payload) {
-    $post = BlogPost::factory()->published()->create([
-        'title' => $payload,
-        'body' => '&lt;img src=x onerror=alert(1)&gt; '.$payload,
-    ]);
+    $post = BlogPost::factory()->published()->titled($payload, '&lt;img src=x onerror=alert(1)&gt; '.$payload)->create();
 
     $html = overviewRenderHtml(['blog.view', 'blog.edit']);
 

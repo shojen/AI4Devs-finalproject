@@ -145,7 +145,8 @@ test('every post that carried the deleted tag survives, untouched, with its othe
     app(DeleteBlogTag::class)($running);
 
     foreach ($posts as $post) {
-        $this->assertNotSoftDeleted('blog_posts', ['id' => $post->id, 'title' => $post->title]);
+        $this->assertNotSoftDeleted('blog_posts', ['id' => $post->id]);
+        $this->assertDatabaseHas('blog_post_translations', ['blog_post_id' => $post->id, 'title' => $post->translated('title')]);
         $this->assertDatabaseHas('blog_post_tag', ['blog_post_id' => $post->id, 'blog_tag_id' => $invierno->id]);
         expect($post->fresh()->tags->pluck('id')->all())->toBe([$invierno->id]);
     }

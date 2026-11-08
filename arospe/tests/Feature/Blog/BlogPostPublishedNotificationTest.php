@@ -66,8 +66,8 @@ function bpnUpdate(BlogPost $post, array $overrides = []): BlogPost
 {
     return app(UpdateBlogPost::class)(
         $post,
-        $overrides['title'] ?? $post->title,
-        $post->body,
+        $overrides['title'] ?? $post->translated('title'),
+        $post->translated('body'),
         $post->blog_category_id,
         $overrides['status'] ?? $post->status->value,
         array_key_exists('published_at', $overrides) ? $overrides['published_at'] : $post->published_at?->toDateTimeString(),
@@ -112,7 +112,7 @@ test('re-saving an already-published post with a title-only edit dispatches zero
     bpnUpdate($post, ['title' => 'Botas de invierno 2026']);
 
     $this->notifier->shouldNotHaveReceived('__invoke');
-    expect($post->fresh()->title)->toBe('Botas de invierno 2026');
+    expect($post->fresh()->translated('title'))->toBe('Botas de invierno 2026');
 });
 
 test('re-saving an already-published post with a tag-only edit dispatches zero times', function () {
@@ -209,11 +209,11 @@ test('a failed save dispatches zero times', function () {
 });
 
 test('a validation refusal dispatches zero times', function () {
-    $post = BlogPost::factory()->draft()->create(['body' => null]);
+    $post = BlogPost::factory()->draft()->titled('Sin cuerpo')->create();
 
     expect(fn () => app(UpdateBlogPost::class)(
         $post,
-        $post->title,
+        $post->translated('title'),
         null,
         $post->blog_category_id,
         'published',
@@ -260,8 +260,8 @@ test('a stale instance must not re-announce a post the sweep already announced',
 
     app(UpdateBlogPost::class)(
         $stale,
-        $stale->title,
-        $stale->body,
+        $stale->translated('title'),
+        $stale->translated('body'),
         $stale->blog_category_id,
         'published',
         $swept->published_at?->toDateTimeString(),

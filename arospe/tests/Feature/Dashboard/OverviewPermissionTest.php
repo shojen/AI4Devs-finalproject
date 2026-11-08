@@ -181,7 +181,7 @@ test('the dashboard route stays reachable for every profile without permissions'
 // =====================================================================
 
 test('a blog row links to its editor only when the actor may edit posts, otherwise it is plain text', function (array $permissions, bool $linked) {
-    $post = BlogPost::factory()->published()->create(['title' => 'Linked or not']);
+    $post = BlogPost::factory()->published()->titled('Linked or not')->create();
     $this->actingAs(Ui::actor($permissions));
     Log::spy();
 
