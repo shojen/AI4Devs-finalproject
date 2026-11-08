@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-08T00:00:00Z",
+  "generated_at": "2026-11-08T23:00:00Z",
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
     {
@@ -67,26 +67,31 @@
     {
       "id": "0088",
       "slug": "0088-order-stock-adjustment-foundation-backend",
-      "title": "Order stock adjustment foundation — returned-units counter and AdjustOrderStock (backend)",
+      "title": "Order stock foundation — stock-tracking columns, counter helpers and counter maintenance, no stock movement (backend)",
       "depends_on": [],
       "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
-        "database/migrations/*_add_stock_returned_quantity_to_order_items_table.php",
+        "database/migrations/*_add_stock_tracking_columns_to_order_items_table.php",
         "app/Models/OrderItem.php",
-        "app/Actions/Orders/AdjustOrderStock.php",
+        "app/Actions/Orders/CreateOrder.php",
+        "app/Actions/Orders/AddOrderItem.php",
+        "app/Actions/Orders/RecordRefund.php",
+        "app/Actions/Orders/UpdateOrderItemQuantity.php",
         "database/factories/OrderItemFactory.php",
-        "tests/Feature/Orders/AdjustOrderStockTest.php",
         "tests/Feature/Orders/OrderStockMigrationTest.php",
+        "tests/Feature/Orders/OrderStockCountersTest.php",
         "tests/Feature/Orders/OrderModelTest.php"
       ],
-      "conflict_risk_with": []
+      "conflict_risk_with": [
+        "0092a"
+      ]
     },
     {
-      "id": "0089",
-      "slug": "0089-order-stock-auto-deduct-on-create-and-add-backend",
-      "title": "Orders deduct stock automatically when an order is created or a line is added (backend)",
+      "id": "0088a",
+      "slug": "0088a-order-stock-auto-deduct-on-create-and-add-backend",
+      "title": "Orders deduct stock automatically when an order is created or a line is added — AdjustOrderStock (backend)",
       "depends_on": [
         "0088"
       ],
@@ -94,10 +99,13 @@
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
+        "app/Actions/Orders/AdjustOrderStock.php",
         "app/Actions/Orders/CreateOrder.php",
         "app/Actions/Orders/AddOrderItem.php",
+        "tests/Feature/Orders/AdjustOrderStockTest.php",
         "tests/Feature/Orders/CreateOrderStockTest.php",
-        "tests/Feature/Orders/AddOrderItemStockTest.php"
+        "tests/Feature/Orders/AddOrderItemStockTest.php",
+        "tests/Feature/Orders/OrderStockCountersTest.php"
       ],
       "conflict_risk_with": []
     },
@@ -107,7 +115,7 @@
       "title": "Line quantity changes and line removal adjust stock only on request (backend)",
       "depends_on": [
         "0088",
-        "0089"
+        "0088a"
       ],
       "status": "blocked",
       "claimed_by": null,
@@ -128,13 +136,14 @@
       "title": "Order cancellation returns stock only on request (backend)",
       "depends_on": [
         "0088",
-        "0089"
+        "0088a"
       ],
       "status": "blocked",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
         "app/Actions/Orders/CancelOrder.php",
+        "tests/Feature/Orders/CancelOrderTest.php",
         "tests/Feature/Orders/CancelOrderStockTest.php",
         "tests/Feature/Orders/AutoCancelFullyRefundedOrderTest.php",
         "tests/Feature/Orders/RemoveOrderItemStockTest.php"
@@ -144,12 +153,29 @@
       ]
     },
     {
-      "id": "0092",
-      "slug": "0092-order-refund-stock-return-backend",
-      "title": "Refunds can return refunded units to stock, and the refund lock order is fixed (backend)",
+      "id": "0092a",
+      "slug": "0092a-record-refund-lock-order-backend",
+      "title": "RecordRefund locks the order before its lines — no behaviour change (backend)",
+      "depends_on": [],
+      "status": "ready",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Actions/Orders/RecordRefund.php",
+        "tests/Feature/Orders/RecordRefundLockOrderTest.php"
+      ],
+      "conflict_risk_with": [
+        "0088"
+      ]
+    },
+    {
+      "id": "0092b",
+      "slug": "0092b-order-refund-stock-return-backend",
+      "title": "Refunds can return refunded units to stock (backend)",
       "depends_on": [
         "0088",
-        "0089"
+        "0088a",
+        "0092a"
       ],
       "status": "blocked",
       "claimed_by": null,
@@ -159,11 +185,11 @@
         "app/Concerns/OrderValidationRules.php",
         "lang/en/orders.php",
         "lang/es/orders.php",
-        "tests/Feature/Orders/RecordRefundStockTest.php",
-        "tests/Feature/Orders/RecordRefundLockOrderTest.php"
+        "tests/Feature/Orders/RecordRefundStockTest.php"
       ],
       "conflict_risk_with": [
         "0094",
+        "0094a",
         "0095"
       ]
     },
@@ -177,15 +203,14 @@
       "claimed_at": null,
       "touches": [
         "resources/views/components/confirm-dialog.blade.php",
-        "tests/Feature/Components/ConfirmDialogTest.php",
-        "tests/Browser/Components/ConfirmDialogSecondaryActionTest.php"
+        "tests/Feature/Components/ConfirmDialogTest.php"
       ],
       "conflict_risk_with": []
     },
     {
       "id": "0094",
-      "slug": "0094-order-line-quantity-and-removal-stock-dialog-ui",
-      "title": "Order detail — ask about stock when a line's quantity changes or a line is removed (frontend)",
+      "slug": "0094-order-line-quantity-stock-dialog-ui",
+      "title": "Order detail — ask about stock when a line's quantity changes (frontend)",
       "depends_on": [
         "0090",
         "0093"
@@ -204,7 +229,36 @@
         "tests/Browser/Orders/OrderDetailLineItemsTest.php"
       ],
       "conflict_risk_with": [
-        "0092",
+        "0092b",
+        "0094a",
+        "0095",
+        "0096"
+      ]
+    },
+    {
+      "id": "0094a",
+      "slug": "0094a-order-line-removal-stock-dialog-ui",
+      "title": "Order detail — ask about stock when a line is removed (frontend)",
+      "depends_on": [
+        "0090",
+        "0093",
+        "0094"
+      ],
+      "status": "blocked",
+      "claimed_by": null,
+      "claimed_at": null,
+      "touches": [
+        "app/Livewire/Orders/Show.php",
+        "resources/views/livewire/orders/show.blade.php",
+        "lang/en/orders.php",
+        "lang/es/orders.php",
+        "tests/Feature/Orders/ShowLineItemRemovalStockTest.php",
+        "tests/Feature/Orders/ShowLineItemsTest.php",
+        "tests/Browser/Orders/OrderLineItemStockDialogTest.php"
+      ],
+      "conflict_risk_with": [
+        "0092b",
+        "0094",
         "0095",
         "0096"
       ]
@@ -230,8 +284,9 @@
         "tests/Browser/Orders/OrderCancellationTest.php"
       ],
       "conflict_risk_with": [
-        "0092",
+        "0092b",
         "0094",
+        "0094a",
         "0096"
       ]
     },
@@ -240,7 +295,7 @@
       "slug": "0096-order-refund-modal-stock-return-ui",
       "title": "Order detail — the refund modal asks whether to return stock (frontend)",
       "depends_on": [
-        "0092"
+        "0092b"
       ],
       "status": "blocked",
       "claimed_by": null,
@@ -256,6 +311,7 @@
       ],
       "conflict_risk_with": [
         "0094",
+        "0094a",
         "0095"
       ]
     }
