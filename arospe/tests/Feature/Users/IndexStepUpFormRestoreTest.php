@@ -201,3 +201,45 @@ test('an ordinary-role creation never stashes a form', function () {
     expect(session()->has('users.pending_form'))->toBeFalse()
         ->and(User::where('email', 'bea@example.test')->exists())->toBeTrue();
 });
+
+test('a stash is discarded when the actor lost users.create before the screen is mounted again', function () {
+    $actor = User::factory()->create();
+    $actor->assignRole('Administrator');
+    $this->actingAs($actor);
+
+    session(['users.pending_form' => [
+        'actor_id' => $actor->id,
+        'target_id' => null,
+        'name' => 'Ana',
+        'email' => 'ana@example.test',
+        'roleId' => '1',
+        'status' => UserStatus::Active->value,
+        'stored_at' => now()->unix(),
+    ]]);
+
+    // The permission comes from the seeded Administrator role, so strip it there.
+    Role::findByName('Administrator')->revokePermissionTo('users.create');
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+    Livewire::test(Index::class)
+        ->assertSet('showModal', false)
+        ->assertSet('email', '');
+
+    expect(session()->has('users.pending_form'))->toBeFalse();
+});
+
+test('a malformed stash is discarded without error', function (array $stash) {
+    $actor = User::factory()->create();
+    $actor->assignRole('Super Admin');
+    $this->actingAs($actor);
+
+    session(['users.pending_form' => ['actor_id' => $actor->id, 'stored_at' => now()->unix(), ...$stash]]);
+
+    Livewire::test(Index::class)->assertSet('showModal', false);
+
+    expect(session()->has('users.pending_form'))->toBeFalse();
+})->with([
+    'array roleId' => [['target_id' => null, 'name' => 'Ana', 'email' => 'a@example.test', 'roleId' => ['1'], 'status' => 'active']],
+    'missing status' => [['target_id' => null, 'name' => 'Ana', 'email' => 'a@example.test', 'roleId' => '1']],
+    'array target id' => [['target_id' => ['x'], 'name' => 'Ana', 'email' => 'a@example.test', 'roleId' => '1', 'status' => 'active']],
+]);
