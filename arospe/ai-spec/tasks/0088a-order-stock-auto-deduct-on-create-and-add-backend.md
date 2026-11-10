@@ -2,7 +2,7 @@
 
 > **Status: New — created 2026-11-08 by splitting 0088 after the fourth Phase 2 INVEST review (user decision, OQ-5 option (a));
 > pending review.** Epic 3 follow-up bug fix, order-stock series. Suffix numbering follows the `0076a` precedent so the story
-> sorts right after [0088](0088-order-stock-adjustment-foundation-backend.md), on which it depends, and before 0090/0091/0092b,
+> sorts right after [0088](done/0088-order-stock-adjustment-foundation-backend.md), on which it depends, and before 0090/0091/0092b,
 > which depend on it. No UI pair (there is no order-creation screen; adding a line gets no prompt, user decision D2).
 
 ## Description
@@ -222,7 +222,7 @@ every later stock change in the series goes through one tested action.
   order.
 
 ## Dependencies, risks, open technical questions
-**Depends on:** [0088](0088-order-stock-adjustment-foundation-backend.md) (hard). **Blocks:**
+**Depends on:** [0088](done/0088-order-stock-adjustment-foundation-backend.md) (hard). **Blocks:**
 [0090](0090-order-line-quantity-and-removal-stock-opt-in-backend.md), [0091](0091-order-cancellation-stock-return-opt-in-backend.md),
 [0092b](0092b-order-refund-stock-return-backend.md).
 

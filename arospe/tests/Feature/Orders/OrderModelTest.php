@@ -5,6 +5,8 @@ use App\Enums\PaymentStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderPayment;
+use App\Models\Product;
+use App\Models\ProductVariant;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -199,3 +201,122 @@ test('a default-state order creates no payment row', function () {
 
     expect(DB::table('order_payments')->where('order_id', $order->id)->exists())->toBeFalse();
 });
+
+// --- Story 0088: stock target and counter helpers (D1, D8, D9) ---
+
+test('stockTarget() names the variant for a variant line, the product for a plain line, and null for a deleted product or an orphaned variant line', function () {
+    $product = Product::factory()->create();
+    $variant = ProductVariant::factory()->for($product)->create();
+
+    $variantLine = OrderItem::factory()->forVariant($variant)->create();
+    $productLine = OrderItem::factory()->create(['product_id' => $product->id]);
+    $orphanedLine = OrderItem::factory()->orphanedVariant()->create();
+
+    $deletedProduct = Product::factory()->create();
+    $deletedProductLine = OrderItem::factory()->create(['product_id' => $deletedProduct->id]);
+    $deletedProduct->delete();
+
+    expect($variantLine->stockTarget())->toBe(['type' => 'variant', 'id' => $variant->id])
+        ->and($productLine->stockTarget())->toBe(['type' => 'product', 'id' => $product->id])
+        ->and($orphanedLine->stockTarget())->toBeNull()
+        ->and($orphanedLine->fresh()->stockTarget())->toBeNull()
+        ->and($deletedProductLine->fresh()->product_id)->toBeNull()
+        ->and($deletedProductLine->fresh()->stockTarget())->toBeNull();
+});
+
+test('stockTarget() runs no query', function () {
+    $item = OrderItem::factory()->create()->fresh();
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    $item->stockTarget();
+
+    $queries = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    expect($queries)->toBe([]);
+});
+
+test('a factory line of 5 deducted has 5 returnable units and none refunded out', function () {
+    $item = OrderItem::factory()->create(['quantity' => 5]);
+
+    expect($item->returnableStockUnits())->toBe(5)
+        ->and($item->refundedUnitsOutOfStock())->toBe(0);
+});
+
+test('a legacy-untracked line has no returnable units and no refunded units out, with or without refunds', function (int $quantity, int $refunded) {
+    $item = OrderItem::factory()->legacyStockUntracked()->create([
+        'quantity' => $quantity,
+        'refunded_quantity' => $refunded,
+    ])->fresh();
+
+    expect($item->stock_undeducted_quantity)->toBe($quantity - $refunded)
+        ->and($item->stock_refunded_not_out_quantity)->toBe($refunded)
+        ->and($item->returnableStockUnits())->toBe(0)
+        ->and($item->refundedUnitsOutOfStock())->toBe(0);
+})->with([
+    'no refund' => [3, 0],
+    'partly refunded' => [5, 2],
+    'fully refunded' => [4, 4],
+]);
+
+test('returnableStockUnits() is (Q - F) - U and refundedUnitsOutOfStock() is F - K on a mixed line', function () {
+    $item = OrderItem::factory()->create([
+        'quantity' => 7,
+        'refunded_quantity' => 3,
+        'stock_undeducted_quantity' => 1,
+        'stock_refunded_not_out_quantity' => 1,
+    ]);
+
+    expect($item->returnableStockUnits())->toBe(3)
+        ->and($item->refundedUnitsOutOfStock())->toBe(2);
+});
+
+test('the factory keeps ordered_as_variant true for orphanedVariant() and derives it from the variant otherwise', function () {
+    $variant = ProductVariant::factory()->create();
+
+    expect(OrderItem::factory()->orphanedVariant()->create()->ordered_as_variant)->toBeTrue()
+        ->and(OrderItem::factory()->forVariant($variant)->create()->ordered_as_variant)->toBeTrue()
+        ->and(OrderItem::factory()->create()->ordered_as_variant)->toBeFalse();
+});
+
+dataset('refund_rule_cases', [
+    'R 5, f 2, k 0' => [5, 0, 0, 0, 2, 0, 0, 0],
+    'R 2 (Q 5, U 3), f 3, k 0' => [5, 3, 0, 0, 3, 0, 2, 1],
+    'R 0 after a cancel (Q 4, U 4), f 4, k 0' => [4, 4, 0, 0, 4, 0, 0, 4],
+    'R 2 (Q 5, U 3), f 3, k 2' => [5, 3, 0, 0, 3, 2, 2, 3],
+]);
+
+test('applyRefundToStockCounters(f, k) moves over = max(0, f - R) from U to K and adds k to K, keeping the invariants', function (int $quantity, int $undeducted, int $refundedNotOut, int $refundedBefore, int $refund, int $restocked, int $expectedUndeducted, int $expectedRefundedNotOut) {
+    $item = OrderItem::factory()->create([
+        'quantity' => $quantity,
+        'refunded_quantity' => $refundedBefore,
+        'stock_undeducted_quantity' => $undeducted,
+        'stock_refunded_not_out_quantity' => $refundedNotOut,
+    ]);
+
+    $item->applyRefundToStockCounters($refund, $restocked);
+
+    // The caller increments refunded_quantity afterwards; the method must not.
+    expect($item->stock_undeducted_quantity)->toBe($expectedUndeducted)
+        ->and($item->stock_refunded_not_out_quantity)->toBe($expectedRefundedNotOut)
+        ->and($item->refunded_quantity)->toBe($refundedBefore)
+        ->and($item->stock_undeducted_quantity)->toBeLessThanOrEqual($quantity - ($refundedBefore + $refund))
+        ->and($item->stock_refunded_not_out_quantity)->toBeLessThanOrEqual($refundedBefore + $refund);
+})->with('refund_rule_cases');
+
+test('applyRefundToStockCounters() refuses a restock above min(f, R) and leaves the counters unchanged', function (int $refund, int $restocked) {
+    $item = OrderItem::factory()->create([
+        'quantity' => 5,
+        'stock_undeducted_quantity' => 3,
+    ]);
+
+    expect(fn () => $item->applyRefundToStockCounters($refund, $restocked))->toThrow(LogicException::class);
+
+    expect($item->stock_undeducted_quantity)->toBe(3)
+        ->and($item->stock_refunded_not_out_quantity)->toBe(0);
+})->with([
+    'k above R (R 2, f 3, k 3)' => [3, 3],
+    'k above f (R 2, f 1, k 2)' => [1, 2],
+]);
