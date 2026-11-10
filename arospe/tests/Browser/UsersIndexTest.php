@@ -536,6 +536,9 @@ test('editing another user without a recent password confirmation restores the e
         ->assertNoJavaScriptErrors()
         ->assertValue('name', 'Diego Restored')
         ->click('Save')
+        // Waits for the saved row to appear in the list, so the database is only read once
+        // the Livewire request has actually finished.
+        ->assertSee('Diego Restored')
         ->assertNoJavaScriptErrors();
 
     expect($target->fresh()->name)->toBe('Diego Restored')
