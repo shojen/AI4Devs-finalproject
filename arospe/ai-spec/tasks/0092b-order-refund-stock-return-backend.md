@@ -2,7 +2,7 @@
 
 > **Status: New — created 2026-11-08 by splitting former story 0092 after the Phase 2 INVEST review (user decision); pending
 > review.** Epic 3 follow-up bug fix, order-stock series. Fullstack pair: **related_task_id 0096** (the refund modal).
-> Blocked on [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (`AdjustOrderStock`; and, through it, [0088](0088-order-stock-adjustment-foundation-backend.md)'s counters and refund rule) and
+> Blocked on [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (`AdjustOrderStock`; and, through it, [0088](in-progress/0088-order-stock-adjustment-foundation-backend.md)'s counters and refund rule) and
 > [0092a](0092a-record-refund-lock-order-backend.md) (the order-first lock order this story's stock call relies on, 0088a FD-2).
 
 ## Description
@@ -163,7 +163,7 @@ Independent: needs 0088a (and 0088) and 0092a only. Negotiable: lang key names. 
 Estimable/Small: one parameter, one rule set, four lang keys. Testable: a full validation matrix plus stock/counter assertions.
 
 ## Dependencies, risks, open technical questions
-**Depends on:** [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md), [0092a](0092a-record-refund-lock-order-backend.md) and [0088](0088-order-stock-adjustment-foundation-backend.md) (transitively)
+**Depends on:** [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md), [0092a](0092a-record-refund-lock-order-backend.md) and [0088](in-progress/0088-order-stock-adjustment-foundation-backend.md) (transitively)
 (hard). **Blocks:** [0096](0096-order-refund-modal-stock-return-ui.md). Soft: [0091](0091-order-cancellation-stock-return-opt-in-backend.md)
 (the cancel-then-refund case; if not merged, arrange the counters with the factory). Shares `lang/*/orders.php` with
 [0094](0094-order-line-quantity-stock-dialog-ui.md), [0094a](0094a-order-line-removal-stock-dialog-ui.md) and

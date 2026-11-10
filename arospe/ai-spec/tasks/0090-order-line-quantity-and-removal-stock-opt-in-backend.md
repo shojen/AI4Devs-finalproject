@@ -4,9 +4,9 @@
 > follow-up bug fix, order-stock series. **This story covers both operations**: changing a line's quantity
 > (`UpdateOrderItemQuantity`) **and** removing a line (`RemoveOrderItem`). Fullstack pairs: **related_task_id 0094**
 > (quantity dialog) and **0094a** (removal dialog). Blocked on [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md)
-> (automatic deduction and `AdjustOrderStock`) and, through it, [0088](0088-order-stock-adjustment-foundation-backend.md) (counters).
+> (automatic deduction and `AdjustOrderStock`) and, through it, [0088](in-progress/0088-order-stock-adjustment-foundation-backend.md) (counters).
 > **User-confirmed (2026-11-08):** the corrected decrease formula and the **two-counter** model in 0088's
-> [counter model](0088-order-stock-adjustment-foundation-backend.md#counter-model-d8-two-counters-user-confirmed-2026-11-08-corrected-after-review-3)
+> [counter model](in-progress/0088-order-stock-adjustment-foundation-backend.md#counter-model-d8-two-counters-user-confirmed-2026-11-08-corrected-after-review-3)
 > (D8 revised: user-confirmed 2026-11-08 (two counters), corrected after review #3). The "stock not changed" counter rules
 > already ship in 0088 (D10); this story adds the stock-moving branches.
 
@@ -217,7 +217,7 @@ Independent: needs 0088a (and 0088) only; no UI. Negotiable: counter rules settl
 parameter each, one formula. Testable: deterministic stock/counter assertions per scenario plus a numeric table.
 
 ## Dependencies, risks, open technical questions
-**Depends on:** [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (hard) and [0088](0088-order-stock-adjustment-foundation-backend.md) (transitively). **Blocks:**
+**Depends on:** [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (hard) and [0088](in-progress/0088-order-stock-adjustment-foundation-backend.md) (transitively). **Blocks:**
 [0094](0094-order-line-quantity-stock-dialog-ui.md), [0094a](0094a-order-line-removal-stock-dialog-ui.md).
 Shares `RemoveOrderItemStockTest.php` with [0091](0091-order-cancellation-stock-return-opt-in-backend.md) — sequence or coordinate.
 

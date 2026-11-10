@@ -8,7 +8,7 @@
 >
 > **History of the scope.** Former story 0089 (automatic deduction) was merged into this story at the first Phase 2 review
 > (its number is retired). At the fourth review **the user decided to split it again (OQ-5 option (a), 2026-11-08)**:
-> this story keeps the **counters only** and moves **no stock**; [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md)
+> this story keeps the **counters only** and moves **no stock**; [0088a](../0088a-order-stock-auto-deduct-on-create-and-add-backend.md)
 > adds `AdjustOrderStock` and the automatic deduction. **This story is safe to ship on its own:** every line it creates is
 > written stock-neutral (`stock_undeducted_quantity = quantity`, exactly like a legacy line), so a line created before 0088a
 > can never return stock it did not take — there is no release window between the two stories.
@@ -35,15 +35,15 @@ backend | includes database-expert: **yes** (three new columns + data backfill m
 
 ## Verified facts that shaped the story
 - `products.stock` and `product_variants.stock` are signed `INT NOT NULL DEFAULT 0`; a negative value is a legal
-  business state ([categories-and-products.md](../../docs/database/schema-products/categories-and-products.md),
-  [variants.md](../../docs/database/schema-products/variants.md)).
+  business state ([categories-and-products.md](../../../docs/database/schema-products/categories-and-products.md),
+  [variants.md](../../../docs/database/schema-products/variants.md)).
 - **No stock-tracking flag exists** on `Product` or `ProductVariant`, so no line is skipped for that reason. `Product::$type` is
   `physical`/`virtual` — see [OQ-4](#oq-4--virtual-products--resolved-user-confirmed-2026-11-08).
 - `Product` and `ProductVariant` have **no `SoftDeletes`**. A deleted catalog row is gone, and `order_items.product_id` /
   `product_variant_id` are `nullOnDelete()`. After its variant is deleted, a line looks exactly like a plain-product line.
   D9 resolves this.
 - `OrderItem::#[Fillable]` is `product_id`, `product_variant_id`, `quantity`; every derived column is written with
-  `forceFill()`/`forceCreate()` ([items-and-refunds.md#order_items](../../docs/database/schema-orders/items-and-refunds.md#order_items)).
+  `forceFill()`/`forceCreate()` ([items-and-refunds.md#order_items](../../../docs/database/schema-orders/items-and-refunds.md#order_items)).
 - `RecordRefund` already records refunds without any stock effect, and `UpdateOrderItemQuantity` already changes quantities
   without any stock effect — both happen today, so the counter rules for them must ship with the columns (D10).
 - `CreateOrder` writes the order and its lines inside `DB::transaction()` (with a retry loop for `order_number` collisions);
@@ -53,7 +53,7 @@ backend | includes database-expert: **yes** (three new columns + data backfill m
 - **D1 — Stock target.** A line moves `product_variants.stock` when it names a variant, otherwise `products.stock`
   (**virtual products included — OQ-4, user-confirmed 2026-11-08**). When the line's variant (on a variant line) or its
   product was deleted, **nothing** is adjusted for that line, and the stock dialogs do not list it.
-- **D2** — automatic deduction on create / add: **moved to [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md)**
+- **D2** — automatic deduction on create / add: **moved to [0088a](../0088a-order-stock-auto-deduct-on-create-and-add-backend.md)**
   (split, user decision 2026-11-08). In this story new lines are written stock-neutral (FD-4).
 - **D6 — Counters.** Two new columns, both `INT UNSIGNED NOT NULL DEFAULT 0`: `order_items.stock_undeducted_quantity` (U) and
   `order_items.stock_refunded_not_out_quantity` (K). The migration backfills every existing row with
@@ -127,8 +127,16 @@ backend | includes database-expert: **yes** (three new columns + data backfill m
   (a line as it is after 0088a, i.e. fully deducted — what later stories' tests need) and `ordered_as_variant` from whether
   the factory line names a variant. New states:
   - `legacyStockUntracked()` — `stock_undeducted_quantity = quantity − refunded_quantity`,
-    `stock_refunded_not_out_quantity = refunded_quantity` (also the shape this story's `CreateOrder` / `AddOrderItem` write);
+    `stock_refunded_not_out_quantity = refunded_quantity` (also the shape this story's `CreateOrder` / `AddOrderItem` write).
+    It computes both values in an `afterMaking` callback, because a plain `state()` closure does not see the final
+    `quantity` / `refunded_quantity` passed to `create([...])`;
   - `orphanedVariant()` — `ordered_as_variant = true`, `product_variant_id = null`, `product_id` set.
+
+  The factory's existing `configure()` (`afterMaking`) must not overwrite these values: `ordered_as_variant` is derived there as
+  `ordered_as_variant || product_variant_id !== null` (or set in the `forVariant()` state), never reset to `false`, so
+  `orphanedVariant()` keeps its `true`.
+- **FD-5b — `DemoDataSeeder`.** `database/seeders/DemoDataSeeder.php` creates its order lines through the factory without ever
+  deducting stock; it uses `->legacyStockUntracked()` so no seeded line can later return stock it never took.
 - **FD-6 — `RecordRefund` counter maintenance (D10).** Inside its existing transaction, for every refunded line (null-target
   lines included), before incrementing `refunded_quantity`: `applyRefundToStockCounters($quantityToRefund, 0)`; persisted with
   the same `forceFill()->save()` as `refunded_quantity`. No stock movement, no new parameter, no new refusal.
@@ -232,13 +240,13 @@ Feature: Order lines track which units are out of stock
 
   Scenario: A line raised with deduction after such a refund counts the newly deducted units as returnable
     Given an order administrator, with a paid order whose 2-unit "Mug" line was raised to 5 without deducting, refunded 3 units without returning stock, and then raised to 7 deducting the 2 added units
-    When the units of that line that can go back to stock are worked out
+    When the order administrator reviews the stock counts of that line
     Then 2 non-refunded units can go back to stock
     And 2 refunded units are still out of stock
 
   Scenario: A legacy line refunded and then raised with deduction counts only the new unit as returnable
     Given an order administrator, with an order recorded before stock tracking existed whose 3-unit "Mug" line was fully refunded and then raised to 4 deducting the added unit
-    When the units of that line that can go back to stock are worked out
+    When the order administrator reviews the stock counts of that line
     Then 1 non-refunded unit can go back to stock
     And no refunded unit is counted as out of stock
 
@@ -259,7 +267,7 @@ Feature: Order lines track which units are out of stock
   - Backfill `ordered_as_variant` (D9) with `UPDATE order_items LEFT JOIN products … SET ordered_as_variant = true WHERE
     product_variant_id IS NOT NULL OR (products.id IS NOT NULL AND order_items.product_sku <> products.sku)`.
 
-  `down()` drops the three columns. Follow [docs/database/migrations.md](../../docs/database/migrations.md).
+  `down()` drops the three columns. Follow [docs/database/migrations.md](../../../docs/database/migrations.md).
 - `app/Models/OrderItem.php` — `@property int $stock_undeducted_quantity`, `@property int $stock_refunded_not_out_quantity`,
   `@property bool $ordered_as_variant`, casts, `stockTarget()`, `returnableStockUnits()`, `refundedUnitsOutOfStock()`,
   `applyRefundToStockCounters()`; all three columns stay out of `#[Fillable]`.
@@ -268,6 +276,9 @@ Feature: Order lines track which units are out of stock
 - `app/Actions/Orders/RecordRefund.php` — FD-6: counter maintenance for every refunded line (no stock movement); docblock step.
 - `app/Actions/Orders/UpdateOrderItemQuantity.php` — FD-7: counter maintenance on increase/decrease (no stock movement).
 - `database/factories/OrderItemFactory.php` — FD-5.
+- `database/seeders/DemoDataSeeder.php` — FD-5b (`->legacyStockUntracked()` on seeded lines).
+- `tests/Feature/Orders/DemoDataSeederStockTest.php` — new: seeded order lines have `returnableStockUnits() === 0`
+  (extend an existing seeder test instead if one already covers `DemoDataSeeder`).
 - `tests/Feature/Orders/OrderStockMigrationTest.php` — new.
 - `tests/Feature/Orders/OrderStockCountersTest.php` — new (create/add/refund/quantity counter maintenance, sequences, property test).
 - `tests/Feature/Orders/OrderModelTest.php` — extend with the helper cases.
@@ -344,10 +355,10 @@ any stock change yet. Shipping this story alone is safe; 0088a then starts deduc
 - **Testable:** migration, unit, action and property tests; no UI.
 
 ## Dependencies, risks, open technical questions
-**Depends on:** nothing pending. **Blocks:** [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (and, through it,
-[0090](0090-order-line-quantity-and-removal-stock-opt-in-backend.md), [0091](0091-order-cancellation-stock-return-opt-in-backend.md),
-[0092b](0092b-order-refund-stock-return-backend.md)).
-**File overlap without a dependency:** [0092a](0092a-record-refund-lock-order-backend.md) also edits `RecordRefund.php` —
+**Depends on:** nothing pending. **Blocks:** [0088a](../0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (and, through it,
+[0090](../0090-order-line-quantity-and-removal-stock-opt-in-backend.md), [0091](../0091-order-cancellation-stock-return-opt-in-backend.md),
+[0092b](../0092b-order-refund-stock-return-backend.md)).
+**File overlap without a dependency:** [0092a](../0092a-record-refund-lock-order-backend.md) also edits `RecordRefund.php` —
 `conflict_risk_with`; run them in sequence or coordinate.
 
 - **R-1 — Two stories touch `CreateOrder` / `AddOrderItem` in a row** (this one, then 0088a). Expected; 0088a's diff is the
@@ -365,13 +376,13 @@ cancel-with-return returned the same units twice.
 
 ### OQ-3 — A line with zero returnable units — resolved (user-confirmed 2026-11-08)
 The dialog is still shown, with a note and only "Save without changing stock" / "Keep editing". See
-[0094](0094-order-line-quantity-stock-dialog-ui.md) and [0094a](0094a-order-line-removal-stock-dialog-ui.md).
+[0094](../0094-order-line-quantity-stock-dialog-ui.md) and [0094a](../0094a-order-line-removal-stock-dialog-ui.md).
 
 ### OQ-4 — Virtual products — resolved (user-confirmed 2026-11-08)
 D1 applies as written: every product line moves `products.stock`, including `virtual` products.
 
 ### OQ-5 — Story size — resolved (user-confirmed 2026-11-08: split, option (a))
-This story keeps the counters (no stock movement); [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md) adds
+This story keeps the counters (no stock movement); [0088a](../0088a-order-stock-auto-deduct-on-create-and-add-backend.md) adds
 `AdjustOrderStock` and the automatic deduction; 0090, 0091 and 0092b depend on 0088a.
 
 ### Backlog (technical tasks for later)
@@ -394,3 +405,4 @@ This story keeps the counters (no stock movement); [0088a](0088a-order-stock-aut
   D9 blind spot added → rewritten, pending re-review.
 - **Phase 2:** INVEST re-review #3 2026-11-08: refund rule corrected (U only non-refunded, `over` transfer on every refund), K renamed, backfill U = Q − F / K = F, `RecordRefund` and `UpdateOrderItemQuantity` counter maintenance added (D10), sequences and property test added, size concern raised as OQ-5 → rewritten, pending re-review.
 - **Phase 2:** INVEST re-review #4 2026-11-08 → rewritten, pending re-review (split into 0088 + 0088a per the user's OQ-5 decision; this story is counters only and safe alone; OQ-4 user-confirmed).
+- **Phase 2:** INVEST re-review #5 2026-11-10 (code-reviewer) → APPROVED: counters/sequences/D8–D10 verified against CreateOrder, AddOrderItem, RecordRefund, UpdateOrderItemQuantity, OrderItem and OrderItemFactory; Small and safe alone, with amendments applied: DemoDataSeeder uses legacyStockUntracked() (FD-5b, added to files + test), factory configure() must not overwrite ordered_as_variant and legacyStockUntracked() computes in afterMaking, two helper-level Gherkin When steps reworded.
