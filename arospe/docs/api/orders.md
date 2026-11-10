@@ -8,6 +8,7 @@ Part of [Routes](routes.md) — see [routes.md](routes.md#why-this-file-exists) 
 - [Lang group `orders.payment.*` and the 0085 test support](#lang-group-orderspayment-and-the-0085-test-support)
 - [`orders.show` — the twelfth permission-gated route, and the first screen governed by three abilities](#ordersshow--the-twelfth-permission-gated-route-and-the-first-screen-governed-by-three-abilities)
 - [`MarkOrderAsPaid` — the action contract (story 0084, no route)](#markorderaspaid--the-action-contract-story-0084-no-route)
+- [Order-line stock counters — side effects of the order actions (story 0088)](#order-line-stock-counters--side-effects-of-the-order-actions-story-0088)
 - [Shared pieces this story introduced](#shared-pieces-this-story-introduced)
 
 ## `orders.index` — the eleventh permission-gated route, and a list with exactly one write
@@ -83,10 +84,21 @@ The UI hint for each mirrors the predicate its own guard reads — the component
 
 Tests (story 0085): [`tests/Support/Orders/MarkAsPaidUi.php`](../../tests/Support/Orders/MarkAsPaidUi.php) holds the actor (permissions plus admin locale) and by-`data-test` DOM probes; the dataset `mark_as_paid_button_visibility_grid` in [`tests/Feature/Orders/Datasets.php`](../../tests/Feature/Orders/Datasets.php) writes the 4 x 5 payment-state/status visibility grid out literally (exactly 4 visible cells), never derived from `isAwaitingPayment()`. Feature coverage is in `IndexMarkAsPaidTest` and `ShowMarkAsPaidTest`; browser journeys are in `tests/Browser/Orders/`.
 
+## Order-line stock counters — side effects of the order actions (story 0088)
+
+No route or signature changed. Four actions now also maintain the line's stock counters (`stock_undeducted_quantity` U, `stock_refunded_not_out_quantity` K); **none moves, reads or locks stock**. Rules in [items-and-refunds.md](../database/schema-orders/items-and-refunds.md#stock-tracking-columns-story-0088).
+
+| Action | Counter side effect |
+| --- | --- |
+| `CreateOrder` | each new line: `U = quantity`, `K = 0`, `ordered_as_variant = (variant named)` — stock-neutral, like a legacy line |
+| `AddOrderItem` | the same three values on the added line |
+| `RecordRefund` | per refunded line, before `refunded_quantity` is incremented: `OrderItem::applyRefundToStockCounters(quantity, 0)` (D8, `k = 0`), persisted in the same `forceFill()->save()` |
+| `UpdateOrderItemQuantity` | increase by d: `U + d`; decrease by d: `max(0, U - d)`; K unchanged, written in the same save as `quantity` / `line_total` |
+
 ## Shared pieces this story introduced
 
 - **`<x-money :amount>`** ([`money.blade.php`](../../resources/views/components/money.blade.php)) prints `€ {amount}` from the stored decimal string, with no cast or formatting. Story 0047's customer order history was retrofitted to it.
 - **`<x-confirm-dialog>`** ([`confirm-dialog.blade.php`](../../resources/views/components/confirm-dialog.blade.php)) — props `show`, `model`, `heading`, `body`, `confirm-label`, `dismiss-label`, `confirm-action`, `dismiss-action`, `test-prefix`, `variant`. It holds no state and decides nothing: the parent owns the bool and both methods. `@close` runs the dismiss method (Flux compiles it to `wire:close` on the `<dialog>`), so Esc, backdrop and the X reach the server like the Cancel button. Its inner content is wrapped in `@if ($show)` and the hooks sit on that inner content, never on `<flux:modal>`. It is the repo's first shared anonymous component that is not navigation chrome.
 - **`Order::isLineItemEditable()`** and **`Order::isRefundable()`** ([`app/Models/Order.php`](../../app/Models/Order.php)) — the single copy of the `Shipped`/`Delivered` block and of the `Paid`/`PartiallyRefunded` refund state, read by the actions and by this screen. The three `assertEditable()` bodies still each log and throw (triplicated), but the status set itself now lives once.
 
-_Last updated: 2026-11-06 — Story 0076: the `Orders\Show` product picker orders by the default-language product name (`—` when absent) and order lines snapshot it via `Product::snapshotName()`. Earlier content current from story 0085 (order mark-as-paid UI)._
+_Last updated: 2026-11-10 — Story 0088: new section on the order-line stock-counter side effects of `CreateOrder`, `AddOrderItem`, `RecordRefund` and `UpdateOrderItemQuantity`. Story 0076: the `Orders\Show` product picker orders by the default-language product name (`—` when absent) and order lines snapshot it via `Product::snapshotName()`. Earlier content current from story 0085 (order mark-as-paid UI)._
