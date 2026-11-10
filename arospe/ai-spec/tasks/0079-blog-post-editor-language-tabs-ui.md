@@ -1296,7 +1296,7 @@ a post's French title is neither identity-sensitive nor hard to reverse.
   editor, the routes, the registry entry and the lang files this story widens. See **R-1**.
 - **[0071](done/0071-product-categories-language-tabs-ui.md)** — hard. The shared strip, `setActiveLanguageTab()`,
   the two-layer pattern, the `x-show` rendering mode, the derived error key. **Consumed, never edited.**
-- **[0077](0077-product-editor-language-tabs-ui.md)** — soft but load-bearing. Not a code dependency;
+- **[0077](done/0077-product-editor-language-tabs-ui.md)** — soft but load-bearing. Not a code dependency;
   it is where the multi-field, routed-page, WYSIWYG-in-tabs shape was worked out, and this story adopts
   its **C-2** reconciliation and **D-4** state triple, plus [0076b](done/0076b-product-translation-write-action-backend.md)'s **D-1** parameter rule, wholesale.
 - **[0070](done/0070-translatable-content-mechanism-product-categories-backend.md)** — hard.

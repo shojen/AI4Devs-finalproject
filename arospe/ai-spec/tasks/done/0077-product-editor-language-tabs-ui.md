@@ -1,9 +1,9 @@
 # [0077] Product editor — language tabs (UI)
 
 ## Description
-Adds per-store-language tabs to the product editor ([PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization): *"each active store language surfaces as a tab in the Product and Blog editors"*), so a catalog administrator authors a product's **five** translatable fields — `name`, `description`, `slug`, `meta_title`, `meta_description` — in every active store language from one screen. Non-translatable fields (`sku`, category, `type`, `status`, `price`, `stock`, imagery, sales regions) stay **outside** the tabs and render once.
+Adds per-store-language tabs to the product editor ([PRD Epic 5, Layer 2](../../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization): *"each active store language surfaces as a tab in the Product and Blog editors"*), so a catalog administrator authors a product's **five** translatable fields — `name`, `description`, `slug`, `meta_title`, `meta_description` — in every active store language from one screen. Non-translatable fields (`sku`, category, `type`, `status`, `price`, `stock`, imagery, sales regions) stay **outside** the tabs and render once.
 
-**What exists today (verified at `HEAD`).** `app/Livewire/Products/Editor.php` and `resources/views/livewire/products/editor.blade.php` (0027) edit the **default language only**: scalar `$name` / `$description` and `#[Locked] ?string $slug / $metaTitle / $metaDescription` (0076a **D-33**, passed through unchanged on edit and `null` on create, `Editor.php:131-138`, `:472-503`). One `WysiwygEditor` (0021, `#[Modelable] $value`) is bound with `wire:model="description"`. `ProductTranslation`, `SetTranslation`, `CanonicalizeProductSlug`, `TranslateProductUniqueViolation` and the shared `resources/views/components/language-tab-strip.blade.php` (0071) are shipped. The guarded per-language write action is [0076b](done/0076b-product-translation-write-action-backend.md), which this story depends on.
+**What exists today (verified at `HEAD`).** `app/Livewire/Products/Editor.php` and `resources/views/livewire/products/editor.blade.php` (0027) edit the **default language only**: scalar `$name` / `$description` and `#[Locked] ?string $slug / $metaTitle / $metaDescription` (0076a **D-33**, passed through unchanged on edit and `null` on create, `Editor.php:131-138`, `:472-503`). One `WysiwygEditor` (0021, `#[Modelable] $value`) is bound with `wire:model="description"`. `ProductTranslation`, `SetTranslation`, `CanonicalizeProductSlug`, `TranslateProductUniqueViolation` and the shared `resources/views/components/language-tab-strip.blade.php` (0071) are shipped. The guarded per-language write action is [0076b](0076b-product-translation-write-action-backend.md), which this story depends on.
 
 **This story is UI only.** It consumes, unmodified: 0071's tab strip and component pattern, 0076/0076a's `CreateProduct` / `UpdateProduct` signatures and rule methods (`productNameRules()`, `productDescriptionRules()`, `productSlugRules(string $storeLanguageId, ?string $productId)`, `productMetaTitleRules()`, `productMetaDescriptionRules()` — `app/Concerns/ProductValidationRules.php:80,204,217,236,247`), and 0076b's `SetProductTranslation`.
 
@@ -20,7 +20,7 @@ frontend | includes database-expert: **no** (no migration, model, action, rule m
 
 ## Gherkin — 2. Detailed acceptance criteria (Given/When/Then)
 
-Every scenario opens with a named business-role actor and has exactly one `When` ([gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3).
+Every scenario opens with a named business-role actor and has exactly one `When` ([gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3).
 
 ```gherkin
 Feature: Per-store-language content in the product editor
@@ -249,7 +249,7 @@ Feature: Per-store-language content in the product editor
 
 ## Files to create/modify
 
-Phase 3 of this story must not run in the same batch as any story touching the files below (Parallel Agent File-Ownership Rule); today that is [0087](0087-translation-write-actions-refuse-inactive-store-language.md) (`lang/{en,es}/products.php`).
+Phase 3 of this story must not run in the same batch as any story touching the files below (Parallel Agent File-Ownership Rule); today that is [0087](../0087-translation-write-actions-refuse-inactive-store-language.md) (`lang/{en,es}/products.php`).
 
 ### Modify
 
@@ -354,12 +354,12 @@ A catalog administrator opening a product sees a tab per active store language, 
 - [ ] No backend file changes; `tests/Unit/ProductTranslationArchitectureTest.php` stays green unchanged; `lang/en/products.php` and `lang/es/products.php` stay key-for-key identical; no hardcoded user-facing string.
 
 ## Definition of Done
-- [ ] Tests written and green, including the six browser tests; full suite green unscoped before closure
-- [ ] Pint and Larastan clean
-- [ ] Code reviewed (`code-reviewer`)
-- [ ] No security findings (`appsec-auditor`) — point the audit at: payload narrowing to active languages (D-3); the locked properties and `setActiveLanguageTab()` input; the create-path `update` check (D-8); that `SetTranslation` is unreachable from `App\Livewire\Products`; `prefillSlug()` authorization
-- [ ] Documentation updated (`docs-keeper`): epic-5 digest entry; `docs/api/routes.md` (editor's public methods) if it lists them
-- [ ] Acceptance criteria met
+- [x] Tests written and green, including the six browser tests; full suite green unscoped before closure
+- [x] Pint and Larastan clean (Larastan: only the pre-existing local-only error in `SanitizeProductDescription.php:98`, an untouched file)
+- [x] Code reviewed (`code-reviewer`)
+- [x] No security findings (`appsec-auditor`) — point the audit at: payload narrowing to active languages (D-3); the locked properties and `setActiveLanguageTab()` input; the create-path `update` check (D-8); that `SetTranslation` is unreachable from `App\Livewire\Products`; `prefillSlug()` authorization
+- [x] Documentation updated (`docs-keeper`): epic-5 digest entry; `docs/api/routes.md` (editor's public methods) if it lists them
+- [x] Acceptance criteria met
 
 ## 4. Documented functional decisions
 
@@ -396,9 +396,9 @@ A catalog administrator opening a product sees a tab per active store language, 
 ## 5. Dependencies, risks, open technical questions
 
 ### Dependencies
-- `depends_on`: [0076b](done/0076b-product-translation-write-action-backend.md) (closed 2026-11-10, PR pending) — `SetProductTranslation`, the `products.attributes.{name,description}` labels and `products.editor.tabs.language_inactive`. Unblocked: Phase 3 may start once the 0076b branch is merged into the base.
-- Shipped and consumed: [0021](done/0021-wysiwyg-rich-text-editor-component.md), [0027](done/0027-products-list-and-editor-ui.md), [0070](done/0070-translatable-content-mechanism-product-categories-backend.md), [0071](done/0071-product-categories-language-tabs-ui.md), [0075](done/0075-blog-tags-language-tabs-ui.md), [0076](done/0076-translatable-content-retrofit-products-backend.md), [0076a](done/0076a-product-slug-and-seo-fields-backend.md).
-- `conflict_risk_with`: [0087](0087-translation-write-actions-refuse-inactive-store-language.md) (`lang/{en,es}/products.php`; its inactive-language rule, which this story relies on through 0076b) and [0079](0079-blog-post-editor-language-tabs-ui.md) (sibling editor-tabs pattern; 0079 cites this story's D-numbers). Not a dependency on either.
+- `depends_on`: [0076b](0076b-product-translation-write-action-backend.md) (closed 2026-11-10, PR pending) — `SetProductTranslation`, the `products.attributes.{name,description}` labels and `products.editor.tabs.language_inactive`. Unblocked: Phase 3 may start once the 0076b branch is merged into the base.
+- Shipped and consumed: [0021](0021-wysiwyg-rich-text-editor-component.md), [0027](0027-products-list-and-editor-ui.md), [0070](0070-translatable-content-mechanism-product-categories-backend.md), [0071](0071-product-categories-language-tabs-ui.md), [0075](0075-blog-tags-language-tabs-ui.md), [0076](0076-translatable-content-retrofit-products-backend.md), [0076a](0076a-product-slug-and-seo-fields-backend.md).
+- `conflict_risk_with`: [0087](../0087-translation-write-actions-refuse-inactive-store-language.md) (`lang/{en,es}/products.php`; its inactive-language rule, which this story relies on through 0076b) and [0079](../0079-blog-post-editor-language-tabs-ui.md) (sibling editor-tabs pattern; 0079 cites this story's D-numbers). Not a dependency on either.
 
 ### Risks
 - **R-1** `wire:model="descriptions.{id}"` on a `#[Modelable]` child is a dotted array path; Phase 3 proves it binds and writes back (B-2/B-4) before building the rest. UUIDs contain no `.`.
@@ -421,4 +421,31 @@ Phase 1 debate 2026-08-29/30 (`product-owner`, `frontend-expert`, `frontend-qa`)
 - Rewritten 2026-11-10 after split A/B decisions.
 - 2026-11-10 (`product-owner`): Phase 2 re-review edits applied — D-5 narrows before the D-8 check (new create-only/deactivated-language scenario and test); D-9 `?? ''` and D-5 local copy with matching tests; `setActiveLanguageTab()` specified as `ModelNotFoundException`; component gate cases moved to `ScreenAuthorizationTest.php` (`ProductAuthorizationTest.php` dropped from the Files table); line citations corrected (architecture guard 10–12, strip hooks 16/27/41).
 - Phase 2 APPROVED 2026-11-10 (code-reviewer, delta confirmation after the split and defects 1-7); owner decisions A (split), B (inactive languages refused from day one), and keeping the 0071/0075 precedent of no permission check on setActiveLanguageTab() are recorded.
-- Unblocked 2026-11-10: [0076b](done/0076b-product-translation-write-action-backend.md) closed (Phase 7, PR pending); Phase 3 starts once it is merged.
+- Unblocked 2026-11-10: [0076b](0076b-product-translation-write-action-backend.md) closed (Phase 7, PR pending); Phase 3 starts once it is merged.
+
+## Implementation records (Phases 3-6)
+
+### Phase 3 - TDD
+- Red -> green. The 7 assumptions flagged by QA all held against the shipped code.
+- One story-external test broke and was retargeted: `tests/Feature/Products/ProductListAndPickerOrderingTest.php` (asserted the removed `name`/`description` properties; not in the Files table). Logged in `docs/errors-log.md`.
+
+### Phase 4 - appsec-auditor: PASS
+- L-1 (Low): non-string tampered array values raised a `TypeError` -> FIXED with `typedString()` (7+1 tests).
+- I-1 (Info): the WYSIWYG was not disabled in locked panels -> FIXED with `:disabled`.
+- I-2 (Info): no-default-language invariant -> ACCEPTED (sibling-wide, not specific to this story).
+
+### Phase 5 - code-reviewer: APPROVED, conditions met
+- Full suite unscoped in chunks: A 1375, B 825, C 1435, D 1041 (1036 passed, 5 skipped), E 743, F 1122, Browser 286 (283 passed, 3 skipped) = 6827 tests, 0 failures, 8 skips none in files touched by this story. Pint unscoped passed.
+
+### Story vs shipped
+1. `ProductListAndPickerOrderingTest` was not in the Files table (see Phase 3).
+2. `ScreenAuthorizationTest` had no `save()` refusal tests, so the `product_translations` assertion went on the mount refusal plus a new mount test.
+3. D-12 not followed as written: locked inputs use a `:disabled` prop with no `<flux:tooltip>`, and no test matches `disabled="disabled"` - ACCEPTED, the lock notice explains the state.
+4. A public `hydrate()` and an extra `data-test="product-language-tabs"` wrapper were not specified.
+5. `editor.tabs.{slug,meta_title,meta_description}_label` keys were added, as the Files table allowed.
+
+### Phase 6 - docs-keeper
+- Updated: `docs/api/products/products-index-and-editor.md`, `routeless-components.md`, `docs/api/routes.md`, the two `docs/security/livewire-authorization/` parts, `docs/conventions/naming/livewire-components-and-views.md`, `docs/database/schema-products/categories-and-products.md`, `docs/errors-log` (one entry), and the epic-5 digest.
+
+### Phase 7 - closure
+Phase 7 closed 2026-11-10, PR pending. Task file moved `in-progress/` -> `done/`; link-integrity check (both directions) and `tasks-map.md` / `tasks-status.json` regeneration done.

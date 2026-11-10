@@ -299,7 +299,7 @@ the suite.
   0068 D5 (removal = deactivation).
 - Pending [0076b](done/0076b-product-translation-write-action-backend.md) (new `SetProductTranslation`, which
   refuses an inactive language itself) and [0079](0079-blog-post-editor-language-tabs-ui.md) are affected
-  by note only (§6); [0077](0077-product-editor-language-tabs-ui.md) is affected only through 0076b.
+  by note only (§6); [0077](done/0077-product-editor-language-tabs-ui.md) is affected only through 0076b.
 
 ### Risks
 
@@ -324,7 +324,7 @@ the suite.
   `SetProductTranslation` must refuse an inactive language in the action itself (0076b D-3);
   component-only filtering is insufficient. The structural guard in `tests/Unit/ArchitectureTest.php`
   must cover `SetProductTranslation`, whichever of 0076b and this story lands second. The product editor
-  ([0077](0077-product-editor-language-tabs-ui.md)) is affected only through 0076b.
+  ([0077](done/0077-product-editor-language-tabs-ui.md)) is affected only through 0076b.
   Update 2026-11-10: 0076b has landed `SetProductTranslation` with the refusal already in place (`names.{id}`, `products.editor.tabs.language_inactive`), so this story's guard must include it.
 - **docs-keeper:** sweep `docs/` for "inactive languages remain writable" statements.
 

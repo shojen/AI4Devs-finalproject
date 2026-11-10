@@ -3,9 +3,9 @@
 ## Description
 Adds the product **slug** and **SEO meta fields** (`slug`, `meta_title`, `meta_description`) to the per-store-language `product_translations` table that [0076](../done/0076-translatable-content-retrofit-products-backend.md) creates ([PRD Epic 5, Layer 2](../../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization); [assumption 14](../../../docs/PRD/sections/foundations.md#assumptions--confirmed-decisions) names *"slug/SEO fields … on products"* as translatable content). It covers the columns, their validation rules, the `CreateProduct`/`UpdateProduct` signature widening, slug canonicalisation in two layers, per-language slug uniqueness, and a 1062 race catch that is disambiguated by index name.
 
-**Origin.** This story was split out of 0076 on 2026-11-06 (project owner's decision after 0076's Phase 2 rejection; see that file's review log). The text below reuses 0076's original Phase 1 debate (2026-08-29) where it is still valid. Its decision numbers keep 0076's original ones (**D-5**, **D-6**, **D-18**) so that [0077](../0077-product-editor-language-tabs-ui.md)'s references still resolve. New decisions start at **D-30**.
+**Origin.** This story was split out of 0076 on 2026-11-06 (project owner's decision after 0076's Phase 2 rejection; see that file's review log). The text below reuses 0076's original Phase 1 debate (2026-08-29) where it is still valid. Its decision numbers keep 0076's original ones (**D-5**, **D-6**, **D-18**) so that [0077](0077-product-editor-language-tabs-ui.md)'s references still resolve. New decisions start at **D-30**.
 
-**Numbering.** This story is `0076a`, not the next free integer (`0088`). The reason is the [task ordering rule](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule): a dependency's number must be lower than its dependents', and [0077](../0077-product-editor-language-tabs-ui.md) consumes this story's rule methods and widened signatures. A suffix keeps `0076 < 0076a < 0077` without renumbering 0077, using the same convention as `0024a`/`0024b`.
+**Numbering.** This story is `0076a`, not the next free integer (`0088`). The reason is the [task ordering rule](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule): a dependency's number must be lower than its dependents', and [0077](0077-product-editor-language-tabs-ui.md) consumes this story's rule methods and widened signatures. A suffix keeps `0076 < 0076a < 0077` without renumbering 0077, using the same convention as `0024a`/`0024b`.
 
 ## Type
 backend | includes database-expert: **yes** (one additive migration with a named composite unique index)
@@ -16,7 +16,7 @@ backend | includes database-expert: **yes** (one additive migration with a named
 > **I want** each product to carry its own slug, meta title and meta description per store language,
 > **so that** each language's storefront can address and describe the product in its own words, and two products can never claim the same address within one language.
 
-**Scope fence.** No screen, route, tab or lang key for a visible control. The editor fields and the slug pre-fill affordance belong to [0077](../0077-product-editor-language-tabs-ui.md). Every write in this story goes through `CreateProduct`/`UpdateProduct` and writes the **default store language**, as in 0076. Non-default-language writes are 0077's `SetProductTranslation`.
+**Scope fence.** No screen, route, tab or lang key for a visible control. The editor fields and the slug pre-fill affordance belong to [0077](0077-product-editor-language-tabs-ui.md). Every write in this story goes through `CreateProduct`/`UpdateProduct` and writes the **default store language**, as in 0076. Non-default-language writes are 0077's `SetProductTranslation`.
 
 ## Gherkin — 2. Detailed acceptance criteria (Given/When/Then)
 
@@ -298,7 +298,7 @@ Each `product_translations` row can carry a slug, a meta title and a meta descri
 
 **D-35 — The `saving` hook normalises the meta fields too (finding 6, resolved as "move it into the hook").** When `meta_title` or `meta_description` is dirty, the hook trims it and stores blank as `NULL`. This is the same two-layer reasoning as **D-6**: every writer is bound, including bare `SetTranslation` and 0077's action, so the actions do not duplicate the step. Reads were already safe (`translated()` treats `''` as absent), but the stored data is now uniform.
 
-**D-32 — Rule method names follow the shipped trait** (`productNameRules()`, `productSkuRules()`, …): `productSlugRules()`, `productMetaTitleRules()` and `productMetaDescriptionRules()`. [0077](../0077-product-editor-language-tabs-ui.md)'s draft calls them `slugRules()` / `metaTitleRules()` / `metaDescriptionRules()`, and 0077's Phase 3 must adopt these names. This is recorded here as a hand-off and 0077's file is not edited.
+**D-32 — Rule method names follow the shipped trait** (`productNameRules()`, `productSkuRules()`, …): `productSlugRules()`, `productMetaTitleRules()` and `productMetaDescriptionRules()`. [0077](0077-product-editor-language-tabs-ui.md)'s draft calls them `slugRules()` / `metaTitleRules()` / `metaDescriptionRules()`, and 0077's Phase 3 must adopt these names. This is recorded here as a hand-off and 0077's file is not edited.
 
 **D-33 — The existing editor preserves the three fields until 0077 exposes them.** Because `UpdateProduct` requires them (**D-18**), `Products\Editor::save()` must pass something. It passes the values it read from the raw default-language row in `mount()`, held in `#[Locked]` properties so a forged update cannot change them through a field the UI does not offer.
 
@@ -307,7 +307,7 @@ Each `product_translations` row can carry a slug, a meta title and a meta descri
 ### Dependencies
 - **[0076](../done/0076-translatable-content-retrofit-products-backend.md)**: hard. It supplies `product_translations`, `ProductTranslation` and its `saving` hook, the default-language write in both actions, and the editor's raw-row read.
 - Shipped: [0024](../done/0024-products-core-crud-backend.md) (the actions and their 1062 catches), [0070](../done/0070-translatable-content-mechanism-product-categories-backend.md) (`SetTranslation`), [0068](../done/0068-store-languages-catalog-backend.md).
-- **Dependents:** [0077](../0077-product-editor-language-tabs-ui.md) (hard: rule methods, widened signatures).
+- **Dependents:** [0077](0077-product-editor-language-tabs-ui.md) (hard: rule methods, widened signatures).
 - **File-sharing:** [0087](../0087-translation-write-actions-refuse-inactive-store-language.md) also edits `lang/{en,es}/products.php`.
 
 ### Risks

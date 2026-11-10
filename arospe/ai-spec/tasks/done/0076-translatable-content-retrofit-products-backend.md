@@ -26,9 +26,9 @@ backend | includes database-expert: **yes** (one new table with an idempotent da
 
 > **As** the engineer applying story 0070's recipe to the first entity with two translatable fields,
 > **I want** per-field fallback proven against real fields, the description sanitizer bound to every writer, and every reader of the moved columns migrated in the same change,
-> **so that** dropping the columns breaks nothing that ships today and the language-tab UI story ([0077](../0077-product-editor-language-tabs-ui.md)) builds on a safe mechanism.
+> **so that** dropping the columns breaks nothing that ships today and the language-tab UI story ([0077](0077-product-editor-language-tabs-ui.md)) builds on a safe mechanism.
 
-**Scope fence.** This story ships **no new screen, route, language tab or `config/modules.php` entry**. It **does** edit the existing Livewire readers of the dropped columns (listed under *Modify*), minimally, so they keep their current behaviour against the new storage. Non-default-language authoring (the tabs, and the per-entity `SetProductTranslation` action that validates and authorizes such a write) belongs to [0077](../0077-product-editor-language-tabs-ui.md); slug/SEO belong to [0076a](0076a-product-slug-and-seo-fields-backend.md).
+**Scope fence.** This story ships **no new screen, route, language tab or `config/modules.php` entry**. It **does** edit the existing Livewire readers of the dropped columns (listed under *Modify*), minimally, so they keep their current behaviour against the new storage. Non-default-language authoring (the tabs, and the per-entity `SetProductTranslation` action that validates and authorizes such a write) belongs to [0077](0077-product-editor-language-tabs-ui.md); slug/SEO belong to [0076a](0076a-product-slug-and-seo-fields-backend.md).
 
 ## Gherkin — 2. Detailed acceptance criteria (Given/When/Then)
 
@@ -173,7 +173,7 @@ Feature: Per-store-language product content
     Then the count includes the French product translations
 ```
 
-**Moved out of this story at the split (not deleted):** writing, re-translating, refusing a blank title in, or sanitizing a description in a **non-default** language, and the store-language-permission scenario for a French write, all need a validating and authorizing non-default write path, which only [0077](../0077-product-editor-language-tabs-ui.md) ships (its scenarios *"A catalog administrator translates a product into an additional language"*, *"A blank title in a language being authored is refused"*, *"A description written in a non-default language is stored safely"* and *"Translating a product is refused without the editor, not only within it"* already cover them). The slug scenarios moved to [0076a](0076a-product-slug-and-seo-fields-backend.md). The bare `SetTranslation` sanitization proof is a technical test, not a business scenario, and stays below under *Tests to perform*.
+**Moved out of this story at the split (not deleted):** writing, re-translating, refusing a blank title in, or sanitizing a description in a **non-default** language, and the store-language-permission scenario for a French write, all need a validating and authorizing non-default write path, which only [0077](0077-product-editor-language-tabs-ui.md) ships (its scenarios *"A catalog administrator translates a product into an additional language"*, *"A blank title in a language being authored is refused"*, *"A description written in a non-default language is stored safely"* and *"Translating a product is refused without the editor, not only within it"* already cover them). The slug scenarios moved to [0076a](0076a-product-slug-and-seo-fields-backend.md). The bare `SetTranslation` sanitization proof is a technical test, not a business scenario, and stays below under *Tests to perform*.
 
 ## Files to create/modify
 
@@ -398,7 +398,7 @@ Feature and Unit tests. The existing browser tests that seed product names are *
 ### Deliberately NOT tested here
 - SKU canonicalisation, uniqueness and its race catch (**D-7**). `ProductSkuUniquenessTest.php` is the regression check: only its raw-insert column list loses `name`, and no assertion changes.
 - `HasTranslations`' generic mechanics, the default-language memo and `SetTranslation` in isolation (0070), and `StoreLanguage` CRUD (0068).
-- Slug/SEO behaviour ([0076a](0076a-product-slug-and-seo-fields-backend.md)) and non-default-language authoring ([0077](../0077-product-editor-language-tabs-ui.md)).
+- Slug/SEO behaviour ([0076a](0076a-product-slug-and-seo-fields-backend.md)) and non-default-language authoring ([0077](0077-product-editor-language-tabs-ui.md)).
 
 ### Disposition of existing test files (re-derived against `HEAD`, 2026-11-06)
 
@@ -555,7 +555,7 @@ The column is `NOT NULL`, so the seam never returns `null`. `CreateOrder` eager-
 
 All hard dependencies are **shipped** (`done/`): [0024](../done/0024-products-core-crud-backend.md) (products, model, actions, validation trait), [0024a](../done/0024a-product-description-html-sanitization.md) (`SanitizeProductDescription`), [0068](../done/0068-store-languages-catalog-backend.md) (`store_languages`, the usage registry), [0070](../done/0070-translatable-content-mechanism-product-categories-backend.md) (`HasTranslations`, `SetTranslation`, drift guard), [0074](../done/0074-translatable-content-retrofit-blog-tags-backend.md) (the backfill, guard and factory shapes copied here), and [0082](../done/0082-dashboard-home-overview-backend.md) (the `resolveName()` seam). So `depends_on` is empty.
 
-**Dependents:** [0076a](0076a-product-slug-and-seo-fields-backend.md) (slug/SEO; hard) and [0077](../0077-product-editor-language-tabs-ui.md) (language tabs; hard, through 0076a). **File-sharing sibling:** [0078](0078-translatable-content-retrofit-blog-posts-backend.md) also appends to `config/store-languages.php` and edits dashboard readers. No new Composer package.
+**Dependents:** [0076a](0076a-product-slug-and-seo-fields-backend.md) (slug/SEO; hard) and [0077](0077-product-editor-language-tabs-ui.md) (language tabs; hard, through 0076a). **File-sharing sibling:** [0078](0078-translatable-content-retrofit-blog-posts-backend.md) also appends to `config/store-languages.php` and edits dashboard readers. No new Composer package.
 
 ### Risks
 
@@ -588,14 +588,14 @@ Removed at the split: the old R-4 (sequencing against unshipped 0024, now moot),
 - **(b) Refuse the order line with a validation message** ("this product has no name in the store default language"). This is stricter, but it blocks order work until someone translates the catalog.
 
 ### Inherited open questions — listed, not resolved here
-0070's **Q2** (per-language name uniqueness) is moot here, since Products has no name uniqueness. 0070's **Q3** (which story owns the tabs) is answered by [0077](../0077-product-editor-language-tabs-ui.md).
+0070's **Q2** (per-language name uniqueness) is moot here, since Products has no name uniqueness. 0070's **Q3** (which story owns the tabs) is answered by [0077](0077-product-editor-language-tabs-ui.md).
 
 ## 6. Technical tasks for later backlog creation
 
 None of these are in scope for 0076.
 
 1. **Slug and SEO fields**: [0076a](0076a-product-slug-and-seo-fields-backend.md) (created at the split).
-2. **Non-default-language authoring and the per-entity `SetProductTranslation` action**: [0077](../0077-product-editor-language-tabs-ui.md).
+2. **Non-default-language authoring and the per-entity `SetProductTranslation` action**: [0077](0077-product-editor-language-tabs-ui.md).
 3. **A UI-locale to store-language mapping for dashboard readers**: a separate follow-up story, since **Q-4** was resolved as (a) on 2026-11-06. It would activate `GetLowStockProductsTest`'s two `->todo()` tests.
 4. **An optional column list on `scopeWithTranslationsFor()`** (**R-7**), if a future list needs eager loading rather than a join.
 5. **`ModuleRouteAccessTest.php` route coverage**, inherited and unrelated, untouched here.
