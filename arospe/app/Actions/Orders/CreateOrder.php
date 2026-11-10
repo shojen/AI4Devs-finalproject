@@ -54,6 +54,7 @@ class CreateOrder
     public function __construct(
         private readonly LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt,
         private readonly NotifyOrderCreated $notifyOrderCreated,
+        private readonly AdjustOrderStock $adjustOrderStock,
     ) {}
 
     /**
@@ -117,10 +118,12 @@ class CreateOrder
      * builds brand-new rows from scratch, which is what makes retrying
      * safe here (see the task file's own note under the action's step 4).
      *
-     * Story 0088: every line is written stock-neutral -- `stock_undeducted_quantity = quantity`,
-     * `stock_refunded_not_out_quantity = 0` and `ordered_as_variant` (true when the line names a
-     * variant) -- exactly like a legacy line, so it can never return stock it did not take. This
-     * action reads, writes and locks no stock.
+     * Story 0088a: every line is written as deducted (`stock_undeducted_quantity = 0`,
+     * `stock_refunded_not_out_quantity = 0`, `ordered_as_variant` true when the line names a
+     * variant) and its units are taken out of inventory automatically, with no prompt, by one
+     * `AdjustOrderStock` call inside the same transaction, after the order insert and BEFORE the
+     * order_items inserts (D10: avoids the FK shared-lock to FOR UPDATE upgrade deadlock).
+     * Stock may go negative.
      *
      * Story 0046: `NotifyOrderCreated` is dispatched strictly AFTER the
      * retry loop below has converged and `DB::transaction()` has committed
@@ -253,7 +256,7 @@ class CreateOrder
                 'quantity' => $quantity,
                 'unit_price' => $unitPrice,
                 'line_total' => $lineTotal,
-                'stock_undeducted_quantity' => $quantity,
+                'stock_undeducted_quantity' => 0,
                 'stock_refunded_not_out_quantity' => 0,
             ];
         }
@@ -316,13 +319,29 @@ class CreateOrder
                         'billing_country' => $customer->billing_country,
                     ]);
 
+                    // Story 0088a (D10): the lines are built UNSAVED (uuid and order_id assigned up
+                    // front) so stock can be locked and updated BEFORE any order_items insert --
+                    // the order_items FK would otherwise take a shared lock on the product row that
+                    // the stock FOR UPDATE then has to upgrade (deadlock). forceFill(), not the
+                    // relation's create(): OrderItem's #[Fillable] deliberately omits
+                    // product_name/product_sku/unit_price/line_total (a fillable unit_price would
+                    // hand a caller the ability to set its own price).
+                    $newItems = [];
+                    $stockDeltas = [];
+
                     foreach ($resolvedItems as $resolvedItem) {
-                        // forceCreate(), not the relation's ordinary create(): OrderItem's
-                        // #[Fillable] deliberately omits product_name/product_sku/
-                        // unit_price/line_total (a fillable unit_price would hand a caller
-                        // the ability to set its own price), so a plain create() would
-                        // silently drop every one of them.
-                        OrderItem::forceCreate([...$resolvedItem, 'order_id' => $order->id]);
+                        $newItem = (new OrderItem)->forceFill([...$resolvedItem, 'order_id' => $order->id]);
+                        $newItem->setAttribute($newItem->getKeyName(), $newItem->newUniqueId());
+                        $newItems[] = $newItem;
+                        $stockDeltas[] = ['order_item' => $newItem, 'delta' => -$resolvedItem['quantity']];
+                    }
+
+                    // ONE adjustment for all lines, inside this same transaction so a failure or an
+                    // order_number retry rolls the deduction back with the rest.
+                    ($this->adjustOrderStock)($order, $stockDeltas);
+
+                    foreach ($newItems as $newItem) {
+                        $newItem->save();
                     }
 
                     return $order;
