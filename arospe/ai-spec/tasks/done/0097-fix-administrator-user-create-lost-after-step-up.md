@@ -1,6 +1,6 @@
 # [0097] Fix: creating an Administrator user is lost after the step-up password confirmation
 
-> **Status: In progress — created 2026-11-10 from a user bug report. OQ-1 resolved by the user the same day: option (a), applied to create AND edit.**
+> **Status: Done — closed 2026-11-10. Created 2026-11-10 from a user bug report. OQ-1 resolved by the user the same day: option (a), applied to create AND edit.**
 > Bug fix on the Users screen, follow-up to story 0015a (decision D4, "accepted UX wart").
 
 ## Description
@@ -90,4 +90,9 @@ No task dependencies. Risk: persisting user-supplied form state across a redirec
 left it out) — mitigated by (a) storing only four non-secret fields, flash lifetime of one request, actor-bound.
 
 ## Approval record
-_Phase 1 shortened by user decision on OQ-1 (2026-11-10); implemented directly with TDD in this worktree. Phase 4/5 review pending._
+- **Phase 1/2 (2026-11-10):** shortened by user decision on OQ-1 (option (a), create + edit); no separate INVEST pass.
+- **Phase 3 (TDD):** `tests/Feature/Users/IndexStepUpFormRestoreTest.php` (12 tests, written red first) and two real-browser round trips in `tests/Browser/UsersIndexTest.php`; implementation in `App\Livewire\Users\Index` (`stashPendingForm()` / `restorePendingForm()`).
+- **Phase 4 (appsec-auditor, 2026-11-10): approved**, no Critical/High/Medium. L1 (Low) — the parked name/email sit unencrypted in `sessions.payload` until the session expires or the stash is read: **accepted risk**, no early-forget hook is possible because the stash only lingers when the actor never returns to the screen (production hardening is `SESSION_ENCRYPT=true`). L2 (test gap: lost permission, malformed stash) — **fixed** (`ea34741`).
+- **Phase 5 (full suite, 2026-11-10), run unscoped in directory chunks, all green:** `tests/Unit` 408; `tests/Feature` every directory passed (Users 282, Orders 893, Blog 1197, Dashboard 715 with 5 skipped, Products 699, the rest ≤ 248 each); `tests/Browser` every chunk passed (Media 3 skipped); `UsersIndexTest` 16/16 after the two new journeys. Pint and Larastan clean.
+- **Phase 6 (docs):** `docs/architecture/authorization/step-up-and-refusal-logging.md` — new subsection, footer updated; the 0015a D4 wart is superseded.
+- **Phase 7:** moved to `done/`; coordination files regenerated (pending-only registry, so the entry is removed).
