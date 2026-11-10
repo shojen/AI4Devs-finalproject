@@ -164,6 +164,8 @@ return [
 
     // Historia 0076a -- clave por clave idéntico a lang/en/products.php.
     'attributes' => [
+        'name' => 'nombre',
+        'description' => 'descripción',
         'slug' => 'slug',
         'meta_title' => 'título meta',
         'meta_description' => 'descripción meta',
@@ -171,6 +173,9 @@ return [
 
     // Historia 0027 -- clave por clave idéntico a lang/en/products.php.
     'editor' => [
+        'tabs' => [
+            'language_inactive' => 'Este idioma ya no está activo en la tienda.',
+        ],
         'concurrent_save_retry' => 'Otra persona ha guardado este producto al mismo tiempo. Recarga la página e inténtalo de nuevo.',
         'title_create' => 'Nuevo producto',
         'title_edit' => 'Editar producto',

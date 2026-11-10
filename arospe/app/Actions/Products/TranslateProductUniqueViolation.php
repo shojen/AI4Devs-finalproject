@@ -13,9 +13,12 @@ use Illuminate\Validation\ValidationException;
 class TranslateProductUniqueViolation
 {
     /**
+     * Story 0076b (D-4): a non-null $storeLanguageId re-keys the slug and natural-key indexes to the
+     * nested "slugs.{id}" / "names.{id}" form; null keeps the bare keys.
+     *
      * @throws QueryException $e unchanged when it is not a 1062, or names any other index
      */
-    public function __invoke(QueryException $e): ValidationException
+    public function __invoke(QueryException $e, ?string $storeLanguageId = null): ValidationException
     {
         if (($e->errorInfo[1] ?? null) === 1062) {
             $message = (string) ($e->errorInfo[2] ?? '');
@@ -28,13 +31,13 @@ class TranslateProductUniqueViolation
 
             if ($this->names('product_translations_language_slug_unique', $message)) {
                 return ValidationException::withMessages([
-                    'slug' => trans('validation.unique', ['attribute' => trans('products.attributes.slug')]),
+                    ($storeLanguageId === null ? 'slug' : "slugs.{$storeLanguageId}") => trans('validation.unique', ['attribute' => trans('products.attributes.slug')]),
                 ]);
             }
 
             if ($this->names('product_translations_product_language_unique', $message)) {
                 return ValidationException::withMessages([
-                    'name' => trans('products.editor.concurrent_save_retry'),
+                    ($storeLanguageId === null ? 'name' : "names.{$storeLanguageId}") => trans('products.editor.concurrent_save_retry'),
                 ]);
             }
         }

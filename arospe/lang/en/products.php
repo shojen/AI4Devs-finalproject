@@ -176,6 +176,8 @@ return [
 
     // Story 0076a -- the per-language slug and SEO field names.
     'attributes' => [
+        'name' => 'name',
+        'description' => 'description',
         'slug' => 'slug',
         'meta_title' => 'meta title',
         'meta_description' => 'meta description',
@@ -183,6 +185,9 @@ return [
 
     // Story 0027 -- the routed product editor.
     'editor' => [
+        'tabs' => [
+            'language_inactive' => 'This language is no longer active for the store.',
+        ],
         'concurrent_save_retry' => 'Someone else saved this product at the same moment. Reload the page and try again.',
         'title_create' => 'New product',
         'title_edit' => 'Edit product',

@@ -3,33 +3,11 @@
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
     {
-      "id": "0076b",
-      "slug": "0076b-product-translation-write-action-backend",
-      "title": "Product translation write action (backend)",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "app/Actions/Products/SetProductTranslation.php",
-        "app/Actions/Products/TranslateProductUniqueViolation.php",
-        "lang/en/products.php",
-        "lang/es/products.php",
-        "tests/Feature/Products/SetProductTranslationTest.php",
-        "tests/Unit/Actions/Products/TranslateProductUniqueViolationTest.php"
-      ],
-      "conflict_risk_with": [
-        "0087"
-      ]
-    },
-    {
       "id": "0077",
       "slug": "0077-product-editor-language-tabs-ui",
       "title": "Product editor — language tabs (UI)",
-      "depends_on": [
-        "0076b"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -91,8 +69,7 @@
       ],
       "conflict_risk_with": [
         "0077",
-        "0079",
-        "0076b"
+        "0079"
       ]
     },
     {
