@@ -91,3 +91,11 @@ and are not backfilled here — see their own task files in `ai-spec/tasks/done/
 ## Story 0093 — Confirm dialog second choice
 
 - `<x-confirm-dialog>` takes optional `secondary-action` + `secondary-label` (both required to render the `-secondary` button); the stacked three-button layout (`flex-col-reverse`, `min-h-11`) applies only then, two-button dialogs keep their markup; `@close` still runs dismiss, and both action buttons target both methods in `wire:target` — story 0093. Interactive checks (Esc/backdrop/X, 375px layout) belong to its first consumer, 0094.
+
+## Story 0088 — Order stock-adjustment foundation (backend)
+
+- `order_items` gained `ordered_as_variant` (bool), `stock_undeducted_quantity` (U) and `stock_refunded_not_out_quantity` (K), all unsigned/default-safe; migration `2026_11_10_184845_add_stock_tracking_columns_to_order_items_table.php` — story 0088.
+- `OrderItem` helpers, the one copy of D8: `stockTarget(): ?array{type,id}` (variant, else product, else null for an orphaned variant or deleted product), `returnableStockUnits()` R = (Q-F)-U, `refundedUnitsOutOfStock()` H = F-K, and `applyRefundToStockCounters(int $refunded, int $restocked)` (in memory, before `refunded_quantity` increments, `LogicException` when k > min(f, R); `over = max(0, f-R)`, U-over, K+k+over) — story 0088.
+- Create/add write lines stock-neutral (`U = quantity`, `K = 0`); `RecordRefund` applies the rule with `k = 0`; `UpdateOrderItemQuantity` moves only U (`+d` / `max(0, U-d)`); no stock is read or written yet (stories 0088a/0090-0092b do that) — story 0088.
+- Backfill D6 uses `GREATEST(CAST(quantity AS SIGNED) - CAST(refunded_quantity AS SIGNED), 0)` so a legacy over-refunded row cannot underflow the unsigned column; D9 `ordered_as_variant` backfill has two accepted blind spots (edited product SKU flagged; deleted variant sharing its product's SKU missed) — story 0088.
+- Factory precedent: `OrderItemFactory::legacyStockUntracked()` (U = Q-F, K = F, computed in `afterMaking`) and `orphanedVariant()`; `forVariant()` sets `ordered_as_variant`; `DemoDataSeeder` uses `legacyStockUntracked()` — story 0088.

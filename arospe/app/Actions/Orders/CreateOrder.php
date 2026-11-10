@@ -117,6 +117,11 @@ class CreateOrder
      * builds brand-new rows from scratch, which is what makes retrying
      * safe here (see the task file's own note under the action's step 4).
      *
+     * Story 0088: every line is written stock-neutral -- `stock_undeducted_quantity = quantity`,
+     * `stock_refunded_not_out_quantity = 0` and `ordered_as_variant` (true when the line names a
+     * variant) -- exactly like a legacy line, so it can never return stock it did not take. This
+     * action reads, writes and locks no stock.
+     *
      * Story 0046: `NotifyOrderCreated` is dispatched strictly AFTER the
      * retry loop below has converged and `DB::transaction()` has committed
      * -- never inside the closure, and never inside the `catch` block that
@@ -244,9 +249,12 @@ class CreateOrder
                 'product_variant_id' => $variant?->id,
                 'product_name' => $product->snapshotName(),
                 'product_sku' => (string) ($variant->sku ?? $product->sku),
+                'ordered_as_variant' => $variant !== null,
                 'quantity' => $quantity,
                 'unit_price' => $unitPrice,
                 'line_total' => $lineTotal,
+                'stock_undeducted_quantity' => $quantity,
+                'stock_refunded_not_out_quantity' => 0,
             ];
         }
 

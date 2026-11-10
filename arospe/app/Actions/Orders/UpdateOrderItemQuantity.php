@@ -28,7 +28,9 @@ use Illuminate\Validation\ValidationException;
  * 6. `DB::transaction()`: re-verify the hard block against the order's TRUE
  *    current state under `lockForUpdate()` (Phase 4 security audit finding
  *    F-4), write `quantity` and `line_total`, then recompute and persist
- *    the parent's totals.
+ *    the parent's totals. Story 0088: the line's `stock_undeducted_quantity`
+ *    follows the change (increase by d: `U + d`; decrease by d: `max(0, U - d)`),
+ *    persisted in the same save; no stock is moved.
  *
  * Phase 4 security audit fixes applied to this action:
  * - F-1: `$lineTotal` is checked against the same decimal(10,2) column
@@ -109,7 +111,13 @@ class UpdateOrderItemQuantity
             // F-1: the same decimal(10,2) column-overflow guard CreateOrder already applies.
             ($this->assertWithinColumnCeiling)($lineTotal, 'items');
 
+            $difference = $quantity - $item->quantity;
+            $undeducted = $difference >= 0
+                ? $item->stock_undeducted_quantity + $difference
+                : max(0, $item->stock_undeducted_quantity + $difference);
+
             $item->forceFill([
+                'stock_undeducted_quantity' => $undeducted,
                 'quantity' => $quantity,
                 'line_total' => $lineTotal,
             ])->save();

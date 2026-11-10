@@ -117,7 +117,7 @@ class DemoDataSeeder extends Seeder
                 for ($j = 0; $j < $itemCount; $j++) {
                     $product = $products->random();
 
-                    OrderItem::factory()->for($order)->create([
+                    OrderItem::factory()->legacyStockUntracked()->for($order)->create([
                         'product_id' => $product->id,
                     ]);
                 }

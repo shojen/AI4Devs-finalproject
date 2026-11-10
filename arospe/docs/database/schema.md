@@ -318,12 +318,15 @@ erDiagram
         uuid order_id FK
         uuid product_id FK
         uuid product_variant_id FK
+        boolean ordered_as_variant
         string product_name
         string product_sku
         int quantity
         decimal unit_price
         decimal line_total
         int refunded_quantity
+        int stock_undeducted_quantity
+        int stock_refunded_not_out_quantity
     }
     ORDER_PAYMENTS {
         uuid id PK
@@ -461,6 +464,6 @@ Split by domain into separate files, per [contracts.md](../contracts/token-and-d
 - For migration authoring conventions (naming, `down()` requirements, real examples), see [database/migrations.md](migrations.md).
 - **UUID (v7) primary keys.** Each table's PK type (`uuid` vs `bigint`) is already visible directly in the ER diagram above, and each per-domain schema file states its own table's status against [ADR 0001](../decisions/0001-uuid-primary-keys.md) at the point that table is documented — so this section no longer restates a consolidated status list. The ADR is the single source of truth for the policy and its full history: which entities it covers, the one named `bigint` exception (`geography_entries`), and every amendment since. The model-side convention (`HasUuids`, `@property string $id`, no restated `$keyType`/`$incrementing`) is in [conventions/base-standards.md](../conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys); the migration-side pattern is in [database/migrations.md](migrations/uuid-primary-keys.md#uuid-primary-keys).
 
-_Last updated: 2026-11-08 — Story 0078 (blog posts retrofit, backend): `BLOG_POST_TRANSLATIONS` joined the diagram (`BLOG_POSTS ||--o{`, `STORE_LANGUAGES ||--o{`), `BLOG_POSTS` lost `title`/`slug`/`body`, and the **Notes** model-class inventory counts twenty-nine. Story 0076a: `PRODUCT_TRANSLATIONS` gained `slug`, `meta_title` and `meta_description`. Earlier diagram changes (0070-0084, 0076) remain current. Every application table is diagrammed, relationships or not — since story 0058._
+_Last updated: 2026-11-10 — Story 0088: `ORDER_ITEMS` gained `ordered_as_variant`, `stock_undeducted_quantity` and `stock_refunded_not_out_quantity`. Story 0078 (blog posts retrofit, backend): `BLOG_POST_TRANSLATIONS` joined the diagram (`BLOG_POSTS ||--o{`, `STORE_LANGUAGES ||--o{`), `BLOG_POSTS` lost `title`/`slug`/`body`, and the **Notes** model-class inventory counts twenty-nine. Story 0076a: `PRODUCT_TRANSLATIONS` gained `slug`, `meta_title` and `meta_description`. Earlier diagram changes (0070-0084, 0076) remain current. Every application table is diagrammed, relationships or not — since story 0058._
 
 _Earlier revision notes: [database--schema.md](../history/database--schema.md)._

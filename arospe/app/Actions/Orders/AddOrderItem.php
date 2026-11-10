@@ -47,6 +47,10 @@ use Illuminate\Validation\ValidationException;
  *    recompute and persist the parent's totals (D-7/D-8) via
  *    RecalculateOrderTotals.
  *
+ * Story 0088: the new line is written stock-neutral (`stock_undeducted_quantity
+ * = quantity`, `stock_refunded_not_out_quantity = 0`, `ordered_as_variant` true
+ * when a variant is named); no stock is read, written or locked.
+ *
  * Phase 4 security audit fixes applied to this action:
  * - F-2: refuses once the order is already at `OrderValidationRules::MAX_ITEMS`
  *   line items -- previously unbounded on this edit path, unlike CreateOrder's
@@ -172,9 +176,12 @@ class AddOrderItem
                 'product_variant_id' => $variant?->id,
                 'product_name' => $product->snapshotName(),
                 'product_sku' => $productSku,
+                'ordered_as_variant' => $variant !== null,
                 'quantity' => $quantity,
                 'unit_price' => $unitPrice,
                 'line_total' => $lineTotal,
+                'stock_undeducted_quantity' => $quantity,
+                'stock_refunded_not_out_quantity' => 0,
             ]);
 
             ($this->recalculateOrderTotals)($lockedOrder);
