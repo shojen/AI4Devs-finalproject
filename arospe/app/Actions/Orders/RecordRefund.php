@@ -53,7 +53,10 @@ use Illuminate\Validation\ValidationException;
  * 8. Write, per item: a `refunds` row (order_item_id, quantity,
  *    amount = quantity x unit_price, refunded_by = Auth::id(),
  *    reason = null -- see the $reason parameter's own docblock) then
- *    increment order_items.refunded_quantity via forceFill().
+ *    increment order_items.refunded_quantity via forceFill(). Story 0088:
+ *    before that increment the line's stock counters follow the D8 refund
+ *    rule (`applyRefundToStockCounters($quantity, 0)`), persisted in the same
+ *    save; no stock is moved.
  * 9. Increment orders.refunded_amount by the sum of the amounts just
  *    written.
  * 10. Derive and write orders.payment_status (D-4), from the FINAL state
@@ -147,7 +150,11 @@ class RecordRefund
                     'reason' => null,
                 ]);
 
+                $lineItem->applyRefundToStockCounters($quantityToRefund, 0);
+
                 $lineItem->forceFill([
+                    'stock_undeducted_quantity' => $lineItem->stock_undeducted_quantity,
+                    'stock_refunded_not_out_quantity' => $lineItem->stock_refunded_not_out_quantity,
                     'refunded_quantity' => $lineItem->refunded_quantity + $quantityToRefund,
                 ])->save();
 
