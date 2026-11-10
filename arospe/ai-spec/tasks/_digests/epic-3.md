@@ -87,3 +87,7 @@ and are not backfilled here — see their own task files in `ai-spec/tasks/done/
 - Open for 0085: validate type with `Rule::enum`, resolve method with `findOrFail`, add a code-to-type mapping before a second method; no actor column (F-1, owner decision) — story 0084.
 - 0085 UI contract: both `Orders\Index` (`markAsPaid()`, `#[Locked] ?string $confirmingPaidOrderId`, `showMarkPaidConfirm`, `confirmingPaidRow`, per-row `canMarkPaid`) and `Orders\Show` (`canMarkPaid`, `confirmMarkAsPaid()`/`markAsPaid()`) call `MarkOrderAsPaid` unconditionally with the server-resolved bank-transfer method and `OrderPaymentType::Transfer`; the button is absent from the DOM when ineligible — story 0085.
 - Lang group `orders.payment.*` (`action`, `dialog_*`, `marked`, `info`, `info_by`, `not_found`); test support `tests/Support/Orders/MarkAsPaidUi.php` and dataset `mark_as_paid_button_visibility_grid` — story 0085.
+
+## Story 0093 — Confirm dialog second choice
+
+- `<x-confirm-dialog>` takes optional `secondary-action` + `secondary-label` (both required to render the `-secondary` button); the stacked three-button layout (`flex-col-reverse`, `min-h-11`) applies only then, two-button dialogs keep their markup; `@close` still runs dismiss, and both action buttons target both methods in `wire:target` — story 0093. Interactive checks (Esc/backdrop/X, 375px layout) belong to its first consumer, 0094.
