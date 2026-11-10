@@ -47,9 +47,11 @@ use Illuminate\Validation\ValidationException;
  *    recompute and persist the parent's totals (D-7/D-8) via
  *    RecalculateOrderTotals.
  *
- * Story 0088: the new line is written stock-neutral (`stock_undeducted_quantity
- * = quantity`, `stock_refunded_not_out_quantity = 0`, `ordered_as_variant` true
- * when a variant is named); no stock is read, written or locked.
+ * Story 0088a: the new line is written as deducted (`stock_undeducted_quantity = 0`,
+ * `stock_refunded_not_out_quantity = 0`, `ordered_as_variant` true when a variant is
+ * named) and its units are taken out of inventory automatically by `AdjustOrderStock`,
+ * inside the same transaction, BEFORE the line insert (D10: avoids the FK shared-lock to
+ * FOR UPDATE upgrade deadlock). Stock may go negative.
  *
  * Phase 4 security audit fixes applied to this action:
  * - F-2: refuses once the order is already at `OrderValidationRules::MAX_ITEMS`
@@ -89,6 +91,7 @@ class AddOrderItem
         private readonly RecalculateOrderTotals $recalculateOrderTotals,
         private readonly ToNumericString $toNumericString,
         private readonly AssertWithinColumnCeiling $assertWithinColumnCeiling,
+        private readonly AdjustOrderStock $adjustOrderStock,
     ) {}
 
     public function __invoke(Order $order, string $productId, ?string $productVariantId, int $quantity): OrderItem
@@ -170,7 +173,11 @@ class AddOrderItem
             // every line_total it computes -- this edit path had none.
             ($this->assertWithinColumnCeiling)($lineTotal, 'items');
 
-            $item = OrderItem::forceCreate([
+            // Story 0088a (D10): built unsaved, stock is locked and updated first, then the line
+            // is persisted -- orders -> products -> product_variants -> UPDATE stock -> order_items
+            // insert -> totals. Inserting first would let the order_items FK shared-lock the
+            // product row that the stock FOR UPDATE must then upgrade (deadlock).
+            $item = (new OrderItem)->forceFill([
                 'order_id' => $lockedOrder->id,
                 'product_id' => $product->id,
                 'product_variant_id' => $variant?->id,
@@ -180,9 +187,14 @@ class AddOrderItem
                 'quantity' => $quantity,
                 'unit_price' => $unitPrice,
                 'line_total' => $lineTotal,
-                'stock_undeducted_quantity' => $quantity,
+                'stock_undeducted_quantity' => 0,
                 'stock_refunded_not_out_quantity' => 0,
             ]);
+            $item->setAttribute($item->getKeyName(), $item->newUniqueId());
+
+            ($this->adjustOrderStock)($lockedOrder, [['order_item' => $item, 'delta' => -$quantity]]);
+
+            $item->save();
 
             ($this->recalculateOrderTotals)($lockedOrder);
 

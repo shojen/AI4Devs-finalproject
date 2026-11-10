@@ -9,6 +9,7 @@ Part of [Routes](routes.md) — see [routes.md](routes.md#why-this-file-exists) 
 - [`orders.show` — the twelfth permission-gated route, and the first screen governed by three abilities](#ordersshow--the-twelfth-permission-gated-route-and-the-first-screen-governed-by-three-abilities)
 - [`MarkOrderAsPaid` — the action contract (story 0084, no route)](#markorderaspaid--the-action-contract-story-0084-no-route)
 - [Order-line stock counters — side effects of the order actions (story 0088)](#order-line-stock-counters--side-effects-of-the-order-actions-story-0088)
+- [`AdjustOrderStock` — the stock-adjustment contract (story 0088a)](#adjustorderstock--the-stock-adjustment-contract-story-0088a)
 - [Shared pieces this story introduced](#shared-pieces-this-story-introduced)
 
 ## `orders.index` — the eleventh permission-gated route, and a list with exactly one write
@@ -86,14 +87,50 @@ Tests (story 0085): [`tests/Support/Orders/MarkAsPaidUi.php`](../../tests/Suppor
 
 ## Order-line stock counters — side effects of the order actions (story 0088)
 
-No route or signature changed. Four actions now also maintain the line's stock counters (`stock_undeducted_quantity` U, `stock_refunded_not_out_quantity` K); **none moves, reads or locks stock**. Rules in [items-and-refunds.md](../database/schema-orders/items-and-refunds.md#stock-tracking-columns-story-0088).
+No route or signature changed. Four actions maintain the line's stock counters (`stock_undeducted_quantity` U, `stock_refunded_not_out_quantity` K); story 0088 itself moved no stock, and from story 0088a `CreateOrder` and `AddOrderItem` also move stock (next section). Rules in [items-and-refunds.md](../database/schema-orders/items-and-refunds.md#stock-tracking-columns-story-0088).
 
 | Action | Counter side effect |
 | --- | --- |
-| `CreateOrder` | each new line: `U = quantity`, `K = 0`, `ordered_as_variant = (variant named)` — stock-neutral, like a legacy line |
-| `AddOrderItem` | the same three values on the added line |
+| `CreateOrder` | each new line: `U = 0`, `K = 0`, `ordered_as_variant = (variant named)` — written deducted (0088a); stock moves, see below |
+| `AddOrderItem` | the same three values on the added line; stock moves |
 | `RecordRefund` | per refunded line, before `refunded_quantity` is incremented: `OrderItem::applyRefundToStockCounters(quantity, 0)` (D8, `k = 0`), persisted in the same `forceFill()->save()` |
 | `UpdateOrderItemQuantity` | increase by d: `U + d`; decrease by d: `max(0, U - d)`; K unchanged, written in the same save as `quantity` / `line_total` |
+
+## `AdjustOrderStock` — the stock-adjustment contract (story 0088a)
+
+[`App\Actions\Orders\AdjustOrderStock`](../../app/Actions/Orders/AdjustOrderStock.php) is the one place order actions change `products.stock` / `product_variants.stock`. It has no route and no gate.
+
+```php
+/**
+ * @param  list<array{order_item: OrderItem, delta: int}>  $deltas
+ * @return list<string> ids of the order items whose delta was applied
+ * @throws LogicException when called outside a transaction or with a line of another order
+ */
+public function __invoke(Order $order, array $deltas): array
+```
+
+- **Transaction precondition.** `DB::transactionLevel() < 1` throws `LogicException`; the caller already holds the `orders` row lock.
+- **Ownership guard.** Every `order_item->order_id` must equal `$order->id`, else `LogicException`.
+- **No gate, by design (D7).** It never authorizes; the calling action has already done so. It is only used from `App\Actions\Orders\*` (an arch test pins this).
+- **Aggregation.** Deltas are summed per target (`product:<id>` / `variant:<id>`, from `OrderItem::stockTarget()`); each target gets one relative `increment('stock', $net)` UPDATE, never a read-modify-write. Stock has **no lower bound** (it may go negative; R-5: a sum leaving the signed `INT` range is a strict-mode 1264 error, accepted).
+- **Skip rules.** A line with a null `stockTarget()`, a target row deleted before the lock, or a target whose deltas net to `0` is not written and not reported.
+- **Return value.** The ids of the order items whose delta was applied.
+- **Counters are the caller's.** It moves `stock` only; each caller owns its U / K rule (FD-8).
+
+**Side effect of create / add (automatic, no prompt).** `CreateOrder` builds every line unsaved (uuid and `order_id` assigned up front), makes **one** `AdjustOrderStock` call with `delta = -quantity` per line after the `orders` insert, then saves the lines; an `order_number` retry rolls the deduction back with the rest. `AddOrderItem` does the same for the single new line, after its refusals (hard block, line ceiling, column ceiling) so a refused add never moves stock, and before `RecalculateOrderTotals`.
+
+### Lock-order convention (project-wide)
+
+```
+orders -> products (by id, including a variant line's parent product)
+       -> product_variants (by id) -> UPDATE stock -> order_items insert -> totals
+```
+
+- `AdjustOrderStock` locks all products in one id-ordered `lockForUpdate()` read, then all variants in another; a variant line's **parent product** is locked in the same products read (locked, never written), then stock is written to the actual target only.
+- **Why stock before the insert (D10).** The `order_items` insert takes a shared (S) lock on the parent `products` / `product_variants` rows through its FK check. A `FOR UPDATE` on that row later in the same transaction is a lock upgrade, and two such transactions deadlock (MySQL 1213). Locking first removes the upgrade. See [security/model-instance-trust.md](../security/model-instance-trust.md#an-fk-insert-shared-locks-its-parent-so-a-later-for-update-on-the-parent-deadlocks).
+- **Forward rule.** Stories 0090 / 0091 / 0092b must call `AdjustOrderStock` **before** any `FOR UPDATE` on `order_items` (a locking read there takes gap locks that deadlock across two orders; appsec L-1).
+- A 1213 is not retried by these actions (only the `order_number` collision is).
+- **Known gap (R-2, appsec L-2).** The product and variant editors save `stock` from a form value, so an editor left open overwrites a deduction made meanwhile; follow-up story.
 
 ## Shared pieces this story introduced
 
@@ -101,4 +138,4 @@ No route or signature changed. Four actions now also maintain the line's stock c
 - **`<x-confirm-dialog>`** ([`confirm-dialog.blade.php`](../../resources/views/components/confirm-dialog.blade.php)) — props `show`, `model`, `heading`, `body`, `confirm-label`, `dismiss-label`, `confirm-action`, `dismiss-action`, `test-prefix`, `variant`, plus the optional `secondary-action` / `secondary-label` pair (story 0093: the second button renders only when **both** are set, hook `-secondary`, labels escaped and supplied by the parent; three-button dialogs stack below `sm` with confirm first and dismiss last, two-button dialogs render unchanged; `wire:target` on both action buttons names both actions; `@close` never runs the secondary action). It holds no state and decides nothing: the parent owns the bool and both methods. `@close` runs the dismiss method (Flux compiles it to `wire:close` on the `<dialog>`), so Esc, backdrop and the X reach the server like the Cancel button. Its inner content is wrapped in `@if ($show)` and the hooks sit on that inner content, never on `<flux:modal>`. It is the repo's first shared anonymous component that is not navigation chrome.
 - **`Order::isLineItemEditable()`** and **`Order::isRefundable()`** ([`app/Models/Order.php`](../../app/Models/Order.php)) — the single copy of the `Shipped`/`Delivered` block and of the `Paid`/`PartiallyRefunded` refund state, read by the actions and by this screen. The three `assertEditable()` bodies still each log and throw (triplicated), but the status set itself now lives once.
 
-_Last updated: 2026-11-10 — Story 0093: `<x-confirm-dialog>` gained the optional second choice (`secondary-action` / `secondary-label`, hook `-secondary`). Story 0088: new section on the order-line stock-counter side effects of `CreateOrder`, `AddOrderItem`, `RecordRefund` and `UpdateOrderItemQuantity`. Story 0076: the `Orders\Show` product picker orders by the default-language product name (`—` when absent) and order lines snapshot it via `Product::snapshotName()`. Earlier content current from story 0085 (order mark-as-paid UI)._
+_Last updated: 2026-11-10 — Story 0088a: `AdjustOrderStock` contract, create/add stock deduction and the lock-order convention. Story 0093: `<x-confirm-dialog>` gained the optional second choice (`secondary-action` / `secondary-label`, hook `-secondary`). Story 0088: new section on the order-line stock-counter side effects of `CreateOrder`, `AddOrderItem`, `RecordRefund` and `UpdateOrderItemQuantity`. Story 0076: the `Orders\Show` product picker orders by the default-language product name (`—` when absent) and order lines snapshot it via `Product::snapshotName()`. Earlier content current from story 0085 (order mark-as-paid UI)._

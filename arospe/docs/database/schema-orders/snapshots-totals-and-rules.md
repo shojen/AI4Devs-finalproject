@@ -50,6 +50,10 @@ Both `AssertWithinColumnCeiling` (the shared `decimal(10,2)` overflow guard `Cre
 
 A newly created order's `sales_region_id`, `shipping_rate_id` and `tax_rate` are all `null` (never `0`/`0.000` — see above); `flagged_for_review` is `false`; `tax_amount` and `shipping_amount` are `0.00`; and `total` equals `subtotal`. Every one of these is asserted by a dedicated test rather than left to inspection, because a populated column here would look exactly like a working feature while silently masking stories 0037/0053/0054's actual, not-yet-built work.
 
+### Stock side effect of create / add line (story 0088a)
+
+Creating an order or adding a line takes the line's units out of inventory automatically, with no prompt and in the same transaction as the insert (`AdjustOrderStock`, contract and lock order in [api/orders.md](../../api/orders.md#adjustorderstock--the-stock-adjustment-contract-story-0088a)). Stock has no lower bound, so it may go negative. The line is stored with `stock_undeducted_quantity = 0`; the price snapshot rules above are unchanged.
+
 ### Authorization
 
 Gated by [`App\Policies\OrderPolicy`](../../../app/Policies/OrderPolicy.php) — see [architecture/authorization.md](../../architecture/authorization/policies-customers-orders.md#orderpolicy--the-twelfth-policy) for the full roster entry. `orders.*` are already-seeded module permissions (`RolePermissionSeeder::MODULES` has carried `orders` since task 0002) — no catalog change, no new permission, no re-seed. `CreateOrder` self-authorizes `create` as its own first statement, through `App\Actions\Auth\LogRefusedPrivilegedAttempt` rather than a bare `Gate::authorize()`, since this story ships no route and no Livewire component — the action is the only reachable enforcement point that exists today.
@@ -60,6 +64,6 @@ Story 0051's `App\Actions\Orders\RecordRefund` gates on a **bare** `Gate::author
 
 Story 0050's `App\Actions\Orders\CancelOrder` **does** gate through an `OrderPolicy` ability — `cancel`, the policy's **sixth** and this app's first requiring TWO permissions (`orders.edit` **and** `orders.refund`, D-6). `App\Models\Order::isManuallyCancellable()` (reading both `status` and `payment_status`) is the state clause both `OrderPolicy::cancel()`'s hint and `CancelOrder`'s own `OrderCancellationBlockedException` direct-throw wrap — see [architecture/authorization.md](../../architecture/authorization/domain-invariants.md#manual-order-cancellation--the-third-state-based-refusal-and-the-first-ability-requiring-two-permissions) for the full mechanism, including why an ordinary actor's blocked-state refusal (403, via the Gate) differs from a Super Admin's (409, via the direct throw).
 
-_Last updated: 2026-11-06 — Story 0076: `order_items.product_name` is written by `Product::snapshotName()` (the name moved to `product_translations`). Earlier content current from story 0054 (Order tax Sales-Region resolution: `ip_address`, `ip_derived_country`, `flag_reason`)._
+_Last updated: 2026-11-10 — Story 0088a: stock side effect of create / add line. Story 0076: `order_items.product_name` is written by `Product::snapshotName()` (the name moved to `product_translations`). Earlier content current from story 0054 (Order tax Sales-Region resolution: `ip_address`, `ip_derived_country`, `flag_reason`)._
 
 _Earlier revision notes: [database--schema-orders--snapshots-totals-and-rules.md](../../history/database--schema-orders--snapshots-totals-and-rules.md)._

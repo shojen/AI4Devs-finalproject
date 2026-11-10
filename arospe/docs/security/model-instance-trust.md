@@ -40,6 +40,7 @@ value was decided by whoever hydrated the instance, at whatever time they did so
 - [One fix closes both](#one-fix-closes-both)
 - [Re-audit round 2: what the fix itself got subtly wrong](#re-audit-round-2-what-the-fix-itself-got-subtly-wrong)
 - [A single predicate on one row can collapse the guard into the write itself](#a-single-predicate-on-one-row-can-collapse-the-guard-into-the-write-itself)
+- [An FK insert shared-locks its parent, so a later FOR UPDATE on the parent deadlocks](#an-fk-insert-shared-locks-its-parent-so-a-later-for-update-on-the-parent-deadlocks)
 - [A multi-step, caller-hydrated decision compares against its OWN pre-refresh snapshot, never the refreshed value](#a-multi-step-caller-hydrated-decision-compares-against-its-own-pre-refresh-snapshot-never-the-refreshed-value)
 
 ## A guard must re-read its subject under lock, inside its own transaction
@@ -490,7 +491,27 @@ using the post-refresh value as the CAS baseline let a resubmission matching a n
 revert a concurrent administrator's suspension back to `Active`, with no exception and no log line —
 switching the comparison to the pre-refresh snapshot is what turns that into a refused conflict instead.
 
-_Last updated: 2026-09-28 — story 0064d: replaced the prior placeholder ("a sibling story will add the
+## An FK insert shared-locks its parent, so a later FOR UPDATE on the parent deadlocks
+
+Story 0088a (appsec F-1). Inserting an `order_items` row takes a shared lock on the referenced `products` / `product_variants` rows through its foreign-key check, and holds it to the end of the transaction. If the same transaction then runs `lockForUpdate()` on that parent, it must upgrade S to X; two transactions doing this on the same product each wait for the other's S lock and MySQL aborts one with 1213.
+
+❌ insert, then lock stock:
+
+```php
+OrderItem::forceCreate([...]);                 // FK check: S lock on the product row
+Product::whereKey($id)->lockForUpdate()->get(); // upgrade -> deadlock under concurrency
+```
+
+✅ lock first, insert last (`AddOrderItem`, `CreateOrder`):
+
+```php
+($this->adjustOrderStock)($lockedOrder, [['order_item' => $item, 'delta' => -$quantity]]);
+$item->save();
+```
+
+The line is built unsaved, `AdjustOrderStock` locks products (including a variant line's parent) then variants and writes stock, and only then is the line saved. Full ordering convention: [api/orders.md](../api/orders.md#lock-order-convention-project-wide).
+
+_Last updated: 2026-11-10 — story 0088a added the FK-insert shared-lock deadlock section. Earlier content current from story 0064d: replaced the prior placeholder ("a sibling story will add the
 mirror-image example") with the shipped section above — `UpdateUser`'s locked compare-and-set, and the
 ❌/✅ pair on which snapshot the write-time conflict check must compare against (the pre-refresh original,
 never the value `refresh()` just wrote), since the two are easy to conflate and conflating them turns the
