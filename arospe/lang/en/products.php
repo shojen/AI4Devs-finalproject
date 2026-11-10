@@ -187,6 +187,11 @@ return [
     'editor' => [
         'tabs' => [
             'language_inactive' => 'This language is no longer active for the store.',
+            'untranslated' => 'This product has no content in this language yet.',
+            'translation_requires_edit' => 'You need permission to edit products to add a translation.',
+            'slug_label' => 'Slug',
+            'meta_title_label' => 'Meta title',
+            'meta_description_label' => 'Meta description',
         ],
         'concurrent_save_retry' => 'Someone else saved this product at the same moment. Reload the page and try again.',
         'title_create' => 'New product',

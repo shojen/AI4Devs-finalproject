@@ -10,13 +10,109 @@
     <div class="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         {{-- Core fields --}}
         <div class="space-y-4 lg:col-span-2">
-            <flux:input wire:model="name" :label="__('products.editor.name_label')" required />
+            {{-- Story 0077: the five translatable fields, one tab per ACTIVE store language. Every panel
+            stays mounted and is hidden with x-show, never @if (D-1/D-2): unsaved input in a hidden
+            tab, including a WYSIWYG's last 400 ms, must survive a switch. --}}
+            <div class="space-y-4" data-test="product-language-tabs">
+                <x-language-tab-strip
+                    :languages="$this->languages"
+                    :active="$activeLanguageId"
+                    :error-language-ids="$this->languages->pluck('id')->filter(fn ($languageId) => $errors->has('names.'.$languageId) || $errors->has('descriptions.'.$languageId) || $errors->has('slugs.'.$languageId) || $errors->has('metaTitles.'.$languageId) || $errors->has('metaDescriptions.'.$languageId))->values()->all()"
+                />
 
-            <flux:input wire:model="sku" :label="__('products.editor.sku_label')" required />
+                @foreach ($this->languages as $language)
+                    @php
+                        $isDefaultLanguage = (bool) $language->is_default;
+                        $isTranslationLocked = ! $isDefaultLanguage && ! $canAuthorTranslations;
+                    @endphp
+
+                    <div
+                        wire:key="language-panel-{{ $language->id }}"
+                        x-show="$wire.activeLanguageId === {{ Js::from($language->id) }}"
+                        x-cloak
+                        role="tabpanel"
+                        data-test="language-panel-{{ $language->id }}"
+                        class="space-y-4"
+                    >
+                        @if ($productId !== null && ! in_array($language->id, $originalTranslatedLanguageIds, true))
+                            <flux:text size="sm" data-test="language-untranslated-{{ $language->id }}">
+                                {{ __('products.editor.tabs.untranslated') }}
+                            </flux:text>
+                        @endif
+
+                        @if ($isTranslationLocked)
+                            <flux:text size="sm" data-test="language-translation-locked-{{ $language->id }}">
+                                {{ __('products.editor.tabs.translation_requires_edit') }}
+                            </flux:text>
+                        @endif
+
+                        <flux:field>
+                            <flux:label>{{ __('products.editor.name_label') }}</flux:label>
+
+                            <flux:input
+                                wire:model="names.{{ $language->id }}"
+                                wire:blur="prefillSlug({{ Js::from($language->id) }})"
+                                data-test="product-name-input-{{ $language->id }}"
+                                :disabled="$isTranslationLocked"
+                                :required="$isDefaultLanguage"
+                            />
+
+                            @error('names.'.$language->id)
+                                <p class="text-sm font-medium text-red-500" data-test="language-name-error-{{ $language->id }}">{{ $message }}</p>
+                            @enderror
+                        </flux:field>
+
+                        <flux:input
+                            wire:model="slugs.{{ $language->id }}"
+                            data-test="product-slug-input-{{ $language->id }}"
+                            :label="__('products.editor.tabs.slug_label')"
+                            :disabled="$isTranslationLocked"
+                        />
+
+                        <flux:input
+                            wire:model="metaTitles.{{ $language->id }}"
+                            data-test="product-meta-title-input-{{ $language->id }}"
+                            :label="__('products.editor.tabs.meta_title_label')"
+                            :disabled="$isTranslationLocked"
+                        />
+
+                        <flux:textarea
+                            wire:model="metaDescriptions.{{ $language->id }}"
+                            data-test="product-meta-description-input-{{ $language->id }}"
+                            :label="__('products.editor.tabs.meta_description_label')"
+                            rows="3"
+                            :disabled="$isTranslationLocked"
+                        />
+
+                        <div data-test="product-description-editor-{{ $language->id }}">
+                            <livewire:components.wysiwyg-editor
+                                wire:model="descriptions.{{ $language->id }}"
+                                wire:key="product-description-editor-{{ $language->id }}"
+                                :label="__('products.editor.description_label')"
+                                :disabled="$isTranslationLocked"
+                            />
+
+                            <flux:error name="descriptions.{{ $language->id }}" />
+
+                        </div>
+                    </div>
+                @endforeach
+
+                {{-- D-13: a static, always-visible notice, shown once for every language's description --
+                zero mechanism, sets the expectation before the paste rather than explaining a surprise
+                afterwards. This screen renders NO product description HTML anywhere (the WYSIWYG seeds
+                itself client-side, D9). --}}
+                <p class="text-xs text-zinc-500 dark:text-zinc-400" data-test="description-sanitization-notice">
+                    {{ __('products.editor.description_sanitization_notice') }}
+                </p>
+            </div>
+
+            <flux:input wire:model="sku" data-test="product-sku-input" :label="__('products.editor.sku_label')" required />
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <flux:select
                     wire:model="productCategoryId"
+                    data-test="product-category-select"
                     :label="__('products.editor.category_label')"
                     :placeholder="__('products.editor.category_placeholder')"
                 >
@@ -30,6 +126,7 @@
                 already renders `<option value="" disabled selected class="placeholder">`. --}}
                 <flux:select
                     wire:model="type"
+                    data-test="product-type-select"
                     :label="__('products.editor.type_label')"
                     :placeholder="__('products.editor.type_placeholder')"
                 >
@@ -43,30 +140,15 @@
                 {{-- D-6: fed from ProductStatus::cases() ONLY, never ProductDisplayStatus -- an
                 option that can never be persisted becomes something the user picks and the server
                 then rejects. --}}
-                <flux:select wire:model="status" :label="__('products.editor.status_label')">
+                <flux:select wire:model="status" data-test="product-status-select" :label="__('products.editor.status_label')">
                     @foreach ($this->statusOptions as $statusCase)
                         <flux:select.option value="{{ $statusCase->value }}">{{ $statusCase->label() }}</flux:select.option>
                     @endforeach
                 </flux:select>
 
-                <flux:input wire:model="price" type="text" inputmode="decimal" :label="__('products.editor.price_label')" required />
+                <flux:input wire:model="price" data-test="product-price-input" type="text" inputmode="decimal" :label="__('products.editor.price_label')" required />
 
-                <flux:input wire:model="stock" type="text" inputmode="numeric" :label="__('products.editor.stock_label')" required />
-            </div>
-
-            <div>
-                <livewire:components.wysiwyg-editor
-                    wire:model="description"
-                    wire:key="product-description-editor"
-                    :label="__('products.editor.description_label')"
-                />
-
-                {{-- D-13: a static, always-visible notice -- zero mechanism, sets the expectation
-                before the paste rather than explaining a surprise afterwards. This screen renders NO
-                product description HTML anywhere (the WYSIWYG seeds itself client-side, D9). --}}
-                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400" data-test="description-sanitization-notice">
-                    {{ __('products.editor.description_sanitization_notice') }}
-                </p>
+                <flux:input wire:model="stock" data-test="product-stock-input" type="text" inputmode="numeric" :label="__('products.editor.stock_label')" required />
             </div>
 
             <div>

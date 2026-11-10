@@ -3,8 +3,11 @@
 namespace App\Livewire\Products;
 
 use App\Actions\Auth\LogRefusedPrivilegedAttempt;
+use App\Actions\Products\CanonicalizeProductSlug;
 use App\Actions\Products\CreateProduct;
+use App\Actions\Products\SanitizeProductDescription;
 use App\Actions\Products\SearchSalesRegions;
+use App\Actions\Products\SetProductTranslation;
 use App\Actions\Products\SyncProductSalesRegions;
 use App\Actions\Products\UpdateProduct;
 use App\Actions\Translations\CompareTranslatedNames;
@@ -15,8 +18,11 @@ use App\Exceptions\UnresolvedSelectionException;
 use App\Models\Media;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\ProductTranslation;
 use App\Models\StoreLanguage;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -38,10 +44,14 @@ use Livewire\Component;
  * finer `create`/`update`/`delete` abilities authorized here as the SECOND layer over
  * CreateProduct/UpdateProduct's own self-authorization (0024's D-15 was reversed at its split).
  *
- * Story 0076: `$name` and `$description` are plain scalar properties holding the store DEFAULT
- * language's translation row (`product_translations`), read raw in mount() -- never through
- * `translated()`, so a fallback is not silently saved back as a translation -- and written back
- * through CreateProduct/UpdateProduct, whose signatures are unchanged.
+ * Stories 0076/0077: the five translatable fields (name, description, slug, meta title, meta
+ * description) live in five arrays keyed by store-language id, one entry per ACTIVE language behind
+ * the shared language tab strip. They are hydrated from each language's own row, never through
+ * `translated()`, so a fallback is not saved back as a translation. The default language is written
+ * through CreateProduct/UpdateProduct, every other engaged language ONLY through
+ * SetProductTranslation (never the unguarded SetTranslation primitive).
+ *
+ * @property-read Collection<int, StoreLanguage> $languages
  */
 #[Title('Product editor')]
 class Editor extends Component
@@ -65,8 +75,6 @@ class Editor extends Component
     public ?string $productId = null;
 
     // --- form fields, all bound with wire:model. NONE of them is ever null (D-5) ---
-    public string $name = '';
-
     public string $sku = '';
 
     /** '' matches the placeholder <option value=""> -- the $roleId fix from errors-log.md. */
@@ -93,8 +101,56 @@ class Editor extends Component
 
     public string $stock = '';
 
-    /** The WYSIWYG's #[Modelable] target. */
-    public string $description = '';
+    /**
+     * The five per-language arrays, keyed by store_language_id. '' means empty, never null. They
+     * are wire:model targets, so they cannot be locked: save() therefore iterates the server-derived
+     * active-language list and never trusts these arrays' keys (D-3).
+     *
+     * @var array<string, string>
+     */
+    public array $names = [];
+
+    /**
+     * Each entry is a WYSIWYG instance's #[Modelable] target.
+     *
+     * @var array<string, string>
+     */
+    public array $descriptions = [];
+
+    /** @var array<string, string> */
+    public array $slugs = [];
+
+    /** @var array<string, string> */
+    public array $metaTitles = [];
+
+    /** @var array<string, string> */
+    public array $metaDescriptions = [];
+
+    #[Locked]
+    public string $defaultLanguageId = '';
+
+    /**
+     * The tab currently shown. Only setActiveLanguageTab() and save()'s refusal handling move it,
+     * both from an id resolved server-side (D-7).
+     */
+    #[Locked]
+    public string $activeLanguageId = '';
+
+    /**
+     * The language ids the product held a translation in when the editor opened: a view hint only
+     * (the untranslated notice). save() decides from the stored rows it re-reads itself.
+     *
+     * @var list<string>
+     */
+    #[Locked]
+    public array $originalTranslatedLanguageIds = [];
+
+    /**
+     * Create-path UI hint (D-8): false when the actor may create but not edit products, so the
+     * non-default panels render disabled. The server-side check in save() is the guard.
+     */
+    #[Locked]
+    public bool $canAuthorTranslations = true;
 
     /**
      * The searchable multi-select's #[Modelable] target -- NOT #[Locked] (that binding needs it
@@ -127,16 +183,6 @@ class Editor extends Component
     #[Locked]
     public array $galleryPreviews = [];
 
-    // --- story 0076a D-33: default-language SEO fields carried through save() until 0077 adds inputs ---
-    #[Locked]
-    public ?string $slug = null;
-
-    #[Locked]
-    public ?string $metaTitle = null;
-
-    #[Locked]
-    public ?string $metaDescription = null;
-
     // --- modal open flags, each the #[Modelable] target of one Gallery instance (D-8) ---
     public bool $showFeaturedGallery = false;
 
@@ -164,25 +210,34 @@ class Editor extends Component
             targetId: $product?->id,
         );
 
+        $languages = $this->languages;
+        $this->defaultLanguageId = (string) $languages->first(fn (StoreLanguage $language): bool => (bool) $language->is_default)?->id;
+        $this->activeLanguageId = $this->defaultLanguageId !== '' ? $this->defaultLanguageId : (string) $languages->first()?->id;
+
+        foreach (['names', 'descriptions', 'slugs', 'metaTitles', 'metaDescriptions'] as $property) {
+            $this->{$property} = $languages->mapWithKeys(fn (StoreLanguage $language): array => [$language->id => ''])->all();
+        }
+
         if ($product === null) {
+            $this->canAuthorTranslations = Gate::allows('update', new Product);
+
             return;
         }
 
         $this->productId = $product->id;
-        $defaultLanguageId = StoreLanguage::defaultStoreLanguage()?->id;
-        $this->name = '';
-        $this->description = '';
 
         foreach ($product->translations as $translation) {
-            if ($translation->store_language_id === $defaultLanguageId) {
-                $this->name = $translation->name;
-                $this->description = $translation->description ?? '';
-                $this->slug = $translation->slug;
-                $this->metaTitle = $translation->meta_title;
-                $this->metaDescription = $translation->meta_description;
-
-                break;
+            if (! $languages->contains('id', $translation->store_language_id)) {
+                continue;
             }
+
+            $id = $translation->store_language_id;
+            $this->names[$id] = $translation->name;
+            $this->descriptions[$id] = $translation->description ?? '';
+            $this->slugs[$id] = $translation->slug ?? '';
+            $this->metaTitles[$id] = $translation->meta_title ?? '';
+            $this->metaDescriptions[$id] = $translation->meta_description ?? '';
+            $this->originalTranslatedLanguageIds[] = $id;
         }
 
         $this->sku = $product->sku;
@@ -384,9 +439,12 @@ class Editor extends Component
     public function save(
         CreateProduct $create,
         UpdateProduct $update,
+        SetProductTranslation $setTranslation,
         SyncProductSalesRegions $syncRegions,
         SearchSalesRegions $searchSalesRegions,
         LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt,
+        CanonicalizeProductSlug $canonicalizeSlug,
+        SanitizeProductDescription $sanitizeDescription,
     ): mixed {
         $product = $this->productId === null ? null : Product::findOrFail($this->productId);
 
@@ -402,26 +460,118 @@ class Editor extends Component
         // i.e. bit-for-bit the pre-D12 strict rule (obligation 4).
         $preserved = $product?->salesRegions->pluck('id')->all() ?? [];
 
+        // D-3: only the server-derived ACTIVE languages are ever read; keys for any other language
+        // in the client-writable arrays are dropped here, before any check, validation or write.
+        $languages = $this->languages;
+        $defaultId = (string) $languages->first(fn (StoreLanguage $language): bool => (bool) $language->is_default)?->id;
+        $storedLanguageIds = $product === null
+            ? []
+            : ProductTranslation::query()
+                ->where('product_id', $product->id)
+                ->whereIn('store_language_id', $languages->modelKeys())
+                ->pluck('store_language_id')
+                ->all();
+
+        // D-5: canonicalised/sanitised values live in a LOCAL copy and are never written back into
+        // the bound arrays, so the canonicaliser's null never reaches a wire:model target and typed
+        // input survives a refusal exactly as typed.
+        $values = [];
+        $engagedNonDefaultIds = [];
+
+        foreach ($languages as $language) {
+            $id = $language->id;
+            $rawName = trim($this->typedString($this->names, $id));
+            $rawDescription = $this->typedString($this->descriptions, $id);
+            $rawSlug = $this->typedString($this->slugs, $id);
+            $rawMetaTitle = trim($this->typedString($this->metaTitles, $id));
+            $rawMetaDescription = trim($this->typedString($this->metaDescriptions, $id));
+
+            $isBlank = $rawName === '' && trim($rawDescription) === '' && trim($rawSlug) === ''
+                && $rawMetaTitle === '' && $rawMetaDescription === '';
+
+            if ($id !== $defaultId) {
+                if ($isBlank && ! in_array($id, $storedLanguageIds, true)) {
+                    continue;
+                }
+
+                if (! $isBlank) {
+                    $engagedNonDefaultIds[] = $id;
+                }
+            }
+
+            $values[$id] = [
+                'name' => $rawName,
+                'description' => $this->emptyToNull($sanitizeDescription($rawDescription)),
+                'slug' => $canonicalizeSlug($rawSlug),
+                'meta_title' => $this->emptyToNull($rawMetaTitle),
+                'meta_description' => $this->emptyToNull($rawMetaDescription),
+            ];
+        }
+
+        // D-8: SetProductTranslation authorizes `update`, so a create-only actor cannot write a
+        // non-default language. Refused (and logged) once, before validation and the transaction.
+        if ($product === null && $engagedNonDefaultIds !== []) {
+            $logRefusedPrivilegedAttempt->authorize('update', new Product, targetType: 'product');
+        }
+
         // Canonicalise BEFORE validating, mirroring CreateProduct/UpdateProduct's own
-        // Str::upper(trim(...))/trim(...) (D-11): productSkuRules()'s regex requires the
-        // already-canonical form, and this component's own validate() call runs before either
-        // action ever sees the value, so without this the raw, pre-canonical submission would
-        // fail a regex check the persisted value was always going to satisfy.
-        $this->name = trim($this->name);
+        // Str::upper(trim(...)) (D-11): productSkuRules()'s regex requires the canonical form.
         $this->sku = Str::upper(trim($this->sku));
 
-        // 1. The core fields, composed from ProductValidationRules' per-field methods.
-        $this->validate([
-            'name' => $this->productNameRules(),
+        // 1. The core fields plus every in-play language's rules, in one pass so every refusal is
+        //    reported together and the first errored tab can be made active. A blanked tab (stored
+        //    row, every field empty) stays in $values with an empty name, so `required` refuses it.
+        $data = [
+            'sku' => $this->sku,
+            'productCategoryId' => $this->productCategoryId,
+            'type' => $this->type,
+            'status' => $this->status,
+            'price' => $this->price,
+            'stock' => $this->stock,
+            'featuredMediaId' => $this->featuredMediaId,
+            'names' => [],
+            'descriptions' => [],
+            'slugs' => [],
+            'metaTitles' => [],
+            'metaDescriptions' => [],
+        ];
+        $rules = [
             'sku' => $this->productSkuRules($this->productId),
             'productCategoryId' => $this->productCategoryIdRules(),
             'type' => $this->productTypeRules(),
             'status' => $this->productStatusRules(),
             'price' => $this->productPriceRules(),
             'stock' => $this->productStockRules(),
-            'description' => $this->productDescriptionRules(),
             'featuredMediaId' => $this->productFeaturedMediaIdRules(),
-        ]);
+        ];
+
+        foreach ($values as $id => $value) {
+            $data['names'][$id] = $value['name'];
+            $data['descriptions'][$id] = $value['description'];
+            $data['slugs'][$id] = $value['slug'];
+            $data['metaTitles'][$id] = $value['meta_title'];
+            $data['metaDescriptions'][$id] = $value['meta_description'];
+
+            $rules["names.{$id}"] = $this->productNameRules();
+            $rules["descriptions.{$id}"] = $this->productDescriptionRules();
+            $rules["slugs.{$id}"] = $this->productSlugRules($id, $this->productId);
+            $rules["metaTitles.{$id}"] = $this->productMetaTitleRules();
+            $rules["metaDescriptions.{$id}"] = $this->productMetaDescriptionRules();
+        }
+
+        try {
+            Validator::make($data, $rules, [], [
+                'names.*' => __('products.attributes.name'),
+                'descriptions.*' => __('products.attributes.description'),
+                'slugs.*' => __('products.attributes.slug'),
+                'metaTitles.*' => __('products.attributes.meta_title'),
+                'metaDescriptions.*' => __('products.attributes.meta_description'),
+            ])->validate();
+        } catch (ValidationException $exception) {
+            $this->activeLanguageId = $this->firstErroringLanguageId($exception, $this->activeLanguageId);
+
+            throw $exception;
+        }
 
         // 1b. galleryMediaIds' SHAPE AND BOUND, alone, in its own call -- must throw before a
         //     single per-element exists() query runs, matching the regionIds two-pass pattern
@@ -465,49 +615,145 @@ class Editor extends Component
             ]);
         }
 
-        DB::transaction(function () use ($create, $update, $syncRegions, $product): void {
-            // CreateProduct / UpdateProduct call SyncProductGallery internally (D-12a, 0024
-            // D-17a) -- never called directly from here. Both imagery arguments are ALWAYS
-            // passed, since neither action gives them a default.
-            $saved = $product === null
-                ? $create(
-                    $this->name,
-                    $this->sku,
-                    $this->productCategoryId,
-                    $this->type,
-                    $this->status,
-                    $this->price,
-                    $this->stock,
-                    $this->featuredMediaId,
-                    $this->galleryMediaIds,
-                    $this->description,
-                    null,
-                    null,
-                    null,
-                )
-                : $update(
-                    $product,
-                    $this->name,
-                    $this->sku,
-                    $this->productCategoryId,
-                    $this->type,
-                    $this->status,
-                    $this->price,
-                    $this->stock,
-                    $this->featuredMediaId,
-                    $this->galleryMediaIds,
-                    $this->description,
-                    $this->slug,
-                    $this->metaTitle,
-                    $this->metaDescription,
-                );
+        $defaultValues = $values[$defaultId];
 
-            $syncRegions($saved, $this->regionIds);
-        });
+        try {
+            DB::transaction(function () use ($create, $update, $setTranslation, $syncRegions, $product, $languages, $defaultValues, $engagedNonDefaultIds, $values): void {
+                // CreateProduct / UpdateProduct call SyncProductGallery internally (D-12a, 0024
+                // D-17a) -- never called directly from here. Both imagery arguments are ALWAYS
+                // passed, since neither action gives them a default.
+                $saved = $product === null
+                    ? $create(
+                        $defaultValues['name'],
+                        $this->sku,
+                        $this->productCategoryId,
+                        $this->type,
+                        $this->status,
+                        $this->price,
+                        $this->stock,
+                        $this->featuredMediaId,
+                        $this->galleryMediaIds,
+                        $defaultValues['description'],
+                        $defaultValues['slug'],
+                        $defaultValues['meta_title'],
+                        $defaultValues['meta_description'],
+                    )
+                    : $update(
+                        $product,
+                        $defaultValues['name'],
+                        $this->sku,
+                        $this->productCategoryId,
+                        $this->type,
+                        $this->status,
+                        $this->price,
+                        $this->stock,
+                        $this->featuredMediaId,
+                        $this->galleryMediaIds,
+                        $defaultValues['description'],
+                        $defaultValues['slug'],
+                        $defaultValues['meta_title'],
+                        $defaultValues['meta_description'],
+                    );
+
+                foreach ($languages as $language) {
+                    if (! in_array($language->id, $engagedNonDefaultIds, true)) {
+                        continue;
+                    }
+
+                    $setTranslation(
+                        $saved,
+                        $language,
+                        $values[$language->id]['name'],
+                        $values[$language->id]['description'],
+                        $values[$language->id]['slug'],
+                        $values[$language->id]['meta_title'],
+                        $values[$language->id]['meta_description'],
+                    );
+                }
+
+                $syncRegions($saved, $this->regionIds);
+            });
+        } catch (ValidationException $exception) {
+            // D-10: the default language's actions throw bare keys; re-key them to the bound arrays.
+            $rekeyed = $this->rekeyDefaultLanguageErrors($exception, $defaultId);
+            $this->activeLanguageId = $this->firstErroringLanguageId($rekeyed, $this->activeLanguageId);
+
+            throw $rekeyed;
+        }
 
         // D-12c: a successful save redirects; it never resets the form in place -- 0021 D9 means a
         // server-side write to $description would not appear in the (wire:ignore'd) editor anyway.
         return $this->redirectRoute('products.index');
+    }
+
+    /**
+     * Keeps every bound array holding a '' for each active language on every request, so a language
+     * that became active after mount() never leaves a wire:model target (above all a WYSIWYG's
+     * non-nullable #[Modelable] value) bound to a missing, i.e. null, key.
+     */
+    public function hydrate(): void
+    {
+        foreach ($this->languages as $language) {
+            foreach (['names', 'descriptions', 'slugs', 'metaTitles', 'metaDescriptions'] as $property) {
+                $this->{$property}[$language->id] ??= '';
+            }
+        }
+    }
+
+    /**
+     * The active store languages, one tab each: the store default first, then the rest by name.
+     *
+     * @return Collection<int, StoreLanguage>
+     */
+    #[Computed]
+    public function languages(): Collection
+    {
+        return StoreLanguage::query()
+            ->active()
+            ->orderByDesc('is_default')
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * Switch the visible language tab. Deliberately no Gate check, matching the shipped sibling
+     * tab screens: switching discloses nothing the open editor does not already hold, and only an
+     * actor who passed mount()'s gate reaches it. The id is resolved against the ACTIVE languages,
+     * so a forged unknown or inactive id fails and leaves the current tab unchanged.
+     */
+    public function setActiveLanguageTab(string $languageId): void
+    {
+        $language = StoreLanguage::query()->active()->findOrFail($languageId);
+
+        $this->activeLanguageId = $language->id;
+    }
+
+    /**
+     * D-9: pre-fills one language's EMPTY slug from that language's own title, server-side (a JS
+     * slugifier would diverge from Str::slug()'s transliteration). Authorizes the same ability as
+     * save() for the current mode. Never overwrites a typed slug, and never stores null.
+     */
+    public function prefillSlug(
+        string $languageId,
+        LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt,
+        CanonicalizeProductSlug $canonicalizeSlug,
+    ): void {
+        $product = $this->productId === null ? null : Product::findOrFail($this->productId);
+
+        $logRefusedPrivilegedAttempt->authorize(
+            $product === null ? 'create' : 'update',
+            $product ?? Product::class,
+            targetType: 'product',
+            targetId: $product?->id,
+        );
+
+        $language = StoreLanguage::query()->active()->findOrFail($languageId);
+
+        if ($this->typedString($this->slugs, $language->id) !== '') {
+            return;
+        }
+
+        $this->slugs[$language->id] = $canonicalizeSlug($this->typedString($this->names, $language->id)) ?? '';
     }
 
     /**
@@ -567,6 +813,62 @@ class Editor extends Component
     public function statusOptions(): array
     {
         return ProductStatus::cases();
+    }
+
+    /**
+     * Reads a client-bound per-language value as a string; a tampered non-string value behaves like ''.
+     *
+     * @param  array<string, mixed>  $values
+     */
+    private function typedString(array $values, string $id): string
+    {
+        return is_string($values[$id] ?? null) ? $values[$id] : '';
+    }
+
+    private function emptyToNull(?string $value): ?string
+    {
+        return $value === '' ? null : $value;
+    }
+
+    /**
+     * The id of the first language (in tab order) carrying an error in the exception, or
+     * $fallback when none does.
+     */
+    private function firstErroringLanguageId(ValidationException $exception, string $fallback): string
+    {
+        $errors = $exception->errors();
+
+        foreach ($this->languages as $language) {
+            foreach (['names', 'descriptions', 'slugs', 'metaTitles', 'metaDescriptions'] as $property) {
+                if (isset($errors["{$property}.{$language->id}"])) {
+                    return $language->id;
+                }
+            }
+        }
+
+        return $fallback;
+    }
+
+    /**
+     * Re-key the default language's bare action keys (`name`, `slug`, ...) to the bound arrays'
+     * `names.{defaultId}` form: Livewire drops an error whose first key segment is not a property.
+     */
+    private function rekeyDefaultLanguageErrors(ValidationException $exception, string $defaultId): ValidationException
+    {
+        $map = [
+            'name' => 'names',
+            'description' => 'descriptions',
+            'slug' => 'slugs',
+            'meta_title' => 'metaTitles',
+            'meta_description' => 'metaDescriptions',
+        ];
+        $rekeyed = [];
+
+        foreach ($exception->errors() as $key => $messages) {
+            $rekeyed[isset($map[$key]) ? "{$map[$key]}.{$defaultId}" : $key] = $messages;
+        }
+
+        return ValidationException::withMessages($rekeyed);
     }
 
     private function swapGalleryPosition(string $mediaId, int $direction): void
