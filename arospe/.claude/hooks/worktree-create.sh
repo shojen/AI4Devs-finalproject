@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # WorktreeCreate hook: replaces Claude Code's default `git worktree add`.
 #
-# The Laravel app lives in the arospe/ subfolder of the repository, so the session must start in
-# <worktree>/arospe (where .claude/, CLAUDE.md, docs/ and artisan are). This hook therefore:
+# The Laravel app lives in the arospe/ subfolder of the repository (where .claude/, CLAUDE.md, docs/
+# and artisan are). Claude Code refuses a returned path whose `git rev-parse --show-toplevel` differs
+# from it, so the hook must return the worktree ROOT; the session then does `cd arospe`. This hook:
 #   1. creates the git worktree from the current HEAD,
 #   2. copies .env / .env.testing from the main checkout (DB_HOST=127.0.0.1, per-worktree test database),
 #   3. creates that database and installs dependencies / builds assets (best effort, warnings only),
-#   4. prints <worktree>/arospe as the ONLY line on stdout, which becomes the session working directory.
+#   4. prints <worktree> (the root, not <worktree>/arospe) as the ONLY line on stdout, which becomes the session working directory.
 # Everything else goes to stderr. Contract: https://code.claude.com/docs/en/hooks#worktreecreate
 
 set -euo pipefail
@@ -67,4 +68,4 @@ worktree-create: ready at $app_dir
   run tests with: DB_DATABASE=$database php -d memory_limit=-1 vendor/bin/pest --filter=... > /tmp/out.log 2>&1
 MSG
 
-printf '%s\n' "$app_dir" >&3
+printf '%s\n' "$payload_worktree_path" >&3
