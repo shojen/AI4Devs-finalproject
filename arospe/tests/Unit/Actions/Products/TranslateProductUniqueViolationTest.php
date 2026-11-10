@@ -109,3 +109,58 @@ test('anything that is not a 1062 on a product index is rethrown as the same ins
     ),
     'no errorInfo at all' => fn () => s76aQueryException(null),
 ]);
+
+// Story 0076b (D-4): an optional trailing language id re-keys the slug and natural-key indexes to
+// the nested "{field}s.{id}" form used by SetProductTranslation; the SKU branch and the default
+// (no language id) mapping stay as they were.
+
+test('with a language id the slug index maps to slugs.{id} with the slug attribute label', function () {
+    $result = app(TranslateProductUniqueViolation::class)(
+        s76aQueryException(s76aDuplicate('product_translations.product_translations_language_slug_unique')),
+        'lang-1',
+    );
+
+    expect(array_keys($result->errors()))->toBe(['slugs.lang-1'])
+        ->and($result->errors()['slugs.lang-1'][0])->toBe(trans('validation.unique', ['attribute' => trans('products.attributes.slug')]));
+});
+
+test('with a language id the natural-key index maps to names.{id} with the retry message', function () {
+    $result = app(TranslateProductUniqueViolation::class)(
+        s76aQueryException(s76aDuplicate('product_translations_product_language_unique')),
+        'lang-1',
+    );
+
+    expect(array_keys($result->errors()))->toBe(['names.lang-1'])
+        ->and($result->errors()['names.lang-1'][0])->toBe(trans('products.editor.concurrent_save_retry'));
+});
+
+test('with a language id the sku index still maps to the bare sku key', function () {
+    $result = app(TranslateProductUniqueViolation::class)(
+        s76aQueryException(s76aDuplicate('products.products_sku_unique')),
+        'lang-1',
+    );
+
+    expect(array_keys($result->errors()))->toBe(['sku']);
+});
+
+test('with a language id an unrelated QueryException is still rethrown as the same instance', function () {
+    $e = s76aQueryException(s76aDuplicate('product_variants.product_variants_sku_unique'));
+    $caught = null;
+
+    try {
+        app(TranslateProductUniqueViolation::class)($e, 'lang-1');
+    } catch (Throwable $t) {
+        $caught = $t;
+    }
+
+    expect($caught)->toBe($e);
+});
+
+test('with an explicit null language id the bare slug and name keys are unchanged', function (string $key, string $expected) {
+    $result = app(TranslateProductUniqueViolation::class)(s76aQueryException(s76aDuplicate($key)), null);
+
+    expect(array_keys($result->errors()))->toBe([$expected]);
+})->with([
+    'slug' => ['product_translations_language_slug_unique', 'slug'],
+    'name' => ['product_translations_product_language_unique', 'name'],
+]);

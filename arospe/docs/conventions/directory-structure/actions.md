@@ -155,7 +155,7 @@ app/
                        (logged `update`, first statement), self-validating (nested data against `names.{languageId}`) wrapper
                        over the unguarded Translations\SetTranslation primitive; the second of its kind after
                        ProductCategories/SetProductCategoryTranslation, and the only blog code that may import the primitive;
-                       SetBlogTagTranslation (story 0075) is the tag counterpart: same shape, plus it refuses an inactive store language (siblings do not; story 0087);
+                       SetBlogTagTranslation (story 0075) is the tag counterpart: same shape, plus it refuses an inactive store language (siblings do not; story 0087); Products/SetProductTranslation (story 0076b) is the product counterpart, also refusing an inactive language;
                        DeleteBlogTag, FindOrCreateBlogTag — story 0059 (story 0074: CreateBlogTag, RenameBlogTag and FindOrCreateBlogTag write the default-language `blog_tag_translations` row through SetTranslation, parent + translation in one transaction; BackfillBlogTagTranslations and TranslateBlogTagNameUniqueViolation are the migration backfill and 1062 translator); CreateBlogPost, UpdateBlogPost,
                        DeleteBlogPost (a soft delete), RestoreBlogPost, SyncBlogPostTags (the single writer of
                        blog_post_tag; authorizes nothing, its callers did) — story 0061; each other action self-authorizes as its first
@@ -214,7 +214,7 @@ app/
                        dependency-free, never-`new`-ed classes (the combination hash, the SKU
                        derivation formula plus its `checked()` validating entry point, and the
                        shared disambiguator for product_variants' two unique-index race guards)
-                       filed here (alongside story 0076a's CanonicalizeProductSlug — the single slug canonicaliser shared by the actions and the ProductTranslation `saving` hook — and TranslateProductUniqueViolation, the index-name 1062 translator for sku/slug/natural-key) rather than under an unapproved app/Support/ base folder, per the
+                       filed here (alongside story 0076a's CanonicalizeProductSlug — the single slug canonicaliser shared by the actions and the ProductTranslation `saving` hook — and TranslateProductUniqueViolation, the index-name 1062 translator for sku/slug/natural-key, which since story 0076b takes an optional store-language id to re-key slug/natural-key errors to slugs.{id}/names.{id}; and SetProductTranslation, the per-language product translation writer) rather than under an unapproved app/Support/ base folder, per the
                        "or directly under app/Actions/ if it belongs to none" branch below applied
                        one level narrower — domain-scoped rather than app-wide, so app/Actions/
                        Products/ rather than app/Actions/ itself (story 0029); GenerateProductVariant
