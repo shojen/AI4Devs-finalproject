@@ -17,7 +17,9 @@
 // right now for the correct reason: the view file does not exist yet.
 
 use App\Livewire\Products\Editor;
+use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\ProductTranslation;
 use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
@@ -122,12 +124,13 @@ test('the two direct gallery embeds carry distinct wire keys and the literal sel
         ->and($source)->toContain('select-event="product-images-added"');
 });
 
-test('one wysiwyg editor is bound to description', function () {
+test('each language panel binds its own wysiwyg editor to its own descriptions entry', function () {
     $source = productsEditorViewSource();
 
     expect($source)->not->toBe('');
     expect($source)->toContain('components.wysiwyg-editor')
-        ->and($source)->toContain('wire:model="description"');
+        ->and($source)->toContain('wire:model="descriptions.')
+        ->and($source)->not->toContain('wire:model="description"');
 });
 
 test('the searchable multi-select is bound to regionIds with SearchSalesRegions as its option resolver', function () {
@@ -186,4 +189,156 @@ test('with no default store language at all, the editor still renders without th
     Livewire::test(Editor::class)
         ->assertOk()
         ->assertSee('—');
+});
+
+// =====================================================================
+// Story 0077: language panels (D-1, D-11, D-14)
+// =====================================================================
+
+function productsEditorXPath(string $html): DOMXPath
+{
+    $document = new DOMDocument;
+    libxml_use_internal_errors(true);
+    $document->loadHTML('<?xml encoding="utf-8" ?>'.$html);
+    libxml_clear_errors();
+
+    return new DOMXPath($document);
+}
+
+function productsEditorHookCount(DOMXPath $xpath, string $hook, string $scope = ''): int
+{
+    return $xpath->query($scope.'//*[@data-test="'.$hook.'"]')->length;
+}
+
+/**
+ * Three store languages (default first by tab order) and a product translated into each.
+ *
+ * @return array{0: Product, 1: list<StoreLanguage>}
+ */
+function productsEditorThreeLanguageProduct(): array
+{
+    $default = StoreLanguage::factory()->default()->create(['name' => 'Mmm default']);
+    $second = StoreLanguage::factory()->create(['name' => 'Aaa second']);
+    $third = StoreLanguage::factory()->create(['name' => 'Zzz third']);
+
+    $product = Product::factory()->withoutTranslations()->create();
+
+    foreach ([$default, $second, $third] as $language) {
+        ProductTranslation::factory()->forLanguage($language)->create([
+            'product_id' => $product->id,
+            'name' => 'Name '.$language->id,
+        ]);
+    }
+
+    return [$product, [$default, $second, $third]];
+}
+
+test('every active language panel is in the DOM at once, never swapped by an if branch', function () {
+    $this->actingAs(productsEditorRenderingActor());
+    [$product, $languages] = productsEditorThreeLanguageProduct();
+
+    $xpath = productsEditorXPath(Livewire::test(Editor::class, ['product' => $product])->html());
+
+    foreach ($languages as $language) {
+        expect(productsEditorHookCount($xpath, 'language-panel-'.$language->id))->toBe(1);
+    }
+
+    expect($xpath->query('//*[starts-with(@data-test, "language-panel-")]')->length)->toBe(count($languages));
+});
+
+test('each translatable hook sits inside its own language panel exactly once', function () {
+    $this->actingAs(productsEditorRenderingActor());
+    [$product, $languages] = productsEditorThreeLanguageProduct();
+
+    $xpath = productsEditorXPath(Livewire::test(Editor::class, ['product' => $product])->html());
+
+    foreach ($languages as $language) {
+        $panel = '//*[@data-test="language-panel-'.$language->id.'"]';
+
+        foreach (['product-name-input', 'product-slug-input', 'product-meta-title-input', 'product-meta-description-input', 'product-description-editor'] as $hook) {
+            expect(productsEditorHookCount($xpath, $hook.'-'.$language->id, $panel))->toBe(1)
+                ->and(productsEditorHookCount($xpath, $hook.'-'.$language->id))->toBe(1);
+        }
+    }
+});
+
+test('the shared fields render exactly once and outside every language panel', function () {
+    $this->actingAs(productsEditorRenderingActor());
+    [$product] = productsEditorThreeLanguageProduct();
+
+    $xpath = productsEditorXPath(Livewire::test(Editor::class, ['product' => $product])->html());
+
+    foreach (['product-sku-input', 'product-price-input', 'product-stock-input', 'product-status-select', 'product-type-select', 'product-category-select'] as $hook) {
+        expect(productsEditorHookCount($xpath, $hook))->toBe(1)
+            ->and($xpath->query('//*[starts-with(@data-test, "language-panel-")]//*[@data-test="'.$hook.'"]')->length)->toBe(0);
+    }
+});
+
+test('the error marker appears only on the tab of a language that carries an error', function () {
+    $this->actingAs(productsEditorRenderingActor());
+    [$product, $languages] = productsEditorThreeLanguageProduct();
+
+    $cleanXpath = productsEditorXPath(Livewire::test(Editor::class, ['product' => $product])->html());
+
+    expect($cleanXpath->query('//*[starts-with(@data-test, "language-tab-error-")]')->length)->toBe(0);
+
+    $failed = Livewire::test(Editor::class, ['product' => $product])
+        ->set('names.'.$languages[1]->id, '')
+        ->set('slugs.'.$languages[1]->id, 'a-slug')
+        ->call('save')
+        ->assertHasErrors(['names.'.$languages[1]->id]);
+    $failedXpath = productsEditorXPath($failed->html());
+
+    expect(productsEditorHookCount($failedXpath, 'language-tab-error-'.$languages[1]->id))->toBe(1)
+        ->and($failedXpath->query('//*[starts-with(@data-test, "language-tab-error-")]')->length)->toBe(1);
+});
+
+test('an untranslated language panel shows its untranslated notice and a translated one does not', function () {
+    $this->actingAs(productsEditorRenderingActor());
+    $default = StoreLanguage::factory()->default()->create();
+    $second = StoreLanguage::factory()->create();
+    $product = Product::factory()->withoutTranslations()->create();
+    ProductTranslation::factory()->forLanguage($default)->create(['product_id' => $product->id]);
+
+    $xpath = productsEditorXPath(Livewire::test(Editor::class, ['product' => $product])->html());
+
+    expect(productsEditorHookCount($xpath, 'language-untranslated-'.$second->id, '//*[@data-test="language-panel-'.$second->id.'"]'))->toBe(1)
+        ->and(productsEditorHookCount($xpath, 'language-untranslated-'.$default->id))->toBe(0);
+});
+
+test('a create-only actor sees a lock notice on non-default panels and none on the default one', function () {
+    $this->actingAs(productsEditorRenderingActor(['products.view', 'products.create']));
+    $default = StoreLanguage::factory()->default()->create();
+    $second = StoreLanguage::factory()->create();
+
+    $xpath = productsEditorXPath(Livewire::test(Editor::class)->html());
+
+    expect(productsEditorHookCount($xpath, 'language-translation-locked-'.$second->id, '//*[@data-test="language-panel-'.$second->id.'"]'))->toBe(1)
+        ->and(productsEditorHookCount($xpath, 'language-translation-locked-'.$default->id))->toBe(0);
+});
+
+test('a create-only actor gets a disabled wysiwyg on non-default panels and an enabled one on the default panel', function () {
+    $this->actingAs(productsEditorRenderingActor(['products.view', 'products.create']));
+    $default = StoreLanguage::factory()->default()->create();
+    $second = StoreLanguage::factory()->create();
+
+    $xpath = productsEditorXPath(Livewire::test(Editor::class)->html());
+    $boldButton = fn (string $languageId, string $extra): int => $xpath->query(
+        '//*[@data-test="product-description-editor-'.$languageId.'"]//*[@data-test="wysiwyg-bold"]'.$extra
+    )->length;
+
+    expect($boldButton($second->id, ''))->toBe(1)
+        ->and($boldButton($second->id, '[@disabled]'))->toBe(1)
+        ->and($boldButton($default->id, ''))->toBe(1)
+        ->and($boldButton($default->id, '[@disabled]'))->toBe(0);
+});
+
+test('an actor who may also edit sees no lock notice on a create', function () {
+    $this->actingAs(productsEditorRenderingActor(['products.view', 'products.create', 'products.edit']));
+    StoreLanguage::factory()->default()->create();
+    $second = StoreLanguage::factory()->create();
+
+    $xpath = productsEditorXPath(Livewire::test(Editor::class)->html());
+
+    expect(productsEditorHookCount($xpath, 'language-translation-locked-'.$second->id))->toBe(0);
 });

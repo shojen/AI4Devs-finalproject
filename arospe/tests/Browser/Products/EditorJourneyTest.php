@@ -31,6 +31,7 @@ use App\Models\Media;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\SalesRegion;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\DB;
@@ -50,6 +51,14 @@ function editorJourneyActor(): User
     $actor->givePermissionTo(['products.view', 'products.create', 'products.edit', 'media.view', 'media.create', 'media.edit']);
 
     return $actor;
+}
+
+/**
+ * Story 0077: the product title lives in the default store language's tab, reached by its hook.
+ */
+function editorJourneyNameInput(): string
+{
+    return '@product-name-input-'.StoreLanguage::defaultStoreLanguage()->id;
 }
 
 /**
@@ -112,7 +121,7 @@ test('filling every field, choosing imagery and regions, saving, and reopening p
 
         $page = visit(route('products.create'))->assertNoJavaScriptErrors();
 
-        $page->fill('name', 'Zapatillas Runner Pro')
+        $page->fill(editorJourneyNameInput(), 'Zapatillas Runner Pro')
             ->fill('sku', $sku)
             ->select('productCategoryId', $category->id)
             ->select('type', 'physical')
@@ -195,7 +204,7 @@ test('filling every field, choosing imagery and regions, saving, and reopening p
         // Reopen and verify every value survived the round trip.
         visit(route('products.edit', $product))
             ->assertNoJavaScriptErrors()
-            ->assertValue('name', 'Zapatillas Runner Pro')
+            ->assertValue(editorJourneyNameInput(), 'Zapatillas Runner Pro')
             ->assertValue('sku', $canonicalSku)
             ->assertSeeIn('@featured-image-preview', 'Featured Widget')
             ->assertVisible('@gallery-strip-item-'.$stripA->id)
@@ -218,7 +227,7 @@ test('choosing the first real option in the type select via a genuine click sequ
 
     $page = visit(route('products.create'))->assertNoJavaScriptErrors();
 
-    $page->fill('name', 'Click Sequence Widget')
+    $page->fill(editorJourneyNameInput(), 'Click Sequence Widget')
         ->fill('sku', 'RNR-CLICK-001')
         ->select('productCategoryId', $category->id)
         ->fill('price', '10.00')
@@ -271,7 +280,7 @@ test('choosing a category via a genuine click sequence persists that value', fun
 
     $page = visit(route('products.create'))->assertNoJavaScriptErrors();
 
-    $page->fill('name', 'Category Click Widget')
+    $page->fill(editorJourneyNameInput(), 'Category Click Widget')
         ->fill('sku', 'RNR-CLICK-002')
         ->select('type', 'physical')
         ->fill('price', '10.00')
@@ -338,7 +347,7 @@ test('a duplicate sku refusal renders visibly beside the sku field', function ()
 
     visit(route('products.create'))
         ->assertNoJavaScriptErrors()
-        ->fill('name', 'Duplicate Sku Widget')
+        ->fill(editorJourneyNameInput(), 'Duplicate Sku Widget')
         ->fill('sku', 'RNR-DUP-001')
         ->select('productCategoryId', $category->id)
         ->select('type', 'physical')
@@ -412,7 +421,7 @@ test('reordering the strip through the real controls persists after a save and r
 
         $page = visit(route('products.create'))->assertNoJavaScriptErrors();
 
-        $page->fill('name', 'Reorder Widget')
+        $page->fill(editorJourneyNameInput(), 'Reorder Widget')
             ->fill('sku', $sku)
             ->select('productCategoryId', $category->id)
             ->select('type', 'physical')
@@ -448,4 +457,34 @@ test('reordering the strip through the real controls persists after a save and r
                 })()
             JS);
     });
+});
+
+// =====================================================================
+// Story 0077: a second language authored through its tab survives a save and a reopen.
+// =====================================================================
+
+test('authoring a French title in its tab, saving and reopening keeps both languages', function () {
+    $actor = editorJourneyActor();
+    $this->actingAs($actor);
+
+    $spanish = StoreLanguage::factory()->default()->create(['name' => 'Mmm default']);
+    $french = StoreLanguage::factory()->create(['name' => 'Aaa second']);
+    $product = Product::factory()->named('Zapatillas')->create();
+
+    visit(route('products.edit', $product))
+        ->assertNoJavaScriptErrors()
+        ->click('@language-tab-'.$french->id)
+        ->wait(1)
+        ->fill('@product-name-input-'.$french->id, 'Chaussures')
+        ->click('Save')
+        ->assertNoJavaScriptErrors()
+        ->assertUrlIs(route('products.index'));
+
+    visit(route('products.edit', $product))
+        ->assertNoJavaScriptErrors()
+        ->assertValue('@product-name-input-'.$spanish->id, 'Zapatillas')
+        ->click('@language-tab-'.$french->id)
+        ->wait(1)
+        ->assertValue('@product-name-input-'.$french->id, 'Chaussures')
+        ->assertNoJavaScriptErrors();
 });

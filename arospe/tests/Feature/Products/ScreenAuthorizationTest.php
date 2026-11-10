@@ -15,9 +15,14 @@
 use App\Livewire\Products\Editor;
 use App\Livewire\Products\Index;
 use App\Models\Product;
+use App\Models\ProductTranslation;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Livewire\Livewire;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -150,7 +155,8 @@ test('Editor::save() updating an existing product is refused for an actor lackin
     expect(fn () => Livewire::test(Editor::class, ['product' => $product]))
         ->toThrow(AuthorizationException::class);
 
-    expect($product->fresh()->translated('name'))->toBe('Original Name');
+    expect($product->fresh()->translated('name'))->toBe('Original Name')
+        ->and(DB::table('product_translations')->count())->toBe(1);
 });
 
 test('Editor::setFeaturedImage() is refused for an actor holding every products permission but lacking media.view', function () {
@@ -245,4 +251,100 @@ test('an actor holding the full products permission set sees every row action en
         expect($row['canEdit'] ?? null)->toBeTrue();
         expect($row['canDelete'] ?? null)->toBeTrue();
     });
+});
+
+// =====================================================================
+// Story 0077 -- Editor::prefillSlug() and Editor::setActiveLanguageTab()
+// =====================================================================
+
+test('Editor::prefillSlug() pre-fills the slug for an actor holding products.edit on an edit', function () {
+    $actor = screenAuthActor(['products.view', 'products.edit']);
+    $this->actingAs($actor);
+    $default = StoreLanguage::factory()->default()->create();
+    $product = Product::factory()->withoutTranslations()->create();
+    ProductTranslation::factory()->forLanguage($default)->create(['product_id' => $product->id, 'name' => 'Runner Pro']);
+
+    Livewire::test(Editor::class, ['product' => $product])
+        ->set('names.'.$default->id, 'Runner Pro Max')
+        ->call('prefillSlug', $default->id)
+        ->assertSet('slugs.'.$default->id, 'runner-pro-max');
+});
+
+test('Editor::prefillSlug() pre-fills the slug for an actor holding products.create on a create', function () {
+    $actor = screenAuthActor(['products.view', 'products.create']);
+    $this->actingAs($actor);
+    $default = StoreLanguage::factory()->default()->create();
+
+    Livewire::test(Editor::class)
+        ->set('names.'.$default->id, 'Runner Pro')
+        ->call('prefillSlug', $default->id)
+        ->assertSet('slugs.'.$default->id, 'runner-pro');
+});
+
+test('Editor::prefillSlug() is refused, logged and writes nothing once the permission is revoked after mount', function () {
+    $this->withoutExceptionHandling();
+    Log::spy();
+    $actor = screenAuthActor(['products.view', 'products.edit']);
+    $this->actingAs($actor);
+    $default = StoreLanguage::factory()->default()->create();
+    $product = Product::factory()->withoutTranslations()->create();
+    ProductTranslation::factory()->forLanguage($default)->create(['product_id' => $product->id, 'name' => 'Runner Pro']);
+
+    $component = Livewire::test(Editor::class, ['product' => $product])
+        ->set('names.'.$default->id, 'Runner Pro Max');
+
+    $actor->revokePermissionTo('products.edit');
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+    expect(fn () => $component->call('prefillSlug', $default->id))->toThrow(AuthorizationException::class);
+
+    $component->assertSet('slugs.'.$default->id, '');
+
+    Log::shouldHaveReceived('warning')
+        ->withArgs(fn (string $message, array $context): bool => $message === 'Privileged action refused'
+            && ($context['actor_id'] ?? null) === $actor->id)
+        ->once();
+});
+
+test('Editor::setActiveLanguageTab() switches to an active language for an actor who passed mount', function () {
+    $actor = screenAuthActor(['products.view', 'products.edit']);
+    $this->actingAs($actor);
+    StoreLanguage::factory()->default()->create();
+    $french = StoreLanguage::factory()->create();
+    $product = Product::factory()->create();
+
+    Livewire::test(Editor::class, ['product' => $product])
+        ->call('setActiveLanguageTab', $french->id)
+        ->assertSet('activeLanguageId', $french->id);
+});
+
+test('Editor::setActiveLanguageTab() has no permission check by design: an inactive id is refused as not found and nothing is written', function () {
+    $this->withoutExceptionHandling();
+    $actor = screenAuthActor(['products.view', 'products.edit']);
+    $this->actingAs($actor);
+    $default = StoreLanguage::factory()->default()->create();
+    $retired = StoreLanguage::factory()->inactive()->create();
+    $product = Product::factory()->create();
+
+    $component = Livewire::test(Editor::class, ['product' => $product]);
+    $before = DB::table('product_translations')->count();
+
+    expect(fn () => $component->call('setActiveLanguageTab', $retired->id))->toThrow(ModelNotFoundException::class);
+
+    $component->assertSet('activeLanguageId', $default->id);
+    expect(DB::table('product_translations')->count())->toBe($before);
+});
+
+test('a refused Editor mount leaves product_translations unchanged', function () {
+    $this->withoutExceptionHandling();
+    $creator = screenAuthActor(['products.view', 'products.create', 'products.edit']);
+    $this->actingAs($creator);
+    $product = Product::factory()->named('Original Name')->create();
+    $before = DB::table('product_translations')->orderBy('id')->get()->all();
+
+    $this->actingAs(screenAuthActor(['products.view']));
+
+    expect(fn () => Livewire::test(Editor::class, ['product' => $product]))->toThrow(AuthorizationException::class);
+
+    expect(DB::table('product_translations')->orderBy('id')->get()->all())->toEqual($before);
 });

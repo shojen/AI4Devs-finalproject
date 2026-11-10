@@ -165,8 +165,8 @@ test('the editor opens a product with the raw default-language name and descript
     $product = Product::factory()->named('Zapatillas Running', '<p>Ligeras</p>')->create();
 
     Livewire::test(Editor::class, ['product' => $product])
-        ->assertSet('name', 'Zapatillas Running')
-        ->assertSet('description', '<p>Ligeras</p>');
+        ->assertSet('names.'.StoreLanguage::defaultStoreLanguage()->id, 'Zapatillas Running')
+        ->assertSet('descriptions.'.StoreLanguage::defaultStoreLanguage()->id, '<p>Ligeras</p>');
 });
 
 test('a product whose only translation is French opens with an empty name, never the French one', function () {
@@ -176,6 +176,6 @@ test('a product whose only translation is French opens with an empty name, never
     ProductTranslation::factory()->forLanguage($fr)->create(['product_id' => $product->id, 'name' => 'Chaussures', 'description' => '<p>Legeres</p>']);
 
     Livewire::test(Editor::class, ['product' => $product])
-        ->assertSet('name', '')
-        ->assertSet('description', '');
+        ->assertSet('names.'.StoreLanguage::defaultStoreLanguage()->id, '')
+        ->assertSet('descriptions.'.StoreLanguage::defaultStoreLanguage()->id, '');
 });
