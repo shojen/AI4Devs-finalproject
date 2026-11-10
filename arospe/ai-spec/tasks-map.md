@@ -20,6 +20,12 @@ task file is correct and this one needs a refresh.
 
 **Update (2026-11-10): `0088-order-stock-adjustment-foundation-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0088-order-stock-adjustment-foundation-backend`; Phase 4 security audit and Phase 5 code review approved, full suite green). Its node, its inventory row, its `claimed` class membership and both edges touching it (`P0088 --> P0088a`, `P0088 -.-> P0092a`) are dropped from the graph; it joins the flat `done/` inventory (Epic 3, order-stock series) and its `tasks-status.json` entry (the `claimed` one) is deleted. Dependents recomputed: `0088a` had `0088` as its only pending dependency, so `depends_on` is now empty and it moves `blocked` -> `ready` (green); `0090`, `0091` and `0092b` drop `0088` from `depends_on` and stay `blocked` on `0088a`; `0092a` drops `0088` from `conflict_risk_with`. `ai-spec/tasks/in-progress/` is empty again. The per-epic done counts below were not recounted in this pass. Link check: same-depth move (`in-progress/` -> `done/`), so the moved file's outbound links were re-verified only and all resolve; inbound links were repointed from `in-progress/0088-…` to `done/0088-…` in `0088a`, `0090`, `0091` and `0092b`; all resolve, fragment included.
 
+**Update (2026-11-10): `0093-confirm-dialog-secondary-action-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0093-confirm-dialog-secondary-action-ui`). Its node, its inventory row, its `claimed` class membership and the edges touching it (`P0093 --> P0094`, `P0093 --> P0094a`, `P0093 --> P0095`) are dropped from the graph; it joins the flat `done/` inventory (Epic 3 +1) and its `tasks-status.json` entry is deleted. Dependents recomputed: `0094` (still `blocked` on `0090`), `0094a` (on `0090` and `0094`) and `0095` (on `0091` and `0094`) drop `0093` from `depends_on`; no `status` changes, and no node is `claimed` now. Link check: same-depth move, so the moved file's outbound links were re-verified only; inbound links from `0094`, `0094a` and `0095` were repointed from `in-progress/0093-…` to `done/0093-…`; all resolve.
+
+**Update (2026-11-10): `0093-confirm-dialog-secondary-action-ui.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (claimed by `worktree-0093-confirm-dialog-secondary-action-ui`; Phase 3). Still pending work: node and registry entry kept, `claimed`. Link check, both directions: the file's own outbound links gained a `../` segment; the inbound links from `0094`, `0094a` and `0095` now point at `in-progress/`; every relative link resolves.
+
+**Update (2026-11-10, Phase 2 rejection of `0077`): `0077` split; new pending file `0076b-product-translation-write-action-backend.md`.** Project owner decision A: `0077` is now UI only; the `SetProductTranslation` action and the widened `TranslateProductUniqueViolation` moved to `0076b` (numbered below its consumer, `0076a` precedent). Both are pending Phase 2 re-review, none approved. New node `P0076b` (green `ready`, no pending dependency); edge `P0076b --> P0077`, so `0077` turns `blocked` (yellow `pending`, `depends_on: ["0076b"]`); dashed conflict edge `P0076b -.-> P0087` (both edit `lang/{en,es}/products.php`; `0087` lists it back). `0077`'s `touches` now include its seven Feature and two Browser test files. `0087`'s inactive-language amendment note now targets `0076b` and requires its structural guard to cover `SetProductTranslation`; `0079`'s cites of the named-parameters rule and the parallel-arrays decision were repointed to `0076b` D-1 / `0077` D-2. The `ready` set gains `0076b` and loses `0077`. Link check: every relative link in `0076b`, `0077` and the edited `0079`/`0087` lines resolves; no file moved.
+
 **Update (2026-11-08, Phase 2 re-review #4): `0088` split; new pending file `0088a-order-stock-auto-deduct-on-create-and-add-backend.md`.** User decision (0088 OQ-5, option (a)): `0088` keeps the counters only (migration, helpers, counter maintenance in `CreateOrder`/`AddOrderItem` — new lines written stock-neutral —, `RecordRefund` and `UpdateOrderItemQuantity`; no stock movement, safe to ship alone), and the new `0088a` (suffix per the `0076a` precedent) adds `AdjustOrderStock` and the automatic deduction. Dependencies re-derived from the files: `0088a` → `0088`; `0090`, `0091` → `0088a` (and `0088`); `0092b` → `0088a` (and `0088`), `0092a`. Graph: new node `P0088a` (yellow `pending`); the edges `P0088 --> P0090/P0091/P0092b` are replaced by `P0088 --> P0088a --> P0090/P0091/P0092b` (the direct `0088` dependency in those files is transitive). Registry: `0088a` entry added (`blocked`), `0088.touches` narrowed (no `AdjustOrderStock`, no stock tests) and `0088.title` updated; `0088` ↔ `0092a` `conflict_risk_with` kept (both edit `RecordRefund.php`). Inventory: 15 numbered pending. Also: 0088 OQ-4 (virtual products) and 0090 OQ-5 (stock adjustment on a cancelled order) are now user-confirmed. Link check: every relative link and anchor in the eleven series files resolves; the new file's inbound links (0088, 0090, 0091, 0092a, 0092b) resolve.
 
 **Update (2026-11-08, Phase 2 re-review #3): order-stock series rewritten in place.** The reviewer's ledger simulation showed the counter `stock_undeducted_quantity` must hold only non-refunded units; every refund now moves the units it takes from the undeducted ones into the second counter, renamed `stock_refunded_not_out_quantity` (formerly `stock_refund_returned_quantity`, mentioned in the note below). Because refunds without restock and quantity changes without stock adjustment already exist, `0088` now also maintains both counters in `RecordRefund` and `UpdateOrderItemQuantity` (no stock movement). Registry: `0088.touches` gains `app/Actions/Orders/RecordRefund.php`, `app/Actions/Orders/UpdateOrderItemQuantity.php` and `tests/Feature/Orders/OrderStockCountersTest.php`; a new symmetric `conflict_risk_with` pair **`0088` ↔ `0092a`** (both edit `RecordRefund.php`, no dependency between them); `0088` → `0090`/`0092b` already sequence the other shared files. A new dashed edge `P0088 -.-> P0092a` is drawn. No file was created, moved, renamed or deleted; dependencies and statuses unchanged. **Open (user decision pending):** 0088's OQ-5 recommends splitting it into `0088` (counters only, new lines stock-neutral) and `0088a` (deduction); if accepted, `0090`, `0091` and `0092b` would depend on `0088a`. Link check: every relative link and anchor in the ten series files resolves (0088's counter-model heading changed again; its inbound anchor from 0090 was updated).
@@ -409,7 +415,7 @@ graph and from the parallelization analysis below.
 
 - [Inventory](#inventory)
   - [Done (100) — shipped, out of scope for this graph](#done-100--shipped-out-of-scope-for-this-graph)
-  - [Pending — not started (14 numbered + 1 infra doc)](#pending--not-started-14-numbered--1-infra-doc)
+  - [Pending — not started (15 numbered + 1 infra doc)](#pending--not-started-15-numbered--1-infra-doc)
 - [Dependency graph (pending tasks only)](#dependency-graph-pending-tasks-only)
 - [Analysis](#analysis)
   - [Pending tasks that are independent of each other and safe to parallelize](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
@@ -419,7 +425,7 @@ graph and from the parallelization analysis below.
 
 ## Inventory
 
-### Done (100) — shipped, out of scope for this graph
+### Done (101) — shipped, out of scope for this graph
 
 Already merged into `main`/`finalproject-ARP` and closed via the workflow's Phase 7; see
 [`ai-spec/tasks/done/`](tasks/done/) for each story's full file. Listed here only as IDs, grouped
@@ -438,7 +444,7 @@ appears as a node in the dependency graph below:
 - **Epic 2 — Products, Taxes, Media, Shipping (35):** 0016, 0017, 0018, 0019, 0019a, 0019b,
   0019c, 0019d, 0020, 0021, 0022, 0023, 0024, 0024a, 0024b, 0025, 0026, 0027, 0028, 0029, 0029a,
   0029b, 0030, 0030a, 0031, 0031a, 0032, 0033, 0034, 0035, 0036, 0037, 0038, 0039, 0080.
-- **Epic 3 — Customers, Orders & Notifications (18):** 0041 — the epic's foundation story (the first to close in
+- **Epic 3 — Customers, Orders & Notifications (19):** 0041 — the epic's foundation story (the first to close in
   this epic); its own three former dependents (0042, 0043, 0045) are re-derived against `done/`
   rather than against this pending list from here on. 0042 — Customers soft delete (backend), the
   second story to close in this epic; its own two former dependents (0044, 0047) are re-derived
@@ -532,6 +538,7 @@ appears as a node in the dependency graph below:
   closure re-derives no `status` change against the pending list.
   0084 — Order mark as paid (backend), closed 2026-10-02: adds `MarkOrderAsPaid` and the `order_payments` table; its one
   dependent, 0085, drops it and moves to `ready`.
+  0093 — Confirmation dialog optional second choice (frontend), closed 2026-11-10: `<x-confirm-dialog>` gains `secondary-action` / `secondary-label`; its dependents 0094, 0094a and 0095 drop it from `depends_on` and stay `blocked` on their other pending dependencies.
 
 ### Pending — not started (14 numbered + 1 infra doc)
 
@@ -539,6 +546,7 @@ Re-derived 2026-11-08 from the files actually present in `ai-spec/tasks/` (`0078
 
 | ID | Title | Epic area |
 | --- | --- | --- |
+| 0076b | Product translation write action (backend) | Epic 5 — i18n |
 | 0077 | Product editor — language tabs (UI) | Epic 5 — i18n |
 | 0079 | Blog post editor — language tabs (frontend) | Epic 5 — i18n |
 | 0087 | Translation write actions refuse an inactive store language | Epic 5 — i18n |
@@ -547,7 +555,6 @@ Re-derived 2026-11-08 from the files actually present in `ai-spec/tasks/` (`0078
 | 0091 | Order cancellation returns stock only on request (backend) | Epic 3 — Orders (stock) |
 | 0092a | `RecordRefund` locks the order before its lines — no behaviour change (backend) | Epic 3 — Orders (stock) |
 | 0092b | Refunds can return refunded units to stock (backend) | Epic 3 — Orders (stock) |
-| 0093 | Confirmation dialog — optional second choice (frontend) | Epic 3 — Orders (stock) |
 | 0094 | Order detail — quantity-change stock dialog (frontend) | Epic 3 — Orders (stock) |
 | 0094a | Order detail — line-removal stock dialog (frontend) | Epic 3 — Orders (stock) |
 | 0095 | Order detail — cancel stock dialog (frontend) | Epic 3 — Orders (stock) |
@@ -585,6 +592,7 @@ flowchart LR
     subgraph PEND_I18N["Epic 5 — Internationalization"]
         direction TB
         P0087["0087 Refuse inactive language in translation write actions"]
+        P0076b["0076b Product translation write action"]
         P0077["0077 Product editor i18n UI"]
         P0079["0079 Blog post editor i18n UI"]
     end
@@ -596,7 +604,6 @@ flowchart LR
         P0091["0091 Cancel opt-in BE"]
         P0092a["0092a RecordRefund lock order BE"]
         P0092b["0092b Refund stock return BE"]
-        P0093["0093 Confirm dialog 2nd choice UI"]
         P0094["0094 Quantity stock dialog UI"]
         P0094a["0094a Removal stock dialog UI"]
         P0095["0095 Cancel stock dialog UI"]
@@ -609,12 +616,9 @@ flowchart LR
     P0088a --> P0092b
     P0092a --> P0092b
     P0090 --> P0094
-    P0093 --> P0094
     P0090 --> P0094a
-    P0093 --> P0094a
     P0094 --> P0094a
     P0091 --> P0095
-    P0093 --> P0095
     P0094 --> P0095
     P0092b --> P0096
     P0090 -.-> P0091
@@ -625,7 +629,7 @@ flowchart LR
     P0094 -.-> P0096
     P0094a -.-> P0096
     P0095 -.-> P0096
-    class P0088a,P0092a,P0093 ready;
+    class P0088a,P0092a ready;
     class P0090,P0091,P0092b,P0094,P0094a,P0095,P0096 pending;
 
     %% Standalone (no PRD epic)
@@ -699,10 +703,13 @@ flowchart LR
     %% (P0084 --> P0085 dropped: 0084 is done; 0085 is done too.)
     %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
-    class P0077,P0079,P0087 ready;
+    class P0076b,P0079,P0087 ready;
+    class P0077 pending;
     %% (P0078 closed to done/ 2026-11-08; no node remains `claimed`.)
     P0087 -.-> P0079
     P0087 -.-> P0077
+    P0076b --> P0077
+    P0076b -.-> P0087
     %% (P0075 closed to done/ 2026-10-27; P0073 closed to done/ 2026-10-08; no node remains `claimed`.)
     %% (P0071 --> P0073/P0075/P0079 dropped: 0071 closed to done/ 2026-10-07.)
 ```
@@ -720,7 +727,7 @@ here); yellow (`pending`) = still blocked on at least one open pending dependenc
 ### Pending tasks that are independent of each other and safe to parallelize
 
 These are the tasks whose **entire dependency chain is already `done/`** — nothing pending blocks
-them — the green `ready` nodes in the diagram above (`0077`, `0078`, `0087`, `0088`, `0092a`, `0093` as of the 2026-11-08 restructure). (`0046`–`0054` and `0057` all had the
+them — the green `ready` nodes in the diagram above (`0076b`, `0079`, `0087`, `0088`, `0092a`, `0093` as of the 2026-11-08 restructure). (`0046`–`0054` and `0057` all had the
 identical property in their own turn — but none of them is listed anywhere in this section any
 more: each closed to `done/` in this or a prior regeneration pass, so per this file's own "`done/`
 tasks are omitted from the graph" rule none has a node at all any more. See the note at the top of

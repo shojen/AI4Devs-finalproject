@@ -17,8 +17,13 @@
          DOM, and the data-test hooks live on that INNER content (never on <flux:modal>) -- the
          two Flux/Blaze markup rules from users.blade.php / roles.blade.php.
 
+    Story 0093 -- optional second choice: `secondary-action` + `secondary-label` (both required for it
+    to render, labels always supplied by the parent). `@close` still runs the DISMISS method, never the
+    secondary one. Three-button dialogs stack below `sm` (confirm first, dismiss last); two-button
+    dialogs keep their original markup.
+
     Hooks: confirm-dialog-{test-prefix}, confirm-dialog-{test-prefix}-dismiss,
-    confirm-dialog-{test-prefix}-confirm.
+    confirm-dialog-{test-prefix}-confirm, confirm-dialog-{test-prefix}-secondary (only when rendered).
 --}}
 @props([
     'show',
@@ -31,7 +36,15 @@
     'dismissAction',
     'testPrefix',
     'variant' => 'primary',
+    'secondaryAction' => null,
+    'secondaryLabel' => null,
 ])
+
+@php
+    $hasSecondary = $secondaryAction !== null && $secondaryLabel !== null;
+    $buttonClass = $hasSecondary ? 'w-full min-h-11 sm:w-auto' : null;
+    $confirmTarget = $hasSecondary ? $confirmAction.','.$secondaryAction : $confirmAction;
+@endphp
 
 <flux:modal :name="$testPrefix.'-modal'" class="max-w-md md:min-w-md" wire:model="{{ $model }}" @close="{{ $dismissAction }}">
     @if ($show)
@@ -42,16 +55,30 @@
                 {{ $slot }}
             </div>
 
-            <div class="flex gap-3 justify-end">
-                <flux:button variant="outline" wire:click="{{ $dismissAction }}" data-test="confirm-dialog-{{ $testPrefix }}-dismiss">
+            <div @class(['flex gap-3 justify-end' => ! $hasSecondary, 'flex flex-col-reverse gap-3 sm:flex-row sm:justify-end' => $hasSecondary])>
+                <flux:button :class="$buttonClass" variant="outline" wire:click="{{ $dismissAction }}" data-test="confirm-dialog-{{ $testPrefix }}-dismiss">
                     {{ $dismissLabel }}
                 </flux:button>
 
+                @if ($hasSecondary)
+                    <flux:button
+                        :class="$buttonClass"
+                        variant="outline"
+                        wire:click="{{ $secondaryAction }}"
+                        wire:loading.attr="disabled"
+                        wire:target="{{ $confirmTarget }}"
+                        data-test="confirm-dialog-{{ $testPrefix }}-secondary"
+                    >
+                        {{ $secondaryLabel }}
+                    </flux:button>
+                @endif
+
                 <flux:button
+                    :class="$buttonClass"
                     :variant="$variant"
                     wire:click="{{ $confirmAction }}"
                     wire:loading.attr="disabled"
-                    wire:target="{{ $confirmAction }}"
+                    wire:target="{{ $confirmTarget }}"
                     data-test="confirm-dialog-{{ $testPrefix }}-confirm"
                 >
                     {{ $confirmLabel }}
