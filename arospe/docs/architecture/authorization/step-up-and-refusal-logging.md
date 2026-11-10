@@ -101,6 +101,16 @@ Two notices carry a **second** predicate beside it, and both exist because a not
 > privileged capability on a customer record, that story adds step-up and must knowingly reverse this
 > decision — see [api/customers.md](../../api/customers.md#customersindex--the-ninth-permission-gated-route).
 
+### The interrupted form survives the confirmation (story 0097)
+
+Task 0015a's decision D4 accepted that the redirect to `password.confirm` throws the form away. Story 0097 removed that wart for both the **create** and the **edit** path, without writing anything after the confirmation:
+
+- `App\Livewire\Users\Index::save()`, in the `PasswordConfirmationRequiredException` catch, parks `name`, `email`, `roleId`, `status` — the form has no password field — plus the actor id, the target id (`null` on create) and a timestamp under the session key `users.pending_form`, then redirects as before.
+- `mount()` **pulls** that entry (read and removed, so it is used exactly once) and reopens the modal prefilled. The actor presses Save again, so every `Gate` and step-up check re-runs against the then-current state.
+- The entry is dropped silently when it belongs to another actor, is older than 15 minutes (`PENDING_FORM_LIFETIME_SECONDS`), is malformed, or no longer authorizes: a create needs `create`; an edit needs the target to still exist and the same `update` / `updateSensitiveAttributes` gates `openEditModal()` applies (the actor's own row exempt from the latter).
+
+Tests: `tests/Feature/Users/IndexStepUpFormRestoreTest.php`.
+
 ## Recording a refusal — what every gate owes the audit trail
 
 Task 0015b. The three layers above decide **whether** an attempt proceeds; none of them records that it did not. Until this story every refusal in this app was correct and completely invisible — an actor repeatedly probing an `Administrator`-holding target, or hammering a rate-limited action, left nothing behind, while the *successful* mutations sitting beside them had been writing `Log::info` audit lines since task 0015. **Gating a method and knowing when the gate fired are two different properties, and the second one has to be built.** This section is the copyable pattern; it sits alongside [the module-gate pattern](how-to-gate.md#the-copyable-module-gate-pattern-and-the-three-alternatives-rejected) and [the sidebar registry](how-to-gate.md#the-second-half-of-a-module-gate-the-sidebar-registry) as the third thing a later epic's admin screen inherits rather than re-invents.
@@ -247,4 +257,4 @@ Three rules generalise from it:
 4. Pin the shape with an **equivalence test** that captures a refusal from the new screen and one from an existing screen in a single `Log::spy()` session and set-equates their key sets — `tests/Feature/Roles/RefusalLoggingTest.php` and `tests/Feature/Users/ActionRefusalLoggingTest.php` do this screen-to-screen and action-to-action respectively. Asserting each screen's shape in isolation lets two conventions drift into existence.
 5. Add a must-not-over-log test beside each: a permitted create/edit/delete still writes its single `Log::info` success line and **no** warning.
 
-_Last updated: 2026-10-01 — Story 0082: added the dashboard read-side actions subsection (five refusal-logging actions with explicit `targetType`; `GetDashboardCounters` as the no-throw, no-log `Gate::allows` exception; the check-before-calling caller contract). Still current from earlier stories: the `update_conflict` refusal reason (story 0064d, `UpdateUser`'s locked compare-and-set) and `activation_refused_status_changed` (0064c, `ActivateInactiveUser`)._
+_Last updated: 2026-11-10 — Story 0097: added the interrupted-form-restore subsection (the 0015a D4 "lose the form" wart is gone for create and edit). Still current from earlier stories: the dashboard read-side actions subsection (0082), the `update_conflict` refusal reason (0064d) and `activation_refused_status_changed` (0064c)._
