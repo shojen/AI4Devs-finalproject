@@ -37,7 +37,7 @@ function emptyEveryTableExceptMigrations(): void
 {
     Schema::disableForeignKeyConstraints();
 
-    foreach (Schema::getTables() as $table) {
+    foreach (Schema::getTables(DB::connection()->getDatabaseName()) as $table) {
         if ($table['name'] !== 'migrations') {
             DB::table($table['name'])->delete();
         }
@@ -109,12 +109,16 @@ test('the backfill sets stock_undeducted_quantity to quantity minus refunded and
                 'plain' => insertLegacyOrderItem($order->id, $product->id, null, $product->sku, 3, 0),
                 'refunded' => insertLegacyOrderItem($order->id, $product->id, null, $product->sku, 5, 2),
                 'fullyRefunded' => insertLegacyOrderItem($order->id, $product->id, null, $product->sku, 4, 4),
+                'overRefunded' => insertLegacyOrderItem($order->id, $product->id, null, $product->sku, 2, 5),
             ];
         },
         function (array $ids): void {
             $plain = DB::table('order_items')->find($ids['plain']);
             $refunded = DB::table('order_items')->find($ids['refunded']);
             $fullyRefunded = DB::table('order_items')->find($ids['fullyRefunded']);
+            $overRefunded = DB::table('order_items')->find($ids['overRefunded']);
+
+            expect([$overRefunded->stock_undeducted_quantity, $overRefunded->stock_refunded_not_out_quantity])->toBe([0, 5]);
 
             expect([$plain->stock_undeducted_quantity, $plain->stock_refunded_not_out_quantity])->toBe([3, 0])
                 ->and([$refunded->stock_undeducted_quantity, $refunded->stock_refunded_not_out_quantity])->toBe([3, 2])
