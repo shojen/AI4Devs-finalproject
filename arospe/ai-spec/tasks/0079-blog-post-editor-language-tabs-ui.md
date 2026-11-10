@@ -71,7 +71,7 @@ frontend | includes database-expert: **no** | consumes **0078** (the retrofit), 
 (the domain), **0021** (the WYSIWYG), **[0024a](done/0024a-product-description-html-sanitization.md)** (the sanitizer, transitively)
 
 > **On the classification — settled, not re-escalated.** This story stays **frontend** while adding one
-> `app/Actions/Blog/` class, which is the shape 0071, 0073, 0075 and 0077 all ship. The coordinator has
+> `app/Actions/Blog/` class, which is the shape 0071, 0073, 0075 and 0076b all ship. The coordinator has
 > fixed this and the human has already answered it once for this family; it is recorded rather than
 > re-opened. The action is a thin, self-authorizing, self-validating wrapper over a primitive 0070
 > already ships — no model, migration, schema, route, policy or permission change, so
@@ -344,7 +344,7 @@ Feature: Blog post content authored per store language
 > [rule 6](../../docs/testing/frontend/gherkin-guidelines.md#6-no-ghost-scenarios) (no ghost scenarios):
 >
 > - **"a blog editor removes a translation."** 0071's **Q-1** resolved **(a) — no removal** and 0077's
->   **Q-4** and **D-18** decide it identically. There is no such behaviour to script.
+>   **D-4** decides it identically. There is no such behaviour to script.
 > - **"a blog editor reads content held in a removed store language."** The data survives (0068 **D5**,
 >   0070 **D-6**) but no screen offers a surface for it (**D-5**), exactly as 0071 **D-5** and 0073
 >   decide. Scripting it would assert a feature every sibling declines to build.
@@ -455,7 +455,7 @@ final class SetBlogPostTranslation
 }
 ```
 
-Following 0071 **D-13**'s master contract and 0077 **D-19**'s named-parameters rule, with the
+Following 0071 **D-13**'s master contract and [0076b](0076b-product-translation-write-action-backend.md) **D-1**'s named-parameters rule (originally 0077 D-19), with the
 Blog-side specifics **verified against 0061/0078 rather than ported from a sibling**. The seven
 properties, and the two places this action is *unlike* every sibling, are in **D-8**.
 
@@ -911,7 +911,7 @@ than an absence:
 
 - **No `$slugs` state array, no `slugRules()` call from this screen, and no blur-prefill affordance.**
   0077's **D-9** — the whole `Str::ascii()`-versus-JS-`slugify` fidelity argument — has **no analogue
-  here**, and 0077's **D-4** `'' → NULL` slug-uniqueness trap is structurally unreachable, because a
+  here**, and [0076b](0076b-product-translation-write-action-backend.md) **D-1** step 6's `'' → NULL` slug-uniqueness trap is structurally unreachable, because a
   `NOT NULL` derived column can never be blank.
 - **A read-only disclosure is permitted; a *live* preview is not.** `frontend-expert` proposed showing
   the persisted slug per tab ("will be published at `/blog/{slug}`"), sourced from that language's
@@ -927,7 +927,7 @@ than an absence:
   refusal must be re-keyed onto `titles.{languageId}`, on the reasoning that retitling is the only
   action an editor can take to resolve it. See **R-4** and **Q-2**.
 
-**D-3 — Two parallel arrays keyed by store-language id, following 0077's C-4 reversal rather than its
+**D-3 — Two parallel arrays keyed by store-language id, following 0077's **D-2** (originally its C-4 reversal) rather than its
 first draft.** `public array $titles` and `public array $bodies`, each `array<string, string>` keyed by
 store-language **id**, plus `#[Locked] $languages`, `#[Locked] $defaultLanguageId`, `#[Locked]
 $originalTranslatedLanguageIds` and the unlocked `public string $activeLanguageId`.
@@ -1051,7 +1051,7 @@ own acceptance criterion and its own test asserting the two call sites use **dif
 rather than a note nobody re-reads.
 
 **D-8 — `SetBlogPostTranslation`'s contract, and the two places it is unlike every sibling.** The
-class follows 0071 **D-13**'s master shape and 0077 **D-19**'s named-parameters rule. Seven properties
+class follows 0071 **D-13**'s master shape and [0076b](0076b-product-translation-write-action-backend.md) **D-1**'s named-parameters rule (originally 0077 D-19). Seven properties
 are the family's, applied unchanged:
 
 1. **Authorization is its own first statement**, outside any transaction, per
@@ -1064,7 +1064,7 @@ are the family's, applied unchanged:
 2. **It routes through `LogRefusedPrivilegedAttempt::authorize()`, not a bare `Gate::authorize()`**,
    with `target_type: 'blog_post'` passed **explicitly** — 0061 **D-13**'s established idiom for this
    folder, which by the time this lands holds seven self-authorizing actions. This is the one place
-   this story diverges from 0071/0077, whose Product-side actions do not log; following the *entity's*
+   this story diverges from 0071's `SetProductCategoryTranslation` pattern sibling, whose refusals were not logged when 0071 shipped (0076b's `SetProductTranslation` logs them); following the *entity's*
    folder rather than the *pattern's* sibling is 0073's precedent applied again.
 3. **Sanitization runs before `validate()`.** 0061 **D-14** and 0024a **D-16** constraint 1 require it,
    so a body whose *pre*-sanitisation length exceeds a rule but whose sanitised form does not is judged
@@ -1074,7 +1074,7 @@ are the family's, applied unchanged:
    never accepted as parameters — the [guard-took-the-state-it-guarded](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
    shape.
 5. **It reuses `BlogPostValidationRules` and writes no local rule** — subject to **Q-1**.
-6. **Named parameters, never `array $fields`** (0077 **D-19**): an array is a pass-through surface the
+6. **Named parameters, never `array $fields`** (0076b **D-1**, originally 0077 D-19): an array is a pass-through surface the
    action would have to whitelist anyway, whereas named parameters make the whitelist *the signature*,
    unforgeable. The required-vs-optional split is expressed in the types (`string $title` against
    `?string $body`).
@@ -1096,9 +1096,9 @@ are the family's, applied unchanged:
   one, which looks wrong at a glance and is correct: the alternative is the drift 0024's own scope
   fence exists to prevent. **(V-1.)**
 
-**One more property, from 0077 D-4's shape applied to a different column:** `''` must become `null`
+**One more property, from 0076b D-1 step 6's shape applied to a different column:** `''` must become `null`
 before it reaches `body`, at the **action boundary**, so a caller with no component inherits it too.
-Unlike 0077 the reason is not a uniqueness constraint — `body` has none — it is that 0078's whole
+Unlike 0076b the reason is not a uniqueness constraint — `body` has none — it is that 0078's whole
 per-field fallback design depends on an absent value resolving through the chain. If `HasTranslations`
 distinguishes absence with `!== null` rather than `blank()`, a stored `''` in French renders as an
 empty body instead of falling back to the default's, silently defeating **Q-1(a)**. ⚠️ **This is not
@@ -1135,7 +1135,7 @@ primary path and is exercised by ordinary input. *Rejected:* widening 0061's two
 `titles.{id}`, which changes a public contract 0063 and every direct-call test bind to, from a story
 forbidden to edit either file.
 
-**D-10 — Untouched / engaged / blanked, keyed on `title`.** 0077 **D-18**'s triple, adapted to a
+**D-10 — Untouched / engaged / blanked, keyed on `title`.** 0077 **D-4**'s triple, adapted to a
 two-field panel. `blog_post_translations.title` is `NOT NULL` (0078's migration), so "write whatever
 they typed" is not available and the rule must be stated:
 
@@ -1143,7 +1143,7 @@ they typed" is not available and the rule must be stated:
 | --- | --- | --- |
 | **Untouched** | title blank **and** body blank, **and** the language held no translation before this edit | **Skipped.** No row, no slug derived, no validation, no error. The language keeps falling back through `HasTranslations` exactly as a never-translated one does. |
 | **Engaged** | title **or** body non-blank | `title` becomes **`required` for that language**; `body` stays optional (**D-11**). |
-| **Blanked** | title blank **and** body blank, **but** the language *did* hold a translation | **Refused**, keyed `titles.{id}`. Blanking is not a delete path — 0071 **Q-1**, 0077 **Q-4**, both resolved the same way. |
+| **Blanked** | title blank **and** body blank, **but** the language *did* hold a translation | **Refused**, keyed `titles.{id}`. Blanking is not a delete path — 0071 **Q-1**, 0077 **D-4**, both resolved the same way. |
 
 The **default** language's title is unconditionally required (0070 **Q1(a)**).
 
@@ -1298,7 +1298,7 @@ a post's French title is neither identity-sensitive nor hard to reverse.
   the two-layer pattern, the `x-show` rendering mode, the derived error key. **Consumed, never edited.**
 - **[0077](0077-product-editor-language-tabs-ui.md)** — soft but load-bearing. Not a code dependency;
   it is where the multi-field, routed-page, WYSIWYG-in-tabs shape was worked out, and this story adopts
-  its **C-2** reconciliation, **D-18** state triple and **D-19** parameter rule wholesale.
+  its **C-2** reconciliation and **D-4** state triple, plus [0076b](0076b-product-translation-write-action-backend.md)'s **D-1** parameter rule, wholesale.
 - **[0070](done/0070-translatable-content-mechanism-product-categories-backend.md)** — hard.
   `HasTranslations`, `SetTranslation`, `defaultStoreLanguage()`. Consumed unmodified.
 - **[0068](done/0068-store-languages-catalog-backend.md)** — hard. `StoreLanguage`, `scopeActive()`,
@@ -1379,9 +1379,9 @@ a post's French title is neither identity-sensitive nor hard to reverse.
   the family.
 - **R-11 — Refusal logging is asymmetric across this family and this story picks a side.**
   `SetBlogPostTranslation` routes through `LogRefusedPrivilegedAttempt` because 0061 **D-13** makes that
-  the Blog folder's idiom; 0071's and 0077's Product-side equivalents do **not** log, and 0071 **R-7**
-  records that as a deliberate deferral. So after this story the Blog translation path logs and the
-  Product one does not. **Consistent within each folder, inconsistent across the family** — recorded so
+  the Blog folder's idiom; 0071's Product-category action does **not** log (0071 **R-7**
+  records that as a deliberate deferral), while 0076b's `SetProductTranslation` does. So after this story the Blog translation path logs and the
+  Product-category one does not. **Consistent within each folder, inconsistent across the family** — recorded so
   a reviewer meets a decision rather than a silence.
 - **R-12 — This story's design is provisional against thirteen unshipped stories at once** — 0020,
   0021, 0024, 0058, 0059, 0060, 0061, 0062, 0063, 0068, 0070, 0074 and 0078 are all Phase 1 text, and it
@@ -1449,7 +1449,7 @@ client-side preview on fidelity grounds (`Str::slug()` versus any JS slugifier d
 - **0074's Q-1** (which language an on-the-fly tag is authored in) — **D-12** confirms its **(a)**, and
   **R-3** records the half that is still open.
 - **0063's OQ-1 … OQ-7** — none touched by this story.
-- **0071's R-7 / 0077's R-10** (refusal logging on the Product-side screens) — **R-11** records that
+- **0071's R-7** (refusal logging on the Product-category screen; 0077's former R-10 no longer exists) — **R-11** records that
   this story takes the opposite side for the Blog folder, deliberately.
 
 ## 6. Technical tasks for later backlog creation
@@ -1467,13 +1467,12 @@ Derived from this debate; **none are in scope for 0079.**
    0063/0079 that neither file closes.
 4. **Add a status-free `translatedBodyRules()` to `BlogPostValidationRules` in 0078** if **Q-1(a)** is
    adopted — a small, additive, cross-story edit.
-5. **Decide refusal logging for the Product-side translation actions** (0071 **R-7**, 0077 **R-10**),
-   now that the Blog side logs and the Product side does not (**R-11**). The honest unit of work is all
-   of `SetProductCategoryTranslation` and `SetProductTranslation` at once.
+5. **Decide refusal logging for `SetProductCategoryTranslation`** (0071 **R-7**), now that the Blog
+   side and 0076b's `SetProductTranslation` log and it does not (**R-11**). (Moot for
+   `SetProductTranslation`: 0076b already logs; 0077's former R-10 no longer exists.)
 6. **Correct 0071's `flux:tab` verification claim** (**R-13**) and check whether 0073 carries the same
    phrasing, so a later reader does not inherit a command that cannot produce its stated result.
-7. **State the N-galleries cost in 0077 as well** (**D-4**) — it has the identical exposure and its
-   **D-1** discusses only editor multiplicity.
+7. ~~**State the N-galleries cost in 0077 as well** (**D-4**)~~ — **done**: 0077 **R-2** states the 2 + N galleries cost.
 8. **Retire the three flat `tests/Browser/` files** into mirrored subfolders — 0069's backlog item 5,
    still open after four Epic 5 UI stories (**D-17**).
 9. **Surface "this language holds content but is no longer active"** — 0069's backlog item 3, declined
@@ -1552,7 +1551,7 @@ Six points, each reached from opposite directions:
 `app/Livewire/`, `app/Actions/`, `app/Models/`, `app/Concerns/`, `lang/en/`, `routes/` and
 `resources/views/components/` all listed and quoted in the header block above; **no `vendor/`**;
 `composer.json` requires `livewire/flux` with **no `livewire/flux-pro`**, so `flux:tabs` is a Pro
-component and 0071's hand-rolled strip stands (0077 **D-11**'s finding, re-confirmed); **no tabbed
+component and 0071's hand-rolled strip stands (re-confirmed here); **no tabbed
 markup exists** (`grep -rnE 'flux:tab[^l]|flux:tabs|role="tab"' resources/` returns nothing) — **but
 0071's own cited command returns 119 hits**, all `flux:table`, which is **R-13**; `tests/Browser/` holds
 **three flat files and one mirrored**, so 0071 **D-9**'s count is still accurate and 0069 **D-17**'s is
