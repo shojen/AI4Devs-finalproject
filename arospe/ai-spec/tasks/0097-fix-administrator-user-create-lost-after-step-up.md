@@ -1,6 +1,6 @@
 # [0097] Fix: creating an Administrator user is lost after the step-up password confirmation
 
-> **Status: New — created 2026-11-10 from a user bug report; Phase 1 not yet run (open question OQ-1 needs a user decision).**
+> **Status: In progress — created 2026-11-10 from a user bug report. OQ-1 resolved by the user the same day: option (a), applied to create AND edit.**
 > Bug fix on the Users screen, follow-up to story 0015a (decision D4, "accepted UX wart").
 
 ## Description
@@ -26,8 +26,8 @@ backend + frontend (single Livewire component, no split needed unless OQ-1 picks
 - A pre-warning exists (`create-modal-reconfirm-notice`) but only once the role is already Administrator; the actor has
   typically filled the form by then and still loses it.
 
-## Open question (blocking)
-**OQ-1 — how should the write survive the confirmation?** Options:
+## Decision
+**OQ-1 (resolved 2026-11-10, user): option (a) — restore the form; the same mechanism covers the edit path.** Implementation: `Users\Index::save()` stashes `name`, `email`, `roleId`, `status` plus actor id, target id (null on create) and timestamp under session key `users.pending_form` before redirecting; `mount()` pulls it once and reopens the modal prefilled, dropping it if it belongs to another actor, is older than 15 minutes, is malformed, or no longer authorizes (create gate / target gone / `update` + `updateSensitiveAttributes`). Nothing is written after the confirmation. Options considered:
 - (a) **Restore the form (recommended):** before redirecting, flash only the non-secret fields (`name`, `email`, `roleId`, `status`;
   there is no password on this form) to the session for exactly one redirect; on return, `mount()` reopens the modal prefilled so
   the actor presses Save again. Smallest change, no automatic write after confirmation.
@@ -90,4 +90,4 @@ No task dependencies. Risk: persisting user-supplied form state across a redirec
 left it out) — mitigated by (a) storing only four non-secret fields, flash lifetime of one request, actor-bound.
 
 ## Approval record
-_None yet — Phase 1 (OQ-1) pending._
+_Phase 1 shortened by user decision on OQ-1 (2026-11-10); implemented directly with TDD in this worktree. Phase 4/5 review pending._
