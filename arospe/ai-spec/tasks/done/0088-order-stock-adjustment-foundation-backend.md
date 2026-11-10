@@ -8,7 +8,7 @@
 >
 > **History of the scope.** Former story 0089 (automatic deduction) was merged into this story at the first Phase 2 review
 > (its number is retired). At the fourth review **the user decided to split it again (OQ-5 option (a), 2026-11-08)**:
-> this story keeps the **counters only** and moves **no stock**; [0088a](../0088a-order-stock-auto-deduct-on-create-and-add-backend.md)
+> this story keeps the **counters only** and moves **no stock**; [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md)
 > adds `AdjustOrderStock` and the automatic deduction. **This story is safe to ship on its own:** every line it creates is
 > written stock-neutral (`stock_undeducted_quantity = quantity`, exactly like a legacy line), so a line created before 0088a
 > can never return stock it did not take — there is no release window between the two stories.
@@ -53,7 +53,7 @@ backend | includes database-expert: **yes** (three new columns + data backfill m
 - **D1 — Stock target.** A line moves `product_variants.stock` when it names a variant, otherwise `products.stock`
   (**virtual products included — OQ-4, user-confirmed 2026-11-08**). When the line's variant (on a variant line) or its
   product was deleted, **nothing** is adjusted for that line, and the stock dialogs do not list it.
-- **D2** — automatic deduction on create / add: **moved to [0088a](../0088a-order-stock-auto-deduct-on-create-and-add-backend.md)**
+- **D2** — automatic deduction on create / add: **moved to [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md)**
   (split, user decision 2026-11-08). In this story new lines are written stock-neutral (FD-4).
 - **D6 — Counters.** Two new columns, both `INT UNSIGNED NOT NULL DEFAULT 0`: `order_items.stock_undeducted_quantity` (U) and
   `order_items.stock_refunded_not_out_quantity` (K). The migration backfills every existing row with
@@ -355,7 +355,7 @@ any stock change yet. Shipping this story alone is safe; 0088a then starts deduc
 - **Testable:** migration, unit, action and property tests; no UI.
 
 ## Dependencies, risks, open technical questions
-**Depends on:** nothing pending. **Blocks:** [0088a](../0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (and, through it,
+**Depends on:** nothing pending. **Blocks:** [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (and, through it,
 [0090](../0090-order-line-quantity-and-removal-stock-opt-in-backend.md), [0091](../0091-order-cancellation-stock-return-opt-in-backend.md),
 [0092b](../0092b-order-refund-stock-return-backend.md)).
 **File overlap without a dependency:** [0092a](../0092a-record-refund-lock-order-backend.md) also edits `RecordRefund.php` —
@@ -382,7 +382,7 @@ The dialog is still shown, with a note and only "Save without changing stock" / 
 D1 applies as written: every product line moves `products.stock`, including `virtual` products.
 
 ### OQ-5 — Story size — resolved (user-confirmed 2026-11-08: split, option (a))
-This story keeps the counters (no stock movement); [0088a](../0088a-order-stock-auto-deduct-on-create-and-add-backend.md) adds
+This story keeps the counters (no stock movement); [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md) adds
 `AdjustOrderStock` and the automatic deduction; 0090, 0091 and 0092b depend on 0088a.
 
 ### Backlog (technical tasks for later)

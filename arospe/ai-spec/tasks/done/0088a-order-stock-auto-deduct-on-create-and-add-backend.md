@@ -1,8 +1,7 @@
 # [0088a] Orders deduct stock automatically when an order is created or a line is added — `AdjustOrderStock` (backend)
 
-> **Status: New — created 2026-11-08 by splitting 0088 after the fourth Phase 2 INVEST review (user decision, OQ-5 option (a));
-> pending review.** Epic 3 follow-up bug fix, order-stock series. Suffix numbering follows the `0076a` precedent so the story
-> sorts right after [0088](done/0088-order-stock-adjustment-foundation-backend.md), on which it depends, and before 0090/0091/0092b,
+> **Status: Done — closed 2026-11-10 (created 2026-11-08 by splitting 0088, user decision OQ-5 option (a)).** Epic 3 follow-up bug fix, order-stock series. Suffix numbering follows the `0076a` precedent so the story
+> sorts right after [0088](../done/0088-order-stock-adjustment-foundation-backend.md), on which it depends, and before 0090/0091/0092b,
 > which depend on it. No UI pair (there is no order-creation screen; adding a line gets no prompt, user decision D2).
 
 ## Description
@@ -22,8 +21,8 @@ backend | includes database-expert: no
   and `SyncProductAttributeValues` all lock `products` rows before `product_variants` rows (story 0029). This story follows
   the same order, so an order write and a catalog write can never deadlock on each other.
 - Existing order lock order: the line-item actions lock **`orders` → `order_items`**. `RecordRefund` is the known
-  exception ([docs/api/orders.md — orders.show, "Known concurrency gap"](../../docs/api/orders.md#ordersshow--the-twelfth-permission-gated-route-and-the-first-screen-governed-by-three-abilities));
-  [0092a](0092a-record-refund-lock-order-backend.md) fixes it.
+  exception ([docs/api/orders.md — orders.show, "Known concurrency gap"](../../../docs/api/orders.md#ordersshow--the-twelfth-permission-gated-route-and-the-first-screen-governed-by-three-abilities));
+  [0092a](../0092a-record-refund-lock-order-backend.md) fixes it.
 - `CreateOrder` has **no stock validation** today. It writes the order and its lines inside `DB::transaction()`, within a
   retry loop for `order_number` collisions (MySQL 1062). Each retry is a **new** transaction, so a deduction made by a
   rolled-back attempt is rolled back with it.
@@ -36,12 +35,20 @@ backend | includes database-expert: no
   nothing.
 - **D2 — Automatic deduction on create / add (user decision).** `CreateOrder` and `AddOrderItem` deduct the units they create,
   in the same transaction, row-locked, with no prompt. Lock order:
-  - `AddOrderItem`: `orders` lock → `order_items` insert → `products` locks (by id) → `product_variants` locks (by id) →
-    `UPDATE … stock = stock + ?`.
-  - `CreateOrder`: `orders` insert → `order_items` inserts → the same stock locks and `UPDATE`s.
+  - `AddOrderItem`: `orders` lock → `products` locks (by id) → `product_variants` locks (by id) →
+    `UPDATE … stock = stock + ?` → `order_items` insert (changed by D10).
+  - `CreateOrder`: `orders` insert → the same stock locks and `UPDATE`s → `order_items` inserts (changed by D10).
 
   If a later story makes `AddOrderItem` merge into an existing line, it deducts only the added units. Insufficient stock never
   refuses the write (stock may go negative).
+- **D10 — Stock rows are locked before the `order_items` insert (user decision, Phase 4 finding F-1, 2026-11-10).** The
+  `order_items` FK check takes a shared lock on the referenced `products` / `product_variants` row; a later `FOR UPDATE` on the
+  same row in the same transaction is a lock upgrade, and two concurrent orders for the same product deadlock (MySQL 1213).
+  Both actions therefore lock and update the stock rows **before** inserting the lines, so the FK check hits rows this
+  transaction already holds exclusively. No stock read is needed for race safety: the write is the relative
+  `UPDATE … stock = stock + ?` under the row lock, and insufficient stock never refuses a write, so nothing depends on a
+  value read earlier. Mechanism (e.g. building the line models with their ids and `order_id` before persisting them) is the
+  implementer's call, as long as `AdjustOrderStock` still never writes `order_items` or `orders` and the FD-3 ownership guard holds.
 - **D7 — Authorization unchanged.** `AdjustOrderStock` has **no** `Gate` call of its own. It runs only inside a caller's
   transaction that is already authorized (the same shape as `RecalculateOrderTotals`). `CreateOrder` keeps its own gate and
   `AddOrderItem` keeps `orders.edit`. No new permission, and no `products.edit` requirement.
@@ -52,7 +59,7 @@ backend | includes database-expert: no
   and `@return list<string>` = ids of the order items whose delta was actually applied. Resolved from the container.
 - **FD-2 — Transaction precondition.** The first statement checks `DB::transactionLevel() > 0`, or else throws `LogicException`
   (a programming error). The caller already holds the `orders` row lock. For a `RecordRefund` stock call (0092b), that holds
-  only after [0092a](0092a-record-refund-lock-order-backend.md)'s lock-order fix.
+  only after [0092a](../0092a-record-refund-lock-order-backend.md)'s lock-order fix.
 - **FD-3 — Ownership guard.** Every `order_item` must belong to `$order`, or else `LogicException`.
 - **FD-4 — Aggregation.** Deltas are summed per target key (`variant:<id>` / `product:<id>`). A net-zero target is not
   written, and lines whose `stockTarget()` is `null` are skipped.
@@ -61,19 +68,19 @@ backend | includes database-expert: no
   target, never thrown.
 - **FD-6 — Atomic write.** One `UPDATE … SET stock = stock + ?` per target (`increment('stock', $delta)`). It is **never** a
   read-modify-write, and there is no lower bound.
-- **FD-7 — Project-wide lock-order convention** (docs-keeper documents it): `orders` → `order_items` (by id) → `products` (by id) →
-  `product_variants` (by id).
+- **FD-7 — Project-wide lock-order convention** (docs-keeper documents it): `orders` → `products` (by id) →
+  `product_variants` (by id) → `order_items` inserts (D10; this order avoids the FK shared-to-exclusive lock upgrade).
 - **FD-8 — Counter ownership.** `AdjustOrderStock` moves `stock` only; each caller owns the counter rule for its operation
   (0088's counter model).
 - **FD-9 — `CreateOrder` integration.**
   - Inside the transaction closure, `CreateOrder` collects the `OrderItem` models it creates (`forceCreate` returns them).
-  - It then passes them to **one** `AdjustOrderStock` call, with `delta = -quantity` each, after all lines are inserted.
+  - It passes all of them to **one** `AdjustOrderStock` call, with `delta = -quantity` each, **before** any line is inserted (D10).
   - Each line is now written with `stock_undeducted_quantity = 0` (replacing 0088's `= quantity`),
     `stock_refunded_not_out_quantity = 0` and `ordered_as_variant`.
 - **FD-10 — `AddOrderItem` integration.**
   - It writes `stock_undeducted_quantity = 0` (replacing 0088's `= quantity`), `stock_refunded_not_out_quantity = 0` and
     `ordered_as_variant` in its `forceCreate`.
-  - It calls `AdjustOrderStock` with `delta = -$quantity` after the insert and before `RecalculateOrderTotals`.
+  - It calls `AdjustOrderStock` with `delta = -$quantity` **before** the insert (D10) and before `RecalculateOrderTotals`.
   - Every existing refusal (hard block, line ceiling, column ceiling) runs first, so a refused add never moves stock.
 
 ## Gherkin
@@ -166,29 +173,29 @@ Feature: Stock is deducted when order lines are created
   (`U = 0`).
 
 ## Tests to perform
-- [ ] `AdjustOrderStock`:
+- [x] `AdjustOrderStock`:
   - positive and negative deltas, variant vs product target;
   - aggregation of two lines of the same target; a net-zero target writes nothing;
   - negative resulting stock allowed;
   - returns only the ids actually applied; null targets (incl. `orphanedVariant()`) and rows deleted before locking are skipped.
-- [ ] Negative: outside a transaction → `LogicException`; a line of another order → `LogicException`; stock untouched.
-- [ ] Atomicity: the write is `UPDATE … stock = stock + ?`, and the final value is correct when another write changed the row
+- [x] Negative: outside a transaction → `LogicException`; a line of another order → `LogicException`; stock untouched.
+- [x] Atomicity: the write is `UPDATE … stock = stock + ?`, and the final value is correct when another write changed the row
   between the caller's read and this call.
-- [ ] Lock order (query log):
+- [x] Lock order (query log):
   - `AdjustOrderStock` locks `products` before `product_variants`, each by id;
-  - **`AddOrderItem`**: `orders` lock → `order_items` insert → product/variant locks → `UPDATE stock`;
-  - **`CreateOrder`**: `orders` insert → `order_items` inserts → stock locks → `UPDATE stock`.
-- [ ] `CreateOrder`: product, variant and mixed lines; same-target aggregation in **one** `AdjustOrderStock` call; negative
+  - **`AddOrderItem`**: `orders` lock → product/variant locks → `UPDATE stock` → `order_items` insert (D10);
+  - **`CreateOrder`**: `orders` insert → stock locks → `UPDATE stock` → `order_items` inserts (D10).
+- [x] `CreateOrder`: product, variant and mixed lines; same-target aggregation in **one** `AdjustOrderStock` call; negative
   stock allowed; counters `U = 0`, `K = 0` and correct `ordered_as_variant` per line.
-- [ ] `CreateOrder` refusals and retry: refused by validation, by the column ceiling, or by a non-1062 `QueryException` →
+- [x] `CreateOrder` refusals and retry: refused by validation, by the column ceiling, or by a non-1062 `QueryException` →
   stock unchanged; a forced 1062 then success → stock deducted **once**.
-- [ ] `AddOrderItem`: deducts, with `U = 0`, `K = 0` and the correct flag; refused by the hard block, the line ceiling, the
+- [x] `AddOrderItem`: deducts, with `U = 0`, `K = 0` and the correct flag; refused by the hard block, the line ceiling, the
   column ceiling, or authorization → stock unchanged.
-- [ ] A line written stock-neutral by 0088 (arranged with `legacyStockUntracked()`) keeps `returnableStockUnits() === 0`.
-- [ ] End to end (D9): after the variant of a line created here is deleted, `stockTarget()` is `null` and `AdjustOrderStock`
+- [x] A line written stock-neutral by 0088 (arranged with `legacyStockUntracked()`) keeps `returnableStockUnits() === 0`.
+- [x] End to end (D9): after the variant of a line created here is deleted, `stockTarget()` is `null` and `AdjustOrderStock`
   skips it.
-- [ ] Architecture: `AdjustOrderStock` has no `Gate`/`authorize` call and is used only from `App\Actions\Orders\*`.
-- [ ] Regression: `CreateOrderTest`, `AddOrderItemTest`, `HardBlockTest`, `PriceSnapshotTest`, 0088's `OrderStockCountersTest`
+- [x] Architecture: `AdjustOrderStock` has no `Gate`/`authorize` call and is used only from `App\Actions\Orders\*`.
+- [x] Regression: `CreateOrderTest`, `AddOrderItemTest`, `HardBlockTest`, `PriceSnapshotTest`, 0088's `OrderStockCountersTest`
   (updated create/add cases) green.
 
 ## Expected outcome
@@ -196,22 +203,22 @@ Every order or added line created from now on holds its units out of the right s
 every later stock change in the series goes through one tested action.
 
 ## Acceptance criteria
-- [ ] `AdjustOrderStock` implements FD-1 … FD-7 and touches neither `order_items` nor `orders`.
-- [ ] `CreateOrder` and `AddOrderItem` deduct created units in their own transaction, in the FD-7 lock order, and write new
+- [x] `AdjustOrderStock` implements FD-1 … FD-7 and touches neither `order_items` nor `orders`.
+- [x] `CreateOrder` and `AddOrderItem` deduct created units in their own transaction, in the FD-7 lock order, and write new
   lines with `U = 0`.
-- [ ] A refused or rolled-back create/add never changes stock; insufficient stock never refuses a write.
-- [ ] No authorization change; the full suite is green.
+- [x] A refused or rolled-back create/add never changes stock; insufficient stock never refuses a write.
+- [x] No authorization change; the full suite is green.
 
 ## Definition of Done
-- [ ] Tests written and green (full suite, unscoped)
-- [ ] Code reviewed (code-reviewer)
-- [ ] No security findings (appsec-auditor)
-- [ ] Documentation updated (docs-keeper):
+- [x] Tests written and green (full suite, unscoped)
+- [x] Code reviewed (code-reviewer)
+- [x] No security findings (appsec-auditor)
+- [x] Documentation updated (docs-keeper):
   - `docs/database/schema-orders/snapshots-totals-and-rules.md` — stock side effect of create / add line;
   - `docs/api/orders.md` — `AdjustOrderStock` contract, stock side effect of create/add, lock-order convention FD-7;
   - `docs/database/schema-orders/items-and-refunds.md#order_items` — new lines now written deducted (`U = 0`);
   - `ai-spec/tasks/_digests/epic-3.md`.
-- [ ] Acceptance criteria met
+- [x] Acceptance criteria met
 
 ## INVEST note
 - **Independent:** needs 0088 only; 0088 is safe alone, so the two can ship in separate releases.
@@ -222,9 +229,9 @@ every later stock change in the series goes through one tested action.
   order.
 
 ## Dependencies, risks, open technical questions
-**Depends on:** [0088](done/0088-order-stock-adjustment-foundation-backend.md) (hard). **Blocks:**
-[0090](0090-order-line-quantity-and-removal-stock-opt-in-backend.md), [0091](0091-order-cancellation-stock-return-opt-in-backend.md),
-[0092b](0092b-order-refund-stock-return-backend.md).
+**Depends on:** [0088](../done/0088-order-stock-adjustment-foundation-backend.md) (hard). **Blocks:**
+[0090](../0090-order-line-quantity-and-removal-stock-opt-in-backend.md), [0091](../0091-order-cancellation-stock-return-opt-in-backend.md),
+[0092b](../0092b-order-refund-stock-return-backend.md).
 
 - **R-2 — Product editor lost update.** The product and variant editors save `stock` from a form value, so an editor left
   open overwrites a deduction made in the meantime. Pre-existing shape, out of scope (0088 backlog B-1).
@@ -232,6 +239,8 @@ every later stock change in the series goes through one tested action.
   backlog B-2).
 - **R-4 — Price read vs deduction.** `CreateOrder` reads prices without locking catalog rows; the stock lock happens only at
   the deduction step. Acceptable, because the price snapshot rule is unchanged.
+- **R-5 — Stock range (Phase 4 F-2, accepted).** `stock` is a signed `INT` with no lower bound by design; summed deltas could in
+  theory leave the `INT` range, which strict mode turns into a 1264 error (no silent wrap). Insider-only, low impact; no change here.
 - **Open** — none.
 
 ## Debate record
@@ -240,4 +249,9 @@ every later stock change in the series goes through one tested action.
 
 ## Approval record
 - Phase 1: complete 2026-11-08 (product-owner, split from 0088).
+- Phase 4: appsec-auditor 2026-11-10 → changes required (F-1 Medium: FK shared lock then `FOR UPDATE` deadlock); user chose to lock stock before the insert (D10); F-2 accepted (R-5); F-3 already covered by the arch test; re-audit 2026-11-10 → **approved** (no High/Medium; F-1 fixed for product and variant lines, `AdjustOrderStock` also locks a variant line's parent product in the same products read). Notes for docs-keeper and follow-ups, none blocking: L-1 (0090/0091/0092b must call `AdjustOrderStock` before locking `order_items` FOR UPDATE, to keep the FD-7 order and avoid a cross-order gap-lock deadlock); L-2 (product/variant editors overwrite `stock` from the form, so an automatic deduction can be lost; follow-up story); I-1 (optional assertion that the applied ids equal the line count); I-2 (1213/1205 not retried, fails safe).
 - Phase 2: INVEST re-review #4 2026-11-08 → rewritten, pending re-review (created by the split of 0088).
+- Phase 3: TDD 2026-11-10 (backend-qa red tests, backend-expert green); tests updated after D10 (lock order) and after the Phase 5 findings L-1/L-2/L-3.
+- Phase 5: code-reviewer 2026-11-10 → **approved** (Low findings L-1 stale headers, L-2 weak assertion, L-3 deleted-product end-to-end test: all fixed). Full suite unscoped, in chunks, green: Unit + Orders + Localization 1475/1475; Feature Actions…Database 2316 passed (5 skipped) of 2321; Feature Http…Products 1619/1619; Feature Providers…Users 1132/1132; Browser 276 passed (3 skipped) of 279. Pint unscoped passed; Larastan clean on the three actions.
+- Phase 6: docs-keeper 2026-11-10 → `docs/api/orders.md` (AdjustOrderStock contract, FD-7/D10 lock order, forward rule for 0090/0091/0092b), `docs/database/schema-orders/{snapshots-totals-and-rules,items-and-refunds}.md`, `docs/security/model-instance-trust.md` (FK shared lock lesson), `_digests/epic-3.md`. Link and anchor check passed.
+- Phase 7: closed 2026-11-10; moved to `done/`.
