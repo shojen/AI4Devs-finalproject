@@ -558,6 +558,7 @@ Re-derived 2026-11-08 from the files actually present in `ai-spec/tasks/` (`0078
 | 0094a | Order detail — line-removal stock dialog (frontend) | Epic 3 — Orders (stock) |
 | 0095 | Order detail — cancel stock dialog (frontend) | Epic 3 — Orders (stock) |
 | 0096 | Order detail — refund modal stock return (frontend) | Epic 3 — Orders (stock) |
+| 0097 | Fix: creating an Administrator user is lost after the step-up password confirmation | Epic 1 — Users (bug fix) |
 | _(no number)_ | Infrastructure fix: no test suite can open a database connection (local fresh setup or CI) — **status: already fixed and documented**, kept out of the numbering and out of the dependency graph below | Infrastructure |
 
 ## Dependency graph (pending tasks only)
