@@ -31,12 +31,12 @@ Model: [`App\Models\OrderItem`](../../../app/Models/OrderItem.php). Columns in r
 
 #### Stock-tracking columns (story 0088)
 
-Source: `database/migrations/2026_11_10_184845_add_stock_tracking_columns_to_order_items_table.php`. The story adds the columns and the counter bookkeeping only; **no stock is read, written or locked** (the stock adjustment itself ships in later stories).
+Source: `database/migrations/2026_11_10_184845_add_stock_tracking_columns_to_order_items_table.php`. The story adds the columns and the counter bookkeeping only; story 0088 itself reads, writes and locks no stock; the deduction on create / add arrives with story 0088a (below), the return paths with later stories.
 
 - **Two counters (D8).** With Q = `quantity`, F = `refunded_quantity`, U = `stock_undeducted_quantity`, K = `stock_refunded_not_out_quantity`: returnable units `R = (Q - F) - U` (`OrderItem::returnableStockUnits()`) and refunded-but-still-out units `H = F - K` (`OrderItem::refundedUnitsOutOfStock()`).
 - **Refund rule (D8)** — `OrderItem::applyRefundToStockCounters(f, k)`, the one copy, in memory only, run **before** `refunded_quantity` is incremented on a locked row: `over = max(0, f - R)`, `U' = U - over`, `K' = K + k + over`. It throws `LogicException` when `k > min(f, R)`. `RecordRefund` calls it with `k = 0` for every line.
 - **Quantity change (D10)** — `UpdateOrderItemQuantity` moves U only: increase by d gives `U + d`; decrease by d gives `max(0, U - d)`; K never changes.
-- **Create / add (D10)** — `CreateOrder` and `AddOrderItem` write every new line stock-neutral, exactly like a legacy line: `stock_undeducted_quantity = quantity`, `stock_refunded_not_out_quantity = 0`.
+- **Create / add (story 0088a)** — `CreateOrder` and `AddOrderItem` write every new line as already **deducted**: `stock_undeducted_quantity = 0`, `stock_refunded_not_out_quantity = 0`, `ordered_as_variant` (variant named), and take the units out of inventory in the same transaction via `AdjustOrderStock` ([contract](../../api/orders.md#adjustorderstock--the-stock-adjustment-contract-story-0088a)). Only lines written by 0088 and earlier keep `R = 0` (nothing was ever deducted for them, so nothing is returned).
 - **Stock target (D1)** — `OrderItem::stockTarget()` returns the variant when `product_variant_id` is set; the product on a plain line; `null` when `ordered_as_variant` is true with no variant id, or the product is gone. A null-target line never moves stock but its counters still follow every rule above.
 - **Backfill (D6).** Every existing row gets `stock_undeducted_quantity = GREATEST(CAST(quantity AS SIGNED) - CAST(refunded_quantity AS SIGNED), 0)` and `stock_refunded_not_out_quantity = refunded_quantity`: a legacy order's units were never deducted, so nothing is ever returned for it. The `GREATEST(..., 0)` clamp keeps the statement from aborting on a legacy **over-refunded** row (`refunded_quantity > quantity`), which would otherwise underflow the unsigned column (pinned by a test).
 - **Backfill (D9).** `ordered_as_variant` is set to true where `product_variant_id IS NOT NULL`, or where the `product_sku` snapshot differs from the product's current SKU (a deleted variant; `LEFT JOIN products`). Two accepted blind spots: (1) a plain line whose product SKU was edited after the order is wrongly flagged as ordered-as-variant; (2) a deleted variant whose SKU equalled its parent product's SKU is not detected.
@@ -69,3 +69,5 @@ Model: [`App\Models\Refund`](../../../app/Models/Refund.php). Columns in real ph
 #### Indexes — exactly the FK-created ones, no others
 
 `php artisan db:table refunds` reports exactly three indexes: `primary` on `id`, and two FK-created indexes (`refunds_order_item_id_foreign`, `refunds_refunded_by_foreign`) — verified against a live, migrated instance. No hand-written index anywhere on this table, and no index on `created_at` either — the same low-cardinality/write-cost argument `orders.status` already establishes.
+
+_Last updated: 2026-11-10 — Story 0088a: new order lines are written deducted (U = 0) and stock is taken out on create / add._
