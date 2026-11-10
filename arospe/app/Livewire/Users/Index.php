@@ -239,10 +239,11 @@ class Index extends Component
         } catch (PasswordConfirmationRequiredException) {
             // Story 0015a — a role/status/email change (or, on the create
             // path, an Administrator-tier creation -- Phase 4 finding F1)
-            // reached the step-up guard. The modal is deliberately left open
-            // (accepted UX wart, decision D4) rather than closed/reloaded:
-            // the actor is being redirected away entirely, so there is
-            // nothing to reset here. setIntendedUrl() is required because
+            // reached the step-up guard. The form is parked by
+            // stashPendingForm() below (story 0097, superseding the 0015a D4
+            // "accepted UX wart") and restored by mount() after the
+            // confirmation; the actor is being redirected away entirely, so
+            // there is nothing to reset here. setIntendedUrl() is required because
             // this request is a POST to /livewire/update, not the GET
             // RequirePassword::redirectGuest() normally handles, so nothing
             // else populates `url.intended` for Fortify's post-confirmation
