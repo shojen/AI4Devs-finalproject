@@ -1,6 +1,6 @@
 # [0088] Order stock foundation — stock-tracking columns, counter helpers and counter maintenance, no stock movement (backend)
 
-> **Status: New — Phase 1 output, rewritten after four Phase 2 INVEST reviews of 2026-11-08; pending re-review.**
+> **Status: Done — closed 2026-11-10 (Phase 2 approved at re-review #5).**
 > Epic 3 follow-up bug fix (Orders, Payments & Fulfilment), no new PRD requirement: no order flow touches stock today
 > (`CreateOrder`, `AddOrderItem`, `UpdateOrderItemQuantity`, `RemoveOrderItem`, `CancelOrder`,
 > `AutoCancelFullyRefundedOrder`, `RecordRefund` — verified against `main`).
@@ -406,3 +406,8 @@ This story keeps the counters (no stock movement); [0088a](../0088a-order-stock-
 - **Phase 2:** INVEST re-review #3 2026-11-08: refund rule corrected (U only non-refunded, `over` transfer on every refund), K renamed, backfill U = Q − F / K = F, `RecordRefund` and `UpdateOrderItemQuantity` counter maintenance added (D10), sequences and property test added, size concern raised as OQ-5 → rewritten, pending re-review.
 - **Phase 2:** INVEST re-review #4 2026-11-08 → rewritten, pending re-review (split into 0088 + 0088a per the user's OQ-5 decision; this story is counters only and safe alone; OQ-4 user-confirmed).
 - **Phase 2:** INVEST re-review #5 2026-11-10 (code-reviewer) → APPROVED: counters/sequences/D8–D10 verified against CreateOrder, AddOrderItem, RecordRefund, UpdateOrderItemQuantity, OrderItem and OrderItemFactory; Small and safe alone, with amendments applied: DemoDataSeeder uses legacyStockUntracked() (FD-5b, added to files + test), factory configure() must not overwrite ordered_as_variant and legacyStockUntracked() computes in afterMaking, two helper-level Gherkin When steps reworded.
+- **Phase 3:** TDD 2026-11-10 — backend-qa wrote the red tests (migration, counters, seeder, model helpers), database-expert the migration, backend-expert the model, actions, factory and seeder; all green.
+- **Phase 4:** security audit 2026-11-10 (appsec-auditor) → APPROVED: no Critical/High/Medium findings; new stock columns kept out of `#[Fillable]` and written only via `forceCreate`/`forceFill` on rows locked in a transaction; no authorization, input or behaviour change; migration SQL is static. One Low (unsigned-subtraction backfill could abort on a legacy row with `refunded_quantity > quantity`) fixed in `eb9a595` (`GREATEST` over signed casts); pre-flight count `SELECT COUNT(*) FROM order_items WHERE refunded_quantity > quantity` recommended before deploy.
+- **Phase 5:** code review 2026-11-10 (code-reviewer) → APPROVED: AC 1–4 and FD-1..FD-7/FD-5b verified; no stock row written or locked. Follow-ups applied: migration-test cleanup scoped to the current schema and the over-refunded clamp pinned (`566de62`). Carried to later stories: extract the FD-7 quantity rule into an `OrderItem` helper in 0090, and floor `R` at 0 before 0091 uses it as a stock delta. Full suite unscoped, run in six directory chunks on per-worktree databases, all green: 1662 + 2234 (5 skipped) + 847 + 1023 + 694 + 279 (3 skipped) = 6739 tests; Pint and Larastan clean.
+- **Phase 6:** documentation 2026-11-10 (docs-keeper): `docs/database/schema-orders/items-and-refunds.md`, ER diagram in `docs/database/schema.md`, `docs/api/orders.md`, `ai-spec/tasks/_digests/epic-3.md`.
+- **Phase 7:** closed 2026-11-10; moved to `done/`.
