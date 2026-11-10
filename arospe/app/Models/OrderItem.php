@@ -110,7 +110,8 @@ class OrderItem extends Model
     /**
      * The one copy of the D8 refund rule, applied in memory only (the caller
      * persists): `over = max(0, f - R)`, `U' = U - over`, `K' = K + k + over`.
-     * Must run BEFORE `refunded_quantity` is incremented.
+     * Must run BEFORE `refunded_quantity` is incremented, on a row locked with `lockForUpdate()`
+     * inside a transaction.
      *
      * @throws LogicException when `$restocked` exceeds `min($refunded, R)`
      */

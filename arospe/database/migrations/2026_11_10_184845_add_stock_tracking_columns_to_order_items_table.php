@@ -31,7 +31,7 @@ return new class extends Migration
             $table->unsignedInteger('stock_refunded_not_out_quantity')->default(0)->after('stock_undeducted_quantity');
         });
 
-        DB::statement('UPDATE order_items SET stock_undeducted_quantity = quantity - refunded_quantity, stock_refunded_not_out_quantity = refunded_quantity');
+        DB::statement('UPDATE order_items SET stock_undeducted_quantity = GREATEST(CAST(quantity AS SIGNED) - CAST(refunded_quantity AS SIGNED), 0),stock_refunded_not_out_quantity = refunded_quantity');
 
         DB::statement(
             'UPDATE order_items LEFT JOIN products ON products.id = order_items.product_id '
