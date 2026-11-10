@@ -1,11 +1,11 @@
 # [0093] Confirmation dialog — optional second choice (frontend)
 
-> **Status: New — Phase 1 output, rewritten after the Phase 2 INVEST review of 2026-11-08; pending re-review.** Epic 3
+> **Status: Done — closed 2026-11-10 (Phases 1–7 complete).** Epic 3
 > follow-up, order-stock series. No backend pair and no dependency: a backwards-compatible extension of the shared
-> `<x-confirm-dialog>` that the stock dialogs ([0094](0094-order-line-quantity-stock-dialog-ui.md),
-> [0094a](0094a-order-line-removal-stock-dialog-ui.md), [0095](0095-order-cancellation-stock-dialog-ui.md)) need. This story is
+> `<x-confirm-dialog>` that the stock dialogs ([0094](../0094-order-line-quantity-stock-dialog-ui.md),
+> [0094a](../0094a-order-line-removal-stock-dialog-ui.md), [0095](../0095-order-cancellation-stock-dialog-ui.md)) need. This story is
 > limited to what a render test can prove; the interactive checks (Esc / backdrop / X abort, loading-disable, 375px layout) are
-> owned by its first consumer, [0094](0094-order-line-quantity-stock-dialog-ui.md).
+> owned by its first consumer, [0094](../0094-order-line-quantity-stock-dialog-ui.md).
 
 ## Description
 `<x-confirm-dialog>` today offers exactly two controls: confirm and dismiss. The stock dialogs need three explicit outcomes. This
@@ -32,7 +32,7 @@ frontend | includes database-expert: no
   `@close`/`wire:model` contract and no state in the component.
 - **D-4** — **The stacked layout applies only when the secondary action renders.** Three-button dialogs: left → right on `sm`+
   dismiss (outline), secondary (outline), confirm (`$variant`); below `sm` stacked full width, confirm first, dismiss last, each
-  at least 44px tall. **Two-button dialogs keep today's markup byte-for-byte.**
+  at least 44px tall. **Two-button dialogs render as before: same hooks, same container classes, same `wire:target`, no secondary or stacked-layout classes.**
 - **D-5** — Labels are always supplied by the parent (escaped with `{{ }}`); the component ships no default copy.
 
 ## Gherkin
@@ -56,7 +56,7 @@ Feature: A confirmation dialog can offer a second choice
 - `tests/Feature/Components/ConfirmDialogTest.php` — new (Blade render tests).
 
 ## Tests to perform
-- [ ] Render without the new props: output equals today's markup (snapshot of the rendered HTML for a two-button dialog); no `-secondary` hook; no stacked-layout classes.
+- [ ] Render without the new props: same hooks, same container classes (`flex gap-3 justify-end`), no `-secondary` hook, no stacked-layout classes; the unchanged consumers are covered by the regression list below.
 - [ ] Render with both props: `-secondary` hook and label render; stacked-layout classes present.
 - [ ] Render with only one of the two props: no secondary button, two-button markup.
 - [ ] A label containing HTML is escaped.
@@ -84,10 +84,10 @@ for existing dialogs. Estimable/Small: one Blade component. Testable: render tes
 0094.
 
 ## Dependencies, risks, open technical questions
-**Depends on:** nothing pending. **Blocks:** [0094](0094-order-line-quantity-stock-dialog-ui.md),
-[0094a](0094a-order-line-removal-stock-dialog-ui.md), [0095](0095-order-cancellation-stock-dialog-ui.md).
+**Depends on:** nothing pending. **Blocks:** [0094](../0094-order-line-quantity-stock-dialog-ui.md),
+[0094a](../0094a-order-line-removal-stock-dialog-ui.md), [0095](../0095-order-cancellation-stock-dialog-ui.md).
 - **R-1** — Flux modal + Blaze markup rules (hooks on inner content, single dismiss control in the DOM) must hold for the new button
-  ([Livewire and Flux conventions](../../docs/conventions/base-standards/livewire-and-flux-conventions.md)).
+  ([Livewire and Flux conventions](../../../docs/conventions/base-standards/livewire-and-flux-conventions.md)).
 
 ## Debate record
 - 2026-11-08 — Three Amigos facilitated by product-owner from the frontend-expert design.
@@ -99,3 +99,9 @@ for existing dialogs. Estimable/Small: one Blade component. Testable: render tes
 - Phase 1: complete 2026-11-08 (product-owner).
 - Phase 2: INVEST review 2026-11-08: findings received → rewritten, pending re-review.
 - Phase 2: INVEST re-review 2026-11-08: scenario 2 rewritten without reference to the quantity screen → rewritten, pending re-review.
+- Phase 2: INVEST review 2026-11-10 (code-reviewer): **APPROVED**; two minor findings applied (the "byte-for-byte" wording replaced by "renders as before" in D-4 and the first test line; this approval record added). Process note: the review ran after the Phase 3 code and tests were committed (`eba0bbc`, `6464bcf`) because the story was started before its Phase 2 approval; the review checked the committed work against the story and found no scope drift.
+- Phase 3: complete 2026-11-10 — `ConfirmDialogTest` (6 cases) green; regression `ShowStatusTest`, `ShowCancellationTest`, `ShowMarkAsPaidTest`, `IndexMarkAsPaidTest` green (168 tests).
+- Phase 4: security audit 2026-11-10 (appsec-auditor): **APPROVED, no findings**. Advice for the consumers 0094, 0094a and 0095: `secondary-action` must be a literal method name in the parent view (never bound from a variable), and each secondary method must re-authorize, re-check the dialog-open flag, re-load its target from server state and be idempotent, per `docs/security/livewire-authorization.md`.
+- Phase 5: final code review 2026-11-10 (code-reviewer): **APPROVED**; acceptance criteria and DoD checked, two non-blocking notes (inline `//` header comment in the test follows the sibling pattern; no test asserts that two-button buttons carry no stray `class` attribute, accepted under "renders as before"). Full suite unscoped, run in chunks on two test databases: Unit + Feature/Orders…Console 2804 passed; Feature/Customers…ProductCategories 1768 passed (5 skipped); Feature/Products…Users 1832 passed; Browser 276 passed (3 skipped, run alone). Pint unscoped passes; Larastan passes (needs `--memory-limit`: the default 128M crashes the parallel workers).
+- Phase 6: documentation 2026-11-10 — `docs/api/orders.md` (props, hooks, last-updated line) and `ai-spec/tasks/_digests/epic-3.md`.
+- Phase 7: closed 2026-11-10 — moved to `done/`, link-integrity check in both directions, `tasks-map.md` and `tasks-status.json` regenerated; PR against `main`.
