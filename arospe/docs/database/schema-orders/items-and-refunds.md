@@ -14,17 +14,33 @@ Model: [`App\Models\OrderItem`](../../../app/Models/OrderItem.php). Columns in r
 | `order_id` | `CHAR(36)` FK → `orders.id`, `cascadeOnDelete()` | the only cascade in this domain — see [Delete behaviour](snapshots-totals-and-rules.md#delete-behaviour--the-same-three-way-rule-stated-once) below |
 | `product_id` | `CHAR(36)` FK → `products.id`, nullable, `nullOnDelete()` | the catalog product this line item references at order time |
 | `product_variant_id` | `CHAR(36)` FK → `product_variants.id`, nullable, `nullOnDelete()` | present only when the line item names a specific variant |
+| `ordered_as_variant` | `BOOLEAN`, default `false` | story 0088 (D9) — true when the line was ordered as a variant, so a line whose variant was later deleted (`product_variant_id` nulled) is still known to have no valid stock target. Written by `CreateOrder` / `AddOrderItem` (`$variant !== null`); cast to `boolean`. Physically placed after `product_variant_id` |
 | `product_name` | `VARCHAR(255)` | snapshot, matching [`product_translations.name`](../schema-products/categories-and-products.md#product_translations)'s length (the column moved off `products` in story 0076; written by `Product::snapshotName()`) — always the **parent product's** name, even for a variant line item (a variant has no name column of its own) |
 | `product_sku` | `VARCHAR(128)` | snapshot, capped at [`product_variants.sku`](../schema-products/variants.md#product_variants)'s length (128) rather than `products.sku`'s (64) — the **longer** of the two, since this column holds either |
 | `quantity` | `INT UNSIGNED` | required, `≥ 1` |
 | `unit_price` | `DECIMAL(10,2)` | the price **at the time of order** — this story's core invariant. See [The price snapshot](snapshots-totals-and-rules.md#the-price-snapshot--read-from-the-variant-never-the-parent-when-one-is-named) below. **Immutable after insert** — story 0048's `UpdateOrderItemQuantity` is the first (and, as of that story, only) writer of an existing line item, and it never touches this column; see [Totals are derived and re-derived, not write-once](snapshots-totals-and-rules.md#totals-are-derived-and-re-derived-not-write-once) |
 | `line_total` | `DECIMAL(10,2)` | `unit_price × quantity`, computed once at creation |
 | `refunded_quantity` | `INT UNSIGNED`, default `0` | story 0051's own running total, incremented by `App\Actions\Orders\RecordRefund` on every refund written against this line item — always equal to the SUM of this item's `refunds` rows' `quantity`. Shipped inert at 0045 (**D-3**); this is its first and only consumer |
+| `stock_undeducted_quantity` | `INT UNSIGNED`, default `0` | story 0088 (D8), counter **U**: non-refunded units that are not currently out of inventory. Invariant `0 <= U <= quantity - refunded_quantity` |
+| `stock_refunded_not_out_quantity` | `INT UNSIGNED`, default `0` | story 0088 (D8), counter **K**: refunded units that are not out of inventory. Invariant `0 <= K <= refunded_quantity` |
 | `created_at` / `updated_at` | timestamp, nullable | |
 
 **No `deleted_at`.** A line item's lifecycle is tied entirely to its parent order (`cascadeOnDelete()`), never deleted independently.
 
 **`#[Fillable]`** covers only `product_id`, `product_variant_id` and `quantity` — the three values a caller genuinely supplies. `product_name`, `product_sku`, `unit_price`, `line_total` and `refunded_quantity` are all **deliberately omitted**: every one is derived by `CreateOrder` from the resolved catalog row, and a fillable `unit_price` would hand a caller the ability to set its own price — the single sharpest write in this story. Written only via `OrderItem::forceCreate()`, never the relation's ordinary `create()`, which would silently drop all four derived columns.
+
+#### Stock-tracking columns (story 0088)
+
+Source: `database/migrations/2026_11_10_184845_add_stock_tracking_columns_to_order_items_table.php`. The story adds the columns and the counter bookkeeping only; **no stock is read, written or locked** (the stock adjustment itself ships in later stories).
+
+- **Two counters (D8).** With Q = `quantity`, F = `refunded_quantity`, U = `stock_undeducted_quantity`, K = `stock_refunded_not_out_quantity`: returnable units `R = (Q - F) - U` (`OrderItem::returnableStockUnits()`) and refunded-but-still-out units `H = F - K` (`OrderItem::refundedUnitsOutOfStock()`).
+- **Refund rule (D8)** — `OrderItem::applyRefundToStockCounters(f, k)`, the one copy, in memory only, run **before** `refunded_quantity` is incremented on a locked row: `over = max(0, f - R)`, `U' = U - over`, `K' = K + k + over`. It throws `LogicException` when `k > min(f, R)`. `RecordRefund` calls it with `k = 0` for every line.
+- **Quantity change (D10)** — `UpdateOrderItemQuantity` moves U only: increase by d gives `U + d`; decrease by d gives `max(0, U - d)`; K never changes.
+- **Create / add (D10)** — `CreateOrder` and `AddOrderItem` write every new line stock-neutral, exactly like a legacy line: `stock_undeducted_quantity = quantity`, `stock_refunded_not_out_quantity = 0`.
+- **Stock target (D1)** — `OrderItem::stockTarget()` returns the variant when `product_variant_id` is set; the product on a plain line; `null` when `ordered_as_variant` is true with no variant id, or the product is gone. A null-target line never moves stock but its counters still follow every rule above.
+- **Backfill (D6).** Every existing row gets `stock_undeducted_quantity = GREATEST(CAST(quantity AS SIGNED) - CAST(refunded_quantity AS SIGNED), 0)` and `stock_refunded_not_out_quantity = refunded_quantity`: a legacy order's units were never deducted, so nothing is ever returned for it. The `GREATEST(..., 0)` clamp keeps the statement from aborting on a legacy **over-refunded** row (`refunded_quantity > quantity`), which would otherwise underflow the unsigned column (pinned by a test).
+- **Backfill (D9).** `ordered_as_variant` is set to true where `product_variant_id IS NOT NULL`, or where the `product_sku` snapshot differs from the product's current SKU (a deleted variant; `LEFT JOIN products`). Two accepted blind spots: (1) a plain line whose product SKU was edited after the order is wrongly flagged as ordered-as-variant; (2) a deleted variant whose SKU equalled its parent product's SKU is not detected.
+- **Factory.** `OrderItemFactory` defaults the counters to `0`, adds `legacyStockUntracked()` (U = Q - F, K = F; used by `DemoDataSeeder`) and `orphanedVariant()`; `forVariant()` sets `ordered_as_variant`. Tests: `OrderStockCountersTest`, `OrderStockMigrationTest`, `DemoDataSeederStockTest`, `OrderModelTest`.
 
 #### Indexes — exactly the FK-created ones, no others
 

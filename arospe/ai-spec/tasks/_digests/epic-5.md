@@ -107,3 +107,12 @@ closed earlier and are not backfilled here (read their `done/` files or `docs/`)
 - `TranslateProductUniqueViolation` maps a 1062 by index name (`products_sku_unique` to `sku`, language-slug to `slug`, product-language natural key to `name` with `products.editor.concurrent_save_retry`); otherwise rethrows. Resolves 0076's deferred R-22 — story 0076a (D-31).
 - `Products\Editor` has `#[Locked] ?string $slug/$metaTitle/$metaDescription` (default language) passed unchanged on edit, `null` on create, until 0077 adds inputs — story 0076a (D-33).
 - New lang keys: `products.attributes.{slug,meta_title,meta_description}`, `products.editor.concurrent_save_retry` (en/es) — story 0076a.
+
+## Story 0076b — Product translation write action (backend)
+
+- `App\Actions\Products\SetProductTranslation::__invoke(Product, StoreLanguage, string $name, ?string $description = null, ?string $slug = null, ?string $metaTitle = null, ?string $metaDescription = null): ProductTranslation` — logged `update` authorize (`target_type` `product`) first, then re-reads the product; no new permission, route, policy or migration — story 0076b.
+- It refuses an inactive or unknown language on `names.{id}` with `products.editor.tabs.language_inactive` (D-3); the 0087 structural guard must cover it, whichever of 0076b/0087 lands second — story 0076b.
+- Sanitises the description and canonicalises the slug before validating nested data; meta fields are trimmed and nulled; name/meta stay stored unsanitised, so renderers must escape (carried to 0077 and the storefront) — story 0076b.
+- `TranslateProductUniqueViolation::__invoke(QueryException, ?string $storeLanguageId = null)`: non-null re-keys slug/natural-key errors to `slugs.{id}`/`names.{id}`; null and the `sku` branch unchanged — story 0076b.
+- New lang keys (en/es): `products.attributes.{name,description}`, `products.editor.tabs.language_inactive` — story 0076b.
+- Accepted residuals: check-to-write race on language deactivation (L-1); product deleted between re-read and save gives an FK 1452 500 as in `SetProductCategoryTranslation` (L-2, fix belongs to the shared helper backlogged by 0087 D-5) — story 0076b.

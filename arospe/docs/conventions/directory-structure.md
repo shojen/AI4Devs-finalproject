@@ -48,4 +48,4 @@ This document is split into parts so an agent reads only the one its task touche
 | [An app-owned config file is a registry](directory-structure/config-registry.md) | you edit `config/modules.php` or `config/html-sanitizer.php`, or add any app-owned config file (no closures, keys not copy). | An app-owned config file is a registry, and must survive `con... |
 | [Controllers in front of actions; authorization belongs to the action](directory-structure/controllers-and-authorization-rule.md) | you add a controller, or decide where an authorization check for an operation must live. | Controllers sit in front of actions, not instead of them; An authorization rule belongs to the action, not to one of it... |
 
-_Last updated: 2026-11-08 — Story 0076a: [Actions](directory-structure/actions.md) lists `CanonicalizeProductSlug` and `TranslateProductUniqueViolation`. Earlier content current from story 0076._
+_Last updated: 2026-11-10 — Story 0076b: [Actions](directory-structure/actions.md) lists `SetProductTranslation` and the translator's language-id argument. Earlier content current from story 0076a._

@@ -1,35 +1,13 @@
 {
-  "generated_at": "2026-11-10T22:30:00Z",
+  "generated_at": "2026-11-10T18:53:01Z",
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
-    {
-      "id": "0076b",
-      "slug": "0076b-product-translation-write-action-backend",
-      "title": "Product translation write action (backend)",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "app/Actions/Products/SetProductTranslation.php",
-        "app/Actions/Products/TranslateProductUniqueViolation.php",
-        "lang/en/products.php",
-        "lang/es/products.php",
-        "tests/Feature/Products/SetProductTranslationTest.php",
-        "tests/Unit/Actions/Products/TranslateProductUniqueViolationTest.php"
-      ],
-      "conflict_risk_with": [
-        "0087"
-      ]
-    },
     {
       "id": "0077",
       "slug": "0077-product-editor-language-tabs-ui",
       "title": "Product editor — language tabs (UI)",
-      "depends_on": [
-        "0076b"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -91,42 +69,15 @@
       ],
       "conflict_risk_with": [
         "0077",
-        "0079",
-        "0076b"
-      ]
-    },
-    {
-      "id": "0088",
-      "slug": "0088-order-stock-adjustment-foundation-backend",
-      "title": "Order stock foundation — stock-tracking columns, counter helpers and counter maintenance, no stock movement (backend)",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "database/migrations/*_add_stock_tracking_columns_to_order_items_table.php",
-        "app/Models/OrderItem.php",
-        "app/Actions/Orders/CreateOrder.php",
-        "app/Actions/Orders/AddOrderItem.php",
-        "app/Actions/Orders/RecordRefund.php",
-        "app/Actions/Orders/UpdateOrderItemQuantity.php",
-        "database/factories/OrderItemFactory.php",
-        "tests/Feature/Orders/OrderStockMigrationTest.php",
-        "tests/Feature/Orders/OrderStockCountersTest.php",
-        "tests/Feature/Orders/OrderModelTest.php"
-      ],
-      "conflict_risk_with": [
-        "0092a"
+        "0079"
       ]
     },
     {
       "id": "0088a",
       "slug": "0088a-order-stock-auto-deduct-on-create-and-add-backend",
       "title": "Orders deduct stock automatically when an order is created or a line is added — AdjustOrderStock (backend)",
-      "depends_on": [
-        "0088"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -145,7 +96,6 @@
       "slug": "0090-order-line-quantity-and-removal-stock-opt-in-backend",
       "title": "Line quantity changes and line removal adjust stock only on request (backend)",
       "depends_on": [
-        "0088",
         "0088a"
       ],
       "status": "blocked",
@@ -166,7 +116,6 @@
       "slug": "0091-order-cancellation-stock-return-opt-in-backend",
       "title": "Order cancellation returns stock only on request (backend)",
       "depends_on": [
-        "0088",
         "0088a"
       ],
       "status": "blocked",
@@ -195,16 +144,13 @@
         "app/Actions/Orders/RecordRefund.php",
         "tests/Feature/Orders/RecordRefundLockOrderTest.php"
       ],
-      "conflict_risk_with": [
-        "0088"
-      ]
+      "conflict_risk_with": []
     },
     {
       "id": "0092b",
       "slug": "0092b-order-refund-stock-return-backend",
       "title": "Refunds can return refunded units to stock (backend)",
       "depends_on": [
-        "0088",
         "0088a",
         "0092a"
       ],

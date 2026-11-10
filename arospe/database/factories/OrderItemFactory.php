@@ -36,11 +36,14 @@ class OrderItemFactory extends Factory
             'order_id' => Order::factory(),
             'product_id' => Product::factory(),
             'product_variant_id' => null,
+            'ordered_as_variant' => false,
             'product_name' => '',
             'product_sku' => '',
             'quantity' => fake()->numberBetween(1, 5),
             'unit_price' => '0.00',
             'line_total' => '0.00',
+            'stock_undeducted_quantity' => 0,
+            'stock_refunded_not_out_quantity' => 0,
         ];
     }
 
@@ -82,6 +85,7 @@ class OrderItemFactory extends Factory
                 ? ProductVariant::query()->find($orderItem->product_variant_id)
                 : null;
 
+            $orderItem->ordered_as_variant = $orderItem->ordered_as_variant || $variant !== null;
             $orderItem->product_name = $product->snapshotName();
             // A plain `->` (not `?->`) on the left of `??` is intentional, not an oversight -- matching
             // App\Actions\Orders\CreateOrder's own identical pattern and its docblock: PHP's `??` uses
@@ -100,6 +104,33 @@ class OrderItemFactory extends Factory
     }
 
     /**
+     * A line as it is for a legacy order (and as CreateOrder / AddOrderItem
+     * write it before story 0088a): no unit was ever taken out of stock.
+     * Computed in `afterMaking` so it sees the final `quantity` /
+     * `refunded_quantity` passed to `create([...])`.
+     */
+    public function legacyStockUntracked(): static
+    {
+        return $this->afterMaking(function (OrderItem $orderItem): void {
+            $refunded = (int) $orderItem->refunded_quantity;
+            $orderItem->stock_undeducted_quantity = $orderItem->quantity - $refunded;
+            $orderItem->stock_refunded_not_out_quantity = $refunded;
+        });
+    }
+
+    /**
+     * A line whose variant was deleted: it was ordered as a variant but no
+     * longer references one, so its stock target is null.
+     */
+    public function orphanedVariant(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'ordered_as_variant' => true,
+            'product_variant_id' => null,
+        ]);
+    }
+
+    /**
      * Price the line item against a specific product variant (D-15) --
      * sets BOTH `product_id` (the variant's parent) and
      * `product_variant_id`; `configure()` above then reads
@@ -110,6 +141,7 @@ class OrderItemFactory extends Factory
         return $this->state(fn (array $attributes): array => [
             'product_id' => $productVariant->product_id,
             'product_variant_id' => $productVariant->id,
+            'ordered_as_variant' => true,
         ]);
     }
 }

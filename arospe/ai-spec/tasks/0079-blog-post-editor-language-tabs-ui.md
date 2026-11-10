@@ -455,7 +455,7 @@ final class SetBlogPostTranslation
 }
 ```
 
-Following 0071 **D-13**'s master contract and [0076b](0076b-product-translation-write-action-backend.md) **D-1**'s named-parameters rule (originally 0077 D-19), with the
+Following 0071 **D-13**'s master contract and [0076b](done/0076b-product-translation-write-action-backend.md) **D-1**'s named-parameters rule (originally 0077 D-19), with the
 Blog-side specifics **verified against 0061/0078 rather than ported from a sibling**. The seven
 properties, and the two places this action is *unlike* every sibling, are in **D-8**.
 
@@ -911,7 +911,7 @@ than an absence:
 
 - **No `$slugs` state array, no `slugRules()` call from this screen, and no blur-prefill affordance.**
   0077's **D-9** — the whole `Str::ascii()`-versus-JS-`slugify` fidelity argument — has **no analogue
-  here**, and [0076b](0076b-product-translation-write-action-backend.md) **D-1** step 6's `'' → NULL` slug-uniqueness trap is structurally unreachable, because a
+  here**, and [0076b](done/0076b-product-translation-write-action-backend.md) **D-1** step 6's `'' → NULL` slug-uniqueness trap is structurally unreachable, because a
   `NOT NULL` derived column can never be blank.
 - **A read-only disclosure is permitted; a *live* preview is not.** `frontend-expert` proposed showing
   the persisted slug per tab ("will be published at `/blog/{slug}`"), sourced from that language's
@@ -1051,7 +1051,7 @@ own acceptance criterion and its own test asserting the two call sites use **dif
 rather than a note nobody re-reads.
 
 **D-8 — `SetBlogPostTranslation`'s contract, and the two places it is unlike every sibling.** The
-class follows 0071 **D-13**'s master shape and [0076b](0076b-product-translation-write-action-backend.md) **D-1**'s named-parameters rule (originally 0077 D-19). Seven properties
+class follows 0071 **D-13**'s master shape and [0076b](done/0076b-product-translation-write-action-backend.md) **D-1**'s named-parameters rule (originally 0077 D-19). Seven properties
 are the family's, applied unchanged:
 
 1. **Authorization is its own first statement**, outside any transaction, per
@@ -1298,7 +1298,7 @@ a post's French title is neither identity-sensitive nor hard to reverse.
   the two-layer pattern, the `x-show` rendering mode, the derived error key. **Consumed, never edited.**
 - **[0077](0077-product-editor-language-tabs-ui.md)** — soft but load-bearing. Not a code dependency;
   it is where the multi-field, routed-page, WYSIWYG-in-tabs shape was worked out, and this story adopts
-  its **C-2** reconciliation and **D-4** state triple, plus [0076b](0076b-product-translation-write-action-backend.md)'s **D-1** parameter rule, wholesale.
+  its **C-2** reconciliation and **D-4** state triple, plus [0076b](done/0076b-product-translation-write-action-backend.md)'s **D-1** parameter rule, wholesale.
 - **[0070](done/0070-translatable-content-mechanism-product-categories-backend.md)** — hard.
   `HasTranslations`, `SetTranslation`, `defaultStoreLanguage()`. Consumed unmodified.
 - **[0068](done/0068-store-languages-catalog-backend.md)** — hard. `StoreLanguage`, `scopeActive()`,
