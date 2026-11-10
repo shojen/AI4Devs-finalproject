@@ -202,26 +202,11 @@
       ]
     },
     {
-      "id": "0093",
-      "slug": "0093-confirm-dialog-secondary-action-ui",
-      "title": "Confirmation dialog — optional second choice (frontend)",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "resources/views/components/confirm-dialog.blade.php",
-        "tests/Feature/Components/ConfirmDialogTest.php"
-      ],
-      "conflict_risk_with": []
-    },
-    {
       "id": "0094",
       "slug": "0094-order-line-quantity-stock-dialog-ui",
       "title": "Order detail — ask about stock when a line's quantity changes (frontend)",
       "depends_on": [
-        "0090",
-        "0093"
+        "0090"
       ],
       "status": "blocked",
       "claimed_by": null,
@@ -249,7 +234,6 @@
       "title": "Order detail — ask about stock when a line is removed (frontend)",
       "depends_on": [
         "0090",
-        "0093",
         "0094"
       ],
       "status": "blocked",
@@ -277,7 +261,6 @@
       "title": "Order detail — the cancel confirmation asks whether to return stock (frontend)",
       "depends_on": [
         "0091",
-        "0093",
         "0094"
       ],
       "status": "blocked",

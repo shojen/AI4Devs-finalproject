@@ -18,9 +18,13 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
-**Update (2026-11-10): `0076b-product-translation-write-action-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0076b-product-translation-write-action-backend`; PR pending). Its node, inventory row, `claimed` class membership and the edges `P0076b --> P0077` and `P0076b -.-> P0087` are dropped; it joins the flat `done/` inventory (Epic 5 recounted as 14; `done/` holds 108 files) and its `tasks-status.json` entry is deleted. `0077` had `0076b` as its only pending dependency, so `depends_on` is now empty and it moves `blocked` -> `ready` (green); `0087` drops `0076b` from `conflict_risk_with`. No node is `claimed`; `in-progress/` is empty. Link check, both directions: outbound links in the moved file resolve (its `](../done/…)` links became bare siblings); inbound links from `0077`, `0079` and `0087` were repointed `in-progress/` -> `done/`; a repo-wide grep finds no stale `in-progress/0076b` path.
+**Update (2026-11-10): `0076b-product-translation-write-action-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0076b-product-translation-write-action-backend`; PR pending). Its node, inventory row, `claimed` class membership and the edges `P0076b --> P0077` and `P0076b -.-> P0087` are dropped; it joins the flat `done/` inventory (Epic 5 recounted as 14; `done/` holds 109 files) and its `tasks-status.json` entry is deleted. `0077` had `0076b` as its only pending dependency, so `depends_on` is now empty and it moves `blocked` -> `ready` (green); `0087` drops `0076b` from `conflict_risk_with`. No node is `claimed`; `in-progress/` is empty. Link check, both directions: outbound links in the moved file resolve (its `](../done/…)` links became bare siblings); inbound links from `0077`, `0079` and `0087` were repointed `in-progress/` -> `done/`; a repo-wide grep finds no stale `in-progress/0076b` path.
 
 **Update (2026-11-10): `0076b-product-translation-write-action-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 3 step 0, claimed by `worktree-0076b-product-translation-write-action-backend`). Still pending work, so it keeps its node and edges (`P0076b --> P0077`, `P0076b -.-> P0087`); the node is now the blue `claimed` class and its `tasks-status.json` entry is `"claimed"`. Inbound links from `0077`, `0079` and `0087` were repointed to `in-progress/`.
+
+**Update (2026-11-10): `0093-confirm-dialog-secondary-action-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0093-confirm-dialog-secondary-action-ui`). Its node, its inventory row, its `claimed` class membership and the edges touching it (`P0093 --> P0094`, `P0093 --> P0094a`, `P0093 --> P0095`) are dropped from the graph; it joins the flat `done/` inventory (Epic 3 +1) and its `tasks-status.json` entry is deleted. Dependents recomputed: `0094` (still `blocked` on `0090`), `0094a` (on `0090` and `0094`) and `0095` (on `0091` and `0094`) drop `0093` from `depends_on`; no `status` changes, and no node is `claimed` now. Link check: same-depth move, so the moved file's outbound links were re-verified only; inbound links from `0094`, `0094a` and `0095` were repointed from `in-progress/0093-…` to `done/0093-…`; all resolve.
+
+**Update (2026-11-10): `0093-confirm-dialog-secondary-action-ui.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (claimed by `worktree-0093-confirm-dialog-secondary-action-ui`; Phase 3). Still pending work: node and registry entry kept, `claimed`. Link check, both directions: the file's own outbound links gained a `../` segment; the inbound links from `0094`, `0094a` and `0095` now point at `in-progress/`; every relative link resolves.
 
 **Update (2026-11-10, Phase 2 rejection of `0077`): `0077` split; new pending file `0076b-product-translation-write-action-backend.md`.** Project owner decision A: `0077` is now UI only; the `SetProductTranslation` action and the widened `TranslateProductUniqueViolation` moved to `0076b` (numbered below its consumer, `0076a` precedent). Both are pending Phase 2 re-review, none approved. New node `P0076b` (green `ready`, no pending dependency); edge `P0076b --> P0077`, so `0077` turns `blocked` (yellow `pending`, `depends_on: ["0076b"]`); dashed conflict edge `P0076b -.-> P0087` (both edit `lang/{en,es}/products.php`; `0087` lists it back). `0077`'s `touches` now include its seven Feature and two Browser test files. `0087`'s inactive-language amendment note now targets `0076b` and requires its structural guard to cover `SetProductTranslation`; `0079`'s cites of the named-parameters rule and the parallel-arrays decision were repointed to `0076b` D-1 / `0077` D-2. The `ready` set gains `0076b` and loses `0077`. Link check: every relative link in `0076b`, `0077` and the edited `0079`/`0087` lines resolves; no file moved.
 
@@ -423,7 +427,7 @@ graph and from the parallelization analysis below.
 
 ## Inventory
 
-### Done (100) — shipped, out of scope for this graph
+### Done (101) — shipped, out of scope for this graph
 
 Already merged into `main`/`finalproject-ARP` and closed via the workflow's Phase 7; see
 [`ai-spec/tasks/done/`](tasks/done/) for each story's full file. Listed here only as IDs, grouped
@@ -442,7 +446,7 @@ appears as a node in the dependency graph below:
 - **Epic 2 — Products, Taxes, Media, Shipping (35):** 0016, 0017, 0018, 0019, 0019a, 0019b,
   0019c, 0019d, 0020, 0021, 0022, 0023, 0024, 0024a, 0024b, 0025, 0026, 0027, 0028, 0029, 0029a,
   0029b, 0030, 0030a, 0031, 0031a, 0032, 0033, 0034, 0035, 0036, 0037, 0038, 0039, 0080.
-- **Epic 3 — Customers, Orders & Notifications (18):** 0041 — the epic's foundation story (the first to close in
+- **Epic 3 — Customers, Orders & Notifications (19):** 0041 — the epic's foundation story (the first to close in
   this epic); its own three former dependents (0042, 0043, 0045) are re-derived against `done/`
   rather than against this pending list from here on. 0042 — Customers soft delete (backend), the
   second story to close in this epic; its own two former dependents (0044, 0047) are re-derived
@@ -536,6 +540,7 @@ appears as a node in the dependency graph below:
   closure re-derives no `status` change against the pending list.
   0084 — Order mark as paid (backend), closed 2026-10-02: adds `MarkOrderAsPaid` and the `order_payments` table; its one
   dependent, 0085, drops it and moves to `ready`.
+  0093 — Confirmation dialog optional second choice (frontend), closed 2026-11-10: `<x-confirm-dialog>` gains `secondary-action` / `secondary-label`; its dependents 0094, 0094a and 0095 drop it from `depends_on` and stay `blocked` on their other pending dependencies.
 
 ### Pending — not started (14 numbered + 1 infra doc)
 
@@ -552,7 +557,6 @@ Re-derived 2026-11-08 from the files actually present in `ai-spec/tasks/` (`0078
 | 0091 | Order cancellation returns stock only on request (backend) | Epic 3 — Orders (stock) |
 | 0092a | `RecordRefund` locks the order before its lines — no behaviour change (backend) | Epic 3 — Orders (stock) |
 | 0092b | Refunds can return refunded units to stock (backend) | Epic 3 — Orders (stock) |
-| 0093 | Confirmation dialog — optional second choice (frontend) | Epic 3 — Orders (stock) |
 | 0094 | Order detail — quantity-change stock dialog (frontend) | Epic 3 — Orders (stock) |
 | 0094a | Order detail — line-removal stock dialog (frontend) | Epic 3 — Orders (stock) |
 | 0095 | Order detail — cancel stock dialog (frontend) | Epic 3 — Orders (stock) |
@@ -602,7 +606,6 @@ flowchart LR
         P0091["0091 Cancel opt-in BE"]
         P0092a["0092a RecordRefund lock order BE"]
         P0092b["0092b Refund stock return BE"]
-        P0093["0093 Confirm dialog 2nd choice UI"]
         P0094["0094 Quantity stock dialog UI"]
         P0094a["0094a Removal stock dialog UI"]
         P0095["0095 Cancel stock dialog UI"]
@@ -616,12 +619,9 @@ flowchart LR
     P0088a --> P0092b
     P0092a --> P0092b
     P0090 --> P0094
-    P0093 --> P0094
     P0090 --> P0094a
-    P0093 --> P0094a
     P0094 --> P0094a
     P0091 --> P0095
-    P0093 --> P0095
     P0094 --> P0095
     P0092b --> P0096
     P0090 -.-> P0091
@@ -633,7 +633,7 @@ flowchart LR
     P0094 -.-> P0096
     P0094a -.-> P0096
     P0095 -.-> P0096
-    class P0088,P0092a,P0093 ready;
+    class P0088,P0092a ready;
     class P0088a,P0090,P0091,P0092b,P0094,P0094a,P0095,P0096 pending;
 
     %% Standalone (no PRD epic)
