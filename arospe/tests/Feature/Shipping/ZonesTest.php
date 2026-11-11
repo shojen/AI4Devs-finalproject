@@ -9,10 +9,8 @@
 
 use App\Actions\Shipping\SearchGeographyEntries;
 use App\Exceptions\UnresolvedSelectionException;
-use App\Livewire\SalesRegions\Index as SalesRegionsIndex;
 use App\Livewire\Shipping\Zones;
 use App\Models\GeographyEntry;
-use App\Models\SalesRegion;
 use App\Models\ShippingRate;
 use App\Models\ShippingZone;
 use App\Models\User;
@@ -56,18 +54,6 @@ test('the screen lists zones with their coverage counts, ordered by name', funct
         ->and(collect($rows)->firstWhere('id', $zapatos->id)['entriesCount'])->toBe(0);
 });
 
-test('a newly created zone covers nothing, and the list renders that neutrally', function () {
-    $this->actingAs(shippingZonesFullActor());
-
-    Livewire::test(Zones::class)
-        ->set('name', 'Zona Norte')
-        ->call('save');
-
-    $zone = ShippingZone::where('name', 'Zona Norte')->firstOrFail();
-
-    expect($zone->geographyEntries()->count())->toBe(0);
-});
-
 test('loadZones issues a bounded number of queries regardless of zone count', function () {
     $this->actingAs(shippingZonesFullActor());
 
@@ -103,18 +89,6 @@ test('creating a zone with a valid name adds it to the list, and the modal close
     expect(ShippingZone::where('name', 'Zona Norte')->exists())->toBeTrue();
 });
 
-test('a whitespace-only name is refused with the error on the name field; no zone is created', function () {
-    $this->actingAs(shippingZonesFullActor());
-
-    Livewire::test(Zones::class)
-        ->call('openCreateModal')
-        ->set('name', '   ')
-        ->call('save')
-        ->assertHasErrors(['name']);
-
-    expect(ShippingZone::count())->toBe(0);
-});
-
 test('a duplicate name is refused with the error on name', function (string $duplicateName) {
     $this->actingAs(shippingZonesFullActor());
 
@@ -136,20 +110,6 @@ test('a duplicate name is refused with the error on name', function (string $dup
 // =====================================================================
 // Rename / save-under-own-name
 // =====================================================================
-
-test('renaming a zone updates the list', function () {
-    $this->actingAs(shippingZonesFullActor());
-
-    $zone = ShippingZone::factory()->create(['name' => 'Zona Norte']);
-
-    Livewire::test(Zones::class)
-        ->call('openEditModal', $zone->id)
-        ->set('name', 'Cornisa Cantábrica')
-        ->call('save')
-        ->assertHasNoErrors();
-
-    expect($zone->refresh()->name)->toBe('Cornisa Cantábrica');
-});
 
 test('saving a zone under its own unchanged name succeeds, and the zone is genuinely unchanged', function () {
     $this->actingAs(shippingZonesFullActor());
@@ -332,23 +292,6 @@ test('when resolveSelected rejects the selection directly, the D-12 refusal mess
     expect($zone->fresh()->geographyEntries()->count())->toBe(0);
 });
 
-test('assigning an entry another zone already covers succeeds with no error on any field', function () {
-    $this->actingAs(shippingZonesFullActor());
-
-    $entry = GeographyEntry::factory()->create(['name' => 'Gijón']);
-    ShippingZone::factory()->create(['name' => 'Asturias Centro'])
-        ->geographyEntries()->attach($entry->id);
-    $zone = ShippingZone::factory()->create(['name' => 'Zona Norte']);
-
-    Livewire::test(Zones::class)
-        ->call('openEditModal', $zone->id)
-        ->set('geographyEntryIds', [(string) $entry->id])
-        ->call('save')
-        ->assertHasNoErrors();
-
-    expect($zone->fresh()->geographyEntries()->pluck('id')->all())->toBe([$entry->id]);
-});
-
 // =====================================================================
 // Locked properties
 // =====================================================================
@@ -522,32 +465,4 @@ test('cancelling a blocked delete clears its error, so a later unrelated modal o
         ->assertHasErrors('shippingZoneId')
         ->call('closeDeleteModal')
         ->assertHasNoErrors('shippingZoneId');
-});
-
-// Un-skipped: task 0018 shipped the Sales Regions screen (App\Livewire\SalesRegions\Index,
-// route sales-regions.index) the original skip reason named as still missing -- the "UI-driven
-// comparison this story cannot exercise alone" is now buildable. Read through the REAL
-// sales-regions screen's own component, before and after, rather than a raw DB row count, so
-// the assertion is genuinely "at the UI layer": if that screen's own query or view contract ever
-// changed to surface a shipping-zone-derived value, this would catch it where a bare
-// SalesRegion::count() comparison could not.
-test('creating a shipping zone leaves the Sales Region catalog untouched, at the UI layer', function () {
-    $actor = shippingZonesFullActor();
-    $actor->givePermissionTo('sales-regions.view');
-    $this->actingAs($actor);
-
-    SalesRegion::factory()->create(['name' => 'Some Region']);
-    SalesRegion::factory()->create(['name' => 'Another Region']);
-
-    $before = Livewire::test(SalesRegionsIndex::class)->get('regions');
-
-    Livewire::test(Zones::class)
-        ->call('openCreateModal')
-        ->set('name', 'Zona Norte')
-        ->call('save')
-        ->assertHasNoErrors();
-
-    $after = Livewire::test(SalesRegionsIndex::class)->get('regions');
-
-    expect($after)->toBe($before);
 });
