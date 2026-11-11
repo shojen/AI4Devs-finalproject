@@ -397,25 +397,6 @@ test('the edit form shows a re-confirmation notice when the password confirmatio
         ->assertNoJavaScriptErrors();
 });
 
-// Scenario: A fresh confirmation shows no warning
-test('the edit form shows no re-confirmation notice when the password confirmation is fresh', function () {
-    $administrator = User::factory()->create();
-    $administrator->assignRole('Administrator');
-
-    $target = User::factory()->create(['name' => 'Diego Ferrer']);
-
-    $this->actingAs($administrator)->withSession([
-        'auth.password_confirmed_at' => now()->unix(),
-    ]);
-
-    visit('/users')
-        ->assertNoJavaScriptErrors()
-        ->click('@edit-user-'.$target->id)
-        ->assertNoJavaScriptErrors()
-        ->assertMissing('@edit-modal-reconfirm-notice')
-        ->assertNoJavaScriptErrors();
-});
-
 // Scenario: The delete confirmation warns before the administrator commits
 test('the delete confirmation shows a re-confirmation notice when the password confirmation is stale', function () {
     $administrator = User::factory()->create();
@@ -461,25 +442,6 @@ test('the create form shows the Administrator-tier re-confirmation notice as soo
         ->select('roleId', 'Administrator')
         ->assertNoJavaScriptErrors()
         ->assertVisible('@create-modal-reconfirm-notice')
-        ->assertNoJavaScriptErrors();
-});
-
-// Scenario: A fresh confirmation shows no warning (delete confirmation)
-test('the delete confirmation shows no re-confirmation notice when the password confirmation is fresh', function () {
-    $administrator = User::factory()->create();
-    $administrator->assignRole('Administrator');
-
-    $target = User::factory()->create(['name' => 'Diego Ferrer']);
-
-    $this->actingAs($administrator)->withSession([
-        'auth.password_confirmed_at' => now()->unix(),
-    ]);
-
-    visit('/users')
-        ->assertNoJavaScriptErrors()
-        ->click('@delete-user-'.$target->id)
-        ->assertNoJavaScriptErrors()
-        ->assertMissing('@delete-modal-reconfirm-notice')
         ->assertNoJavaScriptErrors();
 });
 

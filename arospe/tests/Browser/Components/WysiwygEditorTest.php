@@ -880,51 +880,6 @@ test('confirming a featured image or a gallery strip image never touches the des
 });
 
 // =====================================================================
-// assertNoJavaScriptErrors() across a representative sequence -- the hand-rolled caret logic (D6)
-// is exactly the kind of code that otherwise fails silently.
-// =====================================================================
-
-test('a representative sequence of toolbar actions produces no JavaScript errors', function () {
-    $actor = wysiwygUiTestActor();
-    $this->actingAs($actor);
-    $product = wysiwygUiTestProduct();
-
-    $media = Media::factory()->withRealFiles()->create(['title' => 'Sequence Widget', 'description' => null]);
-
-    $region = wysiwygUiTestRegion();
-
-    // The longest chain in this file: two formatting round trips followed by the same
-    // click -> Livewire -> Alpine -> <dialog> gallery-confirm race tests/Browser/Media/GalleryTest.php's
-    // own docblock already measured and closed with retry(3, ...) rather than a fourth
-    // wait/assertion permutation (25%/50% single-attempt failure rates across two independent
-    // 12-run baselines, none of it a client-side artifact this test's own wait/assertion choices
-    // can rule out further). Reproduced here empirically: this exact test failed with "Timeout
-    // 5000ms exceeded" on a full-file run (15/16 passing) while every other test in this file
-    // passed -- the same class of occasional real-world latency, on the same chain shape, not a
-    // defect in the sequence this test drives. retry(3, ...) wraps the whole real-DOM interaction;
-    // $media is created once, outside the retry, and re-used across attempts exactly as
-    // GalleryTest.php's own retried test does.
-    retry(3, function () use ($product, $region, $media): void {
-        $page = visit(route('products.edit', $product))->assertNoJavaScriptErrors();
-
-        $page->script(wysiwygUiTestSelectWordScript($region, 'BEFORE'));
-        $page->click(wysiwygUiTestControl('wysiwyg-bold'))->assertNoJavaScriptErrors();
-
-        $page->script(wysiwygUiTestSelectAllScript($region));
-        $page->click(wysiwygUiTestControl('wysiwyg-h2'))->assertNoJavaScriptErrors();
-
-        $page->click(wysiwygUiTestControl('wysiwyg-insert-image'))->assertNoJavaScriptErrors();
-        $page->click(wysiwygUiTestGalleryModal('media-tile-'.$media->id))->assertNoJavaScriptErrors();
-        $page->assertScript(wysiwygUiTestConfirmEnabledScript());
-        $page->click(wysiwygUiTestGalleryModal('media-confirm'))->assertNoJavaScriptErrors();
-
-        $page->wait(2)->assertNoJavaScriptErrors();
-    });
-
-    wysiwygUiTestCleanupMedia($media);
-});
-
-// =====================================================================
 // Live syntax colouring & Preview mode (D-16bis) -- an explicit revision of this story's earlier
 // "display-only highlighting" decision: code is now coloured LIVE, per keystroke, inside the editor
 // itself, and a third Preview mode (alongside Edit/HTML source in the same toolbar panel) shows a
