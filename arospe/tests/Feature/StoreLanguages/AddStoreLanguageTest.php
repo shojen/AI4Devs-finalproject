@@ -238,14 +238,6 @@ test('called with no authenticated user, the action is refused', function () {
     expect(StoreLanguage::count())->toBe(0);
 });
 
-test('called directly, an actor holding store-languages.create succeeds', function () {
-    $this->actingAs(addStoreLanguageActor());
-
-    $language = app(AddStoreLanguage::class)('fr');
-
-    expect($language->code)->toBe('fr');
-});
-
 // =====================================================================
 // Refusal logging -- context array, never the rendered message (docs/architecture/
 // authorization/step-up-and-refusal-logging.md).

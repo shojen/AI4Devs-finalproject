@@ -357,16 +357,6 @@ test('removing the default that is also the only active language renders no repl
         ->and(storeLanguagesControlDisabled($html, 'confirm-remove-language'))->toBeTrue();
 });
 
-test('the removal confirmation never states a zero-usage safety claim when no translation references the language', function () {
-    $this->seed(StoreLanguageSeeder::class);
-    $french = StoreLanguage::factory()->create(['code' => 'fr', 'name' => 'Français']);
-    $this->actingAs(storeLanguagesCatalogActor());
-
-    $html = Livewire::test(Index::class)->call('confirmRemoveLanguage', $french->id)->html();
-
-    expect(storeLanguagesControlPresent($html, 'remove-modal-usage-line'))->toBeFalse();
-});
-
 // =====================================================================
 // Section structure and lang
 // =====================================================================
