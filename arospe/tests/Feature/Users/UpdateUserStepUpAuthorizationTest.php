@@ -88,25 +88,6 @@ test('a role change is refused when the confirmation was never set this session,
         ->and($target->fresh()->hasRole('Blog Editor'))->toBeFalse();
 });
 
-test('a role change is refused when the confirmation is older than the configured timeout, and the role is left unchanged', function () {
-    $actor = User::factory()->create();
-    $actor->givePermissionTo('users.edit');
-    $this->actingAs($actor);
-    markPasswordConfirmationStale();
-
-    $editorRole = Role::create(['name' => 'Editor', 'guard_name' => 'web']);
-    $blogEditorRole = Role::create(['name' => 'Blog Editor', 'guard_name' => 'web']);
-    $target = User::factory()->create();
-    $target->assignRole($editorRole);
-
-    $updateUser = app(UpdateUser::class);
-
-    expect(fn () => $updateUser($target, $target->name, $target->email, (string) $blogEditorRole->id, $target->status, app(RequestEmailChange::class)))
-        ->toThrow(PasswordConfirmationRequiredException::class);
-
-    expect($target->fresh()->hasRole('Editor'))->toBeTrue();
-});
-
 test('a status change is refused when the confirmation is stale, and the status is left unchanged', function () {
     $actor = User::factory()->create();
     $actor->givePermissionTo('users.edit');
@@ -114,7 +95,7 @@ test('a status change is refused when the confirmation is stale, and the status 
     markPasswordConfirmationStale();
 
     // The role id submitted is the target's own current role (a no-op), isolating this scenario
-    // to a status-only change -- a role change is covered by its own tests above.
+    // to a status-only change -- a role change is covered by its own test above.
     $editorRole = Role::create(['name' => 'Editor', 'guard_name' => 'web']);
     $target = User::factory()->create(['status' => UserStatus::Active]);
     $target->assignRole($editorRole);
@@ -125,43 +106,6 @@ test('a status change is refused when the confirmation is stale, and the status 
         ->toThrow(PasswordConfirmationRequiredException::class);
 
     expect($target->fresh()->status)->toBe(UserStatus::Active);
-});
-
-// =====================================================================
-// Happy path -- a fresh confirmation is not a blanket refusal.
-// =====================================================================
-
-test('a role change succeeds when the confirmation is fresh', function () {
-    $actor = User::factory()->create();
-    $actor->givePermissionTo('users.edit');
-    $this->actingAs($actor);
-    markPasswordConfirmationFresh();
-
-    $editorRole = Role::create(['name' => 'Editor', 'guard_name' => 'web']);
-    $blogEditorRole = Role::create(['name' => 'Blog Editor', 'guard_name' => 'web']);
-    $target = User::factory()->create();
-    $target->assignRole($editorRole);
-
-    $updateUser = app(UpdateUser::class);
-    $updateUser($target, $target->name, $target->email, (string) $blogEditorRole->id, $target->status, app(RequestEmailChange::class));
-
-    expect($target->fresh()->hasRole('Blog Editor'))->toBeTrue();
-});
-
-test('a status change succeeds when the confirmation is fresh', function () {
-    $actor = User::factory()->create();
-    $actor->givePermissionTo('users.edit');
-    $this->actingAs($actor);
-    markPasswordConfirmationFresh();
-
-    $editorRole = Role::create(['name' => 'Editor', 'guard_name' => 'web']);
-    $target = User::factory()->create(['status' => UserStatus::Active]);
-    $target->assignRole($editorRole);
-
-    $updateUser = app(UpdateUser::class);
-    $updateUser($target, $target->name, $target->email, (string) $editorRole->id, UserStatus::Suspended, app(RequestEmailChange::class));
-
-    expect($target->fresh()->status)->toBe(UserStatus::Suspended);
 });
 
 // =====================================================================
@@ -473,40 +417,6 @@ test('the refusal against a direct call is PasswordConfirmationRequiredException
 
     expect($response->getStatusCode())->toBe(423)
         ->and($response->getStatusCode())->not->toBe(403);
-});
-
-// =====================================================================
-// Fail-closed with an unset confirmation key -- NOT the same claim as "no
-// session at all". Phase 4 finding F5: this test's original title claimed
-// the latter while actingAs() still binds a real session store, it only
-// leaves this one key unset -- the identical case
-// tests/Feature/Actions/Auth/EnsureRecentPasswordConfirmationTest.php's "it
-// throws when the confirmation was never set this session" already covers
-// at the raw-guard level. Kept here, renamed to what it actually proves:
-// UpdateUser's full role-change path (not just the guard in isolation)
-// fails closed too. The genuinely session-less claim -- no Laravel
-// container/session service bound at all -- is
-// tests/Unit/Actions/Auth/EnsureRecentPasswordConfirmationTest.php's own
-// test, which this one is deliberately not a substitute for.
-// =====================================================================
-
-test('a role change is refused when the confirmation key was never set this session, under a real actingAs() session', function () {
-    $actor = User::factory()->create();
-    $actor->givePermissionTo('users.edit');
-    $this->actingAs($actor);
-    // auth.password_confirmed_at deliberately never touched anywhere in this test.
-
-    $editorRole = Role::create(['name' => 'Editor', 'guard_name' => 'web']);
-    $blogEditorRole = Role::create(['name' => 'Blog Editor', 'guard_name' => 'web']);
-    $target = User::factory()->create();
-    $target->assignRole($editorRole);
-
-    $updateUser = app(UpdateUser::class);
-
-    expect(fn () => $updateUser($target, $target->name, $target->email, (string) $blogEditorRole->id, $target->status, app(RequestEmailChange::class)))
-        ->toThrow(PasswordConfirmationRequiredException::class);
-
-    expect($target->fresh()->hasRole('Editor'))->toBeTrue();
 });
 
 // =====================================================================

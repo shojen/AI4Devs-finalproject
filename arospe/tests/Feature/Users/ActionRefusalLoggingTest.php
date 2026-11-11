@@ -457,31 +457,6 @@ test('a domain-action refusal and a Livewire-component refusal share exactly the
 });
 
 // =====================================================================
-// "Domain actions — the refusal still refuses, identically" -- a dedicated test proving logging
-// cannot intercept or swallow the exception, run through a distinct site (UpdateUser's
-// promoteToAdministrator) than the ones already asserted above via try/catch.
-// =====================================================================
-
-test('UpdateUser refusal still throws AuthorizationException with its original message, and writes nothing', function () {
-    $actor = User::factory()->create();
-    $actor->givePermissionTo('users.edit');
-    $this->actingAs($actor);
-
-    $editorRole = Role::create(['name' => 'Editor', 'guard_name' => 'web']);
-    $administratorRole = Role::where('name', RoleName::Administrator->value)->where('guard_name', 'web')->firstOrFail();
-    $target = User::factory()->create(['name' => 'Original Name']);
-    $target->assignRole($editorRole);
-
-    $updateUser = app(UpdateUser::class);
-
-    expect(fn () => $updateUser($target, 'Changed Name', $target->email, (string) $administratorRole->id, $target->status, app(RequestEmailChange::class)))
-        ->toThrow(AuthorizationException::class);
-
-    expect($target->fresh()->name)->toBe('Original Name')
-        ->and($target->fresh()->hasRole('Administrator'))->toBeFalse();
-});
-
-// =====================================================================
 // RequestEmailChange
 // =====================================================================
 

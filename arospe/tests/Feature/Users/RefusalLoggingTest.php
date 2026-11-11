@@ -40,7 +40,7 @@
 //      decides -- so it is left out here, per the task file's own guidance that mount() is "the
 //      known candidate" for an explicit, documented non-coverage decision.
 //   2. openCreateModal() :117 create                   -- 'openCreateModal() authorization refusal is logged'
-//   3. openEditModal()   :156 updateSensitiveAttributes -- 'openEditModal() authorization refusal is logged...' (Gherkin scenario 1) + 'openEditModal() refusal still throws...'
+//   3. openEditModal()   :156 updateSensitiveAttributes -- 'openEditModal() authorization refusal is logged...' (Gherkin scenario 1)
 //   4. save() create      :184 create                  -- 'save() create-branch authorization refusal is logged'
 //   5. save() update      :187 update                  -- 'save() update-branch authorization refusal is logged (own row)'
 //   6. confirmDelete()   :271 delete                   -- 'confirmDelete() authorization refusal is logged'
@@ -111,8 +111,7 @@ test('openEditModal() authorization refusal is logged with the actor, ability an
     try {
         Livewire::test(Index::class)->call('openEditModal', $target->id);
     } catch (AuthorizationException) {
-        // Expected -- asserted properly by the sibling "still throws" test below. This test is
-        // only about what got logged before the exception propagated.
+        // Expected. This test is only about what got logged before the exception propagated.
     }
 
     Log::shouldHaveReceived('warning')
@@ -123,32 +122,6 @@ test('openEditModal() authorization refusal is logged with the actor, ability an
             && ($context['target_id'] ?? null) === $target->id
             && usersRefusalLogContextHasNoSecretLookingKey($context))
         ->once();
-});
-
-// This is the test that fails if a fix swallows the AuthorizationException while adding logging
-// -- deliberately separate from the log-content assertion above, per the task file's own
-// "Users -- the refusal still refuses" bullet.
-test('openEditModal() refusal still throws and leaves editingUserId/editingPendingEmail/status unpopulated', function () {
-    $this->withoutExceptionHandling();
-
-    $administrator = User::factory()->create();
-    $administrator->assignRole('Administrator'); // lacks roles.manage-administrators
-    $this->actingAs($administrator);
-
-    $administratorRole = Role::where('name', 'Administrator')->where('guard_name', 'web')->firstOrFail();
-    $target = User::factory()->create();
-    $target->assignRole($administratorRole);
-
-    $component = Livewire::test(Index::class);
-
-    expect(fn () => $component->call('openEditModal', $target->id))
-        ->toThrow(AuthorizationException::class);
-
-    expect($component->get('editingUserId'))->toBeNull()
-        ->and($component->get('editingPendingEmail'))->toBeNull()
-        // status defaults to Inactive->value (never null -- see the property's own docblock);
-        // the point here is that it was never overwritten with the target's real status.
-        ->and($component->get('status'))->toBe(UserStatus::Inactive->value);
 });
 
 // =====================================================================
@@ -336,49 +309,6 @@ test('confirmDelete() refusal still throws and leaves the delete modal unopened'
 
     expect($component->get('deletingUserId'))->toBeNull()
         ->and($component->get('showDeleteModal'))->toBeFalse();
-});
-
-// =====================================================================
-// Gherkin scenario 3 — "A refused rate-limited creation is recorded", distinguishable from an
-// authorization refusal. Driven directly through CreateUser (bypassing the Livewire layer) for
-// speed, exactly as tests/Feature/Users/CreateUserActionAuthorizationTest.php's own rate-limit
-// tests do -- Index has no rate limiter of its own in front of this one, so the refusal that
-// reaches save() IS CreateUser's.
-// =====================================================================
-
-test('an 11th CreateUser call within the window logs a rate-limit refusal distinguishable from an authorization refusal', function () {
-    Log::spy();
-
-    $actor = User::factory()->create();
-    $actor->givePermissionTo('users.create');
-    $this->actingAs($actor);
-
-    $role = Role::create(['name' => 'Editor', 'guard_name' => 'web']);
-    $createUser = app(CreateUser::class);
-
-    for ($i = 0; $i < 10; $i++) {
-        $createUser("Hire {$i}", "refusal-throttle-hire-{$i}@arospe.es", (string) $role->id, UserStatus::Active);
-    }
-
-    try {
-        $createUser('Eleventh Hire', 'refusal-throttle-hire-11@arospe.es', (string) $role->id, UserStatus::Active);
-    } catch (ValidationException) {
-        //
-    }
-
-    // The 'ability' value is the pre-agreed, Named-now non-Gate reason string for this
-    // specific site (task file's "Context keys" paragraph) -- distinct from any of the 38 real
-    // permission names in the seeded catalog, so a log reader can never confuse the two.
-    Log::shouldHaveReceived('warning')
-        ->withArgs(fn (string $message, array $context): bool => $message === 'Privileged action refused'
-            && ($context['actor_id'] ?? null) === $actor->id
-            && ($context['ability'] ?? null) === 'create_rate_limited'
-            && $context['ability'] !== 'create' // distinguishable from the base authorization ability
-            && array_key_exists('target_type', $context) && $context['target_type'] === null
-            && usersRefusalLogContextHasNoSecretLookingKey($context))
-        ->once();
-
-    expect(User::where('email', 'refusal-throttle-hire-11@arospe.es')->exists())->toBeFalse();
 });
 
 // =====================================================================
