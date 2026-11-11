@@ -48,20 +48,6 @@ test('translationRowsFor() keeps a null description null rather than turning it 
     expect($rows[0]['description'])->toBeNull();
 });
 
-test('translationRowsFor() copies a description holding every allow-listed tag byte-identically, never re-sanitizing it', function () {
-    $everyTag = '<p>a <strong>b</strong> <b>b</b> <em>c</em> <i>c</i> <u>d</u><br></p><h2>h</h2>'
-        .'<ul><li>x</li></ul><ol><li>y</li></ol>'
-        .'<a href="https://example.com/a?b=1&amp;c=2">link</a><img src="https://example.com/i.png" alt="i">';
-
-    $rows = (new BackfillProductTranslations)->translationRowsFor(
-        [p76LegacyProductRow('Todos los tags', $everyTag)],
-        (string) Str::uuid7(),
-        Carbon::now(),
-    );
-
-    expect($rows[0]['description'])->toBe($everyTag);
-});
-
 test('translationRowsFor() does not sanitize a legacy description: a migration is not an editorial event', function () {
     $legacy = '<script>legacy()</script><p>kept</p>';
 

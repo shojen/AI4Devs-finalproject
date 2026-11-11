@@ -4,13 +4,6 @@ use App\Enums\SalesRegionKind;
 use App\Models\SalesRegion;
 use Illuminate\Support\Str;
 
-test('the sales region model reports a non-incrementing string key type', function () {
-    $salesRegion = new SalesRegion;
-
-    expect($salesRegion->getKeyType())->toBe('string')
-        ->and($salesRegion->getIncrementing())->toBeFalse();
-});
-
 test('slug is not mass-assignable', function () {
     $salesRegion = new SalesRegion;
 

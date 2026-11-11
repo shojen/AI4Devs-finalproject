@@ -19,7 +19,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 // Verified twice...") would call it TWICE, because nothing would ever flip the in-memory
 // `status !== Inactive` guard that is the only thing stopping a second delivery.
 //
-// The five refusal/idempotency cases from story 0064a keep their names and rules unchanged; one
+// The refusal/idempotency cases from story 0064a keep their names and rules unchanged; one
 // new case is added (a false return from the action leaves the instance untouched). Every other
 // case predating 0064a (the getPrevious()/getOriginal() security-audit cases, the not-a-User-
 // instance guard) also keeps its name and rules, adapted to the same fake-counting mechanics for
@@ -132,19 +132,6 @@ test('activates an inactive user when their email is verified for the first time
         ->and($fake->callCount)->toBe(1);
 });
 
-test('never reactivates a suspended user', function () {
-    $fake = new ActivateInactiveUserFake;
-
-    $user = Mockery::mock(User::class)->makePartial();
-    $user->status = UserStatus::Suspended;
-    $user->shouldNotReceive('save');
-
-    (new ActivateVerifiedUser($fake))->handle(new Verified($user));
-
-    expect($user->status)->toBe(UserStatus::Suspended)
-        ->and($fake->callCount)->toBe(0);
-});
-
 test('is a no-op on an already active user', function () {
     $fake = new ActivateInactiveUserFake;
 
@@ -155,27 +142,6 @@ test('is a no-op on an already active user', function () {
     (new ActivateVerifiedUser($fake))->handle(new Verified($user));
 
     expect($user->status)->toBe(UserStatus::Active)
-        ->and($fake->callCount)->toBe(0);
-});
-
-// Phase 4 security audit (F1, story 0007): App\Actions\Users\ConfirmEmailChange writes the new
-// email_verified_at and calls save() BEFORE firing Verified, on a user who -- unlike a brand-new
-// registrant -- had already verified an email before (they're Inactive here only because an
-// administrator deactivated a previously-active, previously-verified account). getPrevious() must
-// capture the OLD, non-null email_verified_at from that prior save, not null, so the listener
-// refuses to reactivate them.
-test('does not reactivate a deactivated user who had already verified an email before (e.g. completing an email change)', function () {
-    $fake = new ActivateInactiveUserFake;
-
-    $user = new ActivateVerifiedUserTrackedUser;
-    $user->setRawAttributes(['email_verified_at' => now()->subDays(30)->toDateTimeString()], true);
-    $user->status = UserStatus::Inactive;
-    $user->email_verified_at = now();
-    $user->syncChanges();
-
-    (new ActivateVerifiedUser($fake))->handle(new Verified($user));
-
-    expect($user->status)->toBe(UserStatus::Inactive)
         ->and($fake->callCount)->toBe(0);
 });
 

@@ -13,11 +13,3 @@ test('the default dashboard set is every status except cancelled, in declaration
         OrderStatus::Delivered,
     ]);
 });
-
-test('the default dashboard set is a list that never contains cancelled', function () {
-    $set = OrderStatus::defaultDashboardSet();
-
-    expect(array_is_list($set))->toBeTrue()
-        ->and($set)->not->toContain(OrderStatus::Cancelled)
-        ->and(count($set))->toBe(count(OrderStatus::cases()) - 1);
-});

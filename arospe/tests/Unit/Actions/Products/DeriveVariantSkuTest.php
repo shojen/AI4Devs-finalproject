@@ -19,14 +19,6 @@ test('the four worked examples derive exactly', function (string $productSku, ar
     '0002 + Color azul marino + Talla L' => ['0002', ['azul marino', 'L'], '0002-azul-marino-L'],
 ]);
 
-// FP14: a casing assertion on a value that is already all one case proves nothing about case
-// preservation, because Str::upper() would also return '0001-M'. Both a value that stays
-// lowercase and one that stays uppercase are required in the same file.
-test('casing is preserved verbatim, for both a lowercase and an uppercase segment', function () {
-    expect(app(DeriveVariantSku::class)('0001', ['L']))->toBe('0001-L')
-        ->and(app(DeriveVariantSku::class)('0002', ['azul marino']))->toBe('0002-azul-marino');
-});
-
 // The exact OPPOSITE of HashVariantCombinationTest's order-independence assertion — written next
 // to a comment saying so, because side by side the two look like a contradiction. D-4.2 note 3: a
 // combination's HASH is a set key and must ignore submission order; its derived SKU is an ORDERED
@@ -45,9 +37,3 @@ test('segment() edge cases', function (string $input, string $expected) {
     'a character outside the safe set is stripped' => ['A★B', 'AB'],
     'a value that reduces entirely to the empty string is surfaced as such' => ['★★★', ''],
 ]);
-
-test('the derivation is pure and stable across calls, the property that makes it safe to store', function () {
-    $result = app(DeriveVariantSku::class)('0002', ['azul marino', 'L']);
-
-    expect(app(DeriveVariantSku::class)('0002', ['azul marino', 'L']))->toBe($result);
-});

@@ -5,8 +5,7 @@ use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
 
 // No RefreshDatabase -- this drives Validator::make() directly against the real ibanRules(),
-// with no database involved at all, matching
-// tests/Unit/Concerns/ProductCategoryValidationRulesTest.php's existing precedent.
+// with no database involved at all.
 
 uses(TestCase::class);
 

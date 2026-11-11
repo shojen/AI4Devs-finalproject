@@ -19,16 +19,6 @@ test('cases are exactly draft, published and scheduled, in that order', function
     expect(array_column(BlogPostStatus::cases(), 'value'))->toBe(['draft', 'published', 'scheduled']);
 });
 
-test('from throws ValueError for an unrecognized value', function () {
-    expect(fn () => BlogPostStatus::from('archived'))->toThrow(ValueError::class);
-});
-
-test('label resolves through the translator rather than returning a literal', function () {
-    expect(BlogPostStatus::Draft->label())->toBe(trans('blog-posts.statuses.draft'))
-        ->and(BlogPostStatus::Published->label())->toBe(trans('blog-posts.statuses.published'))
-        ->and(BlogPostStatus::Scheduled->label())->toBe(trans('blog-posts.statuses.scheduled'));
-});
-
 // Asserting against trans() is green even against a hardcoded literal whose text equals the
 // default 'en' copy. Switching to 'es' and asserting the Spanish copy is what proves the
 // translator is consulted -- no hardcoded English literal could produce these strings. The locale

@@ -2,8 +2,6 @@
 
 use App\Concerns\OrderValidationRules;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rules\Exists;
 use Tests\TestCase;
 
 // This file drives Validator::make() directly (the facade, which needs a booted `validator`
@@ -16,10 +14,9 @@ use Tests\TestCase;
 uses(TestCase::class);
 
 // Story 0048, Phase 3 (TDD "red" step): App\Concerns\OrderValidationRules does not yet declare
-// orderItemQuantityRules() or orderItemOwnershipRules() -- every test below is expected to fail
+// orderItemQuantityRules() -- every test below is expected to fail
 // with "Call to undefined method" until backend-expert extends the trait (task file: "Phase 3 must
-// extract rather than duplicate" the quantity rule out of 0045's own orderItemRules(), and add
-// orderItemOwnershipRules(string $orderId) as a new method).
+// extract rather than duplicate" the quantity rule out of 0045's own orderItemRules()).
 //
 // Pure unit tests, no DB: this file lives under tests/Unit/, which tests/Pest.php does NOT bind
 // RefreshDatabase to (Feature and Browser only) -- see docs/testing/README.md and
@@ -27,11 +24,7 @@ uses(TestCase::class);
 // assertion here either stays in-memory (Validator::make() against 'quantity' alone, which never
 // touches the database) or inspects the CONSTRUCTED rule array without ever running it through
 // $validator->fails() -- doing so against a Rule::exists() would issue a real query against
-// whatever connection is configured, which this file must never do. orderItemOwnershipRules()'s
-// actual database-backed behavior (an id that exists but belongs to a DIFFERENT order) is proven
-// at the action level instead, in tests/Feature/Orders/RemoveOrderItemTest.php's and
-// UpdateOrderItemQuantityTest.php's own cross-order tests, matching
-// tests/Unit/Concerns/ShippingZoneValidationRulesTest.php's identical division of labor.
+// whatever connection is configured, which this file must never do.
 
 function orderValidationRulesFixture(): object
 {
@@ -42,11 +35,6 @@ function orderValidationRulesFixture(): object
         public function quantityRules(): array
         {
             return $this->orderItemQuantityRules();
-        }
-
-        public function ownershipRules(string $orderId): array
-        {
-            return $this->orderItemOwnershipRules($orderId);
         }
 
         public function itemRules(): array
@@ -90,23 +78,4 @@ test('orderItemRules quantity entry is exactly orderItemQuantityRules, not a sec
     $fixture = orderValidationRulesFixture();
 
     expect($fixture->itemRules()['quantity'])->toBe($fixture->quantityRules());
-});
-
-// --- orderItemOwnershipRules(string $orderId) ---
-
-// Structural only, per this file's own banner: proves the method exists, takes an order id, and
-// returns a rule set built around Rule::exists('order_items', 'id') scoped by order_id -- never
-// executes it against the database. The real belongs-to-a-different-order behavior is pinned at
-// the action level (see this file's banner comment).
-test('orderItemOwnershipRules returns a non-empty rule set scoped to the given order id, without touching the database', function () {
-    $orderId = (string) Str::uuid7();
-
-    $rules = orderValidationRulesFixture()->ownershipRules($orderId);
-
-    expect($rules)->toBeArray()
-        ->and($rules)->not->toBeEmpty();
-
-    $hasExistsRule = collect($rules)->contains(fn ($rule): bool => $rule instanceof Exists);
-
-    expect($hasExistsRule)->toBeTrue();
 });

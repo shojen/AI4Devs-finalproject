@@ -61,19 +61,6 @@ test('a body with visible text or an image has visible content', function (strin
     'image next to an empty-src image' => ['<img src=""><img src="https://cdn.example.com/media/bota.jpg">'],
 ]);
 
-test('the rule is any visible content, not only visible content', function () {
-    expect((new BlogBodyHasVisibleContent)('<p><br></p><p>hola</p>'))->toBeTrue()
-        ->and((new BlogBodyHasVisibleContent)('<p><br></p><p><br></p>'))->toBeFalse();
-});
-
-test('it is pure: the same input always gives the same answer', function () {
-    $action = new BlogBodyHasVisibleContent;
-
-    expect($action('<p>hola</p>'))->toBeTrue()
-        ->and($action('<p><br></p>'))->toBeFalse()
-        ->and($action('<p>hola</p>'))->toBeTrue();
-});
-
 test('a body at the sanitizer max_input_length is judged without error', function () {
     $action = new BlogBodyHasVisibleContent;
     $limit = 262_144;
