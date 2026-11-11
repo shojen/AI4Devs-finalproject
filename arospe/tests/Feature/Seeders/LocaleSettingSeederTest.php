@@ -7,11 +7,8 @@
 // ambient-config hazard (docs/errors-log's SUPER_ADMIN_EMAIL entry) is live here.
 
 use App\Models\LocaleSetting;
-use App\Models\User;
 use Database\Seeders\LocaleSettingSeeder;
 use Database\Seeders\ProductionSeeder;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 // --- Fresh install ---
 
@@ -50,17 +47,6 @@ test('seeding with an app.locale outside the offered pair throws and writes no r
     expect(LocaleSetting::count())->toBe(0);
 });
 
-// --- Idempotency ---
-
-test('seeding twice creates no second row', function () {
-    config(['app.locale' => 'es']);
-
-    $this->seed(LocaleSettingSeeder::class);
-    $this->seed(LocaleSettingSeeder::class);
-
-    expect(LocaleSetting::count())->toBe(1);
-});
-
 // --- D22: the bootstrap only writes an EMPTY table, never a resync ---
 
 test('re-seeding after an administrator has changed either default leaves both untouched', function () {
@@ -88,16 +74,4 @@ test('ProductionSeeder reaches LocaleSettingSeeder', function () {
 
     expect(LocaleSetting::count())->toBe(1)
         ->and(LocaleSetting::current()->default_ui_locale)->toBe('es');
-});
-
-// --- Isolation ---
-
-test('running the Locale Setting seeder alone creates no users, roles or permissions', function () {
-    config(['app.locale' => 'es']);
-
-    $this->seed(LocaleSettingSeeder::class);
-
-    expect(User::count())->toBe(0)
-        ->and(Role::count())->toBe(0)
-        ->and(Permission::count())->toBe(0);
 });

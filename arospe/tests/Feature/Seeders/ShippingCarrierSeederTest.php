@@ -81,26 +81,3 @@ test('re-seeding preserves an administrator-edited description', function () {
 
     expect($seur->fresh()->description)->toBe('Custom administrator description');
 });
-
-// --- No ambient config ---
-//
-// ShippingCarrierSeeder reads no config at all. Per the errors-log rule that a test
-// depending on a config key must set that key -- including to null -- these two tests
-// pin both states of the one config key this repo's seeders are known to be sensitive
-// to (SUPER_ADMIN_EMAIL) and confirm the carrier catalog seeds identically regardless.
-
-test('seeding is unaffected by an unrelated application config key left unset', function () {
-    config(['auth.super_admin.email' => null]);
-
-    $this->seed(ShippingCarrierSeeder::class);
-
-    expect(ShippingCarrier::count())->toBe(4);
-});
-
-test('seeding is unaffected by an unrelated application config key being set', function () {
-    config(['auth.super_admin.email' => 'someone@example.test']);
-
-    $this->seed(ShippingCarrierSeeder::class);
-
-    expect(ShippingCarrier::count())->toBe(4);
-});

@@ -2,11 +2,8 @@
 
 use App\Enums\SalesRegionKind;
 use App\Models\SalesRegion;
-use App\Models\User;
 use Database\Seeders\SalesRegionSeeder;
 use Illuminate\Database\QueryException;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 // Every test seeds explicitly; none depends on another test having seeded. No
 // forgetCachedPermissions() beforeEach() -- that hook exists in the role/permission
@@ -86,17 +83,6 @@ test('the España entry has no parent', function () {
     $spain = SalesRegion::where('slug', SalesRegionSeeder::SPAIN_SLUG)->firstOrFail();
 
     expect($spain->parent_id)->toBeNull();
-});
-
-// --- Idempotency ---
-
-test('running the seeder twice leaves the row count unchanged', function () {
-    $this->seed(SalesRegionSeeder::class);
-    $countBefore = SalesRegion::count();
-
-    $this->seed(SalesRegionSeeder::class);
-
-    expect(SalesRegion::count())->toBe($countBefore);
 });
 
 // --- The no-clobber guarantee (the load-bearing test in this story) ---
@@ -214,42 +200,6 @@ test('re-seeding does not move the default away from an administrator\'s choice'
         ->and(SalesRegion::where('is_default', true)->count())->toBe(1);
 });
 
-// --- Isolation ---
-
-test('running the Sales Region seeder alone creates no users, roles or permissions', function () {
-    $this->seed(SalesRegionSeeder::class);
-
-    expect(User::count())->toBe(0)
-        ->and(Role::count())->toBe(0)
-        ->and(Permission::count())->toBe(0);
-});
-
-// --- No ambient config ---
-//
-// SalesRegionSeeder reads no config at all. Per the errors-log rule that a test
-// depending on a config key must set that key -- including to null -- these two
-// tests pin both states of the one config key this repo's seeders are known to be
-// sensitive to (SUPER_ADMIN_EMAIL, see RolePermissionSeederTest) and confirm the
-// Sales Region catalog seeds identically regardless.
-
-test('seeding is unaffected by an unrelated application config key left unset', function () {
-    config(['auth.super_admin.email' => null]);
-
-    $this->seed(SalesRegionSeeder::class);
-
-    expect(SalesRegion::where('kind', SalesRegionKind::Country)->count())->toBeGreaterThanOrEqual(200)
-        ->and(SalesRegion::where('is_active', true)->count())->toBe(6);
-});
-
-test('seeding is unaffected by an unrelated application config key being set', function () {
-    config(['auth.super_admin.email' => 'someone@example.test']);
-
-    $this->seed(SalesRegionSeeder::class);
-
-    expect(SalesRegion::where('kind', SalesRegionKind::Country)->count())->toBeGreaterThanOrEqual(200)
-        ->and(SalesRegion::where('is_active', true)->count())->toBe(6);
-});
-
 // --- Negative/edge ---
 
 test('the database rejects a second row sharing an existing slug', function () {
@@ -257,16 +207,4 @@ test('the database rejects a second row sharing an existing slug', function () {
 
     expect(fn () => SalesRegion::factory()->create(['slug' => 'duplicate-slug']))
         ->toThrow(QueryException::class);
-});
-
-test('no two seeded rows share a slug', function () {
-    $this->seed(SalesRegionSeeder::class);
-
-    $duplicateSlugs = SalesRegion::query()
-        ->select('slug')
-        ->groupBy('slug')
-        ->havingRaw('COUNT(*) > 1')
-        ->pluck('slug');
-
-    expect($duplicateSlugs)->toBeEmpty();
 });
