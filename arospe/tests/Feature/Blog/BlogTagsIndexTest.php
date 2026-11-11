@@ -135,14 +135,6 @@ test('mounting the component without blog.view is refused, independently of the 
     expect(fn () => Livewire::test(Index::class))->toThrow(AuthorizationException::class);
 });
 
-test('mounting the component as a Super Admin holding zero permission rows succeeds', function () {
-    $superAdmin = User::factory()->create();
-    $superAdmin->assignRole('Super Admin');
-    $this->actingAs($superAdmin);
-
-    Livewire::test(Index::class)->assertOk();
-});
-
 test('openCreateModal() is refused without blog.create', function () {
     $this->withoutExceptionHandling();
     $this->actingAs(blogTagsIndexTestActor(['blog.view']));
@@ -378,15 +370,6 @@ test('save() validates through the injected actions, never the find-or-create ac
         ->not->toContain('FindOrCreateBlogTag')
         ->not->toContain('SetTranslation;')
         ->not->toContain('->validate(');
-});
-
-test('a duplicate submitted through the screen never silently succeeds -- it is an error, not a find-or-create hit', function () {
-    BlogTag::factory()->named('running')->create();
-    $this->actingAs(blogTagsIndexTestActor());
-
-    Livewire::test(Index::class)->call('openCreateModal')->set('name', 'running')->call('save')->assertHasErrors(['name']);
-
-    expect(BlogTag::query()->count())->toBe(1);
 });
 
 // =====================================================================

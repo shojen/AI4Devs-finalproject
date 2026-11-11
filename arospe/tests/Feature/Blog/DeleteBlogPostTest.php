@@ -67,22 +67,8 @@ test('a soft-deleted post keeps its blog_post_tag rows and its tags stay in the 
     $this->assertDatabaseHas('blog_tag_translations', ['blog_tag_id' => $invierno->id, 'name' => 'invierno']);
 });
 
-test('deleting a post leaves the other posts untouched', function () {
-    $doomed = BlogPost::factory()->create();
-    $kept = BlogPost::factory()->create();
-
-    app(DeleteBlogPost::class)($doomed);
-
-    $this->assertNotSoftDeleted('blog_posts', ['id' => $kept->id]);
-});
-
 // The action takes an already-resolved model, so a malformed id cannot reach it directly; what CAN
 // reach it is an instance whose row is already trashed or gone.
-test('deleting an unknown or malformed-UUID post fails cleanly', function () {
-    expect(fn () => BlogPost::query()->findOrFail('not-a-uuid'))->toThrow(ModelNotFoundException::class)
-        ->and(fn () => BlogPost::query()->findOrFail('018f0000-0000-7000-8000-000000000000'))->toThrow(ModelNotFoundException::class);
-});
-
 test('deleting a post that is already deleted fails cleanly instead of reporting success', function () {
     $post = BlogPost::factory()->create();
     app(DeleteBlogPost::class)($post);

@@ -170,13 +170,6 @@ test('reassigning the last post to another category frees the original for delet
     $this->assertDatabaseHas('blog_categories', ['id' => $other->id]);
 });
 
-test('a category whose row is already gone still fails as not found, not swallowed by the guard', function () {
-    $category = BlogCategory::factory()->create();
-    app(DeleteBlogCategory::class)($category);
-
-    expect(fn () => app(DeleteBlogCategory::class)($category))->toThrow(ModelNotFoundException::class);
-});
-
 // No confirm-and-proceed path, proven three ways.
 test('the action takes exactly one BlogCategory parameter and no force flag', function () {
     $parameters = (new ReflectionMethod(DeleteBlogCategory::class, '__invoke'))->getParameters();

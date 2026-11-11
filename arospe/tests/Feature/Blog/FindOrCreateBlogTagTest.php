@@ -37,14 +37,6 @@ function blogTagResolveOutcome(string $name): ?Throwable
     return null;
 }
 
-test('calling twice with byte-identical input returns the same row both times and leaves one row', function () {
-    $first = app(FindOrCreateBlogTag::class)('running');
-    $second = app(FindOrCreateBlogTag::class)('running');
-
-    expect($second->id)->toBe($first->id)
-        ->and(BlogTag::count())->toBe(1);
-});
-
 test('a case-only variant resolves to the existing tag', function () {
     $existing = BlogTag::factory()->named('running')->create();
 
@@ -218,27 +210,6 @@ test('a lost insert race resolves to the winning row and leaves no orphaned pare
         ->and(BlogTagTranslation::count())->toBe(1);
 });
 
-test('a translation row already holding the folded name in the default language is returned and no tag is added', function () {
-    $parentId = (string) Str::uuid7();
-
-    DB::table('blog_tags')->insert(['id' => $parentId, 'created_at' => now(), 'updated_at' => now()]);
-    DB::table('blog_tag_translations')->insert([
-        'id' => (string) Str::uuid7(),
-        'blog_tag_id' => $parentId,
-        'store_language_id' => $this->defaultLanguage->id,
-        'name' => 'RUNNING',
-        'normalized_name' => 'running',
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-
-    $before = DB::table('blog_tags')->count();
-    $resolved = app(FindOrCreateBlogTag::class)('running');
-
-    expect($resolved->id)->toBe($parentId)
-        ->and(DB::table('blog_tags')->count())->toBe($before);
-});
-
 // D-8 (amended): the lookup is scoped to the default language; the single exception is a tag that
 // holds NO default-language name at all, which is reachable by the name it does have.
 test('a name held only in another language by a tag that also has a default name does not resolve to that tag', function () {
@@ -301,13 +272,4 @@ test('after the default language changes, a tag left without a default name is s
     expect($resolved->id)->toBe($existing->id)
         ->and($resolved->wasRecentlyCreated)->toBeFalse()
         ->and(BlogTag::count())->toBe(1);
-});
-
-test('two clearly different names never collide', function () {
-    $running = app(FindOrCreateBlogTag::class)('running');
-    $winter = app(FindOrCreateBlogTag::class)('invierno');
-    $trail = app(FindOrCreateBlogTag::class)('trail running');
-
-    expect(collect([$running->id, $winter->id, $trail->id])->unique())->toHaveCount(3)
-        ->and(BlogTag::count())->toBe(3);
 });

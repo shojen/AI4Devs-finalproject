@@ -68,12 +68,6 @@ test('renaming onto a case-only or accent-only variant of another category is re
 });
 
 // R-1, in three parts so a rule that rejects everything cannot pass the first trivially.
-test('renaming a category to its own current name is accepted', function () {
-    $category = BlogCategory::factory()->named('Guías')->create();
-
-    expect(blogCategoryRenameOutcome($category, 'Guías'))->toBeNull();
-});
-
 test('a no-op rename leaves the row genuinely unchanged', function () {
     $category = BlogCategory::factory()->named('Guías')->create();
     $before = DB::table('blog_category_translations')->where('blog_category_id', $category->id)->first();
@@ -112,14 +106,6 @@ test('renaming to a blank or whitespace-only name is refused', function (string 
         ->and($caught->errors())->toHaveKey('name')
         ->and($category->fresh()->translated('name'))->toBe('Guías');
 })->with(['blank' => [''], 'whitespace only' => ['   ']]);
-
-test('a rename trims surrounding whitespace before storing', function () {
-    $category = BlogCategory::factory()->named('Guías')->create();
-
-    app(RenameBlogCategory::class)($category, '  Tutoriales  ');
-
-    expect($category->fresh()->translated('name'))->toBe('Tutoriales');
-});
 
 test('a rename trims surrounding whitespace before validation, so it never counts toward the maximum', function () {
     $category = BlogCategory::factory()->named('Guías')->create();

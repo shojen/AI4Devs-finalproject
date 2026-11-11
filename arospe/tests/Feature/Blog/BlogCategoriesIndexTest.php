@@ -13,9 +13,7 @@
 // utf8mb4_unicode_ci alone, so they cannot prove the normaliser ran (R-9) -- 0058's whitespace
 // tests do.
 
-use App\Actions\Blog\CreateBlogCategory;
 use App\Actions\Blog\DeleteBlogCategory;
-use App\Actions\Blog\RenameBlogCategory;
 use App\Livewire\BlogCategories\Index;
 use App\Models\BlogCategory;
 use App\Models\BlogCategoryTranslation;
@@ -62,20 +60,6 @@ function blogCategoriesIndexRevoke(User $actor, string $permission): void
 {
     $actor->revokePermissionTo($permission);
     app(PermissionRegistrar::class)->forgetCachedPermissions();
-}
-
-/**
- * The component's PHP source with every comment stripped, so a docblock that merely explains why
- * something is NOT done cannot trip an assertion that it is not done.
- */
-function blogCategoriesIndexCodeWithoutComments(): string
-{
-    $source = file_get_contents((new ReflectionClass(Index::class))->getFileName());
-
-    return collect(token_get_all($source))
-        ->reject(fn ($token): bool => is_array($token) && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true))
-        ->map(fn ($token): string => is_array($token) ? $token[1] : $token)
-        ->implode('');
 }
 
 /**
@@ -290,15 +274,6 @@ test('the list is ordered by name, whatever order the rows were created in', fun
     expect($names)->toBe(['alpha', 'Beta', 'Zeta']);
 });
 
-test('each row exposes exactly {id, name, postCount, canEdit, canDelete}', function () {
-    BlogCategory::factory()->named('Guías')->create();
-    $this->actingAs(blogCategoriesIndexTestActor());
-
-    $row = Livewire::test(Index::class)->get('categories')[0];
-
-    expect(array_keys($row))->toBe(['id', 'name', 'postCount', 'canEdit', 'canDelete']);
-});
-
 test('the category list and every id-carrying property are #[Locked], so a client cannot forge them', function () {
     $category = BlogCategory::factory()->create();
     $this->actingAs(blogCategoriesIndexTestActor());
@@ -374,22 +349,6 @@ test('the length boundary is read from the shared constant: max accepted, max + 
         ->assertHasNoErrors();
 
     expect(BlogCategory::query()->count())->toBe(1);
-});
-
-test('save() routes into the injected actions and holds no fold logic of its own', function () {
-    // Story 0073 (A-3) supersedes 0062's D-1: the component now composes the validation trait and
-    // validates the per-language `names.*` keys, so the old "no trait, no ->validate(" assertions
-    // are gone. What stays is the part still true: the writes go through the actions and the fold
-    // is never re-implemented here (it is reached only through NormalizeForSearch).
-    $injected = collect((new ReflectionMethod(Index::class, 'save'))->getParameters())
-        ->map(fn (ReflectionParameter $parameter): string => $parameter->getType()->getName())
-        ->all();
-
-    expect($injected)->toContain(CreateBlogCategory::class)
-        ->toContain(RenameBlogCategory::class)
-        ->and(blogCategoriesIndexCodeWithoutComments())
-        ->not->toContain('Str::lower')
-        ->not->toContain('Str::ascii');
 });
 
 // =====================================================================

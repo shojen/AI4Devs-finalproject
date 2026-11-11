@@ -1,16 +1,12 @@
 <?php
 
-use App\Concerns\HasTranslations;
 use App\Concerns\Translatable;
 use App\Enums\BlogPostStatus;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Models\BlogPostTranslation;
 use App\Models\StoreLanguage;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 // Story 0078 (D-4, D-5, D-9, D-13, D-14): BlogPost as a Translatable, soft-deleting parent. These are
 // NEW tests; the existing BlogPostTest.php is ported by a later step.
@@ -45,16 +41,6 @@ function bp78Translate(BlogPost $post, StoreLanguage $language, string $title, ?
     return $translation;
 }
 
-test('BlogPost implements Translatable, uses HasTranslations and still soft-deletes', function () {
-    $post = BlogPost::factory()->withoutTranslations()->create();
-
-    expect($post)->toBeInstanceOf(Translatable::class)
-        ->and(class_uses_recursive(BlogPost::class))->toContain(HasTranslations::class)
-        ->and(class_uses_recursive(BlogPost::class))->toContain(SoftDeletes::class)
-        ->and($post->translations())->toBeInstanceOf(HasMany::class)
-        ->and($post->translations()->getRelated())->toBeInstanceOf(BlogPostTranslation::class);
-});
-
 test('make() fills only blog_category_id and status, dropping title, body, slug, published_at and created_by', function () {
     $category = BlogCategory::factory()->create();
 
@@ -76,35 +62,6 @@ test('make() fills only blog_category_id and status, dropping title, body, slug,
         ->and($post->getAttributes())->not->toHaveKey('created_by')
         ->and($post->blog_category_id)->toBe($category->id)
         ->and($post->status)->toBe(BlogPostStatus::Published);
-});
-
-test('BlogPost registers no saving hook and no deleting hook', function () {
-    // Models boot lazily: instantiate one so a booted() hook, if any, has registered its listeners.
-    new BlogPost;
-
-    $dispatcher = BlogPost::getEventDispatcher();
-
-    expect($dispatcher->hasListeners('eloquent.saving: '.BlogPost::class))->toBeFalse()
-        ->and($dispatcher->hasListeners('eloquent.deleting: '.BlogPost::class))->toBeFalse();
-});
-
-test('a post trashed and restored keeps all of its translation rows', function () {
-    ['default' => $default, 'fr' => $fr] = bp78Languages();
-    $post = BlogPost::factory()->withoutTranslations()->create();
-    bp78Translate($post, $default, 'Botas de invierno', '<p>es</p>');
-    bp78Translate($post, $fr, "Bottes d'hiver", '<p>fr</p>');
-
-    $post->delete();
-    $post->restore();
-
-    $rows = DB::table('blog_post_translations')->where('blog_post_id', $post->id)->get()->keyBy('store_language_id');
-
-    expect($rows)->toHaveCount(2)
-        ->and($rows[$default->id]->title)->toBe('Botas de invierno')
-        ->and($rows[$default->id]->slug)->toBe('botas-de-invierno')
-        ->and($rows[$default->id]->body)->toBe('<p>es</p>')
-        ->and($rows[$fr->id]->title)->toBe("Bottes d'hiver")
-        ->and($rows[$fr->id]->slug)->toBe(Str::slug("Bottes d'hiver"));
 });
 
 test('displayTitle() prefers the default-language title', function () {

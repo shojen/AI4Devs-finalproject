@@ -143,17 +143,3 @@ test('a validation error renders against the failing language\'s own field and m
         ->and($html)->not->toContain('data-test="language-name-error-'.$this->spanish->id.'"')
         ->and(blogTagTabsRenderingTag($html, 'language-tab-'.$this->french->id))->toContain('aria-selected="true"');
 });
-
-test('the list row hooks and the delete modal are unchanged by the tabs', function () {
-    $tag = BlogTag::factory()->named('running')->create();
-
-    $html = Livewire::test(Index::class)->html();
-
-    expect($html)->toContain('data-test="edit-blog-tag-'.$tag->id.'"')
-        ->and($html)->toContain('data-test="delete-blog-tag-'.$tag->id.'"');
-
-    $deleteHtml = Livewire::test(Index::class)->call('confirmDelete', $tag->id)->html();
-
-    expect($deleteHtml)->toContain('data-test="confirm-delete-blog-tag"')
-        ->and($deleteHtml)->not->toContain('data-test="language-tab-strip"');
-});

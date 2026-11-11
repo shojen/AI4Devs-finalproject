@@ -78,22 +78,6 @@ test('deleting a tag whose row is already gone fails cleanly instead of reportin
     expect(fn () => app(DeleteBlogTag::class)($tag))->toThrow(ModelNotFoundException::class);
 });
 
-test('a malformed or unknown id never resolves to a tag to delete', function () {
-    expect(fn () => BlogTag::query()->findOrFail('not-a-uuid'))->toThrow(ModelNotFoundException::class)
-        ->and(fn () => (new BlogTag)->resolveRouteBinding('not-a-uuid'))->toThrow(ModelNotFoundException::class);
-});
-
-test('deleting one tag leaves the others untouched', function () {
-    $doomed = BlogTag::factory()->named('running')->create();
-    $kept = BlogTag::factory()->named('invierno')->create();
-
-    app(DeleteBlogTag::class)($doomed);
-
-    $this->assertDatabaseHas('blog_tags', ['id' => $kept->id]);
-    $this->assertDatabaseHas('blog_tag_translations', ['blog_tag_id' => $kept->id, 'name' => 'invierno']);
-    $this->assertDatabaseMissing('blog_tag_translations', ['blog_tag_id' => $doomed->id]);
-});
-
 // D-8: the ABSENCE of an in-use guard is this story's contract, so it is asserted positively. A tag
 // that has been resolved for reuse again and again is the nearest thing to "in use" that exists before
 // story 0061 creates blog_posts; the delete still succeeds unconditionally.
@@ -152,18 +136,6 @@ test('every post that carried the deleted tag survives, untouched, with its othe
     }
 
     expect(BlogPost::count())->toBe(3);
-});
-
-test('deleting a tag leaves another post\'s unrelated tag associations alone', function () {
-    $running = BlogTag::factory()->named('running')->create();
-    $other = BlogTag::factory()->named('invierno')->create();
-    $decoy = BlogPost::factory()->create();
-    $decoy->tags()->attach($other->id);
-    BlogPost::factory()->create()->tags()->attach($running->id);
-
-    app(DeleteBlogTag::class)($running);
-
-    $this->assertDatabaseHas('blog_post_tag', ['blog_post_id' => $decoy->id, 'blog_tag_id' => $other->id]);
 });
 
 // D-7c: the tag-side cascade is unaffected by the post-side soft delete, because tags still

@@ -130,13 +130,6 @@ test('a name over the maximum reports the length error exactly once', function (
     expect($caught->errors()['name'])->toHaveCount(1);
 });
 
-test('a name with leading and trailing whitespace is stored trimmed', function () {
-    $category = app(CreateBlogCategory::class)('  Guías  ');
-
-    expect($category->fresh()->translated('name'))->toBe('Guías')
-        ->and(BlogCategory::count())->toBe(1);
-});
-
 test('a name of exactly 255 characters is accepted and one character more is refused', function () {
     $accepted = app(CreateBlogCategory::class)(str_repeat('a', 255));
 

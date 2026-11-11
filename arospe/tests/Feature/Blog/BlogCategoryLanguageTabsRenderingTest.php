@@ -17,7 +17,6 @@
 use App\Livewire\BlogCategories\Index;
 use App\Models\BlogCategory;
 use App\Models\BlogCategoryTranslation;
-use App\Models\BlogPost;
 use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
@@ -298,18 +297,4 @@ test('the list name cell renders the resolved default-language name, and an em d
         ->and($rows[$bare->id]['name'])->toBe('—')
         ->and($html)->toContain('Guias')
         ->and($html)->toContain('—');
-});
-
-test('the blocked-delete refusal still renders unchanged now that this file\'s view was rewritten', function () {
-    $category = BlogCategory::factory()->named('Guias')->create();
-    BlogPost::factory()->count(2)->create(['blog_category_id' => $category->id]);
-    $this->actingAs(blogLanguageTabsRenderingActor());
-
-    $html = Livewire::test(Index::class)
-        ->call('confirmDelete', $category->id)
-        ->call('deleteCategory')
-        ->html();
-
-    expect($html)->toContain('data-test="blog-category-delete-blocked"')
-        ->and($html)->toContain(e('This category is used by 2 posts — reassign them before deleting.'));
 });

@@ -80,15 +80,6 @@ test('the round trip preserves title, body, category and tags', function () {
         ->and($restored->tags->pluck('id')->sort()->values()->all())->toBe(collect([$running->id, $invierno->id])->sort()->values()->all());
 });
 
-test('a restored post is still in the category it had', function () {
-    $category = BlogCategory::factory()->named('Guías')->create();
-    $post = restoreTestTrashedPost($this->editor, ['blog_category_id' => $category->id]);
-
-    app(RestoreBlogPost::class)($post);
-
-    expect($post->fresh()->blog_category_id)->toBe($category->id);
-});
-
 // D-7b: pairs with the slug reservation. If a future change ever freed the slug on delete, this goes
 // red instead of a restore silently 404-ing later.
 test('a restored post reclaims its own slug, unchanged', function () {

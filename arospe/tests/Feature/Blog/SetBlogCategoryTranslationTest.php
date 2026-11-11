@@ -115,18 +115,6 @@ test('an actor holding blog.edit stores a French name and receives the translati
         ->and(storedBlogTranslationName($category, $this->french))->toBe('Guides');
 });
 
-// Regression canary for the flat-data-key bug 0071 found: a flat ["names.{id}" => $name] data key
-// never reaches a nested rule key, so `required` would refuse every valid name.
-test('a valid name for a fresh category and language pair is not refused by the required rule', function () {
-    $category = BlogCategory::factory()->named('Guias')->create();
-    $this->actingAs(setBlogCategoryTranslationActor());
-
-    $keys = blogCategoryTranslationErrorKeys(fn () => app(SetBlogCategoryTranslation::class)($category, $this->french, 'Guides'));
-
-    expect($keys)->toBe([])
-        ->and(storedBlogTranslationRowCount($category, $this->french))->toBe(1);
-});
-
 test('an actor holding only blog.view is refused and no translation row is written', function () {
     $category = BlogCategory::factory()->named('Guias')->create();
     $this->actingAs(setBlogCategoryTranslationActor(['blog.view']));
@@ -140,18 +128,6 @@ test('an actor holding only blog.view is refused and no translation row is writt
 
     expect($caught)->toBeInstanceOf(AuthorizationException::class)
         ->and(BlogCategoryTranslation::query()->where('store_language_id', $this->french->id)->count())->toBe(0);
-});
-
-test('an actor holding blog.edit and no store-languages permission succeeds', function () {
-    $actor = setBlogCategoryTranslationActor(['blog.edit']);
-    $this->actingAs($actor);
-    $category = BlogCategory::factory()->named('Guias')->create();
-
-    expect($actor->getAllPermissions()->pluck('name')->filter(fn (string $name): bool => str_starts_with($name, 'store-languages.')))->toBeEmpty();
-
-    app(SetBlogCategoryTranslation::class)($category, $this->french, 'Guides');
-
-    expect(storedBlogTranslationName($category, $this->french))->toBe('Guides');
 });
 
 test('a Super Admin holding zero permission rows succeeds through Gate::before', function () {

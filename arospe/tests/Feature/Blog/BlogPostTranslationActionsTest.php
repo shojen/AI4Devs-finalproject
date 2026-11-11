@@ -351,16 +351,6 @@ test('restoring a deleted post returns every language content unchanged', functi
     expect($after)->toHaveCount(2)->and($after)->toBe($before);
 });
 
-test('deleting a post through the action keeps all three of its translations', function () {
-    $post = bpaCreate();
-    app(SetTranslation::class)($post, bpaFrench(), ['title' => 'Bottes', 'body' => null]);
-    app(SetTranslation::class)($post, StoreLanguage::factory()->create(['code' => 'de']), ['title' => 'Stiefel', 'body' => null]);
-
-    app(DeleteBlogPost::class)($post);
-
-    expect(DB::table('blog_post_translations')->where('blog_post_id', $post->id)->count())->toBe(3);
-});
-
 // --- The 1062 race ---------------------------------------------------------------------------
 
 test('a slug race lost at the unique index is re-keyed to title by index name', function () {

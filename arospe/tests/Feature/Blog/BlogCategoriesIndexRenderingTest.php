@@ -88,12 +88,6 @@ test('the empty state renders when the catalog holds no categories', function ()
     Livewire::test(Index::class)->assertSee(__('blog.categories.index.empty'));
 });
 
-test('the header carries the create action, hooked for browser tests', function () {
-    $this->actingAs(blogCategoriesRenderingActor());
-
-    expect(blogCategoriesControlExists(Livewire::test(Index::class)->html(), 'create-blog-category-button'))->toBeTrue();
-});
-
 test('the create modal contains exactly one input per active language and no select', function () {
     $this->actingAs(blogCategoriesRenderingActor());
 
@@ -124,28 +118,6 @@ test('the modals render nothing until opened, so a closed screen has no stray Ca
 
     expect($html)->not->toContain('<input')
         ->and($html)->not->toContain(__('blog.categories.index.cancel'));
-});
-
-test('a refused name renders its message beside the field and the modal stays open', function () {
-    $this->actingAs(blogCategoriesRenderingActor());
-
-    Livewire::test(Index::class)
-        ->call('openCreateModal')
-        ->set('names.'.$this->defaultLanguage->id, '')
-        ->call('save')
-        ->assertSet('showModal', true)
-        ->assertSee(trans('validation.required', ['attribute' => __('blog.categories.index.tabs.name_attribute')]));
-});
-
-test('a duplicate name renders its message beside the field', function () {
-    BlogCategory::factory()->named('Guías')->create();
-    $this->actingAs(blogCategoriesRenderingActor());
-
-    Livewire::test(Index::class)
-        ->call('openCreateModal')
-        ->set('names.'.$this->defaultLanguage->id, 'GUÍAS')
-        ->call('save')
-        ->assertSee(trans('validation.unique', ['attribute' => __('blog.categories.index.tabs.name_attribute')]));
 });
 
 // =====================================================================

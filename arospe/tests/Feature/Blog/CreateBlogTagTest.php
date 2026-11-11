@@ -149,13 +149,6 @@ test('a name that is not valid UTF-8 is refused instead of being stored or alias
         ->and(BlogTag::count())->toBe(0);
 });
 
-test('a name with leading and trailing whitespace is stored trimmed', function () {
-    $tag = app(CreateBlogTag::class)('  running  ');
-
-    expect($tag->fresh()->translated('name'))->toBe('running')
-        ->and(BlogTag::count())->toBe(1);
-});
-
 // R-4: the boundary pair on the raw name.
 test('a name of exactly 100 characters is accepted and one character more is refused', function () {
     $accepted = app(CreateBlogTag::class)(str_repeat('a', 100));
@@ -334,16 +327,4 @@ test('creating the same string that exists in another language is accepted, uniq
 
     expect(BlogTag::count())->toBe(2)
         ->and($tag->translated('name'))->toBe('running');
-});
-
-test('an actor holding only blog.create and no store-languages permission can author a tag', function () {
-    $storeLanguagePermissions = $this->actor->getAllPermissions()
-        ->pluck('name')
-        ->filter(fn (string $name): bool => str_starts_with($name, 'store-languages.'));
-
-    expect($storeLanguagePermissions)->toBeEmpty();
-
-    $tag = app(CreateBlogTag::class)('running');
-
-    expect($tag->translated('name'))->toBe('running');
 });

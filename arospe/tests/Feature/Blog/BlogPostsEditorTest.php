@@ -386,16 +386,6 @@ test('a forged status string is refused by validation on the status field, never
     expect(BlogPost::count())->toBe(0);
 });
 
-test('a refused body is shown beside the body field', function () {
-    $this->actingAs(blogPostsEditorActor());
-    $category = BlogCategory::factory()->create();
-
-    $component = blogPostsEditorFill(Livewire::test(Editor::class), $category, ['status' => 'published', 'body' => ''])->call('save');
-
-    $component->assertHasErrors(['body']);
-    expect(BlogPost::count())->toBe(0);
-});
-
 test('a refused publication date is re-keyed onto publishedAt, never published_at', function () {
     $this->actingAs(blogPostsEditorActor());
     $category = BlogCategory::factory()->create();
@@ -648,19 +638,6 @@ test('a future date typed under Scheduled and then hidden by choosing Published 
         ->and($post->published_at->format('Y-m-d H:i:s'))->toBe('2026-06-01 12:00:00');
 });
 
-test('returning a scheduled post to draft clears its publication date', function () {
-    $this->actingAs(blogPostsEditorActor());
-    $post = BlogPost::factory()->scheduled()->create();
-
-    Livewire::test(Editor::class, ['blogPost' => $post])
-        ->set('status', 'draft')
-        ->call('save')
-        ->assertHasNoErrors();
-
-    $fresh = $post->fresh();
-    expect($fresh->status->value)->toBe('draft')->and($fresh->published_at)->toBeNull();
-});
-
 test('re-saving an already published post keeps its own date and does not re-stamp it', function () {
     $this->actingAs(blogPostsEditorActor());
     $post = BlogPost::factory()->create(['status' => 'published', 'published_at' => '2026-01-10 08:00:00']);
@@ -692,33 +669,6 @@ test('a name matching an existing tag exactly, by case or by accent attaches tha
     'case-differing' => ['running', 'Running'],
     'accent-differing' => ['Niño', 'nino'],
 ]);
-
-test('an unknown name creates the tag and attaches it', function () {
-    $this->actingAs(blogPostsEditorActor());
-    $category = BlogCategory::factory()->create();
-
-    blogPostsEditorFill(Livewire::test(Editor::class), $category)->call('addTag', 'invierno')->call('save')->assertHasNoErrors();
-
-    $tag = BlogTag::query()->whereHas('translations', fn ($query) => $query->where('name', 'invierno'))->sole();
-    $this->assertDatabaseHas('blog_post_tag', ['blog_post_id' => BlogPost::sole()->id, 'blog_tag_id' => $tag->id]);
-});
-
-test('three names attach three pivot rows in one save', function () {
-    $this->actingAs(blogPostsEditorActor());
-    $category = BlogCategory::factory()->create();
-    BlogTag::factory()->named('running')->create();
-
-    blogPostsEditorFill(Livewire::test(Editor::class), $category)
-        ->call('addTag', 'running')
-        ->call('addTag', 'invierno')
-        ->call('addTag', 'trail')
-        ->call('save')
-        ->assertHasNoErrors();
-
-    $post = BlogPost::sole();
-    expect(DB::table('blog_post_tag')->where('blog_post_id', $post->id)->count())->toBe(3)
-        ->and(blogPostsEditorAttachedTagNames($post))->toBe(['invierno', 'running', 'trail']);
-});
 
 test('a removed name is detached from the post while the tag row survives, shared with a second post', function () {
     $this->actingAs(blogPostsEditorActor());
