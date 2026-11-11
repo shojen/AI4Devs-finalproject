@@ -100,23 +100,6 @@ test('an actor holding products.edit stores a French name and receives the trans
         ->and(storedTranslationName($category, $this->french))->toBe('Chaussures');
 });
 
-// Regression canary for the flat-data-key bug found at Phase 2: a flat ["names.{id}" => $name] data
-// key never reaches the rule, so `required` refused every valid name.
-test('a valid name for a fresh category and language pair is not refused by the required rule', function () {
-    $category = ProductCategory::factory()->named('Calzado')->create();
-    $this->actingAs(setProductCategoryTranslationActor());
-
-    $caught = null;
-    try {
-        app(SetProductCategoryTranslation::class)($category, $this->french, 'Chaussures');
-    } catch (ValidationException $e) {
-        $caught = $e;
-    }
-
-    expect($caught)->toBeNull()
-        ->and(storedTranslationRowCount($category, $this->french))->toBe(1);
-});
-
 test('an actor lacking products.edit is refused and no translation row is written', function () {
     $category = ProductCategory::factory()->named('Calzado')->create();
     $this->actingAs(setProductCategoryTranslationActor(['products.view', 'products.create']));

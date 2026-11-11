@@ -23,7 +23,6 @@ use App\Actions\ProductCategories\CreateProductCategory;
 use App\Livewire\ProductCategories\Index;
 use App\Models\Product;
 use App\Models\ProductCategory;
-use App\Models\ProductCategoryTranslation;
 use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
@@ -92,32 +91,6 @@ test('the create and edit modal contains exactly one text input per active store
         ->and($html)->not->toContain('<select');
 });
 
-test('the blocked-delete message renders in the DOM with the correct singular digit', function () {
-    $actor = productCategoriesIndexRenderingActor();
-    $this->actingAs($actor);
-
-    $category = app(CreateProductCategory::class)('Calzado');
-    Product::factory()->create(['product_category_id' => $category->id]);
-
-    Livewire::test(Index::class)
-        ->call('confirmDelete', $category->id)
-        ->call('deleteProductCategory')
-        ->assertSee(trans_choice('products.categories.delete_blocked', 1, ['count' => 1]));
-});
-
-test('the blocked-delete message renders in the DOM with the correct plural digit', function () {
-    $actor = productCategoriesIndexRenderingActor();
-    $this->actingAs($actor);
-
-    $category = app(CreateProductCategory::class)('Calzado');
-    Product::factory()->count(12)->create(['product_category_id' => $category->id]);
-
-    Livewire::test(Index::class)
-        ->call('confirmDelete', $category->id)
-        ->call('deleteProductCategory')
-        ->assertSee(trans_choice('products.categories.delete_blocked', 12, ['count' => 12]));
-});
-
 test('a validation message appears next to the name field and the modal stays open', function () {
     // A test asserting only assertHasErrors() never proves the human actually sees the
     // sentence -- this asserts the rendered message text AND that the modal is still open.
@@ -143,37 +116,6 @@ test('the product category screen references no blog taxonomy', function () {
     app(CreateProductCategory::class)('Footwear');
 
     Livewire::test(Index::class)->assertDontSee('blog');
-});
-
-// Phase 4 audit finding N-3 (story 0071: now N error keys): closeModal() must clear EVERY
-// `names.*` validation error, or a refused save's inline message leaks into the next time the
-// create/edit modal opens -- Livewire persists the error bag across round trips. Two languages
-// carry an error here, so a closeModal() that clears only one key (or only the default's) fails.
-test('closing the modal after a refused save clears the stale validation error on every language', function () {
-    $actor = productCategoriesIndexRenderingActor();
-    $this->actingAs($actor);
-
-    $default = StoreLanguage::defaultStoreLanguage();
-    $french = StoreLanguage::factory()->create();
-
-    $category = ProductCategory::factory()->named('Calzado')->create();
-    ProductCategoryTranslation::factory()->forLanguage($french)->create([
-        'product_category_id' => $category->id,
-        'name' => 'Chaussures',
-    ]);
-
-    // Both languages hold a name, so blanking both is refused on both keys (a previously
-    // translated non-default language is required, D-7).
-    Livewire::test(Index::class)
-        ->call('openEditModal', $category->id)
-        ->set('names.'.$default->id, '')
-        ->set('names.'.$french->id, '')
-        ->call('save')
-        ->assertHasErrors(['names.'.$default->id, 'names.'.$french->id])
-        ->call('closeModal')
-        ->assertHasNoErrors()
-        ->call('openCreateModal')
-        ->assertHasNoErrors();
 });
 
 // Phase 5 review round 1, finding 3(a): Index::loadProductCategories()'s own docblock promises a

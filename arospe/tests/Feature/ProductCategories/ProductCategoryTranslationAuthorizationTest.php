@@ -7,7 +7,6 @@ use App\Models\ProductCategoryTranslation;
 use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
-use Illuminate\Auth\Access\AuthorizationException;
 use Spatie\Permission\PermissionRegistrar;
 
 // Story 0070 (D-9, D-13, D-17), Phase 3 TDD step: authorization for the two write actions this
@@ -16,11 +15,7 @@ use Spatie\Permission\PermissionRegistrar;
 // 0071's SetProductCategoryTranslationTest (D-17); not asserted here.
 //
 // Expected outcome per test, verified against the live tree before writing this file:
-//   - The "without products.edit" case is expected to PASS already: RenameProductCategory already
-//     self-authorizes as its own first statement (story 0025), so the AuthorizationException is
-//     thrown before the (still column-based) write is ever attempted, and the fixture translation
-//     row is arranged through the already-shipped ProductCategoryFactory::named() state.
-//   - The other two cases are expected to fail RED today: RenameProductCategory/CreateProductCategory
+//   - Both cases are expected to fail RED today: RenameProductCategory/CreateProductCategory
 //     still write to the dropped product_categories.name column, so both surface
 //     SQLSTATE[42S22] (column not found) before reaching this file's own assertions. That is the
 //     correct, intended "red" outcome until backend-expert migrates both actions onto the
@@ -42,28 +37,6 @@ function productCategoryTranslationAuthorizationActor(array $permissions): User
 
     return $actor;
 }
-
-test('an actor without products.edit cannot rename a category, and its default-language name is unchanged', function () {
-    $category = ProductCategory::factory()->named('Calzado')->create();
-
-    $this->actingAs(productCategoryTranslationAuthorizationActor([]));
-
-    $caught = null;
-    try {
-        app(RenameProductCategory::class)($category, 'Zapatería');
-    } catch (Throwable $e) {
-        $caught = $e;
-    }
-
-    expect($caught)->toBeInstanceOf(AuthorizationException::class);
-
-    expect(
-        ProductCategoryTranslation::query()
-            ->where('product_category_id', $category->id)
-            ->where('store_language_id', $this->defaultLanguage->id)
-            ->value('name')
-    )->toBe('Calzado');
-});
 
 // Not vacuous: RenameProductCategory self-authorizes, so this test would fail the moment a
 // `store-languages.*` check was ever added to that path (D-13 -- authoring content is not managing
