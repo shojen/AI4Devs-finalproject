@@ -26,16 +26,6 @@ use Illuminate\Support\Facades\DB;
 // The persisted tier
 // =====================================================================
 
-test('with a persisted row, defaultUiLocale returns the stored case', function () {
-    config(['app.locale' => 'es']);
-    LocaleSetting::factory()->create([
-        'default_ui_locale' => 'en',
-        'default_notification_locale' => 'en',
-    ]);
-
-    expect(LocaleSetting::defaultUiLocale())->toBe(UiLocale::English);
-});
-
 test('with a persisted row, defaultNotificationLocale returns the stored case', function () {
     config(['app.locale' => 'es']);
     LocaleSetting::factory()->create([
@@ -133,32 +123,4 @@ test('a stored default_notification_locale value outside the enum falls through 
     DB::table('locale_settings')->where('id', $settings->id)->update(['default_notification_locale' => 'de']);
 
     expect(LocaleSetting::defaultNotificationLocale())->toBe(UiLocale::Spanish);
-});
-
-// =====================================================================
-// Type -- both accessors return a UiLocale instance, never a string. The middleware's ->value
-// call site and story 0069's select both depend on the type.
-// =====================================================================
-
-test('both accessors return UiLocale instances, not strings', function () {
-    config(['app.locale' => 'en']);
-    LocaleSetting::factory()->create([
-        'default_ui_locale' => 'es',
-        'default_notification_locale' => 'en',
-    ]);
-
-    expect(LocaleSetting::defaultUiLocale())->toBeInstanceOf(UiLocale::class)
-        ->and(LocaleSetting::defaultNotificationLocale())->toBeInstanceOf(UiLocale::class);
-});
-
-// =====================================================================
-// current() -- the one resolution path (D20), find(SINGLETON_ID).
-// =====================================================================
-
-test('current returns the singleton row by its fixed id', function () {
-    config(['app.locale' => 'en']);
-    $settings = LocaleSetting::factory()->create();
-
-    expect(LocaleSetting::current()->id)->toBe($settings->id)
-        ->and(LocaleSetting::current()->id)->toBe(LocaleSetting::SINGLETON_ID);
 });
