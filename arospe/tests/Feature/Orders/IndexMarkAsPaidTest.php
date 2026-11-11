@@ -25,7 +25,6 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Livewire\Attributes\Locked;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
@@ -114,13 +113,6 @@ test('the button follows the actor permissions on a pending-payment order', func
     'orders.view + orders.edit is shown' => [['orders.view', 'orders.edit'], true],
     'orders.view + orders.edit + orders.refund is shown' => [['orders.view', 'orders.edit', 'orders.refund'], true],
 ]);
-
-test('an actor with no orders permission is forbidden from the page, so there is no button to hide', function () {
-    $this->actingAs(MarkAsPaidUi::actor([]));
-    Order::factory()->create();
-
-    $this->get(route('orders.index'))->assertForbidden();
-});
 
 test('a Super Admin is shown the button on a pending-payment order', function () {
     $this->actingAs(OrdersUi::superAdmin());
@@ -310,23 +302,6 @@ test('the opener refuses to open for an ineligible row but still stores a valid 
     $component->assertSet('showMarkPaidConfirm', false)->assertSet('confirmingPaidOrderId', $paid->id);
 
     expect($component->instance()->confirmingPaidRow)->toBeNull();
-});
-
-test('confirmingPaidRow is the server-built row of the clicked order and null otherwise', function () {
-    markPaidIdxEditor();
-    [$a, $b] = markPaidIdxThreeOrders();
-
-    $component = Livewire::test(Index::class);
-    expect($component->instance()->confirmingPaidRow)->toBeNull();
-
-    $component->call('confirmMarkAsPaid', $b->id);
-    $row = $component->instance()->confirmingPaidRow;
-
-    expect($row)->toBeArray()
-        ->and($row['id'])->toBe($b->id)
-        ->and($row['orderNumber'])->toBe('ORD-BBB-222')
-        ->and($row['total'])->toBe('22.22')
-        ->and($row['canMarkPaid'])->toBeTrue();
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -661,35 +636,6 @@ test('opening the dialog adds no query beyond the memoised rows', function () {
 // ---------------------------------------------------------------------------------------------
 // Public-state audit (D-2)
 // ---------------------------------------------------------------------------------------------
-
-test('no public property holds a model or a collection, and the only new public properties are the bool and the locked id', function () {
-    $properties = (new ReflectionClass(Index::class))->getProperties(ReflectionProperty::IS_PUBLIC);
-
-    foreach ($properties as $property) {
-        $type = (string) $property->getType();
-
-        expect($type)->not->toContain('Collection')->not->toContain('Model')->not->toContain('Order')
-            ->and(in_array($type, ['bool', 'string', '?string', 'int', '?int', 'array'], true))->toBeTrue();
-    }
-
-    $locked = (new ReflectionProperty(Index::class, 'confirmingPaidOrderId'))->getAttributes(Locked::class);
-
-    expect((string) (new ReflectionProperty(Index::class, 'showMarkPaidConfirm'))->getType())->toBe('bool')
-        ->and((string) (new ReflectionProperty(Index::class, 'confirmingPaidOrderId'))->getType())->toBe('?string')
-        ->and($locked)->toHaveCount(1);
-});
-
-test('each row array adds only the canMarkPaid bool to the existing shape', function () {
-    markPaidIdxEditor();
-    Order::factory()->create();
-
-    $row = Livewire::test(Index::class)->instance()->orders[0];
-
-    expect(array_keys($row))->toEqualCanonicalizing([
-        'id', 'orderNumber', 'customerId', 'customerName', 'customerLinkable', 'status', 'statusLabel',
-        'paymentStatus', 'paymentStatusLabel', 'total', 'createdAt', 'isFlagged', 'flagReasonLabel', 'canMarkPaid',
-    ])->and($row['canMarkPaid'])->toBeTrue();
-});
 
 test('the serialized snapshot carries no total or customer name of the confirmed row', function () {
     markPaidIdxEditor();

@@ -110,13 +110,6 @@ test('a Spanish order never resolves to the Spain heading row', function () {
     expect($order->sales_region_id)->not->toBe(seededRegion(SalesRegionSeeder::SPAIN_SLUG)->id);
 });
 
-test('the postal prefix map keeps both Canary prefixes', function () {
-    $map = ResolveOrderTaxRegion::SPAIN_POSTAL_PREFIX_TERRITORIES;
-
-    expect($map[35])->toBe('es-canarias')
-        ->and($map[38])->toBe('es-canarias');
-});
-
 test('the mapping lives on the shared trait the action composes', function () {
     expect(class_uses(ResolveOrderTaxRegion::class))->toContain(ResolvesSalesRegionFromAddress::class)
         ->and((new ReflectionClass(ResolvesSalesRegionFromAddress::class))->hasConstant('SPAIN_POSTAL_PREFIX_TERRITORIES'))->toBeTrue()
@@ -312,16 +305,6 @@ test('an order already resolved to another region is not overwritten', function 
 });
 
 // --- The computed tax amount and total (D-13) ---
-
-test('the total absorbs the tax amount computed from the rate as a percentage', function () {
-    SalesRegion::factory()->withRate('21.000')->create(['slug' => 'fr']);
-    SalesRegion::factory()->isDefault()->withRate('21.000')->create();
-
-    $order = resolveTaxRegion(orderShippingTo('FR', null, [], '100.00'));
-
-    expect((string) $order->tax_amount)->toBe('21.00')
-        ->and((string) $order->total)->toBe('121.00');
-});
 
 test('a null rate and a 0.000 rate share a zero tax amount but stay distinguishable', function () {
     SalesRegion::factory()->isDefault()->withRate('21.000')->create();

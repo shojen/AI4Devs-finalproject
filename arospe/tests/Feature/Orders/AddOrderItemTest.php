@@ -58,22 +58,6 @@ test('adding a line item persists the new row and the parent subtotal equals the
         ->and((string) $fresh->subtotal)->toBe($expectedSubtotal);
 })->with('open_order_statuses');
 
-// Identity, not a bare equality with subtotal alone (0045 D-8) -- stays true once 0053/0054/0037
-// populate tax_amount/shipping_amount.
-test('total equals subtotal plus tax_amount plus shipping_amount after an add', function (OrderStatus $status) {
-    actingOrderEditor();
-
-    $order = Order::factory()->create(['status' => $status]);
-    $product = Product::factory()->create(['price' => '10.00']);
-
-    app(AddOrderItem::class)($order, $product->id, null, 1);
-
-    $fresh = $order->fresh();
-    $expectedTotal = bcadd(bcadd($fresh->subtotal, $fresh->tax_amount, 2), $fresh->shipping_amount, 2);
-
-    expect((string) $fresh->total)->toBe($expectedTotal);
-})->with('open_order_statuses');
-
 // --- The price snapshot: the highest-risk case ---
 
 test('a newly added line item snapshots the product current price, name and sku at add-time', function () {

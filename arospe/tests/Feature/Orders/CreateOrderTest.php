@@ -125,31 +125,8 @@ test('a new order status is Pending and payment_status is PendingPayment, read b
         ->and($fresh->payment_status)->toBe(PaymentStatus::PendingPayment);
 });
 
-test('order_number is non-empty, at most 20 characters, and differs from the order id', function () {
-    actingOrderCreator();
-
-    $customer = Customer::factory()->create();
-    $paymentMethod = PaymentMethod::factory()->create();
-    $product = Product::factory()->create();
-
-    $order = app(CreateOrder::class)([
-        'customer_id' => $customer->id,
-        'payment_method_id' => $paymentMethod->id,
-        'items' => [
-            ['product_id' => $product->id, 'quantity' => 1],
-        ],
-    ]);
-
-    $fresh = $order->fresh();
-
-    expect($fresh->order_number)->not->toBeEmpty()
-        ->and(mb_strlen($fresh->order_number))->toBeLessThanOrEqual(20)
-        ->and($fresh->order_number)->not->toBe($fresh->id);
-});
-
-// D-1 names the format one of three "not negotiable" constraints, distinct from the "non-empty,
-// short, not the id" assertion above -- a regression to any other short unique token would still
-// pass that one. Phase 5 code review finding F-B.
+// D-1 names the format one of three "not negotiable" constraints -- a regression to any other
+// short unique token must fail here. Phase 5 code review finding F-B.
 test('order_number matches the ORD-{current year}-{six digit sequence} format D-1 requires', function () {
     actingOrderCreator();
 

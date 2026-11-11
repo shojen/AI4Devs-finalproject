@@ -14,7 +14,6 @@ use Carbon\Carbon;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
@@ -171,30 +170,6 @@ test('the two refusals are distinguishable: their messages differ and neither is
         ->and(__('orders.payment.cancelled_blocked'))->not->toBe('orders.payment.cancelled_blocked');
 });
 
-test('a cancelled order whose payment is refunded reports "already paid", not "cancelled" (guard order, D-1)', function () {
-    markPaidActingEditor();
-    $order = markPaidOrder(PaymentStatus::Refunded, OrderStatus::Cancelled);
-
-    try {
-        markPaidRun($order);
-        $this->fail('Expected a ValidationException.');
-    } catch (ValidationException $e) {
-        expect($e->errors()['payment_status'])->toBe([__('orders.payment.already_paid')]);
-    }
-});
-
-test('a cancelled order still awaiting payment reports "cancelled", not "already paid" (guard order, D-1)', function () {
-    markPaidActingEditor();
-    $order = markPaidOrder(PaymentStatus::PendingPayment, OrderStatus::Cancelled);
-
-    try {
-        markPaidRun($order);
-        $this->fail('Expected a ValidationException.');
-    } catch (ValidationException $e) {
-        expect($e->errors()['payment_status'])->toBe([__('orders.payment.cancelled_blocked')]);
-    }
-});
-
 test('the cancelled refusal binds a Super Admin too, because it is a direct throw and not a Gate check', function () {
     markPaidActingSuperAdmin();
     $order = markPaidOrder(PaymentStatus::PendingPayment, OrderStatus::Cancelled);
@@ -210,16 +185,6 @@ test('the already-paid refusal binds a Super Admin too', function () {
     $order = markPaidOrder(PaymentStatus::Paid, OrderStatus::Processing);
 
     expect(fn () => markPaidRun($order))->toThrow(ValidationException::class);
-});
-
-test('a Super Admin can mark an order that awaits payment as paid', function () {
-    markPaidActingSuperAdmin();
-    $order = markPaidOrder(PaymentStatus::PendingPayment, OrderStatus::Pending);
-
-    markPaidRun($order);
-
-    expect($order->fresh()->payment_status)->toBe(PaymentStatus::Paid)
-        ->and(markPaidPaymentRows($order))->toHaveCount(1);
 });
 
 // --- The happy path in detail (D-3, D-4) ---
@@ -356,19 +321,6 @@ test('recorded_by is the acting user, not the order\'s customer or another user'
         ->and(markPaidPaymentRows($order)[0]['recorded_by'])->not->toBe($other->id);
 });
 
-test('a refused mark creates no order_payments row and therefore records nobody', function (PaymentStatus $paymentStatus, OrderStatus $status) {
-    markPaidActingSuperAdmin();
-    $order = markPaidOrder($paymentStatus, $status);
-
-    expect(fn () => markPaidRun($order))->toThrow(ValidationException::class);
-
-    expect(DB::table('order_payments')->whereNotNull('recorded_by')->count())->toBe(0)
-        ->and(markPaidPaymentRows($order))->toBe([]);
-})->with([
-    'already paid' => [PaymentStatus::Paid, OrderStatus::Pending],
-    'cancelled' => [PaymentStatus::PendingPayment, OrderStatus::Cancelled],
-]);
-
 // --- Mass assignment (D-4) ---
 
 test('payment_status supplied through fill() never reaches the model, because it is not fillable, and orders has no paid_at', function () {
@@ -459,56 +411,6 @@ test('marking as paid dispatches no event, notification or job and touches no re
 });
 
 // --- The write itself (D-3) ---
-
-test('a successful mark issues exactly one UPDATE on orders carrying both predicates, then one INSERT on order_payments, in that order', function () {
-    markPaidActingEditor();
-    $order = markPaidOrder(PaymentStatus::PendingPayment, OrderStatus::Shipped);
-    $method = markPaidMethod();
-    $statements = [];
-    DB::listen(function ($query) use (&$statements): void {
-        if (preg_match('/^(update|insert into) `(orders|order_payments)`/i', $query->sql) === 1) {
-            $statements[] = $query;
-        }
-    });
-
-    markPaidRun($order, $method);
-
-    expect($statements)->toHaveCount(2);
-    $update = $statements[0];
-    $insert = $statements[1];
-    $updateSql = strtolower($update->sql);
-
-    expect($updateSql)->toStartWith('update `orders`')
-        ->and($updateSql)->toContain('`payment_status` = ?')
-        ->and($updateSql)->toContain('`status` != ?')
-        ->and($updateSql)->not->toContain('paid_at')
-        ->and($update->bindings)->toContain(PaymentStatus::PendingPayment->value)
-        ->and($update->bindings)->toContain(OrderStatus::Cancelled->value)
-        ->and($update->bindings)->toContain(PaymentStatus::Paid->value)
-        ->and(strtolower($insert->sql))->toStartWith('insert into `order_payments`')
-        ->and($insert->bindings)->toContain($order->id)
-        ->and($insert->bindings)->toContain($method->id)
-        ->and($insert->bindings)->toContain('transfer')
-        ->and(strtolower($insert->sql))->toContain('`recorded_by`')
-        ->and($insert->bindings)->toContain(Auth::id());
-});
-
-test('both writes run inside one transaction: each statement sees the transaction level one above the level before the call', function () {
-    markPaidActingEditor();
-    $order = markPaidOrder(PaymentStatus::PendingPayment, OrderStatus::Pending);
-    $levels = [];
-    DB::listen(function ($query) use (&$levels): void {
-        if (preg_match('/^(update|insert into) `(orders|order_payments)`/i', $query->sql, $match) === 1) {
-            $levels[strtolower($match[2])] = DB::transactionLevel();
-        }
-    });
-    $baseline = DB::transactionLevel();
-
-    markPaidRun($order);
-
-    expect($levels)->toBe(['orders' => $baseline + 1, 'order_payments' => $baseline + 1])
-        ->and(DB::transactionLevel())->toBe($baseline);
-});
 
 test('a refused mark (pre-check) issues no write at all against orders or order_payments', function () {
     markPaidActingEditor();

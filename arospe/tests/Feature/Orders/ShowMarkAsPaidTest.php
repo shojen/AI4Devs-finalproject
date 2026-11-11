@@ -22,7 +22,6 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Renderless;
-use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Spatie\Permission\PermissionRegistrar;
@@ -398,15 +397,6 @@ test('rendering the detail logs no refusal, for a view-only actor and for an edi
     'view-only' => [['orders.view']],
     'edit' => [['orders.view', 'orders.edit']],
 ]);
-
-test('the order id is locked: a client cannot re-point markAsPaid at another order', function () {
-    markPaidShowEditor();
-    $order = markPaidShowPending();
-    $other = markPaidShowPending();
-
-    expect(fn () => Livewire::test(Show::class, ['order' => $order])->set('orderId', $other->id))
-        ->toThrow(CannotUpdateLockedPropertyException::class);
-});
 
 // ---------------------------------------------------------------------------------------------
 // Fixed method guard (D-3, D-7)

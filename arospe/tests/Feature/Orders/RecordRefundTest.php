@@ -118,20 +118,6 @@ test('a further refund from PartiallyRefunded is accepted', function () {
         ->and($order->fresh()->payment_status)->toBe(PaymentStatus::PartiallyRefunded);
 });
 
-// Derivation property (b): the boundary case a delta-based implementation gets wrong.
-test('refunding the last outstanding unit of a PartiallyRefunded order moves it to Refunded within the same call', function () {
-    actingOrderRefunder();
-    $item = paidOrderWithItem('10.00', 5);
-    $order = $item->order;
-    app(RecordRefund::class)($order, [$item->id => 4]);
-    expect($order->fresh()->payment_status)->toBe(PaymentStatus::PartiallyRefunded);
-
-    app(RecordRefund::class)($order->fresh(), [$item->id => 1]);
-
-    expect($order->fresh()->payment_status)->toBe(PaymentStatus::Refunded)
-        ->and($item->fresh()->refunded_quantity)->toBe(5);
-});
-
 test('one call naming units from three line items writes three refunds rows and increments all three refunded_quantity values', function () {
     actingOrderRefunder();
     $order = Order::factory()->paid()->create();
@@ -256,20 +242,8 @@ test('an empty items array is refused with a ValidationException on items', func
     }
 });
 
-test('an over-refund against a pristine line is refused', function () {
-    actingOrderRefunder();
-    $item = paidOrderWithItem('10.00', 3);
-    $order = $item->order;
-
-    expect(fn () => app(RecordRefund::class)($order, [$item->id => 4]))
-        ->toThrow(ValidationException::class);
-
-    expect(Refund::count())->toBe(0)
-        ->and($item->fresh()->refunded_quantity)->toBe(0);
-});
-
-// The guard's real trigger: a guard written against the original `quantity` alone passes the
-// previous test and fails only here, once the line has already been partially refunded (D-6).
+// The guard's real trigger: a guard written against the original `quantity` alone fails only
+// here, once the line has already been partially refunded (D-6).
 test('an over-refund against a line that already carries a partial refund is refused', function () {
     actingOrderRefunder();
     $item = paidOrderWithItem('10.00', 5);

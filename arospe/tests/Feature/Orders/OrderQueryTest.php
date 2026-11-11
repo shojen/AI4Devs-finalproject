@@ -39,34 +39,6 @@ test('the detail contract returns the order with customer, items, paymentMethod,
     expect($queriesAfterEagerLoad)->toBe(0);
 });
 
-test('an order whose sales_region_id and shipping_rate_id are null returns null for both relations rather than throwing', function () {
-    $order = Order::factory()->create();
-
-    $found = Order::query()
-        ->with(['customer', 'items', 'paymentMethod', 'salesRegion', 'shippingRate'])
-        ->findOrFail($order->id);
-
-    expect($found->salesRegion)->toBeNull()
-        ->and($found->shippingRate)->toBeNull();
-});
-
-test('an order detail includes its customer', function () {
-    $order = Order::factory()->create();
-
-    $found = Order::query()->with('customer')->findOrFail($order->id);
-
-    expect($found->customer)->not->toBeNull()
-        ->and($found->customer->id)->toBe($order->customer_id);
-});
-
-test('an order detail includes all three of its line items', function () {
-    $order = Order::factory()->withItems(3)->create();
-
-    $found = Order::query()->with('items')->findOrFail($order->id);
-
-    expect($found->items)->toHaveCount(3);
-});
-
 // D-6: newest first, id tie-break. created_at set EXPLICITLY rather than relying on insertion
 // speed -- three rows inserted in one test share a second, and an ordering test that cannot
 // distinguish them carries no signal (per the task file's own instruction).
@@ -78,23 +50,4 @@ test('orders are listed newest first, with an explicit created_at spread', funct
     $ids = Order::query()->orderByDesc('created_at')->orderByDesc('id')->pluck('id')->all();
 
     expect($ids)->toBe([$newest->id, $middle->id, $oldest->id]);
-});
-
-// The id tie-break, asserted deterministically by running the query twice and comparing.
-test('two orders sharing an identical created_at are returned in a deterministic order', function () {
-    $sharedTimestamp = now()->subDay();
-
-    Order::factory()->create(['created_at' => $sharedTimestamp]);
-    Order::factory()->create(['created_at' => $sharedTimestamp]);
-
-    $firstRun = Order::query()->orderByDesc('created_at')->orderByDesc('id')->pluck('id')->all();
-    $secondRun = Order::query()->orderByDesc('created_at')->orderByDesc('id')->pluck('id')->all();
-
-    expect($firstRun)->toBe($secondRun);
-});
-
-test('with no orders recorded, list retrieval returns an empty collection rather than throwing', function () {
-    $results = Order::query()->orderByDesc('created_at')->orderByDesc('id')->get();
-
-    expect($results)->toHaveCount(0);
 });

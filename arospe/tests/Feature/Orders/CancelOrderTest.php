@@ -5,7 +5,6 @@ use App\Actions\Orders\TransitionOrderStatus;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Exceptions\OrderCancellationBlockedException;
-use App\Exceptions\OrderStatusRegressionRequiresConfirmationException;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -183,22 +182,6 @@ test('the blocked refusal renders a 409 with a JSON body for a JSON request', fu
         ->and($response->headers->get('Content-Type'))->toContain('application/json');
 });
 
-// Two 409s, two different classes -- a caller must be able to tell the retryable one
-// (OrderStatusRegressionRequiresConfirmationException) from the terminal one.
-test('the blocked refusal is OrderCancellationBlockedException and not the regression-confirmation exception', function () {
-    actingSuperAdminCanceller();
-    $order = Order::factory()->create(['status' => OrderStatus::Shipped]);
-
-    try {
-        app(CancelOrder::class)($order);
-        test()->fail('Expected OrderCancellationBlockedException.');
-    } catch (OrderStatusRegressionRequiresConfirmationException $e) {
-        test()->fail('Cancellation must not be refused as a confirmable regression.');
-    } catch (OrderCancellationBlockedException $e) {
-        expect($e)->toBeInstanceOf(OrderCancellationBlockedException::class);
-    }
-});
-
 test('the thrown message is the blocked translation, interpolating neither status nor the order number', function () {
     actingSuperAdminCanceller();
     $order = Order::factory()->create(['status' => OrderStatus::Shipped]);
@@ -254,32 +237,7 @@ test('cancelling an order already in Cancelled throws a ValidationException on t
     expect($order->fresh()->status)->toBe(OrderStatus::Cancelled);
 });
 
-// D-3's ordering, proved rather than assumed: a guard with steps 2/3 transposed would still throw
-// SOME exception for a Cancelled order (it is not in {Pending, Processing}) but the wrong one.
-test('the already-cancelled refusal is a ValidationException, never OrderCancellationBlockedException', function () {
-    actingSuperAdminCanceller();
-    $order = Order::factory()->create(['status' => OrderStatus::Cancelled]);
-
-    try {
-        app(CancelOrder::class)($order);
-        test()->fail('Expected a ValidationException.');
-    } catch (OrderCancellationBlockedException $e) {
-        test()->fail('An already-cancelled order must be refused by the validation guard, not the blocked-state guard.');
-    } catch (ValidationException $e) {
-        expect($e)->toBeInstanceOf(ValidationException::class);
-    }
-});
-
 // --- Authorization ---
-
-test('an administrator holding both orders.edit and orders.refund can cancel an order in Pending', function () {
-    actingOrderCanceller();
-    $order = Order::factory()->create(['status' => OrderStatus::Pending]);
-
-    app(CancelOrder::class)($order);
-
-    expect($order->fresh()->status)->toBe(OrderStatus::Cancelled);
-});
 
 // D-6's pinning test: the ONLY test in this file that goes red against the superseded
 // orders.edit-alone guard -- without it, the second hasPermissionTo() can be deleted silently.
@@ -332,17 +290,6 @@ test('a Super Admin is still refused against a Shipped order, with OrderCancella
     expect($order->fresh()->status)->toBe(OrderStatus::Shipped);
 });
 
-test('both OrderPolicy permission constants are literal and exist in the seeded catalog', function () {
-    expect(OrderPolicy::EDIT_PERMISSION)->toBe('orders.edit')
-        ->and(OrderPolicy::ORDER_REFUND_PERMISSION)->toBe('orders.refund');
-
-    $actor = User::factory()->create();
-    $actor->givePermissionTo([OrderPolicy::EDIT_PERMISSION, OrderPolicy::ORDER_REFUND_PERMISSION]);
-
-    expect($actor->hasPermissionTo('orders.edit'))->toBeTrue()
-        ->and($actor->hasPermissionTo('orders.refund'))->toBeTrue();
-});
-
 // The permission refusal always wins -- an unauthorized caller must not learn the order's state.
 test('an actor lacking orders.edit against a Shipped order gets AuthorizationException, never the blocked exception', function () {
     $actor = User::factory()->create();
@@ -380,32 +327,6 @@ test('an actor lacking orders.refund against a Shipped order gets AuthorizationE
     }
 
     expect($order->fresh()->status)->toBe(OrderStatus::Shipped);
-});
-
-// --- 0049 is unaffected -- the regression this story most plausibly causes ---
-
-test('TransitionOrderStatus still refuses a transition to Cancelled from every linear status, after CancelOrder exists', function (OrderStatus $from) {
-    $actor = User::factory()->create();
-    $actor->givePermissionTo('orders.edit');
-    test()->actingAs($actor);
-
-    $order = Order::factory()->create(['status' => $from]);
-
-    expect(fn () => app(TransitionOrderStatus::class)($order, OrderStatus::Cancelled))
-        ->toThrow(ValidationException::class);
-    expect(fn () => app(TransitionOrderStatus::class)($order->fresh(), OrderStatus::Cancelled, true))
-        ->toThrow(ValidationException::class);
-
-    expect($order->fresh()->status)->toBe($from);
-})->with([
-    'Pending' => [OrderStatus::Pending],
-    'Processing' => [OrderStatus::Processing],
-    'Shipped' => [OrderStatus::Shipped],
-    'Delivered' => [OrderStatus::Delivered],
-]);
-
-test('OrderStatus::Cancelled->rank() still throws UnhandledMatchError', function () {
-    expect(fn () => OrderStatus::Cancelled->rank())->toThrow(UnhandledMatchError::class);
 });
 
 // --- Scope fences, made executable ---

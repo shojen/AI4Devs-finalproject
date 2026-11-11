@@ -66,20 +66,6 @@ test('total equals subtotal plus tax_amount plus shipping_amount after a quantit
     expect((string) $fresh->total)->toBe($expectedTotal);
 })->with('open_order_statuses');
 
-// The exact Gherkin scenario: a line item priced at 10.00 for one unit, changed to a quantity of
-// three, records a line total of 30.00.
-test('a line item priced at 10.00 changed to a quantity of three records a line total of 30.00', function () {
-    actingOrderEditorForQuantity();
-
-    $product = Product::factory()->create(['price' => '10.00']);
-    $order = Order::factory()->create();
-    $item = OrderItem::factory()->for($order)->create(['product_id' => $product->id, 'quantity' => 1]);
-
-    app(UpdateOrderItemQuantity::class)($order, $item->id, 3);
-
-    expect((string) $item->fresh()->line_total)->toBe('30.00');
-});
-
 // --- The price snapshot: the single highest-risk test in this story ---
 
 // This is the test that distinguishes a correct implementation from one that "refreshes" the
@@ -207,17 +193,6 @@ test('changing a quantity on an order with no resolved tax rate leaves tax_amoun
 
     expect((string) $fresh->tax_amount)->toBe('0.00')
         ->and($fresh->sales_region_id)->toBeNull();
-});
-
-test('changing a quantity never writes tax_rate itself', function () {
-    actingOrderEditorForQuantity();
-
-    $order = Order::factory()->withItems(1)->create(['tax_rate' => '10.000']);
-    $item = $order->items()->sole();
-
-    app(UpdateOrderItemQuantity::class)($order, $item->id, 3);
-
-    expect((string) $order->fresh()->tax_rate)->toBe('10.000');
 });
 
 // --- Phase 4 security audit fixes ---

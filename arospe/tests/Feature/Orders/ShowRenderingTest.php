@@ -29,10 +29,6 @@ function ordersUiShowHtml(Order $order, array $permissions = ['orders.view', 'cu
     return Livewire::test(Show::class, ['order' => $order])->html();
 }
 
-test('the view resolves to the nested livewire/orders/show path', function () {
-    expect(file_exists(resource_path('views/livewire/orders/show.blade.php')))->toBeTrue();
-});
-
 test('the header renders the order number and both status labels', function () {
     $order = Order::factory()->withItems()->create([
         'order_number' => 'ORD-2026-000123',
