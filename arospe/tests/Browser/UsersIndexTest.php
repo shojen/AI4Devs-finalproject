@@ -369,10 +369,11 @@ test('a stale password confirmation on a role change redirects to reconfirm the 
         ->assertPathIs('/users')
         ->assertNoJavaScriptErrors();
 
-    // D4 (task file, Human decisions): the redirect leaves the modal, so the original
-    // in-flight role change is NOT retried automatically -- the administrator must
-    // resubmit. The round-trip above must therefore leave the target's role exactly as
-    // it was before the refused save, not silently apply it once confirmed.
+    // D4 (task file, Human decisions): the original in-flight role change is NOT retried
+    // automatically -- the administrator must resubmit (story 0097 only restores the form,
+    // see the create/edit restore tests below). The round-trip above must therefore leave
+    // the target's role exactly as it was before the refused save, not silently apply it
+    // once confirmed.
     expect($target->fresh()->hasRole('Viewer'))->toBeTrue()
         ->and($target->fresh()->hasRole('Editor'))->toBeFalse();
 });
@@ -480,4 +481,66 @@ test('the delete confirmation shows no re-confirmation notice when the password 
         ->assertNoJavaScriptErrors()
         ->assertMissing('@delete-modal-reconfirm-notice')
         ->assertNoJavaScriptErrors();
+});
+
+// Story 0097 -- the form survives the real redirect to the password confirmation screen and back:
+// Livewire::test() cannot prove the session value outlives a genuine browser navigation.
+test('creating an Administrator without a recent password confirmation restores the form after confirming, and saving then creates it', function () {
+    $superAdmin = User::factory()->create();
+    $superAdmin->assignRole('Super Admin');
+
+    $this->actingAs($superAdmin);
+
+    visit('/users')
+        ->assertNoJavaScriptErrors()
+        ->click('New user')
+        ->fill('name', 'Restored Administrator')
+        ->fill('email', 'restored.administrator@arospe.es')
+        ->select('roleId', 'Administrator')
+        ->select('status', 'Active')
+        ->click('Save')
+        ->assertPathIs('/user/confirm-password')
+        ->fill('password', 'password')
+        ->click('Confirm')
+        ->assertPathIs('/users')
+        ->assertNoJavaScriptErrors()
+        ->assertValue('name', 'Restored Administrator')
+        ->assertValue('email', 'restored.administrator@arospe.es')
+        ->click('Save')
+        ->assertNoJavaScriptErrors()
+        ->assertSee('Restored Administrator');
+
+    expect(User::where('email', 'restored.administrator@arospe.es')->first()?->hasRole('Administrator'))->toBeTrue();
+});
+
+test('editing another user without a recent password confirmation restores the edit form after confirming', function () {
+    $administrator = User::factory()->create();
+    $administrator->assignRole('Administrator');
+
+    $viewerRole = Role::create(['name' => 'Viewer', 'guard_name' => 'web']);
+    Role::create(['name' => 'Editor', 'guard_name' => 'web']);
+    $target = User::factory()->create(['name' => 'Diego Ferrer']);
+    $target->assignRole($viewerRole);
+
+    $this->actingAs($administrator);
+
+    visit('/users')
+        ->click('@edit-user-'.$target->id)
+        ->fill('name', 'Diego Restored')
+        ->select('roleId', 'Editor')
+        ->click('Save')
+        ->assertPathIs('/user/confirm-password')
+        ->fill('password', 'password')
+        ->click('Confirm')
+        ->assertPathIs('/users')
+        ->assertNoJavaScriptErrors()
+        ->assertValue('name', 'Diego Restored')
+        ->click('Save')
+        // Waits for the saved row to appear in the list, so the database is only read once
+        // the Livewire request has actually finished.
+        ->assertSee('Diego Restored')
+        ->assertNoJavaScriptErrors();
+
+    expect($target->fresh()->name)->toBe('Diego Restored')
+        ->and($target->fresh()->hasRole('Editor'))->toBeTrue();
 });
