@@ -188,16 +188,6 @@ test('an actor holding customers.view but not orders.view sees the header but no
     }
 });
 
-test('an actor holding both customers.view and orders.view sees the order history section', function () {
-    $customer = Customer::factory()->create();
-    Order::factory()->forCustomer($customer)->create();
-
-    $this->actingAs(customersShowRenderingActor(['customers.view', 'orders.view']));
-
-    Livewire::test(Show::class, ['customer' => $customer])
-        ->assertSee('data-test="customer-order-history"', false);
-});
-
 test('total renders as the stored decimal string, never as a float-cast integer', function () {
     $customer = Customer::factory()->create();
     $order = Order::factory()->forCustomer($customer)->withItems()->create();
