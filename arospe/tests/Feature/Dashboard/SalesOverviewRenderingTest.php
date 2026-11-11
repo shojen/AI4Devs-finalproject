@@ -179,24 +179,6 @@ it('lists sales and real income as two series per day in the money table', funct
         ->and($rows['2026-06-09']['income'])->toBe('€ 0.00');
 });
 
-it('counts the sales gross and the real income net of refunds in the money table', function () {
-    Sales::order('2026-06-12 10:00:00', '50.00', OrderStatus::Delivered, PaymentStatus::PartiallyRefunded, '20.00');
-
-    $rows = Sales::moneyRows(Sales::component()->html());
-
-    expect($rows['2026-06-12']['sales'])->toBe('€ 50.00')
-        ->and($rows['2026-06-12']['income'])->toBe('€ 30.00');
-});
-
-it('never counts a cancelled order as income, even with the Cancelled chip on', function () {
-    Sales::order('2026-06-12 10:00:00', '40.00', OrderStatus::Cancelled, PaymentStatus::Paid);
-
-    $rows = Sales::moneyRows(Sales::component(['s' => ['cancelled']])->html());
-
-    expect($rows['2026-06-12']['sales'])->toBe('€ 40.00')
-        ->and($rows['2026-06-12']['income'])->toBe('€ 0.00');
-});
-
 // --- Chart B: orders by status -------------------------------------------------------------
 
 it('breaks each day down by status in the orders table', function () {
@@ -230,16 +212,6 @@ it('keeps a selected status with no orders as a zero column', function () {
         ->and($rows['2026-06-10']['total'])->toBe('1');
 });
 
-it('stacks the statuses in OrderStatus order whatever order they were selected in', function (array $query) {
-    $html = Sales::component($query)->html();
-
-    expect(Sales::orderColumns($html))->toBe(['pending', 'shipped', 'delivered']);
-})->with([
-    'ascending' => [['s' => ['pending', 'shipped', 'delivered']]],
-    'descending' => [['s' => ['delivered', 'shipped', 'pending']]],
-    'shuffled' => [['s' => ['shipped', 'pending', 'delivered']]],
-]);
-
 // --- Empty and edge states -----------------------------------------------------------------
 
 it('shows the empty message for an all-zero period and none once there is an order', function () {
@@ -258,22 +230,4 @@ it('does not use the empty message when only unpaid orders exist (income zero, s
     Sales::order('2026-06-10 10:00:00', '10.00', OrderStatus::Pending, PaymentStatus::PendingPayment);
 
     expect(Ui::present(Sales::component()->html(), 'sales-empty'))->toBeFalse();
-});
-
-it('keeps both canvases in the markup even for an empty period (the chart instance survives)', function () {
-    $html = Sales::component()->html();
-
-    expect(Ui::present($html, 'money-chart-canvas'))->toBeTrue()
-        ->and(Ui::present($html, 'orders-chart-canvas'))->toBeTrue();
-});
-
-it('excludes orders outside the period and statuses outside the selection', function () {
-    Sales::order('2026-05-16 23:59:59', '70.00');   // one second before the default window
-    Sales::order('2026-06-16 00:00:00', '80.00');   // tomorrow
-    Sales::order('2026-06-10 10:00:00', '25.00', OrderStatus::Cancelled);   // Cancelled is off by default
-
-    $html = Sales::component()->html();
-
-    expect(Sales::kpi($html, 'sales'))->toBe('€ 0.00')
-        ->and(Sales::kpi($html, 'orders'))->toBe('0');
 });

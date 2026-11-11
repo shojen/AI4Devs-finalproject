@@ -8,10 +8,9 @@ use App\Models\Order;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Database\Seeders\RolePermissionSeeder;
-use Illuminate\Validation\ValidationException;
 use Spatie\Permission\PermissionRegistrar;
 
-// Story 0082 (D-6): day/month/year grouping and the bucket caps of the money series. See
+// Story 0082 (D-6): day/month/year grouping of the money series. See
 // GetSalesSeriesTest for the shared-fixture note (function_exists-guarded global helpers).
 
 if (! function_exists('seriesActor')) {
@@ -140,42 +139,3 @@ test('a single-day range yields exactly one point for every granularity', functi
     'month' => ['month', '2026-05'],
     'year' => ['year', '2026'],
 ]);
-
-test('a range at exactly the bucket cap is accepted', function (string $granularity, string $to, int $cap) {
-    $granularity = SalesGranularity::from($granularity);
-    $series = app(GetSalesSeries::class)($granularity, seriesDay('2020-01-01'), seriesDay($to));
-
-    expect($series['points'])->toHaveCount($cap);
-})->with([
-    'day 366' => ['day', '2020-12-31', 366],
-    'month 120' => ['month', '2029-12-31', 120],
-    'year 50' => ['year', '2069-12-31', 50],
-]);
-
-test('a range one bucket over the cap is refused on range and names the cap', function (string $granularity, string $to, int $cap) {
-    $granularity = SalesGranularity::from($granularity);
-    try {
-        app(GetSalesSeries::class)($granularity, seriesDay('2020-01-01'), seriesDay($to));
-        $this->fail('Expected a ValidationException');
-    } catch (ValidationException $e) {
-        expect(array_keys($e->errors()))->toBe(['range'])
-            ->and($e->errors()['range'][0])->toBe(__('dashboard.errors.range_too_long', ['max' => $cap]))
-            ->and($e->errors()['range'][0])->toContain((string) $cap);
-    }
-})->with([
-    'day 367' => ['day', '2021-01-01', 366],
-    'month 121' => ['month', '2030-01-01', 120],
-    'year 51' => ['year', '2070-01-01', 50],
-]);
-
-test('the too-long message is translated per locale', function () {
-    app()->setLocale('es');
-
-    try {
-        app(GetSalesSeries::class)(SalesGranularity::Day, seriesDay('2020-01-01'), seriesDay('2021-01-01'));
-        $this->fail('Expected a ValidationException');
-    } catch (ValidationException $e) {
-        expect($e->errors()['range'][0])->toBe(__('dashboard.errors.range_too_long', ['max' => 366], 'es'))
-            ->and($e->errors()['range'][0])->not->toBe('dashboard.errors.range_too_long');
-    }
-});

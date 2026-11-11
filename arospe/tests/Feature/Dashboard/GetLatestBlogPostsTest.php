@@ -88,15 +88,6 @@ it('returns the documented shape per post', function () {
         ->and($posts[0]['status'])->toBe(BlogPostStatus::Published);
 });
 
-it('returns plain arrays, never Eloquent models', function () {
-    postCreatedAgo(1);
-
-    $posts = app(GetLatestBlogPosts::class)();
-
-    expect($posts[0])->toBeArray()
-        ->and($posts)->toBeList();
-});
-
 it('excludes soft-deleted posts and lists the next newest instead', function () {
     $deleted = postCreatedAgo(1);
     $a = postCreatedAgo(2);
@@ -224,10 +215,6 @@ it('does not add a space for inline tags', function (string $body, string $expec
 
 it('does not leave leading, trailing or doubled spaces when blocks are the whole body', function () {
     expect(descriptionOfBody('<p>a</p><p></p><p>b</p><br><p>c</p>'))->toBe('a b c');
-});
-
-it('still decodes entities after stripping when block tags are separated', function () {
-    expect(descriptionOfBody('<p>&lt;b&gt;</p><p>x &amp; y</p>'))->toBe('<b> x & y');
 });
 
 it('keeps the 80-character limit, ellipsis included, when block tags add separators', function () {

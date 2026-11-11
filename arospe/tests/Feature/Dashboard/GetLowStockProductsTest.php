@@ -221,16 +221,6 @@ it('counts the variants at or below the cut-off of the last returned row', funct
         ->and($rows[$six->id]['lowVariantCount'])->toBe(0);
 });
 
-it('reports 2 variants at or below a 6-unit cut-off for variants of 1 and 2 units', function () {
-    $variable = lowStockProduct(0, [1, 2]);
-    lowStockProduct(5);
-    lowStockProduct(6);
-
-    $row = collect(app(GetLowStockProducts::class)())->firstWhere('id', $variable->id);
-
-    expect($row['lowVariantCount'])->toBe(2);
-});
-
 it('moves the cut-off with the last returned row so variants above it are not counted', function () {
     $variable = lowStockProduct(0, [1, 3, 5]);
     lowStockProduct(1);

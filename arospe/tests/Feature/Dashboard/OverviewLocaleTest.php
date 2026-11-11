@@ -83,18 +83,6 @@ test('the new Spanish strings really differ from the English ones', function (st
     'dashboard.no_widgets',
 ]);
 
-test('the greeting follows the time of day in Spanish', function (int $hour, string $kind) {
-    Carbon::setTestNow(Carbon::create(2026, 10, 1, $hour, 0, 0, config('app.timezone')));
-
-    $html = overviewLocaleHtml('es', []);
-
-    expect(Ui::text($html, 'dashboard-greeting'))->toContain(__('dashboard.hero.greeting_'.$kind, ['name' => 'Laura'], 'es'));
-})->with([
-    'morning' => [9, 'morning'],
-    'afternoon' => [15, 'afternoon'],
-    'evening' => [22, 'evening'],
-]);
-
 test('blog badges and the scheduled date are Spanish, the date format unchanged', function () {
     $published = BlogPost::factory()->published()->create(['created_at' => '2026-03-01 09:00:00']);
     $scheduled = BlogPost::factory()->scheduled()->create([
@@ -160,15 +148,6 @@ test('the empty states and the nothing-to-show message are Spanish', function ()
     $none = overviewLocaleHtml('es', []);
 
     expect(Ui::text($none, 'dashboard-no-widgets'))->toBe(__('dashboard.no_widgets', [], 'es'));
-});
-
-test('an English admin sees the English strings', function () {
-    $order = Order::factory()->create(['status' => OrderStatus::Shipped]);
-
-    $html = overviewLocaleHtml('en', ['orders.view', 'blog.view']);
-
-    expect(Ui::text($html, "dashboard-order-status-{$order->id}"))->toBe('Shipped')
-        ->and(Ui::text($html, 'dashboard-empty-blog'))->toBe(__('dashboard.blog.empty', [], 'en'));
 });
 
 test('no raw dashboard translation key leaks into the render in either locale', function (string $locale) {

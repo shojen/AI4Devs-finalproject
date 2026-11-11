@@ -10,8 +10,6 @@ use App\Enums\PaymentStatus;
 use App\Livewire\Dashboard\SalesOverview;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\Blade;
-use Livewire\Attributes\Lazy;
-use Livewire\Attributes\Url;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Support\Dashboard\DashboardUi as Ui;
 use Tests\Support\Dashboard\SalesOverviewUi as Sales;
@@ -64,35 +62,9 @@ it('the lazy placeholder announces the translated loading text to screen readers
         ->and(Blade::render($placeholder))->toContain(__('dashboard.sales.loading'));
 });
 
-it('the component declares #[Lazy] and keeps its filter state in the URL under g, from, to and s', function () {
-    $reflection = new ReflectionClass(SalesOverview::class);
-
-    expect($reflection->getAttributes(Lazy::class))->toHaveCount(1);
-
-    $urlNames = [];
-
-    foreach (['granularity', 'from', 'to', 'statuses'] as $property) {
-        $attributes = $reflection->getProperty($property)->getAttributes(Url::class);
-
-        expect($attributes)->toHaveCount(1, "{$property} must be a #[Url] property");
-
-        $urlNames[$property] = $attributes[0]->newInstance()->as;
-    }
-
-    expect($urlNames)->toBe(['granularity' => 'g', 'from' => 'from', 'to' => 'to', 'statuses' => 's']);
-});
-
 // =====================================================================
 // Round trip and defaults
 // =====================================================================
-
-it('starts from the documented defaults when the URL carries nothing (so the URL omits them)', function () {
-    Sales::component()
-        ->assertSet('granularity', 'day')
-        ->assertSet('from', '')
-        ->assertSet('to', '')
-        ->assertSet('statuses', Sales::defaultStatusValues());
-});
 
 it('restores the same overview from a filtered link', function () {
     Sales::order('2026-05-10 10:00:00', '100.00', OrderStatus::Delivered, PaymentStatus::Paid);

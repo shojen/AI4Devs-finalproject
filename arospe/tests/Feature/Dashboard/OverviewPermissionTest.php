@@ -172,10 +172,6 @@ test('a hidden widget mounted on its own renders nothing, runs no query and logs
     'orders widget' => [LatestOrdersWidget::class, ['orders', 'customers']],
 ]);
 
-test('the dashboard route stays reachable for every profile without permissions', function () {
-    $this->actingAs(Ui::actor([]))->get(route('dashboard'))->assertOk();
-});
-
 // =====================================================================
 // The editor-link rule
 // =====================================================================

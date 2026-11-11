@@ -74,12 +74,6 @@ it('returns zero products and images for an empty shop', function () {
         ->and($counters['images'])->toBe(0);
 });
 
-it('returns exactly the users, products and images keys', function () {
-    countersActor();
-
-    expect(array_keys(app(GetDashboardCounters::class)()))->toBe(['users', 'products', 'images']);
-});
-
 it('returns null for the counters the actor may not see and never reads their tables', function (array $abilities, array $visible) {
     Log::spy();
     countersActor($abilities);

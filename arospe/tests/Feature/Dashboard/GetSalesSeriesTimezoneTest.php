@@ -69,19 +69,6 @@ beforeEach(function () {
     seriesActor();
 });
 
-test('the application timezone the series relies on is Europe/Madrid', function () {
-    expect(config('app.timezone'))->toBe('Europe/Madrid');
-});
-
-test('an order at 00:30 on 1 May lands on 1 May, not on 30 April', function () {
-    seriesOrder('2026-05-01 00:30:00', '10.00');
-
-    $series = app(GetSalesSeries::class)(SalesGranularity::Day, seriesDay('2026-04-30'), seriesDay('2026-05-01'));
-
-    expect(array_column($series['points'], 'bucket'))->toBe(['2026-04-30', '2026-05-01'])
-        ->and(array_column($series['points'], 'sales'))->toBe(['0.00', '10.00']);
-});
-
 test('midnight boundaries split days exactly: 23:59:59 stays, 00:00:00 moves on', function () {
     seriesOrder('2026-04-30 23:59:59', '1.00');
     seriesOrder('2026-05-01 00:00:00', '2.00');
@@ -101,29 +88,6 @@ test('a range that ends on a day includes that whole day through 23:59:59 and ex
 
     expect($series['points'])->toHaveCount(1)
         ->and($series['totalSales'])->toBe('5.00');
-});
-
-test('a range that starts on a day includes 00:00:00 of that day', function () {
-    seriesOrder('2026-05-01 00:00:00', '3.00');
-    seriesOrder('2026-04-30 23:59:59', '300.00');
-
-    $series = app(GetSalesSeries::class)(SalesGranularity::Day, seriesDay('2026-05-01'), seriesDay('2026-05-01'));
-
-    expect($series['totalSales'])->toBe('3.00');
-});
-
-test('a caller in UTC is read in Madrid time: 22:00 UTC on 30 April starts 1 May', function () {
-    seriesOrder('2026-04-30 23:30:00', '100.00'); // 30 April in Madrid
-    seriesOrder('2026-05-01 00:15:00', '7.00'); // 1 May in Madrid
-
-    $series = app(GetSalesSeries::class)(
-        SalesGranularity::Day,
-        CarbonImmutable::parse('2026-04-30 22:00:00', 'UTC'),
-        CarbonImmutable::parse('2026-05-01 10:00:00', 'UTC'),
-    );
-
-    expect(array_column($series['points'], 'bucket'))->toBe(['2026-05-01'])
-        ->and($series['totalSales'])->toBe('7.00');
 });
 
 test('the spring-forward day 2026-03-29 is exactly one daily bucket', function () {

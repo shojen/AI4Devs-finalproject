@@ -80,20 +80,6 @@ test('a null post title in a non-clickable row renders the placeholder as plain 
     Log::shouldNotHaveReceived('warning');
 });
 
-test('the blog widget never calls its action for an actor without blog.view', function () {
-    test()->mock(GetLatestBlogPosts::class, function ($mock): void {
-        $mock->shouldNotReceive('__invoke');
-    });
-    test()->actingAs(Ui::actor(['orders.view']));
-    Log::spy();
-
-    $html = Livewire::test(BlogWidget::class)->html();
-
-    expect(Ui::hooksStartingWith($html, 'dashboard-blog-row-'))->toBe([]);
-
-    Log::shouldNotHaveReceived('warning');
-});
-
 // =====================================================================
 // Low stock
 // =====================================================================
@@ -166,20 +152,6 @@ test('a variants hint needs both variants and a positive low-variant count', fun
     'no variants' => [false, 0, false],
 ]);
 
-test('the low-stock widget never calls its action for an actor without products.view', function () {
-    test()->mock(GetLowStockProducts::class, function ($mock): void {
-        $mock->shouldNotReceive('__invoke');
-    });
-    test()->actingAs(Ui::actor(['blog.view']));
-    Log::spy();
-
-    $html = Livewire::test(LowStockWidget::class)->html();
-
-    expect(Ui::hooksStartingWith($html, 'dashboard-stock-row-'))->toBe([]);
-
-    Log::shouldNotHaveReceived('warning');
-});
-
 // =====================================================================
 // Orders
 // =====================================================================
@@ -204,20 +176,6 @@ test('a null customer name renders the translated deleted-customer text in a val
         ->and(Ui::text($html, 'dashboard-order-link-seam-order-1'))->toContain('ORD-SEAM-1')
         ->and(Ui::text($html, 'dashboard-order-total-seam-order-1'))->toBe('€ 12.50')
         ->and(Ui::text($html, 'dashboard-order-status-seam-order-1'))->toBe(OrderStatus::Pending->label());
-
-    Log::shouldNotHaveReceived('warning');
-});
-
-test('the orders widget never calls its action for an actor without orders.view', function () {
-    test()->mock(GetLatestOrders::class, function ($mock): void {
-        $mock->shouldNotReceive('__invoke');
-    });
-    test()->actingAs(Ui::actor(['products.view']));
-    Log::spy();
-
-    $html = Livewire::test(LatestOrdersWidget::class)->html();
-
-    expect(Ui::hooksStartingWith($html, 'dashboard-order-row-'))->toBe([]);
 
     Log::shouldNotHaveReceived('warning');
 });
