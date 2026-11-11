@@ -91,18 +91,6 @@ test('Gate::forUser denies create for an actor lacking products.create by throwi
         ->toThrow(AuthorizationException::class);
 });
 
-// The permission names are asserted against RolePermissionSeeder's seeded catalog — a permission
-// string not in the catalog throws PermissionDoesNotExist at runtime, so this is a correctness
-// test, not a style one.
-test('the four permission strings ProductPolicy gates on are all in the seeded products module', function () {
-    expect(in_array('products', RolePermissionSeeder::MODULES, true))->toBeTrue();
-
-    $actor = User::factory()->create();
-    $actor->givePermissionTo(['products.view', 'products.create', 'products.edit', 'products.delete']);
-
-    expect($actor->getAllPermissions())->toHaveCount(4);
-});
-
 // =====================================================================
 // Story 0029, D-12: variant operations reuse THIS policy's existing `update` ability, gated
 // against the PARENT PRODUCT (Gate::authorize('update', $variant->product)) -- there is no

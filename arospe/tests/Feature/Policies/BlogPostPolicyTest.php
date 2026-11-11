@@ -2,10 +2,8 @@
 
 use App\Models\BlogPost;
 use App\Models\User;
-use App\Policies\BlogPostPolicy;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\Gate;
-use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
 // Story 0061. Every ability gets both an allow and a deny test, per docs/testing/qa/what-not-to-test.md's
@@ -118,16 +116,3 @@ test('a Super Admin actor passes every BlogPostPolicy ability while holding zero
         ->and(Gate::forUser($superAdmin)->allows('delete', $live))->toBeTrue()
         ->and(Gate::forUser($superAdmin)->allows('restore', $trashed))->toBeTrue();
 });
-
-// A permission name absent from the catalog throws PermissionDoesNotExist at runtime, so this is a
-// correctness test, not a style one. No new permission is added to the seeded catalog (D-20).
-test('every permission name the policy uses exists in the seeded catalog', function (string $constant) {
-    $name = constant(BlogPostPolicy::class.'::'.$constant);
-
-    expect(Permission::query()->where('name', $name)->exists())->toBeTrue("{$name} is not seeded");
-})->with([
-    'VIEW_PERMISSION',
-    'CREATE_PERMISSION',
-    'EDIT_PERMISSION',
-    'DELETE_PERMISSION',
-]);

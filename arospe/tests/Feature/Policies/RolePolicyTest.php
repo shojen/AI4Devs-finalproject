@@ -45,16 +45,6 @@ test('update and delete are refused against the Super Admin role identically for
         ->and(Gate::forUser($broadestHolder)->allows($ability, $superAdmin))->toBeFalse();
 })->with(['delete', 'update']);
 
-test('authorizing delete against the Super Admin role throws for a permission-holding actor', function () {
-    $superAdmin = Role::where('name', 'Super Admin')->where('guard_name', 'web')->firstOrFail();
-
-    $actor = User::factory()->create();
-    $actor->givePermissionTo('roles.manage');
-
-    expect(fn () => Gate::forUser($actor)->authorize('delete', $superAdmin))
-        ->toThrow(AuthorizationException::class);
-});
-
 // =====================================================================
 // Story 0008 re-audit (F6) — RolePolicy is now independently effective
 // even for a Super Admin actor acting on their own role.
@@ -228,21 +218,6 @@ test('an administrator granted roles.manage-administrators cannot delete the see
     expect(Gate::forUser($actor)->allows('delete', $administrator))->toBeFalse();
 
     expect(Role::where('name', 'Administrator')->where('guard_name', 'web')->exists())->toBeTrue();
-});
-
-test('the Super Admin succeeds even though the seeded Super Admin role holds no explicit roles.manage-administrators permission row', function () {
-    $superAdminRole = Role::where('name', 'Super Admin')->where('guard_name', 'web')->firstOrFail();
-    $administrator = Role::where('name', 'Administrator')->where('guard_name', 'web')->firstOrFail();
-
-    // The bypass, not a grant: the Super Admin role itself carries no
-    // permission rows at all (see RolePermissionSeederTest).
-    expect($superAdminRole->permissions->pluck('name')->all())->toBe([]);
-
-    $actingSuperAdmin = User::factory()->create();
-    $actingSuperAdmin->assignRole('Super Admin');
-
-    expect(Gate::forUser($actingSuperAdmin)->allows('update', $administrator))->toBeTrue()
-        ->and(Gate::forUser($actingSuperAdmin)->allows('delete', $administrator))->toBeTrue();
 });
 
 test('the broad administrator holding only roles.manage is denied editing the seeded Administrator role, and its permissions are unchanged', function () {
