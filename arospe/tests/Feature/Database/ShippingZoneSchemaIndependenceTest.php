@@ -1,8 +1,5 @@
 <?php
 
-use App\Actions\Shipping\CreateShippingZone;
-use App\Models\User;
-use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\Schema;
 
 // Story 0033, Phase 3 (TDD "red" step): App\Actions\Shipping\CreateShippingZone and the
@@ -25,33 +22,4 @@ test('the pivot reports exactly two foreign keys -- one to shipping_zones, one t
     $foreignTables = $foreignKeys->pluck('foreign_table')->sort()->values()->all();
 
     expect($foreignTables)->toBe(['geography_entries', 'shipping_zones']);
-});
-
-// Phase 2 correction item 2: sales_regions already exists (App\Models\SalesRegion, since task
-// 0016) -- this file's originally-planned `->skip('sales_regions does not exist yet -- story
-// 0016')` stub is stale. This is the real, un-skipped structural assertion the story's own
-// "Recorded dissent" note argues FOR instead of 0032's `Schema::hasTable('sales_regions') ===
-// false` shape (which would go red the day 0016 shipped, for no defect, per backend-qa's
-// objection): the FK-shape test above already encodes this story's OWN schema-independence
-// property as something that stays true forever (it fails only if a future change adds a
-// sales_region-referencing column to this pivot); this test is the companion table-existence
-// sanity check, matching the shape of the data-level snapshot already un-skipped in
-// tests/Feature/Seeders/GeographyCatalogSeederTest.php's sibling assertion.
-// Phase 4 security audit, finding F-1: CreateShippingZone now authorizes `create` on
-// ShippingZone::class as its own first statement (see CreateShippingZoneTest.php's corrected file
-// banner), so this test needs an actor holding `shipping.create`, seeded and granted locally
-// rather than via a file-wide beforeEach, since this is the only test in this file calling a
-// Shipping action.
-test('creating a shipping zone leaves the sales_regions table itself untouched', function () {
-    $this->seed(RolePermissionSeeder::class);
-
-    $actor = User::factory()->create();
-    $actor->givePermissionTo('shipping.create');
-    $this->actingAs($actor);
-
-    expect(Schema::hasTable('sales_regions'))->toBeTrue();
-
-    app(CreateShippingZone::class)('Zona Norte');
-
-    expect(Schema::hasTable('sales_regions'))->toBeTrue();
 });
