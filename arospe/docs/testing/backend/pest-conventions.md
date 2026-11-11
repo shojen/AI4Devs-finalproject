@@ -4,7 +4,7 @@ For how to create a test file (`php artisan make:test --pest`) and basic `test()
 
 ## `test()` vs. `it()`
 
-Every existing test in this repo uses `test('description', ...)`, not `it('should...', ...)` — see [`tests/Feature/DashboardTest.php`](../../../tests/Feature/DashboardTest.php) and [`tests/Unit/ExampleTest.php`](../../../tests/Unit/ExampleTest.php). Match that: use `test('<behavior in plain English>', function () { ... })` for new tests in this codebase, not `it()`. (If a future file already uses `it()` locally, match that file instead — consistency within a file beats a repo-wide rule.)
+Every existing test in this repo uses `test('description', ...)`, not `it('should...', ...)` — see [`tests/Feature/DashboardTest.php`](../../../tests/Feature/DashboardTest.php) and [`tests/Unit/Enums/ProductTypeTest.php`](../../../tests/Unit/Enums/ProductTypeTest.php). Match that: use `test('<behavior in plain English>', function () { ... })` for new tests in this codebase, not `it()`. (If a future file already uses `it()` locally, match that file instead — consistency within a file beats a repo-wide rule.)
 
 ```php
 // ✅ Matches this repo's convention
@@ -55,4 +55,4 @@ Per the existing [pest-testing skill](../../../.claude/skills/pest-testing/SKILL
 
 **`toHaveKey()`'s second argument is the expected value, not a failure message.** `expect($array)->toHaveKey('id', 'why it failed')` asserts that `$array['id'] === 'why it failed'`; a descriptive string there makes a correct test fail (or a wrong one pass vacuously on a missing-value check). Pass only the key to assert presence, or the real expected value to assert content.
 
-_Last updated: 2026-10-01 — Story 0083: added the `toHaveKey()` second-argument rule._
+_Last updated: 2026-11-11 — Test-suite overtesting cleanup: the `test()` example points at `tests/Unit/Enums/ProductTypeTest.php`, since `tests/Unit/ExampleTest.php` was deleted._

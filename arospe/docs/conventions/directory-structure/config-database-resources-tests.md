@@ -88,19 +88,16 @@ tests/
                         tests — plus Actions/Auth/, Actions/Media/, Actions/Products/ (story 0029's
                         HashVariantCombinationTest.php/DeriveVariantSkuTest.php, unit-testing the two
                         pure-function collaborators directly rather than only through the actions
-                        that inject them), Concerns/ (story 0023's
-                        BlogCategoryValidationRulesTest.php (story 0058), BlogTagValidationRulesTest.php (story 0059), BlogPostValidationRulesTest.php (story 0061), ProductCategoryValidationRulesTest.php, the first trait-level unit test in
-                        this folder, joined by story 0024's ProductValidationRulesTest.php and
-                        story 0038's PaymentMethodValidationRulesTest.php, which drives the real
-                        Iban rule through ibanRules() rather than re-deriving mod-97 as abstract
-                        math),
+                        that inject them), Concerns/ (trait-level unit tests: story 0024's
+                        ProductValidationRulesTest.php, story 0061's
+                        BlogPostValidationRulesTest.php and story 0038's
+                        PaymentMethodValidationRulesTest.php, which drives the real Iban rule
+                        through ibanRules() rather than re-deriving mod-97 as abstract math),
                         Enums/ (ProductStatusTest.php / ProductTypeTest.php since story 0024;
                         PaymentMethodCodeTest.php since story 0038),
                         Exceptions/, Listeners/, Models/, Seeders/ (story 0032's
                         GeographyCatalogSeederParsingTest.php — the CSV-parsing generator exercised
-                        via reflection, no database — and GeographyFixtureIntegrityTest.php, which
-                        parses the real bundled fixtures directly, its own file so a fast run can
-                        exclude it), plus ArchitectureTest.php
+                        via reflection, no database), plus ArchitectureTest.php
   Support/              Test-only support code, not app code (story 0022, the suite's first use of
                         this base folder) — Livewire/ArrayMultiSelectOptionsResolver.php,
                         a conforming MultiSelectOptionsResolver double three later stories (0026,
