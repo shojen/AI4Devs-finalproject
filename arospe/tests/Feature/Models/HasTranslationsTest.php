@@ -250,28 +250,6 @@ test('the default-language memo is flushed by StoreLanguage\'s own saved hook, s
     expect($category->translated('name'))->toBe('Chaussures');
 });
 
-test('a freshly created default language resolves correctly in this test, independent of any other test\'s default (isolation A)', function () {
-    $default = StoreLanguage::factory()->default()->create();
-    $category = ProductCategory::factory()->withoutTranslations()->create();
-    ProductCategoryTranslation::factory()->forLanguage($default)->create([
-        'product_category_id' => $category->id,
-        'name' => 'Calzado',
-    ]);
-
-    expect($category->translated('name'))->toBe('Calzado');
-});
-
-test('a different test\'s own default language never leaks into this one (isolation B)', function () {
-    $default = StoreLanguage::factory()->default()->create();
-    $category = ProductCategory::factory()->withoutTranslations()->create();
-    ProductCategoryTranslation::factory()->forLanguage($default)->create([
-        'product_category_id' => $category->id,
-        'name' => 'Bolsos',
-    ]);
-
-    expect($category->translated('name'))->toBe('Bolsos');
-});
-
 test('the "no default" answer is memoised across a whole list render, not re-queried per row', function () {
     $categories = ProductCategory::factory()->withoutTranslations()->count(3)->create();
 

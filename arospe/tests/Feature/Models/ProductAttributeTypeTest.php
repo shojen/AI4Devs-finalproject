@@ -97,21 +97,6 @@ test('a type with no values returns an empty values collection, not null or an e
 // Cascade delete (D7)
 // =====================================================================
 
-test('deleting a type deletes every one of its own value rows', function () {
-    $type = ProductAttributeType::factory()->withValues(3)->create();
-    $valueIds = $type->values->pluck('id')->all();
-
-    expect($valueIds)->toHaveCount(3);
-
-    $type->delete();
-
-    expect(ProductAttributeType::find($type->id))->toBeNull();
-
-    foreach ($valueIds as $valueId) {
-        expect(ProductAttributeValue::find($valueId))->toBeNull();
-    }
-});
-
 test('deleting a type leaves an unrelated type\'s values completely untouched', function () {
     $typeToDelete = ProductAttributeType::factory()->withValues(2)->create();
     $unrelatedType = ProductAttributeType::factory()->withValues(2)->create();

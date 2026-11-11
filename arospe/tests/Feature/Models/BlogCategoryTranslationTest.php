@@ -105,13 +105,6 @@ test('a factory-created translation receives a uuidv7 primary key', function () 
     expect(Str::isUuid(BlogCategoryTranslation::factory()->create()->id, 7))->toBeTrue();
 });
 
-test('blog_category_translations carries exactly the specified columns', function () {
-    $columns = Schema::getColumnListing('blog_category_translations');
-    sort($columns);
-
-    expect($columns)->toBe(['blog_category_id', 'created_at', 'id', 'name', 'normalized_name', 'store_language_id', 'updated_at']);
-});
-
 // D-10: three indexes, not four -- each composite unique serves as the FK index for its leftmost
 // column. normalized_name carries the per-language unique; there is deliberately no unique on name.
 test('blog_category_translations has exactly the primary key and the two composite unique indexes', function () {

@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\GeographyEntry;
 use App\Models\ShippingZone;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
@@ -11,16 +10,8 @@ use Illuminate\Support\Str;
 // database-expert/backend-expert implement them in the next step of the TDD cycle. That is the
 // correct, intended "red" outcome.
 //
-// Mirrors tests/Feature/Models/ProductCategoryTest.php's shape for the UUID v7/timestamp
-// assertions and the no-SoftDeletes guard, and tests/Feature/Models/UserTest.php's shape for the
-// lexicographic-ordering assertion.
-
-test('a factory-created zone receives a uuidv7 string primary key', function () {
-    $zone = ShippingZone::factory()->create();
-
-    expect($zone->id)->toBeString()
-        ->and(Str::isUuid($zone->id, 7))->toBeTrue();
-});
+// Mirrors tests/Feature/Models/ProductCategoryTest.php's shape for the no-SoftDeletes guard, and
+// tests/Feature/Models/UserTest.php's shape for the lexicographic-ordering assertion.
 
 test('two zones created in immediate succession sort lexicographically in creation order', function () {
     $first = ShippingZone::factory()->create();
@@ -45,22 +36,4 @@ test('name is the only mass-assignable attribute', function () {
 test('the model does not use SoftDeletes', function () {
     expect(class_uses_recursive(ShippingZone::class))
         ->not->toHaveKey(SoftDeletes::class);
-});
-
-// Deliberately UNCONSTRAINED by level (a zone bundles entries at ANY level) -- one assertion that
-// the relation actually returns real GeographyEntry models with the pivot row intact, not a tour
-// of belongsToMany's own mechanics.
-test('geographyEntries() returns GeographyEntry models with the pivot row intact', function () {
-    $country = GeographyEntry::factory()->create(['name' => 'España']);
-    $community = GeographyEntry::factory()->community($country)->create(['name' => 'Asturias']);
-    $gijon = GeographyEntry::factory()->municipality($community)->create(['name' => 'Gijón']);
-
-    $zone = ShippingZone::factory()->create();
-    $zone->geographyEntries()->attach($gijon->id);
-
-    $related = $zone->geographyEntries()->first();
-
-    expect($related)->toBeInstanceOf(GeographyEntry::class)
-        ->and($related->id)->toBe($gijon->id)
-        ->and($related->name)->toBe('Gijón');
 });

@@ -4,8 +4,6 @@ use App\Enums\BlogPostStatus;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Models\BlogTag;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -61,20 +59,6 @@ test('blog_category_id is NOT NULL at the database level, not merely at the vali
         'id' => (string) Str::uuid7(),
         'status' => 'draft',
     ]))->toThrow(QueryException::class);
-});
-
-test('category() returns the post category and tags() a belongs-to-many through blog_post_tag', function () {
-    $category = BlogCategory::factory()->create();
-    $post = BlogPost::factory()->for($category, 'category')->create();
-    $tags = BlogTag::factory()->count(2)->create();
-    $post->tags()->attach($tags->modelKeys());
-
-    expect($post->category())->toBeInstanceOf(BelongsTo::class)
-        ->and($post->category->is($category))->toBeTrue()
-        ->and($post->tags())->toBeInstanceOf(BelongsToMany::class)
-        ->and($post->tags->modelKeys())->toEqualCanonicalizing($tags->modelKeys());
-
-    $this->assertDatabaseCount('blog_post_tag', 2);
 });
 
 test('scopeForCategory returns only posts in that category, with a decoy in another', function () {

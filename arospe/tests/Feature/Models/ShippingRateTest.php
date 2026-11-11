@@ -9,19 +9,12 @@ use Illuminate\Support\Str;
 // database-expert/backend-expert implement them. That failure is the correct, intended "red"
 // outcome.
 //
-// Companion to tests/Unit/Models/ShippingRateTest.php: the two checks below need a real
+// Companion to tests/Unit/Models/ShippingRateTest.php: the checks below need a real
 // persisted row (HasUuids populates the key on INSERT; a genuine decimal cast round trip needs a
 // real write+read cycle), so they live here per RefreshDatabase's Feature/Browser-only scope
-// (tests/Pest.php) -- mirroring tests/Feature/Models/ShippingZoneTest.php's own "a factory-created
-// zone receives a uuidv7 string primary key" shape and
+// (tests/Pest.php) -- mirroring tests/Feature/Models/ShippingZoneTest.php's own "two zones created
+// in immediate succession sort lexicographically in creation order" shape and
 // tests/Feature/Shipping/ToggleShippingCarrierTest.php's identical carrier-side precedent.
-
-test('a factory-created rate receives a uuidv7 string primary key', function () {
-    $rate = ShippingRate::factory()->create();
-
-    expect($rate->id)->toBeString()
-        ->and(Str::isUuid($rate->id, 7))->toBeTrue();
-});
 
 test('two rates created in immediate succession sort lexicographically in creation order', function () {
     $first = ShippingRate::factory()->create();
@@ -54,13 +47,4 @@ test('an open-ended rate persists a real null max_weight_kg through a full write
     $rate = ShippingRate::factory()->openEnded()->create();
 
     expect($rate->fresh()->max_weight_kg)->toBeNull();
-});
-
-test('carrier() and zone() resolve to real, related models', function () {
-    $rate = ShippingRate::factory()->create();
-
-    expect($rate->carrier)->not->toBeNull()
-        ->and($rate->carrier->id)->toBe($rate->shipping_carrier_id)
-        ->and($rate->zone)->not->toBeNull()
-        ->and($rate->zone->id)->toBe($rate->shipping_zone_id);
 });

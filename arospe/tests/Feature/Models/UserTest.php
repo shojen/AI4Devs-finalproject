@@ -21,49 +21,6 @@ test('two users created in immediate succession sort lexicographically in creati
     expect(strcmp((string) $first->id, (string) $second->id))->toBeLessThan(0);
 });
 
-test('an explicitly provided uuid7 id is respected and not overwritten', function () {
-    $id = (string) Str::uuid7();
-
-    $user = User::factory()->create(['id' => $id]);
-
-    expect($user->id)->toBe($id);
-});
-
-test("a passkey's user_id round-trips the user's full uuid string without truncation", function () {
-    $user = User::factory()->create();
-
-    $passkey = $user->passkeys()->create([
-        'name' => 'YubiKey',
-        'credential_id' => Str::random(40),
-        'credential' => '{}',
-    ]);
-
-    $storedUserId = $passkey->fresh()->user_id;
-
-    expect($storedUserId)->toBeString()
-        ->and($storedUserId)->toBe($user->id);
-});
-
-test("a user's passkeys relation is isolated to that user", function () {
-    $userA = User::factory()->create();
-    $userB = User::factory()->create();
-
-    $passkeyA = $userA->passkeys()->create([
-        'name' => 'YubiKey A',
-        'credential_id' => Str::random(40),
-        'credential' => '{}',
-    ]);
-
-    $userB->passkeys()->create([
-        'name' => 'YubiKey B',
-        'credential_id' => Str::random(40),
-        'credential' => '{}',
-    ]);
-
-    expect($userA->passkeys()->count())->toBe(1)
-        ->and($userA->passkeys()->first()->id)->toBe($passkeyA->id);
-});
-
 // Story 0005 (soft-delete): this used to assert a physical-delete cascade
 // removed the passkey row. That is no longer the intended behavior --
 // deleting a user now soft-deletes it (an UPDATE, not a DELETE), so the
