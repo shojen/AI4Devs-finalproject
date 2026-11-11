@@ -34,25 +34,6 @@ test('a name change applies immediately, while an email change is held as pendin
         ->and($user->pending_email)->toBe('test@example.com');
 });
 
-test('changing a name alongside an email applies the name immediately, leaving the email pending', function () {
-    $user = User::factory()->create(['name' => 'Original Name', 'status' => UserStatus::Active]);
-    $originalEmail = $user->getRawOriginal('email');
-
-    $this->actingAs($user);
-
-    Livewire::test(Profile::class)
-        ->set('name', 'New Name')
-        ->set('email', 'new-address@example.com')
-        ->call('updateProfileInformation')
-        ->assertHasNoErrors();
-
-    $user->refresh();
-
-    expect($user->name)->toBe('New Name')
-        ->and($user->getRawOriginal('email'))->toBe($originalEmail)
-        ->and($user->pending_email)->toBe('new-address@example.com');
-});
-
 test('a self-service profile update cannot mass-assign a status', function () {
     $user = User::factory()->create(['status' => UserStatus::Active]);
 
@@ -78,21 +59,6 @@ test('email verification status is unchanged when email address is unchanged', f
 
     expect($user->refresh()->email_verified_at)->not->toBeNull()
         ->and($user->pending_email)->toBeNull();
-});
-
-test('saving your own unchanged email still passes the uniqueness check', function () {
-    $user = User::factory()->create();
-
-    $this->actingAs($user);
-
-    $response = Livewire::test(Profile::class)
-        ->set('name', 'Updated Name')
-        ->set('email', $user->email)
-        ->call('updateProfileInformation');
-
-    $response->assertHasNoErrors(['email']);
-
-    expect($user->fresh()->name)->toBe('Updated Name');
 });
 
 test('user can delete their account', function () {

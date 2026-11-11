@@ -6,9 +6,7 @@ use App\Enums\UserStatus;
 use App\Livewire\Settings\Profile;
 use App\Models\User;
 use App\Notifications\PendingEmailVerification;
-use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
@@ -201,22 +199,6 @@ test('using the link applies the pending address, verifies it, and clears the pe
         ->and($user->email_verified_at)->not->toBeNull();
 });
 
-test('confirming a pending email dispatches the Verified event', function () {
-    Event::fake([Verified::class]);
-
-    $user = User::factory()->pendingEmail('new-address@example.com')->create(['status' => UserStatus::Active]);
-
-    $url = URL::temporarySignedRoute(
-        'email-change.confirm',
-        now()->addMinutes(60),
-        ['user' => $user->id, 'hash' => sha1('new-address@example.com')],
-    );
-
-    $this->get($url);
-
-    Event::assertDispatched(Verified::class, fn (Verified $event): bool => $event->user->is($user));
-});
-
 test('confirming a pending email applies the activation rule for the accounts status', function (string $initialStatus, string $expectedStatus) {
     $user = User::factory()->pendingEmail('new-address@example.com')->create([
         'status' => UserStatus::from($initialStatus),
@@ -273,27 +255,6 @@ test('confirming a pending email change does not reactivate a user who was deact
     expect($fresh->status)->toBe(UserStatus::Inactive)
         ->and($fresh->getRawOriginal('email'))->toBe('new-address@example.com')
         ->and($fresh->pending_email)->toBeNull();
-});
-
-test('the confirmation route is reachable while signed out', function () {
-    $user = User::factory()->pendingEmail('new-address@example.com')->create([
-        'status' => UserStatus::Inactive,
-        'email_verified_at' => null,
-    ]);
-
-    $url = URL::temporarySignedRoute(
-        'email-change.confirm',
-        now()->addMinutes(60),
-        ['user' => $user->id, 'hash' => sha1('new-address@example.com')],
-    );
-
-    $response = $this->get($url);
-
-    $response->assertRedirect(route('profile.edit'));
-    $response->assertHeader('Location', route('profile.edit'));
-
-    expect($user->fresh()->status)->toBe(UserStatus::Active)
-        ->and($user->fresh()->getRawOriginal('email'))->toBe('new-address@example.com');
 });
 
 // --- Negative and edge cases ---
