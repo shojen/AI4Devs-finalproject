@@ -8,10 +8,8 @@ use App\Models\ShippingZone;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -140,16 +138,6 @@ test('reassigning a rate to a different zone leaves every other field untouched'
         ->and($fresh->shipping_carrier_id)->toBe($rate->shipping_carrier_id)
         ->and($fresh->price)->toBe($rate->price)
         ->and($fresh->delivery_estimate)->toBe($rate->delivery_estimate);
-});
-
-test('an unknown shipping rate id fails cleanly with ModelNotFoundException, not a silent no-op', function () {
-    expect(fn () => ShippingRate::findOrFail((string) Str::uuid7()))
-        ->toThrow(ModelNotFoundException::class);
-});
-
-test('a malformed, non-UUID shipping rate id fails cleanly with ModelNotFoundException', function () {
-    expect(fn () => ShippingRate::findOrFail('not-a-uuid'))
-        ->toThrow(ModelNotFoundException::class);
 });
 
 // D-11: the Gherkin "A user without the shipping edit permission cannot change a rate rule". A

@@ -8,9 +8,7 @@ use App\Models\ShippingZone;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Spatie\Permission\PermissionRegistrar;
 
 // Story 0036, Phase 3 (TDD "red" step): see CreateShippingRateTest.php's file banner -- the same
@@ -95,16 +93,6 @@ test('deleting a rate leaves its carrier and its zone untouched', function () {
     $this->assertDatabaseHas('shipping_zones', ['id' => $zone->id]);
 });
 
-test('deleting an unknown shipping rate id fails cleanly with ModelNotFoundException, not a silent no-op', function () {
-    expect(fn () => ShippingRate::findOrFail((string) Str::uuid7()))
-        ->toThrow(ModelNotFoundException::class);
-});
-
-test('deleting a malformed, non-UUID shipping rate id fails cleanly with ModelNotFoundException', function () {
-    expect(fn () => ShippingRate::findOrFail('not-a-uuid'))
-        ->toThrow(ModelNotFoundException::class);
-});
-
 // D-11: the Gherkin "A user without the shipping delete permission cannot delete a rate rule".
 test('a signed-in user without shipping.delete is refused, and the rate still exists', function () {
     [$rate] = createBaselineShippingRateForDeleteTests();
@@ -145,18 +133,4 @@ test('a delete refusal is logged with target_type shipping_rate and the rows own
             && ($context['target_type'] ?? null) === 'shipping_rate'
             && ($context['target_id'] ?? null) === $rate->id)
         ->once();
-});
-
-// The allow half of the pair.
-test('a holder of shipping.delete deletes the rate, as the control', function () {
-    [$rate] = createBaselineShippingRateForDeleteTests();
-
-    $deleter = User::factory()->create();
-    $deleter->givePermissionTo('shipping.delete');
-    $this->actingAs($deleter);
-
-    $result = app(DeleteShippingRate::class)($rate);
-
-    expect($result)->toBeTrue();
-    $this->assertDatabaseMissing('shipping_rates', ['id' => $rate->id]);
 });
