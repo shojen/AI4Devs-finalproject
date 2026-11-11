@@ -19,13 +19,14 @@ test('guests are redirected to the login page', function () {
     $response->assertRedirect(route('login'));
 });
 
-test('authenticated users can visit the dashboard', function () {
-    $user = User::factory()->create();
+test('a user with no permissions gets the greeting and the nothing-to-show message', function () {
+    $user = User::factory()->create(['name' => 'Nora Quiroga']);
     $this->actingAs($user);
 
     $response = $this->get(route('dashboard'));
 
     $response->assertOk();
+    // ...then asserts the greeting and the empty state on the rendered HTML.
 });
 ```
 
@@ -108,4 +109,4 @@ expect($route->getAction('livewire_component'))->toBe(Overview::class);
 
 `RolePermissionSeeder` provisions one extra active Super Admin account when `SUPER_ADMIN_EMAIL` is configured, so a users counter test that expects an exact number breaks depending on the environment. Take a baseline after seeding and add to it, as [`OverviewRenderingTest`](../../../tests/Feature/Dashboard/OverviewRenderingTest.php) does.
 
-_Last updated: 2026-10-01 — Story 0083: added the characterization-before-extraction technique, the `Route::livewire` routed-component assertion and the seed-independent count rule. Still current from story 0082 (the **Counting queries per domain table** section) and earlier tasks: 0017 corrected the **Authorization tests** layers 1 and 3 to the real counts (three module gates, three policies; the headline count stays four layers, and a single-default invariant is a data rule, not a fifth layer); 0015a added step-up as the fourth layer (seed `auth.password_confirmed_at` as a listed change only; assert the refusal on the row, the exempt cases, that a permission refusal wins, and the timeout boundary from both sides, the vendor comparison being `>`); 0004 replaced the stale policies section with the three-layer picture._
+_Last updated: 2026-11-11 — Test-suite overtesting cleanup: the HTTP route example shows the allowed-path test that survives in `DashboardTest.php`. Earlier content current from story 0083._
