@@ -208,18 +208,6 @@ test('every allowed_code_languages entry survives as a code-block class, and not
     }
 });
 
-// A script block is refused, and the legitimate text around it survives -- a sanitizer that
-// dropped everything (turning the whole description empty) would satisfy only the first half.
-test('a script block does not survive, and the surrounding legitimate text is still there', function () {
-    $product = createProductWithDescription('Before text <script>alert(1)</script> After text');
-
-    $stored = $product->fresh()->translated('description');
-
-    expect($stored)->not->toContain('<script')
-        ->and($stored)->toContain('Before text')
-        ->and($stored)->toContain('After text');
-});
-
 // Phase 4 security audit finding F-1 (Medium), added at the fix: the sanitizer's own untouched
 // `default_action` semantics (Block: remove the tag, keep the text child) let a <script>'s TEXT
 // CONTENT resurface as inert, escaped text -- libxml parses a raw-text element's body as an

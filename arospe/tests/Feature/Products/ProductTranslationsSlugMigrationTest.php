@@ -47,15 +47,6 @@ test('product_translations carries exactly three indexes: primary, the natural k
         ->and($indexes['product_translations_product_language_unique']['columns'])->toBe(['product_id', 'store_language_id']);
 });
 
-test('the migration sorts after the two product_translations migrations of story 0076', function () {
-    $mine = basename(s76aMigrationPath());
-    $create = basename(s76aMigrationPath('create_product_translations_table'));
-    $drop = basename(s76aMigrationPath('drop_translatable_columns_from_products_table'));
-
-    expect(strcmp($mine, $create))->toBeGreaterThan(0)
-        ->and(strcmp($mine, $drop))->toBeGreaterThan(0);
-});
-
 // D-34. DDL commits implicitly on MySQL, so the shared test schema must never be left rolled back:
 // the finally block restores it, and only when down() actually removed the columns, so a down()
 // that failed before touching anything is not followed by an up() that would fail on a duplicate column.

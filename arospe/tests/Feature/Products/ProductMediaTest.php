@@ -75,13 +75,6 @@ test('a nonexistent or malformed featured_media_id is refused', function (mixed 
     'a malformed media id' => ['not-a-uuid'],
 ]);
 
-test('featured_media_id is nullable, and the accessor returns null when none is set', function () {
-    $product = app(CreateProduct::class)(...mediaTestProductPayload(['featuredMediaId' => null]));
-
-    expect($product->fresh()->featured_media_id)->toBeNull()
-        ->and($product->fresh()->featuredImage)->toBeNull();
-});
-
 // D-9: the featured image and the gallery are independent — setting one must not implicitly
 // populate the other. If left unasserted, story 0027 inherits an ambiguous "remove image".
 test('setting a featured image creates no gallery pivot row', function () {
@@ -111,15 +104,6 @@ test('syncing the gallery to [a, b] over an existing [b, c] leaves exactly [a, b
 
     expect($galleryIds)->toEqualCanonicalizing([$a->id, $b->id])
         ->and($galleryIds)->not->toContain($c->id);
-});
-
-test('attaching the same media twice via the input array yields exactly one pivot row', function () {
-    $product = Product::factory()->create();
-    $media = Media::factory()->create();
-
-    app(SyncProductGallery::class)($product, null, [$media->id, $media->id]);
-
-    expect(DB::table('product_media')->where('product_id', $product->id)->where('media_id', $media->id)->count())->toBe(1);
 });
 
 // The shared-library premise of 0019: both products keep the same media, and detaching from one

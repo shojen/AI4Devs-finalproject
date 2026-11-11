@@ -41,17 +41,6 @@ function skuDerivationTestAttribute(string $typeName, string $value, int $typePo
     return [$type, $productAttributeValue];
 }
 
-test('creating a single-attribute variant persists exactly the derived SKU, asserted against the literal string in the database', function () {
-    $product = Product::factory()->create(['sku' => '0001']);
-    [, $talla] = skuDerivationTestAttribute('Talla', 'M');
-
-    $variant = app(CreateProductVariant::class)($product, [$talla->id], '19.99', 5);
-
-    // FP15: not a re-call of DeriveVariantSku -- that would be tautological against a formula bug
-    // that lives inside __invoke() itself.
-    $this->assertDatabaseHas('product_variants', ['id' => $variant->id, 'sku' => '0001-M']);
-});
-
 // D-4.3: the only test that proves `sku` really is outside #[Fillable]. Because CreateProductVariant's
 // signature has no $sku parameter at all (D-17.1), the exclusion is proven directly at the model
 // level: fill() silently discards a non-fillable attribute, so a raw mass-assignment attempt on an

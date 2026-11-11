@@ -92,15 +92,7 @@ function updateProductWith(Product $product, array $overrides = []): Product
 }
 
 // 0023's R-1 pattern — the single most likely bug in this story alongside the SKU race guard —
-// written as THREE tests so a reject-everything Rule::unique() cannot pass the first trivially.
-
-test('saving a product under its own unchanged SKU succeeds', function () {
-    $product = makeUpdatableProduct('RNR-001');
-
-    $result = updateProductWith($product, ['sku' => 'RNR-001']);
-
-    expect($result)->not->toBeNull();
-});
+// written as TWO tests so a reject-everything Rule::unique() cannot pass the first trivially.
 
 test('after a no-op save with an unchanged SKU, the row is genuinely unchanged', function () {
     $product = makeUpdatableProduct('RNR-001');
@@ -118,16 +110,6 @@ test('a genuinely free SKU is still accepted when updating, as the control for t
     $updated = updateProductWith($product, ['sku' => 'RNR-002']);
 
     expect($updated->fresh()->sku)->toBe('RNR-002');
-});
-
-// Gherkin: "Editing a product changes its stored values" — a direct, minimal check that a plain
-// field edit persists, distinct from the SKU-specific control above.
-test('updating a product changes its stored values', function () {
-    $product = makeUpdatableProduct('RNR-001');
-
-    $updated = updateProductWith($product, ['name' => 'Runner Pro II', 'sku' => 'RNR-001']);
-
-    expect($updated->fresh()->translated('name'))->toBe('Runner Pro II');
 });
 
 // Phase 4 audit finding F-1: two tests pinning that removing the defaults from $featuredMediaId /

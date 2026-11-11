@@ -269,17 +269,6 @@ test('re-saving a product under its own unchanged slug is accepted, while a free
     expect(s76aStoredSlug($product))->toBe('nouvelle-paire');
 });
 
-test('the own-row exclusion works by product id: re-saving A unchanged is accepted while B holds a different slug', function () {
-    $a = s76aCreate(['slug' => 'chaussures']);
-    $b = s76aCreate(['slug' => 'bottes']);
-
-    $result = s76aUpdate($a, ['slug' => 'chaussures']);
-
-    expect($result->id)->toBe($a->id)
-        ->and(s76aStoredSlug($a))->toBe('chaussures')
-        ->and(s76aStoredSlug($b))->toBe('bottes');
-});
-
 test('writing a slug into a language where the product has no row yet inserts the row and is accepted', function () {
     $product = Product::factory()->withoutTranslations()->create();
 

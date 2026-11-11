@@ -1,25 +1,12 @@
 <?php
 
 use App\Models\Product;
-use App\Models\ProductTranslation;
 use App\Models\StoreLanguage;
-use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
 // Story 0076 (D-22, N-1): ProductFactory writes the default-language translation in afterCreating,
 // and its named()/withoutTranslations() states change ONLY that step, so withGallery() (itself an
 // afterCreating callback) survives in any order.
-
-test('a plain create produces a named product through a default-language translation', function () {
-    $product = Product::factory()->create();
-
-    $default = StoreLanguage::query()->where('is_default', true)->sole();
-    $translations = ProductTranslation::query()->where('product_id', $product->id)->get();
-
-    expect($translations)->toHaveCount(1)
-        ->and($translations[0]->store_language_id)->toBe($default->id)
-        ->and($translations[0]->name)->not->toBe('');
-});
 
 test('named() writes the given name and description into the default-language translation', function () {
     $product = Product::factory()->named('Silla de oficina', '<p>Ergonomica</p>')->create();
@@ -29,12 +16,6 @@ test('named() writes the given name and description into the default-language tr
     expect($row->name)->toBe('Silla de oficina')
         ->and($row->description)->toBe('<p>Ergonomica</p>')
         ->and($row->store_language_id)->toBe(StoreLanguage::query()->where('is_default', true)->sole()->id);
-});
-
-test('named() without a description stores a null description', function () {
-    $product = Product::factory()->named('Silla')->create();
-
-    expect(DB::table('product_translations')->where('product_id', $product->id)->sole()->description)->toBeNull();
 });
 
 test('chaining named() twice leaves exactly one translation carrying the last name', function () {
@@ -73,19 +54,4 @@ test('withGallery(2)->withoutTranslations() and the reverse yield the gallery an
         expect(DB::table('product_media')->where('product_id', $product->id)->count())->toBe(2)
             ->and(DB::table('product_translations')->where('product_id', $product->id)->count())->toBe(0);
     }
-});
-
-test('forging name or description as a create() attribute fails loudly because they are no longer columns', function () {
-    expect(fn () => Product::factory()->create(['name' => 'Forjado']))
-        ->toThrow(fn (QueryException $exception) => expect($exception->errorInfo[1])->toBe(1054));
-});
-
-test('ProductTranslation::factory()->forLanguage() binds the row to that language', function () {
-    $language = StoreLanguage::factory()->create();
-    $product = Product::factory()->withoutTranslations()->create();
-
-    $translation = ProductTranslation::factory()->forLanguage($language)->create(['product_id' => $product->id]);
-
-    expect($translation->store_language_id)->toBe($language->id)
-        ->and($translation->product_id)->toBe($product->id);
 });

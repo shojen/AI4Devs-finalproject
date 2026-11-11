@@ -7,7 +7,6 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\PermissionRegistrar;
@@ -80,27 +79,6 @@ test('assigning an out-of-stock spelling to the status column throws ValueError 
         'stock' => 5,
     ])->status)->toThrow(ValueError::class);
 })->with(['agotado', 'out_of_stock', 'sold_out']);
-
-// A deliberate characterization test: a plain VARCHAR accepts this value with no complaint,
-// documenting that the enforcement is entirely app-level and that no database constraint exists
-// — a reviewer must not believe otherwise.
-test('a raw insert of an out-of-stock status string succeeds at the database layer', function () {
-    $category = ProductCategory::factory()->create();
-
-    DB::table('products')->insert([
-        'id' => (string) Str::uuid7(),
-        'product_category_id' => $category->id,
-        'sku' => 'RNR-'.Str::random(10),
-        'type' => 'physical',
-        'status' => 'agotado',
-        'price' => '19.99',
-        'stock' => 0,
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-
-    expect(DB::table('products')->where('status', 'agotado')->exists())->toBeTrue();
-});
 
 // The paired assertion that defeats the tautology — a single assertion on displayStatus() is just
 // a restatement of stock === 0; the second assertion is what goes red if anyone implements

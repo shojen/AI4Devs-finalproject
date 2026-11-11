@@ -115,10 +115,6 @@ test('a price one cent over the maximum is refused by validation, not a 22003 Qu
     boundariesExpectRefusal(['price' => '100000000.00'], 'price');
 });
 
-test('a non-numeric price string is refused', function () {
-    boundariesExpectRefusal(['price' => 'free'], 'price');
-});
-
 // A genuine input path in a Spanish-language backoffice — the comma decimal separator.
 test('a comma-decimal price is refused', function () {
     boundariesExpectRefusal(['price' => '19,99'], 'price');

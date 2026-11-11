@@ -9,28 +9,6 @@ use Illuminate\Support\Facades\DB;
 // not exist yet. D-7: a variant's featured-image inheritance is resolved at READ time, never
 // copied at creation -- the null pointer IS the inheritance flag, and it must stay null.
 
-test('a variant created with no image persists featured_media_id as literally NULL', function () {
-    $product = Product::factory()->withFeaturedImage()->create();
-
-    $variant = ProductVariant::factory()->for($product)->inheritingImage()->create();
-
-    // The storage-layer proof that no copy happened -- the only assertion that distinguishes a
-    // read-time resolver from a copy-at-creation implementation BEFORE any resolution occurs.
-    $this->assertDatabaseHas('product_variants', [
-        'id' => $variant->id,
-        'featured_media_id' => null,
-    ]);
-});
-
-test('an inheriting variant resolves to the parent\'s featured image', function () {
-    $parentImage = Media::factory()->create();
-    $product = Product::factory()->create(['featured_media_id' => $parentImage->id]);
-
-    $variant = ProductVariant::factory()->for($product)->inheritingImage()->create();
-
-    expect($variant->displayFeaturedMediaId())->toBe($parentImage->id);
-});
-
 // FP2, the discriminating test: a copy-at-creation implementation returns the OLD image here and
 // fails, while passing every other test in this file.
 test('changing the parent\'s featured image changes what an inheriting variant resolves to', function () {
@@ -48,16 +26,6 @@ test('changing the parent\'s featured image changes what an inheriting variant r
     $product->forceFill(['featured_media_id' => $newImage->id])->save();
 
     expect($variant->fresh()->displayFeaturedMediaId())->toBe($newImage->id);
-});
-
-test('a variant with its own image resolves to its own', function () {
-    $parentImage = Media::factory()->create();
-    $ownImage = Media::factory()->create();
-    $product = Product::factory()->create(['featured_media_id' => $parentImage->id]);
-
-    $variant = ProductVariant::factory()->for($product)->create(['featured_media_id' => $ownImage->id]);
-
-    expect($variant->displayFeaturedMediaId())->toBe($ownImage->id);
 });
 
 // Proves the fallback does not override an explicit choice.

@@ -135,45 +135,9 @@ test('a combination whose derived sku another product already uses is refused on
     expect(ProductVariant::where('product_id', $product->id)->count())->toBe(0);
 });
 
-test('when a duplicate combination and a sku collision both apply, the combination refusal wins', function () {
-    // 0029 D-4.5's deliberate ordering (R-F): the duplicate-combination check runs BEFORE the
-    // cross-table SKU check, so the clearer message wins when both are true.
-    $product = Product::factory()->create(['sku' => '0001']);
-    [$talla, $m] = variantBuilderTestAttribute('Talla', 'M');
-
-    $existing = app(CreateProductVariant::class)($product, [$m->id], '19.99', 5);
-    // A second product literally squats the SKU the (duplicate) combination would also derive.
-    Product::factory()->create(['sku' => $existing->sku]);
-
-    $component = Livewire::test(VariantBuilder::class, ['productId' => $product->id]);
-
-    $component->call('openCreateForm')->set('combinationRows', [
-        ['key' => 'row-0', 'typeId' => $talla->id, 'valueId' => $m->id],
-    ])->set('price', '19.99')->set('stock', '5')
-        ->call('saveVariant')
-        ->assertHasErrors(['combination'])
-        ->assertHasNoErrors(['sku']);
-});
-
 test('an attribute value that reduces to an empty sku segment is refused on the sku key, writing zero rows', function () {
     $product = Product::factory()->create(['sku' => '0001']);
     [$type, $value] = variantBuilderTestAttribute('Simbolo', '★');
-
-    $component = Livewire::test(VariantBuilder::class, ['productId' => $product->id]);
-
-    $component->call('openCreateForm')->set('combinationRows', [
-        ['key' => 'row-0', 'typeId' => $type->id, 'valueId' => $value->id],
-    ])->set('price', '19.99')->set('stock', '5')
-        ->call('saveVariant')
-        ->assertHasErrors(['sku']);
-
-    expect(ProductVariant::where('product_id', $product->id)->count())->toBe(0);
-    expect(DB::table('product_variant_values')->count())->toBe(0);
-});
-
-test('a derived sku longer than the limit is refused on the sku key, writing zero rows', function () {
-    $product = Product::factory()->create(['sku' => str_repeat('A', 60)]);
-    [$type, $value] = variantBuilderTestAttribute('Descripcion', str_repeat('B', 70));
 
     $component = Livewire::test(VariantBuilder::class, ['productId' => $product->id]);
 

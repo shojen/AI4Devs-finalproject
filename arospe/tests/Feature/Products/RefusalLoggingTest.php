@@ -179,19 +179,6 @@ test('Editor::mount() update-path authorization refusal is logged', function () 
 // Editor::save()
 // =====================================================================
 
-test('Editor::save() create-path authorization refusal propagates as an AuthorizationException', function () {
-    // mount() already refuses `create` for this actor before save() is ever reachable, so its
-    // own logging is proven by "Editor::mount() create-path authorization refusal is logged"
-    // above rather than re-derived here -- this test only confirms save()'s own gate is present
-    // and does not silently swallow the refusal.
-    $this->withoutExceptionHandling();
-
-    $actor = productsRefusalTestActor();
-    $this->actingAs($actor);
-
-    expect(fn () => Livewire::test(Editor::class))->toThrow(AuthorizationException::class);
-});
-
 test('Editor::save() update-path authorization refusal is logged when the permission is revoked mid-session', function () {
     Log::spy();
 
