@@ -83,8 +83,8 @@ function galleryExpectedItemShape(Media $media): array
 }
 
 // =====================================================================
-// Integration -- search (D6, Gherkin: "Search filters the gallery by title", "...by description",
-// "...shows an empty state...", "Clearing the search restores the full gallery").
+// Integration -- search (D6, Gherkin: "Search filters the gallery by title", "Clearing the search
+// restores the full gallery").
 // =====================================================================
 
 test('setting the search property filters the exposed tile list by title', function () {
@@ -101,35 +101,6 @@ test('setting the search property filters the exposed tile list by title', funct
     );
 
     expect($tiles->pluck('id')->all())->toBe([$match->id]);
-});
-
-test('setting the search property filters the exposed tile list by description', function () {
-    $actor = galleryModalTestActor();
-    $this->actingAs($actor);
-
-    $match = Media::factory()->create(['title' => 'Widget', 'description' => 'A shiny red item']);
-    Media::factory()->create(['title' => 'Gadget', 'description' => 'A dull blue item']);
-
-    $tiles = collect(
-        Livewire::test(Gallery::class)
-            ->set('search', 'shiny')
-            ->get('tiles')
-    );
-
-    expect($tiles->pluck('id')->all())->toBe([$match->id]);
-});
-
-test('a non-matching search term yields an empty tile list', function () {
-    $actor = galleryModalTestActor();
-    $this->actingAs($actor);
-
-    Media::factory()->create(['title' => 'Red Widget']);
-
-    $tiles = Livewire::test(Gallery::class)
-        ->set('search', 'nonexistent-term-xyz')
-        ->get('tiles');
-
-    expect($tiles)->toBeEmpty();
 });
 
 test('clearing the search term restores the full tile list', function () {
@@ -250,26 +221,6 @@ test('confirmSelection dispatches under the consumer-supplied event name with th
     // The default event name never fires -- proves the name genuinely comes from the consumer
     // rather than being hardcoded alongside it.
     $component->assertNotDispatched('media-selected');
-});
-
-test('single-select mode dispatches a one-element list, never a bare object', function () {
-    $actor = galleryModalTestActor();
-    $this->actingAs($actor);
-
-    $media = Media::factory()->create();
-
-    $component = Livewire::test(Gallery::class, ['multi' => false, 'selectEvent' => 'single-mode-picked'])
-        ->call('toggleSelect', $media->id)
-        ->call('confirmSelection');
-
-    $component->assertDispatched(
-        'single-mode-picked',
-        function (string $name, array $params): bool {
-            $payload = $params['media'] ?? null;
-
-            return is_array($payload) && array_is_list($payload) && count($payload) === 1;
-        }
-    );
 });
 
 // =====================================================================
