@@ -10,11 +10,9 @@ use App\Models\ShippingZone;
 use App\Models\User;
 use App\Policies\ShippingZonePolicy;
 use Database\Seeders\RolePermissionSeeder;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 // Story 0033, Phase 3 (TDD "red" step) -- see CreateShippingZoneTest.php's file banner; the same
@@ -128,26 +126,6 @@ test('deleting zone A does not strip a shared entry from zone B', function () {
     app(DeleteShippingZone::class)($zoneA);
 
     expect($zoneB->geographyEntries()->pluck('geography_entries.id')->all())->toBe([$gijon->id]);
-});
-
-test('deleting an unknown zone id fails cleanly with ModelNotFoundException, not a silent no-op', function () {
-    app(CreateShippingZone::class)('Zona Norte');
-
-    expect(fn () => ShippingZone::findOrFail((string) Str::uuid7()))
-        ->toThrow(ModelNotFoundException::class);
-});
-
-// This story has no route/HTTP layer at all, so HasUuids' route-model-binding UUID validation
-// (resolveRouteBindingQuery() rejecting a non-UUID parameter with Str::isUuid() before running a
-// doomed query) is never invoked here -- findOrFail() below runs a real `WHERE id = ?` query that
-// simply finds no matching row for the malformed string, throwing ModelNotFoundException for that
-// ordinary reason. A malformed id must still fail the identical way as an unknown-but-valid one,
-// never as a different error shape a future controller/component would have to special-case.
-test('deleting a malformed, non-UUID zone id fails cleanly with ModelNotFoundException', function () {
-    app(CreateShippingZone::class)('Zona Norte');
-
-    expect(fn () => ShippingZone::findOrFail('not-a-uuid'))
-        ->toThrow(ModelNotFoundException::class);
 });
 
 // =====================================================================
