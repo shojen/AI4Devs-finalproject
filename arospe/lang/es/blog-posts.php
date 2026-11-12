@@ -62,6 +62,12 @@ return [
         'published_at_label' => 'Fecha de publicación',
         'published_at_hint' => 'Fecha y hora en UTC.',
         'body_label' => 'Contenido',
+        // Story 0079 -- the per-language title/body tabs.
+        'tabs' => [
+            'untranslated' => 'Esta entrada aún no tiene contenido en este idioma.',
+            'slug_label' => 'Slug',
+            'slug_hint' => 'tal como se guardó; se actualiza al guardar',
+        ],
         'tags_label' => 'Etiquetas',
         'tags_hint' => 'Escribe una etiqueta y pulsa Intro. Las etiquetas existentes se sugieren mientras escribes.',
         'tag_input_placeholder' => 'Añadir una etiqueta',

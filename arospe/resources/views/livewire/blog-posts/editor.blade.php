@@ -25,13 +25,57 @@
     <x-slot:subheading>{{ __('topbar.blog_post_editor.subtitle') }}</x-slot:subheading>
 
     <div class="mt-6 max-w-3xl space-y-6">
-        <flux:input
-            wire:model="title"
-            data-test="blog-post-title"
-            maxlength="{{ \App\Models\BlogPost::TITLE_MAX_LENGTH }}"
-            :label="__('blog-posts.editor.title_label')"
-            required
-        />
+        {{-- Per-language title and body (0079). Every panel is always mounted and hidden with x-show,
+        never @if: the WYSIWYG's wire:ignore'd region cannot be restored once torn down (0021 D9). --}}
+        <div class="space-y-4" data-test="blog-post-language-tabs">
+            <x-language-tab-strip
+                :languages="collect($languages)->map(fn (array $language): object => (object) $language)"
+                :active="$activeLanguageId"
+                :error-language-ids="collect($languages)->pluck('id')->filter(fn (string $languageId): bool => $errors->has('titles.'.$languageId) || $errors->has('bodies.'.$languageId))->values()->all()"
+            />
+
+            @foreach ($languages as $language)
+                <div
+                    wire:key="language-panel-{{ $language['id'] }}"
+                    x-show="$wire.activeLanguageId === {{ Js::from($language['id']) }}"
+                    x-cloak
+                    role="tabpanel"
+                    data-test="language-panel-{{ $language['id'] }}"
+                    class="space-y-4"
+                >
+                    @if ($blogPostId !== null && ! in_array($language['id'], $originalTranslatedLanguageIds, true))
+                        <flux:text size="sm" data-test="language-untranslated-{{ $language['id'] }}">
+                            {{ __('blog-posts.editor.tabs.untranslated') }}
+                        </flux:text>
+                    @endif
+
+                    <flux:input
+                        wire:model="titles.{{ $language['id'] }}"
+                        data-test="blog-post-title-input-{{ $language['id'] }}"
+                        maxlength="{{ \App\Models\BlogPost::TITLE_MAX_LENGTH }}"
+                        :label="__('blog-posts.editor.title_label')"
+                    />
+
+                    @if (isset($persistedSlugs[$language['id']]))
+                        <flux:text size="sm">
+                            {{ __('blog-posts.editor.tabs.slug_label') }}:
+                            <span data-test="blog-post-slug-{{ $language['id'] }}">{{ $persistedSlugs[$language['id']] }}</span>
+                            <span class="text-zinc-500">({{ __('blog-posts.editor.tabs.slug_hint') }})</span>
+                        </flux:text>
+                    @endif
+
+                    <div data-test="blog-post-body-editor-{{ $language['id'] }}">
+                        <livewire:components.wysiwyg-editor
+                            wire:model="bodies.{{ $language['id'] }}"
+                            wire:key="blog-post-body-editor-{{ $language['id'] }}"
+                            :label="__('blog-posts.editor.body_label')"
+                        />
+
+                        <flux:error name="bodies.{{ $language['id'] }}" />
+                    </div>
+                </div>
+            @endforeach
+        </div>
 
         <div>
             @if (count($this->categoryOptions) === 0)
@@ -88,16 +132,6 @@
                     :description="__('blog-posts.editor.published_at_hint')"
                 />
             </div>
-        </div>
-
-        <div>
-            <livewire:components.wysiwyg-editor
-                wire:model="body"
-                wire:key="blog-post-body-editor"
-                :label="__('blog-posts.editor.body_label')"
-            />
-
-            <flux:error name="body" />
         </div>
 
         {{-- The tag chip field. Chips for EVERY tag; the typed input drives debounced suggestions. --}}

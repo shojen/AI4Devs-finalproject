@@ -4,15 +4,19 @@ namespace App\Livewire\BlogPosts;
 
 use App\Actions\Auth\LogRefusedPrivilegedAttempt;
 use App\Actions\Blog\CreateBlogPost;
+use App\Actions\Blog\SetBlogPostTranslation;
 use App\Actions\Blog\UpdateBlogPost;
 use App\Actions\NormalizeForSearch;
 use App\Actions\Translations\CompareTranslatedNames;
 use App\Enums\BlogPostStatus;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
+use App\Models\BlogPostTranslation;
 use App\Models\BlogTag;
 use App\Models\BlogTagTranslation;
 use App\Models\StoreLanguage;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
@@ -82,8 +86,52 @@ class Editor extends Component
     #[Locked]
     public ?string $blogPostId = null;
 
+    /**
+     * The active store languages in tab order (default first, then by name), set once in mount().
+     * Render-only: save() and setActiveLanguageTab() re-read the active set themselves.
+     *
+     * @var list<array{id: string, name: string}>
+     */
+    #[Locked]
+    public array $languages = [];
+
+    #[Locked]
+    public string $defaultLanguageId = '';
+
+    /**
+     * Ids of the active languages that held a translation row when the editor opened; decides
+     * D-10's blanked branch, so it must not be client-writable.
+     *
+     * @var list<string>
+     */
+    #[Locked]
+    public array $originalTranslatedLanguageIds = [];
+
+    /**
+     * Each language's PERSISTED slug, shown read-only (D-2). Never bound, never submitted.
+     *
+     * @var array<string, string>
+     */
+    #[Locked]
+    public array $persistedSlugs = [];
+
+    /** The tab shown. Moved only by setActiveLanguageTab() and by save()'s refusal handling. */
+    public string $activeLanguageId = '';
+
     // --- form fields, all bound with wire:model. NONE of them is ever null (D-6) ---
-    public string $title = '';
+    /**
+     * Per-language title, keyed by store-language id.
+     *
+     * @var array<string, string>
+     */
+    public array $titles = [];
+
+    /**
+     * Per-language body, keyed by store-language id (the WYSIWYGs' #[Modelable] targets).
+     *
+     * @var array<string, string>
+     */
+    public array $bodies = [];
 
     /** '' matches the placeholder <option value="">, which is genuinely disabled: a category is required. */
     public string $blogCategoryId = '';
@@ -98,9 +146,6 @@ class Editor extends Component
 
     /** `datetime-local`'s own native empty value; hydrated at SECONDS precision (see mount()). */
     public string $publishedAt = '';
-
-    /** The WYSIWYG's #[Modelable] target. */
-    public string $body = '';
 
     /**
      * The post's COMPLETE tag-name set -- see the class docblock. Bounded at the mutation point by
@@ -121,19 +166,33 @@ class Editor extends Component
     {
         $this->authorizeSaving($logRefusedPrivilegedAttempt, $blogPost);
 
+        $languages = $this->activeLanguages();
+        $this->languages = array_values($languages->map(fn (StoreLanguage $language): array => ['id' => $language->id, 'name' => $language->name])->all());
+        $this->defaultLanguageId = (string) $languages->first(fn (StoreLanguage $language): bool => (bool) $language->is_default)?->id;
+        $this->activeLanguageId = $this->defaultLanguageId !== '' ? $this->defaultLanguageId : (string) $languages->first()?->id;
+        $this->titles = $languages->mapWithKeys(fn (StoreLanguage $language): array => [$language->id => ''])->all();
+        $this->bodies = $this->titles;
+
         if ($blogPost === null) {
             return;
         }
 
         $this->blogPostId = $blogPost->id;
-        // The RAW default-language row via a fresh query, never a fallback (0073 D-6, 0078 D-14): a
-        // post with no default-language row opens blank rather than copying another language in.
-        $defaultLanguage = StoreLanguage::query()->where('is_default', true)->first();
-        $defaultTranslation = $defaultLanguage === null
-            ? null
-            : $blogPost->translations()->where('store_language_id', $defaultLanguage->id)->first();
 
-        $this->title = $defaultTranslation->title ?? '';
+        // The RAW rows via a fresh query, never a fallback (0073 D-6, 0078 D-14): an untranslated
+        // language, or one lacking a body, opens blank rather than copying another language in.
+        $translations = BlogPostTranslation::query()
+            ->where('blog_post_id', $blogPost->id)
+            ->whereIn('store_language_id', $languages->modelKeys())
+            ->get();
+
+        foreach ($translations as $translation) {
+            $this->titles[$translation->store_language_id] = $translation->title;
+            $this->bodies[$translation->store_language_id] = $translation->body ?? '';
+            $this->persistedSlugs[$translation->store_language_id] = $translation->slug;
+            $this->originalTranslatedLanguageIds[] = $translation->store_language_id;
+        }
+
         $this->blogCategoryId = $blogPost->blog_category_id;
         $this->status = $blogPost->status->value;
         // Seconds precision, on purpose: a minute-precision value would resubmit 10:20:00 for a post
@@ -141,7 +200,6 @@ class Editor extends Component
         // exemption would not apply and retitling an overdue Scheduled post would be refused (R-9).
         // The application timezone is UTC, and so is the value.
         $this->publishedAt = $blogPost->published_at?->format('Y-m-d\TH:i:s') ?? '';
-        $this->body = $defaultTranslation->body ?? '';
         $compareTranslatedNames = app(CompareTranslatedNames::class);
 
         // A tag with no name in the default language (after a default change) still shows, under
@@ -250,6 +308,7 @@ class Editor extends Component
     public function save(
         CreateBlogPost $createBlogPost,
         UpdateBlogPost $updateBlogPost,
+        SetBlogPostTranslation $setBlogPostTranslation,
         LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt,
     ): mixed {
         $blogPost = $this->blogPostId === null ? null : BlogPost::findOrFail($this->blogPostId);
@@ -262,32 +321,132 @@ class Editor extends Component
             ? $this->publishedAt
             : null;
 
-        try {
-            if ($blogPost === null) {
-                $createBlogPost(
-                    title: $this->title,
-                    body: $this->body,
-                    blogCategoryId: $this->blogCategoryId,
-                    status: $this->status,
-                    publishedAt: $publishedAt,
-                    tagNames: $this->tagNames,
-                );
-            } else {
-                $updateBlogPost(
-                    $blogPost,
-                    title: $this->title,
-                    body: $this->body,
-                    blogCategoryId: $this->blogCategoryId,
-                    status: $this->status,
-                    publishedAt: $publishedAt,
-                    tagNames: $this->tagNames,
-                );
+        // D-14: the client-controlled array keys are narrowed against the server-derived ACTIVE set.
+        $languages = $this->activeLanguages();
+        $defaultLanguage = $languages->first(fn (StoreLanguage $language): bool => (bool) $language->is_default);
+        $defaultId = (string) $defaultLanguage?->id;
+        $titleOf = fn (StoreLanguage $language): string => is_string($this->titles[$language->id] ?? null) ? $this->titles[$language->id] : '';
+        $bodyOf = fn (StoreLanguage $language): string => is_string($this->bodies[$language->id] ?? null) ? $this->bodies[$language->id] : '';
+
+        // D-10: untouched tabs are skipped, blanked ones refused, engaged ones written.
+        $engaged = [];
+        $blanked = [];
+
+        foreach ($languages as $language) {
+            if ($language->id === $defaultId) {
+                continue;
             }
+
+            if (trim($titleOf($language)) === '' && trim($bodyOf($language)) === '') {
+                if (in_array($language->id, $this->originalTranslatedLanguageIds, true)) {
+                    $blanked["titles.{$language->id}"] = [trans('validation.required', ['attribute' => __('blog-posts.editor.title_label')])];
+                }
+
+                continue;
+            }
+
+            $engaged[] = $language;
+        }
+
+        if ($blanked !== []) {
+            $this->activeLanguageId = $this->firstErroringLanguageId($languages, $blanked);
+
+            throw ValidationException::withMessages($blanked);
+        }
+
+        try {
+            DB::transaction(function () use ($blogPost, $createBlogPost, $updateBlogPost, $setBlogPostTranslation, $defaultLanguage, $titleOf, $bodyOf, $publishedAt, $engaged): void {
+                $defaultTitle = $defaultLanguage === null ? '' : $titleOf($defaultLanguage);
+                $defaultBody = $defaultLanguage === null ? '' : $bodyOf($defaultLanguage);
+
+                if ($blogPost === null) {
+                    $blogPost = $createBlogPost(
+                        title: $defaultTitle,
+                        body: $defaultBody,
+                        blogCategoryId: $this->blogCategoryId,
+                        status: $this->status,
+                        publishedAt: $publishedAt,
+                        tagNames: $this->tagNames,
+                    );
+                } else {
+                    $blogPost = $updateBlogPost(
+                        $blogPost,
+                        title: $defaultTitle,
+                        body: $defaultBody,
+                        blogCategoryId: $this->blogCategoryId,
+                        status: $this->status,
+                        publishedAt: $publishedAt,
+                        tagNames: $this->tagNames,
+                    );
+                }
+
+                foreach ($engaged as $language) {
+                    $setBlogPostTranslation($blogPost, $language, $titleOf($language), $bodyOf($language));
+                }
+            });
         } catch (ValidationException $exception) {
-            throw ValidationException::withMessages($this->rekeyErrors($exception->errors()));
+            $errors = $this->rekeyErrors($exception->errors(), $defaultId);
+            $this->activeLanguageId = $this->firstErroringLanguageId($languages, $errors);
+
+            throw ValidationException::withMessages($errors);
         }
 
         return $this->redirectRoute('blog-posts.index');
+    }
+
+    /**
+     * Switch the visible language tab. The id is resolved against the ACTIVE languages, so a forged
+     * unknown, malformed or inactive id fails as not found and leaves the current tab unchanged.
+     */
+    public function setActiveLanguageTab(string $languageId): void
+    {
+        $language = StoreLanguage::query()->active()->findOrFail($languageId);
+
+        $this->activeLanguageId = $language->id;
+    }
+
+    /**
+     * Keeps a '' under every language in the locked set resolved in mount() on each request, so a
+     * wire:model target (a WYSIWYG's non-nullable value) is never bound to a null key. A language that
+     * becomes active after mount() is not covered.
+     */
+    public function hydrate(): void
+    {
+        foreach ($this->languages as $language) {
+            $this->titles[$language['id']] ??= '';
+            $this->bodies[$language['id']] ??= '';
+        }
+    }
+
+    /**
+     * The active store languages, one tab each: the store default first, then the rest by name.
+     *
+     * @return Collection<int, StoreLanguage>
+     */
+    private function activeLanguages(): Collection
+    {
+        return StoreLanguage::query()
+            ->active()
+            ->orderByDesc('is_default')
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * The first tab (in tab order) carrying one of the given errors, else the current tab.
+     *
+     * @param  Collection<int, StoreLanguage>  $languages
+     * @param  array<string, array<int, string>>  $errors
+     */
+    private function firstErroringLanguageId(Collection $languages, array $errors): string
+    {
+        foreach ($languages as $language) {
+            if (isset($errors["titles.{$language->id}"]) || isset($errors["bodies.{$language->id}"])) {
+                return $language->id;
+            }
+        }
+
+        return $this->activeLanguageId;
     }
 
     /**
@@ -462,15 +621,19 @@ class Editor extends Component
      * Moves each message onto the declared public property it is displayed against, merging the
      * messages of keys that share one target.
      *
+     * The default language's bare `title` / `body` keys move onto `titles.{defaultId}` /
+     * `bodies.{defaultId}` (D-9); keys already shaped by SetBlogPostTranslation pass through.
+     *
      * @param  array<string, array<int, string>>  $errors
      * @return array<string, array<int, string>>
      */
-    private function rekeyErrors(array $errors): array
+    private function rekeyErrors(array $errors, string $defaultId): array
     {
         $rekeyed = [];
+        $keyMap = self::RE_KEYED_ERRORS + ['title' => "titles.{$defaultId}", 'body' => "bodies.{$defaultId}"];
 
         foreach ($errors as $key => $messages) {
-            $target = self::RE_KEYED_ERRORS[$key] ?? $key;
+            $target = $keyMap[$key] ?? $key;
             $rekeyed[$target] = [...($rekeyed[$target] ?? []), ...$messages];
         }
 

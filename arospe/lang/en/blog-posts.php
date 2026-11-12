@@ -62,6 +62,12 @@ return [
         'published_at_label' => 'Publication date',
         'published_at_hint' => 'Date and time in UTC.',
         'body_label' => 'Body',
+        // Story 0079 -- the per-language title/body tabs.
+        'tabs' => [
+            'untranslated' => 'This post has no content in this language yet.',
+            'slug_label' => 'Slug',
+            'slug_hint' => 'as last saved; it updates when you save',
+        ],
         'tags_label' => 'Tags',
         'tags_hint' => 'Type a tag and press Enter. Existing tags are suggested as you type.',
         'tag_input_placeholder' => 'Add a tag',
