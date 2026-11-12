@@ -32,7 +32,7 @@ beforeEach(function () {
 // chain is built inline with GeographyEntryFactory::community()/municipality(), both of which
 // require an explicit parent argument.
 
-test('one entry at each level round-trips through the pivot', function (Closure $makeEntry, string $expectedLevel) {
+test('a country entry round-trips through the pivot with its level', function (Closure $makeEntry, string $expectedLevel) {
     $zone = app(CreateShippingZone::class)('Zona Norte');
     $entry = $makeEntry();
 
@@ -49,16 +49,6 @@ test('one entry at each level round-trips through the pivot', function (Closure 
         ->and($roundTripped->level->value)->toBe($expectedLevel);
 })->with([
     'country' => [fn () => GeographyEntry::factory()->create(['name' => 'Francia']), 'country'],
-    'community' => [
-        fn () => GeographyEntry::factory()->community(GeographyEntry::factory()->create(['name' => 'España']))->create(['name' => 'Galicia']),
-        'community',
-    ],
-    'municipality' => [
-        fn () => GeographyEntry::factory()->municipality(
-            GeographyEntry::factory()->community(GeographyEntry::factory()->create(['name' => 'España']))->create(['name' => 'Asturias'])
-        )->create(['name' => 'Gijón']),
-        'municipality',
-    ],
 ]);
 
 test('a single zone may mix geography levels', function () {

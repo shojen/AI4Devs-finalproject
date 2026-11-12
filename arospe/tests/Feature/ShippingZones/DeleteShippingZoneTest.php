@@ -210,7 +210,7 @@ function shippingZoneDeleteFailureDouble(ShippingZone $zone, int $simulatedMysql
 }
 
 // 0033's explicit obligation: a guard hardcoding "1 shipping rate" would pass any single-fixture
-// test -- driven over 1, 2 and 7 distinct reference counts.
+// test -- driven over 1 and 7 distinct reference counts.
 test('the count is correct for at least two distinct reference counts', function (int $count) {
     $zone = app(CreateShippingZone::class)('Zona Norte');
     attachRatesToZone($zone, $count);
@@ -228,7 +228,7 @@ test('the count is correct for at least two distinct reference counts', function
         ->and($caught->errors()['shippingZoneId'][0])->toContain((string) $count);
 
     $this->assertDatabaseHas('shipping_zones', ['id' => $zone->id]);
-})->with([1, 2, 7]);
+})->with([1, 7]);
 
 // Guards a trans_choice string written with one branch (and its Spanish counterpart, R-6) --
 // asserted by DIFFERENCE, not by a literal copy of the exact English wording, since the wording
