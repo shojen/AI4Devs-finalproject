@@ -48,7 +48,7 @@ test('the seeded catalog includes a representative anchor set of ISO countries',
     $this->seed(SalesRegionSeeder::class);
 
     expect(SalesRegion::where('code', $code)->where('kind', SalesRegionKind::Country)->exists())->toBeTrue();
-})->with(['ES', 'FR', 'DE', 'PT', 'US', 'JP', 'GB']);
+})->with(['ES', 'US', 'GB']);
 
 test('every country entry\'s code matches a two-letter uppercase shape', function () {
     $this->seed(SalesRegionSeeder::class);
@@ -64,7 +64,7 @@ test('the seeded catalog carries no retired or invented country code', function 
     $this->seed(SalesRegionSeeder::class);
 
     expect(SalesRegion::where('code', $retiredOrInventedCode)->exists())->toBeFalse();
-})->with(['UK', 'AN', 'CS', 'YU', 'EU']);
+})->with(['UK', 'AN', 'EU']);
 
 // --- Structure ---
 

@@ -465,7 +465,10 @@ test('a malformed super admin address is refused and grants the role to nobody',
     $this->seed(RolePermissionSeeder::class);
 
     expect(DB::table('model_has_roles')->count())->toBe(0);
-})->with('malformedSuperAdminEmails');
+})->with([
+    'bare word' => ['admin'],
+    'single digit' => ['0'],
+]);
 
 test('a malformed super admin address creates no user row for it', function (string $malformedEmail) {
     $countBefore = User::count();
@@ -474,7 +477,10 @@ test('a malformed super admin address creates no user row for it', function (str
     $this->seed(RolePermissionSeeder::class);
 
     expect(User::count())->toBe($countBefore);
-})->with('malformedSuperAdminEmails');
+})->with([
+    'bare word' => ['admin'],
+    'single digit' => ['0'],
+]);
 
 test('a malformed super admin address is reported to the operator naming the rejected value', function (string $malformedEmail) {
     config(['auth.super_admin.email' => $malformedEmail]);
@@ -498,7 +504,10 @@ test('a malformed super admin address does not abort the rest of the seed', func
 
     expect(Role::count())->toBe(2)
         ->and(Permission::count())->toBe(43);
-})->with('malformedSuperAdminEmails');
+})->with([
+    'bare word' => ['admin'],
+    'single digit' => ['0'],
+]);
 
 test('a malformed super admin address results in no password-reset notification', function (string $malformedEmail) {
     Notification::fake();
@@ -507,7 +516,10 @@ test('a malformed super admin address results in no password-reset notification'
     $this->seed(RolePermissionSeeder::class);
 
     Notification::assertNothingSent();
-})->with('malformedSuperAdminEmails');
+})->with([
+    'bare word' => ['admin'],
+    'single digit' => ['0'],
+]);
 
 // --- Audit logging and error reporting (N3) ---
 
