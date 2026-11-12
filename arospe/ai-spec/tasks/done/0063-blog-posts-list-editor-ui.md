@@ -16,7 +16,7 @@
 > | --- | --- |
 > | [**0072** — Blog Categories backend](0072-translatable-content-retrofit-blog-categories-backend.md) + [**0073** — Blog Categories language tabs](0073-blog-categories-language-tabs-ui.md) | Drops `blog_categories.name` **and** `normalized_name` into `blog_category_translations`. A category's name is now `translated('name', $languageId)`. |
 > | [**0074** — Blog Tags backend](0074-translatable-content-retrofit-blog-tags-backend.md) + [**0075** — Blog Tags language tabs](0075-blog-tags-language-tabs-ui.md) | Drops `blog_tags.name` **and** `normalized_name` into `blog_tag_translations`, with uniqueness re-scoped per store language. A tag's name is read the same way. |
-> | [**0078** — Blog Posts backend](0078-translatable-content-retrofit-blog-posts-backend.md) + [**0079** — Blog post editor language tabs](../0079-blog-post-editor-language-tabs-ui.md) | **The largest.** Drops `blog_posts.title`, `body` **and** `slug` into `blog_post_translations`, one row per `(post, store language)`, with `UNIQUE(store_language_id, slug)`. `BlogPost` narrows to `#[Fillable(['blog_category_id', 'status'])]`. 0079 then turns this story's editor into per-language tabs and adds `App\Actions\Blog\SetBlogPostTranslation`. |
+> | [**0078** — Blog Posts backend](0078-translatable-content-retrofit-blog-posts-backend.md) + [**0079** — Blog post editor language tabs](0079-blog-post-editor-language-tabs-ui.md) | **The largest.** Drops `blog_posts.title`, `body` **and** `slug` into `blog_post_translations`, one row per `(post, store language)`, with `UNIQUE(store_language_id, slug)`. `BlogPost` narrows to `#[Fillable(['blog_category_id', 'status'])]`. 0079 then turns this story's editor into per-language tabs and adds `App\Actions\Blog\SetBlogPostTranslation`. |
 >
 > **These are corrections, not a redesign.** This story's job is unchanged — the list, the routed
 > editor, the filters, delete, the trashed section, the registry entry — and it does **not** grow the
@@ -73,7 +73,7 @@
 > **What needed a decision and how each was settled** — stated here rather than left to be inferred:
 >
 > - **Which language the list renders the post title in — ✅ already answered, and not by this
->   amendment.** [0079](../0079-blog-post-editor-language-tabs-ui.md) scripts it
+>   amendment.** [0079](0079-blog-post-editor-language-tabs-ui.md) scripts it
 >   (*"The list shows each post's title in the store's default language"*), states it in its Expected
 >   outcome and pins it in its disposition table. **The store default**, consistent with
 >   [0027's OQ-10](../done/0027-products-list-and-editor-ui.md#open-questions), resolved the same way on
@@ -96,7 +96,7 @@
 >   here** — its **Q-1** (how `SetBlogPostTranslation` expresses "a non-default body is never
 >   required" without editing 0078's trait) and its **Q-2** (whether a tab discloses its derived slug
 >   read-only). Both are that story's to close before its Phase 3.
-> - **One genuinely open cross-story gap is inherited, not closed:** [0079's **R-3**](../0079-blog-post-editor-language-tabs-ui.md) —
+> - **One genuinely open cross-story gap is inherited, not closed:** [0079's **R-3**](0079-blog-post-editor-language-tabs-ui.md) —
 >   `FindOrCreateBlogTag` has no language context after 0074, and neither 0074 nor 0078 closes it.
 >   The *behaviour* is settled (the store default, 0074 **D-7**/**Q-1(a)**, confirmed by 0079
 >   **D-12**); what is unsettled is whether the signature and the lookup shape survive intact.
@@ -135,7 +135,7 @@ taxonomy`, and Blog acceptance criteria 1, the create-on-the-fly half of 3, and 
 >   **R-2**) — which renders an **em dash**, never an error. The language is the **store default**
 >   for the title (0079) and, per [OQ-10](#open-questions), for the category too.
 > - **The editor's `title` and body are authored once per active store language**, inside language
->   tabs — but the tabs are **[0079](../0079-blog-post-editor-language-tabs-ui.md)'s to build, not this
+>   tabs — but the tabs are **[0079](0079-blog-post-editor-language-tabs-ui.md)'s to build, not this
 >   story's**. This story still ships the single-field editor as written until 0079 lands on top of
 >   it; what is corrected here is only what this file *asserts*.
 > - **`status`, the publication date, the category select and the tag chips render exactly once,
@@ -217,7 +217,7 @@ in that guidelines file.
 >
 > **Nothing is added here.** The per-language scenarios — one tab per active language, an
 > untranslated tab opening empty rather than pre-filled, a refusal on a hidden tab bringing it into
-> view — belong to [0079's own Gherkin](../0079-blog-post-editor-language-tabs-ui.md) and are
+> view — belong to [0079's own Gherkin](0079-blog-post-editor-language-tabs-ui.md) and are
 > deliberately not duplicated into this file.
 
 ```gherkin
@@ -580,7 +580,7 @@ this story **appends an item to it**, and does not create it.
 | `app/Actions/NormalizeForSearch.php` | 0022 — reached only transitively |
 
 > ⚠️ **Correction, 2026-08-30 — nine of the files above are also opened by
-> [0079](../0079-blog-post-editor-language-tabs-ui.md), and one entry in the *not touched* table needs
+> [0079](0079-blog-post-editor-language-tabs-ui.md), and one entry in the *not touched* table needs
 > narrowing.** Neither table changes: every file this story creates it still creates, and every file
 > it declines to touch it still declines to touch. What is added is the **sequencing constraint**,
 > which under this repo's
@@ -619,7 +619,7 @@ this story **appends an item to it**, and does not create it.
 
 > ⚠️ **Correction, 2026-08-30 — six cases below are invalidated by the three retrofits, one of them
 > ⛔ *fatally* (it asserts against a column that will not exist). The dispositions are
-> [0079's own](../0079-blog-post-editor-language-tabs-ui.md), adopted verbatim rather than re-derived.**
+> [0079's own](0079-blog-post-editor-language-tabs-ui.md), adopted verbatim rather than re-derived.**
 > Every other case in every file below is **unaffected** — the route gate, the ordering, the
 > soft-delete, the refusal logging, the filters, the `\ValueError` guard, the date boundary, the
 > restore block and the whole trashed section survive unchanged, because none of them touches a
@@ -1255,7 +1255,7 @@ because the answer interacts with that race.
 >   than either choice alone. The same answer governs the editor's category select and the tag chips.
 >
 > ⚠️ **`R-1`'s `<flux:select>` Playwright race is *unchanged in kind and worse in count*.** This
-> decision already ships four such controls; once [0079](../0079-blog-post-editor-language-tabs-ui.md)
+> decision already ships four such controls; once [0079](0079-blog-post-editor-language-tabs-ui.md)
 > lands the same page also carries a tab strip whose own dynamic attributes must use
 > `{{ Js::from(...) }}` rather than `@js(...)`. Neither problem causes the other, and **OQ-4** is
 > still the open decision with the widest blast radius on this screen.
@@ -1288,7 +1288,7 @@ following the newer `SalesRegions\Index::$regions` precedent and 0060's **D-6**.
 > (null on create, set only from the route-bound post).
 
 > ⚠️ **Correction, 2026-08-30 — two rows of the table above are superseded by
-> [0079](../0079-blog-post-editor-language-tabs-ui.md), five are untouched, and one `#[Locked]` property
+> [0079](0079-blog-post-editor-language-tabs-ui.md), five are untouched, and one `#[Locked]` property
 > is fed from a column that no longer exists.**
 >
 > **The rule itself does not merely survive — it *widens*, and this is the single most important
@@ -1442,7 +1442,7 @@ is name-based and case/accent-insensitive.
 > `normalized_name` (verified: its second migration is `dropColumn(['name', 'normalized_name'])`).
 >
 > **0078's R-1(a) lists three break sites in this file and this is not one of them; it is
-> [0079's **R-1**](../0079-blog-post-editor-language-tabs-ui.md), found by opening the editor rather than
+> [0079's **R-1**](0079-blog-post-editor-language-tabs-ui.md), found by opening the editor rather than
 > by following the hand-off — so this file is broken by three Epic 5 stories across *four* sites, and
 > the editor is one of them, not just the list.** The hydration becomes a resolved read
 > (`translated('name', $languageId)` per tag, coalescing a `null` away), loaded through the same
@@ -1477,7 +1477,7 @@ is name-based and case/accent-insensitive.
 > step. Accepted as a curation problem for the tag management screen (0075) rather than solved here.
 >
 > ⛔ **One genuinely open gap, inherited and not closed by this amendment:**
-> [0079's **R-3**](../0079-blog-post-editor-language-tabs-ui.md). The *behaviour* is settled, but whether
+> [0079's **R-3**](0079-blog-post-editor-language-tabs-ui.md). The *behaviour* is settled, but whether
 > `FindOrCreateBlogTag::__invoke(string $name)` really keeps its signature while its lookup spans a
 > translation table is closed by neither 0074 (which defers the UI half here) nor 0078 (whose scope
 > fence excludes tag names as *"0074's, already retrofitted"*). **A coordination item, not a guess.**
@@ -1645,7 +1645,7 @@ column 0061 did not create.
 
 > ⚠️ **Correction, 2026-08-30 — one embed becomes **N**, and the negative assertion below stays
 > *literally* true while ceasing to mean what it meant.** After
-> [0079](../0079-blog-post-editor-language-tabs-ui.md) **D-4** the editor mounts **one `WysiwygEditor`
+> [0079](0079-blog-post-editor-language-tabs-ui.md) **D-4** the editor mounts **one `WysiwygEditor`
 > per active store language**, all mounted simultaneously and hidden with `x-show`, each bound to its
 > own `bodies.{languageId}` leaf with a per-language `wire:key`. Three consequences:
 >
@@ -1902,7 +1902,7 @@ failure mode, arriving in a file nobody opens while adding a model.
 >
 > - ***"No SEO/meta fields, no per-locale tabs — Epic 5."*** **Both halves are still true of this
 >   story**, and the sentence has stopped being a statement about the schema. **Per-locale tabs are
->   [0079's](../0079-blog-post-editor-language-tabs-ui.md)**, built on this editor and explicitly not
+>   [0079's](0079-blog-post-editor-language-tabs-ui.md)**, built on this editor and explicitly not
 >   here. **SEO/meta fields still do not exist anywhere** — 0078's **Q-2** resolved 2026-08-30 to
 >   option **(a), out of scope**: 0061 ships no meta columns and a translation retrofit is the wrong
 >   place to invent them. Note this is a *per-entity* decision rather than a family-wide one — 0076
@@ -1928,7 +1928,7 @@ failure mode, arriving in a file nobody opens while adding a model.
 ### Verified: no single-slug assumption survives in this file
 
 The one check this amendment was asked to run explicitly, because
-[0079's own ⛔ block](../0079-blog-post-editor-language-tabs-ui.md) records a coordinator brief that
+[0079's own ⛔ block](0079-blog-post-editor-language-tabs-ui.md) records a coordinator brief that
 asserted the opposite (*"slug is per-language-unique and administrator-facing"*) and was **false
 against 0078 as written**. Verified by grep rather than by recollection: **`slug` appears three times
 in this file and none of them is a form control, a bound property, a rendered cell, a `data-test` hook
@@ -2004,7 +2004,7 @@ requiring PHP execution was verified and every such claim is flagged at its site
 > | [**0072**](0072-translatable-content-retrofit-blog-categories-backend.md) | **hard**, not implemented | Drops `blog_categories.name`. Two of this screen's queries and two of its option sets name it. |
 > | [**0074**](0074-translatable-content-retrofit-blog-tags-backend.md) | **hard**, not implemented | Drops `blog_tags.name`. The list's eager load and the editor's chip hydration name it. |
 > | [**0078**](0078-translatable-content-retrofit-blog-posts-backend.md) | **hard, blocking, total**, not implemented | Drops `blog_posts.title`/`body`/`slug`. The list query, the editor's two fields, the delete modal's label and the body rules all depend on it. |
-> | [**0079**](../0079-blog-post-editor-language-tabs-ui.md) | **depends on this story**, not the reverse | It builds the language tabs *on top of* this editor and rewrites this list's query. It must land **strictly after** this story and must never be batched with it. |
+> | [**0079**](0079-blog-post-editor-language-tabs-ui.md) | **depends on this story**, not the reverse | It builds the language tabs *on top of* this editor and rewrites this list's query. It must land **strictly after** this story and must never be batched with it. |
 > | [**0070**](0070-translatable-content-mechanism-product-categories-backend.md) / [**0068**](0068-store-languages-catalog-backend.md) | hard, transitively | `HasTranslations`, `translated()`, `withTranslationsFor()`, `SetTranslation`, `StoreLanguage` and its `is_default` row. Consumed, never re-implemented. |
 > | [**0071**](0071-product-categories-language-tabs-ui.md) | soft, via 0079 | Owns `<x-language-tab-strip>`, `setActiveLanguageTab()` and the two-layer pattern 0079 consumes. |
 >
@@ -2183,7 +2183,7 @@ guessed. **None blocks Phase 2 review.**
   artifact default to" question this epic has raised. No longer an adoption pending ratification.
 
   **The post-title half of this question is already answered and is not re-opened**:
-  [0079](../0079-blog-post-editor-language-tabs-ui.md) resolves the list's title to the **store default**
+  [0079](0079-blog-post-editor-language-tabs-ui.md) resolves the list's title to the **store default**
   (its Gherkin, its Expected outcome and its disposition table all say so) and opens the editor on the
   **store default's** tab. **Ordering raises no question at all**, because **D-4** orders by
   `created_at` and never by a translated column. What remains unnamed by *any* story is the language

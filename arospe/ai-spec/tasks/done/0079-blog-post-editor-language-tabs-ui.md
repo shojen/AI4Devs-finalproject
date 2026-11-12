@@ -1,14 +1,14 @@
 # [0079] Blog post editor — language tabs (frontend)
 
 ## Description
-Retrofit story [0063](done/0063-blog-posts-list-editor-ui.md)'s Blog post list and routed editor page so a
+Retrofit story [0063](0063-blog-posts-list-editor-ui.md)'s Blog post list and routed editor page so a
 post's **title** and **body** are authored per active store language through language tabs, satisfying
-[PRD Epic 5, Layer 2](../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization)'s *"each active store language
+[PRD Epic 5, Layer 2](../../../docs/PRD/sections/epic-5-internationalization.md#epic-5--internationalization)'s *"each active store language
 surfaces as a tab in the Product and **Blog editors**"* and its `Switching an editor's language tab
 switches only translatable fields` scenario. Consumes story
-[0078](done/0078-translatable-content-retrofit-blog-posts-backend.md)'s retrofit — which **deletes the
+[0078](0078-translatable-content-retrofit-blog-posts-backend.md)'s retrofit — which **deletes the
 `blog_posts.title` and `blog_posts.body` columns this screen currently reads** — and story
-[0071](done/0071-product-categories-language-tabs-ui.md)'s shared tab-strip pattern, both unchanged.
+[0071](0071-product-categories-language-tabs-ui.md)'s shared tab-strip pattern, both unchanged.
 
 It also adds **one backend action**, `App\Actions\Blog\SetBlogPostTranslation`, so that writing a
 non-default-language translation is authorized and validated at **two independent layers** — the
@@ -38,37 +38,47 @@ refined.** Almost nothing here is new mechanism; what *is* new is named in
 > language."* An administrator-facing slug is 0061 **OQ-2** option **(c)**, which that story
 > **explicitly did not recommend** and which nothing has since adopted. The likely source of the
 > confusion is that 0078 *did* change the slug's **uniqueness scope** (global → per store language) and
-> *did* give the validation trait its first `slugRules()`, which reads like "the slug became a real
-> field" without being that.
+> *did* give the validation trait a slug-aware rule, which reads like "the slug became a real field"
+> without being that. As shipped, that rule is `titleSlugRules(string $storeLanguageId, ?string
+> $ignoreBlogPostId = null)` and it is **keyed on `title`**, not on a slug field.
 >
 > **This matters structurally, not pedantically.** It removes an input, a `$slugs` state array, 0077's
 > entire blur-prefill affordance (**D-9** there) and 0077's `'' → NULL` slug-uniqueness trap
-> (**D-4** there) from this story's scope — and it creates a problem no sibling has: **a refusal about
-> a slug has no slug field to land on** (**D-2**, **Q-2**).
+> (**D-4** there) from this story's scope. A slug-collision refusal lands on the **title** field of the
+> language it belongs to, because the shipped rule already keys it there (**D-2**).
 >
-> Per this project's rule that [a second-hand claim is a flag that nobody checked](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24),
+> Per this project's rule that [a second-hand claim is a flag that nobody checked](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-reviewers-correction-replaced-an-accurate-technical-explanation-with-a-wrong-one-unverified--2026-08-24),
 > this is recorded as a correction with its evidence rather than silently worked around. **Both amigos
 > were asked to challenge it independently and both confirmed it against the files.**
 
-> **Nothing this story depends on exists in code.** Verified against the live tree at authoring time:
-> `app/Livewire/` holds `Actions, Media, Roles, SalesRegions, Settings, Users` and no `BlogPosts/`;
-> `app/Models/` holds `Media, Role, SalesRegion, User` and no `BlogPost` or `StoreLanguage`;
-> `app/Actions/` holds `Auth, Fortify, Media, Roles, SalesRegions, Users` and **no `Blog/`**;
-> `app/Concerns/` holds six validation traits and no `HasTranslations`; `lang/en/` holds
-> `media.php, navigation.php, roles.php, sales-regions.php, users.php` and no `blog*.php`;
-> `routes/` holds `roles, sales-regions, settings, users, web` and no `blog-posts.php`;
-> `resources/views/components/` holds nine files and **no `language-tab-strip.blade.php`**.
-> `composer.json` requires **`livewire/flux` (free) with no `livewire/flux-pro`**. There is **no
-> `vendor/` directory**, so nothing below was settled by executing Laravel, Livewire, Alpine or Flux
-> code. Stories 0020, 0021, 0058, 0059, 0060, 0061, 0062, 0063, 0068, 0070, 0071, 0074 and 0078 are
-> **all Phase 1 files**. **Phase 3 must re-verify every signature named here against `HEAD` before
-> writing a line** — the [deferred-findings failure mode](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23),
-> at this epic's widest exposure yet: **thirteen unshipped stories** (**R-12**).
+> **Every dependency of this story has shipped** (re-verified against the worktree's tree for the
+> Phase 2 refresh). What exists and is consumed here:
+>
+> - `App\Models\BlogPost` (with `translations()`, `displayTitle()` and `scopeWithListTranslations()`),
+>   `App\Models\BlogPostTranslation`, `App\Models\StoreLanguage`.
+> - `App\Livewire\BlogPosts\Index` — already lists through `withListTranslations()` (0078 did the 0063
+>   amendment) and renders `translated('title') ?? displayTitle() ?? '—'`.
+> - `App\Livewire\BlogPosts\Editor` — already hydrates the **default** language's title/body from the
+>   raw `translations()` row and the tag chips from tag translations (`BlogTag::displayName()`). It
+>   still binds a single `public string $title` / `$body`; that is what this story widens. It does
+>   **not** compose `BlogPostValidationRules` nor call `$this->validate()`: the actions own the rules
+>   and `save()` re-keys their `ValidationException` (**D-9**).
+> - `App\Concerns\BlogPostValidationRules` — `titleRules()` (no parameter, no uniqueness),
+>   `titleSlugRules($storeLanguageId, $ignoreBlogPostId)` (per-language derived-slug refusal keyed on
+>   `title`), `bodyRules(BlogPostStatus $status)`. Used by `CreateBlogPost`/`UpdateBlogPost`, which
+>   dispatch the publish notification through `DB::afterCommit()`.
+> - `resources/views/components/language-tab-strip.blade.php` (0071) and
+>   `App\Actions\Blog\SetBlogTagTranslation` (0075) — the closest sibling of the action this story adds.
+>
+> What does **not** exist yet and is this story's: `App\Actions\Blog\SetBlogPostTranslation` and the
+> per-language editor surface. Phase 3 still re-reads each signature against `HEAD` before writing a
+> line, per the [deferred-findings failure mode](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-deferred-storys-findings-were-claims-about-a-tree-that-no-longer-existed-and-one-of-them-would-have-reopened-a-bug-in-this-log--2026-08-23)
+> (**R-12**).
 
 ## Type
 frontend | includes database-expert: **no** | consumes **0078** (the retrofit), **0071** (the tab strip),
 **0070** (the mechanism), **0068** (`StoreLanguage`), **0063** (the screen), **0061**/**0059**/**0058**
-(the domain), **0021** (the WYSIWYG), **[0024a](done/0024a-product-description-html-sanitization.md)** (the sanitizer, transitively)
+(the domain), **0021** (the WYSIWYG), **[0024a](0024a-product-description-html-sanitization.md)** (the sanitizer, transitively)
 
 > **On the classification — settled, not re-escalated.** This story stays **frontend** while adding one
 > `app/Actions/Blog/` class, which is the shape 0071, 0073, 0075 and 0076b all ship. The coordinator has
@@ -78,6 +88,10 @@ frontend | includes database-expert: **no** | consumes **0078** (the retrofit), 
 > `includes database-expert` stays **no**. Splitting would put the screen and the guard it depends on in
 > different stories.
 >
+> **No split is needed.** Precedent runs both ways: `SetBlogTagTranslation` shipped inside 0075's
+> frontend story, while 0076b's `SetProductTranslation` was split into its own backend story. This action is the 0075 shape — one thin
+> wrapper reusing an existing trait — not 0076b's larger backend surface.
+>
 > ⚠️ **One thing Phase 2 should notice anyway, because it is worse here than in any sibling:** this
 > story's action is the family's **second multi-field** one *and* the first whose validation depends on
 > a column living on a **different table** (0078's **R-9**), which is a larger backend surface inside a
@@ -86,7 +100,7 @@ frontend | includes database-expert: **no** | consumes **0078** (the retrofit), 
 ## Three Amigos participants
 
 `product-owner` (facilitator) + `frontend-expert` + `frontend-qa`, per
-[workflow.md](../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule)'s Frontend classification. **Both amigos
+[workflow.md](../../../docs/workflow/task-files-links-and-ordering.md#task-classification-rule)'s Frontend classification. **Both amigos
 were dispatched as real subagent calls and both returned full contributions.** Their material is
 reflected below, including **four points where the facilitator corrected or overruled a contribution**
 (**V-1**–**V-4**) and **six points where the two converged independently**, which is the strongest
@@ -105,24 +119,24 @@ signal in this debate. See [Provenance](#provenance).
 > **I want** the fourth and final language-tabs screen to *consume* the pattern three siblings already
 > refined rather than re-derive any part of it,
 > **so that** the one thing this story genuinely adds — a two-field panel around a `wire:ignore`d
-> rich-text region, on a screen whose slug has no field and whose validation reads a column on another
-> table — is the only thing anybody has to review carefully.
+> rich-text region, on a screen whose slug has no field of its own and whose validation reads a column
+> on another table — is the only thing anybody has to review carefully.
 
 **Scope fence — this story ships no schema and no route.** No migration, no model, no column, no
 policy, no permission, no `config/modules.php` entry, no route. It widens two Livewire components and
 two Blade views, **adds one domain action**, **consumes** 0071's shared tab strip, and appends one lang
 group.
 
-**Scope fence — this story is not the 0063 amendment.** 0078's technical task 1 assigns the
-coordinator *"one coherent amendment covering all three Epic 5 taxonomy/content retrofits at once"* for
-0063. That amendment is **not written here** (this story edits no other story's file), and its scope is
-**larger than 0078's own R-1(a) states** — see **R-1**, which names a fourth break site 0078 misses.
+**Scope fence — the 0063 amendment is already done.** 0078 retrofitted 0063's screen to the translated
+schema (the list uses `withListTranslations()`; the editor hydrates its default-language title/body
+from `translations()` and its tag chips from tag translations). This story starts from that shipped
+state and widens the editor from one language to every active one (**R-1**).
 
 ## Gherkin — 2. Detailed acceptance criteria (Given/When/Then)
 
 Every scenario opens with a named business-role actor — **"a blog editor"**, the actor 0061, 0063 and
 0078 all use, from the PRD's own Epic 4 scenarios — and carries exactly one `When`, per
-[gherkin-guidelines.md](../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3.
+[gherkin-guidelines.md](../../../docs/testing/frontend/gherkin-guidelines.md) rules 1 and 3.
 
 ```gherkin
 Feature: Blog post content authored per store language
@@ -232,6 +246,21 @@ Feature: Blog post content authored per store language
     When they save the post with only its French title changed
     Then the Spanish slug is unchanged
 
+  Scenario: A translated tab shows the slug its language is saved under
+    Given a blog editor, with a post saved in French under the slug "bottes-d-hiver"
+    When they switch to the French tab
+    Then they are shown "bottes-d-hiver" as that language's slug, as text they cannot edit
+
+  Scenario: An untranslated tab shows no slug
+    Given a blog editor, with a post written in Spanish only
+    When they switch to the French tab
+    Then no slug is shown on the French tab
+
+  Scenario: A just-typed title does not change the slug shown until the post is saved
+    Given a blog editor, with a post saved in French under the slug "bottes-d-hiver"
+    When they type a new French title without saving
+    Then the French tab still shows "bottes-d-hiver", labelled as the slug saved so far
+
   Scenario: A blog editor is offered no way to type a slug
     Given a blog editor, with French active as a store language
     When they open a blog post in the editor
@@ -264,10 +293,20 @@ Feature: Blog post content authored per store language
     When they save the post as published
     Then they are shown a validation message on the default tab's body field
 
-  Scenario: Two posts may share a title within one store language
-    Given a blog editor, with a post titled "Resumen semanal" in the default store language
-    When they save another post with the same title on that same tab
-    Then the save is accepted, because a post title carries no uniqueness rule
+  Scenario: A title whose slug another post already holds in that language is refused on that tab
+    Given a blog editor, with another post whose French title is "Bottes d'hiver"
+    When they save the post with "Bottes d'hiver" entered on the French tab
+    Then they are shown a validation message on the French tab's title field
+
+  Scenario: The same title may be used by two posts in different store languages
+    Given a blog editor, with another post whose Spanish title is "Resumen semanal"
+    When they save the post with "Resumen semanal" entered on the French tab
+    Then the save is accepted, because slug uniqueness is scoped to one store language
+
+  Scenario: Re-saving a post under its own title in a language is accepted
+    Given a blog editor, with a post titled "Bottes d'hiver" in French
+    When they save the post without changing the French title
+    Then the save is accepted
 
   # --- A refusal the editor is not looking at ---
 
@@ -281,6 +320,8 @@ Feature: Blog post content authored per store language
     When they switch away to the Spanish tab
     Then the French tab is still marked as carrying a problem
 
+  # Depends on D-14's outer transaction: the default-language action commits its own
+  # transaction, so only the component's outer DB::transaction() makes this all-or-nothing.
   Scenario: A refusal in one language leaves every other language unwritten
     Given a blog editor who has entered a valid Spanish title and an invalid French one
     When they save the post
@@ -300,10 +341,10 @@ Feature: Blog post content authored per store language
     When they open the blog posts screen
     Then the post is listed as "Botas de invierno"
 
-  Scenario: A post with no title in the store default is listed without one
-    Given a blog editor, with a post holding no title in the store default language
+  Scenario: A post with no title in the store default is listed under a title it does hold
+    Given a blog editor, with a post titled "Bottes d'hiver" in French only, Spanish being the store default
     When they open the blog posts screen
-    Then the post is listed with a placeholder in place of a title and no error is raised
+    Then the post is listed as "Bottes d'hiver" and no error is raised
 
   # --- Authorization, unchanged in kind ---
 
@@ -340,18 +381,19 @@ Feature: Blog post content authored per store language
     Then the translation is stored, because a body is required only in the default store language
 ```
 
-> **Three scenarios deliberately *not* scripted**, per
-> [rule 6](../../docs/testing/frontend/gherkin-guidelines.md#6-no-ghost-scenarios) (no ghost scenarios):
+> **Two scenarios deliberately *not* scripted**, per
+> [rule 6](../../../docs/testing/frontend/gherkin-guidelines.md#6-no-ghost-scenarios) (no ghost scenarios):
 >
 > - **"a blog editor removes a translation."** 0071's **Q-1** resolved **(a) — no removal** and 0077's
 >   **D-4** decides it identically. There is no such behaviour to script.
 > - **"a blog editor reads content held in a removed store language."** The data survives (0068 **D5**,
 >   0070 **D-6**) but no screen offers a surface for it (**D-5**), exactly as 0071 **D-5** and 0073
 >   decide. Scripting it would assert a feature every sibling declines to build.
-> - **"two posts collide on a slug."** ⛔ **Deliberately unscripted because the answer is unknown** —
->   0061's **OQ-2** is open, and the two candidate outcomes produce *opposite* scenarios (silent
->   success with a suffixed slug, versus a refusal with nowhere to render). See **R-4** and **Q-2**;
->   writing either one now would bake in a guess.
+>
+> The per-language slug collision **is** scripted (above): 0061's OQ-2 is resolved in code as
+> refuse-with-validation keyed on `title` (`titleSlugRules()`), so the outcome is known (**R-4**).
+> A post title still carries no uniqueness rule *of its own* (**D-13**); two posts sharing a title in
+> one language are refused only because their **derived slugs** collide.
 
 ## Files to create/modify
 
@@ -372,11 +414,10 @@ this story is its **fourth** consumer and must not fork, copy or widen it (**D-5
 
 | Path | Change |
 | --- | --- |
-| `app/Livewire/BlogPosts/Editor.php` | **0063's.** `public string $title` / `$body` → `public array $titles` / `$bodies` keyed by store-language id; adds `$languages`, `$defaultLanguageId`, `$originalTranslatedLanguageIds`, `$activeLanguageId`, `setActiveLanguageTab()`; `mount()` hydrates from raw rows; `save()` gains `SetBlogPostTranslation` plus the `title`/`body` → `titles.{defaultId}`/`bodies.{defaultId}` adapter. See **D-3**, **D-6**, **D-8**, **D-9**, **D-14**. |
-| `resources/views/livewire/blog-posts/editor.blade.php` | **0063's.** The single title input and single WYSIWYG become `<x-language-tab-strip>` plus one panel per active language, each holding a title input and its **own** `WysiwygEditor` instance, all mounted and hidden with `x-show` (**D-4**). Category, status, date and tags move **outside** the strip if they are not already. |
-| `app/Livewire/BlogPosts/Index.php` | **0063's.** `loadPosts()` / the list query rewritten against the translated schema — this is a **three-retrofit** rewrite, not just this story's slice (**D-7**, **R-1**). |
-| `resources/views/livewire/blog-posts.blade.php` | **0063's.** The list's title cell gains an em-dash branch for a `null` resolution. |
-| `lang/en/blog-posts.php`, `lang/es/blog-posts.php` | **0063 creates them** (its **D-17**); this story appends one `editor.tabs.*` group. Key-for-key identical. |
+| `app/Livewire/BlogPosts/Editor.php` | **0063's, as 0078 retrofitted it.** `public string $title` / `$body` → `public array $titles` / `$bodies` keyed by store-language id; adds `$languages`, `$defaultLanguageId`, `$originalTranslatedLanguageIds`, `$activeLanguageId`, `setActiveLanguageTab()`; `mount()` widens its existing raw default-row hydration to every active language; `save()` gains `SetBlogPostTranslation`, an outer `DB::transaction()`, and its existing `RE_KEYED_ERRORS` re-keying gains `title` → `titles.{defaultId}` / `body` → `bodies.{defaultId}`. See **D-3**, **D-6**, **D-8**, **D-9**, **D-14**. |
+| `resources/views/livewire/blog-posts/editor.blade.php` | **0063's.** The single title input and single WYSIWYG become `<x-language-tab-strip>` plus one panel per active language, each holding a title input and its **own** `WysiwygEditor` instance, all mounted and hidden with `x-show` (**D-4**), plus a read-only `blog-post-slug-{id}` showing the persisted slug on a translated tab only (**Q-2(a)**; the component exposes the persisted slugs as a `#[Locked]` or computed read, never a `wire:model` target). Category, status, date and tags move **outside** the strip if they are not already. |
+| `lang/en/blog-posts.php`, `lang/es/blog-posts.php` | **0063 creates them** (its **D-17**); this story appends one `editor.tabs.*` group, including the read-only slug label and its "shows the saved slug until you save" hint (**Q-2(a)**). Key-for-key identical. |
+| `app/Concerns/BlogPostValidationRules.php` | 0061, re-scoped by **0078**. **One additive method only:** `translatedBodyRules()` with no status parameter (**Q-1(a)**). `titleRules()`, `titleSlugRules()`, `bodyRules()` and `assertBodyWithinSanitizerLimit()` are consumed unchanged. |
 | `tests/Feature/Blog/BlogPostsEditorTest.php`, `BlogPostsEditorRenderingTest.php`, `BlogPostsIndexQueryTest.php`, `BlogPostsIndexRenderingTest.php` | **0063's** — only where their own cases assert against the dropped `title`/`body` columns or the single-instance editor. Disposition table below. |
 
 > ⚠️ **`lang/*/navigation.php` and `config/modules.php` are untouched** — 0063 already registers
@@ -387,12 +428,13 @@ this story is its **fourth** consumer and must not fork, copy or widen it (**D-5
 | File | Owner |
 | --- | --- |
 | `resources/views/components/language-tab-strip.blade.php` | **0071** — consumed, never edited (**D-5**) |
+| `app/Livewire/BlogPosts/Index.php`, `resources/views/livewire/blog-posts.blade.php` | 0063, retrofitted by **0078** — already lists through `withListTranslations()` and renders `translated('title') ?? displayTitle() ?? '—'` (**D-7**) |
 | `app/Concerns/HasTranslations.php`, `app/Actions/Translations/SetTranslation.php` | 0070 — consumed, never re-implemented. `SetTranslation` is reached **only** from inside `SetBlogPostTranslation`, never from a component (**D-8**) |
 | `app/Models/BlogPost.php`, `BlogPostTranslation.php`, `StoreLanguage.php` | 0078 / 0068 |
-| `app/Concerns/BlogPostValidationRules.php` | 0061, re-scoped by **0078**; this story is a **consumer** and adds no method — but see **Q-1**, which is the one place that may not hold |
 | `app/Actions/Blog/{Create,Update,Delete,Restore}BlogPost.php`, `SyncBlogPostTags.php`, `BackfillBlogPostTranslations.php` | 0061 / 0078 — signatures unchanged per 0078 **D-12**. ⚠️ **This row no longer covers the whole folder** — this story *adds* `SetBlogPostTranslation.php` beside them |
 | `app/Actions/Blog/FindOrCreateBlogTag.php`, `{Create,Rename,Delete}BlogTag.php` | 0059 / 0074 — **never called directly** (0061's hand-off forbids it). But see **R-3**, an unresolved cross-story gap |
-| `app/Actions/Products/SanitizeProductDescription.php` | **[0024a](done/0024a-product-description-html-sanitization.md)** (split out of 0024 on 2026-09-01) — the **only** class in the app that touches the HTML sanitizer; **consumed by injection**, never re-implemented (**D-8**, **V-1**) |
+| `app/Actions/Blog/BlogBodyHasVisibleContent.php` | 0061b — **consumed by injection** in `SetBlogPostTranslation`, never re-implemented (**D-8**) |
+| `app/Actions/Products/SanitizeProductDescription.php` | **[0024a](0024a-product-description-html-sanitization.md)** (split out of 0024 on 2026-09-01) — the **only** class in the app that touches the HTML sanitizer; **consumed by injection**, never re-implemented (**D-8**, **V-1**) |
 | `app/Livewire/Components/WysiwygEditor.php`, `app/Livewire/Media/Gallery.php` | 0021 / 0020 — embedded N times, **never edited** (**D-4**) |
 | `app/Policies/BlogPostPolicy.php`, `database/seeders/RolePermissionSeeder.php` | 0061 — five abilities, catalog stays at **42** (**D-18**) |
 | `routes/blog-posts.php`, `config/modules.php`, `lang/*/navigation.php` | 0063 — no route, no registry entry, no sidebar change |
@@ -409,7 +451,8 @@ final class SetBlogPostTranslation
     use BlogPostValidationRules;
 
     public function __construct(
-        private readonly SanitizeProductDescription $sanitizeProductDescription,  // 0024a's — V-1
+        private readonly SanitizeProductDescription $sanitizeBody,                // 0024a's — V-1
+        private readonly BlogBodyHasVisibleContent $bodyHasVisibleContent,        // 0061b's — D-8
         private readonly SetTranslation $setTranslation,                          // reached from NOWHERE else
         private readonly LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt,
     ) {}
@@ -425,6 +468,7 @@ final class SetBlogPostTranslation
      *
      * @throws AuthorizationException  when the actor lacks blog.edit
      * @throws ValidationException     keyed "titles.{$language->id}" / "bodies.{$language->id}"
+     *                                 (incl. a derived-slug collision in that language, on the title)
      */
     public function __invoke(
         BlogPost $blogPost,
@@ -434,28 +478,37 @@ final class SetBlogPostTranslation
     ): BlogPostTranslation {
         $this->logRefusedPrivilegedAttempt->authorize('update', $blogPost, 'blog_post');
 
-        $title = trim($title);
-        $body = $body === null ? null : $this->sanitizeProductDescription($body);  // BEFORE validate() — D-8
-
         $id = $language->id;
+        $title = trim($title);
+
+        // The same body pipeline as Create/UpdateBlogPost (D-8): limit on the raw body, sanitize,
+        // collapse an invisible body to null, limit again on the sanitized bytes. The trait throws
+        // on key `body`, so the throw is re-keyed to "bodies.{$id}".
+        $this->rekeyBodyRefusal($id, fn () => $this->assertBodyWithinSanitizerLimit($body));
+        $sanitized = ($this->sanitizeBody)($body === null ? null : trim($body));  // BEFORE validate()
+        $body = ($this->bodyHasVisibleContent)($sanitized) ? $sanitized : null;   // '<p></p>' → null
+        $this->rekeyBodyRefusal($id, fn () => $this->assertBodyWithinSanitizerLimit($body, trim: false));
 
         Validator::make([
             "titles.{$id}" => $title,
             "bodies.{$id}" => $body,
         ], [
-            "titles.{$id}" => $this->titleRules($id),        // 0078 D-11: language param, NO uniqueness — D-13
-            "bodies.{$id}" => $this->translatedBodyRules(),  // NOT bodyRules($status) — D-11, Q-1
+            "titles.{$id}" => [...$this->titleRules(), ...$this->titleSlugRules($id, $blogPost->id)],  // D-8, D-13
+            "bodies.{$id}" => $this->translatedBodyRules(),  // NOT bodyRules($status) — D-11, Q-1(a)
         ])->validate();
 
         return ($this->setTranslation)($blogPost, $language, [
             'title' => $title,
-            'body' => $this->nullIfBlank($body),            // '' must never reach the column — D-8
+            'body' => $body,                                // already null when invisible — D-8
         ]);
     }
+
+    /** Runs a trait check that throws on key `body` and re-throws it on "bodies.{$id}". */
+    private function rekeyBodyRefusal(string $id, Closure $check): void;
 }
 ```
 
-Following 0071 **D-13**'s master contract and [0076b](done/0076b-product-translation-write-action-backend.md) **D-1**'s named-parameters rule (originally 0077 D-19), with the
+Following 0071 **D-13**'s master contract and [0076b](0076b-product-translation-write-action-backend.md) **D-1**'s named-parameters rule (originally 0077 D-19), with the
 Blog-side specifics **verified against 0061/0078 rather than ported from a sibling**. The seven
 properties, and the two places this action is *unlike* every sibling, are in **D-8**.
 
@@ -466,7 +519,7 @@ namespace App\Livewire\BlogPosts;
 
 class Editor extends Component
 {
-    use BlogPostValidationRules;   // 0078-widened: titleRules(string $storeLanguageId)
+    // No BlogPostValidationRules and no $this->validate(): the actions own the rules (D-9).
 
     /** @var array<string, string> keyed by store_language_id; '' means "not typed". NEVER null. */
     public array $titles = [];     // REPLACES 0063's `public string $title = ''`
@@ -486,7 +539,7 @@ class Editor extends Component
     public string $status = BlogPostStatus::Draft->value;   // plain string, never a typed enum (0061 D-12)
     public string $publishedAt = '';
     public array $tagNames = [];                            // the post's COMPLETE set (0061 D-17)
-    #[Locked] public ?string $editingBlogPostId = null;
+    #[Locked] public ?string $blogPostId = null;
 
     public function setActiveLanguageTab(string $languageId): void;   // NEW — no Gate check (D-5)
 
@@ -506,9 +559,8 @@ It is 0070's deliberately-unguarded persistence primitive. A `SetTranslation` im
 `app/Livewire/` is a Phase 5 review finding and is worth an explicit grep at Phase 4 (0071 **D-13**'s
 third non-re-derivable rule).
 
-**This supersedes 0063's committed surface rather than extending it** — `public string $title` and
-`public string $body` cannot survive 0078 **D-4** dropping both columns. Recorded as an amendment
-needing explicit Phase 2 sign-off, not a silent override (**R-1**).
+**This widens the shipped surface** — 0078 already re-pointed `public string $title` / `$body` at the
+default language's raw translation row; this story turns them into per-language arrays (**R-1**).
 
 ### What is genuinely this story's, and not a sibling's
 
@@ -519,14 +571,13 @@ closely:
   stateful; the taxonomy siblings have one field and none. Blog Posts is the only screen where a
   *partially* filled tab (body typed, title blank) is a reachable, legal-looking state that must be
   refused rather than skipped (**D-10**, and `frontend-qa`'s §7 finding).
-- **A translatable field whose refusal has no field to land on.** The slug is derived and rendered
-  nowhere, so a slug-uniqueness refusal — if 0061's **OQ-2** resolves that way — must be re-keyed onto
-  the title. No sibling has this problem: every one of them has a `name` or `slug` input of its own
-  (**D-2**, **Q-2**).
+- **A translatable field whose refusal lands on another field.** The slug is derived and has no input,
+  so its per-language collision refusal is keyed on that language's **title** — already the shape of
+  the shipped `titleSlugRules()`, which `SetBlogPostTranslation` reuses (**D-2**, **D-8**).
 - **A validation rule keyed on a column in another table.** `bodyRules(BlogPostStatus $status)` reads
   `blog_posts.status` while validating `blog_post_translations.body` (0078 **R-9**). Under 0078's
   **Q-1(a)** that rule must bind the **default language only**, which means this action cannot simply
-  call it (**D-11**, **Q-1**).
+  call it; it calls a new status-free `translatedBodyRules()` instead (**D-11**, **Q-1**, closed (a)).
 - **N media galleries, not N editors.** 0021 **D4** embeds `<livewire:media.gallery>` *inside*
   `WysiwygEditor`, so N language panels mount N galleries — a cost **no sibling states**, including
   0077, which has the identical exposure (**D-4**, `frontend-expert`'s finding).
@@ -555,7 +606,7 @@ identically to 0077 and *worse* on one axis:
 | An uncompiled `wire:click`-style attribute | 0071's strip passes `setActiveLanguageTab` through `{{ Js::from(...) }}`; a silent stringification makes every tab inert with no PHP error, no console error and no failed request — and `Livewire::test()->call('setActiveLanguageTab', $id)` passes throughout |
 | A `null`-bound control | **Worse than Products.** 0063 **D-6** already documents six never-`null` bindings; `$title`/`$body` becoming arrays makes the rule bind **2×N** leaves instead of two |
 | A `wire:ignore`d region that never updates | 0021 **D9**: no client-side refresh hook. N instances, `x-show` only (**D-4**) |
-| ⚠️ *Conditional fourth* — a **client-side slug preview** | Only exists if this story renders one. `Str::slug()` routes through `Str::ascii()` and diverges from any JS slugifier on `ñ`, `ç`, `ü`, `ß` (0077 **D-9**), so a live preview would display one slug while the server stores another. **D-2** declines the live form for exactly this reason; **Q-2** puts the decision to the product owner rather than letting it arrive as a Phase 3 "UX improvement" |
+| ⚠️ *Conditional fourth* — a **client-side slug preview** | Only exists if this story renders one. `Str::slug()` routes through `Str::ascii()` and diverges from any JS slugifier on `ñ`, `ç`, `ü`, `ß` (0077 **D-9**), so a live preview would display one slug while the server stores another. **D-2** declines the live form for exactly this reason, and **Q-2** closed on **(a)**: a read-only display of the **persisted** slug only, so this blind spot is not opened. A test pins that the displayed slug does not change while a title is typed (**Q-2(a)**) |
 
 ### The single highest-value test in this story
 
@@ -577,7 +628,7 @@ cause**. That is the same shape 0078 **D-6** records for the trashed-post reserv
 > action protects a caller that is **not** this screen. The action is resolved with
 > `app(SetBlogPostTranslation::class)`, **never** `new` — three actions gained their first constructor
 > dependency in task 0015b and every `new` call site broke at once
-> ([code-style.md](../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)).
+> ([code-style.md](../../../docs/conventions/code-style.md#exception-an-actions-own-dependency-is-constructor-injected-when-the-method-signature-is-a-public-contract)).
 
 - [ ] An actor holding only `blog.view` throws `AuthorizationException` and writes **nothing** —
       asserted on the row count, not only on the throw. *Why:* the single case proving 0008a's gap is
@@ -588,12 +639,16 @@ cause**. That is the same shape 0078 **D-6** records for the trashed-post reserv
       `AuthorizationException`, not `ValidationException` (0061 **D-13**'s ordering, at the new action).
 - [ ] A blank and a whitespace-only title → `ValidationException` keyed `titles.{languageId}`, no row
       written.
-- [ ] **Two posts may share a title within one language → accepted.** *Risk if missing:* **the negative
-      control that matters most on this screen.** 0061 **D-10** forbids title uniqueness (a series, a
-      "Part 2"), unlike `name` on all three sibling entities — so an author mechanically following
-      0071/0077's master pattern adds a uniqueness rule *for consistency* and nothing catches it. This
-      is the [`@js()`-cleanup-for-consistency failure mode](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
-      arriving in a validation rule. Both `frontend-qa` and the facilitator flagged it independently.
+- [ ] **A title whose derived slug another post (trashed included) holds in the same language →
+      `ValidationException` keyed `titles.{languageId}`, no row written** — proving the action reuses
+      `titleSlugRules($language->id, $blogPost->id)` rather than leaving the `23000` to the unique index.
+- [ ] **The same title on another post in a *different* language → accepted**, and **re-invoking with
+      the post's own current title → accepted** (the `$ignoreBlogPostId` exclusion). *Risk if missing:*
+      **the negative control that matters most on this screen.** The only uniqueness is the derived
+      slug's, per language (**D-13**); an author mechanically following 0071/0077's master pattern adds
+      a title uniqueness rule *for consistency*, or a cross-language one, and nothing catches it. This
+      is the [`@js()`-cleanup-for-consistency failure mode](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
+      arriving in a validation rule.
 - [ ] **The action accepts a blank body for any language, unconditionally, regardless of the post's
       `status`** — asserted against a **`Published`** post. *Risk if missing:* this is 0078's backlog
       item 1 arriving as a real defect; see **V-2**, where the first draft of this very action got it
@@ -607,6 +662,12 @@ cause**. That is the same shape 0078 **D-6** records for the trashed-post reserv
       (which never writes the default language) — it belongs in the component file below, and is listed
       here so the pairing is deliberate rather than an omission.
 - [ ] `''` for `$body` persists as `null`, never `''` (**D-8**).
+- [ ] **An invisible body (`<p></p>`, `<p><br></p>`) persists as `null`**, and the post's French body
+      then resolves through `translated('body', $frenchId)` to the **default** language's body.
+      *Risk if missing:* a blank-only check stores empty markup, which silently ends the fallback.
+- [ ] **A raw body longer than `html-sanitizer.max_input_length`** (set low with `config()` in the test)
+      throws `ValidationException` keyed **`bodies.{languageId}`** — never `body` — and writes no row.
+      *Risk if missing:* the sanitizer truncates instead of refusing, so the stored body is silently cut.
 - [ ] The persisted `slug` always equals the derivation of the persisted title — and **the signature
       carries no `$slug` parameter at all**, asserted structurally rather than behaviourally.
 - [ ] Re-invoking for the same `(post, language)` **updates rather than duplicates** — one row-count
@@ -620,7 +681,7 @@ cause**. That is the same shape 0078 **D-6** records for the trashed-post reserv
 - [ ] The action is **resolved from the container, never `new`-ed**, in every test.
 - [ ] ⚠️ **Architecture guard:** `App\Actions\Translations\SetTranslation` appears in **no** import
       under `app/Livewire/` — **one `arch()` rule per namespace, never `expect([...])`**, and proven
-      able to fail, per [the vacuous-`arch()` entry](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18).
+      able to fail, per [the vacuous-`arch()` entry](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-pest-arch-rule-over-an-array-of-namespaces-shipped-green-while-proving-nothing--2026-08-18).
 
 ### Feature — `tests/Feature/Blog/BlogPostEditorLanguageTabsTest.php`
 
@@ -683,12 +744,17 @@ cause**. That is the same shape 0078 **D-6** records for the trashed-post reserv
       save → assert **both** `assertHasErrors(['titles.'.$frenchId])` **and** that `$activeLanguageId`
       has moved to French. *Risk if missing:* the textbook "the save silently did nothing" bug — 0018's
       finding A-1 and its B1 arriving together. **The single highest-value component test.**
-- [ ] **A default-language refusal renders on the default tab's field.** Force `UpdateBlogPost` to throw
-      its `title`-keyed `ValidationException` and assert the component surfaces it as
-      `titles.{defaultId}` (**D-9**'s adapter). *Risk if missing:* a race-path refusal renders nowhere
-      and the editor sees a save that did nothing.
+- [ ] **A default-language refusal renders on the default tab's field.** Submit a blank default title
+      (ordinary input — no forcing needed) and assert the component surfaces `UpdateBlogPost`'s
+      `title`-keyed refusal as `titles.{defaultId}`; same for `body` → `bodies.{defaultId}` (**D-9**'s
+      adapter, the primary path). *Risk if missing:* the refusal renders nowhere and the editor sees a
+      save that did nothing.
+- [ ] **A per-language slug collision renders on that tab's title** — another post holds the French
+      slug, save → `assertHasErrors(['titles.'.$frenchId])` and the French tab becomes active.
 - [ ] A refused save writes nothing across **three** tables — `blog_posts`, `blog_post_translations`
-      (asserted as an exact per-language row set) and `blog_post_tag`.
+      (asserted as an exact per-language row set) and `blog_post_tag` — **including when the refusal
+      comes from a non-default language after the default-language action has already run**, which
+      only **D-14**'s outer transaction makes true.
 - [ ] A `<script>` typed into the **French** body is stored sanitized, **through the component** —
       proving the wiring reaches the sanitizer on a non-default tab (0078 **R-8**). One test only; the
       allow-list, scheme rules and idempotence are 0024's.
@@ -697,8 +763,6 @@ cause**. That is the same shape 0078 **D-6** records for the trashed-post reserv
 - [ ] An actor holding only `blog.view` cannot write **any** tab's translation — asserted **at the
       component**, with the same case asserted **at the action** in the direct-call file. The pair is
       deliberate: it is what proves the two layers are independent rather than one check observed twice.
-- [ ] ⛔ **The slug-collision block is `pending(0061 OQ-2)` and must not be written against a guess.**
-      Both candidate outcomes produce opposite tests — see **R-4** and **Q-2**.
 
 ### Rendering — extend `tests/Feature/Blog/BlogPostsEditorRenderingTest.php`
 
@@ -711,7 +775,7 @@ cause**. That is the same shape 0078 **D-6** records for the trashed-post reserv
       now mount *transitively*, one inside each editor (**D-4**).
 - [ ] The non-translatable controls — category, status, publication date, tag field — render **exactly
       once**. Three rules make this assertion real rather than vacuous: match on the `data-test` hook
-      **including the closing quote** (the [`<ui-checkbox` prefix trap](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21));
+      **including the closing quote** (the [`<ui-checkbox` prefix trap](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21));
       use a **three-language** dataset, because at N=1 the assertion cannot fail and at N=2 an off-by-one
       is indistinguishable from a wrapper; and assert the translatable hooks against the **derived**
       language count, never a literal.
@@ -722,11 +786,20 @@ cause**. That is the same shape 0078 **D-6** records for the trashed-post reserv
 - [ ] A tab carrying an error renders its marker on the **tab header**, and the marker is **absent** for
       clean languages.
 - [ ] **No slug input renders on any tab** — the DOM assertion for **D-2**.
-- [ ] The list's title cell renders the **resolved** title and an em dash when it resolves to `null`.
+- [ ] **Read-only slug (Q-2(a)):** a translated tab renders `data-test="blog-post-slug-{id}"` holding
+      that language's **persisted** slug as text (no `<input>`, no `wire:model`) plus the "until you
+      save" label; an untranslated tab renders **no** `blog-post-slug-{id}`. Use a fixture whose two
+      languages hold **different** slugs, so a swapped or fallback slug fails.
+- [ ] **The displayed slug follows the stored value, not the typed title:** set `titles.{frenchId}` to a
+      new value without saving, re-render, and assert `blog-post-slug-{frenchId}` still shows the old
+      persisted slug; after a successful save it shows the newly derived one.
+- [ ] The list keeps 0078's shipped title resolution (`translated('title') ?? displayTitle() ?? '—'`):
+      the two list scenarios are satisfied by shipped code. Phase 3 confirms an existing Index test
+      covers the `displayTitle()` fallback and adds one only if none does.
 
 ### Browser — `tests/Browser/BlogPosts/EditorLanguageTabsTest.php`
 
-Per [coverage-policy.md](../../docs/testing/frontend/coverage-policy.md), browser tests earn their
+Per [coverage-policy.md](../../../docs/testing/frontend/coverage-policy.md), browser tests earn their
 place only where the real-DOM/JS round trip **is** the risk. Every test closes with
 `->assertNoJavaScriptErrors()`. **`->waitForEvent('networkidle')` is banned outright** — read
 `[wire:snapshot]` before reaching for a short bounded `->wait(n)` with a stated reason.
@@ -746,7 +819,7 @@ place only where the real-DOM/JS round trip **is** the risk. Every test closes w
       the input is never unmounted, so this is a **regression guard on the markup** (an `x-show`
       expression matching the wrong tab id renders plausibly and is invisible to `Livewire::test()`).
 - [ ] **B-5 — a typed draft survives a switch past the 400 ms debounce.** Uses a short bounded
-      `->wait(1)` — the [documented carve-out](../../docs/testing/frontend/playwright-setup/waiting-rules.md#waiting-one-call-is-banned-in-this-repo-and-one-is-bounded)
+      `->wait(1)` — the [documented carve-out](../../../docs/testing/frontend/playwright-setup/waiting-rules.md#waiting-one-call-is-banned-in-this-repo-and-one-is-bounded)
       in its strongest form, because the reason is a **contract**: 0021 **D9** debounces `$wire.set` at
       400 ms. The comment must say exactly that.
 - [ ] **B-6 — a non-active tab's refusal is visible without further clicking.**
@@ -759,16 +832,15 @@ place only where the real-DOM/JS round trip **is** the risk. Every test closes w
 
 | 0063 case | Disposition |
 | --- | --- |
-| "A blank title is refused with the message keyed to that field" | **Invalidated — rekey.** `title` → `titles.{languageId}`, plus the default-language adapter (**D-9**). |
+| "A blank title is refused with the message keyed to that field" | **Invalidated — rekey.** `title` → `titles.{defaultId}` through the existing re-keying adapter (**D-9**). |
 | "`Draft` + empty body accepted; `Published`/`Scheduled` + empty body refused" (0063 **D-9**, three cases) | **Invalidated — rescope** to *"the **default language's** body"*, **and add** the new case: a non-default tab's empty body on a `Published` post is **accepted**. |
 | "Promoting a bodiless draft to published is refused" | **Invalidated — rescope** to default-language bodilessness. |
-| "The list query selects explicit columns and never `body`" (0061 **R-7**) | **Invalidated — replaced, not retargeted.** `body` is no longer a `blog_posts` column at all. Replace with: the list's translation eager-load is explicitly column-scoped to exclude `body` (0078 **D-8**), **and** the editor's is not (**D-7**). |
+| The list's column-scoped translation load (0078 **D-8**, `withListTranslations()`) | **Unaffected** — shipped by 0078. This story adds only the editor-side counterpart: the editor's load **does** include `body` for every active language (**D-7**). |
 | "The WYSIWYG is embedded once with a stable `wire:key`" | **Invalidated — becomes N embeds**, the single-instance framing dropped entirely. |
 | The forged-`status` / `\ValueError` guard (0063 **D-6**) | **Unaffected** — `status` stays on the parent. |
 | `Scheduled` + date-boundary tests, incl. "retitling a `Scheduled` post whose date has passed succeeds" (0061 **R-9**) | **Largely unaffected** — but *"retitling"* must now name **which** language; both the default-language and a non-default retitle are distinct valid scenarios and both should exist. |
 | Tag reuse / case / accent / detach / partial-permission-rollback tests | **Unaffected** — tags are non-translatable (**D-12**). |
 | Restore-rendering ("the restored row carries its category and tags") | **Widened** — the restore round-trip is now a **per-language** guarantee (0078 **D-5**). |
-| — | **New, no 0063 precedent:** the list's title resolves through `translated()`, so a `null` resolution renders a **placeholder, not an error** — reachable transiently right after a store-default change (0070 **R-2**). |
 
 ### Deliberately NOT tested here
 
@@ -782,7 +854,7 @@ place only where the real-DOM/JS round trip **is** the risk. Every test closes w
 | The media gallery's search/upload/tile cap | 0019/0020 |
 | `StoreLanguage` CRUD and the add/remove/default-swap invariants | 0068 |
 | `BlogPostPolicy` asked directly via `Gate::forUser(...)` | 0061 |
-| `Str::slug()`'s transliteration table, `trans_choice`'s plural engine, `HasUuids`, Eloquent timestamps | vendor / [what-not-to-test.md](../../docs/testing/qa/what-not-to-test.md) |
+| `Str::slug()`'s transliteration table, `trans_choice`'s plural engine, `HasUuids`, Eloquent timestamps | vendor / [what-not-to-test.md](../../../docs/testing/qa/what-not-to-test.md) |
 
 ## Expected outcome
 
@@ -796,8 +868,9 @@ language through `CreateBlogPost`/`UpdateBlogPost` and every other **engaged** l
 language keeps falling back. Each language's slug is derived from that language's own title with no
 slug field anywhere on the screen. A refusal in any language marks that language's tab, activates it,
 and leaves every table unwritten — and a post may be published with a body in the store default alone,
-so adding a store language never retroactively unpublishes anything. The list renders each post's title
-resolved through the store default, with an em dash where it resolves to nothing.
+so adding a store language never retroactively unpublishes anything. A title whose derived slug another
+post already holds in that language is refused on that tab's title. The list is unchanged: it renders
+each post's title in the store default, else in any language it holds, else an em dash.
 
 Behind the screen, `App\Actions\Blog\SetBlogPostTranslation` authorizes `blog.edit`, sanitizes the body
 and validates the title before any translation is persisted, **independently of who called it**. An
@@ -828,11 +901,15 @@ nowhere else in the application.
 - [ ] **`SetBlogPostTranslation` authorizes `update`, sanitizes and validates itself**, so a direct
       caller with no component is refused identically; proven by direct-call tests that mount no
       component.
-- [ ] **The component authorizes and validates too, before calling it**, and both layers are covered by
-      their own tests. Neither may be removed as duplication (**D-9**).
-- [ ] A refusal from either layer lands on `titles.{languageId}` / `bodies.{languageId}` and renders on
-      that language's tab, including a default-language refusal re-keyed from the `title` / `body` keys
-      0061's actions throw (**D-9**).
+- [ ] **The component authorizes (as it does today) and computes the D-10 tab state, but does not
+      compose `BlogPostValidationRules` or call `$this->validate()`**; the actions own the rules and
+      `save()` re-keys their `ValidationException` (**D-9**). Component and action authorization are
+      each covered by their own tests.
+- [ ] Every refusal lands on `titles.{languageId}` / `bodies.{languageId}` and renders on that
+      language's tab — `SetBlogPostTranslation` throws those keys directly, and the default language's
+      `title` / `body` keys from `CreateBlogPost`/`UpdateBlogPost` are re-keyed by the adapter (**D-9**).
+- [ ] A title whose derived slug another post holds **in the same language** is refused on that tab's
+      title, through the shipped `titleSlugRules()` on both write paths (**D-2**, **D-8**).
 - [ ] A validation refusal keyed to a hidden tab **switches the active tab to that language** and marks
       it in the strip; the marker persists while the editor navigates away.
 - [ ] The default language's title is required; an **engaged** non-default language's title is required;
@@ -840,9 +917,13 @@ nowhere else in the application.
       language is refused (**D-10**).
 - [ ] **A body is required only in the store default language**, and only when `status` is `Published`
       or `Scheduled`; a blank non-default body never blocks a save at any status (**D-11**).
-- [ ] **Two posts may share a title within one store language** — no uniqueness rule was added while
-      re-scoping uniqueness (**D-13**).
-- [ ] A blank `body` is persisted as `NULL`, never `''` (**D-8**).
+- [ ] **No title uniqueness rule of its own is added** — the only uniqueness is the derived slug's, per
+      store language, so the same title in two different languages is accepted (**D-13**).
+- [ ] A blank **or invisible** `body` (e.g. `<p></p>`) is persisted as `NULL`, never `''` or empty
+      markup, on every language path — so a non-default language with no visible body keeps falling
+      back to the default's (**D-8**).
+- [ ] A body over `html-sanitizer.max_input_length` is **refused**, keyed `bodies.{languageId}`, never
+      silently truncated — checked on the raw and the sanitized body, on every language path (**D-8**).
 - [ ] The body is sanitized before persistence on **every** language path, through 0024's existing
       allow-list, with **no second allow-list added** (**D-8**, 0078 **R-8**).
 - [ ] The tag field renders once, outside the tabs, and still carries the post's **complete** set
@@ -858,7 +939,11 @@ nowhere else in the application.
 - [ ] No new permission, ability, policy, route, migration, model or `config/modules.php` entry; the
       catalog stays at **42**. **Exactly one action is added** (`SetBlogPostTranslation`); 0061's and
       0078's six existing Blog Post actions, 0070's `SetTranslation`, 0024a's sanitizer and
-      `BlogPostValidationRules` are all **unmodified** — subject to **Q-1**.
+      `BlogPostValidationRules` are all **unmodified**, except the one additive
+      `BlogPostValidationRules::translatedBodyRules()` (**Q-1(a)**).
+- [ ] Each language tab that holds a stored translation shows that language's **persisted** slug
+      read-only (no input, no `wire:model`, no validation key), labelled to say that a just-typed title
+      still shows the old slug until the post is saved; an untranslated tab shows no slug (**Q-2(a)**).
 - [ ] `lang/en/blog-posts.php` and `lang/es/blog-posts.php` stay key-for-key identical; no user-facing
       string is hardcoded in a view.
 
@@ -867,7 +952,7 @@ nowhere else in the application.
       tests, which are the only level that can observe three of this story's failure modes
 - [ ] `vendor/bin/pint --format agent` run **unscoped**, not `--dirty`
 - [ ] **Larastan level 7 run and recorded** — named explicitly because
-      [errors-log.md](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
+      [errors-log.md](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#a-verification-record-that-lists-two-of-three-quality-gates-is-a-record-of-two-gates--2026-08-26)
       records three consecutive stories whose verification notes listed two of three gates and were read
       as records of all three. **A record naming two gates is a record of two gates.**
 - [ ] **Compiled output of the tab strip and the N panels verified by rendering**, not by the absence of
@@ -878,17 +963,13 @@ nowhere else in the application.
       directly); that `SetTranslation` is reachable from nowhere but the action (grep `app/Livewire/`);
       that the action's error keys are derived from `$language->id` and never accepted as parameters;
       **0078's R-8** (every per-language body write path sanitizes, and `SetTranslation` was not taught
-      to); the client-controlled language keys in `$titles`/`$bodies` and the server-side intersection
+      to), and that `SetBlogPostTranslation` refuses an over-limit body rather than letting the
+      sanitizer truncate it (**D-8**); the client-controlled language keys in `$titles`/`$bodies` and the server-side intersection
       that narrows them; `$originalTranslatedLanguageIds` being `#[Locked]` while the two field arrays
       are not; and the transaction-nesting/notification-placement interaction in **D-14**
-- [ ] **0061's OQ-2 is closed and its answer re-scoped per language** before Phase 3 — a **hard gate**,
-      not a risk to monitor (**R-4**)
-- [ ] **Q-1 and Q-2 answered** before Phase 3
 - [ ] Documentation updated (`docs-keeper`) — at minimum `docs/api/routes.md` (the editor's tabbed
       panels and their `data-test` hooks) and `docs/conventions/naming.md`. **Verify whether
       0071/0073/0075/0077's own docs passes already made these claims** rather than restating them
-- [ ] **Recorded as a handoff, not done here:** the sibling amendments in **R-1**, **R-2** and **R-3**.
-      This story edits no other story's file
 - [ ] Acceptance criteria met
 
 ## 4. Documented functional decisions
@@ -909,9 +990,9 @@ each language's slug from that language's own title inside `BlogPostTranslation`
 no slug field today and this story adds none. Three consequences, each a real design constraint rather
 than an absence:
 
-- **No `$slugs` state array, no `slugRules()` call from this screen, and no blur-prefill affordance.**
+- **No `$slugs` state array, no slug rule called from the component, and no blur-prefill affordance.**
   0077's **D-9** — the whole `Str::ascii()`-versus-JS-`slugify` fidelity argument — has **no analogue
-  here**, and [0076b](done/0076b-product-translation-write-action-backend.md) **D-1** step 6's `'' → NULL` slug-uniqueness trap is structurally unreachable, because a
+  here**, and [0076b](0076b-product-translation-write-action-backend.md) **D-1** step 6's `'' → NULL` slug-uniqueness trap is structurally unreachable, because a
   `NOT NULL` derived column can never be blank.
 - **A read-only disclosure is permitted; a *live* preview is not.** `frontend-expert` proposed showing
   the persisted slug per tab ("will be published at `/blog/{slug}`"), sourced from that language's
@@ -920,12 +1001,16 @@ than an absence:
   unsaved title is **rejected**: `frontend-qa` identifies it as a genuine fourth `Livewire::test()`
   blind spot, since a JS slugifier and PHP's `Str::slug()` diverge on exactly the `ñ`/`ç`/`ü`/`ß`
   characters a Spanish/French blog uses, so the preview would display one slug while the server stored
-  another, invisibly. **Whether to render the read-only form at all is Q-2**, because it is a product
-  question rather than a technical one.
-- **A slug-uniqueness refusal has no field to land on.** No sibling has this problem — each has a
-  `name` or `slug` input of its own. If 0061's **OQ-2** resolves to *refuse-with-validation*, the
-  refusal must be re-keyed onto `titles.{languageId}`, on the reasoning that retitling is the only
-  action an editor can take to resolve it. See **R-4** and **Q-2**.
+  another, invisibly. **Q-2 closed on (a): the read-only form is rendered** — per tab, the persisted
+  slug only, omitted for an untranslated tab, with a label saying a just-typed title still shows the
+  old slug until save.
+- **A slug-uniqueness refusal lands on the title.** 0061's **OQ-2** is resolved in code as
+  refuse-with-validation: `BlogPostValidationRules::titleSlugRules($storeLanguageId, $ignoreBlogPostId)`
+  derives `Str::slug($title)` and refuses an empty, over-long or already-held (trashed posts included)
+  slug **in that language**, keyed on `title` — retitling being the only action an editor can take to
+  resolve it. `CreateBlogPost`/`UpdateBlogPost` apply it to the default language;
+  `SetBlogPostTranslation` applies it to every other language (**D-8**), so the refusal reaches the
+  screen as `titles.{languageId}` on every path. The unique index remains the last word under a race.
 
 **D-3 — Two parallel arrays keyed by store-language id, following 0077's **D-2** (originally its C-4 reversal) rather than its
 first draft.** `public array $titles` and `public array $bodies`, each `array<string, string>` keyed by
@@ -939,7 +1024,8 @@ $originalTranslatedLanguageIds` and the unlocked `public string $activeLanguageI
   off the property path — so adopting 0071's key **is** adopting parallel arrays. 0077 reached this
   conclusion the hard way, by reversing its own first draft (its **C-4**); this story inherits the
   settled answer.
-- **Keyed by id, not `code`.** 0078's `titleRules(string $storeLanguageId)` takes the id, and 0071
+- **Keyed by id, not `code`.** The shipped `titleSlugRules(string $storeLanguageId, ?string
+  $ignoreBlogPostId)` takes the language id (`titleRules()` takes no parameter, **D-13**), and 0071
   **D-11** forbids matching on a code anywhere. UUIDs contain no `.`, so `titles.019a…` resolves
   correctly as a validation key.
 - **Neither field array can be `#[Locked]`** — they are the `wire:model` targets. That is what makes
@@ -949,7 +1035,7 @@ $originalTranslatedLanguageIds` and the unlocked `public string $activeLanguageI
   destroying content. 0071 **D-3** and 0077 **D-2** reach the identical conclusion for the identical
   reason.
 - **`$activeLanguageId` stays unlocked and never binds a `<select>`** — it drives an `x-show`
-  comparison, so the [null-bound-`<select>` trap](../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
+  comparison, so the [null-bound-`<select>` trap](../../../docs/errors-log/archive-2026-07-21-to-2026-08-17.md#a-null-livewire-property-bound-to-a-native-select-silently-dropped-the-users-own-pick--2026-08-16)
   is structurally inapplicable, recorded so nobody "defensively" applies it. The trap **does** still
   bind `$blogCategoryId` and `$status`, unchanged from 0063 **D-6**.
 
@@ -984,7 +1070,7 @@ exist for this.**
 > while ceasing to mean what it meant, because the mounts are now transitive. Three obligations follow:
 > the per-language `wire:key` must cascade correctly into each nested gallery (0021 **D5**'s uniqueness
 > machinery, at N instead of 1); a **bounded query-count test proven able to move** is needed, per the
-> [count-assertion rule](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21);
+> [count-assertion rule](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21);
 > and page weight at N=3+ is a real Phase 3 verification item, not a theoretical one.
 > `frontend-expert`'s finding, and the sharpest thing in this story that is not about correctness.
 
@@ -1051,11 +1137,11 @@ own acceptance criterion and its own test asserting the two call sites use **dif
 rather than a note nobody re-reads.
 
 **D-8 — `SetBlogPostTranslation`'s contract, and the two places it is unlike every sibling.** The
-class follows 0071 **D-13**'s master shape and [0076b](done/0076b-product-translation-write-action-backend.md) **D-1**'s named-parameters rule (originally 0077 D-19). Seven properties
+class follows 0071 **D-13**'s master shape and [0076b](0076b-product-translation-write-action-backend.md) **D-1**'s named-parameters rule (originally 0077 D-19). Seven properties
 are the family's, applied unchanged:
 
 1. **Authorization is its own first statement**, outside any transaction, per
-   [the action-owns-the-rule convention](../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers).
+   [the action-owns-the-rule convention](../../../docs/conventions/directory-structure/controllers-and-authorization-rule.md#an-authorization-rule-belongs-to-the-action-not-to-one-of-its-callers).
    It authorizes `update` on the **`BlogPost`** — which resolves to `blog.edit` through
    `BlogPostPolicy::EDIT_PERMISSION` — never on the translation row, and there is deliberately no
    `TranslationPolicy` (0078 **D-14**). Not `blog.create`: translating an existing post is editing it,
@@ -1071,9 +1157,12 @@ are the family's, applied unchanged:
    on the sanitised value. Putting it here rather than only in the component is what closes 0078's
    **R-8** structurally rather than by remembering.
 4. **Error keys are derived internally** as `"titles.{$language->id}"` / `"bodies.{$language->id}"`,
-   never accepted as parameters — the [guard-took-the-state-it-guarded](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
+   never accepted as parameters — the [guard-took-the-state-it-guarded](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-guard-took-the-state-it-was-guarding-as-a-parameter-reopening-its-own-hole-one-level-up--2026-08-20)
    shape.
-5. **It reuses `BlogPostValidationRules` and writes no local rule** — subject to **Q-1**.
+5. **It reuses `BlogPostValidationRules` and writes no local rule** — `titleRules()` plus
+   `titleSlugRules($language->id, $blogPost->id)` for the title, exactly as `UpdateBlogPost` composes
+   them for the default language. The one addition is the body rule: a new status-free
+   `translatedBodyRules()` on the same trait (**Q-1(a)**).
 6. **Named parameters, never `array $fields`** (0076b **D-1**, originally 0077 D-19): an array is a pass-through surface the
    action would have to whitelist anyway, whereas named parameters make the whitelist *the signature*,
    unforgeable. The required-vs-optional split is expressed in the types (`string $title` against
@@ -1096,44 +1185,50 @@ are the family's, applied unchanged:
   one, which looks wrong at a glance and is correct: the alternative is the drift 0024's own scope
   fence exists to prevent. **(V-1.)**
 
-**One more property, from 0076b D-1 step 6's shape applied to a different column:** `''` must become `null`
-before it reaches `body`, at the **action boundary**, so a caller with no component inherits it too.
-Unlike 0076b the reason is not a uniqueness constraint — `body` has none — it is that 0078's whole
-per-field fallback design depends on an absent value resolving through the chain. If `HasTranslations`
-distinguishes absence with `!== null` rather than `blank()`, a stored `''` in French renders as an
-empty body instead of falling back to the default's, silently defeating **Q-1(a)**. ⚠️ **This is not
-stated in 0078, 0070 or 0077** — `frontend-expert` raised it and it is recorded as **new**, with
-Phase 3 required to verify it against `HasTranslations`' real implementation.
+**One more property: the body goes through the exact pipeline `CreateBlogPost`/`UpdateBlogPost` already
+apply** (verified in `UpdateBlogPost::__invoke()` / `cleanBody()`), at the **action boundary**, so a
+caller with no component inherits it too:
 
-**D-9 — The component validates too, and its error-key adapter is a backstop rather than the primary
-path.** 0071 **D-4**'s two-layer table applies: layer 1 (the component) fails fast before a transaction
-opens and renders every refusal on the right tab; layer 2 (the action) binds **every** caller with no
-component in sight.
+1. **`assertBodyWithinSanitizerLimit($body)` on the raw body**, then again with **`trim: false` on the
+   sanitized body.** symfony/html-sanitizer **truncates** input past `html-sanitizer.max_input_length`
+   instead of rejecting it, so without the first check an oversized French body would be silently cut,
+   possibly mid-tag; the second measures exactly the bytes the model's saving hook sees. The trait
+   method throws on key **`body`**, which no field on this screen renders, so the action re-throws it
+   on **`bodies.{$language->id}`** (property 4: the key is derived inside the action).
+2. **Sanitize, then collapse an invisible body to `null` through `App\Actions\Blog\BlogBodyHasVisibleContent`**
+   (0061b). A bare blank check is not enough: `<p></p>`, `<p><br></p>` or `<p>&nbsp;</p>` survive the
+   sanitizer as non-blank strings yet show a reader nothing. Stored as-is, such a body would count as
+   a French translation and **stop the fallback to the default language's body**, silently defeating
+   0078's **Q-1(a)**. With the collapse, an invisible body is stored as `NULL` and the fallback holds.
 
-**Why the component validates here, when 0075's does not.** 0075 **D-3** is the documented exception,
-and its cause is specific: 0060 **D-1** is a *screen-story decision* that its component neither composes
-the validation trait nor calls `$this->validate()`, so adding a layer there would duplicate a rule the
-action owns. **0063 makes no such decision.** It never specifies `$this->validate()` either way — but it
-*does* require casting `BlogPostStatus::from(...)` *"only after `validate()` passes"* (its **D-6**),
-which only makes sense with a component-side validate, and it composes no equivalent of 0060's D-1
-anywhere. So Blog Posts sits with 0071/0073/0077, not with 0075. ⚠️ **0063's silence is a real
-ambiguity and Phase 2 must ratify this reading rather than inherit it** (**R-6**); if 0063's Phase 3
-lands without component validation, this decision inverts to 0075's shape and the adapter below becomes
-primary-path rather than backstop.
+Reusing the two shipped collaborators (the trait method and `BlogBodyHasVisibleContent`, constructor-
+injected like the sanitizer) keeps one definition of "a valid, visible body" for every write path.
+
+**D-9 — The actions own validation; the component's error-key adapter is the primary path.** 0071
+**D-4**'s two-layer table applies to **authorization** (the component authorizes, as `Editor` does
+today, and `SetBlogPostTranslation` authorizes again on its own account). **Validation** follows the
+shape the shipped `App\Livewire\BlogPosts\Editor` already has — the same one 0075 **D-3** documents for
+Blog Tags: the component **neither composes `BlogPostValidationRules` nor calls `$this->validate()`**.
+The actions own the rules; a component layer would duplicate rules `CreateBlogPost`, `UpdateBlogPost`
+and `SetBlogPostTranslation` already enforce. What the component does compute itself is **D-10**'s
+untouched/engaged/blanked state, because that decides *which* action is called, not whether a value is
+valid.
 
 **The adapter.** `CreateBlogPost`/`UpdateBlogPost` throw `ValidationException` keyed **`title`** /
 **`body`** (0061's shape, frozen by 0078 **D-12**), while every field on this screen binds to
-`titles.{languageId}` / `bodies.{languageId}`. An unadapted refusal lands on a key no field renders:
-the editor sees a save that did nothing, which is 0018's blocking finding. So `save()` catches the
-default-language write's `ValidationException` and re-keys `title` → `titles.{defaultId}`, `body` →
-`bodies.{defaultId}`. `blogCategoryId`, `status`, `publishedAt` and `tagNames` need **no** adapter —
-their keys are untouched by the retrofit.
+`titles.{languageId}` / `bodies.{languageId}`. Livewire persists only an error whose key is a declared
+public property, so an unadapted refusal renders nowhere: the editor sees a save that did nothing,
+which is 0018's blocking finding. `save()` already catches the actions' `ValidationException` and
+re-keys it through `RE_KEYED_ERRORS` (`blog_category_id` → `blogCategoryId`, `published_at` →
+`publishedAt`, `tag_names`/`name` → `tagNames`); this story extends the re-keying with `title` →
+`titles.{defaultId}` and `body` → `bodies.{defaultId}` (computed in `save()`, since the target depends
+on the default id). `SetBlogPostTranslation` already throws `titles.{languageId}` /
+`bodies.{languageId}`, which pass through unchanged.
 
-Because layer 1 validates first, this adapter is realistically reached only on a race backstop (a
-`23000` slipping past the pre-check) — 0071's situation, not 0075's, where the same adapter sits on the
-primary path and is exercised by ordinary input. *Rejected:* widening 0061's two actions to key on
-`titles.{id}`, which changes a public contract 0063 and every direct-call test bind to, from a story
-forbidden to edit either file.
+Because nothing validates before the actions, **this adapter is reached by ordinary input** — a blank
+default title, a missing default body on publish, a default-language slug collision — so it is the
+primary path and its tests use ordinary input, not a forced race. *Rejected:* widening 0061's two
+actions to key on `titles.{id}`, which changes a public contract their direct-call tests bind to.
 
 **D-10 — Untouched / engaged / blanked, keyed on `title`.** 0077 **D-4**'s triple, adapted to a
 two-field panel. `blog_post_translations.title` is `NOT NULL` (0078's migration), so "write whatever
@@ -1172,7 +1267,9 @@ second is where a first draft of this story got it wrong:
   body-edit path must scope `bodyRules($status)` so it does **not** require a body in every active
   language before publishing — only the default's."*
 
-⚠️ **The *mechanism* for expressing that is genuinely undecided and is escalated as Q-1**, because
+**The mechanism is Q-1, closed on (a):** `BlogPostValidationRules` gains an additive
+`translatedBodyRules()` with no status parameter, which `SetBlogPostTranslation` calls. It was asked
+as a question because
 0078's trait is not this story's file. `bodyRules()` takes a `BlogPostStatus` and there is no
 status-free variant.
 
@@ -1192,25 +1289,30 @@ in the store default — since a field outside the tabs has no per-language cont
 
 ⚠️ **But it leaves a real cross-story gap this story cannot close alone** — see **R-3**.
 
-**D-13 — A post title carries no uniqueness rule, and that is a negative control rather than an
-omission.** 0061 **D-10** is explicit that two posts may legitimately share a title (a series, a "Part
-2"), and 0078 **D-11** carries it forward: `titleRules()` gains a `$storeLanguageId` parameter but
-**still carries no uniqueness rule**, because *"add uniqueness while you're re-scoping uniqueness"* is a
-plausible drift. Every sibling in this family has a unique `name`; this one does not.
+**D-13 — A post title carries no uniqueness rule of its own; the only uniqueness is the derived slug's,
+per language.** As shipped, `titleRules()` takes no parameter and carries no uniqueness rule;
+`titleSlugRules($storeLanguageId, $ignoreBlogPostId)` refuses a title whose **derived slug** another
+post already holds **in that language**. In practice, two posts cannot hold an identical title in one
+language (identical titles derive identical slugs), but the *same* title in two different languages is
+accepted, and re-saving a post under its own title is accepted. The negative control is therefore
+"no title-level or cross-language uniqueness is added", not "duplicate titles are accepted".
 
 **Stated as a decision because the risk is a mechanical port.** An author following 0071/0077's master
 pattern — where per-language `name` uniqueness is *the* headline rule — will add title uniqueness for
 consistency, and nothing will catch it. `frontend-qa` names it as the negative control it would "bet
 real money" a first draft gets wrong, and the facilitator flagged it independently. It is the
-[cleanup-for-consistency failure mode](../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
+[cleanup-for-consistency failure mode](../../../docs/errors-log/archive-2026-08-23-to-2026-08-26.md#two-directive-calls-in-one-blade-component-tags-attribute-string-silently-fail-to-compile--2026-08-26)
 arriving in a validation rule instead of a Blade attribute. **The uniqueness that *does* exist is on the
-derived `slug`, per `(store_language_id, slug)` — and it has no field (D-2).**
+derived `slug`, per `(store_language_id, slug)`, and its refusal lands on the title (D-2).**
 
 **D-14 — Save composition, the payload narrowing, and the transaction that must not swallow the
 notification.** Ordering: authorize → read the server-derived active-language list → **narrow the
-client payload against it** → sanitize → validate → open transaction → default language through
-`CreateBlogPost`/`UpdateBlogPost` → `SetBlogPostTranslation` per **engaged** non-default language →
-commit → (0061's post-commit notification dispatch, untouched).
+client payload against it** → classify each non-default language per **D-10** (refusing a *blanked*
+one, keyed `titles.{id}`) → open transaction → default language through
+`CreateBlogPost`/`UpdateBlogPost` (which sanitize and validate) → `SetBlogPostTranslation` per
+**engaged** non-default language (which sanitizes and validates) → commit → (0061's post-commit
+notification dispatch, untouched). Any `ValidationException` from inside the transaction is re-keyed
+by **D-9**'s adapter after the rollback.
 
 - **The narrowing is not optional.** `$titles`/`$bodies` are unlocked (**D-3**), so their **keys** are
   client-controlled and land in a `store_language_id` FK column. A forged payload naming a real-but-
@@ -1227,21 +1329,26 @@ commit → (0061's post-commit notification dispatch, untouched).
   there deliberately. **An outer transaction moves that "after the commit" point**, so a notification
   0061 designed to fire only on a durable transition could fire inside an outer scope that later rolls
   back. This is precisely the
-  [transaction-wrapper rule](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21) —
+  [transaction-wrapper rule](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21) —
   *wrapping existing code in a transaction is a change to every side effect that code already
-  performed, and the diff will not show you the one that moved.* `frontend-expert`'s finding; **the
-  sharpest new risk this story adds**, and it must be resolved by execution at Phase 3, not reasoned
-  about (**R-5**).
-- **All-or-nothing across languages** is the intended semantics (0075 **D-9**'s reasoning): a refusal in
-  the third language rolls back the first two, and **D-5**'s tab-focusing returns the editor to the
-  failing tab with their typed values on screen, so the correction is one edit away.
+  performed, and the diff will not show you the one that moved.* `frontend-expert`'s finding. The
+  shipped `UpdateBlogPost`/`CreateBlogPost` dispatch it through `DB::afterCommit()`, which Laravel
+  defers to the **outermost** commit, so the expected outcome is that a rolled-back save sends nothing
+  — but this must be proven by execution at Phase 3, not reasoned about (**R-5**).
+- **All-or-nothing across languages** is the intended semantics (0075 **D-9**'s reasoning), and **only
+  this outer transaction delivers it**: the default-language action commits its own transaction before
+  `SetBlogPostTranslation` runs, so without the outer wrapper a refusal in French would leave the
+  Spanish write committed. That is what the Gherkin *"A refusal in one language leaves every other
+  language unwritten"* depends on. **D-5**'s tab-focusing returns the editor to the failing tab with
+  their typed values on screen, so the correction is one edit away.
 
 **D-15 — `data-test` hooks, and the assertion hazards this screen adds.** The strip's own hooks —
 `language-tabs`, `language-tab-{id}`, `language-tab-default-badge-{id}`, `language-tab-error-{id}` —
 come from 0071's component and are **consumed, not defined here**. This story defines
 `language-panel-{id}`, `blog-post-title-input-{id}` and `blog-post-body-editor-{id}` (wrapping each
 WYSIWYG, so 0021's own `wysiwyg-*` hooks, which now repeat N times, are always addressable within a
-scope), plus a read-only `blog-post-slug-{id}` if **Q-2** resolves that way.
+scope), plus the read-only `blog-post-slug-{id}` (**Q-2(a)**), rendered only for a language that holds
+a stored translation.
 
 0071 **D-11**'s rule binds unchanged: **no assertion in this story may match on a language name or a
 two-letter code.** Three hazards this screen adds beyond 0077's *"every markup assertion now matches N
@@ -1262,8 +1369,8 @@ times"*:
 **D-16 — Copy extends `lang/{en,es}/blog-posts.php`, not `blog.php`.** 0063 **D-17** resolved a
 contradiction between 0060 **D-8** and 0061's hand-off in favour of a per-screen file, and created
 `lang/{en,es}/blog-posts.php` for exactly this screen's copy. This story appends one `editor.tabs.*`
-group (the untranslated-tab hint, the tab-error marker's `aria-label`, the read-only slug label if
-**Q-2** adopts it), key-for-key identical across both locales. ⚠️ **0078's R-11 lists 0063 among four
+group (the untranslated-tab hint, the tab-error marker's `aria-label`, the read-only slug label and
+its "shows the saved slug until you save" hint per **Q-2(a)**), key-for-key identical across both locales. ⚠️ **0078's R-11 lists 0063 among four
 stories writing `lang/*/blog.php`** — that is **stale**, superseded by 0063's own D-17, and this story
 follows the settled decision rather than the earlier instruction. **A language's own display name is
 data**, read from `store_languages.name`, and must never be routed through `__()`.
@@ -1288,85 +1395,66 @@ a post's French title is neither identity-sensitive nor hard to reverse.
 
 ### Dependencies
 
-- **[0078](done/0078-translatable-content-retrofit-blog-posts-backend.md)** — hard, blocking, **not
-  implemented**. Supplies `blog_post_translations`, `BlogPostTranslation` and its slug hook, the widened
-  `titleRules()`, the unchanged `CreateBlogPost`/`UpdateBlogPost` signatures and the registry entry.
-  **Its own hard gate — 0061's OQ-2 — is inherited here** (**R-4**).
-- **[0063](done/0063-blog-posts-list-editor-ui.md)** — hard, blocking, not implemented. The list, the routed
-  editor, the routes, the registry entry and the lang files this story widens. See **R-1**.
-- **[0071](done/0071-product-categories-language-tabs-ui.md)** — hard. The shared strip, `setActiveLanguageTab()`,
+- **[0078](0078-translatable-content-retrofit-blog-posts-backend.md)** — hard, **shipped**. Supplies
+  `blog_post_translations`, `BlogPostTranslation` and its slug hook, `titleRules()` /
+  `titleSlugRules()`, the unchanged `CreateBlogPost`/`UpdateBlogPost` signatures, the registry entry,
+  and the retrofit of 0063's list and editor to the translated schema. 0061's OQ-2 is resolved there
+  (refuse-with-validation keyed on `title`, **R-4**).
+- **[0063](0063-blog-posts-list-editor-ui.md)** — hard, **shipped**. The list, the routed editor, the
+  routes, the registry entry and the lang files this story widens. See **R-1**.
+- **[0075](0075-blog-tags-language-tabs-ui.md)** — soft, **shipped**. `SetBlogTagTranslation` is the
+  closest in-folder model for `SetBlogPostTranslation`, and 0075 **D-3** is the no-component-validation
+  shape **D-9** follows.
+- **[0071](0071-product-categories-language-tabs-ui.md)** — hard. The shared strip, `setActiveLanguageTab()`,
   the two-layer pattern, the `x-show` rendering mode, the derived error key. **Consumed, never edited.**
-- **[0077](done/0077-product-editor-language-tabs-ui.md)** — soft but load-bearing. Not a code dependency;
+- **[0077](0077-product-editor-language-tabs-ui.md)** — soft but load-bearing. Not a code dependency;
   it is where the multi-field, routed-page, WYSIWYG-in-tabs shape was worked out, and this story adopts
-  its **C-2** reconciliation and **D-4** state triple, plus [0076b](done/0076b-product-translation-write-action-backend.md)'s **D-1** parameter rule, wholesale.
-- **[0070](done/0070-translatable-content-mechanism-product-categories-backend.md)** — hard.
+  its **C-2** reconciliation and **D-4** state triple, plus [0076b](0076b-product-translation-write-action-backend.md)'s **D-1** parameter rule, wholesale.
+- **[0070](0070-translatable-content-mechanism-product-categories-backend.md)** — hard.
   `HasTranslations`, `SetTranslation`, `defaultStoreLanguage()`. Consumed unmodified.
-- **[0068](done/0068-store-languages-catalog-backend.md)** — hard. `StoreLanguage`, `scopeActive()`,
+- **[0068](0068-store-languages-catalog-backend.md)** — hard. `StoreLanguage`, `scopeActive()`,
   `is_default`.
-- **[0021](done/0021-wysiwyg-rich-text-editor-component.md)** — hard. Its **D9** is the constraint **D-4** is
+- **[0021](0021-wysiwyg-rich-text-editor-component.md)** — hard. Its **D9** is the constraint **D-4** is
   built around; consumed **unmodified**, N times.
-- **[0024a](done/0024a-product-description-html-sanitization.md)** — soft, for `SanitizeProductDescription`
+- **[0024a](0024a-product-description-html-sanitization.md)** — soft, for `SanitizeProductDescription`
   only, consumed exactly as 0061 **D-14** consumes it. *(Repointed 2026-09-01: that class was story
   0024's until 0024 was split; 0024a owns it, and depends on 0024 in turn.)*
-- **[0061](done/0061-blog-posts-core-crud-backend.md)** / **[0059](done/0059-blog-tags-backend.md)** /
-  **[0058](done/0058-blog-categories-backend.md)** — hard, transitively via 0063.
-- Sequencing, strictly: **0058 → 0059 → 0061 → 0063 → 0068 → 0070 → 0074 → 0078 → 0079**, each fully
-  closed before the next starts.
+- **[0061](0061-blog-posts-core-crud-backend.md)** / **[0059](0059-blog-tags-backend.md)** /
+  **[0058](0058-blog-categories-backend.md)** — hard, transitively via 0063.
+- Sequencing: **0058 → 0059 → 0061 → 0063 → 0068 → 0070 → 0074 → 0078 → 0079** — every predecessor is
+  closed (in `done/`), and **Q-1**/**Q-2** are closed, so nothing blocks Phase 3.
 - **No new Composer package. No new permission.**
 
 ### Risks
 
-- **R-1 — This story supersedes part of 0063's committed contract, and the amendment 0063 needs is
-  bigger than 0078's own R-1(a) states.** 0078 names three break sites in 0063 (`select([… 'title' …])`,
-  `category:id,name`, `tags:id,name`). **There is a fourth it does not name, and it is in the file this
-  story opens:** 0063 **D-10** hydrates the tag chip field with `$blogPost->tags->pluck('name')`, and
-  0074 **drops `blog_tags.name`** (verified: its second migration is
-  `dropColumn(['name', 'normalized_name'])`). So 0063 is broken by **three** Epic 5 stories across
-  **four** sites, and the editor — not just the list — is one of them. Everything falsified here is an
-  amendment 0063 owns and that **this story must not write**: `public string $title` / `$body`, the
-  single-WYSIWYG-embed rendering test, the list query, the tag hydration, and 0063 **D-14**'s
-  "no gallery tag" assertion (still literally true, no longer meaning what it meant — **D-4**).
-- **R-2 — 0078's R-1 assigns 0063's amendment to the coordinator, and this story cannot ship a screen
-  whose list query throws.** If 0063 ships before 0078, the Blog Posts list **throws a SQL error** until
-  this story lands — a window in which a shipped screen is broken, exactly as 0071 **R-2** records for
-  Product Categories. **D-7** supplies the replacement query; who applies it is the coordinator's call,
-  and the honest answer is probably "this story, for this screen" (0071 resolved its own equivalent
-  **Q-3** that way).
-- **R-3 — `FindOrCreateBlogTag` has no language context after 0074, and no story resolves it.
-  (`frontend-expert`'s finding, corroborated by the facilitator's own grep.)** 0074 makes tag names
-  per-language with a `(store_language_id, normalized_name)` fold. The post editor's chip field sits
-  **outside** the tabs (**D-12**), so it has no per-language context to resolve or create against. The
-  only coherent answer is **always the store default**, regardless of which tab the editor is viewing —
-  which is what 0074 **D-7** and its **Q-1(a)** already decide, so the *behaviour* is settled. What is
-  **not** settled is whether `FindOrCreateBlogTag::__invoke(string $name)` keeps its signature (0074
-  **D-7** says yes) while its *lookup* must now span a translation table, and whether 0063's
-  `pluck('name')` hydration becomes `translated('name')`. Neither 0078 (whose scope fence excludes tag
-  names as *"0074's, already retrofitted"*) nor 0074 (which defers the UI half here) closes it.
-  **Escalated as a coordination item, not assumed.**
-- **R-4 — 0061's OQ-2 is a hard gate on Phase 3, not a risk to monitor.** 0078 **R-4** records it as
-  open and its own follow-up review states plainly that if it resolves to auto-suffix rather than
-  refuse-with-validation, *"`slugRules()` and this story's whole slug-uniqueness Gherkin block need a
-  **structural rewrite**, not a reshape."* The same binds here and **harder**, because this screen has
-  **no slug field to render a refusal on** (**D-2**): under (a) auto-suffix there is no error at all and
-  the screen may need to *disclose* the suffixed slug back to the editor; under (b) refuse-with-
-  validation the message must be re-keyed onto the title. `frontend-qa` recommends marking the whole
-  block `pending(OQ-2)` rather than writing brittle tests against a guess, and that is adopted.
+- **R-1 — This story widens a shipped, already-retrofitted screen.** 0078 did the 0063 amendment: the
+  list uses `withListTranslations()`, the editor hydrates its default-language title/body from the raw
+  `translations()` row and its tag chips through `BlogTag::displayName()`. What this story changes in
+  0063's surface is the single-language `public string $title` / `$body` (→ per-language arrays), the
+  single-WYSIWYG embed (→ N embeds) and 0063 **D-14**'s "no gallery tag" assertion (still literally
+  true, no longer meaning what it meant — **D-4**). The affected 0063 tests are listed in the
+  disposition table.
+- **R-2 — (closed)** The list-query break window no longer exists: 0078 shipped the retrofitted list.
+- **R-3 — (closed in code)** On-the-fly tags are resolved in the store default:
+  `FindOrCreateBlogTag::__invoke(string $name)` keeps its signature and resolves against the default
+  store language, and the editor hydrates chips through tag translations. The chip field stays outside
+  the tabs (**D-12**) and is reached only through the post actions.
+- **R-4 — (resolved) 0061's OQ-2 is closed in code as refuse-with-validation keyed on `title`.**
+  `titleSlugRules($storeLanguageId, $ignoreBlogPostId)` refuses a per-language derived-slug collision on
+  the `title` field; the unique index remains the race backstop. This story reuses it in
+  `SetBlogPostTranslation` (**D-8**) so the refusal reaches the screen as `titles.{languageId}` on every
+  language, and the collision Gherkin is scripted. No Phase 3 gate remains here.
 - **R-5 — The outer transaction may move 0061's post-commit notification dispatch.** **D-14**'s ⚠️.
   This is the errors-log's transaction-wrapper rule arriving with a *notification* rather than a cache
   flush as the side effect that moved, and it is invisible in the diff. **Must be resolved by execution
   at Phase 3.**
-- **R-6 — Whether 0063's component validates is genuinely ambiguous, and D-9 rules on it rather than
-  inheriting it.** 0063 never states `$this->validate()` either way; its **D-6** implies one. If Phase 2
-  or 0063's own Phase 3 lands without component validation, **D-9** inverts to 0075's shape and its
-  error-key adapter moves from backstop to primary path — which changes what the adapter's test is
-  *for*, not just where it sits. Ratify explicitly.
-- **R-7 — `slugRules()` is specified with no named caller.** 0078 **D-11** adds the trait's first
-  `slugRules()` *"because uniqueness is now conditional on a language and a bare `23000` cannot say
-  which of two `UNIQUE`s fired"* — but the slug is never form-submitted, so nothing in 0078 says who
-  calls it. The only coherent caller must validate the **derived** value (`Str::slug($title)`) before
-  the model hook writes it, which means a write path must pre-compute a value it does not own. Whether
-  that belongs in `SetBlogPostTranslation`, in the two 0061 actions, or nowhere until OQ-2 closes is
-  **unresolved**; it is entangled with **R-4** and should be settled with it. Facilitator's finding.
+- **R-6 — (resolved) The component does not validate.** The shipped `Editor` neither composes
+  `BlogPostValidationRules` nor calls `$this->validate()`, and re-keys the actions'
+  `ValidationException`. **D-9** follows that shape, so the error-key adapter is the primary path and
+  its tests use ordinary input.
+- **R-7 — (resolved) The slug rule has named callers.** It shipped as `titleSlugRules()`, validating the
+  **derived** `Str::slug($title)` and keyed on `title`, called by `CreateBlogPost`/`UpdateBlogPost` for
+  the default language and — from this story — by `SetBlogPostTranslation` for every other language.
 - **R-8 — The list and editor eager loads are opposite and a shared helper breaks one silently**
   (**D-7**). Both amigos found this independently. It has an acceptance criterion and a test rather than
   a note, because the failure is invisible on both sides — a too-narrow load leaves hidden tabs empty
@@ -1383,38 +1471,31 @@ a post's French title is neither identity-sensitive nor hard to reverse.
   records that as a deliberate deferral), while 0076b's `SetProductTranslation` does. So after this story the Blog translation path logs and the
   Product-category one does not. **Consistent within each folder, inconsistent across the family** — recorded so
   a reviewer meets a decision rather than a silence.
-- **R-12 — This story's design is provisional against thirteen unshipped stories at once** — 0020,
-  0021, 0024, 0058, 0059, 0060, 0061, 0062, 0063, 0068, 0070, 0074 and 0078 are all Phase 1 text, and it
-  binds to 0078's *widened* trait which itself binds to 0061's *unimplemented* one. This is the widest
-  exposure in the epic. **Phase 3 must re-verify every signature against `HEAD` first**, and record each
-  disposition including "already closed".
-- **R-13 — A verification claim in 0071 is wrong as written, and the same shape may have propagated.**
-  0071's opening states *"Verified at authoring time: `grep -rn "flux:tab\|role=\"tab\"" resources/`
-  returns **zero hits**."* Run against the tree today that command returns **119 hits** — all of them
-  `flux:table`, because `flux:tab` is a prefix of it. **The conclusion is correct** (there is genuinely
-  no tabbed markup; `grep -rnE 'flux:tab[^l]|flux:tabs|role="tab"'` returns nothing), but the cited
-  command could not have produced the cited result. This is the repo's own
-  [prefix-trap failure mode](../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21)
-  appearing inside a *verification claim in a story file* rather than in a test — the same trap as
-  `<ui-checkbox` matching `<ui-checkbox-group` and `assertSee('0%')` matching `10%`. Nothing here
-  depends on it; recorded because this project's stale-claim rule is that a false premise reaches a
-  fourth story by being copied, and 0073 carries a similar phrasing.
+- **R-12 — Signatures named here are re-verified against `HEAD` at Phase 3.** Every story this one
+  depends on has shipped, and the Phase 2 refresh re-checked the load-bearing ones (`Editor`, `Index`,
+  `BlogPostValidationRules`, `BlogPost::displayTitle()`, `FindOrCreateBlogTag`, the tab strip). The
+  residual risk is drift between this refresh and Phase 3; record each disposition, including "already
+  closed".
+- **R-13 — (closed)** 0071's `flux:tab` verification command, which matched `flux:table` through the
+  [prefix trap](../../../docs/errors-log/archive-2026-08-17-to-2026-08-21.md#a-count-based-assertion-over-rendered-html-counted-a-wrapper-element-it-never-meant-to-include--2026-08-21),
+  has since been corrected in 0071 to an anchored pattern. Nothing here depends on it.
 
-### Open questions for the product owner
+### Questions for the product owner — closed
 
-Per [contracts.md](../../docs/contracts.md)'s Uncertainty Handling Rule, each carries a recommendation
-rather than a silent assumption. **Neither blocks Phase 2 review; both must close before Phase 3.**
+Both were asked per [contracts.md](../../../docs/contracts.md)'s Uncertainty Handling Rule and **answered by
+the user after Phase 2 approval: Q-1 = (a), Q-2 = (a)**. The options are kept below as the record of
+what was weighed.
 
-**Q-1 — How does `SetBlogPostTranslation` express "a non-default body is never required" without
+**Q-1 — (closed: (a)) How does `SetBlogPostTranslation` express "a non-default body is never required" without
 writing a local rule or lying to `bodyRules()`?** **D-11** settles the *behaviour* (0078's Q-1(a));
-this is about the mechanism, and it matters because 0078's trait is not this story's file to edit.
-`bodyRules(BlogPostStatus $status)` returns `nullable` for `Draft` and `required` otherwise (0061
-**D-4**), and there is no status-free variant.
+this is about the mechanism, and it matters because the shipped trait is shared with
+`CreateBlogPost`/`UpdateBlogPost`. `bodyRules(BlogPostStatus $status)` returns `nullable` for `Draft`
+and `required` otherwise (0061 **D-4**), and there is no status-free variant.
 
-- **(a) 0078's trait gains a `translatedBodyRules()` with no status parameter — _(recommended)_.**
-  Honest, self-documenting, and it puts the rule where every sibling's rules live. Its cost is that it
-  is an edit to 0078's file, so it is a **coordination action** rather than something this story can do
-  — which is exactly why it is a question rather than a decision. It is additive and breaks nothing.
+- **(a) The trait gains a `translatedBodyRules()` with no status parameter — _(recommended)_ —
+  ✅ chosen.** Honest, self-documenting, and it puts the rule where every sibling's rules live. Its
+  cost is an additive method on the shipped `app/Concerns/BlogPostValidationRules.php`, made in this
+  story's Phase 3 (listed under *Files → Modify*). It breaks nothing.
 - **(b) Call `bodyRules(BlogPostStatus::Draft)` from the action, with a comment.** Costs nothing, needs
   no cross-story edit, and produces the correct rule set today — but it reads as a lie at the call site
   (the post is not a draft), and it silently couples this action to `Draft`'s branch continuing to mean
@@ -1424,12 +1505,13 @@ this is about the mechanism, and it matters because 0078's trait is not this sto
   rule"*, and a second definition of "what a valid body is" is exactly the drift the traits exist to
   prevent.
 
-**Q-2 — Does a language tab disclose its derived slug, and if so how?** **D-2** rules out a *live*
+**Q-2 — (closed: (a)) Does a language tab disclose its derived slug, and if so how?** **D-2** rules out a *live*
 client-side preview on fidelity grounds (`Str::slug()` versus any JS slugifier diverges on `ñ`/`ç`/`ü`/
 `ß`). What remains is a product call about whether an editor should see the URL their post will have.
 
 - **(a) A read-only, per-tab display of the **persisted** slug, omitted for an untranslated tab —
-  _(recommended)_.** An editor authoring for the web has a legitimate need to see the URL, it is
+  _(recommended)_ — ✅ chosen, with a label saying a just-typed title still shows the old slug until
+  save.** An editor authoring for the web has a legitimate need to see the URL, it is
   presentational with no binding and no validation key, and reading the stored value can never disagree
   with what the server did. Its cost is that a *just-typed, unsaved* title shows the **old** slug until
   save, which needs a label that says so.
@@ -1437,17 +1519,19 @@ client-side preview on fidelity grounds (`Str::slug()` versus any JS slugifier d
   public storefront to visit the URL on (PRD's Out of scope). Costs the editor any visibility into an
   identifier the system derives on their behalf.
 - **(c) A live client-side preview.** **Rejected on evidence**, not preference — see **D-2**.
-- ⚠️ **This question interacts with R-4.** If 0061's OQ-2 resolves to **auto-suffix**, a collision is
-  resolved silently server-side and the editor gets a slug they never saw and were never told about —
-  which makes (a) substantially more valuable, possibly necessary. **Answer OQ-2 first.**
+- **Weighed before the answer:** the OQ-2 dependency is gone, which made (b) cheaper to defend than
+  when this question was raised. The concern that made (a) "possibly necessary" was an auto-suffix outcome silently giving
+  the editor a slug they never saw. OQ-2 resolved the other way (refuse-with-validation on the title,
+  **R-4**), so the stored slug is always exactly `Str::slug()` of the title the editor typed, never a
+  surprise. (a) remains recommended for URL visibility, but it is now a convenience rather than a
+  safeguard, and (b) costs nothing in correctness.
 
 ### Inherited open questions — listed, deliberately not resolved here
 
-- **0061's OQ-2** (slug collision handling) — **R-4**, a hard gate rather than an inheritance.
 - **0070's Q1** (must every entity always hold a default-language translation) — this story assumes its
   recommended **(a) yes**, which is what makes **D-10**'s default-required branch coherent.
-- **0074's Q-1** (which language an on-the-fly tag is authored in) — **D-12** confirms its **(a)**, and
-  **R-3** records the half that is still open.
+- **0074's Q-1** (which language an on-the-fly tag is authored in) — **D-12** confirms its **(a)**,
+  which the shipped `FindOrCreateBlogTag` implements (**R-3**).
 - **0063's OQ-1 … OQ-7** — none touched by this story.
 - **0071's R-7** (refusal logging on the Product-category screen; 0077's former R-10 no longer exists) — **R-11** records that
   this story takes the opposite side for the Blog folder, deliberately.
@@ -1456,22 +1540,13 @@ client-side preview on fidelity grounds (`Str::slug()` versus any JS slugifier d
 
 Derived from this debate; **none are in scope for 0079.**
 
-1. **Write the single coherent 0063 amendment** covering all three Epic 5 retrofits (0072, 0074, 0078)
-   **plus this story's** — 0078's technical task 1, **widened by R-1** to include the fourth break site
-   (`$blogPost->tags->pluck('name')` in the editor's `mount()`) that 0078's own R-1(a) does not name.
-   The coordinator's, not this story's.
-2. **Close 0061's OQ-2 before this story reaches Phase 3, and re-scope its answer per language**
-   (**R-4**). This is a gate on 0078 *and* on 0079, and 0079's version is harder because there is no
-   slug field to carry a refusal.
-3. **Decide `FindOrCreateBlogTag`'s post-0074 lookup shape** (**R-3**) — a real gap between 0074 and
-   0063/0079 that neither file closes.
-4. **Add a status-free `translatedBodyRules()` to `BlogPostValidationRules` in 0078** if **Q-1(a)** is
-   adopted — a small, additive, cross-story edit.
+1. ~~0063 amendment~~, ~~0061 OQ-2~~, ~~`FindOrCreateBlogTag` lookup shape~~ — **closed in shipped
+   code** (**R-1**, **R-4**, **R-3**).
+4. ~~Add a status-free `translatedBodyRules()`~~ — **moved into this story's scope** (**Q-1(a)**).
 5. **Decide refusal logging for `SetProductCategoryTranslation`** (0071 **R-7**), now that the Blog
    side and 0076b's `SetProductTranslation` log and it does not (**R-11**). (Moot for
    `SetProductTranslation`: 0076b already logs; 0077's former R-10 no longer exists.)
-6. **Correct 0071's `flux:tab` verification claim** (**R-13**) and check whether 0073 carries the same
-   phrasing, so a later reader does not inherit a command that cannot produce its stated result.
+6. ~~Correct 0071's `flux:tab` verification claim~~ — **done** in 0071 (**R-13**).
 7. ~~**State the N-galleries cost in 0077 as well** (**D-4**)~~ — **done**: 0077 **R-2** states the 2 + N galleries cost.
 8. **Retire the three flat `tests/Browser/` files** into mirrored subfolders — 0069's backlog item 5,
    still open after four Epic 5 UI stories (**D-17**).
@@ -1509,7 +1584,7 @@ Six points, each reached from opposite directions:
    independently, and both singled out the body-filled-title-blank case as the one no sibling can
    demonstrate.
 4. **Title carries no uniqueness rule and needs a negative control** (**D-13**).
-5. **0061's OQ-2 is a hard gate, not a monitorable risk** (**R-4**).
+5. **0061's OQ-2 had to be closed before Phase 3** (**R-4**) — it since has been, in shipped code.
 6. **The slug premise in the coordinator's brief is false** — both were asked to challenge it and both
    confirmed it independently against the files.
 
@@ -1533,13 +1608,11 @@ Six points, each reached from opposite directions:
   mechanism is escalated as **Q-1**, and the case is now a required test asserted against a `Published`
   post. Recorded rather than silently fixed, because a sketch that looks right and is wrong in one
   parameter is exactly what a Phase 3 author would copy.
-- **V-3 — `frontend-expert`'s reasoning for "the component validates" was imprecise, though its
-  conclusion stands.** It argued the 0075 exception applies *"only because 0059's actions were already
-  self-validating with no prior component layer to duplicate."* That does not discriminate: 0058's
-  actions self-validate too (its **D-13**) and 0073's component validates anyway. **The real
-  discriminator is 0060's D-1**, a *screen-story* decision that its component neither composes the trait
-  nor calls `$this->validate()` — and **0063 makes no such decision**. Corrected in **D-9**, with the
-  ambiguity recorded as **R-6** rather than resolved by assertion.
+- **V-3 — `frontend-expert` argued "the component validates"; the shipped code settled it the other
+  way.** Its reasoning (*"the 0075 exception applies only because 0059's actions were already
+  self-validating"*) did not discriminate, and the debate left the question open as **R-6**. The
+  shipped `Editor` now neither composes `BlogPostValidationRules` nor calls `$this->validate()` — the
+  0075/0060 **D-1** shape — so **D-9** follows that shape and **R-6** is resolved.
 - **V-4 — `frontend-qa` raised a design question neither the brief nor any sibling settles**, and the
   facilitator escalated it rather than deciding: whether the screen discloses the derived slug at all
   (**Q-2**). `frontend-expert` proposed a read-only display; `frontend-qa` identified a *live* preview
@@ -1548,8 +1621,9 @@ Six points, each reached from opposite directions:
 
 ### Facts verified by the facilitator against the real tree rather than taken from a task file
 
-`app/Livewire/`, `app/Actions/`, `app/Models/`, `app/Concerns/`, `lang/en/`, `routes/` and
-`resources/views/components/` all listed and quoted in the header block above; **no `vendor/`**;
+*At authoring time (2026-08-30; the tree has since moved on — see the header block and the Phase 2
+record for the current state):* `app/Livewire/`, `app/Actions/`, `app/Models/`, `app/Concerns/`,
+`lang/en/`, `routes/` and `resources/views/components/` were listed; **no `vendor/`**;
 `composer.json` requires `livewire/flux` with **no `livewire/flux-pro`**, so `flux:tabs` is a Pro
 component and 0071's hand-rolled strip stands (re-confirmed here); **no tabbed
 markup exists** (`grep -rnE 'flux:tab[^l]|flux:tabs|role="tab"' resources/` returns nothing) — **but
@@ -1560,5 +1634,90 @@ what makes **R-1**'s fourth break site real; 0063 contains exactly **three** occ
 **none** is a form control; and 0074 **Q-2** assigns the tag-field placement question to *"story 0061
 and its UI sibling"*, which is what **D-12** closes.
 
-**Not run by this phase**, per [workflow.md](../../docs/workflow.md): the INVEST check (Phase 2), TDD
+**Not run by this phase**, per [workflow.md](../../../docs/workflow.md): the INVEST check (Phase 2), TDD
 implementation (Phase 3), security audit (Phase 4), code review (Phase 5), or the docs pass (Phase 6).
+
+## Phase 2 record
+
+**Status: ✅ APPROVED by `code-reviewer` on the third review (no remaining issues).** It was rejected
+twice before that and refreshed by `product-owner` each time; the reasons and fixes are below. After
+approval the user closed **Q-1 = (a)** (additive `translatedBodyRules()`, no status parameter) and
+**Q-2 = (a)** (read-only per-tab persisted slug, omitted on an untranslated tab, labelled as the saved
+slug until save). The file then moved to `in-progress/` for Phase 3. The story was
+written against a tree that has since shipped. The refresh changes no design; it re-aligns the text with
+the code (each point verified against the worktree).
+
+- **B1 — slug collision.** 0061's OQ-2 is resolved in code as refuse-with-validation keyed on `title`
+  via `BlogPostValidationRules::titleSlugRules($storeLanguageId, $ignoreBlogPostId)`, used by
+  `CreateBlogPost`/`UpdateBlogPost`. Fixed: the per-language collision is scripted as a refusal on that
+  tab's title; `SetBlogPostTranslation` reuses `titleSlugRules()` (**D-8**); the "no field to land on"
+  claim and the OQ-2 hard gate are removed (**D-2**, **D-13**, **R-4**, **R-7**, DoD). The former
+  "two posts may share a title in one language" scenario contradicted the shipped rule and was replaced
+  by cross-language and re-save negative controls.
+- **B2 — component validation.** The shipped `Editor` neither composes `BlogPostValidationRules` nor
+  calls `$this->validate()`, and re-keys the actions' `ValidationException`. Fixed: **D-9** rewritten to
+  that shape (adapter is the primary path), **R-6** resolved, and the "refusal in one language leaves
+  other languages unwritten" scenario now states its dependence on **D-14**'s outer transaction.
+- **B3 — 0063 amendment.** 0078 already did it (`Index` uses `withListTranslations()`; `Editor` hydrates
+  from `translations()` and tag translations). Fixed: the three-retrofit rewrite, the `Index.php` modify
+  row and the handoff DoD row are dropped (**R-1**–**R-3**).
+- **B4 — list fallback.** The placeholder scenario conflicted with `BlogPost::displayTitle()`, which
+  falls back to any stored translation before the em dash. Fixed: the scenario adopts the shipped
+  behaviour.
+- **Also:** the "nothing exists in code" block and **R-12**'s "thirteen unshipped stories" are replaced
+  by the current state; **R-13** is closed (0071 corrected its command); a no-split note is added under
+  *Type*. **Q-1** and **Q-2** were left open at that point (since closed, see the status above).
+
+**Re-review findings (second rejection), fixed:**
+
+- **Body pipeline (blocking).** The **D-8** sketch now runs the same body steps as
+  `UpdateBlogPost` (verified in `cleanBody()`): `assertBodyWithinSanitizerLimit()` on the raw body,
+  then sanitizing, then the `BlogBodyHasVisibleContent` collapse to `null`, then the limit check again
+  with `trim: false`. The trait throws on `body`, so the action re-throws on `bodies.{id}`. Added two
+  direct-call tests, two acceptance criteria and a "consumed" row.
+- **D-3** no longer cites a `titleRules(string $storeLanguageId)` signature that never shipped.
+- **Provenance V-3** now records R-6 as resolved by the shipped `Editor`.
+
+## Phase 3 record (TDD)
+
+**Status: GREEN.** Tests were written first (red), then the implementation: `SetBlogPostTranslation`,
+`BlogPostValidationRules::translatedBodyRules()` (Q-1(a)), the tabbed `BlogPosts\Editor` and its view,
+`blog-posts.editor.tabs.*` lang keys (en/es, key-for-key identical) and the architecture fence in
+`tests/Unit/BlogPostTranslationArchitectureTest.php`. The new feature, rendering, architecture and
+browser tests pass; 0063's own cases that became invalid were updated (see *Which of 0063's own test cases
+stop being valid*).
+
+## Phase 4 record (security audit)
+
+**Status: APPROVED by `appsec-auditor` — no Critical, High or Medium findings.**
+
+- **L-1 (Low, accepted, deferred):** `SetBlogPostTranslation` does not refuse an inactive store language
+  inside the action (only the tab strip filters), matching the category siblings. The check belongs to
+  story 0087, which already lists this action.
+- **L-2 (Low, documented):** the WYSIWYG echoes its value raw, so it assumes every translation row went
+  through a sanitizing path; `SetTranslation` is unguarded, so any future import or seeder calling it
+  must sanitize first. Recorded in `docs/security/html-sanitization.md`.
+- **Info:** the audit points in the DoD were confirmed (both write layers refuse a `blog.view` actor,
+  `SetTranslation` reachable only from the action, error keys derived from `$language->id`, over-limit
+  body refused not truncated, server-side narrowing of client-controlled language keys,
+  `$originalTranslatedLanguageIds` locked, D-14 transaction and notification placement).
+
+## Phase 5 record (final code review)
+
+**Status: APPROVED by `code-reviewer` — no blocking issues.** Three minor findings were raised and fixed.
+**Full unscoped suite confirmed green** (docs/contracts.md full-suite gate), run in 36 directory chunks,
+all green: Unit 286 passed; Feature, every directory including Blog, 1164 passed; Browser 287 passed and
+3 skipped. Pint clean.
+
+## Phase 7 record (closure)
+
+Moved from `in-progress/` to `done/` on 2026-11-12. The link-integrity check was run in both directions,
+and `ai-spec/tasks-map.md` and `ai-spec/tasks-status.json` were regenerated (0079 removed from both).
+
+## Phase 6 record (documentation)
+
+`docs-keeper` updated: `docs/api/blog.md` (editor tabs, save path, `data-test` hooks), `docs/api/routes.md`
+(footer pointer), `docs/conventions/naming-validation-traits.md` (`translatedBodyRules()`),
+`docs/conventions/directory-structure/actions.md`, `docs/security/livewire-authorization/action-level-authorization.md`
+(wrapper + L-1), `docs/security/html-sanitization.md` (L-2) and `ai-spec/tasks/_digests/epic-5.md`.
+`docs/conventions/naming.md` needed no change: the field-named-method rule already covers the new method.

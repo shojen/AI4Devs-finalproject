@@ -128,3 +128,12 @@ closed earlier and are not backfilled here (read their `done/` files or `docs/`)
 - Lang keys (en/es): `products.editor.tabs.{untranslated,translation_requires_edit,slug_label,meta_title_label,meta_description_label}` — story 0077.
 - The shared `<x-language-tab-strip>` now has four consumers, unmodified; the backlog item to generalise its hardcoded error-marker key (`products.categories.index.tabs.error_marker`) stays open — story 0077.
 - Story-external breakage: `ProductListAndPickerOrderingTest` asserted the removed `name`/`description`; see `docs/errors-log.md` — story 0077.
+
+## Story 0079 — Blog post editor language tabs (UI)
+
+- `App\Actions\Blog\SetBlogPostTranslation::__invoke(BlogPost, StoreLanguage, string $title, ?string $body = null): BlogPostTranslation` — logged `update` authorize (`target_type` `blog_post`), re-reads the post, sanitizes + size-guards the body (refuses over-limit on `bodies.{id}` rather than truncating), validates `titles.{id}`/`bodies.{id}`, re-keys the 1062 slug collision onto the title; takes no slug — story 0079.
+- `BlogPostValidationRules::translatedBodyRules()` returns `['nullable', 'string']`, status-free: only the default language's body gates publishing (`bodyRules()`) — story 0079.
+- `BlogPosts\Editor` holds `$titles`/`$bodies` keyed by active language id; `#[Locked]`: `$languages`, `$defaultLanguageId`, `$originalTranslatedLanguageIds`, `$persistedSlugs`; the field arrays are not. Blanking a previously translated tab is refused on `titles.{id}`; an untouched untranslated tab is skipped — story 0079.
+- One outer `DB::transaction` wraps default (`Create/UpdateBlogPost`) plus every engaged language (`SetBlogPostTranslation`); errors are re-keyed and the first erroring tab activated — story 0079.
+- Lang keys (en/es): `blog-posts.editor.tabs.{untranslated,slug_label,slug_hint}` — story 0079.
+- Accepted: L-1 no inactive-language check inside the action (aligned by story 0087); L-2 any import/seeder calling the unguarded `SetTranslation` must sanitize (see `docs/security/html-sanitization.md`) — story 0079.
