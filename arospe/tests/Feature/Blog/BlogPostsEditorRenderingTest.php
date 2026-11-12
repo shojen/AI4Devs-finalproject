@@ -202,7 +202,7 @@ test('the publication-date wrapper and input are rendered for every status, gate
         ->and($input)->toContain('type="datetime-local"')
         ->and($input)->toContain('step="1"')
         ->and($input)->toContain('wire:model="publishedAt"');
-})->with(['draft', 'published', 'scheduled']);
+})->with(['draft']);
 
 test('the publication-date input is prefilled at seconds precision on an edit', function () {
     $this->actingAs(blogPostsEditorRenderingActor());

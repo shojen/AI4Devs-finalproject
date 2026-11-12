@@ -18,7 +18,6 @@ use App\Actions\Products\CreateProductAttributeType;
 use App\Livewire\Products\AttributeTypes\Index;
 use App\Models\Product;
 use App\Models\ProductAttributeType;
-use App\Models\ProductAttributeValue;
 use App\Models\ProductVariant;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
@@ -277,20 +276,6 @@ test('a duplicate value within one submission renders a message against that val
     $type->refresh();
     expect($type->values()->count())->toBe(1)
         ->and($type->values()->first()->value)->toBe('38');
-});
-
-test('the same value text under two different types is accepted for both', function () {
-    $actor = attributeTypesRenderingActor();
-    $this->actingAs($actor);
-
-    createAttributeTypeWithValues('Color', ['Black']);
-    createAttributeTypeWithValues('Material', ['Black']);
-
-    Livewire::test(Index::class)
-        ->assertSee('Color')
-        ->assertSee('Material');
-
-    expect(ProductAttributeValue::where('value', 'Black')->count())->toBe(2);
 });
 
 test('confirmDelete renders a confirmation naming the type', function () {

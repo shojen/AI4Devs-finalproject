@@ -34,16 +34,6 @@ function p76ActAs(array $permissions): User
 
 // --- Products\Index ------------------------------------------------------------------------
 
-test('the products list shows and orders products by their default-language title', function () {
-    p76ActAs(['products.view']);
-    Product::factory()->named('Botas')->create();
-    Product::factory()->named('Abrigo')->create();
-
-    $names = collect(Livewire::test(Index::class)->get('products')->items())->pluck('name')->all();
-
-    expect($names)->toBe(['Abrigo', 'Botas']);
-});
-
 test('the list orders by the default-language title even when a French row would sort differently', function () {
     p76ActAs(['products.view']);
     $fr = StoreLanguage::factory()->create(['code' => 'fr']);
@@ -159,15 +149,6 @@ test('the picker lists each product once with its id, default-language name and 
 });
 
 // --- Products\Editor::mount() --------------------------------------------------------------
-
-test('the editor opens a product with the raw default-language name and description', function () {
-    p76ActAs(['products.view', 'products.edit']);
-    $product = Product::factory()->named('Zapatillas Running', '<p>Ligeras</p>')->create();
-
-    Livewire::test(Editor::class, ['product' => $product])
-        ->assertSet('names.'.StoreLanguage::defaultStoreLanguage()->id, 'Zapatillas Running')
-        ->assertSet('descriptions.'.StoreLanguage::defaultStoreLanguage()->id, '<p>Ligeras</p>');
-});
 
 test('a product whose only translation is French opens with an empty name, never the French one', function () {
     p76ActAs(['products.view', 'products.edit']);

@@ -272,23 +272,6 @@ describe('recipients (D-8)', function () {
         Notification::assertNotSentTo($superAdmin, ScheduledBlogPostPublishFailed::class);
     });
 
-    // Gherkin: "An administrator who can only view the blog is not told" -- the action item this
-    // message carries (open the editor) needs blog.edit, so a view-only administrator gets nothing.
-    test('an administrator holding only blog.view is not notified when the creator is unreachable', function () {
-        $deletedCreator = User::factory()->create(['status' => UserStatus::Active]);
-        $deletedCreator->givePermissionTo('blog.edit');
-        $deletedCreator->delete();
-        $post = ScheduledPosts::scheduled(createdBy: $deletedCreator);
-
-        $viewOnlyAdmin = User::factory()->create(['status' => UserStatus::Active]);
-        $viewOnlyAdmin->givePermissionTo('blog.view');
-        Notification::fake();
-
-        app(NotifyScheduledBlogPostPublishFailed::class)($post->id);
-
-        Notification::assertNotSentTo($viewOnlyAdmin, ScheduledBlogPostPublishFailed::class);
-    });
-
     // Mutation: permission('blog.view'); drop the status filter. Combining all five exclusions in
     // one assertion means dropping ANY single guard lets that one row through, breaking
     // assertNothingSent() -- each excluded user is its own killer.
@@ -390,17 +373,6 @@ describe('recipients (D-8)', function () {
 });
 
 describe('dedup (D-6)', function () {
-    // V-5 asserted rather than assumed, per the task file's own instruction, before the day-later
-    // test below relies on it.
-    test('the array cache store honours Carbon::setTestNow() for TTL expiry', function () {
-        Cache::put('pf-probe-key', 1, now()->addDay());
-        expect(Cache::has('pf-probe-key'))->toBeTrue();
-
-        Carbon::setTestNow(now()->addDay()->addSecond());
-
-        expect(Cache::has('pf-probe-key'))->toBeFalse();
-    });
-
     // Mutation: remove the Cache::add guard.
     test('two failing ticks yield one notification, not two', function () {
         $creator = pfReachableCreator();

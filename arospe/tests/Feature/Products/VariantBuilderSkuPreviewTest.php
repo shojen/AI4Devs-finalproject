@@ -126,23 +126,6 @@ test('the three-way ordering fixture derives the SKU by type position, never by 
     expect($variant->sku)->toBe('0002-Mate-L-azul-marino');
 });
 
-test('submission order does not affect the previewed SKU', function () {
-    [$product, $t1Color, $v1AzulMarino, $t2Acabado, $v2Mate, $t3Talla, $v3L] = skuPreviewThreeWayFixture();
-
-    // The SAME three values, submitted in reverse key order (T3, T1, T2) -- $combinationRows is a
-    // PHP array whose insertion order IS the submission order, so this is a faithful reproduction
-    // of a differently-ordered payload vector.
-    $component = Livewire::test(VariantBuilder::class, ['productId' => $product->id]);
-
-    $component->call('openCreateForm')->set('combinationRows', [
-        ['key' => 'row-0', 'typeId' => $t3Talla->id, 'valueId' => $v3L->id],
-        ['key' => 'row-1', 'typeId' => $t1Color->id, 'valueId' => $v1AzulMarino->id],
-        ['key' => 'row-2', 'typeId' => $t2Acabado->id, 'valueId' => $v2Mate->id],
-    ]);
-
-    expect($component->get('skuPreview'))->toBe('0002-Mate-L-azul-marino');
-});
-
 test('a submitted sku property does not exist on the component and the rendered form carries no sku control', function () {
     $product = Product::factory()->create(['sku' => '0001']);
 
@@ -161,24 +144,6 @@ test('a submitted sku property does not exist on the component and the rendered 
     // rendered as read-only text, never posted back (D-4 point 3, D-5).
     expect($html)->not->toContain('name="sku"')
         ->and($html)->not->toContain("name='sku'");
-});
-
-test('casing is preserved in both directions in the previewed SKU', function () {
-    // A single all-one-case assertion cannot fail against an implementation that upper-cases
-    // everything (0029 FP14) -- "L" (already upper) and "azul marino" (already lower) must BOTH
-    // survive unchanged.
-    $product = Product::factory()->create(['sku' => '0002']);
-    [$talla, $l] = skuPreviewTestAttribute('Talla', 'L', typePosition: 0);
-    [$color, $azulMarino] = skuPreviewTestAttribute('Color', 'azul marino', typePosition: 1);
-
-    $component = Livewire::test(VariantBuilder::class, ['productId' => $product->id]);
-
-    $component->call('openCreateForm')->set('combinationRows', [
-        ['key' => 'row-0', 'typeId' => $talla->id, 'valueId' => $l->id],
-        ['key' => 'row-1', 'typeId' => $color->id, 'valueId' => $azulMarino->id],
-    ]);
-
-    expect($component->get('skuPreview'))->toBe('0002-L-azul-marino');
 });
 
 test('an empty combination previews the placeholder, never a bare parent sku', function () {

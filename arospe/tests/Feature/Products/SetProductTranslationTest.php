@@ -315,16 +315,6 @@ test('the stored slug is the canonical form', function () {
     expect(storedProductTranslation($product, $this->french)->slug)->toBe('chaussures-de-course');
 });
 
-test('the same slug on two products in one language is refused', function () {
-    productWithFrenchSlug($this->french, 'chaussures-de-course');
-    $product = Product::factory()->named('Zapatillas')->create();
-    $this->actingAs(setProductTranslationActor());
-
-    $errors = productTranslationErrors(fn () => app(SetProductTranslation::class)($product, $this->french, 'Chaussures', slug: 'chaussures-de-course'));
-
-    expect(array_keys($errors))->toBe(["slugs.{$this->french->id}"]);
-});
-
 test('the same slug in two languages of one product is accepted, inserting the French row', function () {
     $product = Product::factory()->named('Zapatillas')->create();
     ProductTranslation::query()

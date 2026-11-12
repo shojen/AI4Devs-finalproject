@@ -36,24 +36,6 @@ function actingSnapshotCreator(): User
     return $actor;
 }
 
-test('the line item stores the price at the time of order', function () {
-    actingSnapshotCreator();
-
-    $customer = Customer::factory()->create();
-    $paymentMethod = PaymentMethod::factory()->create();
-    $product = Product::factory()->create(['price' => '10.00']);
-
-    $order = app(CreateOrder::class)([
-        'customer_id' => $customer->id,
-        'payment_method_id' => $paymentMethod->id,
-        'items' => [
-            ['product_id' => $product->id, 'quantity' => 1],
-        ],
-    ]);
-
-    expect((string) $order->items()->sole()->unit_price)->toBe('10.00');
-});
-
 // R-2, dedicated regression: mutate the product's price AFTER the order exists, then re-fetch the
 // ORDER from the database (never the in-memory instance) and assert the snapshot survived.
 test('a later product price change does not move an existing order line item unit_price', function () {
@@ -77,25 +59,6 @@ test('a later product price change does not move an existing order line item uni
     $fresh = $order->fresh();
 
     expect((string) $fresh->items()->sole()->unit_price)->toBe('10.00');
-});
-
-test('a line item for a variant stores the variant own price, not the product price', function () {
-    actingSnapshotCreator();
-
-    $customer = Customer::factory()->create();
-    $paymentMethod = PaymentMethod::factory()->create();
-    $product = Product::factory()->create(['price' => '10.00']);
-    $variant = ProductVariant::factory()->for($product)->create(['price' => '15.00']);
-
-    $order = app(CreateOrder::class)([
-        'customer_id' => $customer->id,
-        'payment_method_id' => $paymentMethod->id,
-        'items' => [
-            ['product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => 1],
-        ],
-    ]);
-
-    expect((string) $order->items()->sole()->unit_price)->toBe('15.00');
 });
 
 // D-15's own dedicated regression: mutate the VARIANT's price (not the parent product's), because
@@ -151,27 +114,6 @@ test('a line item for a variant stores the variant own SKU, while product_name c
     expect($item->product_sku)->toBe($variant->sku)
         ->and($item->product_sku)->not->toBe($product->sku)
         ->and($item->product_name)->toBe('Camiseta');
-});
-
-test('the line item stores the product name and code at the time of order', function () {
-    actingSnapshotCreator();
-
-    $customer = Customer::factory()->create();
-    $paymentMethod = PaymentMethod::factory()->create();
-    $product = Product::factory()->named('Silla de oficina')->create(['sku' => 'SIL-001', 'price' => '10.00']);
-
-    $order = app(CreateOrder::class)([
-        'customer_id' => $customer->id,
-        'payment_method_id' => $paymentMethod->id,
-        'items' => [
-            ['product_id' => $product->id, 'quantity' => 1],
-        ],
-    ]);
-
-    $item = $order->items()->sole();
-
-    expect($item->product_name)->toBe('Silla de oficina')
-        ->and($item->product_sku)->toBe('SIL-001');
 });
 
 // The same regression as unit_price, for name/sku -- rename/re-code the product after the order

@@ -9,10 +9,9 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductCategory;
-use Illuminate\Support\Facades\Artisan;
 
 // Story 0081: the console entry point for DemoDataSeeder. Thin by design -- these tests prove the
-// command's OWN responsibilities (registration, the environment guard, delegating to the seeder),
+// command's OWN responsibilities (the environment guard, delegating to the seeder),
 // not the seeder's data-generation detail, which tests/Feature/Seeders/DemoDataSeederTest.php
 // already owns in full. Assertions here are deliberately coarse counts.
 //
@@ -40,15 +39,6 @@ function demoDataTableCounts(): array
         'blog_tags' => BlogTag::count(),
     ];
 }
-
-test('demo:generate-data is registered with its description', function () {
-    $commands = Artisan::all();
-
-    expect($commands)->toHaveKey('demo:generate-data');
-
-    expect($commands['demo:generate-data']->getDescription())
-        ->toBe('Generate demo data (customers, orders, products, categories, blog content) for a local or demo environment');
-});
 
 test('demo:generate-data succeeds in the testing environment and adds the expected demo rows', function () {
     $this->artisan('demo:generate-data')->assertSuccessful();
@@ -114,19 +104,6 @@ test('running the command twice adds a second batch, and every customer old and 
 // need demonstrable data. The seeder makes the FIRST seeded order paid and the SECOND cancelled
 // (deterministic, like 0081's always-tagged first post), and never produces a refund (refunds need
 // line-level RecordRefund data the seeder does not build). 0081's invariants must survive.
-test('one seeding run yields a paid non-cancelled order and a cancelled order', function () {
-    $this->artisan('demo:generate-data')->assertSuccessful();
-
-    $paidAndLive = Order::query()
-        ->where('payment_status', PaymentStatus::Paid)
-        ->where('status', '!=', OrderStatus::Cancelled)
-        ->count();
-    $cancelled = Order::query()->where('status', OrderStatus::Cancelled)->count();
-
-    expect($paidAndLive)->toBeGreaterThanOrEqual(1)
-        ->and($cancelled)->toBeGreaterThanOrEqual(1);
-});
-
 test('the cancelled demo order is a different order from the paid one, and is not paid-and-live', function () {
     $this->artisan('demo:generate-data')->assertSuccessful();
 

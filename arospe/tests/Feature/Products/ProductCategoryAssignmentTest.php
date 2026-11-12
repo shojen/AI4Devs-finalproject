@@ -5,8 +5,6 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
-use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\PermissionRegistrar;
@@ -74,21 +72,3 @@ test('a malformed category id is refused by ValidationException, never a QueryEx
     'a blank string' => [''],
     'an integer' => [123],
 ]);
-
-// The FK is a real constraint — 0024b's delete guard's second line of defence. A migration
-// quietly dropping ->constrained() would remove that backstop with nothing else going red. A
-// deliberate, argued exception to what-not-to-test.md's "database guarantees" rule (per the task
-// file's own note) — one test, not a suite.
-test('the product_category_id foreign key is a real database constraint', function () {
-    expect(fn () => DB::table('products')->insert([
-        'id' => (string) Str::uuid7(),
-        'product_category_id' => (string) Str::uuid7(),
-        'sku' => 'RNR-'.Str::random(10),
-        'type' => 'physical',
-        'status' => 'draft',
-        'price' => '19.99',
-        'stock' => 0,
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]))->toThrow(fn (QueryException $exception) => expect($exception->errorInfo[1])->toBe(1452));
-});

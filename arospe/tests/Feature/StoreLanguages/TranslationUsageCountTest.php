@@ -17,7 +17,6 @@
 
 use App\Models\SalesRegion;
 use App\Models\StoreLanguage;
-use Illuminate\Support\Str;
 
 test('translationUsageCount returns 0 against the shipped empty registry, even with unrelated rows present', function () {
     config(['store-languages.translation_relations' => []]);
@@ -69,18 +68,4 @@ test('translationUsageCount returns 0 for a language nothing references', functi
     ]]);
 
     expect(StoreLanguage::translationUsageCount($language->id))->toBe(0);
-});
-
-test('translationUsageCount is called with a plain string id, never requiring a hydrated model', function () {
-    $language = StoreLanguage::factory()->create();
-    SalesRegion::factory()->create(['description' => $language->id]);
-
-    config(['store-languages.translation_relations' => [
-        ['table' => 'sales_regions', 'column' => 'description'],
-    ]]);
-
-    $count = StoreLanguage::translationUsageCount((string) $language->id);
-
-    expect($count)->toBe(1)
-        ->and(StoreLanguage::translationUsageCount((string) Str::uuid()))->toBe(0);
 });

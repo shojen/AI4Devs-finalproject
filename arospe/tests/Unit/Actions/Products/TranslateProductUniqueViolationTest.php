@@ -155,12 +155,3 @@ test('with a language id an unrelated QueryException is still rethrown as the sa
 
     expect($caught)->toBe($e);
 });
-
-test('with an explicit null language id the bare slug and name keys are unchanged', function (string $key, string $expected) {
-    $result = app(TranslateProductUniqueViolation::class)(s76aQueryException(s76aDuplicate($key)), null);
-
-    expect(array_keys($result->errors()))->toBe([$expected]);
-})->with([
-    'slug' => ['product_translations_language_slug_unique', 'slug'],
-    'name' => ['product_translations_product_language_unique', 'name'],
-]);

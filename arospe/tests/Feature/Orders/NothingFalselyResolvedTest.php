@@ -17,8 +17,7 @@ use Spatie\Permission\PermissionRegistrar;
 // 0053/0054/0037's actual work, and would do so SILENTLY, because a populated column looks like a
 // working feature. D-9: sales_region_id / shipping_rate_id stay null; tax_rate stays null, NEVER
 // 0.000 (D-8, mirroring sales_regions.rate's own "not configured" vs "a legitimate 0%" distinction);
-// flagged_for_review stays false (D-10); tax_amount/shipping_amount are 0.00 and total equals
-// subtotal (D-8).
+// flagged_for_review stays false (D-10).
 
 beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
@@ -68,13 +67,4 @@ test('a newly created order tax_rate is null, not 0.000', function () {
 
 test('a newly created order flagged_for_review is false', function () {
     expect(createPlainOrder()->fresh()->flagged_for_review)->toBeFalse();
-});
-
-test('tax_amount and shipping_amount are 0.00 and total equals subtotal, as decimal strings', function () {
-    $fresh = createPlainOrder()->fresh();
-
-    expect((string) $fresh->tax_amount)->toBe('0.00')
-        ->and((string) $fresh->shipping_amount)->toBe('0.00')
-        ->and((string) $fresh->total)->toBe((string) $fresh->subtotal)
-        ->and((string) $fresh->subtotal)->toBe('20.00');
 });

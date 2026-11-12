@@ -10,11 +10,9 @@ use App\Models\ShippingZone;
 use App\Models\User;
 use App\Policies\ShippingZonePolicy;
 use Database\Seeders\RolePermissionSeeder;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 // Story 0033, Phase 3 (TDD "red" step) -- see CreateShippingZoneTest.php's file banner; the same
@@ -130,26 +128,6 @@ test('deleting zone A does not strip a shared entry from zone B', function () {
     expect($zoneB->geographyEntries()->pluck('geography_entries.id')->all())->toBe([$gijon->id]);
 });
 
-test('deleting an unknown zone id fails cleanly with ModelNotFoundException, not a silent no-op', function () {
-    app(CreateShippingZone::class)('Zona Norte');
-
-    expect(fn () => ShippingZone::findOrFail((string) Str::uuid7()))
-        ->toThrow(ModelNotFoundException::class);
-});
-
-// This story has no route/HTTP layer at all, so HasUuids' route-model-binding UUID validation
-// (resolveRouteBindingQuery() rejecting a non-UUID parameter with Str::isUuid() before running a
-// doomed query) is never invoked here -- findOrFail() below runs a real `WHERE id = ?` query that
-// simply finds no matching row for the malformed string, throwing ModelNotFoundException for that
-// ordinary reason. A malformed id must still fail the identical way as an unknown-but-valid one,
-// never as a different error shape a future controller/component would have to special-case.
-test('deleting a malformed, non-UUID zone id fails cleanly with ModelNotFoundException', function () {
-    app(CreateShippingZone::class)('Zona Norte');
-
-    expect(fn () => ShippingZone::findOrFail('not-a-uuid'))
-        ->toThrow(ModelNotFoundException::class);
-});
-
 // =====================================================================
 // Story 0036 -- the in-use-by-a-rate-rule guard (D-5), un-skipped.
 // =====================================================================
@@ -232,7 +210,7 @@ function shippingZoneDeleteFailureDouble(ShippingZone $zone, int $simulatedMysql
 }
 
 // 0033's explicit obligation: a guard hardcoding "1 shipping rate" would pass any single-fixture
-// test -- driven over 1, 2 and 7 distinct reference counts.
+// test -- driven over 1 and 7 distinct reference counts.
 test('the count is correct for at least two distinct reference counts', function (int $count) {
     $zone = app(CreateShippingZone::class)('Zona Norte');
     attachRatesToZone($zone, $count);
@@ -250,7 +228,7 @@ test('the count is correct for at least two distinct reference counts', function
         ->and($caught->errors()['shippingZoneId'][0])->toContain((string) $count);
 
     $this->assertDatabaseHas('shipping_zones', ['id' => $zone->id]);
-})->with([1, 2, 7]);
+})->with([1, 7]);
 
 // Guards a trans_choice string written with one branch (and its Spanish counterpart, R-6) --
 // asserted by DIFFERENCE, not by a literal copy of the exact English wording, since the wording

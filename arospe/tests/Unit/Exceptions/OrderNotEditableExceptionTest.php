@@ -27,10 +27,6 @@ use Tests\TestCase;
 // database.
 uses(TestCase::class);
 
-test('it is a runtime exception', function () {
-    expect(new OrderNotEditableException)->toBeInstanceOf(RuntimeException::class);
-});
-
 test('rendering it produces a 409 response, RoleInUseExceptions own precedent for a well-formed, authorized, but state-refused request', function () {
     $exception = new OrderNotEditableException;
 

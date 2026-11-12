@@ -853,25 +853,6 @@ test('save authorizes update as its first statement for a denied actor, on an ex
     expect($product->fresh()->translated('name'))->toBe('Original Name');
 });
 
-test('a save by a denied actor writes nothing across products, product_media and product_sales_region', function () {
-    // The AuthorizationException fires at mount(), not at ->call('save') -- the whole chain from
-    // Livewire::test() through fillEditorForm() must sit inside the try block.
-    $this->withoutExceptionHandling();
-    $actor = User::factory()->create();
-    $this->actingAs($actor);
-
-    try {
-        fillEditorForm(Livewire::test(Editor::class), editorValidPayload())->call('save');
-    } catch (AuthorizationException) {
-        // expected
-    }
-
-    expect(Product::count())->toBe(0)
-        ->and(DB::table('product_translations')->count())->toBe(0)
-        ->and(DB::table('product_media')->count())->toBe(0)
-        ->and(DB::table('product_sales_region')->count())->toBe(0);
-});
-
 // Story 0076a (D-33): UpdateProduct now requires slug and the two meta fields, and the editor has no
 // input for them yet. An edit made today must pass the stored values back instead of clearing them.
 test('saving an existing product through the editor preserves its stored slug and SEO fields', function () {

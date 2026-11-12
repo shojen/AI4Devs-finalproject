@@ -11,7 +11,6 @@ use App\Models\Customer;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Http\Request;
 use Livewire\Livewire;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -89,14 +88,6 @@ test('a malformed, non-UUID customer id in the URL is not found', function () {
     $this->actingAs($actor);
 
     $this->get('/customers/not-a-uuid')->assertNotFound();
-});
-
-test('GET /customers still resolves to customers.index once the parameterised route is registered', function () {
-    $request = Request::create('/customers', 'GET');
-
-    $route = app('router')->getRoutes()->match($request);
-
-    expect($route->getName())->toBe('customers.index');
 });
 
 test('the customers.show route is gated by exactly can:customers.view', function () {

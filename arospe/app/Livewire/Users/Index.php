@@ -39,6 +39,19 @@ class Index extends Component
     use ProfileValidationRules, UserValidationRules;
 
     /**
+     * Session key holding the create/edit form parked across a step-up
+     * password confirmation (story 0097).
+     */
+    private const PENDING_FORM_SESSION_KEY = 'users.pending_form';
+
+    /**
+     * How long a parked form stays restorable -- long enough to type a
+     * password, short enough that an abandoned confirmation does not
+     * resurface later.
+     */
+    private const PENDING_FORM_LIFETIME_SECONDS = 900;
+
+    /**
      * @var array<int, array{id: string, name: string, email: string, pendingEmail: string|null, role: string|null, status: UserStatus, canEdit: bool, canDelete: bool}>
      */
     #[Locked]
@@ -116,6 +129,7 @@ class Index extends Component
         Gate::authorize('viewAny', User::class);
 
         $this->loadUsers();
+        $this->restorePendingForm();
     }
 
     /**
@@ -225,10 +239,11 @@ class Index extends Component
         } catch (PasswordConfirmationRequiredException) {
             // Story 0015a — a role/status/email change (or, on the create
             // path, an Administrator-tier creation -- Phase 4 finding F1)
-            // reached the step-up guard. The modal is deliberately left open
-            // (accepted UX wart, decision D4) rather than closed/reloaded:
-            // the actor is being redirected away entirely, so there is
-            // nothing to reset here. setIntendedUrl() is required because
+            // reached the step-up guard. The form is parked by
+            // stashPendingForm() below (story 0097, superseding the 0015a D4
+            // "accepted UX wart") and restored by mount() after the
+            // confirmation; the actor is being redirected away entirely, so
+            // there is nothing to reset here. setIntendedUrl() is required because
             // this request is a POST to /livewire/update, not the GET
             // RequirePassword::redirectGuest() normally handles, so nothing
             // else populates `url.intended` for Fortify's post-confirmation
@@ -249,6 +264,8 @@ class Index extends Component
                 'user_id' => $target?->id,
             ]);
 
+            $this->stashPendingForm($target);
+
             redirect()->setIntendedUrl(route('users.index'));
             $this->redirect(route('password.confirm'));
 
@@ -259,6 +276,83 @@ class Index extends Component
         unset($this->usersSummary);
 
         $this->closeModal();
+    }
+
+    /**
+     * Park the in-flight create/edit form in the session so the step-up
+     * round trip does not lose it (story 0097, superseding the 0015a D4
+     * "accepted UX wart").
+     *
+     * Only the four non-secret form fields are kept -- this form has no
+     * password field -- together with the owning actor and the target id
+     * (`null` on the create path). Nothing is written after the actor
+     * confirms their password: the next mount reopens the modal prefilled and
+     * the actor presses Save again, so every Gate and step-up check re-runs
+     * against the then-current state.
+     */
+    private function stashPendingForm(?User $target): void
+    {
+        session()->put(self::PENDING_FORM_SESSION_KEY, [
+            'actor_id' => Auth::id(),
+            'target_id' => $target?->id,
+            'name' => $this->name,
+            'email' => $this->email,
+            'roleId' => $this->roleId,
+            'status' => $this->status,
+            'stored_at' => now()->unix(),
+        ]);
+    }
+
+    /**
+     * Reopen the modal with the form parked by stashPendingForm(), once.
+     *
+     * The entry is pulled (read and removed) first, so it can never be used
+     * twice, and is dropped silently when it belongs to another actor, is
+     * older than PENDING_FORM_LIFETIME_SECONDS, is malformed, or no longer
+     * authorizes: a create needs `create`; an edit needs the target to still
+     * exist and the same `update` / `updateSensitiveAttributes` gates
+     * openEditModal() applies (the actor's own row is exempt from the latter,
+     * as there).
+     */
+    private function restorePendingForm(): void
+    {
+        $stash = session()->pull(self::PENDING_FORM_SESSION_KEY);
+
+        if (! is_array($stash)
+            || ($stash['actor_id'] ?? null) !== Auth::id()
+            || ! is_int($stash['stored_at'] ?? null)
+            || now()->unix() - $stash['stored_at'] > self::PENDING_FORM_LIFETIME_SECONDS
+            || ! is_string($stash['name'] ?? null)
+            || ! is_string($stash['email'] ?? null)
+            || ! is_string($stash['roleId'] ?? null)
+            || ! is_string($stash['status'] ?? null)) {
+            return;
+        }
+
+        $targetId = $stash['target_id'] ?? null;
+
+        if ($targetId === null) {
+            if (! Gate::allows('create', User::class)) {
+                return;
+            }
+        } else {
+            $target = is_string($targetId) ? User::find($targetId) : null;
+
+            if ($target === null
+                || ! Gate::allows('update', $target)
+                || (! $target->is(Auth::user()) && ! Gate::allows('updateSensitiveAttributes', $target))) {
+                return;
+            }
+
+            $this->editingUserId = $target->id;
+            $this->editingPendingEmail = $target->pending_email;
+        }
+
+        $this->name = $stash['name'];
+        $this->email = $stash['email'];
+        $this->roleId = $stash['roleId'];
+        $this->status = $stash['status'];
+        $this->showModal = true;
     }
 
     /**

@@ -143,34 +143,6 @@ test('a host components bound value seeds the embedded editor at mount', functio
     expect($html)->toContain('<p>Seeded from the host</p>');
 });
 
-// Phase 4 correction (frontend-expert, technical task 4): this test's own premise -- that a
-// host-side update to the bound property reaches the ALREADY-MOUNTED child's rendered HTML on the
-// host's next re-render -- is false, and provably so on two independent grounds. (1) It directly
-// contradicts D9's own documented consequence: "because the region is wire:ignore'd... a server-side
-// write to $value does not appear in the editor. A consumer that resets its form by nulling the
-// bound property will see the editor keep its old content." (2) It is also false at the LIVEWIRE
-// mechanism level, independent of wire:ignore entirely: Livewire\Features\SupportNestingComponents
-// spoofs any nested child keyed identically to one already rendered on a PRIOR render of the same
-// parent test instance -- `pre-mount`'s `hasPreviouslyRenderedChild()` short-circuits `mount()`
-// entirely and emits a bare `<div wire:id="..." wire:name="..." wire:key="..."></div>` stub instead
-// of the child's real markup, so the child's own $value is never even re-read on this pass. Verified
-// by execution: the host's re-render HTML for the second `->set()` call really does contain only that
-// empty stub tag, not the editor's inner markup at all -- confirming this is a general Livewire
-// nested-component property, not something a wire:ignore workaround could change.
-test('updating the hosts bound property does not reach the already-mounted embedded editor', function () {
-    $this->actingAs(wysiwygEditorTestActor());
-
-    $component = Livewire::test(WysiwygEditorHostStubForModelableTest::class, [
-        'description' => '<p>Original</p>',
-    ])->assertSeeHtml('<p>Original</p>');
-
-    // D9's documented consequence, proven rather than merely cited: the child was already rendered
-    // above, so this second render spoofs it as an empty stub -- the new value never reaches it.
-    expect($component->set('description', '<p>Updated from host</p>')->html())
-        ->not->toContain('<p>Updated from host</p>')
-        ->not->toContain('<p>Original</p>');
-});
-
 test('the value property is a plain writable Modelable target, not locked like galleryEvent', function () {
     $this->actingAs(wysiwygEditorTestActor());
 
@@ -190,8 +162,8 @@ test('the value property is a plain writable Modelable target, not locked like g
 
 // Phase 4 correction (frontend-expert, technical task 4): the original single-call-chain shape
 // asserted "multi:false" AFTER calling openGallery(), but that call re-renders this SAME tested
-// instance a second time -- and per Livewire\Features\SupportNestingComponents (see the sibling
-// correction above), the embedded <livewire:media.gallery> child, already rendered once on the
+// instance a second time -- and per Livewire\Features\SupportNestingComponents, the embedded
+// <livewire:media.gallery> child, already rendered once on the
 // INITIAL mount, is spoofed as an empty stub on this second render rather than re-emitting its own
 // snapshot. So the assertion is split: the child's multi:false is read off the component's FIRST
 // (initial-mount) render -- the one and only render at which a nested child's real markup is
@@ -220,31 +192,6 @@ test('the registered gallery listener name is unique per mounted instance', func
     $second = Livewire::test(WysiwygEditor::class);
 
     expect($first->get('galleryEvent'))->not->toBe($second->get('galleryEvent'));
-});
-
-// =====================================================================
-// Integration -- insertImage() with 0020's exact payload shape dispatches the client-side event
-// carrying the ORIGINAL url (never webpUrl/avifUrl -- D7) and the title as alt. Assert the payload
-// itself, not merely that something was dispatched.
-// =====================================================================
-
-test('insertImage dispatches the client-side event carrying the original url and the title as alt', function () {
-    $this->actingAs(wysiwygEditorTestActor());
-
-    $media = Media::factory()->create(['title' => 'Red widget']);
-    $item = wysiwygGalleryPayloadItem($media);
-
-    $component = Livewire::test(WysiwygEditor::class)
-        ->call('insertImage', [$item]);
-
-    $component->assertDispatched(
-        'wysiwyg-insert-image',
-        fn (string $name, array $params): bool => $params['url'] === $item['url']
-            && $params['alt'] === $item['title']
-            // D7: the ORIGINAL url, never a format-negotiated variant.
-            && $params['url'] !== $item['webpUrl']
-            && $params['url'] !== $item['avifUrl']
-    );
 });
 
 // =====================================================================

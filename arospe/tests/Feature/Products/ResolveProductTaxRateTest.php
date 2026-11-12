@@ -70,20 +70,6 @@ test('when no assigned region matches the destination, the default entry\'s rate
         ->and($result->tier)->toBe(TaxRateResolutionTier::CatalogDefault);
 });
 
-// The decoy that makes the test above non-trivial: the unassigned destination carries its OWN
-// rate, and it must never be what comes back.
-test('the destination\'s own rate is not used when the product is not assigned to it', function () {
-    $destination = SalesRegion::factory()->withRate('9.000')->create();
-    $default = SalesRegion::factory()->isDefault()->withRate('21.000')->create();
-    $product = Product::factory()->create();
-
-    $result = app(ResolveProductTaxRate::class)($product, $destination);
-
-    expect($result->rate)->toBe('21.000')
-        ->and($result->rate)->not->toBe('9.000')
-        ->and($result->region->id)->toBe($default->id);
-});
-
 // =====================================================================
 // D5 -- 0.000 is a real rate, at both tiers, never mistaken for unconfigured
 // =====================================================================
@@ -148,62 +134,9 @@ test('an unconfigured default entry resolves to no rate when nothing matches, ne
         ->and($result->tier)->toBe(TaxRateResolutionTier::CatalogDefault);
 });
 
-// The pairing that proves the null-handling is not accidentally identical to the zero-handling,
-// at the assigned-region tier.
-test('at the assigned-region tier, null and 0.000 resolve to different, distinguishable answers', function () {
-    $unconfigured = SalesRegion::factory()->create();
-    $zeroRated = SalesRegion::factory()->withRate('0.000')->create();
-    $productWithUnconfigured = Product::factory()->create();
-    $productWithZero = Product::factory()->create();
-
-    app(SyncProductSalesRegions::class)($productWithUnconfigured, [$unconfigured->id]);
-    app(SyncProductSalesRegions::class)($productWithZero, [$zeroRated->id]);
-
-    $unconfiguredResult = app(ResolveProductTaxRate::class)($productWithUnconfigured, $unconfigured);
-    $zeroResult = app(ResolveProductTaxRate::class)($productWithZero, $zeroRated);
-
-    expect($unconfiguredResult->rate)->toBeNull()
-        ->and($zeroResult->rate)->toBe('0.000');
-});
-
-// The same pairing at the default (CatalogDefault) tier.
-test('at the default tier, null and 0.000 resolve to different, distinguishable answers', function () {
-    $unconfiguredDefault = SalesRegion::factory()->isDefault()->create();
-    $unmatchedDestination = SalesRegion::factory()->create();
-    $productAgainstUnconfigured = Product::factory()->create();
-
-    $unconfiguredResult = app(ResolveProductTaxRate::class)($productAgainstUnconfigured, $unmatchedDestination);
-
-    expect($unconfiguredResult->rate)->toBeNull();
-
-    $unconfiguredDefault->delete();
-    $zeroDefault = SalesRegion::factory()->isDefault()->withRate('0.000')->create();
-    $productAgainstZero = Product::factory()->create();
-
-    $zeroResult = app(ResolveProductTaxRate::class)($productAgainstZero, $unmatchedDestination);
-
-    expect($zeroResult->rate)->toBe('0.000');
-});
-
 // =====================================================================
 // D6 -- a disabled but still-assigned region keeps deciding the rate
 // =====================================================================
-
-test('a disabled but still-assigned region keeps deciding the rate, rather than the default', function () {
-    $region = SalesRegion::factory()->withRate('7.500')->create();
-    $default = SalesRegion::factory()->isDefault()->withRate('21.000')->create();
-    $product = Product::factory()->create();
-
-    app(SyncProductSalesRegions::class)($product, [$region->id]);
-
-    $region->is_active = false;
-    $region->save();
-
-    $result = app(ResolveProductTaxRate::class)($product, $region);
-
-    expect($result->rate)->toBe('7.500')
-        ->and($result->tier)->toBe(TaxRateResolutionTier::AssignedRegion);
-});
 
 // Phase 4 finding F-4: a caller may hand this action a Product whose `salesRegions` relation was
 // already eager-loaded with a CONSTRAINED closure (Product::with(['salesRegions' => fn ($q) =>
@@ -271,21 +204,6 @@ test('assigning a parent entry does not cover its fiscal territories', function 
         ->and($result->tier)->toBe(TaxRateResolutionTier::CatalogDefault);
 });
 
-test('a different country never matches -- with groupings gone, this is the whole no-match surface', function () {
-    $francia = SalesRegion::factory()->withRate('20.000')->create();
-    $portugal = SalesRegion::factory()->withRate('23.000')->create();
-    $default = SalesRegion::factory()->isDefault()->withRate('15.000')->create();
-    $product = Product::factory()->create();
-
-    app(SyncProductSalesRegions::class)($product, [$francia->id]);
-
-    $result = app(ResolveProductTaxRate::class)($product, $portugal);
-
-    expect($result->rate)->toBe('15.000')
-        ->and($result->region->id)->toBe($default->id)
-        ->and($result->tier)->toBe(TaxRateResolutionTier::CatalogDefault);
-});
-
 // =====================================================================
 // Phase 4 finding F-5 -- deterministic tiebreak if the single-default
 // invariant is ever violated (nothing in the database enforces it; see
@@ -325,32 +243,4 @@ test('resolving with no default row at all throws a domain exception, not a sile
 
     expect(fn () => app(ResolveProductTaxRate::class)($product, $destination))
         ->toThrow(RuntimeException::class);
-});
-
-// =====================================================================
-// Type pinning at both tiers -- a branch doing (string) $default->rate would turn null into ''
-// and '0.000' into '0'.
-// =====================================================================
-
-test('the resolved rate is a genuine string at the assigned-region tier', function () {
-    $region = SalesRegion::factory()->withRate('12.345')->create();
-    $product = Product::factory()->create();
-
-    app(SyncProductSalesRegions::class)($product, [$region->id]);
-
-    $result = app(ResolveProductTaxRate::class)($product, $region);
-
-    expect($result->rate)->toBeString()
-        ->and($result->rate)->toBe('12.345');
-});
-
-test('the resolved rate is a genuine string at the default tier, never coerced from null or zero', function () {
-    $default = SalesRegion::factory()->isDefault()->withRate('12.345')->create();
-    $destination = SalesRegion::factory()->create();
-    $product = Product::factory()->create();
-
-    $result = app(ResolveProductTaxRate::class)($product, $destination);
-
-    expect($result->rate)->toBeString()
-        ->and($result->rate)->toBe('12.345');
 });

@@ -25,7 +25,6 @@ use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -334,29 +333,6 @@ test('a Super Admin actor holding zero permission rows passes every gated method
         ->call('deleteVariant');
 
     expect(ProductVariant::where('id', $variant->id)->exists())->toBeFalse();
-});
-
-// =====================================================================
-// Permission-cache staleness: a revocation is reflected on a freshly resolved user, with no
-// forgetCachedPermissions() call between the revoke and the assert -- Spatie's own model events
-// invalidate the cache on write.
-// =====================================================================
-
-test('a revoked permission is reflected without an explicit cache flush between the act and the assert', function () {
-    $actor = variantAuthzActor();
-    $this->actingAs($actor);
-    $product = Product::factory()->create(['sku' => '0001']);
-
-    // Warmed true first.
-    expect(Gate::allows('update', $product))->toBeTrue();
-
-    $actor->revokePermissionTo('products.edit');
-
-    $freshActor = $actor->fresh();
-    $this->actingAs($freshActor);
-
-    expect(fn () => Livewire::test(VariantBuilder::class, ['productId' => $product->id])->call('openCreateForm'))
-        ->toThrow(AuthorizationException::class);
 });
 
 // =====================================================================

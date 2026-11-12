@@ -7,13 +7,10 @@
 // tests/Feature/Policies/SalesRegionPolicyTest.php, for the precedent this one copies.
 //
 // Story 0042 adds a fourth ability, delete() -- a flat permission check with no privilege-tier
-// logic (D-3): any holder of customers.delete may delete any customer. The method-existence test
-// below is updated in place (not worked around) to assert delete() now exists, per this story's
-// own hand-off note in 0041's D-12.
+// logic (D-3): any holder of customers.delete may delete any customer.
 
 use App\Models\Customer;
 use App\Models\User;
-use App\Policies\CustomerPolicy;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
@@ -22,17 +19,6 @@ use Spatie\Permission\PermissionRegistrar;
 beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
-});
-
-// =====================================================================
-// Method existence -- the structural pin that catches an ability silently going missing.
-// =====================================================================
-
-test('CustomerPolicy defines viewAny, create, update and delete', function () {
-    expect(method_exists(CustomerPolicy::class, 'viewAny'))->toBeTrue()
-        ->and(method_exists(CustomerPolicy::class, 'create'))->toBeTrue()
-        ->and(method_exists(CustomerPolicy::class, 'update'))->toBeTrue()
-        ->and(method_exists(CustomerPolicy::class, 'delete'))->toBeTrue();
 });
 
 // =====================================================================

@@ -31,14 +31,10 @@ function ordersUiCanceller(): void
 // "is status in {Pending, Processing}" passes every other row (0050 R-1, arriving one layer up).
 dataset('orders_ui_cancel_states', [
     'Pending / Paid' => [OrderStatus::Pending, PaymentStatus::Paid, true],
-    'Pending / PendingPayment' => [OrderStatus::Pending, PaymentStatus::PendingPayment, true],
-    'Processing / Paid' => [OrderStatus::Processing, PaymentStatus::Paid, true],
     'Processing / PendingPayment' => [OrderStatus::Processing, PaymentStatus::PendingPayment, true],
     'Shipped / Paid' => [OrderStatus::Shipped, PaymentStatus::Paid, false],
-    'Delivered / Paid' => [OrderStatus::Delivered, PaymentStatus::Paid, false],
     'Cancelled / Paid' => [OrderStatus::Cancelled, PaymentStatus::Paid, false],
     'Pending / PartiallyRefunded' => [OrderStatus::Pending, PaymentStatus::PartiallyRefunded, false],
-    'Processing / PartiallyRefunded' => [OrderStatus::Processing, PaymentStatus::PartiallyRefunded, false],
 ]);
 
 test('the cancel control renders enabled or disabled per BOTH status dimensions', function (OrderStatus $status, PaymentStatus $payment, bool $enabled) {

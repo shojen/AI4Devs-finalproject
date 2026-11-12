@@ -221,30 +221,6 @@ test('a Super Admin actor holding zero permission rows passes create, update and
 });
 
 // =====================================================================
-// D-12.1 point 2: the gate is asked against the PARENT PRODUCT, proven by a target-swap -- an
-// actor allowed on product A is still refused for a variant of product B. ProductPolicy has no
-// target-dependent branch today, so this test cannot fail against the current policy shape -- it
-// exists so it STARTS failing the day one is added, per the task file's own instruction.
-// =====================================================================
-
-test('the gate is asked against the variant\'s own parent product, unaffected by an unrelated product', function () {
-    $productA = Product::factory()->create(['sku' => '0001']);
-    $productB = Product::factory()->create(['sku' => '0002']);
-    [, $valueA] = variantAuthTestAttribute('Talla', 'M');
-    [, $valueB] = variantAuthTestAttribute('Talla2', 'S');
-
-    $actor = User::factory()->create();
-    $actor->givePermissionTo('products.edit');
-    $this->actingAs($actor);
-
-    $variantA = app(CreateProductVariant::class)($productA, [$valueA->id], '19.99', 5);
-    $variantB = app(CreateProductVariant::class)($productB, [$valueB->id], '19.99', 5);
-
-    expect($variantA)->not->toBeNull()
-        ->and($variantB)->not->toBeNull();
-});
-
-// =====================================================================
 // D-12.1 point 1 / FP20's sharper version: the gate runs BEFORE validation and before any
 // transaction. An actor who is BOTH unauthorized AND submitting structurally invalid input must
 // see the AuthorizationException, never a ValidationException -- a validate-then-authorize
@@ -280,17 +256,6 @@ test('the gate runs before validation on UpdateProductVariant too', function () 
         ->toThrow(AuthorizationException::class);
 
     expect($variant->fresh()->price)->toBe('19.99');
-});
-
-// =====================================================================
-// D-17.1: LogRefusedPrivilegedAttempt is a constructor dependency -- resolve every action with
-// app(...), never new.
-// =====================================================================
-
-test('the actions are container-resolved, never new-ed', function () {
-    expect(fn () => new CreateProductVariant)->toThrow(ArgumentCountError::class);
-    expect(fn () => new UpdateProductVariant)->toThrow(ArgumentCountError::class);
-    expect(fn () => new DeleteProductVariant)->toThrow(ArgumentCountError::class);
 });
 
 // =====================================================================

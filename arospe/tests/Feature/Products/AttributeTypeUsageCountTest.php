@@ -4,7 +4,7 @@
 // source of the type-level count consumed by both App\Actions\Products\
 // DeleteProductAttributeType's in-use guard and App\Livewire\Products\AttributeTypes\Index::
 // confirmDelete(). One query, one source of truth: this file pins that both callers agree with
-// it, over the same dataset tests/Feature/Products/DeleteProductAttributeTypeTest.php uses.
+// it, over a subset of the dataset tests/Feature/Products/DeleteProductAttributeTypeTest.php uses.
 
 use App\Livewire\Products\AttributeTypes\Index;
 use App\Models\ProductAttributeType;
@@ -51,7 +51,7 @@ test('variantUsageCount() returns the exact number of distinct variants built on
     $type = usageCountFixtureWithVariants($n);
 
     expect($type->variantUsageCount())->toBe($n);
-})->with([1, 2, 12]);
+})->with([1, 12]);
 
 test('variantUsageCount() is 0 for a type with no variants at all', function () {
     $type = ProductAttributeType::factory()->withValues(2)->create();

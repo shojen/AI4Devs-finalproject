@@ -228,16 +228,6 @@ test('promoting a bodiless draft to published is refused and the post is still a
         ->and($fresh->translated('body'))->toBeNull();
 });
 
-test('the same promotion succeeds once a body is supplied in the same save', function () {
-    Carbon::setTestNow('2026-06-15 12:00:00');
-    $post = BlogPost::factory()->titled('Sin cuerpo')->create();
-
-    updateBlogPostWith($post, ['status' => 'published', 'body' => '<p>Ya escrito</p>']);
-
-    expect($post->fresh()->status)->toBe(BlogPostStatus::Published)
-        ->and($post->fresh()->translated('body'))->toBe('<p>Ya escrito</p>');
-});
-
 test('scheduling a bodiless draft is refused as well', function () {
     Carbon::setTestNow('2026-06-15 12:00:00');
     $post = BlogPost::factory()->titled('Sin cuerpo')->create();

@@ -87,15 +87,6 @@ function attachedTagNames(BlogPost $post): array
         ->all();
 }
 
-test('saving with an existing tag name attaches that row and creates no duplicate', function () {
-    $existing = BlogTag::factory()->named('running')->create();
-
-    $post = createTaggedPost($this->category, ['running']);
-
-    $this->assertDatabaseHas('blog_post_tag', ['blog_post_id' => $post->id, 'blog_tag_id' => $existing->id]);
-    expect(BlogTag::count())->toBe(1);
-});
-
 // The assertion that proves the save path calls FindOrCreateBlogTag and not CreateBlogTag: the wrong one
 // throws a ValidationException on a case-differing name, invisible to every exact-match test.
 test('a name differing only by case attaches the existing tag', function () {

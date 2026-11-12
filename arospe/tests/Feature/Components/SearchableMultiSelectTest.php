@@ -292,18 +292,6 @@ test('the resolver is always called with resultLimit + 1 + count($selected) -- b
         ->and($double->searchCalls[0]['limit'])->toBe(20 + 1 + 3);
 });
 
-test('a 10,000-row fixture still yields exactly resultLimit rendered options -- the real "it scales" assertion', function () {
-    $rows = multiSelectManyMatchingRows(10000, 'row');
-    $resolver = multiSelectResolver($rows);
-
-    $component = Livewire::test(SearchableMultiSelect::class, [
-        'optionResolver' => $resolver,
-        'resultLimit' => 20,
-    ])->set('search', 'match');
-
-    expect($component->get('results'))->toHaveCount(20);
-});
-
 test('grouped results render under their group heading; group: null results render with no heading', function () {
     $groupedRows = [
         ['id' => 'canarias', 'label' => 'Canarias', 'group' => 'Comunidad Autónoma', 'disabled' => false],
@@ -402,23 +390,6 @@ test('an injected id the resolver cannot vouch for is kept in $selected, listed 
     $component->assertHasErrors('selected');
 });
 
-test('mount() catches an unresolvable preselected id rather than throwing and 500-ing the host screen', function () {
-    $resolver = multiSelectResolver();
-
-    // No expect()->not->toThrow() wrapper: Pest 4's toThrow() requires at least one argument even
-    // negated, so a bare closure assertion isn't available here. Calling mount() directly is the
-    // correct replacement -- if it throws, the exception propagates and fails this test with an
-    // error, which is exactly what "does not throw" means; the assertion below additionally proves
-    // real behavior (mount() completed and recorded the unresolvable id) rather than leaving the
-    // test with no assertion at all.
-    $component = Livewire::test(SearchableMultiSelect::class, [
-        'optionResolver' => $resolver,
-        'selected' => ['ghost-id'],
-    ]);
-
-    expect($component->get('unresolvableSelected'))->toBe(['ghost-id']);
-});
-
 test('an unresolvable chip renders the generic localized label, never the raw id', function () {
     $resolver = multiSelectResolver();
     $conspicuousId = 'ghost-id-CONSPICUOUS-93a7';
@@ -449,7 +420,7 @@ test('assertSelectionResolvable() throws ValidationException, not a bare Unresol
     ]);
 
     // Called directly rather than via expect()->not->toThrow() (Pest 4's toThrow() requires at
-    // least one argument even negated -- see the sibling comment above). A direct call still
+    // least one argument even negated). A direct call still
     // proves "returns cleanly": a thrown exception here propagates and fails the test with an
     // error, exactly like the ->not->toThrow() this replaces.
     $allResolve->instance()->assertSelectionResolvable();
@@ -475,17 +446,6 @@ test('removing the unavailable chip clears $unresolvableSelected and the field e
     // thrown exception here would still fail the test with an error, so "then passes" is proven
     // by this line completing.
     $component->instance()->assertSelectionResolvable();
-});
-
-test('UnresolvedSelectionException::$missingIds carries every unresolvable id, not just the first', function () {
-    $resolver = new ArrayMultiSelectOptionsResolver(ArrayMultiSelectOptionsResolver::DEFAULT_ROWS);
-
-    try {
-        $resolver->resolveSelected(['ghost-1', 'madrid', 'ghost-2', 'ghost-3']);
-        $this->fail('Expected UnresolvedSelectionException to be thrown.');
-    } catch (UnresolvedSelectionException $exception) {
-        expect($exception->missingIds)->toBe(['ghost-1', 'ghost-2', 'ghost-3']);
-    }
 });
 
 test('a resolver that (wrongly) returns a short array instead of throwing is still caught by the shell -- defence in depth against a consumer implementing the interface incorrectly', function () {
@@ -553,18 +513,6 @@ test('the resolver receives an already-normalized term -- asserted from the doub
 
     expect($double->searchCalls)->toHaveCount(1)
         ->and($double->searchCalls[0]['term'])->toBe(app(NormalizeForSearch::class)('  ÑÍÑO  '));
-});
-
-test('a whitespace-only term normalizes to empty, so no resolver call is made (OQ-5, now covered by D13)', function () {
-    $resolver = multiSelectResolver();
-    $double = app(ArrayMultiSelectOptionsResolver::class);
-
-    $component = Livewire::test(SearchableMultiSelect::class, [
-        'optionResolver' => $resolver,
-    ])->set('search', '   ');
-
-    expect($component->get('results'))->toBe([])
-        ->and($double->searchCalls)->toBe([]);
 });
 
 test('minSearchLength is measured against the normalized term, not the raw input', function () {

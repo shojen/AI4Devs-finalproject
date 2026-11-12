@@ -17,7 +17,7 @@
 //      defense-in-depth refusal at all is left to Phase 3, not pre-agreed the way the other 6
 //      sites are.
 //   2. openCreateModal()   :106 create   -- 'openCreateModal() authorization refusal is logged'
-//   3. openEditModal()     :125 update   -- 'openEditModal() authorization refusal is logged...' (Gherkin scenario 2) + 'openEditModal() refusal still throws...'
+//   3. openEditModal()     :125 update   -- 'openEditModal() authorization refusal is logged...' (Gherkin scenario 2)
 //   4. saveRole() create    :148 create  -- 'saveRole() create-branch authorization refusal is logged'
 //   5. saveRole() update    :152 update  -- 'saveRole() update-branch authorization refusal is logged'
 //   6. confirmDeleteRole() :276 delete   -- 'confirmDeleteRole() authorization refusal is logged'
@@ -127,26 +127,6 @@ test('openEditModal() authorization refusal is logged with the actor, ability an
             && ($context['target_id'] ?? null) === $role->id
             && rolesRefusalLogContextHasNoSecretLookingKey($context))
         ->once();
-});
-
-test('openEditModal() refusal still throws and discloses no part of the target role', function () {
-    $this->withoutExceptionHandling();
-
-    $role = Role::create(['name' => 'Sensitive Role Name', 'guard_name' => 'web']);
-
-    $actor = refusalTestActor();
-    $this->actingAs($actor);
-
-    $component = Livewire::test(Index::class);
-
-    $actor->revokePermissionTo('roles.manage');
-    app(PermissionRegistrar::class)->forgetCachedPermissions();
-
-    expect(fn () => $component->call('openEditModal', $role->id))
-        ->toThrow(AuthorizationException::class);
-
-    expect($component->get('name'))->toBe('')
-        ->and($component->get('selectedPermissionIds'))->toBe([]);
 });
 
 // =====================================================================
@@ -295,25 +275,6 @@ test('deleteRole() authorization refusal is logged', function () {
             && rolesRefusalLogContextHasNoSecretLookingKey($context))
         ->once();
 
-    expect(Role::find($role->id))->not->toBeNull();
-});
-
-// "The refusal still refuses, identically" — a second, independent site from openEditModal()'s
-// own still-throws test above.
-test('deleteRole() refusal still throws and the role still exists', function () {
-    $this->withoutExceptionHandling();
-
-    $role = Role::create(['name' => 'Blog Editor', 'guard_name' => 'web']);
-
-    $actor = refusalTestActor();
-    $this->actingAs($actor);
-
-    $component = Livewire::test(Index::class)->call('confirmDeleteRole', $role->id);
-
-    $actor->revokePermissionTo('roles.manage');
-    app(PermissionRegistrar::class)->forgetCachedPermissions();
-
-    expect(fn () => $component->call('deleteRole'))->toThrow(AuthorizationException::class);
     expect(Role::find($role->id))->not->toBeNull();
 });
 

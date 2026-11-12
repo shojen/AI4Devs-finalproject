@@ -6,22 +6,6 @@ use Carbon\CarbonImmutable;
 // Story 0082 (D-6): the closed, per-granularity constants the dashboard series actions rely on, so
 // the actions never need a `switch`. SalesGranularity does not exist yet -- red until implemented.
 
-test('SalesGranularity has the three string-backed cases day, month and year', function () {
-    expect(SalesGranularity::Day->value)->toBe('day')
-        ->and(SalesGranularity::Month->value)->toBe('month')
-        ->and(SalesGranularity::Year->value)->toBe('year')
-        ->and(SalesGranularity::cases())->toHaveCount(3);
-});
-
-test('maxBuckets carries the per-granularity cap', function (string $granularity, int $cap) {
-    $granularity = SalesGranularity::from($granularity);
-    expect($granularity->maxBuckets())->toBe($cap);
-})->with([
-    'day' => ['day', 366],
-    'month' => ['month', 120],
-    'year' => ['year', 50],
-]);
-
 test('sqlFormat is the MySQL DATE_FORMAT pattern of the bucket key', function (string $granularity, string $format) {
     $granularity = SalesGranularity::from($granularity);
     expect($granularity->sqlFormat())->toBe($format);

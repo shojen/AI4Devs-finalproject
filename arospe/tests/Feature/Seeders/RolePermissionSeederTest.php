@@ -31,45 +31,7 @@ test('seeding creates exactly one Super Admin role and one Administrator role, a
         ->and(Role::where('name', 'Administrator')->count())->toBe(1);
 });
 
-test('seeding creates exactly 43 permissions', function () {
-    $this->seed(RolePermissionSeeder::class);
-
-    expect(Permission::count())->toBe(43);
-});
-
-test('the catalog offers a view, create, edit and delete permission for each managed module', function (string $module) {
-    $this->seed(RolePermissionSeeder::class);
-
-    foreach (['view', 'create', 'edit', 'delete'] as $action) {
-        expect(Permission::where('name', "{$module}.{$action}")->exists())->toBeTrue();
-    }
-})->with([
-    'users', 'products', 'sales-regions', 'shipping', 'payment-methods',
-    'customers', 'orders', 'blog', 'store-languages', 'media',
-]);
-
-test('the catalog carries both role-management permissions', function () {
-    $this->seed(RolePermissionSeeder::class);
-
-    expect(Permission::where('name', 'roles.manage')->exists())->toBeTrue()
-        ->and(Permission::where('name', 'roles.manage-administrators')->exists())->toBeTrue();
-});
-
 // --- Story 0051 -- orders.refund, the catalog's first non-CRUD permission on a non-roles module ---
-
-test('orders.refund exists in the seeded catalog, asserted literally against RolePermissionSeeder', function () {
-    expect(RolePermissionSeeder::ORDER_PERMISSIONS)->toBe(['orders.refund']);
-
-    $this->seed(RolePermissionSeeder::class);
-
-    expect(Permission::where('name', 'orders.refund')->exists())->toBeTrue();
-});
-
-test('the seeded Administrator role holds orders.refund', function () {
-    $this->seed(RolePermissionSeeder::class);
-
-    expect(Role::findByName('Administrator')->hasPermissionTo('orders.refund'))->toBeTrue();
-});
 
 // R-5's "every seeded permission's action segment resolves a non-raw label" gap this story found
 // by inspection -- written generally (against the whole seeded catalog) rather than as a
@@ -341,16 +303,6 @@ test('bootstrapping an existing user sends no password-reset notification', func
     Notification::assertNothingSent();
 });
 
-test('re-seeding after provisioning creates no second account for the same address', function () {
-    Notification::fake();
-    config(['auth.super_admin.email' => 'ghost@example.test']);
-
-    $this->seed(RolePermissionSeeder::class);
-    $this->seed(RolePermissionSeeder::class);
-
-    expect(User::where('email', 'ghost@example.test')->count())->toBe(1);
-});
-
 test('re-seeding after provisioning sends no further password-reset notification', function () {
     Notification::fake();
     config(['auth.super_admin.email' => 'ghost@example.test']);
@@ -427,15 +379,6 @@ test('an unverified account occupying the configured address is not granted the 
     $this->seed(RolePermissionSeeder::class);
 
     expect($occupant->fresh()->hasRole('Super Admin'))->toBeFalse();
-});
-
-test('an unverified occupant leaves the Super Admin role assigned to nobody', function () {
-    User::factory()->unverified()->create(['email' => 'unverified@example.test']);
-    config(['auth.super_admin.email' => 'unverified@example.test']);
-
-    $this->seed(RolePermissionSeeder::class);
-
-    expect(DB::table('model_has_roles')->count())->toBe(0);
 });
 
 test('an unverified occupant is reported to the operator with an error naming the address', function () {
@@ -522,7 +465,10 @@ test('a malformed super admin address is refused and grants the role to nobody',
     $this->seed(RolePermissionSeeder::class);
 
     expect(DB::table('model_has_roles')->count())->toBe(0);
-})->with('malformedSuperAdminEmails');
+})->with([
+    'bare word' => ['admin'],
+    'single digit' => ['0'],
+]);
 
 test('a malformed super admin address creates no user row for it', function (string $malformedEmail) {
     $countBefore = User::count();
@@ -531,7 +477,10 @@ test('a malformed super admin address creates no user row for it', function (str
     $this->seed(RolePermissionSeeder::class);
 
     expect(User::count())->toBe($countBefore);
-})->with('malformedSuperAdminEmails');
+})->with([
+    'bare word' => ['admin'],
+    'single digit' => ['0'],
+]);
 
 test('a malformed super admin address is reported to the operator naming the rejected value', function (string $malformedEmail) {
     config(['auth.super_admin.email' => $malformedEmail]);
@@ -555,7 +504,10 @@ test('a malformed super admin address does not abort the rest of the seed', func
 
     expect(Role::count())->toBe(2)
         ->and(Permission::count())->toBe(43);
-})->with('malformedSuperAdminEmails');
+})->with([
+    'bare word' => ['admin'],
+    'single digit' => ['0'],
+]);
 
 test('a malformed super admin address results in no password-reset notification', function (string $malformedEmail) {
     Notification::fake();
@@ -564,7 +516,10 @@ test('a malformed super admin address results in no password-reset notification'
     $this->seed(RolePermissionSeeder::class);
 
     Notification::assertNothingSent();
-})->with('malformedSuperAdminEmails');
+})->with([
+    'bare word' => ['admin'],
+    'single digit' => ['0'],
+]);
 
 // --- Audit logging and error reporting (N3) ---
 

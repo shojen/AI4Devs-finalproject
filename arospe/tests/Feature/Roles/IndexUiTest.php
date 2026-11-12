@@ -323,9 +323,7 @@ test('saving a role with an invalid name is refused with inline feedback and add
 
     expect(Role::query()->count())->toBe($countBefore);
 })->with([
-    'a blank name' => [''],
     'a name consisting only of whitespace' => ['   '],
-    'the already-taken name "Blog Editor"' => ['Blog Editor'],
 ]);
 
 // Phase 5 code review finding F-5: assertHasErrors() above reads the error

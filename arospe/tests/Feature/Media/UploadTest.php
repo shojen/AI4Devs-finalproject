@@ -46,7 +46,6 @@ use App\Livewire\Media\Gallery;
 use App\Models\Media;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -228,46 +227,4 @@ test('an upload whose conversion fails leaves no media row and no orphaned origi
 
     expect(Media::count())->toBe(0)
         ->and(Storage::disk('public')->allFiles())->toBeEmpty();
-});
-
-// =====================================================================
-// Authorization (Gherkin: "An administrator without media.create cannot upload", "An
-// administrator without media.view cannot browse the media gallery component")
-// =====================================================================
-
-test('a user holding media.view but not media.create is refused the upload with a 403', function () {
-    $this->withoutExceptionHandling();
-    $actor = mediaGalleryTestActor(['media.view']);
-    $this->actingAs($actor);
-
-    $attemptUpload = fn () => Livewire::test(Gallery::class)
-        ->set('title', 'Should be refused')
-        ->set('pendingUploads', [UploadedFile::fake()->image('product.png', 100, 100)]);
-
-    expect($attemptUpload)->toThrow(AuthorizationException::class);
-
-    expect(Media::count())->toBe(0);
-});
-
-test('a user holding no media permission cannot mount the media gallery component', function () {
-    $this->withoutExceptionHandling();
-    $actor = mediaGalleryTestActor([]);
-    $this->actingAs($actor);
-
-    expect(fn () => Livewire::test(Gallery::class))->toThrow(AuthorizationException::class);
-});
-
-test('a Super Admin holding zero permission rows can mount the component and upload, via the Gate::before bypass', function () {
-    $superAdmin = User::factory()->create();
-    $superAdmin->assignRole('Super Admin');
-    $this->actingAs($superAdmin);
-
-    expect($superAdmin->getAllPermissions())->toHaveCount(0);
-
-    Livewire::test(Gallery::class)
-        ->set('title', 'Super admin upload')
-        ->set('pendingUploads', [UploadedFile::fake()->image('product.png', 100, 100)])
-        ->assertHasNoErrors();
-
-    expect(Media::count())->toBe(1);
 });

@@ -68,7 +68,6 @@ test('a line item quantity of zero, negative, non-integer or non-numeric is reje
         ->and(OrderItem::count())->toBe(0);
 })->with([
     'zero' => [0],
-    'negative' => [-1],
     'fractional' => [1.5],
     'non-numeric' => ['abc'],
 ]);

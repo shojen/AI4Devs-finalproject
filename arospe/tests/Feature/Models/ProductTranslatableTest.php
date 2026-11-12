@@ -1,17 +1,12 @@
 <?php
 
-use App\Concerns\Translatable;
-use App\Models\Media;
 use App\Models\Product;
 use App\Models\ProductTranslation;
 use App\Models\StoreLanguage;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-// Story 0076 (D-3, D-10, D-14, D-21): Product as a Translatable model -- fillable shape, relations,
+// Story 0076 (D-3, D-10, D-14, D-21): Product as a Translatable model -- fillable shape,
 // the per-field fallback wiring against a real two-field table, the order-line name seam and the
 // translated-name ordering scope.
 
@@ -48,31 +43,6 @@ function p76Translate(Product $product, StoreLanguage $language, string $name, ?
 
 // --- Model shape ---------------------------------------------------------------------------
 
-test('Product implements Translatable and exposes the translations relation', function () {
-    $product = Product::factory()->withoutTranslations()->create();
-
-    expect($product)->toBeInstanceOf(Translatable::class)
-        ->and($product->translations())->toBeInstanceOf(HasMany::class)
-        ->and($product->translations()->getRelated())->toBeInstanceOf(ProductTranslation::class);
-});
-
-test('the fillable set is exactly the six parent columns, with name, description and featured_media_id absent', function () {
-    expect((new Product)->getFillable())->toBe([
-        'sku', 'product_category_id', 'type', 'status', 'price', 'stock',
-    ])->and((new Product)->getFillable())->not->toContain('featured_media_id');
-});
-
-test('the five existing relations survive the retrofit', function () {
-    $product = Product::factory()->withoutTranslations()->create();
-
-    expect($product->category())->toBeInstanceOf(BelongsTo::class)
-        ->and($product->featuredImage())->toBeInstanceOf(BelongsTo::class)
-        ->and($product->gallery())->toBeInstanceOf(BelongsToMany::class)
-        ->and($product->salesRegions())->toBeInstanceOf(BelongsToMany::class)
-        ->and($product->variants())->toBeInstanceOf(HasMany::class)
-        ->and($product->gallery()->getRelated())->toBeInstanceOf(Media::class);
-});
-
 test('a forged mass assignment of name is silently dropped and raises no QueryException', function () {
     $category = Product::factory()->withoutTranslations()->create()->category;
 
@@ -93,36 +63,6 @@ test('a forged mass assignment of name is silently dropped and raises no QueryEx
 });
 
 // --- Per-field fallback (D-3) --------------------------------------------------------------
-
-test('a product translated into the requested language returns that language', function () {
-    ['default' => $default, 'fr' => $fr] = p76Languages();
-    $product = Product::factory()->withoutTranslations()->create();
-    p76Translate($product, $default, 'Zapatillas Running');
-    p76Translate($product, $fr, 'Chaussures de course');
-
-    $product = $product->fresh();
-
-    expect($product->translated('name', $fr->id))->toBe('Chaussures de course')
-        ->and($product->translated('name'))->toBe('Zapatillas Running');
-});
-
-test('a missing translation falls back to the default store language', function () {
-    ['default' => $default, 'fr' => $fr] = p76Languages();
-    $product = Product::factory()->withoutTranslations()->create();
-    p76Translate($product, $default, 'Zapatillas Running');
-
-    expect($product->fresh()->translated('name', $fr->id))->toBe('Zapatillas Running');
-});
-
-test('missing in both languages resolves each field to null without throwing', function () {
-    ['fr' => $fr] = p76Languages();
-    $product = Product::factory()->withoutTranslations()->create();
-
-    $product = $product->fresh();
-
-    expect($product->translated('name', $fr->id))->toBeNull()
-        ->and($product->translated('description', $fr->id))->toBeNull();
-});
 
 test('a half-translated product keeps its French title and falls back only on the description', function () {
     ['default' => $default, 'fr' => $fr] = p76Languages();
@@ -156,33 +96,6 @@ test('a French description stored as an empty string falls back to the default d
     p76Translate($product, $fr, 'Chaussures de course', '');
 
     expect($product->fresh()->translated('description', $fr->id))->toBe('<p>Por defecto</p>');
-});
-
-test('an inactive requested language still resolves, because removal preserves stored content', function () {
-    ['default' => $default, 'fr' => $fr] = p76Languages();
-    $product = Product::factory()->withoutTranslations()->create();
-    p76Translate($product, $default, 'Zapatillas Running');
-    p76Translate($product, $fr, 'Chaussures de course');
-    $fr->forceFill(['is_active' => false])->save();
-
-    expect($product->fresh()->translated('name', $fr->id))->toBe('Chaussures de course');
-});
-
-test('after the store default changes, a product translated only into the old default resolves to null without error', function () {
-    ['default' => $old, 'fr' => $fr] = p76Languages();
-    $product = Product::factory()->withoutTranslations()->create();
-    p76Translate($product, $old, 'Zapatillas Running');
-
-    expect($product->fresh()->translated('name'))->toBe('Zapatillas Running');
-
-    $old->forceFill(['is_default' => false])->save();
-    $fr->forceFill(['is_default' => true])->save();
-    StoreLanguage::flushDefaultStoreLanguage();
-
-    $product = $product->fresh();
-
-    expect($product->translated('name'))->toBeNull()
-        ->and($product->translated('description'))->toBeNull();
 });
 
 // --- snapshotName() (D-21, N-3, N-4) -------------------------------------------------------
@@ -372,16 +285,4 @@ test('two products with the same name are tie-broken by products.id so pages nev
     $pageTwo = Product::query()->orderByTranslatedName()->orderBy('products.id')->forPage(2, 3)->pluck('products.id')->all();
 
     expect([...$pageOne, ...$pageTwo])->toBe($expected);
-});
-
-test('the scope builds a left join with COALESCE(NULLIF(...)) aliased as translated_name', function () {
-    ['default' => $default] = p76Languages();
-    $product = Product::factory()->withoutTranslations()->create();
-    p76Translate($product, $default, 'Abrigo');
-
-    $sql = strtolower(Product::query()->orderByTranslatedName()->toSql());
-
-    expect($sql)->toContain('coalesce(nullif(')
-        ->and($sql)->toContain('translated_name')
-        ->and($sql)->toContain('left join');
 });

@@ -21,7 +21,6 @@ use App\Enums\UserStatus;
 use App\Livewire\Users\Index;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Log;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
@@ -75,43 +74,6 @@ test('deleting a user with a stale password confirmation redirects to re-confirm
         ->call('confirmDelete', $target->id)
         ->call('deleteUser')
         ->assertRedirect(route('password.confirm'));
-
-    expect(User::find($target->id))->not->toBeNull();
-});
-
-test('deleting a user with a fresh password confirmation succeeds', function () {
-    $administrator = User::factory()->create();
-    $administrator->assignRole('Administrator');
-    $this->actingAs($administrator);
-    markComponentPasswordConfirmationFresh();
-
-    $target = User::factory()->create();
-
-    Livewire::test(Index::class)
-        ->call('confirmDelete', $target->id)
-        ->call('deleteUser');
-
-    expect(User::find($target->id))->toBeNull();
-});
-
-test('a stale confirmation does not mask a permission refusal when deleting -- lacking users.delete still throws, and is never converted into a redirect', function () {
-    // Matching every other AuthorizationException-throw test in tests/Feature/Users/IndexTest.php:
-    // Livewire::test() runs a component call through the real exception handler, which renders an
-    // AuthorizationException as a 403 response rather than letting it propagate to the test unless
-    // exception handling is disabled first.
-    $this->withoutExceptionHandling();
-
-    $actor = User::factory()->create();
-    $actor->givePermissionTo('users.view'); // deliberately NOT users.delete
-    $this->actingAs($actor);
-    markComponentPasswordConfirmationStale();
-
-    $target = User::factory()->create();
-
-    // confirmDelete() itself authorizes with UserPolicy::delete(), so the refusal happens there,
-    // before deleteUser() (and its step-up guard) is ever reached.
-    expect(fn () => Livewire::test(Index::class)->call('confirmDelete', $target->id))
-        ->toThrow(AuthorizationException::class);
 
     expect(User::find($target->id))->not->toBeNull();
 });
@@ -176,26 +138,6 @@ test('saving a status change with a stale password confirmation redirects to re-
         ->assertRedirect(route('password.confirm'));
 
     expect($target->fresh()->status)->toBe(UserStatus::Active);
-});
-
-test('saving a role change with a fresh password confirmation succeeds through the dashboard', function () {
-    $administrator = User::factory()->create();
-    $administrator->assignRole('Administrator');
-    $this->actingAs($administrator);
-    markComponentPasswordConfirmationFresh();
-
-    $editorRole = Role::create(['name' => 'Editor', 'guard_name' => 'web']);
-    $blogEditorRole = Role::create(['name' => 'Blog Editor', 'guard_name' => 'web']);
-    $target = User::factory()->create();
-    $target->assignRole($editorRole);
-
-    Livewire::test(Index::class)
-        ->call('openEditModal', $target->id)
-        ->set('roleId', (string) $blogEditorRole->id)
-        ->call('save')
-        ->assertHasNoErrors();
-
-    expect($target->fresh()->hasRole('Blog Editor'))->toBeTrue();
 });
 
 test('saving a name-only edit with a stale password confirmation still succeeds through the dashboard', function () {

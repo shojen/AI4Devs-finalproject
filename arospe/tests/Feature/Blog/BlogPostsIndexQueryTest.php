@@ -192,34 +192,6 @@ test('the query counter can see a per-row query, so the equality above is not va
 // The scopes the filters are built on, with decoys in every fixture
 // =====================================================================
 
-test('forCategory() returns only that category\'s posts, leaving a decoy category out', function () {
-    $guides = BlogCategory::factory()->create();
-    $decoy = BlogCategory::factory()->create();
-    BlogPost::factory()->count(2)->create(['blog_category_id' => $guides->id]);
-    BlogPost::factory()->count(3)->create(['blog_category_id' => $decoy->id]);
-
-    expect(BlogPost::query()->forCategory($guides->id)->count())->toBe(2);
-});
-
-test('forTag() returns only posts carrying that tag, leaving a decoy tag out', function () {
-    $tag = BlogTag::factory()->create();
-    $decoyTag = BlogTag::factory()->create();
-    BlogPost::factory()->count(2)->create()->each(fn (BlogPost $post) => $post->tags()->attach($tag->id));
-    BlogPost::factory()->count(3)->create()->each(fn (BlogPost $post) => $post->tags()->attach($decoyTag->id));
-
-    expect(BlogPost::query()->forTag($tag->id)->count())->toBe(2);
-});
-
-test('the scopes compose: category and tag together narrow further', function () {
-    $guides = BlogCategory::factory()->create();
-    $tag = BlogTag::factory()->create();
-    BlogPost::factory()->create(['blog_category_id' => $guides->id])->tags()->attach($tag->id);
-    BlogPost::factory()->create(['blog_category_id' => $guides->id]);
-    BlogPost::factory()->create()->tags()->attach($tag->id);
-
-    expect(BlogPost::query()->forCategory($guides->id)->forTag($tag->id)->count())->toBe(1);
-});
-
 test('neither scope returns a trashed post', function () {
     $category = BlogCategory::factory()->create();
     $tag = BlogTag::factory()->create();

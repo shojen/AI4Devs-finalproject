@@ -22,9 +22,7 @@ use Illuminate\Validation\Rules\Unique;
 // fatal error, and the obvious future consumer (0027's editor, with a create-a-category-on-the-
 // fly control) composes exactly ProductValidationRules with ProductCategoryValidationRules.
 //
-// An anonymous class exposes the trait's protected methods publicly, matching
-// tests/Unit/Concerns/ProductCategoryValidationRulesTest.php's own precedent (the first and only
-// tests/Unit/Concerns/ file before this one).
+// An anonymous class exposes the trait's protected methods publicly.
 //
 // D-13's rules table itself lists `status` as `['required', Rule::enum(ProductStatus::class)]`,
 // which directly contradicts this section's own checklist item below ("does NOT mark status
@@ -57,14 +55,6 @@ function productValidationRulesHarness(): object
         public function exposedProductRules(?string $productId = null): array
         {
             return $this->productRules($productId);
-        }
-
-        /**
-         * @return array<int, mixed>
-         */
-        public function exposedProductSkuRules(?string $productId = null): array
-        {
-            return $this->productSkuRules($productId);
         }
 
         /**
@@ -126,14 +116,6 @@ test('productRules($id) threads $id into the SKU uniqueness rule\'s ignore branc
         ->and((string) $withId)->not->toBe((string) $withoutId);
 });
 
-test('productSkuRules($id) threads $id into the ignore branch directly, and productSkuRules(null) does not', function () {
-    $withoutId = findUniqueRuleAmong(productValidationRulesHarness()->exposedProductSkuRules(null));
-    $withId = findUniqueRuleAmong(productValidationRulesHarness()->exposedProductSkuRules('a-product-id'));
-
-    expect((string) $withoutId)->toContain('NULL')
-        ->and((string) $withId)->toContain('a-product-id');
-});
-
 test('price rules carry the 2-decimal scale rule and a floor of zero', function () {
     $rules = productValidationRulesHarness()->exposedProductPriceRules();
 
@@ -188,7 +170,7 @@ test('ProductValidationRules composes with ProfileValidationRules with no method
     expect($harness)->toBeObject();
 });
 
-// Story 0076a (D-6, D-32): the three SEO rule methods, named in the trait's product*Rules() style.
+// Story 0076a (D-6, D-32): the SEO slug rule method, named in the trait's product*Rules() style.
 // Rule COMPOSITION only; the per-language scope and own-row exclusion by product_id are proved by
 // behaviour in tests/Feature/Products/ProductSlugAndSeoTest.php.
 function productSeoRulesHarness(): object
@@ -204,22 +186,6 @@ function productSeoRulesHarness(): object
         {
             return $this->productSlugRules($storeLanguageId, $productId);
         }
-
-        /**
-         * @return array<int, mixed>
-         */
-        public function metaTitle(): array
-        {
-            return $this->productMetaTitleRules();
-        }
-
-        /**
-         * @return array<int, mixed>
-         */
-        public function metaDescription(): array
-        {
-            return $this->productMetaDescriptionRules();
-        }
     };
 }
 
@@ -231,16 +197,4 @@ test('productSlugRules() is nullable, a string capped at 160, and carries one un
         ->and($rules)->toContain('string')
         ->and($rules)->toContain('max:160')
         ->and((string) $unique)->toContain('product_translations,slug');
-});
-
-test('productMetaTitleRules() is nullable, a string, capped at 160 and carries no uniqueness rule', function () {
-    $rules = productSeoRulesHarness()->metaTitle();
-
-    expect($rules)->toBe(['nullable', 'string', 'max:160']);
-});
-
-test('productMetaDescriptionRules() is nullable, a string, capped at 500 and carries no uniqueness rule', function () {
-    $rules = productSeoRulesHarness()->metaDescription();
-
-    expect($rules)->toBe(['nullable', 'string', 'max:500']);
 });

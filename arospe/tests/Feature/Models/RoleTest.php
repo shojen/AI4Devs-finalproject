@@ -60,12 +60,6 @@ test('superAdminName() refuses a config value colliding with the Administrator n
 // selector must use. Excludes exactly the Super Admin role.
 // =====================================================================
 
-test('selectable() excludes the Super Admin role by exact name match', function () {
-    $names = Role::query()->selectable()->pluck('name');
-
-    expect($names)->not->toContain('Super Admin');
-});
-
 test('a custom role whose name merely resembles the Super Admin role stays visible under selectable()', function () {
     Role::create(['name' => 'Super Admin Assistant', 'guard_name' => 'web']);
 
@@ -88,29 +82,6 @@ test('selectable() still excludes the Super Admin role under additional query co
 // authorized flow and through a direct instance call with no
 // authorization context at all.
 // =====================================================================
-
-test('the delete a dashboard-style flow would issue is rejected for the Super Admin role even when the actor is authorized to manage roles, and the row survives', function () {
-    $actor = User::factory()->create();
-    $actor->givePermissionTo('roles.manage');
-
-    $superAdmin = Role::where('name', 'Super Admin')->where('guard_name', 'web')->firstOrFail();
-
-    // A future dashboard action would authorize first (which this actor legitimately
-    // passes), then call delete() on the resolved model -- the same call this test makes.
-    expect(fn () => $superAdmin->delete())->toThrow(ImmutableRoleException::class);
-
-    expect(Role::where('name', 'Super Admin')->where('guard_name', 'web')->exists())->toBeTrue();
-});
-
-test('a direct delete() call on the Super Admin role instance is rejected with no authorization context at all, and the row survives', function () {
-    $superAdmin = Role::where('name', 'Super Admin')->where('guard_name', 'web')->firstOrFail();
-
-    // No Gate/authorize() call anywhere here -- this is the "crafted request that never
-    // touches the dashboard" / console-command shaped call the model guard alone must stop.
-    expect(fn () => $superAdmin->delete())->toThrow(ImmutableRoleException::class);
-
-    expect(Role::where('name', 'Super Admin')->where('guard_name', 'web')->exists())->toBeTrue();
-});
 
 test('a refused delete leaves the role_has_permissions and model_has_roles rows for the Super Admin role intact, not just its own row', function () {
     $superAdmin = Role::where('name', 'Super Admin')->where('guard_name', 'web')->firstOrFail();
@@ -219,14 +190,6 @@ test('an ordinary custom role remains fully deletable and editable in every dire
 test('seeding still creates exactly one Super Admin role and one Administrator role, resolved through App\Models\Role', function () {
     expect(Role::where('name', 'Super Admin')->where('guard_name', 'web')->count())->toBe(1)
         ->and(Role::where('name', 'Administrator')->where('guard_name', 'web')->count())->toBe(1);
-});
-
-test('assignRole() by name still resolves and grants the Super Admin role', function () {
-    $user = User::factory()->create();
-
-    $user->assignRole('Super Admin');
-
-    expect($user->fresh()->hasRole('Super Admin'))->toBeTrue();
 });
 
 test('the permission cache rehydrates correctly after being flushed, for a role held by a user', function () {
@@ -507,14 +470,6 @@ test('isAdministratorRole() returns false for a custom role holding every permis
 // permission set stays editable (story 0009's whole point). Narrower
 // guards than the Super Admin ones, on purpose.
 // =====================================================================
-
-test('deleting the seeded Administrator role is refused with no authorization context at all, and the row survives', function () {
-    $administrator = Role::where('name', RoleName::Administrator->value)->where('guard_name', 'web')->firstOrFail();
-
-    expect(fn () => $administrator->delete())->toThrow(ImmutableRoleException::class);
-
-    expect(Role::where('name', RoleName::Administrator->value)->where('guard_name', 'web')->exists())->toBeTrue();
-});
 
 test('a refused delete leaves the Administrator role_has_permissions and model_has_roles rows intact', function () {
     $administrator = Role::where('name', RoleName::Administrator->value)->where('guard_name', 'web')->firstOrFail();

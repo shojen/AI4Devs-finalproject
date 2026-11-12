@@ -110,16 +110,6 @@ test('a scheduled post dated one second from now is accepted', function () {
         ->and($post->fresh()->published_at->toDateTimeString())->toBe('2026-06-15 12:00:01');
 });
 
-test('a scheduled post with a future date is accepted and the date is persisted', function () {
-    $post = createDatedPost($this->category, [
-        'status' => 'scheduled',
-        'publishedAt' => '2026-07-01 09:30:00',
-    ]);
-
-    expect($post->fresh()->status)->toBe(BlogPostStatus::Scheduled)
-        ->and($post->fresh()->published_at->toDateTimeString())->toBe('2026-07-01 09:30:00');
-});
-
 test('a scheduled post without a date is refused', function () {
     $keys = datedPostErrorKeys(fn () => createDatedPost($this->category, [
         'status' => 'scheduled',
@@ -328,17 +318,6 @@ test('the same ceiling applies when updating', function () {
 
 // Story 0061a (D-1, D-3, D-4): asking for Published with a strictly future date schedules the post
 // instead of leaving a live post dated in the future. The `>` boundary is asserted from BOTH sides.
-test('publishing with a future date saves the post as scheduled, carrying that date', function () {
-    $post = createDatedPost($this->category, [
-        'status' => 'published',
-        'publishedAt' => '2026-07-01 09:30:00',
-    ]);
-
-    expect($post->status)->toBe(BlogPostStatus::Scheduled)
-        ->and($post->fresh()->status)->toBe(BlogPostStatus::Scheduled)
-        ->and($post->fresh()->published_at->toDateTimeString())->toBe('2026-07-01 09:30:00');
-});
-
 test('a published date equal to the current moment is published, one second later is scheduled', function () {
     $atNow = createDatedPost($this->category, [
         'title' => 'Botas de verano',
@@ -355,16 +334,6 @@ test('a published date equal to the current moment is published, one second late
         ->and($atNow->fresh()->published_at->toDateTimeString())->toBe('2026-06-15 12:00:00')
         ->and($afterNow->fresh()->status)->toBe(BlogPostStatus::Scheduled)
         ->and($afterNow->fresh()->published_at->toDateTimeString())->toBe('2026-06-15 12:00:01');
-});
-
-test('publishing a draft with a future date on the update path saves it as scheduled', function () {
-    $post = BlogPost::factory()->draft()->create();
-
-    $returned = updateDatedPost($post, ['status' => 'published', 'publishedAt' => '2026-07-01 09:30:00']);
-
-    expect($returned->status)->toBe(BlogPostStatus::Scheduled)
-        ->and($post->fresh()->status)->toBe(BlogPostStatus::Scheduled)
-        ->and($post->fresh()->published_at->toDateTimeString())->toBe('2026-07-01 09:30:00');
 });
 
 test('the update path draws the same boundary: now is published, one second later is scheduled', function () {

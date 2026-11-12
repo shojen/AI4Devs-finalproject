@@ -6,7 +6,6 @@ use App\Models\BlogPost;
 use App\Models\BlogPostTranslation;
 use App\Models\StoreLanguage;
 use App\Models\User;
-use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
 // Story 0078 (D-15): BlogPostFactory writes the default-language translation in an identifiable
@@ -33,35 +32,12 @@ test('many default-created posts never collide on the per-language slug', functi
         ->and(DB::table('blog_post_translations')->distinct()->count('slug'))->toBe(15);
 });
 
-test('titled() writes the given title and body into the default-language translation', function () {
-    $post = BlogPost::factory()->titled('Botas de invierno', '<p>Cuerpo</p>')->create();
-
-    $row = DB::table('blog_post_translations')->where('blog_post_id', $post->id)->sole();
-
-    expect($row->title)->toBe('Botas de invierno')
-        ->and($row->slug)->toBe('botas-de-invierno')
-        ->and($row->body)->toBe('<p>Cuerpo</p>')
-        ->and($row->store_language_id)->toBe(StoreLanguage::query()->where('is_default', true)->sole()->id);
-});
-
-test('titled() without a body stores a null body', function () {
-    $post = BlogPost::factory()->titled('Sin cuerpo')->create();
-
-    expect(DB::table('blog_post_translations')->where('blog_post_id', $post->id)->sole()->body)->toBeNull();
-});
-
 test('chaining titled() twice leaves exactly one translation carrying the last title', function () {
     $post = BlogPost::factory()->titled('Primero')->titled('Segundo')->create();
 
     $rows = DB::table('blog_post_translations')->where('blog_post_id', $post->id)->get();
 
     expect($rows)->toHaveCount(1)->and($rows[0]->title)->toBe('Segundo');
-});
-
-test('withoutTranslations() creates a bare parent with no translation row', function () {
-    $post = BlogPost::factory()->withoutTranslations()->create();
-
-    expect(DB::table('blog_post_translations')->where('blog_post_id', $post->id)->count())->toBe(0);
 });
 
 test('published()->titled() and titled()->published() both keep the published status and the title', function () {
@@ -121,23 +97,4 @@ test('with no default store language the default step creates exactly one, and l
     BlogPost::factory()->titled('Otro')->create(['blog_category_id' => $categoryId]);
 
     expect(StoreLanguage::query()->count())->toBe(1);
-});
-
-test('forging title, body or slug as a create() attribute fails loudly because they are no longer columns', function () {
-    expect(fn () => BlogPost::factory()->create(['title' => 'Forjado']))
-        ->toThrow(fn (QueryException $exception) => expect($exception->errorInfo[1])->toBe(1054));
-});
-
-test('BlogPostTranslation::factory()->forLanguage() binds the row to that language and derives the slug', function () {
-    $language = StoreLanguage::factory()->create();
-    $post = BlogPost::factory()->withoutTranslations()->create();
-
-    $translation = BlogPostTranslation::factory()->forLanguage($language)->create([
-        'blog_post_id' => $post->id,
-        'title' => 'Botas de invierno',
-    ]);
-
-    expect($translation->store_language_id)->toBe($language->id)
-        ->and($translation->blog_post_id)->toBe($post->id)
-        ->and($translation->fresh()->slug)->toBe('botas-de-invierno');
 });

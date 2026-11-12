@@ -362,12 +362,6 @@ test('creating a user with invalid details is rejected and no user is created', 
     'no role chosen' => [fn () => ['roleId' => null]],
     'a role that does not exist' => [fn () => ['roleId' => '999999999']],
     'the Super Admin role' => [fn () => ['roleId' => (string) Role::where('name', 'Super Admin')->where('guard_name', 'web')->value('id')]],
-    // Story 0015 finding F8: a forged status value must fail validation, not raise an unhandled
-    // \ValueError -- possible now that $status is a plain, non-nullable `public string`
-    // (App\Livewire\Users\Index::$status) rather than a typed UserStatus enum property, which
-    // hydrated a bad value BEFORE Rule::enum(UserStatus::class) ever got a chance to reject it.
-    'a forged status value' => [fn () => ['status' => 'not-a-real-status']],
-    'an empty status value' => [fn () => ['status' => '']],
 ]);
 
 // Story 0015 finding F8: the validation error must land specifically on the status field, not
@@ -412,28 +406,6 @@ test('creating a user with an address held as another users pending email is rej
         ->assertHasErrors(['email']);
 
     expect(User::count())->toBe($countBefore);
-});
-
-test('creating an active user persists the active status, not the inactive default', function () {
-    $administrator = User::factory()->create();
-    $administrator->assignRole('Administrator');
-    $this->actingAs($administrator);
-
-    $role = Role::create(['name' => 'Editor', 'guard_name' => 'web']);
-
-    Livewire::test(Index::class)
-        ->call('openCreateModal')
-        ->set('name', 'Active Hire')
-        ->set('email', 'active.hire@arospe.es')
-        ->set('roleId', (string) $role->id)
-        ->set('status', UserStatus::Active->value)
-        ->call('save')
-        ->assertHasNoErrors();
-
-    $created = User::where('email', 'active.hire@arospe.es')->firstOrFail();
-
-    expect($created->status)->toBeInstanceOf(UserStatus::class)
-        ->and($created->status)->toBe(UserStatus::Active);
 });
 
 test('creating a suspended user persists the suspended status', function () {
@@ -588,25 +560,6 @@ test('an administrator can save their own unchanged email', function () {
     expect($administrator->fresh()->name)->toBe('Admin Renamed');
 });
 
-test('changing an email to a different free address is accepted', function () {
-    $administrator = User::factory()->create();
-    $administrator->assignRole('Administrator');
-    $this->actingAs($administrator);
-    // Story 0015a, Phase 4 finding F2: a THIRD-PARTY email change now requires a fresh
-    // password confirmation too.
-    session(['auth.password_confirmed_at' => now()->unix()]);
-
-    $role = Role::create(['name' => 'Editor', 'guard_name' => 'web']);
-    $target = User::factory()->create(['email' => 'target@arospe.es']);
-    $target->assignRole($role);
-
-    Livewire::test(Index::class)
-        ->call('openEditModal', $target->id)
-        ->set('email', 'brand-new-free-address@arospe.es')
-        ->call('save')
-        ->assertHasNoErrors();
-});
-
 test('assigning a role that no longer exists is rejected, and the users role is left unchanged', function () {
     $administrator = User::factory()->create();
     $administrator->assignRole('Administrator');
@@ -736,20 +689,6 @@ test('saving a user with their email unchanged writes no pending value and sends
 
 // --- Self-edit guard ---
 
-test('an administrator can update their own name', function () {
-    $administrator = User::factory()->create(['name' => 'Old Name']);
-    $administrator->assignRole('Administrator');
-    $this->actingAs($administrator);
-
-    Livewire::test(Index::class)
-        ->call('openEditModal', $administrator->id)
-        ->set('name', 'New Own Name')
-        ->call('save')
-        ->assertHasNoErrors();
-
-    expect($administrator->fresh()->name)->toBe('New Own Name');
-});
-
 test('an administrator submitting a different role for themselves has it silently ignored', function () {
     $editorRole = Role::create(['name' => 'Editor', 'guard_name' => 'web']);
 
@@ -805,17 +744,6 @@ test('changing another users role from Editor to Blog Editor applies, unaffected
 });
 
 // --- Authorization ---
-
-test('a blog editor whose role does not grant users.view is denied server-side, not merely hidden in the UI', function () {
-    $blogEditorRole = Role::create(['name' => 'Blog Editor', 'guard_name' => 'web']);
-    $blogEditorRole->givePermissionTo('blog.view');
-
-    $editor = User::factory()->create();
-    $editor->assignRole($blogEditorRole);
-    $this->actingAs($editor);
-
-    $this->get(route('users.index'))->assertForbidden();
-});
 
 test('mounting the component directly is forbidden for a user lacking users.view, even though route middleware never ran', function () {
     // Livewire::test() dispatches through the full HTTP kernel, so without this

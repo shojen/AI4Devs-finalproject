@@ -2,7 +2,7 @@
 
 > **Status: New — Phase 1 output, rewritten after the Phase 2 INVEST review of 2026-11-08; pending re-review.** Epic 3
 > follow-up bug fix, order-stock series. Fullstack pair: **related_task_id 0095** (the cancel dialog). Blocked on
-> [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (automatic deduction and `AdjustOrderStock`) and, through it, [0088](done/0088-order-stock-adjustment-foundation-backend.md) (counters).
+> [0088a](done/0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (automatic deduction and `AdjustOrderStock`) and, through it, [0088](done/0088-order-stock-adjustment-foundation-backend.md) (counters).
 
 ## Description
 `CancelOrder` gains `bool $adjustStock = false`. With `true`, every line returns its returnable units to its variant or product
@@ -157,7 +157,7 @@ back to inventory. Estimable/Small: one action gains a transaction, a lock and o
 Testable: stock asserted per scenario, both refusal paths, a concurrency test.
 
 ## Dependencies, risks, open technical questions
-**Depends on:** [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (hard) and [0088](done/0088-order-stock-adjustment-foundation-backend.md) (transitively). **Blocks:**
+**Depends on:** [0088a](done/0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (hard) and [0088](done/0088-order-stock-adjustment-foundation-backend.md) (transitively). **Blocks:**
 [0095](0095-order-cancellation-stock-dialog-ui.md). Soft: [0090](0090-order-line-quantity-and-removal-stock-opt-in-backend.md)
 (shared test file; the remove-after-cancel case uses its parameter).
 

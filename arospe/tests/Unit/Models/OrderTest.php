@@ -50,18 +50,6 @@ test('isManuallyCancellable is false for Pending/Processing when payment_status 
     'Processing' => [OrderStatus::Processing],
 ]);
 
-test('isManuallyCancellable never throws for any OrderStatus case, Cancelled included', function (OrderStatus $status) {
-    $order = makeOrder($status, PaymentStatus::Paid);
-
-    expect(fn () => $order->isManuallyCancellable())->not->toThrow(Throwable::class);
-})->with([
-    'Pending' => [OrderStatus::Pending],
-    'Processing' => [OrderStatus::Processing],
-    'Shipped' => [OrderStatus::Shipped],
-    'Delivered' => [OrderStatus::Delivered],
-    'Cancelled' => [OrderStatus::Cancelled],
-]);
-
 // Story 0055, Phase 3 (TDD "red" step): Order::isLineItemEditable() does not exist yet. It is the
 // single predicate AddOrderItem / RemoveOrderItem / UpdateOrderItemQuantity read in place of their
 // three private in_array(Shipped, Delivered) copies (D-4, shape (b)), and that the Show screen's

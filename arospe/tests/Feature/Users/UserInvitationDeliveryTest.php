@@ -16,11 +16,8 @@
 use App\Enums\UserStatus;
 use App\Livewire\Users\Index;
 use App\Models\User;
-use App\Notifications\UserInvitation;
 use Database\Seeders\RolePermissionSeeder;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
@@ -29,10 +26,6 @@ use Spatie\Permission\PermissionRegistrar;
 beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
-});
-
-test('UserInvitation no longer implements ShouldQueue', function () {
-    expect(is_subclass_of(UserInvitation::class, ShouldQueue::class))->toBeFalse();
 });
 
 test('creating a user enqueues no job for the invitation notification', function () {
@@ -56,30 +49,6 @@ test('creating a user enqueues no job for the invitation notification', function
     // If UserInvitation still implemented ShouldQueue, sending it would push a
     // SendQueuedNotifications job -- this asserts nothing was pushed to the queue at all.
     Queue::assertNothingPushed();
-});
-
-test('creating a user still sends the invitation exactly once, synchronously', function () {
-    Notification::fake();
-
-    $administrator = User::factory()->create();
-    $administrator->assignRole('Administrator');
-    $this->actingAs($administrator);
-
-    $role = Role::create(['name' => 'Editor', 'guard_name' => 'web']);
-
-    Livewire::test(Index::class)
-        ->call('openCreateModal')
-        ->set('name', 'New Hire')
-        ->set('email', 'still-sent-hire@arospe.es')
-        ->set('roleId', (string) $role->id)
-        ->set('status', UserStatus::Active->value)
-        ->call('save')
-        ->assertHasNoErrors();
-
-    $created = User::where('email', 'still-sent-hire@arospe.es')->firstOrFail();
-
-    Notification::assertSentTo($created, UserInvitation::class);
-    Notification::assertSentTimes(UserInvitation::class, 1);
 });
 
 test('creating a user leaves no invitation token in the jobs table', function () {

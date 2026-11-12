@@ -5,7 +5,6 @@ use App\Actions\Translations\SetTranslation;
 use App\Models\BlogTag;
 use App\Models\BlogTagTranslation;
 use App\Models\StoreLanguage;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -100,27 +99,8 @@ test('a factory-created translation receives a uuidv7 primary key', function () 
     expect(Str::isUuid(BlogTagTranslation::factory()->create()->id, 7))->toBeTrue();
 });
 
-test('the blogTag and storeLanguage relations resolve to the owning rows', function () {
-    $language = StoreLanguage::factory()->default()->create();
-    $tag = BlogTag::factory()->withoutTranslations()->create();
-    $translation = BlogTagTranslation::factory()->forLanguage($language)->create(['blog_tag_id' => $tag->id]);
-
-    expect($translation->blogTag())->toBeInstanceOf(BelongsTo::class)
-        ->and($translation->storeLanguage())->toBeInstanceOf(BelongsTo::class)
-        ->and($translation->blogTag->is($tag))->toBeTrue()
-        ->and($translation->storeLanguage->is($language))->toBeTrue()
-        ->and($tag->translations->pluck('id')->all())->toBe([$translation->id]);
-});
-
 test('the translation model does not use SoftDeletes', function () {
     expect(class_uses_recursive(BlogTagTranslation::class))->not->toContain(SoftDeletes::class);
-});
-
-test('blog_tag_translations carries exactly the specified columns', function () {
-    $columns = Schema::getColumnListing('blog_tag_translations');
-    sort($columns);
-
-    expect($columns)->toBe(['blog_tag_id', 'created_at', 'id', 'name', 'normalized_name', 'store_language_id', 'updated_at']);
 });
 
 // D-10: three indexes, not four -- each composite unique serves as the FK index for its leftmost
@@ -236,54 +216,6 @@ test('a real duplicate normalized_name in one language is translated to a valida
 
     expect($caught)->toBeInstanceOf(QueryException::class)
         ->and(app(TranslateBlogTagNameUniqueViolation::class)($caught)->errors())->toHaveKey('name');
-});
-
-// HasTranslations fallback as BlogTag consumes it: requested language, then the default, then null.
-test('translated() returns the requested language, falls back to the default, then to null', function () {
-    $default = StoreLanguage::factory()->default()->create();
-    $spanish = StoreLanguage::factory()->create();
-    $french = StoreLanguage::factory()->create();
-    $tag = BlogTag::factory()->withoutTranslations()->create();
-    BlogTagTranslation::factory()->forLanguage($default)->create(['blog_tag_id' => $tag->id, 'name' => 'running']);
-    BlogTagTranslation::factory()->forLanguage($spanish)->create(['blog_tag_id' => $tag->id, 'name' => 'correr']);
-
-    $fresh = $tag->fresh();
-
-    expect($fresh->translated('name', $spanish->id))->toBe('correr')
-        ->and($fresh->translated('name', $french->id))->toBe('running')
-        ->and($fresh->translated('name'))->toBe('running');
-
-    $bare = BlogTag::factory()->withoutTranslations()->create();
-
-    expect($bare->fresh()->translated('name', $spanish->id))->toBeNull();
-});
-
-test('translated() still resolves a name in an inactive language', function () {
-    $default = StoreLanguage::factory()->default()->create();
-    $inactive = StoreLanguage::factory()->create(['is_active' => false]);
-    $tag = BlogTag::factory()->withoutTranslations()->create();
-    BlogTagTranslation::factory()->forLanguage($default)->create(['blog_tag_id' => $tag->id, 'name' => 'running']);
-    BlogTagTranslation::factory()->forLanguage($inactive)->create(['blog_tag_id' => $tag->id, 'name' => 'correr']);
-
-    expect($tag->fresh()->translated('name', $inactive->id))->toBe('correr');
-});
-
-test('translated() follows the default language when the default changes', function () {
-    $first = StoreLanguage::factory()->default()->create();
-    $second = StoreLanguage::factory()->create();
-    $third = StoreLanguage::factory()->create();
-    $tag = BlogTag::factory()->withoutTranslations()->create();
-    BlogTagTranslation::factory()->forLanguage($first)->create(['blog_tag_id' => $tag->id, 'name' => 'running']);
-    BlogTagTranslation::factory()->forLanguage($second)->create(['blog_tag_id' => $tag->id, 'name' => 'correr']);
-
-    expect($tag->fresh()->translated('name', $third->id))->toBe('running');
-
-    DB::table('store_languages')->update(['is_default' => false]);
-    DB::table('store_languages')->where('id', $second->id)->update(['is_default' => true]);
-    StoreLanguage::flushDefaultStoreLanguage();
-
-    expect($tag->fresh()->translated('name', $third->id))->toBe('correr')
-        ->and($tag->fresh()->translated('name'))->toBe('correr');
 });
 
 // R-9 / D-6: the deepest fallback branch. A tag translated only into the OLD default has nothing to

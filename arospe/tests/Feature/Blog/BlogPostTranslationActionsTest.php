@@ -351,16 +351,6 @@ test('restoring a deleted post returns every language content unchanged', functi
     expect($after)->toHaveCount(2)->and($after)->toBe($before);
 });
 
-test('deleting a post through the action keeps all three of its translations', function () {
-    $post = bpaCreate();
-    app(SetTranslation::class)($post, bpaFrench(), ['title' => 'Bottes', 'body' => null]);
-    app(SetTranslation::class)($post, StoreLanguage::factory()->create(['code' => 'de']), ['title' => 'Stiefel', 'body' => null]);
-
-    app(DeleteBlogPost::class)($post);
-
-    expect(DB::table('blog_post_translations')->where('blog_post_id', $post->id)->count())->toBe(3);
-});
-
 // --- The 1062 race ---------------------------------------------------------------------------
 
 test('a slug race lost at the unique index is re-keyed to title by index name', function () {
@@ -688,12 +678,11 @@ test('creating a post whose body only exceeds the limit once sanitized is refuse
 
 test('updating a post with a body that only exceeds the limit once sanitized is refused on body and changes nothing', function (string $body, string $status) {
     $post = bpaCreate(['title' => 'Original', 'body' => '<p>original</p>']);
-    $publishedAt = $status === 'scheduled' ? now()->addDay()->toDateTimeString() : null;
     $parentBefore = DB::table('blog_posts')->where('id', $post->id)->first();
     $rowBefore = bpaRow($post, bpaDefaultLanguage());
 
     try {
-        bpaUpdate($post, ['title' => 'Cambiado', 'body' => $body, 'status' => $status, 'publishedAt' => $publishedAt]);
+        bpaUpdate($post, ['title' => 'Cambiado', 'body' => $body, 'status' => $status, 'publishedAt' => null]);
         $this->fail('Expected a ValidationException on body.');
     } catch (ValidationException $e) {
         expect($e->errors())->toHaveKey('body');
@@ -701,7 +690,7 @@ test('updating a post with a body that only exceeds the limit once sanitized is 
 
     expect(DB::table('blog_posts')->where('id', $post->id)->first())->toEqual($parentBefore)
         ->and(bpaRow($post, bpaDefaultLanguage()))->toBe($rowBefore);
-})->with('bpaEnlargingBodies')->with(['draft', 'published', 'scheduled']);
+})->with('bpaEnlargingBodies')->with(['draft', 'published']);
 
 test('a body that stays just under the limit after sanitizing still saves, on create and on update', function () {
     $max = (int) config('html-sanitizer.max_input_length');

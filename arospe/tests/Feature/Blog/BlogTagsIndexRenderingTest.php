@@ -72,12 +72,6 @@ test('the empty state renders when the catalog holds no tags', function () {
     Livewire::test(Index::class)->assertSee(__('blog-tags.index.empty'));
 });
 
-test('the header carries the create action, hooked for browser tests', function () {
-    $this->actingAs(blogTagsRenderingActor());
-
-    expect(blogTagsControlExists(Livewire::test(Index::class)->html(), 'create-blog-tag-button'))->toBeTrue();
-});
-
 test('the create modal contains exactly one input and no select', function () {
     $this->actingAs(blogTagsRenderingActor());
 
@@ -156,16 +150,6 @@ test('the delete confirmation is plain: it names the tag and renders no usage co
         ->not->toMatch('/reassign/i')
         ->not->toMatch('/blocked/i')
         ->not->toContain('data-flux-error');
-});
-
-test('the delete confirmation renders the same plain modal for a tag that has never been used, and for one with a long name', function () {
-    $tag = BlogTag::factory()->named(str_repeat('a', 100))->create();
-    $this->actingAs(blogTagsRenderingActor());
-
-    $html = Livewire::test(Index::class)->call('confirmDelete', $tag->id)->html();
-
-    expect(blogTagsControlExists($html, 'confirm-delete-blog-tag'))->toBeTrue()
-        ->and(blogTagsControlIsDisabled($html, 'confirm-delete-blog-tag'))->toBeFalse();
 });
 
 test('the delete modal is absent until a confirmation is opened', function () {

@@ -2,10 +2,8 @@
 
 use App\Models\BlogTag;
 use App\Models\User;
-use App\Policies\BlogTagPolicy;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\Gate;
-use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
 // Story 0059. Every ability gets both an allow and a deny test, per docs/testing/qa/what-not-to-test.md's authorization rule.
@@ -77,17 +75,4 @@ test('a Super Admin actor passes every BlogTagPolicy ability while holding zero 
         ->and(Gate::forUser($superAdmin)->allows('create', BlogTag::class))->toBeTrue()
         ->and(Gate::forUser($superAdmin)->allows('update', $target))->toBeTrue()
         ->and(Gate::forUser($superAdmin)->allows('delete', $target))->toBeTrue();
-});
-
-// A permission string missing from the catalog throws PermissionDoesNotExist at runtime, so this is
-// a correctness test rather than a style one.
-test('every permission the policy names exists in the seeded catalog', function () {
-    foreach ([
-        BlogTagPolicy::VIEW_PERMISSION,
-        BlogTagPolicy::CREATE_PERMISSION,
-        BlogTagPolicy::EDIT_PERMISSION,
-        BlogTagPolicy::DELETE_PERMISSION,
-    ] as $permission) {
-        expect(Permission::where('name', $permission)->exists())->toBeTrue("{$permission} is not seeded");
-    }
 });

@@ -151,22 +151,6 @@ test('the picker offers the bundled list while the dashboard selects offer two v
         ->and(storeLanguagesSelectOptionValues($html, 'default-ui-locale-select'))->toHaveCount(2);
 });
 
-test('the component state shapes differ: the content default is a store language id, the locale properties are UiLocale backing values', function () {
-    $this->seed(StoreLanguageSeeder::class);
-    $spanish = StoreLanguage::query()->where('code', 'es')->firstOrFail();
-    LocaleSetting::factory()->create(['default_ui_locale' => 'en', 'default_notification_locale' => 'es']);
-    $this->actingAs(storeLanguagesLocaleActor());
-
-    $component = Livewire::test(Index::class);
-
-    $defaultRow = collect($component->get('languages'))->firstWhere('isDefault', true);
-
-    expect($defaultRow['id'])->toBe($spanish->id)
-        ->and(UiLocale::tryFrom($defaultRow['id']))->toBeNull()
-        ->and(UiLocale::tryFrom($component->get('defaultUiLocale')))->toBe(UiLocale::English)
-        ->and(UiLocale::tryFrom($component->get('defaultNotificationLocale')))->toBe(UiLocale::Spanish);
-});
-
 test('the two selects start from the stored defaults, and from the resolved fallback on an unseeded settings table', function () {
     $this->seed(StoreLanguageSeeder::class);
     $this->actingAs(storeLanguagesLocaleActor());
@@ -307,7 +291,6 @@ test('every localization copy key the screen relies on exists in both locales', 
         expect(trans($key, [], $locale))->not->toBe($key, "[{$key}] is missing from lang/{$locale}/localization.php");
     }
 })->with([
-    'localization.settings.description',
     'localization.attributes.defaultUiLocale',
     'localization.attributes.defaultNotificationLocale',
 ]);

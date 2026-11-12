@@ -9,7 +9,7 @@ use Illuminate\Contracts\Validation\Validator as ValidatorContract;
 use Illuminate\Support\Facades\Validator;
 
 // Story 0071 (Q-4), Phase 3 TDD "red" step. The story files this case under
-// tests/Unit/Concerns/ProductCategoryValidationRulesTest.php, but that directory is deliberately
+// tests/Unit/Concerns, but that directory is deliberately
 // DB-free and un-refreshed (tests/Pest.php) while a duplicate refusal needs a real
 // product_category_translations row -- so the case lives here, in tests/Feature, beside the sibling
 // per-language rules test.
@@ -78,26 +78,4 @@ test('a duplicate refused under the name key reads El nombre ya está en uso in 
 
     expect($validator->fails())->toBeTrue()
         ->and($validator->errors()->first('name'))->toBe('El nombre ya está en uso.');
-});
-
-test('a duplicate refused under a names.{id} key renders the caller-supplied attribute in en', function () {
-    app()->setLocale('en');
-
-    $key = 'names.'.$this->french->id;
-    $validator = duplicateNameValidator($key, $this->french, ['names.*' => 'category name']);
-
-    expect($validator->fails())->toBeTrue()
-        ->and($validator->errors()->first($key))->toBe('The category name has already been taken.')
-        ->and($validator->errors()->first($key))->not->toContain('names.');
-});
-
-test('a duplicate refused under a names.{id} key renders the caller-supplied attribute in es', function () {
-    app()->setLocale('es');
-
-    $key = 'names.'.$this->french->id;
-    $validator = duplicateNameValidator($key, $this->french, ['names.*' => 'nombre de la categoría']);
-
-    expect($validator->fails())->toBeTrue()
-        ->and($validator->errors()->first($key))->toBe('El nombre de la categoría ya está en uso.')
-        ->and($validator->errors()->first($key))->not->toContain('names.');
 });

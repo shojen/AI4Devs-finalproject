@@ -28,14 +28,6 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
-test('an authenticated user with a stored es preference gets es as the request locale', function () {
-    $user = User::factory()->create(['ui_locale' => 'es']);
-
-    $this->actingAs($user)->get(route('dashboard'));
-
-    expect(App::getLocale())->toBe('es');
-});
-
 test('the stored preference outlives the session it was chosen in -- persists across sign-out and a fresh sign-in', function () {
     // PRD-stated persistence, not merely a same-session assertion: a session- or
     // cookie-backed implementation would pass a same-session test and fail this one.

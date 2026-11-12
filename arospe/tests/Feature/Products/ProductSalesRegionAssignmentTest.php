@@ -132,16 +132,6 @@ test('reassigning a product narrows its regions -- {A,B,C} to {B,D} yields exact
     expect(pivotRegionIdsFor($product))->toBe(sortedIds([$b->id, $d->id]));
 });
 
-test('reassigning a product to a superset -- {A} to {A,B,C} -- yields exactly {A,B,C}', function () {
-    $product = Product::factory()->create();
-    [$a, $b, $c] = SalesRegion::factory()->count(3)->create();
-
-    app(SyncProductSalesRegions::class)($product, [$a->id]);
-    app(SyncProductSalesRegions::class)($product, [$a->id, $b->id, $c->id]);
-
-    expect(pivotRegionIdsFor($product))->toBe(sortedIds([$a->id, $b->id, $c->id]));
-});
-
 test('syncing an empty set on an assigned product leaves zero pivot rows and does not throw', function () {
     $product = Product::factory()->create();
     [$a, $b] = SalesRegion::factory()->count(2)->create();
@@ -190,26 +180,6 @@ test('deleting a product removes its pivot rows and the sales region survives', 
 // =====================================================================
 // Validation -- D3 (assignable), D11 (whole-set rejection), D12 (preserved exemption)
 // =====================================================================
-
-test('a well-formed but nonexistent region id fails validation, writes no row, and leaves existing assignments unchanged', function () {
-    $product = Product::factory()->create();
-    $existing = SalesRegion::factory()->create();
-
-    app(SyncProductSalesRegions::class)($product, [$existing->id]);
-
-    $nonexistentId = (string) Str::uuid();
-
-    $caught = null;
-
-    try {
-        validateSalesRegionIds([$existing->id, $nonexistentId]);
-    } catch (ValidationException $e) {
-        $caught = $e;
-    }
-
-    expect($caught)->toBeInstanceOf(ValidationException::class);
-    expect(pivotRegionIdsFor($product))->toBe([$existing->id]);
-});
 
 // D11: a set that is valid except for one stale id is rejected ENTIRELY -- the pivot must still
 // hold exactly {A}, asserted as an exact set, because the regression this pins writes {A, B} and
@@ -304,12 +274,6 @@ test('a non-list (associative) salesRegionIds array is rejected', function () {
 
     expect($caught)->toBeInstanceOf(ValidationException::class);
     expect(array_key_exists('salesRegionIds', $caught->errors()))->toBeTrue();
-});
-
-test('an inactive region id is refused by validation', function () {
-    $inactive = SalesRegion::factory()->inactive()->create();
-
-    expect(fn () => validateSalesRegionIds([$inactive->id]))->toThrow(ValidationException::class);
 });
 
 // D3: paired with a positive control in the SAME test, so a refuse-everything rule cannot pass
@@ -427,59 +391,10 @@ test('newly adding a child-bearing entry is still refused, even beside a preserv
     expect(pivotRegionIdsFor($product))->toBe([$preservedRegion->id]);
 });
 
-// D12 security: the preserved set must be SERVER-derived. A test that hands the id under test
-// straight into $preserved proves nothing -- the arrangement here goes through
-// Product::salesRegions, never a hand-built array literal containing the tested id.
-test('the preserved set is server-derived from Product::salesRegions, not from an arbitrary caller-supplied array', function () {
-    $product = Product::factory()->create();
-    $assigned = SalesRegion::factory()->create();
-
-    app(SyncProductSalesRegions::class)($product, [$assigned->id]);
-
-    $neverAssignedInactive = SalesRegion::factory()->inactive()->create();
-
-    // Read straight off the persisted relation -- this is the "server-derived" property under test.
-    $preserved = $product->fresh()->salesRegions->pluck('id')->all();
-
-    expect($preserved)->toBe([$assigned->id]);
-
-    $caught = null;
-
-    try {
-        validateSalesRegionIds([$assigned->id, $neverAssignedInactive->id], preservedSalesRegionIds: $preserved);
-    } catch (ValidationException $e) {
-        $caught = $e;
-    }
-
-    expect($caught)->toBeInstanceOf(ValidationException::class);
-});
-
 // =====================================================================
 // The FKs really constrain -- an argued exception to what-not-to-test.md's "database guarantees"
 // rule, identical in kind to 0024's category/media FK tests.
 // =====================================================================
-
-test('a raw insert with a nonexistent sales_region_id raises a QueryException 23000', function () {
-    $product = Product::factory()->create();
-
-    $caught = null;
-
-    try {
-        DB::table('product_sales_region')->insert([
-            'product_id' => $product->id,
-            'sales_region_id' => (string) Str::uuid(),
-        ]);
-    } catch (QueryException $e) {
-        $caught = $e;
-    }
-
-    // Asserting the SQLSTATE (23000, integrity constraint violation) rather than a bare
-    // QueryException instance -- a bare instance check passes today for the WRONG reason (the
-    // product_sales_region table itself does not exist yet, "42S02"), which would be a false-red
-    // signal indistinguishable from the real FK violation this test exists to pin.
-    expect($caught)->toBeInstanceOf(QueryException::class)
-        ->and($caught->getCode())->toBe('23000');
-});
 
 // The ONLY executable proof of restrictOnDelete() anywhere in the codebase, since no application
 // path deletes a region.

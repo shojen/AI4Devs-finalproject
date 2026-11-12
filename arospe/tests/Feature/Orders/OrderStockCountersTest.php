@@ -20,15 +20,12 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\PermissionRegistrar;
 
-// Story 0088 (Phase 3, red step): the stock-tracking columns, the OrderItem helpers and the factory
-// states legacyStockUntracked() / orphanedVariant() do not exist yet, so every test below is
-// expected to fail on a missing column, method or state -- the correct "red" outcome.
-//
-// Layers: (1) the four existing actions keep the counters right and move no stock (query-log proof);
-// (2) the numbered sequences of the counter model, including the review #3 counterexample, at helper
-// level; (3) a seeded-random property test checking the helpers against a unit-level ledger.
-// Deduction, return-on-lower and return-on-cancel ship in later stories (0088a/0090/0091), so the
-// simulator below "arranges" those steps by applying the counter model's table rules directly.
+// Stock counters of order lines (stories 0088 and 0088a).
+// Layers: (1) the existing line actions keep the counters right (CreateOrder/AddOrderItem deduct,
+// refund/quantity change move no stock); (2) the numbered sequences of the counter model, including the
+// review #3 counterexample, at helper level; (3) a seeded-random property test checking the helpers
+// against a unit-level ledger. Return-on-lower and return-on-cancel ship in later stories (0090/0091),
+// so the simulator below "arranges" those steps by applying the counter model's table rules directly.
 
 beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
@@ -76,9 +73,23 @@ function stockTableTouches(array $queryLog): array
         ->all();
 }
 
+/**
+ * @param  array<int, string>  $touches
+ * @return list<string>
+ */
+function touchedStockTables(array $touches): array
+{
+    return collect($touches)
+        ->map(fn (string $sql): string => preg_match('/`(products|product_variants)`/', $sql, $match) === 1 ? $match[1] : 'other')
+        ->unique()
+        ->sort()
+        ->values()
+        ->all();
+}
+
 // --- CreateOrder (FD-4) ---
 
-test('creating an order writes every line stock-neutral and leaves product and variant stock untouched, proven by the query log', function () {
+test('creating an order writes every line deducted (U 0) and takes the units out of the product and variant stock', function () {
     actingStockCounterActor('orders.create');
 
     $product = Product::factory()->create(['stock' => 10]);
@@ -103,18 +114,18 @@ test('creating an order writes every line stock-neutral and leaves product and v
     $plainLine = $order->items()->where('product_id', $product->id)->sole();
     $variantLine = $order->items()->where('product_variant_id', $variant->id)->sole();
 
-    expect(stockTableTouches($queryLog))->toBe([])
-        ->and($product->fresh()->stock)->toBe(10)
+    expect(touchedStockTables(stockTableTouches($queryLog)))->toBe(['product_variants', 'products'])
+        ->and($product->fresh()->stock)->toBe(7)
         ->and($variantProduct->fresh()->stock)->toBe(7)
-        ->and($variant->fresh()->stock)->toBe(4)
-        ->and($plainLine->stock_undeducted_quantity)->toBe(3)
+        ->and($variant->fresh()->stock)->toBe(2)
+        ->and($plainLine->stock_undeducted_quantity)->toBe(0)
         ->and($plainLine->stock_refunded_not_out_quantity)->toBe(0)
         ->and($plainLine->ordered_as_variant)->toBeFalse()
-        ->and($variantLine->stock_undeducted_quantity)->toBe(2)
+        ->and($variantLine->stock_undeducted_quantity)->toBe(0)
         ->and($variantLine->stock_refunded_not_out_quantity)->toBe(0)
         ->and($variantLine->ordered_as_variant)->toBeTrue()
-        ->and($plainLine->returnableStockUnits())->toBe(0)
-        ->and($variantLine->returnableStockUnits())->toBe(0);
+        ->and($plainLine->returnableStockUnits())->toBe(3)
+        ->and($variantLine->returnableStockUnits())->toBe(2);
 });
 
 test('a refused create leaves no order line behind', function () {
@@ -133,7 +144,7 @@ test('a refused create leaves no order line behind', function () {
 
 // --- AddOrderItem (FD-4) ---
 
-test('adding a plain-product line to an open order writes it stock-neutral and moves no stock, proven by the query log', function () {
+test('adding a plain-product line to an open order writes it deducted (U 0) and takes the units out of the product stock', function () {
     actingStockCounterActor('orders.edit');
 
     $order = Order::factory()->create(['status' => OrderStatus::Pending]);
@@ -149,15 +160,15 @@ test('adding a plain-product line to an open order writes it stock-neutral and m
 
     $fresh = $item->fresh();
 
-    expect(stockTableTouches($queryLog))->toBe([])
-        ->and($product->fresh()->stock)->toBe(10)
-        ->and($fresh->stock_undeducted_quantity)->toBe(2)
+    expect(touchedStockTables(stockTableTouches($queryLog)))->toBe(['products'])
+        ->and($product->fresh()->stock)->toBe(8)
+        ->and($fresh->stock_undeducted_quantity)->toBe(0)
         ->and($fresh->stock_refunded_not_out_quantity)->toBe(0)
         ->and($fresh->ordered_as_variant)->toBeFalse()
-        ->and($fresh->returnableStockUnits())->toBe(0);
+        ->and($fresh->returnableStockUnits())->toBe(2);
 });
 
-test('adding a variant line writes ordered_as_variant true, stays stock-neutral and moves no variant stock', function () {
+test('adding a variant line writes ordered_as_variant true, deducted (U 0), and takes the units out of the variant stock only', function () {
     actingStockCounterActor('orders.edit');
 
     $order = Order::factory()->create(['status' => OrderStatus::Processing]);
@@ -174,11 +185,11 @@ test('adding a variant line writes ordered_as_variant true, stays stock-neutral 
 
     $fresh = $item->fresh();
 
-    expect(stockTableTouches($queryLog))->toBe([])
-        ->and($variant->fresh()->stock)->toBe(5)
+    expect(touchedStockTables(stockTableTouches($queryLog)))->toBe(['product_variants', 'products'])
+        ->and($variant->fresh()->stock)->toBe(2)
         ->and($product->fresh()->stock)->toBe(9)
         ->and($fresh->ordered_as_variant)->toBeTrue()
-        ->and($fresh->stock_undeducted_quantity)->toBe(3)
+        ->and($fresh->stock_undeducted_quantity)->toBe(0)
         ->and($fresh->stock_refunded_not_out_quantity)->toBe(0);
 });
 

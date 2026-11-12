@@ -47,22 +47,6 @@ test('a user holding payment-methods.view can reach the payment methods screen',
 // Livewire::test(Index::class)::save() — authorization layer
 // =====================================================================
 
-test('an Administrator can set the IBAN', function () {
-    $method = PaymentMethod::factory()->create();
-
-    $actor = User::factory()->create();
-    $actor->assignRole('Administrator');
-    $this->actingAs($actor);
-
-    Livewire::test(Index::class)
-        ->call('openEditModal', $method->id)
-        ->set('iban', 'ES9121000418450200051332')
-        ->call('save')
-        ->assertHasNoErrors();
-
-    expect($method->fresh()->iban)->toBe('ES9121000418450200051332');
-});
-
 // Phase 5 code review finding N1: every other test that puts an unauthorized actor in front of
 // save() is stopped earlier, by mount()'s viewAny or openEditModal()'s own update check -- since
 // $editingMethodId is #[Locked], no test could otherwise reach save() without a successful

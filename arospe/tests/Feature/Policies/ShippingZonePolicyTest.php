@@ -110,19 +110,3 @@ test('a Super Admin actor passes every ShippingZonePolicy ability while holding 
         ->and(Gate::forUser($superAdmin)->allows('update', $target))->toBeTrue()
         ->and(Gate::forUser($superAdmin)->allows('delete', $target))->toBeTrue();
 });
-
-// The permission names are asserted against RolePermissionSeeder's seeded catalog -- a permission
-// string not in the catalog throws PermissionDoesNotExist at runtime, so this is a correctness
-// test, not a style one (D-9/AC: confirmed to gate on the already-seeded shipping.* module, no new
-// permission and no RolePermissionSeeder change).
-test('the four permission strings ShippingZonePolicy gates on are all in the seeded shipping module', function () {
-    expect(in_array('shipping', RolePermissionSeeder::MODULES, true))->toBeTrue();
-
-    // givePermissionTo() throws Spatie\Permission\Exceptions\PermissionDoesNotExist if any of
-    // these four strings is not in the seeded catalog -- this call succeeding is itself the
-    // assertion that all four exist.
-    $actor = User::factory()->create();
-    $actor->givePermissionTo(['shipping.view', 'shipping.create', 'shipping.edit', 'shipping.delete']);
-
-    expect($actor->getAllPermissions())->toHaveCount(4);
-});

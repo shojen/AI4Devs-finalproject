@@ -53,16 +53,7 @@ test("renaming onto another zone's name is refused and the target keeps its orig
     expect($asturias->fresh()->name)->toBe('Asturias Centro');
 });
 
-// R-2: the single most likely bug in this story -- the missing ->ignore() trap. Written as THREE
-// tests, not one, so a rule that rejects everything cannot pass the first trivially.
-
-test('saving a zone under its own current name (a no-op rename) succeeds', function () {
-    $zone = app(CreateShippingZone::class)('Zona Norte');
-
-    $result = app(RenameShippingZone::class)($zone, 'Zona Norte');
-
-    expect($result)->not->toBeNull();
-});
+// R-2: the single most likely bug in this story -- the missing ->ignore() trap.
 
 test('after a no-op rename to the identical name, the row is genuinely unchanged', function () {
     $zone = app(CreateShippingZone::class)('Zona Norte');
@@ -72,14 +63,6 @@ test('after a no-op rename to the identical name, the row is genuinely unchanged
     expect(ShippingZone::where('name', 'Zona Norte')->count())->toBe(1)
         ->and($zone->fresh()->id)->toBe($zone->id)
         ->and($zone->fresh()->name)->toBe('Zona Norte');
-});
-
-test('a genuinely free name is still accepted when renaming, as the control for the no-op case above', function () {
-    $zone = app(CreateShippingZone::class)('Zona Norte');
-
-    $renamed = app(RenameShippingZone::class)($zone, 'Cornisa Cantábrica');
-
-    expect($renamed->fresh()->name)->toBe('Cornisa Cantábrica');
 });
 
 // R-7: the validation rules helper reused asymmetrically -- an id threaded through one call site

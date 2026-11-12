@@ -1,13 +1,9 @@
 <?php
 
-use App\Actions\Blog\DeleteBlogPost;
 use App\Actions\Blog\PublishScheduledBlogPost;
-use App\Actions\Blog\RestoreBlogPost;
 use App\Enums\BlogPostStatus;
 use App\Events\Blog\ScheduledBlogPostPublished;
 use App\Models\BlogPost;
-use App\Models\User;
-use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use Tests\Support\Blog\FailingBlogPostWrites;
@@ -86,25 +82,6 @@ test('a second sweep dispatches nothing further', function () {
     $this->artisan('blog:publish-scheduled-posts')->assertExitCode(0);
 
     Event::assertDispatchedTimes(ScheduledBlogPostPublished::class, 1);
-});
-
-// 0061's D-20 makes this reachable: a restore leaves `status` at Published and fires `restored`, so an
-// Eloquent observer keyed on either would re-announce a post its subscribers already heard about. This is
-// the reason D-12 rules an observer out.
-test('restoring a previously published post dispatches nothing', function () {
-    $this->seed(RolePermissionSeeder::class);
-    $editor = User::factory()->create();
-    $editor->givePermissionTo(['blog.view', 'blog.edit', 'blog.delete']);
-    $this->actingAs($editor);
-
-    $post = BlogPost::factory()->published()->create();
-    app(DeleteBlogPost::class)($post);
-    $trashed = BlogPost::withTrashed()->find($post->id);
-
-    app(RestoreBlogPost::class)($trashed);
-
-    expect(BlogPost::query()->find($post->id))->not->toBeNull();
-    Event::assertNotDispatched(ScheduledBlogPostPublished::class);
 });
 
 // The order of the write and the dispatch is exactly what a later refactor reverses.

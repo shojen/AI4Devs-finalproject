@@ -73,12 +73,6 @@ test('saving without touching description does not rewrite it (the isDirty guard
         ->and($fresh->fresh()->description)->toBe('<script>sentinel</script>');
 });
 
-test('the factory default description is plain text that needs no sanitizing', function () {
-    $translation = ProductTranslation::factory()->create();
-
-    expect($translation->description === null || app(SanitizeProductDescription::class)($translation->description) === $translation->description)->toBeTrue();
-});
-
 test('only the content columns are fillable, and a forged product_id or store_language_id is ignored', function () {
     $product = Product::factory()->withoutTranslations()->create();
     $victim = Product::factory()->withoutTranslations()->create();

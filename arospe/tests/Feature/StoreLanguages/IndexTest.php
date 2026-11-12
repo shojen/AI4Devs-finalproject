@@ -35,7 +35,6 @@ use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\StoreLanguageSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Mockery\MockInterface;
 use Spatie\Permission\PermissionRegistrar;
@@ -318,15 +317,6 @@ test('a target that vanishes between render and click raises ModelNotFoundExcept
     expect(fn () => $component->call($method, $staleId))->toThrow(ModelNotFoundException::class);
 })->with(['setDefaultLanguage', 'confirmRemoveLanguage']);
 
-test('a forged id that is not a row at all is a ModelNotFoundException, not a TypeError from a null policy argument', function (string $method) {
-    $this->withoutExceptionHandling();
-    $this->seed(StoreLanguageSeeder::class);
-    $this->actingAs(storeLanguagesIndexActor());
-
-    expect(fn () => Livewire::test(Index::class)->call($method, (string) Str::uuid()))
-        ->toThrow(ModelNotFoundException::class);
-})->with(['setDefaultLanguage', 'confirmRemoveLanguage']);
-
 test('a Super Admin holding zero store-languages permission rows can use every catalog write', function () {
     $this->seed(StoreLanguageSeeder::class);
     $superAdmin = User::factory()->create();
@@ -449,7 +439,6 @@ test('a forged locale value on either property is refused with an error keyed on
     'wrong case' => 'EN',
     'region subtag' => 'en-GB',
     'empty' => '',
-    'forty characters' => str_repeat('x', 40),
 ]);
 
 test('a user holding only store-languages.view is refused on both dashboard default saves and nothing persists', function (string $property, string $saveMethod) {

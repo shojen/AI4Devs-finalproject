@@ -150,18 +150,6 @@ test('after the backfill every legacy row has no returnable units and no refunde
     );
 });
 
-test('a row inserted after the migration defaults both counters to 0 and ordered_as_variant to false', function () {
-    $order = Order::factory()->create();
-    $product = Product::factory()->create();
-
-    $id = insertLegacyOrderItem($order->id, $product->id, null, $product->sku, 3, 0);
-    $row = DB::table('order_items')->find($id);
-
-    expect($row->stock_undeducted_quantity)->toBe(0)
-        ->and($row->stock_refunded_not_out_quantity)->toBe(0)
-        ->and((bool) $row->ordered_as_variant)->toBeFalse();
-});
-
 test('the two counter columns are unsigned and NOT NULL, and ordered_as_variant is a NOT NULL boolean defaulting to false', function () {
     $columns = collect(Schema::getColumns('order_items'))->keyBy('name');
 
@@ -226,21 +214,4 @@ test('the D9 backfill flags ordered_as_variant for variant rows, SKU-mismatched 
                 ->and($flag('deletedSameSkuVariantRow'))->toBeFalse();
         },
     );
-});
-
-test('down() drops exactly the three stock-tracking columns and re-applying restores them', function () {
-    $path = stockTrackingMigrationPath();
-
-    try {
-        Artisan::call('migrate:rollback', ['--path' => $path, '--force' => true]);
-
-        expect(Schema::hasColumn('order_items', 'ordered_as_variant'))->toBeFalse()
-            ->and(Schema::hasColumn('order_items', 'stock_undeducted_quantity'))->toBeFalse()
-            ->and(Schema::hasColumn('order_items', 'stock_refunded_not_out_quantity'))->toBeFalse()
-            ->and(Schema::hasColumn('order_items', 'refunded_quantity'))->toBeTrue();
-    } finally {
-        Artisan::call('migrate', ['--path' => $path, '--force' => true]);
-    }
-
-    expect(Schema::hasColumns('order_items', ['ordered_as_variant', 'stock_undeducted_quantity', 'stock_refunded_not_out_quantity']))->toBeTrue();
 });

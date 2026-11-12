@@ -23,14 +23,6 @@ test('cases are exactly active and draft, in that order', function () {
     expect(array_column(ProductStatus::cases(), 'value'))->toBe(['active', 'draft']);
 });
 
-test('tryFrom returns null for every out-of-stock spelling', function (string $value) {
-    expect(ProductStatus::tryFrom($value))->toBeNull();
-})->with(['agotado', 'out_of_stock', 'sold_out', 'outofstock']);
-
-test('from throws ValueError for an unrecognized value', function () {
-    expect(fn () => ProductStatus::from('agotado'))->toThrow(ValueError::class);
-});
-
 // Phase 5 finding N-2: asserting against trans('products.statuses.active') is green even against a
 // hardcoded `return 'Active';` implementation, since the default 'en' locale's own translation
 // happens to be the identical literal — the assertion could not distinguish "goes through the

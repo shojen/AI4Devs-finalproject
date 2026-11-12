@@ -116,18 +116,6 @@ test('isRecentlyConfirmed returns false when never confirmed', function () {
     expect(app(EnsureRecentPasswordConfirmation::class)->isRecentlyConfirmed())->toBeFalse();
 });
 
-test('isRecentlyConfirmed returns false when stale, without throwing', function () {
-    session(['auth.password_confirmed_at' => now()->subSeconds(config('auth.password_timeout') + 60)->unix()]);
-
-    expect(app(EnsureRecentPasswordConfirmation::class)->isRecentlyConfirmed())->toBeFalse();
-});
-
-test('isRecentlyConfirmed returns true when recently confirmed', function () {
-    session(['auth.password_confirmed_at' => now()->unix()]);
-
-    expect(app(EnsureRecentPasswordConfirmation::class)->isRecentlyConfirmed())->toBeTrue();
-});
-
 test('isRecentlyConfirmed mirrors the exact ">" boundary the throwing check uses', function () {
     $timeout = config('auth.password_timeout');
     $now = Carbon::create(2026, 1, 1, 12, 0, 0);

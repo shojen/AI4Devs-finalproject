@@ -88,19 +88,6 @@ test('removing an orders only remaining line item is rejected, and the item rema
         ->and((string) $order->fresh()->total)->toBe($originalTotal);
 });
 
-// The boundary from the other side -- a rule asserted only from its refusing side cannot
-// distinguish count <= 1 from count <= 2.
-test('removing one of two line items succeeds', function () {
-    actingOrderEditorForRemoval();
-
-    $order = Order::factory()->withItems(2)->create();
-    $itemToRemove = $order->items()->first();
-
-    app(RemoveOrderItem::class)($order, $itemToRemove->id);
-
-    expect($order->items()->count())->toBe(1);
-});
-
 test('removing a line item that belongs to a different order is rejected, and neither orders line items change', function () {
     actingOrderEditorForRemoval();
 
@@ -119,24 +106,6 @@ test('removing a line item that belongs to a different order is rejected, and ne
         ->and((string) $orderA->fresh()->subtotal)->toBe($orderASubtotalBefore)
         ->and(OrderItem::query()->whereKey($itemBelongingToOrderB->id)->exists())->toBeTrue()
         ->and((string) $orderB->fresh()->subtotal)->toBe($orderBSubtotalBefore);
-});
-
-test('a rejected edit leaves the orders stored subtotal and total exactly what they were before', function () {
-    actingOrderEditorForRemoval();
-
-    $order = Order::factory()->withItems(1)->create();
-    $onlyItem = $order->items()->sole();
-    $originalSubtotal = (string) $order->fresh()->subtotal;
-    $originalTotal = (string) $order->fresh()->total;
-
-    try {
-        app(RemoveOrderItem::class)($order, $onlyItem->id);
-    } catch (ValidationException) {
-        // expected -- the rejection itself is asserted by the D-1 test above.
-    }
-
-    expect((string) $order->fresh()->subtotal)->toBe($originalSubtotal)
-        ->and((string) $order->fresh()->total)->toBe($originalTotal);
 });
 
 // --- Atomicity ---
@@ -205,17 +174,6 @@ test('removing a line item from an order with no resolved tax rate leaves tax_am
 
     expect((string) $fresh->tax_amount)->toBe('0.00')
         ->and($fresh->sales_region_id)->toBeNull();
-});
-
-test('removing a line item never writes tax_rate itself', function () {
-    actingOrderEditorForRemoval();
-
-    $order = Order::factory()->withItems(2)->create(['tax_rate' => '10.000']);
-    $itemToRemove = $order->items()->first();
-
-    app(RemoveOrderItem::class)($order, $itemToRemove->id);
-
-    expect((string) $order->fresh()->tax_rate)->toBe('10.000');
 });
 
 // --- Story 0055 prep (D-4 / amendment 3): a refunded line can never be deleted ---

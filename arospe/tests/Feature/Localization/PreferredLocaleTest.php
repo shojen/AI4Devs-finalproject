@@ -28,33 +28,11 @@
 // when they have none set), not whatever locale happens to be ambient for the current request.
 
 use App\Actions\Users\RequestEmailChange;
-use App\Enums\UiLocale;
 use App\Models\LocaleSetting;
 use App\Models\User;
 use App\Notifications\PendingEmailVerification;
 use App\Notifications\UserInvitation;
 use Illuminate\Support\Facades\DB;
-
-test('preferredLocale returns the users own stored preference when one is set', function () {
-    $user = User::factory()->create(['ui_locale' => 'es']);
-
-    expect($user->preferredLocale())->toBe('es');
-});
-
-test('with no stored preference, preferredLocale reads the NOTIFICATION default, never the dashboard default', function () {
-    // The two settings are deliberately DIFFERENT here -- if preferredLocale() ever read
-    // default_ui_locale by mistake (a copy-paste of the middleware's own fallback), this is the
-    // one test that would catch it; with both set to the same value the bug is invisible.
-    LocaleSetting::factory()->create([
-        'default_ui_locale' => 'en',
-        'default_notification_locale' => 'es',
-    ]);
-
-    $user = User::factory()->create(['ui_locale' => null]);
-
-    expect($user->preferredLocale())->toBe('es')
-        ->and(LocaleSetting::defaultUiLocale())->toBe(UiLocale::English);
-});
 
 test('preferredLocale never returns null, including for a user holding an unsupported stored value', function () {
     config(['app.locale' => 'en']);

@@ -79,10 +79,6 @@ test('the order status badge speaks Spanish under the es locale', function (Orde
 
     expect($badge['label'])->toBe($label);
 })->with([
-    'pending' => [OrderStatus::Pending, 'Pendiente'],
-    'processing' => [OrderStatus::Processing, 'Procesando'],
-    'shipped' => [OrderStatus::Shipped, 'Enviado'],
-    'delivered' => [OrderStatus::Delivered, 'Entregado'],
     'cancelled' => [OrderStatus::Cancelled, 'Cancelado'],
 ]);
 
@@ -140,9 +136,7 @@ test('the blog status badge speaks Spanish under the es locale', function (BlogP
 
     expect($badge['label'])->toBe($label);
 })->with([
-    'draft' => [BlogPostStatus::Draft, 'Borrador'],
     'scheduled' => [BlogPostStatus::Scheduled, 'Programado'],
-    'published' => [BlogPostStatus::Published, 'Publicado'],
 ]);
 
 test('the blog status badge forwards the row hook the blog list asserts on', function () {

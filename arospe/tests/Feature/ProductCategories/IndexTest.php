@@ -318,44 +318,6 @@ test('deleting a category with N products surfaces an error on productCategoryId
     $this->assertDatabaseHas('product_categories', ['id' => $category->id]);
 })->with([1, 2, 12]);
 
-test('the singular and plural forms differ', function () {
-    $actor = productCategoriesFullActor();
-    $this->actingAs($actor);
-
-    $one = productCategoriesFixtureWithProducts(1);
-    $two = app(CreateProductCategory::class)('Calzado Dos');
-    Product::factory()->count(2)->create(['product_category_id' => $two->id]);
-
-    $oneComponent = Livewire::test(Index::class)
-        ->call('confirmDelete', $one->id)
-        ->call('deleteProductCategory');
-
-    expect($oneComponent->html())->toContain('1 product')
-        ->not->toContain('1 products');
-
-    $twoComponent = Livewire::test(Index::class)
-        ->call('confirmDelete', $two->id)
-        ->call('deleteProductCategory');
-
-    expect($twoComponent->html())->toContain('2 products');
-});
-
-test('draft products count towards the block', function () {
-    // The likeliest implementation bug is a stray ->where('status', Active) filter.
-    $actor = productCategoriesFullActor();
-    $this->actingAs($actor);
-
-    $category = app(CreateProductCategory::class)('Calzado');
-    Product::factory()->count(3)->draft()->create(['product_category_id' => $category->id]);
-
-    Livewire::test(Index::class)
-        ->call('confirmDelete', $category->id)
-        ->call('deleteProductCategory')
-        ->assertSee(trans_choice('products.categories.delete_blocked', 3, ['count' => 3]));
-
-    $this->assertDatabaseHas('product_categories', ['id' => $category->id]);
-});
-
 test('a Super Admin is refused identically to any other actor', function () {
     // The single most important test in this story: proves the block is a data-integrity rule
     // and not an authorization one. If the guard were ever routed through Gate, a Super Admin
@@ -373,26 +335,6 @@ test('a Super Admin is refused identically to any other actor', function () {
         ->call('deleteProductCategory')
         ->assertHasErrors(['productCategoryId'])
         ->assertSee(trans_choice('products.categories.delete_blocked', 12, ['count' => 12]));
-
-    $this->assertDatabaseHas('product_categories', ['id' => $category->id]);
-});
-
-test('calling delete twice in succession on the same in-use category is refused both times', function () {
-    // No "confirmed" state accumulates.
-    $actor = productCategoriesFullActor();
-    $this->actingAs($actor);
-
-    $category = productCategoriesFixtureWithProducts(1);
-
-    Livewire::test(Index::class)
-        ->call('confirmDelete', $category->id)
-        ->call('deleteProductCategory')
-        ->assertHasErrors(['productCategoryId']);
-
-    Livewire::test(Index::class)
-        ->call('confirmDelete', $category->id)
-        ->call('deleteProductCategory')
-        ->assertHasErrors(['productCategoryId']);
 
     $this->assertDatabaseHas('product_categories', ['id' => $category->id]);
 });

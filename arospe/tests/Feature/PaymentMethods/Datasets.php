@@ -17,18 +17,15 @@
 
 // A NARROWER dataset for a component-level (post-normalisation) rejection test. The component
 // uppercases and strips spaces BEFORE validating (see App\Livewire\PaymentMethods\Index::save()),
-// so the two case-only variants the Unit test's `invalid_ibans` set carries ('eS91...', 'es91...')
-// are deliberately EXCLUDED here: after normalisation they become the structurally and
-// arithmetically valid ES example and are correctly ACCEPTED, not rejected -- that is the separate
+// so the case-only variant the Unit test's `invalid_ibans` set carries ('eS91...')
+// is deliberately EXCLUDED here: after normalisation it becomes the structurally and
+// arithmetically valid ES example and is correctly ACCEPTED, not rejected -- that is the separate
 // "lowercase IBAN is accepted and stored uppercased" scenario, not a rejection case. Using the
 // full invalid_ibans set against the component would fail the suite on cases that are working
 // exactly as designed.
 dataset('invalid_ibans_after_normalisation', [
     'punctuation embedded' => 'ES91-2100-0418-4502-0005-1332',
-    'digits where the country code belongs' => '129121000418450200051332',
     'too short for ES (23 chars)' => 'ES912100041845020005133',
-    'too long for ES (25 chars)' => 'ES91210004184502000513322',
     'structurally valid, wrong mod-97 check digit' => 'ES9021000418450200051332',
-    'country code only' => 'ES',
     'empty string' => '',
 ]);

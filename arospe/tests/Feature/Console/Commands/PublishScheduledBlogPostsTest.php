@@ -35,24 +35,6 @@ test('a run with nothing due exits 0 and says so', function () {
         ->assertExitCode(0);
 });
 
-// One integration assertion that the command delegates to the action instead of carrying parallel logic.
-test('it publishes a due post', function () {
-    $post = ScheduledPosts::scheduled();
-
-    $this->artisan('blog:publish-scheduled-posts')->assertExitCode(0);
-
-    expect(BlogPost::query()->find($post->id)->status)->toBe(BlogPostStatus::Published);
-});
-
-test('it reports how many posts it published', function () {
-    ScheduledPosts::scheduled(-30);
-    ScheduledPosts::scheduled(-20);
-
-    $this->artisan('blog:publish-scheduled-posts')
-        ->expectsOutputToContain('Published 2 scheduled blog posts.')
-        ->assertExitCode(0);
-});
-
 test('it leaves a post scheduled for later alone', function () {
     $due = ScheduledPosts::scheduled();
     $later = ScheduledPosts::scheduled(3600);

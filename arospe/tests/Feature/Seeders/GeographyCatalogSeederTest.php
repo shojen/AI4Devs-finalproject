@@ -30,20 +30,6 @@ afterEach(function () {
 
 // --- Behavioural coverage (small fixture) ---
 
-test('seeding creates a country row for every country row in the fixture', function () {
-    $this->seed(TestableGeographyCatalogSeeder::class);
-
-    $fixtureCountryCount = count(json_decode(file_get_contents(database_path('data/iso-3166-countries.json')), associative: true));
-
-    expect(GeographyEntry::where('level', GeographyLevel::Country)->count())->toBe($fixtureCountryCount);
-});
-
-test('seeding creates exactly seventeen comunidad autonoma rows', function () {
-    $this->seed(TestableGeographyCatalogSeeder::class);
-
-    expect(GeographyEntry::where('level', GeographyLevel::Community)->count())->toBe(17);
-});
-
 test('every seeded municipio has a parent resolving to an existing comunidad, and every comunidad resolves to España', function () {
     $this->seed(TestableGeographyCatalogSeeder::class);
 

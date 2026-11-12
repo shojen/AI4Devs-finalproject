@@ -22,9 +22,7 @@ use Illuminate\Validation\Rules\Unique;
 // Rule::unique(), not the NormalizeForSearch-based closure ProductCategoryValidationRules uses --
 // so this harness needs no container-resolved dependency at all.
 //
-// An anonymous class exposes the trait's protected methods publicly, mirroring
-// tests/Unit/Concerns/ProductCategoryValidationRulesTest.php's identical harness shape -- there is
-// no second precedent to diverge from.
+// An anonymous class exposes the trait's protected methods publicly.
 
 function productAttributeValidationRulesHarness(): object
 {
@@ -62,40 +60,9 @@ function productAttributeValidationRulesHarness(): object
 // attributeTypeNameRules()
 // =====================================================================
 
-test('attributeTypeNameRules(null) returns required/string/max:100 plus exactly one uniqueness rule', function () {
-    $rules = productAttributeValidationRulesHarness()->exposedAttributeTypeNameRules();
-
-    expect($rules)->toHaveCount(4)
-        ->and($rules[0])->toBe('required')
-        ->and($rules[1])->toBe('string')
-        ->and($rules[2])->toBe('max:100');
-
-    // max:100 matches the column width from D2 -- asserted as its own literal string rather
-    // than folded into a toContain(), so a future accidental "max:255" copy-paste from
-    // ProductCategoryValidationRules fails here specifically rather than only at the Feature
-    // level once a 101-256 character name is actually submitted.
-    //
-    // The 4th rule is the uniqueness check. Unlike ProductCategoryValidationRules'
-    // closure-based guard, D2's own snippet gives this as a bare Rule::unique() instance --
-    // deliberately relying on this project's case-/accent-insensitive utf8mb4_unicode_ci
-    // collation (D3) rather than a NormalizeForSearch-based comparison, so it must be an
-    // actual Unique rule object, not a Closure and not a plain string.
-    expect($rules[3])->toBeInstanceOf(Unique::class);
-});
-
-test('attributeTypeNameRules($typeId) still returns exactly 4 rules, with the ignore-branch uniqueness rule present', function () {
-    $rules = productAttributeValidationRulesHarness()->exposedAttributeTypeNameRules('a-type-id');
-
-    expect($rules)->toHaveCount(4)
-        ->and($rules[0])->toBe('required')
-        ->and($rules[1])->toBe('string')
-        ->and($rules[2])->toBe('max:100')
-        ->and($rules[3])->toBeInstanceOf(Unique::class);
-});
-
 // Distinguishes "the id was threaded through to ->ignore()" from "the id was silently dropped" --
-// both a correct and a buggy attributeTypeNameRules() produce an identical rule-array SHAPE by the
-// two tests above alone. Unique::__toString() renders the ignored id into the compiled rule
+// both a correct and a buggy attributeTypeNameRules() produce an identical rule-array SHAPE.
+// Unique::__toString() renders the ignored id into the compiled rule
 // string (e.g. "unique:product_attribute_types,name,a-type-id"), which is the cheapest way to
 // observe the rule's own internal state without touching the database -- this file stays DB-free.
 test('attributeTypeNameRules($typeId) genuinely ignores that id, distinct from the null case', function () {

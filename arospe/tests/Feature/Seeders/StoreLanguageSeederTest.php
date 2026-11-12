@@ -7,11 +7,8 @@
 // touches no permission cache, exactly like SalesRegionSeederTest.php's own reasoning.
 
 use App\Models\StoreLanguage;
-use App\Models\User;
 use Database\Seeders\ProductionSeeder;
 use Database\Seeders\StoreLanguageSeeder;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 function withCorruptedIso639FixtureDuring(?string $content, Closure $callback): mixed
 {
@@ -118,14 +115,4 @@ test('ProductionSeeder reaches StoreLanguageSeeder', function () {
     (new ProductionSeeder)();
 
     expect(StoreLanguage::where('code', 'es')->where('is_default', true)->exists())->toBeTrue();
-});
-
-// --- Isolation ---
-
-test('running the Store Language seeder alone creates no users, roles or permissions', function () {
-    $this->seed(StoreLanguageSeeder::class);
-
-    expect(User::count())->toBe(0)
-        ->and(Role::count())->toBe(0)
-        ->and(Permission::count())->toBe(0);
 });

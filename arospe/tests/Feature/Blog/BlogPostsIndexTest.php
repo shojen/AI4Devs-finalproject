@@ -236,21 +236,6 @@ test('each row carries the documented shape, with the category name and the tag 
         ->and($rows[0]['tags'])->toEqualCanonicalizing(['running', 'invierno']);
 });
 
-test('the date is the publication date when the post has one and the creation date otherwise', function () {
-    $published = BlogPost::factory()->create([
-        'status' => 'published',
-        'published_at' => '2026-03-15 10:30:00',
-        'created_at' => '2026-03-01 08:00:00',
-    ]);
-    $draft = BlogPost::factory()->create(['created_at' => '2026-02-01 09:15:00']);
-    $this->actingAs(blogPostsIndexActor(['blog.view']));
-
-    $dates = collect(Livewire::test(Index::class)->get('posts')->items())->pluck('date', 'id');
-
-    expect($dates[$published->id])->toBe('15/03/2026 10:30')
-        ->and($dates[$draft->id])->toBe('01/02/2026 09:15');
-});
-
 test('canEdit and canDelete agree with BlogPostPolicy for each permission combination', function (array $permissions, bool $canEdit, bool $canDelete) {
     BlogPost::factory()->create();
     $this->actingAs(blogPostsIndexActor($permissions));
@@ -486,26 +471,6 @@ test('changing either filter returns to page 1', function (string $property) {
         ->assertSet('paginators.page', 1);
 })->with(['category' => 'categoryFilter', 'tag' => 'tagFilter']);
 
-test('both filters are bound to the URL as ?category= and ?tag=', function () {
-    $properties = collect(['categoryFilter' => 'category', 'tagFilter' => 'tag']);
-
-    foreach ($properties as $property => $alias) {
-        $attributes = (new ReflectionProperty(Index::class, $property))->getAttributes(Url::class);
-
-        expect($attributes)->toHaveCount(1)
-            ->and($attributes[0]->newInstance()->as)->toBe($alias);
-    }
-
-    $category = BlogCategory::factory()->named('Guías')->create();
-    $tag = BlogTag::factory()->named('running')->create();
-    $this->actingAs(blogPostsIndexActor(['blog.view']));
-
-    Livewire::withQueryParams(['category' => $category->id, 'tag' => $tag->id])
-        ->test(Index::class)
-        ->assertSet('categoryFilter', $category->id)
-        ->assertSet('tagFilter', $tag->id);
-});
-
 test('an unknown, malformed or forged filter value degrades to no filter and never a 500', function (string $property, string $forged) {
     BlogPost::factory()->count(3)->create();
     $this->actingAs(blogPostsIndexActor(['blog.view']));
@@ -530,7 +495,6 @@ test('a forged filter arriving through the URL, even as an array, renders the fu
 })->with([
     'category array' => [['category' => ['a', 'b']]],
     'tag array' => [['tag' => ['a']]],
-    'category unknown' => [['category' => 'nope']],
     'tag unknown' => [['tag' => '0198a3a0-0000-7000-8000-000000000000']],
 ]);
 

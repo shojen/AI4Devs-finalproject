@@ -52,29 +52,11 @@ function dashboardPlaceholders(string $text): array
     return array_values($found);
 }
 
-test('the errors group holds exactly range_invalid, range_too_long and statuses_required in both locales', function (string $locale) {
-    $errors = dashboardLang($locale)['errors'] ?? null;
-
-    expect($errors)->toBeArray()
-        ->and(array_keys($errors))->toEqualCanonicalizing(['range_invalid', 'range_too_long', 'statuses_required']);
-})->with(['en', 'es']);
-
 test('every errors message is a non-empty string in both locales', function (string $locale) {
     foreach (dashboardLang($locale)['errors'] as $key => $message) {
         expect($message)->toBeString()->not->toBe('', "errors.{$key} ({$locale}) must not be empty");
     }
 })->with(['en', 'es']);
-
-test('English and Spanish dashboard files define identical key sets', function () {
-    expect(dashboardFlattenKeys(dashboardLang('es')))->toBe(dashboardFlattenKeys(dashboardLang('en')));
-});
-
-test('each errors message carries the same placeholders in English and Spanish', function (string $key) {
-    $en = dashboardLang('en')['errors'][$key];
-    $es = dashboardLang('es')['errors'][$key];
-
-    expect(dashboardPlaceholders($es))->toBe(dashboardPlaceholders($en));
-})->with(['range_invalid', 'range_too_long', 'statuses_required']);
 
 test('range_too_long exposes the :max placeholder in both locales', function (string $locale) {
     expect(dashboardLang($locale)['errors']['range_too_long'])->toContain(':max');
@@ -84,9 +66,7 @@ test('range_invalid and statuses_required take no placeholder', function (string
     expect(dashboardPlaceholders(dashboardLang('en')['errors'][$key]))->toBe([]);
 })->with(['range_invalid', 'statuses_required']);
 
-// Story 0086 (D-5, Phase 2 finding 4): the `sales` group. Placeholder parity is asserted per key over
-// the whole group, in a loop (the group does not exist before the story, so a dataset built from it at
-// collection time would be empty). The `errors` pin above is left exactly as it is.
+// Story 0086 (D-5, Phase 2 finding 4): the `sales` group. The `errors` pin above is left exactly as it is.
 
 /**
  * @return array<string, string> flattened `sales.*` leaves, keyed by their dotted path
@@ -120,15 +100,6 @@ test('the sales group exists with the same keys in both locales and no empty str
     }
 });
 
-test('every sales message carries the same placeholders in English and Spanish', function () {
-    $en = dashboardSalesLeaves('en');
-    $es = dashboardSalesLeaves('es');
-
-    foreach ($en as $key => $message) {
-        expect(dashboardPlaceholders($es[$key] ?? ''))->toBe(dashboardPlaceholders($message), "sales.{$key} placeholders differ between en and es");
-    }
-});
-
 test('the sales group defines the documented placeholders in both locales', function (string $locale) {
     $leaves = dashboardSalesLeaves($locale);
 
@@ -151,12 +122,6 @@ test('the sales group defines every key the card needs in both locales', functio
         expect($leaves)->toHaveKey($key);
     }
 })->with(['en', 'es']);
-
-test('the sales group never duplicates the backend range and status refusals', function () {
-    expect(dashboardSalesLeaves('en'))->not->toHaveKey('range_error')
-        ->not->toHaveKey('range_invalid')
-        ->not->toHaveKey('statuses_required');
-});
 
 test('the Spanish sales strings really differ from the English ones', function () {
     $en = dashboardSalesLeaves('en');

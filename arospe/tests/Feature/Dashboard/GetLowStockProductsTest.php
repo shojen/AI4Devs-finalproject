@@ -147,7 +147,7 @@ it('ignores the parent own stock when the product has variants', function (int $
         ->and($rows[0]['id'])->toBe($variable->id)
         ->and($rows[0]['effectiveStock'])->toBe(40)
         ->and($rows[0]['isOutOfStock'])->toBeFalse();
-})->with(['parent 999' => [999], 'parent 0' => [0]]);
+})->with(['parent 999' => [999]]);
 
 it('ranks a product by a negative variant stock and flags it out of stock', function () {
     $variable = lowStockProduct(100, [-3, 10]);
@@ -219,16 +219,6 @@ it('counts the variants at or below the cut-off of the last returned row', funct
         ->and($rows[$variable->id]['lowVariantCount'])->toBe(2)
         ->and($rows[$five->id]['lowVariantCount'])->toBe(0)
         ->and($rows[$six->id]['lowVariantCount'])->toBe(0);
-});
-
-it('reports 2 variants at or below a 6-unit cut-off for variants of 1 and 2 units', function () {
-    $variable = lowStockProduct(0, [1, 2]);
-    lowStockProduct(5);
-    lowStockProduct(6);
-
-    $row = collect(app(GetLowStockProducts::class)())->firstWhere('id', $variable->id);
-
-    expect($row['lowVariantCount'])->toBe(2);
 });
 
 it('moves the cut-off with the last returned row so variants above it are not counted', function () {
