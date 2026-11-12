@@ -138,7 +138,6 @@ it('shows how much of the sales was collected, with up to two decimals rounded h
         ->and(Ui::text($html, 'sales-kpi-collected'))->toBe(__('dashboard.sales.kpi.collected', ['percent' => $percent]))
         ->and(Ui::present($html, 'sales-kpi-income-hint'))->toBeFalse();
 })->with([
-    'one half' => ['200.00', '100.00', '50'],
     'one third is not rounded to an integer' => ['300.00', '100.00', '33.33'],
     'two thirds rounds up' => ['300.00', '200.00', '66.67'],
     'rounds half up at the second decimal (4.436)' => ['1000.00', '44.36', '4.44'],

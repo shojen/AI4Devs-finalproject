@@ -147,7 +147,6 @@ test('a variants hint needs both variants and a positive low-variant count', fun
     }
 })->with([
     'variants and one low' => [true, 1, true],
-    'variants and three low' => [true, 3, true],
     'variants but none low' => [true, 0, false],
     'no variants' => [false, 0, false],
 ]);

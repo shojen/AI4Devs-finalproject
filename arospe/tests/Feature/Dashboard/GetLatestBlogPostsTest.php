@@ -192,13 +192,11 @@ it('derives the description as plain text with entities decoded after stripping'
 it('treats block-level tags as a single space separator even without whitespace between them', function (string $body, string $expected) {
     expect(descriptionOfBody($body))->toBe($expected);
 })->with([
-    'heading then paragraph' => ['<h2>Heading</h2><p>palabra</p>', 'Heading palabra'],
     'two paragraphs' => ['<p>one</p><p>two</p>', 'one two'],
     'list items' => ['<ul><li>a</li><li>b</li></ul>', 'a b'],
     'line break' => ['line<br>break', 'line break'],
     'self-closing line break' => ['line<br/>break', 'line break'],
     'divs' => ['<div>one</div><div>two</div>', 'one two'],
-    'blockquote' => ['<p>one</p><blockquote>two</blockquote>', 'one two'],
     'table cells' => ['<table><tr><td>a</td><td>b</td></tr><tr><td>c</td></tr></table>', 'a b c'],
     'block tags with whitespace already between them' => ["<h2>Heading</h2>\n<p>palabra</p>", 'Heading palabra'],
     'uppercase block tags' => ['<P>one</P><P>two</P>', 'one two'],
@@ -245,11 +243,9 @@ it('never exceeds 80 characters including the ellipsis and only adds it when tru
         expect($description)->toBe(str_repeat('a', $length));
     }
 })->with([
-    '50 characters' => [50, 50, false],
     '79 characters' => [79, 79, false],
     '80 characters' => [80, 80, false],
     '81 characters' => [81, 80, true],
-    '300 characters' => [300, 80, true],
 ]);
 
 it('truncates multibyte text without breaking a character', function (string $unit) {

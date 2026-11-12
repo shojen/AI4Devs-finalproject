@@ -180,4 +180,12 @@ it('the real lazy load answers 200 with the default overview for every broken li
     expect($html)->not->toBeNull()
         ->and(Sales::buckets($html))->toHaveCount(30)
         ->and(Sales::orderColumns($html))->toBe(Sales::defaultStatusValues());
-})->with('broken shared links');
+})->with([
+    'unknown period' => [['g' => 'garbage']],
+    'period as an array' => [['g' => ['day']]],
+    'start as an array' => [['from' => ['2026-05-01'], 'to' => '2026-05-31']],
+    'end as an array' => [['from' => '2026-05-01', 'to' => ['2026-05-31']]],
+    'start after end' => [['from' => '2026-05-31', 'to' => '2026-05-01']],
+    'status as a string' => [['s' => 'delivered']],
+    'nested status garbage' => [['s' => [['x' => 'y']]]],
+]);

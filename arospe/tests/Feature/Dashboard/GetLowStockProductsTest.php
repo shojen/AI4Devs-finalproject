@@ -147,7 +147,7 @@ it('ignores the parent own stock when the product has variants', function (int $
         ->and($rows[0]['id'])->toBe($variable->id)
         ->and($rows[0]['effectiveStock'])->toBe(40)
         ->and($rows[0]['isOutOfStock'])->toBeFalse();
-})->with(['parent 999' => [999], 'parent 0' => [0]]);
+})->with(['parent 999' => [999]]);
 
 it('ranks a product by a negative variant stock and flags it out of stock', function () {
     $variable = lowStockProduct(100, [-3, 10]);

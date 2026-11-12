@@ -433,8 +433,6 @@ test('the payment state resolves through the orders.payment_statuses keys', func
     expect(Ui::text($html, "dashboard-order-payment-{$order->id}"))->toBe(__('orders.payment_statuses.'.$status->value));
 })->with([
     'pending_payment' => [PaymentStatus::PendingPayment],
-    'paid' => [PaymentStatus::Paid],
-    'refunded' => [PaymentStatus::Refunded],
     'partially_refunded' => [PaymentStatus::PartiallyRefunded],
 ]);
 

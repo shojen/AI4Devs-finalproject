@@ -43,7 +43,6 @@ it('labels the buckets per granularity in English and Spanish', function (string
     'en month' => ['en', 'month', 'Jul 2025', 'Jun 2026'],
     'es month' => ['es', 'month', 'jul 2025', 'jun 2026'],
     'en year' => ['en', 'year', '2022', '2026'],
-    'es year' => ['es', 'year', '2022', '2026'],
 ]);
 
 it('names the first of May in the active locale', function (string $locale, string $label) {

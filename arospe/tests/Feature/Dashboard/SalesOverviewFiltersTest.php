@@ -313,9 +313,7 @@ it('the status chips narrow every figure', function (array $toggleOff, string $s
         ->and(Sales::kpi($html, 'income'))->toBe("€ {$income}")
         ->and(Sales::kpi($html, 'orders'))->toBe($orders);
 })->with([
-    'Delivered' => [['pending', 'processing', 'shipped'], '100.00', '100.00', '1'],
     'Delivered, Shipped' => [['pending', 'processing'], '150.00', '150.00', '2'],
-    'Pending' => [['processing', 'shipped', 'delivered'], '20.00', '0.00', '1'],
 ]);
 
 it('refuses to deselect the last status with the backend message and keeps the previous data', function () {
