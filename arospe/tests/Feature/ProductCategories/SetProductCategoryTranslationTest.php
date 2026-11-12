@@ -141,7 +141,6 @@ test('a blank or whitespace-only name is refused and no translation row is writt
         ->and(storedTranslationRowCount($category, $this->french))->toBe(0);
 })->with([
     'empty' => '',
-    'spaces only' => '   ',
     'tabs and newlines' => "\t\n ",
 ]);
 

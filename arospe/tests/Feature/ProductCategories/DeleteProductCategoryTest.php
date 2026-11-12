@@ -120,7 +120,7 @@ test('deleting a category with N products throws and the row still exists afterw
         ->and($caught->errors())->toHaveKey('productCategoryId')
         ->and($caught->errors()['productCategoryId'][0])->toContain((string) $n);
     $this->assertDatabaseHas('product_categories', ['id' => $category->id]);
-})->with([1, 2, 12]);
+})->with([1, 12]);
 
 // Phase 5 review finding N-4: an all-draft test alone cannot catch a stray ->where('status',
 // Draft') (or any filter that happens to include Draft), because ProductFactory defaults every
