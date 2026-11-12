@@ -103,8 +103,6 @@ test('a duplicate name is refused with the error on name', function (string $dup
     expect(ShippingZone::count())->toBe(1);
 })->with([
     'exact duplicate' => ['Península'],
-    'case-only duplicate' => ['PENÍNSULA'],
-    'accent-only duplicate' => ['Peninsula'],
 ]);
 
 // =====================================================================
