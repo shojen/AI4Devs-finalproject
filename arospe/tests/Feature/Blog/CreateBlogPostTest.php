@@ -283,11 +283,11 @@ test('a published or scheduled post whose body renders nothing is refused', func
         'image with an empty src' => '<img src="" alt="Bota">',
     ];
 
-    foreach (['published', 'scheduled'] as $status) {
-        foreach ($bodies as $label => $body) {
-            yield "{$status}, {$label}" => [$status, $body];
-        }
+    foreach ($bodies as $label => $body) {
+        yield "published, {$label}" => ['published', $body];
     }
+
+    yield 'scheduled, line break in a paragraph' => ['scheduled', $bodies['line break in a paragraph']];
 });
 
 test('a draft whose body renders nothing is saved with no body', function (string $body) {

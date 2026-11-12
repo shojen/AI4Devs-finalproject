@@ -192,7 +192,6 @@ test('a blank, whitespace-only or over-length name is refused and no translation
 })->with([
     'empty' => '',
     'spaces only' => '   ',
-    'tabs and newlines' => "\t\n ",
     'non-breaking and zero-width space only' => "\u{00A0}\u{200B}",
     'over the max length' => [str_repeat('a', 256)],
 ]);

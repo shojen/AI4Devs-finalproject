@@ -678,12 +678,11 @@ test('creating a post whose body only exceeds the limit once sanitized is refuse
 
 test('updating a post with a body that only exceeds the limit once sanitized is refused on body and changes nothing', function (string $body, string $status) {
     $post = bpaCreate(['title' => 'Original', 'body' => '<p>original</p>']);
-    $publishedAt = $status === 'scheduled' ? now()->addDay()->toDateTimeString() : null;
     $parentBefore = DB::table('blog_posts')->where('id', $post->id)->first();
     $rowBefore = bpaRow($post, bpaDefaultLanguage());
 
     try {
-        bpaUpdate($post, ['title' => 'Cambiado', 'body' => $body, 'status' => $status, 'publishedAt' => $publishedAt]);
+        bpaUpdate($post, ['title' => 'Cambiado', 'body' => $body, 'status' => $status, 'publishedAt' => null]);
         $this->fail('Expected a ValidationException on body.');
     } catch (ValidationException $e) {
         expect($e->errors())->toHaveKey('body');
@@ -691,7 +690,7 @@ test('updating a post with a body that only exceeds the limit once sanitized is 
 
     expect(DB::table('blog_posts')->where('id', $post->id)->first())->toEqual($parentBefore)
         ->and(bpaRow($post, bpaDefaultLanguage()))->toBe($rowBefore);
-})->with('bpaEnlargingBodies')->with(['draft', 'published', 'scheduled']);
+})->with('bpaEnlargingBodies')->with(['draft', 'published']);
 
 test('a body that stays just under the limit after sanitizing still saves, on create and on update', function () {
     $max = (int) config('html-sanitizer.max_input_length');

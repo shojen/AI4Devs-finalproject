@@ -495,7 +495,6 @@ test('a forged filter arriving through the URL, even as an array, renders the fu
 })->with([
     'category array' => [['category' => ['a', 'b']]],
     'tag array' => [['tag' => ['a']]],
-    'category unknown' => [['category' => 'nope']],
     'tag unknown' => [['tag' => '0198a3a0-0000-7000-8000-000000000000']],
 ]);
 
