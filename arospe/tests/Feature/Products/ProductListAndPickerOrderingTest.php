@@ -157,6 +157,6 @@ test('a product whose only translation is French opens with an empty name, never
     ProductTranslation::factory()->forLanguage($fr)->create(['product_id' => $product->id, 'name' => 'Chaussures', 'description' => '<p>Legeres</p>']);
 
     Livewire::test(Editor::class, ['product' => $product])
-        ->assertSet('name', '')
-        ->assertSet('description', '');
+        ->assertSet('names.'.StoreLanguage::defaultStoreLanguage()->id, '')
+        ->assertSet('descriptions.'.StoreLanguage::defaultStoreLanguage()->id, '');
 });

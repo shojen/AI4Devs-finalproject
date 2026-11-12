@@ -734,7 +734,7 @@ tracked* (server-side, above) and *whether an inactive panel stays in the DOM* (
 reasons, in order of weight:
 
 1. **`@if` cannot survive a stateful panel, and one sibling already proves it.** Story
-   [0077](../0077-product-editor-language-tabs-ui.md)'s **C-2** found that `@if` tears down N
+   [0077](0077-product-editor-language-tabs-ui.md)'s **C-2** found that `@if` tears down N
    `wire:ignore`d WYSIWYG regions on every tab switch — story 0021's editor has no client-side
    refresh hook. That is what happens to **anything stateful** inside a panel.
 2. **One mode is simpler for four consumers to reason about than two.** 0073 and 0075 already

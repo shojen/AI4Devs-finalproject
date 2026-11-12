@@ -40,15 +40,18 @@ Nine consequences for anyone binding to this, or adding a method to it:
 
 ### `App\Livewire\Components\WysiwygEditor` — the gallery's first real consumer, and the second routeless gated component
 
-Story 0021. **This is also not in [routes.md](../routes.md#app-owned-routes)'s app-owned route table and never will be**: same reasoning as `Gallery` immediately above it — no route, reached only over `/livewire/update`, embedded by a host screen. It is worth its own subsection rather than a bullet under `Gallery`'s because it sits **one layer further out**: `WysiwygEditor` *is* a `Gallery` consumer (it embeds `<livewire:media.gallery>` itself, single-select, D4 in the story's own task file), and it is in turn embedded by the product/blog editors that are `WysiwygEditor`'s own consumers — [0027](../../../ai-spec/tasks/done/0027-products-list-and-editor-ui.md), [0061](../../../ai-spec/tasks/done/0061-blog-posts-core-crud-backend.md), [0077](../../../ai-spec/tasks/0077-product-editor-language-tabs-ui.md) and [0079](../../../ai-spec/tasks/0079-blog-post-editor-language-tabs-ui.md). A reusable rich-text toolbar (Bold, Italic, Underline, H2, bullet list, numbered list, link, "Insert image") whose output is HTML a future column stores; the eight-action set and the exact tag set it may emit are fixed by [PRD §2.3](../../PRD/sections/epic-2-products-taxes-shipping.md#23-shared-media-gallery)'s design reference and by the story's own D2, not repeated here.
+Story 0021. **This is also not in [routes.md](../routes.md#app-owned-routes)'s app-owned route table and never will be**: same reasoning as `Gallery` immediately above it — no route, reached only over `/livewire/update`, embedded by a host screen. It is worth its own subsection rather than a bullet under `Gallery`'s because it sits **one layer further out**: `WysiwygEditor` *is* a `Gallery` consumer (it embeds `<livewire:media.gallery>` itself, single-select, D4 in the story's own task file), and it is in turn embedded by the product/blog editors that are `WysiwygEditor`'s own consumers — [0027](../../../ai-spec/tasks/done/0027-products-list-and-editor-ui.md), [0061](../../../ai-spec/tasks/done/0061-blog-posts-core-crud-backend.md), [0077](../../../ai-spec/tasks/done/0077-product-editor-language-tabs-ui.md) and [0079](../../../ai-spec/tasks/0079-blog-post-editor-language-tabs-ui.md). A reusable rich-text toolbar (Bold, Italic, Underline, H2, bullet list, numbered list, link, "Insert image") whose output is HTML a future column stores; the eight-action set and the exact tag set it may emit are fixed by [PRD §2.3](../../PRD/sections/epic-2-products-taxes-shipping.md#23-shared-media-gallery)'s design reference and by the story's own D2, not repeated here.
 
 ```blade
 <livewire:components.wysiwyg-editor
-    wire:model="description"
-    wire:key="product-description-editor"
-    :label="__('products.description_label')"
+    wire:model="descriptions.{{ $language->id }}"
+    wire:key="product-description-editor-{{ $language->id }}"
+    :label="__('products.editor.description_label')"
+    :disabled="$isTranslationLocked"
 />
 ```
+
+Since story 0077 the product `Editor` mounts **N instances** (one per active store language), each bound through a dotted `descriptions.{id}` key with a per-language `wire:key`; the per-instance event name (below) is what keeps them from cross-wiring. `:disabled` renders a locked panel's editor read-only.
 
 Seven consequences for anyone binding to this, or adding a method to it:
 

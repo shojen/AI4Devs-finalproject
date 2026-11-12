@@ -84,8 +84,16 @@ function editorValidPayload(array $overrides = []): array
  */
 function fillEditorForm($component, array $payload)
 {
+    // Story 0077: the translatable fields are per-language arrays keyed by store-language id; the
+    // payload keeps its readable `name` / `description` keys and they target the DEFAULT language's slot.
+    $defaultLanguageId = (string) StoreLanguage::defaultStoreLanguage()?->id;
+
     foreach ($payload as $field => $value) {
-        $component->set($field, $value);
+        $component->set(match ($field) {
+            'name' => 'names.'.$defaultLanguageId,
+            'description' => 'descriptions.'.$defaultLanguageId,
+            default => $field,
+        }, $value);
     }
 
     return $component;
@@ -230,14 +238,14 @@ test('opening an existing product populates every field from the database', func
 
     Livewire::test(Editor::class, ['product' => $product])
         ->assertSet('productId', $product->id)
-        ->assertSet('name', 'Runner Pro')
+        ->assertSet('names.'.StoreLanguage::defaultStoreLanguage()->id, 'Runner Pro')
         ->assertSet('sku', 'RNR-001')
         ->assertSet('productCategoryId', $product->product_category_id)
         ->assertSet('type', $product->type->value)
         ->assertSet('status', $product->status->value)
         ->assertSet('price', '99.00')
         ->assertSet('stock', '7')
-        ->assertSet('description', '<p>Stored description.</p>');
+        ->assertSet('descriptions.'.StoreLanguage::defaultStoreLanguage()->id, '<p>Stored description.</p>');
 });
 
 test('saving a product under its own unchanged sku is accepted', function () {
@@ -527,7 +535,7 @@ test('a validation exception never travels through an open transaction', functio
         }
     });
 
-    $component->call('save')->assertHasErrors(['name']);
+    $component->call('save')->assertHasErrors(['names.'.StoreLanguage::defaultStoreLanguage()->id]);
 
     expect($writeQueries)->toBe(0);
     expect(Product::count())->toBe(0);

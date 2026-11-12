@@ -1,7 +1,7 @@
 # [0076b] Product translation write action (backend)
 
 ## Description
-Adds `App\Actions\Products\SetProductTranslation`, the self-authorizing, self-validating action that writes **one product's five translatable fields in one store language** — `name`, `description`, `slug`, `meta_title`, `meta_description` — over story 0070's deliberately unguarded `App\Actions\Translations\SetTranslation` primitive. It is the backend layer of the two-layer write guard (decision **D-17**, human decision 2026-08-30: *"everything must be controlled from both front and back for security"*) that the product editor's language tabs ([0077](../0077-product-editor-language-tabs-ui.md)) call for every non-default store language. It also widens `TranslateProductUniqueViolation` so a duplicate-key race on this path lands on the per-language error key.
+Adds `App\Actions\Products\SetProductTranslation`, the self-authorizing, self-validating action that writes **one product's five translatable fields in one store language** — `name`, `description`, `slug`, `meta_title`, `meta_description` — over story 0070's deliberately unguarded `App\Actions\Translations\SetTranslation` primitive. It is the backend layer of the two-layer write guard (decision **D-17**, human decision 2026-08-30: *"everything must be controlled from both front and back for security"*) that the product editor's language tabs ([0077](0077-product-editor-language-tabs-ui.md)) call for every non-default store language. It also widens `TranslateProductUniqueViolation` so a duplicate-key race on this path lands on the per-language error key.
 
 **Origin.** Split out of 0077 on 2026-11-10 by the project owner (decision **A**) after 0077's Phase 2 rejection: 0077 had a backend action inside a story classified frontend. Per the [task ordering rule](../../../docs/workflow/task-files-links-and-ordering.md#task-ordering-rule) the backend half takes a number below its consumer, so it is `0076b` (the `0076a` split-suffix precedent), not `0088`.
 
@@ -224,7 +224,7 @@ Named parameters, not `array $fields` (original 0077 **D-19**): the signature is
 
 ### Dependencies
 - `depends_on`: none pending (0070, 0071, 0075, 0076, 0076a are in `done/`).
-- Dependent: [0077](../0077-product-editor-language-tabs-ui.md).
+- Dependent: [0077](0077-product-editor-language-tabs-ui.md).
 - `conflict_risk_with`: [0087](../0087-translation-write-actions-refuse-inactive-store-language.md) — both edit `lang/{en,es}/products.php`, and 0087 adds a structural guard (`tests/Unit/ArchitectureTest.php`) for the inactive-language rule. Whichever lands second makes sure that guard covers `SetProductTranslation` and passes.
 
 ### Risks
@@ -238,7 +238,7 @@ None. Decisions A and B were confirmed by the project owner on 2026-11-10.
 - When 0087 lands, consider extracting a shared "resolve active language or refuse" helper across the `Set*Translation` actions (0087 D-5).
 
 ## Provenance
-Split from [0077](../0077-product-editor-language-tabs-ui.md) on 2026-11-10 (owner decisions A and B) after 0077's Phase 2 rejection by `code-reviewer` on the same day. The action contract is the original 0077 **D-17**/**D-19** text, corrected against the shipped code: rule method names are 0076a's, the slug canonicaliser is `CanonicalizeProductSlug`, authorization uses `LogRefusedPrivilegedAttempt` with a re-read, validation uses nested data, the return is narrowed, and the inactive-language refusal is added.
+Split from [0077](0077-product-editor-language-tabs-ui.md) on 2026-11-10 (owner decisions A and B) after 0077's Phase 2 rejection by `code-reviewer` on the same day. The action contract is the original 0077 **D-17**/**D-19** text, corrected against the shipped code: rule method names are 0076a's, the slug canonicaliser is `CanonicalizeProductSlug`, authorization uses `LogRefusedPrivilegedAttempt` with a re-read, validation uses nested data, the return is narrowed, and the inactive-language refusal is added.
 
 - Phase 1: written 2026-11-10 (`product-owner`) from the split.
 - 2026-11-10 (`product-owner`): Phase 2 re-review defects applied — the `SetTranslation` acceptance criterion reworded (CreateProduct/UpdateProduct also import it) with a matching reference-scan test case (comment-stripping scan, F-5); architecture-guard citation corrected to lines 10–12.

@@ -116,3 +116,15 @@ closed earlier and are not backfilled here (read their `done/` files or `docs/`)
 - `TranslateProductUniqueViolation::__invoke(QueryException, ?string $storeLanguageId = null)`: non-null re-keys slug/natural-key errors to `slugs.{id}`/`names.{id}`; null and the `sku` branch unchanged — story 0076b.
 - New lang keys (en/es): `products.attributes.{name,description}`, `products.editor.tabs.language_inactive` — story 0076b.
 - Accepted residuals: check-to-write race on language deactivation (L-1); product deleted between re-read and save gives an FK 1452 500 as in `SetProductCategoryTranslation` (L-2, fix belongs to the shared helper backlogged by 0087 D-5) — story 0076b.
+
+## Story 0077 — Product editor language tabs (UI)
+
+- `Products\Editor` holds five per-language arrays keyed by store-language id: `$names`, `$descriptions`, `$slugs`, `$metaTitles`, `$metaDescriptions`; the 0076a locked scalars are gone — story 0077.
+- `#[Locked]` tab state: `$activeLanguageId`, `$defaultLanguageId`, `$originalTranslatedLanguageIds`, `$canAuthorTranslations` (UI hint only) — story 0077.
+- `setActiveLanguageTab()` has no permission gate by design (`active()->findOrFail`); `prefillSlug()` is gated like `save()`; a public `hydrate()` fills `''` for missing keys and cannot be called as an action — story 0077.
+- `save()`: narrow arrays to active languages, then D-8 (create-only actor cannot write non-default tabs; logged refusal before validation and the transaction), one `Validator` pass, one `DB::transaction` (default via `CreateProduct`/`UpdateProduct`, others via `SetProductTranslation`), D-10 re-keying plus first-errored-tab activation — story 0077.
+- `typedString()` coerces non-string tampered values to `''` (appsec L-1); a locked panel's `WysiwygEditor` gets `:disabled` (I-1). Accepted: I-2 no-default-language invariant, sibling-wide — story 0077.
+- One `WysiwygEditor` per language, bound through `descriptions.{id}`, so `Gallery` instances on the page are 3+N — story 0077.
+- Lang keys (en/es): `products.editor.tabs.{untranslated,translation_requires_edit,slug_label,meta_title_label,meta_description_label}` — story 0077.
+- The shared `<x-language-tab-strip>` now has four consumers, unmodified; the backlog item to generalise its hardcoded error-marker key (`products.categories.index.tabs.error_marker`) stays open — story 0077.
+- Story-external breakage: `ProductListAndPickerOrderingTest` asserted the removed `name`/`description`; see `docs/errors-log.md` — story 0077.

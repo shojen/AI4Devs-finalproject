@@ -175,6 +175,11 @@ return [
     'editor' => [
         'tabs' => [
             'language_inactive' => 'Este idioma ya no está activo en la tienda.',
+            'untranslated' => 'Este producto aún no tiene contenido en este idioma.',
+            'translation_requires_edit' => 'Necesitas permiso para editar productos para añadir una traducción.',
+            'slug_label' => 'Slug',
+            'meta_title_label' => 'Meta título',
+            'meta_description_label' => 'Meta descripción',
         ],
         'concurrent_save_retry' => 'Otra persona ha guardado este producto al mismo tiempo. Recarga la página e inténtalo de nuevo.',
         'title_create' => 'Nuevo producto',

@@ -1162,7 +1162,7 @@ Low, 1 Info.
   [0063](0063-blog-posts-list-editor-ui.md) carries thin (one-line, deferring-to-0061) coverage,
   which is acceptable since 0063 never itself writes the sanitized column.
   **Re-audit correction (code-reviewer, round 2, finding F4): a fifth consumer was missed above.**
-  [0077](../0077-product-editor-language-tabs-ui.md) (product editor language tabs) also binds
+  [0077](0077-product-editor-language-tabs-ui.md) (product editor language tabs) also binds
   `WysiwygEditor` and had its inbound link fixed in this same stage-move diff; its own D-6
   constructor-injects `SanitizeProductDescription` and calls it before `validate()`, matching 0079's
   shape. B2's conclusion is unaffected — this is a fifth independent closure, not a gap. **No amendment
