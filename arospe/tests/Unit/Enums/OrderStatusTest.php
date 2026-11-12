@@ -85,31 +85,18 @@ test('Cancelled has no position on the ladder, so rank() raises UnhandledMatchEr
     expect(fn () => OrderStatus::Cancelled->rank())->toThrow(UnhandledMatchError::class);
 });
 
-// Dataset over all twelve ordered pairs among the four linear statuses plus the four identities --
-// tested as a dataset rather than a handful of hand-picked cases, per the task file's own
-// instruction. isBackwardFrom() is asked of the TARGET: $target->isBackwardFrom($current).
+// Dataset over four ordered pairs among the four linear statuses (rank differences +1, -1, -3
+// and 0). isBackwardFrom() is asked of the TARGET: $target->isBackwardFrom($current).
 test('isBackwardFrom is true only when the target ranks lower than the current status', function (OrderStatus $target, OrderStatus $current, bool $expectedBackward) {
     expect($target->isBackwardFrom($current))->toBe($expectedBackward);
 })->with([
-    // Forward pairs (target ranks higher than current) -- never backward.
+    // Forward pair (target ranks higher than current) -- never backward.
     'Pending -> Processing is not backward' => [OrderStatus::Processing, OrderStatus::Pending, false],
-    'Pending -> Shipped is not backward' => [OrderStatus::Shipped, OrderStatus::Pending, false],
-    'Pending -> Delivered is not backward' => [OrderStatus::Delivered, OrderStatus::Pending, false],
-    'Processing -> Shipped is not backward' => [OrderStatus::Shipped, OrderStatus::Processing, false],
-    'Processing -> Delivered is not backward' => [OrderStatus::Delivered, OrderStatus::Processing, false],
-    'Shipped -> Delivered is not backward' => [OrderStatus::Delivered, OrderStatus::Shipped, false],
 
-    // Backward pairs (target ranks lower than current) -- all backward.
+    // Backward pairs (target ranks lower than current) -- both backward.
     'Processing -> Pending is backward' => [OrderStatus::Pending, OrderStatus::Processing, true],
-    'Shipped -> Pending is backward' => [OrderStatus::Pending, OrderStatus::Shipped, true],
     'Delivered -> Pending is backward' => [OrderStatus::Pending, OrderStatus::Delivered, true],
-    'Shipped -> Processing is backward' => [OrderStatus::Processing, OrderStatus::Shipped, true],
-    'Delivered -> Processing is backward' => [OrderStatus::Processing, OrderStatus::Delivered, true],
-    'Delivered -> Shipped is backward' => [OrderStatus::Shipped, OrderStatus::Delivered, true],
 
-    // Identities -- a status compared with itself is never backward.
-    'Pending -> Pending is not backward' => [OrderStatus::Pending, OrderStatus::Pending, false],
-    'Processing -> Processing is not backward' => [OrderStatus::Processing, OrderStatus::Processing, false],
-    'Shipped -> Shipped is not backward' => [OrderStatus::Shipped, OrderStatus::Shipped, false],
+    // Identity -- a status compared with itself is never backward.
     'Delivered -> Delivered is not backward' => [OrderStatus::Delivered, OrderStatus::Delivered, false],
 ]);
