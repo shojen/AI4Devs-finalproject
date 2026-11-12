@@ -129,7 +129,10 @@ test('marking an order that awaits payment never changes its fulfilment status o
         ->toBe(Arr::except($before, ['payment_status', 'updated_at']))
         ->and($after['status'])->toBe($status->value)
         ->and($after['payment_method_id'])->toBe($before['payment_method_id']);
-})->with('mark_as_paid_markable_cells');
+})->with([
+    'pending payment / pending' => [PaymentStatus::PendingPayment, OrderStatus::Pending],
+    'pending payment / shipped' => [PaymentStatus::PendingPayment, OrderStatus::Shipped],
+]);
 
 test('an already-settled order is refused with the already-paid message on payment_status and neither orders nor order_payments change', function (PaymentStatus $paymentStatus, OrderStatus $status) {
     markPaidActingEditor();
@@ -146,7 +149,11 @@ test('an already-settled order is refused with the already-paid message on payme
     expect(markPaidRawRow($order))->toBe($before)
         ->and($order->payment_status)->toBe($paymentStatus)
         ->and(markPaidPaymentRows($order))->toBe([]);
-})->with('mark_as_paid_already_paid_cells');
+})->with([
+    'paid / pending' => [PaymentStatus::Paid, OrderStatus::Pending],
+    'partially refunded / shipped' => [PaymentStatus::PartiallyRefunded, OrderStatus::Shipped],
+    'refunded / cancelled' => [PaymentStatus::Refunded, OrderStatus::Cancelled],
+]);
 
 test('a cancelled order that awaits payment is refused with the cancelled message on payment_status and neither orders nor order_payments change', function (PaymentStatus $paymentStatus, OrderStatus $status) {
     markPaidActingEditor();

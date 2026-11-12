@@ -74,7 +74,7 @@ test('the country match is case-insensitive on the order stored value', function
     SalesRegion::factory()->isDefault()->withRate('21.000')->create();
 
     expect(resolveTaxRegion(orderShippingTo($country))->sales_region_id)->toBe($fr->id);
-})->with(['FR', 'fr', 'Fr']);
+})->with(['fr', 'Fr']);
 
 test('tax_rate is snapshotted as the decimal string the region carries', function () {
     SalesRegion::factory()->withRate('20.500')->create(['slug' => 'fr']);

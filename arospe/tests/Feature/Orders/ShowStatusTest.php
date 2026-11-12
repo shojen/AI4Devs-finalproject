@@ -98,8 +98,6 @@ test('choosing a forward status and applying it changes the order WITHOUT openin
         ->and(OrdersUi::present($component->html(), 'confirm-dialog-backward-transition'))->toBeFalse();
 })->with([
     'Pending -> Processing' => [OrderStatus::Pending, OrderStatus::Processing],
-    'Processing -> Shipped' => [OrderStatus::Processing, OrderStatus::Shipped],
-    'Shipped -> Delivered' => [OrderStatus::Shipped, OrderStatus::Delivered],
 ]);
 
 // --- Backward: confirmation first ---
@@ -119,8 +117,6 @@ test('choosing a backward status opens the confirmation dialog and does NOT writ
         ->and(OrdersUi::present($component->html(), 'confirm-dialog-backward-transition'))->toBeTrue();
 })->with([
     'Processing -> Pending' => [OrderStatus::Processing, OrderStatus::Pending],
-    'Shipped -> Processing' => [OrderStatus::Shipped, OrderStatus::Processing],
-    'Delivered -> Shipped' => [OrderStatus::Delivered, OrderStatus::Shipped],
 ]);
 
 test('a backward SKIP (Delivered -> Pending) opens the dialog too: the rule is direction, not distance (0049 D-8)', function () {

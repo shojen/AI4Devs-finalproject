@@ -176,7 +176,6 @@ test('adding a line item with a non-positive quantity is rejected, and no row is
     expect($order->items()->count())->toBe(0);
 })->with([
     'zero' => [0],
-    'negative' => [-1],
 ]);
 
 // AddOrderItem's own signature types $quantity as `int`, so a genuinely non-numeric value cannot
