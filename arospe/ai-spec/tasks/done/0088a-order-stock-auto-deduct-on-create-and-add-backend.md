@@ -22,7 +22,7 @@ backend | includes database-expert: no
   the same order, so an order write and a catalog write can never deadlock on each other.
 - Existing order lock order: the line-item actions lock **`orders` → `order_items`**. `RecordRefund` is the known
   exception ([docs/api/orders.md — orders.show, "Known concurrency gap"](../../../docs/api/orders.md#ordersshow--the-twelfth-permission-gated-route-and-the-first-screen-governed-by-three-abilities));
-  [0092a](../0092a-record-refund-lock-order-backend.md) fixes it.
+  [0092a](0092a-record-refund-lock-order-backend.md) fixes it.
 - `CreateOrder` has **no stock validation** today. It writes the order and its lines inside `DB::transaction()`, within a
   retry loop for `order_number` collisions (MySQL 1062). Each retry is a **new** transaction, so a deduction made by a
   rolled-back attempt is rolled back with it.
@@ -59,7 +59,7 @@ backend | includes database-expert: no
   and `@return list<string>` = ids of the order items whose delta was actually applied. Resolved from the container.
 - **FD-2 — Transaction precondition.** The first statement checks `DB::transactionLevel() > 0`, or else throws `LogicException`
   (a programming error). The caller already holds the `orders` row lock. For a `RecordRefund` stock call (0092b), that holds
-  only after [0092a](../0092a-record-refund-lock-order-backend.md)'s lock-order fix.
+  only after [0092a](0092a-record-refund-lock-order-backend.md)'s lock-order fix.
 - **FD-3 — Ownership guard.** Every `order_item` must belong to `$order`, or else `LogicException`.
 - **FD-4 — Aggregation.** Deltas are summed per target key (`variant:<id>` / `product:<id>`). A net-zero target is not
   written, and lines whose `stockTarget()` is `null` are skipped.

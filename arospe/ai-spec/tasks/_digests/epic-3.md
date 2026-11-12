@@ -77,7 +77,7 @@ and are not backfilled here — see their own task files in `ai-spec/tasks/done/
 - `<x-money>` (no cast) and `<x-confirm-dialog>` (parent owns the flag and both methods; `@close` runs the dismiss method) are the first shared anonymous non-chrome components; `App\Concerns\ResolvesFlagReasonLabel` is shared by list and detail — story 0055.
 - A `#[Computed]` is memoised only when read as a property; a typed `int` bound to a number input is unset by a cleared box (bind a string); reset the error bag at the top of every action — story 0055 (see docs/errors-log.md).
 - Refund control: row state = absent from DOM, permission = disabled; Super Admin sees Cancel enabled on a Shipped order (documented drift, 409 rendered) — story 0055.
-- Open: RecordRefund/line-item lock-order inversion, interim picker disclosure, unbounded list — backlog items 8-12 in the story file.
+- Open: interim picker disclosure, unbounded list — backlog items 8-12 in the story file. RecordRefund/line-item lock-order inversion: resolved by story 0092a, 2026-11-12 (`RecordRefund` now locks `orders` then items, like the three line-item actions) — story 0055.
 
 ## Story 0084 — Order mark-as-paid (backend, reworked to `order_payments`)
 

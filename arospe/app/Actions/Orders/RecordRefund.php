@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Refund;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -34,9 +35,12 @@ use Illuminate\Validation\ValidationException;
  *    -- the items array and every quantity. This is shape only; ownership
  *    and the over-refund guard cannot be static rule arrays (see below).
  * 3. Open a DB::transaction(). Everything below runs inside it (D-12).
- * 4. Re-read the order and its items under a row lock -- not decoration
- *    (R-1): reading state INSIDE the lock is what makes the guards below
- *    atomic with the writes that follow them.
+ * 4. Re-read the order and THEN its items under row locks, in the same
+ *    order every line-item action uses (`orders` -> `order_items`, story
+ *    0092a) so a refund and a concurrent line edit cannot deadlock. Not
+ *    decoration (R-1): reading state INSIDE the lock is what makes the
+ *    guards below atomic with the writes that follow them. The caller's
+ *    instance is refreshed on return, as before.
  * 5. Refuse by payment state. PendingPayment and Refunded -> refused
  *    (D-5, a ValidationException -- never an AuthorizationException,
  *    since this is never about WHO is asking). Accepted from Paid and
@@ -101,12 +105,13 @@ class RecordRefund
         )->validate();
 
         $refreshedOrder = DB::transaction(function () use ($order, $items): Order {
-            $order->refresh();
+            $lockedOrder = Order::query()->whereKey($order->id)->lockForUpdate()->first()
+                ?? throw (new ModelNotFoundException)->setModel(Order::class, [$order->id]);
 
             /** @var Collection<string, OrderItem> $lockedItems */
-            $lockedItems = $order->items()->lockForUpdate()->get()->keyBy('id');
+            $lockedItems = $lockedOrder->items()->orderBy('id')->lockForUpdate()->get()->keyBy('id');
 
-            if (! $order->isRefundable()) {
+            if (! $lockedOrder->isRefundable()) {
                 throw ValidationException::withMessages([
                     'items' => __('orders.refunds.invalid_payment_state'),
                 ]);
@@ -162,7 +167,7 @@ class RecordRefund
             }
 
             $newRefundedAmount = bcadd(
-                ($this->toNumericString)((string) $order->refunded_amount),
+                ($this->toNumericString)((string) $lockedOrder->refunded_amount),
                 $totalRefundedAmount,
                 2,
             );
@@ -177,10 +182,10 @@ class RecordRefund
             $newPaymentStatus = match (true) {
                 $everyLineFullyRefunded => PaymentStatus::Refunded,
                 $anyLineRefunded => PaymentStatus::PartiallyRefunded,
-                default => $order->payment_status,
+                default => $lockedOrder->payment_status,
             };
 
-            $order->forceFill([
+            $lockedOrder->forceFill([
                 'refunded_amount' => $newRefundedAmount,
                 'payment_status' => $newPaymentStatus,
             ])->save();
