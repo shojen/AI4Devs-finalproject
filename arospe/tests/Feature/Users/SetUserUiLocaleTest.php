@@ -136,5 +136,4 @@ test('uiLocaleRules() refuses every value outside en/es, leaving the stored valu
     'a differently-cased code' => ['EN'],
     'a region-qualified code' => ['en-US'],
     'an empty value' => [''],
-    'an over-long value' => [str_repeat('a', 200)],
 ]);

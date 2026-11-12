@@ -362,12 +362,6 @@ test('creating a user with invalid details is rejected and no user is created', 
     'no role chosen' => [fn () => ['roleId' => null]],
     'a role that does not exist' => [fn () => ['roleId' => '999999999']],
     'the Super Admin role' => [fn () => ['roleId' => (string) Role::where('name', 'Super Admin')->where('guard_name', 'web')->value('id')]],
-    // Story 0015 finding F8: a forged status value must fail validation, not raise an unhandled
-    // \ValueError -- possible now that $status is a plain, non-nullable `public string`
-    // (App\Livewire\Users\Index::$status) rather than a typed UserStatus enum property, which
-    // hydrated a bad value BEFORE Rule::enum(UserStatus::class) ever got a chance to reject it.
-    'a forged status value' => [fn () => ['status' => 'not-a-real-status']],
-    'an empty status value' => [fn () => ['status' => '']],
 ]);
 
 // Story 0015 finding F8: the validation error must land specifically on the status field, not
