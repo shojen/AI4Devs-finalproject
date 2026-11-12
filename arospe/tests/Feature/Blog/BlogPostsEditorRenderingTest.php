@@ -19,7 +19,9 @@ use App\Enums\BlogPostStatus;
 use App\Livewire\BlogPosts\Editor;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
+use App\Models\BlogPostTranslation;
 use App\Models\BlogTag;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\App;
@@ -29,7 +31,14 @@ use Spatie\Permission\PermissionRegistrar;
 beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
+
+    StoreLanguage::factory()->default()->create();
 });
+
+function blogPostsEditorRenderingDefaultId(): string
+{
+    return StoreLanguage::query()->where('is_default', true)->firstOrFail()->id;
+}
 
 /**
  * @param  array<int, string>  $permissions
@@ -235,31 +244,21 @@ test('the date field carries a translated UTC hint, in both locales', function (
 // The WYSIWYG seam (D-14)
 // =====================================================================
 
-test('the WYSIWYG is embedded exactly once, bound to body, with a stable wire:key, outside any conditional', function () {
-    $source = blogPostsEditorViewSource();
-
-    expect(substr_count($source, '<livewire:components.wysiwyg-editor'))->toBe(1)
-        ->and($source)->toContain('wire:model="body"')
-        ->and($source)->toContain('wire:key="blog-post-body-editor"');
-
-    // The one embed sits at top level of its own block: no @if/@can opens between the form's root
-    // and the tag, which is what would remount the editor and lose unsaved content (D-1).
-    $before = substr($source, 0, (int) strpos($source, '<livewire:components.wysiwyg-editor'));
-    $opened = preg_match_all('/@(if|can|unless|isset|foreach|forelse)\b/', $before);
-    $closed = preg_match_all('/@end(if|can|unless|isset|foreach|forelse)\b/', $before);
-
-    expect($opened)->toBe($closed);
-});
-
-test('the rendered page mounts exactly one WYSIWYG', function () {
+test('the rendered page mounts exactly one WYSIWYG per active store language, each with its own stable wire:key', function () {
     $this->actingAs(blogPostsEditorRenderingActor());
+    $languages = blogPostsEditorLanguages(3);
+    StoreLanguage::factory()->inactive()->create();
 
     $html = Livewire::test(Editor::class)->html();
+    $source = blogPostsEditorViewSource();
 
-    expect(substr_count($html, 'data-test="wysiwyg-editor-region"'))->toBe(1);
+    expect(substr_count($html, 'data-test="wysiwyg-editor-region"'))->toBe(count($languages))
+        ->and(substr_count($source, '<livewire:components.wysiwyg-editor'))->toBe(1)
+        ->and($source)->toContain('wire:key="blog-post-body-editor-{{ $language[\'id\'] }}"');
 });
 
-test('the editor view embeds no media gallery of its own, listens for no select event and wraps nothing in a Media gate', function () {
+test('the editor view embeds no media gallery tag of its own, listens for no select event and wraps nothing in a Media gate', function () {
+    // The N galleries mount transitively, one inside each WysiwygEditor (0079 D-4), never from this view.
     $source = blogPostsEditorViewSource();
 
     expect($source)->not->toContain('livewire:media.gallery')
@@ -361,16 +360,26 @@ test('the tag input is capped at the tag name length', function () {
 test('every refusal renders its message in the field it belongs to', function (string $field, array $set) {
     $this->actingAs(blogPostsEditorRenderingActor());
     $category = BlogCategory::factory()->create();
+    $defaultId = blogPostsEditorRenderingDefaultId();
+
+    // Titles and bodies are keyed by store-language id (0079 D-3); the dataset names them by field.
+    $resolve = fn (string $key): string => match ($key) {
+        'title' => 'titles.'.$defaultId,
+        'body' => 'bodies.'.$defaultId,
+        default => $key,
+    };
 
     $component = Livewire::test(Editor::class)
-        ->set('title', 'Botas')
+        ->set('titles.'.$defaultId, 'Botas')
         ->set('blogCategoryId', $category->id);
 
     foreach ($set as $property => $value) {
-        $component->set($property, $value);
+        $component->set($resolve($property), $value);
     }
 
     $component->call('save');
+
+    $field = $resolve($field);
 
     expect($component->errors()->has($field))->toBeTrue();
     expect(substr_count($component->html(), 'data-flux-error'))->toBeGreaterThanOrEqual(1);
@@ -412,4 +421,151 @@ test('the editor renders no force-delete or delete control at all', function () 
     $html = Livewire::test(Editor::class, ['blogPost' => BlogPost::factory()->create()])->html();
 
     expect(strtolower($html))->not->toContain('forcedelete')->and($html)->not->toContain('delete-blog-post');
+});
+
+// =====================================================================
+// Language tabs (story 0079): N panels, N editors, one set of non-translatable controls
+// =====================================================================
+
+/**
+ * Whether `//*[@data-test="$scopeHook"]` contains a descendant carrying `data-test="$hook"`.
+ */
+function blogPostsEditorPanelContains(string $html, string $scopeHook, string $hook): bool
+{
+    $document = new DOMDocument;
+    libxml_use_internal_errors(true);
+    $document->loadHTML('<?xml encoding="utf-8" ?>'.$html);
+    libxml_clear_errors();
+
+    return (new DOMXPath($document))
+        ->query('//*[@data-test="'.$scopeHook.'"]//*[@data-test="'.$hook.'"]')
+        ->length > 0;
+}
+
+/**
+ * The default language first, then $count - 1 further active languages.
+ *
+ * @return array<int, StoreLanguage>
+ */
+function blogPostsEditorLanguages(int $count): array
+{
+    $default = StoreLanguage::query()->where('is_default', true)->firstOrFail();
+
+    return [$default, ...StoreLanguage::factory()->count($count - 1)->create()->all()];
+}
+
+test('every active language has its own panel in the DOM at once, the inactive ones none', function () {
+    $this->actingAs(blogPostsEditorRenderingActor());
+    [$default, $second, $third] = blogPostsEditorLanguages(3);
+    $retired = StoreLanguage::factory()->inactive()->create();
+
+    $html = Livewire::test(Editor::class)->html();
+
+    foreach ([$default, $second, $third] as $language) {
+        expect($html)->toContain('data-test="language-panel-'.$language->id.'"');
+    }
+
+    expect($html)->not->toContain('data-test="language-panel-'.$retired->id.'"');
+});
+
+test('one WysiwygEditor and one title input render per active language, none shared', function (int $count) {
+    $this->actingAs(blogPostsEditorRenderingActor());
+    $languages = blogPostsEditorLanguages($count);
+
+    $html = Livewire::test(Editor::class)->html();
+
+    expect(substr_count($html, 'data-test="wysiwyg-editor-region"'))->toBe($count);
+
+    foreach ($languages as $language) {
+        expect(blogPostsEditorPanelContains($html, 'language-panel-'.$language->id, 'blog-post-title-input-'.$language->id))->toBeTrue()
+            ->and(blogPostsEditorPanelContains($html, 'language-panel-'.$language->id, 'blog-post-body-editor-'.$language->id))->toBeTrue();
+    }
+})->with([2, 3]);
+
+test('the non-translatable controls render exactly once and outside every language panel', function () {
+    $this->actingAs(blogPostsEditorRenderingActor());
+    $languages = blogPostsEditorLanguages(3);
+
+    $html = Livewire::test(Editor::class)->html();
+
+    foreach (['blog-post-category', 'blog-post-status', 'blog-post-published-at-input', 'blog-post-tag-field'] as $hook) {
+        expect(substr_count($html, 'data-test="'.$hook.'"'))->toBe(1);
+
+        foreach ($languages as $language) {
+            expect(blogPostsEditorPanelContains($html, 'language-panel-'.$language->id, $hook))->toBeFalse();
+        }
+    }
+
+    expect(substr_count($html, 'data-test="blog-post-title-input-'))->toBe(count($languages));
+});
+
+test('an untranslated tab renders its not-yet-translated hint while a translated one and the default do not', function () {
+    $this->actingAs(blogPostsEditorRenderingActor());
+    [$default, $french, $german] = blogPostsEditorLanguages(3);
+    $post = BlogPost::factory()->titled('Titulo', '<p>x</p>')->create();
+    BlogPostTranslation::factory()->forLanguage($french)->create(['blog_post_id' => $post->id]);
+
+    $html = Livewire::test(Editor::class, ['blogPost' => $post])->html();
+
+    expect($html)->toContain('data-test="language-untranslated-'.$german->id.'"')
+        ->and($html)->not->toContain('data-test="language-untranslated-'.$french->id.'"')
+        ->and($html)->not->toContain('data-test="language-untranslated-'.$default->id.'"');
+});
+
+test('a tab carrying an error shows its marker on the tab header and clean tabs show none', function () {
+    $this->actingAs(blogPostsEditorRenderingActor());
+    [$default, $french, $german] = blogPostsEditorLanguages(3);
+    $post = BlogPost::factory()->titled('Titulo', '<p>x</p>')->create();
+
+    $html = Livewire::test(Editor::class, ['blogPost' => $post])
+        ->set('bodies.'.$french->id, '<p>Corps sans titre</p>')
+        ->call('save')
+        ->html();
+
+    expect($html)->toContain('data-test="language-tab-error-'.$french->id.'"')
+        ->and($html)->not->toContain('data-test="language-tab-error-'.$default->id.'"')
+        ->and($html)->not->toContain('data-test="language-tab-error-'.$german->id.'"');
+});
+
+test('no slug input renders on any tab', function () {
+    $this->actingAs(blogPostsEditorRenderingActor());
+    blogPostsEditorLanguages(3);
+
+    $html = Livewire::test(Editor::class)->html();
+
+    expect($html)->not->toContain('data-test="blog-post-slug-input')
+        ->and($html)->not->toMatch('/wire:model[^=]*="[^"]*slug/i');
+});
+
+test('a translated tab shows its own persisted slug as plain text, an untranslated tab shows none', function () {
+    $this->actingAs(blogPostsEditorRenderingActor());
+    [$default, $french, $german] = blogPostsEditorLanguages(3);
+    $post = BlogPost::factory()->titled('Botas de invierno', '<p>x</p>')->create();
+    BlogPostTranslation::factory()->forLanguage($french)->create(['blog_post_id' => $post->id, 'title' => 'Chaussures dhiver']);
+
+    $html = Livewire::test(Editor::class, ['blogPost' => $post])->html();
+    $slugTag = blogPostsEditorOpeningTag($html, 'blog-post-slug-'.$default->id);
+
+    expect($slugTag)->not->toBeNull()
+        ->and($slugTag)->not->toStartWith('<input')
+        ->and($html)->toContain('botas-de-invierno')
+        ->and($html)->toContain('chaussures-dhiver')
+        ->and($html)->not->toContain('data-test="blog-post-slug-'.$german->id.'"');
+});
+
+test('the displayed slug follows the stored value, not the typed title, until a save derives the new one', function () {
+    $this->actingAs(blogPostsEditorRenderingActor());
+    [$default, $french] = blogPostsEditorLanguages(2);
+    $post = BlogPost::factory()->titled('Titulo', '<p>x</p>')->create();
+    BlogPostTranslation::factory()->forLanguage($french)->create(['blog_post_id' => $post->id, 'title' => 'Ancien titre']);
+
+    $component = Livewire::test(Editor::class, ['blogPost' => $post])
+        ->set('titles.'.$french->id, 'Nouveau titre');
+
+    expect($component->html())->toContain('ancien-titre')
+        ->and($component->html())->not->toContain('nouveau-titre');
+
+    $component->call('save')->assertHasNoErrors();
+
+    expect(Livewire::test(Editor::class, ['blogPost' => $post])->html())->toContain('nouveau-titre');
 });
