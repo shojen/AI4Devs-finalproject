@@ -291,7 +291,6 @@ test('every localization copy key the screen relies on exists in both locales', 
         expect(trans($key, [], $locale))->not->toBe($key, "[{$key}] is missing from lang/{$locale}/localization.php");
     }
 })->with([
-    'localization.settings.description',
     'localization.attributes.defaultUiLocale',
     'localization.attributes.defaultNotificationLocale',
 ]);

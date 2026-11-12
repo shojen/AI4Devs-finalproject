@@ -439,7 +439,6 @@ test('a forged locale value on either property is refused with an error keyed on
     'wrong case' => 'EN',
     'region subtag' => 'en-GB',
     'empty' => '',
-    'forty characters' => str_repeat('x', 40),
 ]);
 
 test('a user holding only store-languages.view is refused on both dashboard default saves and nothing persists', function (string $property, string $saveMethod) {

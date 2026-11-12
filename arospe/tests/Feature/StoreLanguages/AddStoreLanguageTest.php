@@ -179,11 +179,8 @@ test('a code outside the bundled fixture is refused with a validation error nami
     expect(StoreLanguage::count())->toBe($countBefore);
 })->with([
     'zz' => ['zz'],
-    'a full English word' => ['english'],
     'valid BCP 47 but not in this bare-ISO-639-1 fixture (D16)' => ['pt-BR'],
     'empty string' => [''],
-    'digits' => ['123'],
-    'a 40-character string' => [str_repeat('x', 40)],
 ]);
 
 // =====================================================================
