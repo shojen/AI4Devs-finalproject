@@ -61,27 +61,11 @@
       ]
     },
     {
-      "id": "0092a",
-      "slug": "0092a-record-refund-lock-order-backend",
-      "title": "RecordRefund locks the order before its lines — no behaviour change (backend)",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "app/Actions/Orders/RecordRefund.php",
-        "tests/Feature/Orders/RecordRefundLockOrderTest.php"
-      ],
-      "conflict_risk_with": []
-    },
-    {
       "id": "0092b",
       "slug": "0092b-order-refund-stock-return-backend",
       "title": "Refunds can return refunded units to stock (backend)",
-      "depends_on": [
-        "0092a"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
