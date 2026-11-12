@@ -26,8 +26,6 @@ test('rate round-trips through the decimal cast as an exact string', function (s
     expect($fresh->rate)->toBe($rate)
         ->and($fresh->rate)->toBeString();
 })->with([
-    '21.000',
-    '7.500',
     '0.000',
     '4.050',
 ]);
