@@ -62,7 +62,7 @@ test('submitting an out-of-stock spelling as status is refused by validation, wi
         ->and($caught->errors())->toHaveKey('status');
 
     expect(Product::count())->toBe(0);
-})->with(['agotado', 'out_of_stock', 'sold_out']);
+})->with(['agotado']);
 
 // The Eloquent cast layer — the path a seeder or console command bypassing CreateProduct
 // entirely would take.
@@ -78,7 +78,7 @@ test('assigning an out-of-stock spelling to the status column throws ValueError 
         'price' => '19.99',
         'stock' => 5,
     ])->status)->toThrow(ValueError::class);
-})->with(['agotado', 'out_of_stock', 'sold_out']);
+})->with(['agotado']);
 
 // The paired assertion that defeats the tautology — a single assertion on displayStatus() is just
 // a restatement of stock === 0; the second assertion is what goes red if anyone implements

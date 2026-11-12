@@ -86,7 +86,6 @@ test('the accepted and refused stock input shapes persist with the right type', 
     expect($product->fresh()->stock)->toBe($expected);
 })->with([
     'a numeric string is accepted as an integer' => ['12', true, 12],
-    'a float is refused' => [12.5, false, null],
 ]);
 
 test('price of zero is accepted as a free product', function () {

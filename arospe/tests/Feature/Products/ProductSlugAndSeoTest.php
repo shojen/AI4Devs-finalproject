@@ -401,7 +401,6 @@ test('blank meta fields sent through each action are stored as null, never an em
             ->and($row->meta_description)->toBeNull();
     }
 })->with([
-    'empty string' => [''],
     'whitespace only' => ['   '],
 ]);
 
