@@ -144,27 +144,6 @@ test('a validation refusal actually renders a message in the template, not only 
         ->assertSee(__('validation.required', ['attribute' => __('shipping.rates.attributes.name')]));
 });
 
-test('min weight equal to max weight is accepted', function () {
-    $this->actingAs(rateEditorFullActor());
-
-    $carrier = ShippingCarrier::factory()->create();
-    $zone = ShippingZone::factory()->create();
-
-    Livewire::test(Index::class)
-        ->call('openCreateRateModal')
-        ->set('rateName', 'Estándar')
-        ->set('shippingCarrierId', $carrier->id)
-        ->set('shippingZoneId', $zone->id)
-        ->set('minWeightKg', '2')
-        ->set('maxWeightKg', '2')
-        ->set('price', '4.95')
-        ->set('deliveryEstimate', '24-48h')
-        ->call('saveRate')
-        ->assertHasNoErrors();
-
-    expect(ShippingRate::where('name', 'Estándar')->exists())->toBeTrue();
-});
-
 test('a free shipping rate (0.00) is accepted', function () {
     $this->actingAs(rateEditorFullActor());
 

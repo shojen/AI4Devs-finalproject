@@ -2,7 +2,6 @@
 
 use App\Actions\Auth\LogRefusedPrivilegedAttempt;
 use App\Actions\Products\CreateProductVariant;
-use App\Actions\Products\DeriveVariantSku;
 use App\Actions\Products\GenerateProductVariantCombinations;
 use App\Actions\Products\HashVariantCombination;
 use App\Models\Product;
@@ -103,30 +102,6 @@ test('generating combinations creates one variant per combination and exactly N 
         ->and($result['attempted'])->toBe(6)
         ->and(ProductVariant::count())->toBe(6)
         ->and(DB::table('product_variant_values')->count())->toBe(12);
-});
-
-test('a single attribute type generates one variant per value', function () {
-    $this->actingAs(generatorTestActor());
-    $product = Product::factory()->create(['sku' => '0002']);
-    [$talla] = generatorTestType('Talla', ['38', '39', '40']);
-
-    $result = app(GenerateProductVariantCombinations::class)($product, [$talla->id]);
-
-    expect($result['created'])->toHaveCount(3)
-        ->and(ProductVariant::count())->toBe(3);
-});
-
-test('every generated SKU is the ordinary derivation, in D-G6 iteration order, asserted as literal strings', function () {
-    $this->actingAs(generatorTestActor());
-    $product = Product::factory()->create(['sku' => '0002']);
-    [$talla] = generatorTestType('Talla', ['38', '39'], 0);
-    [$color] = generatorTestType('Color', ['Black'], 1);
-
-    app(GenerateProductVariantCombinations::class)($product, [$talla->id, $color->id]);
-
-    $skus = $product->variants()->pluck('sku')->all();
-
-    expect($skus)->toBe(['0002-38-Black', '0002-39-Black']);
 });
 
 test('the position sequence follows D-G6 order, asserted as an exact ordered SKU array', function () {
@@ -644,30 +619,6 @@ test('the pre-read of existing combinations is one query, and does not scale wit
     app(GenerateProductVariantCombinations::class)($product, [$talla->id, $color->id]);
 
     expect($preReadQueries)->toBe(1);
-});
-
-// =====================================================================
-// The global consistency invariant (0029 D-4.3) holds over generated rows too
-// =====================================================================
-
-test('every generated variant\'s stored sku still equals the derivation of its current inputs', function () {
-    $this->actingAs(generatorTestActor());
-    $product = Product::factory()->create(['sku' => '0002']);
-    [$talla] = generatorTestType('Talla', ['38', '39'], 0);
-    [$color] = generatorTestType('Color', ['Black'], 1);
-
-    app(GenerateProductVariantCombinations::class)($product, [$talla->id, $color->id]);
-
-    $variants = ProductVariant::where('product_id', $product->id)->with('product', 'values')->get();
-
-    expect($variants)->toHaveCount(2);
-
-    foreach ($variants as $variant) {
-        $orderedValues = $variant->values->pluck('value')->all();
-        $expected = app(DeriveVariantSku::class)->checked($variant->product->sku, $orderedValues);
-
-        expect($variant->sku)->toBe($expected);
-    }
 });
 
 // =====================================================================

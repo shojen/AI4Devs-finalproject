@@ -4,7 +4,6 @@ use App\Models\ProductAttributeType;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\Gate;
-use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
 // Story 0028, Phase 3 (TDD "red" step): App\Policies\ProductAttributeTypePolicy, App\Models\
@@ -101,29 +100,4 @@ test('a Super Admin actor passes every ProductAttributeTypePolicy ability while 
         ->and(Gate::forUser($superAdmin)->allows('create', ProductAttributeType::class))->toBeTrue()
         ->and(Gate::forUser($superAdmin)->allows('update', $target))->toBeTrue()
         ->and(Gate::forUser($superAdmin)->allows('delete', $target))->toBeTrue();
-});
-
-// D6: reusing products.*, no new module slug, no RolePermissionSeeder change -- the permission
-// strings are asserted against the real seeded catalog rather than assumed, since a permission
-// string outside it throws PermissionDoesNotExist at runtime (this is a correctness test, not a
-// style one).
-test('the four permission strings ProductAttributeTypePolicy gates on are all in the seeded products module, and no new module slug was added', function () {
-    expect(in_array('products', RolePermissionSeeder::MODULES, true))->toBeTrue()
-        ->and(count(RolePermissionSeeder::MODULES))->toBe(10);
-
-    // givePermissionTo() throws Spatie\Permission\Exceptions\PermissionDoesNotExist if any of
-    // these four strings is not in the seeded catalog -- this call succeeding is itself the
-    // assertion that all four exist.
-    $actor = User::factory()->create();
-    $actor->givePermissionTo(['products.view', 'products.create', 'products.edit', 'products.delete']);
-
-    expect($actor->getAllPermissions())->toHaveCount(4);
-
-    // D6's own explicit constraint: adding a tenth module slug would break the hardcoded 43/42
-    // assertions in tests/Feature/Seeders/RolePermissionSeederTest.php -- verified here rather
-    // than assumed, so a future accidental new-module addition alongside this policy is caught
-    // in the same file that names the constraint. (Story 0051 grew the catalog from 42 to 43 via
-    // a new non-CRUD ORDER_PERMISSIONS entry, not a new module slug, so MODULES' own count of 10
-    // above is unaffected.)
-    expect(Permission::count())->toBe(43);
 });

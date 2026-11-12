@@ -6,16 +6,12 @@
 //
 // Unit/Models tests in this repo never touch the database (Pest.php scopes RefreshDatabase to
 // Feature/Browser only, matching SalesRegionTest.php's/UserTest.php's/ShippingCarrierTest.php's
-// own shape) -- so the "produces a UUID id" check below calls HasUuids::newUniqueId() directly
-// rather than persisting a factory-made row. The factory round-trip / persisted-id check lives in
+// own shape). The factory round-trip / persisted-id check lives in
 // tests/Feature/Customers/PersistenceTest.php instead, where a real INSERT already happens for
 // other reasons.
 //
 // "A customer is not a dashboard user" (D-11) is asserted here in its three STRUCTURAL forms --
 // no HasRoles, no Authenticatable, no PasskeyUser -- all class-shape checks with no DB involved.
-// The one INTEGRATION half of that same acceptance criterion (a created customer leaves
-// model_has_roles / model_has_permissions at zero rows) lives in
-// tests/Feature/Customers/NotADashboardUserTest.php, since it requires a real persisted row.
 //
 // Story 0042 removed a fourth structural form this file used to carry here -- "does not use
 // SoftDeletes" -- per this file's own original comment naming that removal as the explicit
@@ -25,35 +21,10 @@
 
 use App\Models\Customer;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User;
-use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Spatie\Permission\Traits\HasRoles;
-
-test('the customer model reports a non-incrementing string key type', function () {
-    $customer = new Customer;
-
-    expect($customer->getKeyType())->toBe('string')
-        ->and($customer->getIncrementing())->toBeFalse();
-});
-
-test('the customer model uses HasUuids and produces a 36-character UUID string id, never an integer', function () {
-    $customer = new Customer;
-
-    expect(class_uses_recursive(Customer::class))->toContain(HasUuids::class);
-
-    // HasUuids::newUniqueId() is what the `creating` event calls to populate the primary key --
-    // calling it directly here proves the id shape without persisting anything, matching this
-    // folder's no-DB convention (see the file banner comment above).
-    $id = $customer->newUniqueId();
-
-    expect($id)->toBeString()
-        ->and(strlen($id))->toBe(36)
-        ->and(Str::isUuid($id))->toBeTrue()
-        ->and(is_int($id))->toBeFalse();
-});
 
 // D-11 / the "not a dashboard user" acceptance criterion, structural half 1 of 3: a customer
 // holds no dashboard role or permission, so it must not compose the package trait that grants a

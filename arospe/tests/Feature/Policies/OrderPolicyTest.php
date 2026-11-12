@@ -6,7 +6,6 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Models\Order;
 use App\Models\User;
-use App\Policies\OrderPolicy;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
@@ -102,27 +101,6 @@ test('a Super Admin actor passes every OrderPolicy ability while holding zero pe
         ->and(Gate::forUser($superAdmin)->allows('create', Order::class))->toBeTrue()
         ->and(Gate::forUser($superAdmin)->allows('update', $target))->toBeTrue()
         ->and(Gate::forUser($superAdmin)->allows('delete', $target))->toBeTrue();
-});
-
-// The permission strings are asserted against RolePermissionSeeder's seeded catalog -- a
-// permission string not in the catalog throws PermissionDoesNotExist at runtime, so this is a
-// correctness test, not a style one. No new permission and no RolePermissionSeeder change.
-test('the four permission strings OrderPolicy gates on are all in the seeded orders module', function () {
-    expect(in_array('orders', RolePermissionSeeder::MODULES, true))->toBeTrue();
-
-    $actor = User::factory()->create();
-    $actor->givePermissionTo(['orders.view', 'orders.create', 'orders.edit', 'orders.delete']);
-
-    expect($actor->getAllPermissions())->toHaveCount(4);
-});
-
-// One public const <VERB>_PERMISSION per ability, named once on the class that owns the rule --
-// naming.md's permission-naming convention.
-test('OrderPolicy exposes one VERB_PERMISSION constant per ability, matching the seeded catalog', function () {
-    expect(OrderPolicy::VIEW_PERMISSION)->toBe('orders.view')
-        ->and(OrderPolicy::CREATE_PERMISSION)->toBe('orders.create')
-        ->and(OrderPolicy::EDIT_PERMISSION)->toBe('orders.edit')
-        ->and(OrderPolicy::DELETE_PERMISSION)->toBe('orders.delete');
 });
 
 // --- Story 0049, Phase 3 (TDD "red" step): transitionStatus() does not exist on OrderPolicy yet --

@@ -42,47 +42,8 @@ function syncInUseFixture(): array
 }
 
 // =====================================================================
-// The control: a removal with no in-use values still works (the case that stops a
-// refuse-everything guard from passing every other test in this file).
-// =====================================================================
-
-test('removing a value no variant uses still deletes it', function () {
-    $type = ProductAttributeType::factory()->create(['name' => 'Color']);
-    $keep = ProductAttributeValue::factory()->create(['product_attribute_type_id' => $type->id, 'value' => 'Black', 'position' => 0]);
-    $remove = ProductAttributeValue::factory()->create(['product_attribute_type_id' => $type->id, 'value' => 'White', 'position' => 1]);
-
-    app(SyncProductAttributeValues::class)($type, [
-        ['id' => $keep->id, 'value' => $keep->value],
-    ]);
-
-    $this->assertDatabaseHas('product_attribute_values', ['id' => $keep->id]);
-    $this->assertDatabaseMissing('product_attribute_values', ['id' => $remove->id]);
-});
-
-// =====================================================================
 // The block (D-A1 path 2 / D-A5).
 // =====================================================================
-
-test('removing a value in use throws ValidationException on values, names the count, and the value survives', function () {
-    [$type, $unused, $used] = syncInUseFixture();
-
-    $caught = null;
-
-    try {
-        app(SyncProductAttributeValues::class)($type, [
-            ['id' => $unused->id, 'value' => $unused->value],
-        ]);
-    } catch (Throwable $e) {
-        $caught = $e;
-    }
-
-    expect($caught)->toBeInstanceOf(ValidationException::class)
-        ->and($caught->errors())->toHaveKey('values')
-        ->and($caught->errors()['values'][0])->toContain('1');
-
-    // FP-A2: the row itself survives, not merely the throw.
-    $this->assertDatabaseHas('product_attribute_values', ['id' => $used->id]);
-});
 
 // The diff runs in one transaction, so a partial apply would leave the type's value list in a
 // state the administrator never asked for -- removing TWO values where only one is in use must

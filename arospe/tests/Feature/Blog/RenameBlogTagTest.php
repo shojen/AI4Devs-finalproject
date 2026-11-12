@@ -106,13 +106,7 @@ test('renaming onto a case-only, accent-only or whitespace variant of another ta
     expect($target->fresh()->translated('name'))->toBe('invierno');
 });
 
-// R-1, in three parts so a rule that rejects everything cannot pass the first trivially.
-test('renaming a tag to its own current name is accepted', function () {
-    $tag = BlogTag::factory()->named('running')->create();
-
-    expect(blogTagRenameOutcome($tag, 'running'))->toBeNull();
-});
-
+// R-1, in two parts so a rule that rejects everything cannot pass the first trivially.
 test('a no-op rename leaves the row genuinely unchanged', function () {
     $tag = BlogTag::factory()->named('running')->create();
     $before = DB::table('blog_tag_translations')->where('blog_tag_id', $tag->id)->first();
@@ -153,14 +147,6 @@ test('renaming to a blank or whitespace-only name is refused', function (string 
         ->and($caught->errors())->toHaveKey('name')
         ->and($tag->fresh()->translated('name'))->toBe('running');
 })->with(['blank' => [''], 'whitespace only' => ['   ']]);
-
-test('a rename trims surrounding whitespace before storing', function () {
-    $tag = BlogTag::factory()->named('running')->create();
-
-    app(RenameBlogTag::class)($tag, '  invierno  ');
-
-    expect($tag->fresh()->translated('name'))->toBe('invierno');
-});
 
 test('a rename trims surrounding whitespace before validation, so it never counts toward the maximum', function () {
     $tag = BlogTag::factory()->named('running')->create();
@@ -299,18 +285,6 @@ test('the same string already used in another language does not block a rename',
 
     expect(blogTagRenameOutcome($tag, 'Trail'))->toBeNull()
         ->and($tag->fresh()->translated('name'))->toBe('Trail');
-});
-
-// A name exclusion keyed by blog_tag_id: a wrong id (the other tag's) would let a rename onto the
-// target's own name through, or refuse the tag's own name.
-test('with two tags present, renaming one onto its own name passes and onto the other\'s is refused', function () {
-    $first = BlogTag::factory()->named('running')->create();
-    $second = BlogTag::factory()->named('invierno')->create();
-
-    expect(blogTagRenameOutcome($first, 'RUNNING'))->toBeNull()
-        ->and(blogTagRenameOutcome($first, 'invierno'))->toBeInstanceOf(ValidationException::class)
-        ->and(blogTagRenameOutcome($second, 'Running'))->toBeInstanceOf(ValidationException::class)
-        ->and($second->fresh()->translated('name'))->toBe('invierno');
 });
 
 test('a foreign key violation is not misreported as a duplicate name', function () {

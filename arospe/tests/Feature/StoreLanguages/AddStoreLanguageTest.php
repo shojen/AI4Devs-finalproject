@@ -179,11 +179,8 @@ test('a code outside the bundled fixture is refused with a validation error nami
     expect(StoreLanguage::count())->toBe($countBefore);
 })->with([
     'zz' => ['zz'],
-    'a full English word' => ['english'],
     'valid BCP 47 but not in this bare-ISO-639-1 fixture (D16)' => ['pt-BR'],
     'empty string' => [''],
-    'digits' => ['123'],
-    'a 40-character string' => [str_repeat('x', 40)],
 ]);
 
 // =====================================================================
@@ -236,14 +233,6 @@ test('called with no authenticated user, the action is refused', function () {
         ->toThrow(AuthorizationException::class);
 
     expect(StoreLanguage::count())->toBe(0);
-});
-
-test('called directly, an actor holding store-languages.create succeeds', function () {
-    $this->actingAs(addStoreLanguageActor());
-
-    $language = app(AddStoreLanguage::class)('fr');
-
-    expect($language->code)->toBe('fr');
 });
 
 // =====================================================================

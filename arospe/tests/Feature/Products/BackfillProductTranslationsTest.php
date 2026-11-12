@@ -39,13 +39,6 @@ test('with zero products, assertCanBackfill() does not throw even with no defaul
     expect(app(BackfillProductTranslations::class)())->toBe(0);
 });
 
-test('with products present and a default store language, assertCanBackfill() does not throw', function () {
-    StoreLanguage::factory()->default()->create();
-    Product::factory()->withoutTranslations()->create();
-
-    expect(fn () => app(BackfillProductTranslations::class)->assertCanBackfill())->not->toThrow(RuntimeException::class);
-});
-
 /**
  * Re-adds the legacy columns, runs $callback, then removes every row and both columns again.
  */

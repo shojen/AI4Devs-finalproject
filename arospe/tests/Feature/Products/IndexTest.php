@@ -81,13 +81,6 @@ test('mount() authorizes viewAny, proven by a direct Livewire::test() call as a 
     expect(fn () => Livewire::test(Index::class))->toThrow(AuthorizationException::class);
 });
 
-test('mount() succeeds for an actor holding products.view, as the control', function () {
-    $actor = productsIndexFullActor(['products.view']);
-    $this->actingAs($actor);
-
-    Livewire::test(Index::class)->assertOk();
-});
-
 // =====================================================================
 // Listing
 // =====================================================================

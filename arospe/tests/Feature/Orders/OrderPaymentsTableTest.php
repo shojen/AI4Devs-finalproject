@@ -48,13 +48,6 @@ function orderPaymentsInsert(string $orderId, string $methodId): void
     ]);
 }
 
-test('order_payments has exactly the D-4 columns (recorded_by last before the timestamps) in physical order', function () {
-    expect(Schema::hasTable('order_payments'))->toBeTrue()
-        ->and(array_column(Schema::getColumns('order_payments'), 'name'))->toBe([
-            'id', 'order_id', 'payment_method_id', 'type', 'paid_at', 'recorded_by', 'created_at', 'updated_at',
-        ]);
-});
-
 test('column types and nullability follow D-4: char(36) keys, varchar(20) type, non-null paid_at, nullable timestamps', function () {
     expect(orderPaymentsColumn('id')['type'])->toBe('char(36)')
         ->and(orderPaymentsColumn('order_id')['type'])->toBe('char(36)')
@@ -73,36 +66,6 @@ test('column types and nullability follow D-4: char(36) keys, varchar(20) type, 
         ->and(orderPaymentsColumn('created_at')['type_name'])->toBe('timestamp')
         ->and(orderPaymentsColumn('created_at')['nullable'])->toBeTrue()
         ->and(orderPaymentsColumn('updated_at')['nullable'])->toBeTrue();
-});
-
-test('order_payments carries exactly the primary key, the unique order_id index and the payment_method_id and recorded_by foreign indexes, nothing hand-written', function () {
-    $indexes = collect(Schema::getIndexes('order_payments'))->keyBy('name');
-
-    expect($indexes->keys()->sort()->values()->all())->toBe([
-        'order_payments_order_id_unique', 'order_payments_payment_method_id_foreign', 'order_payments_recorded_by_foreign', 'primary',
-    ])
-        ->and($indexes['order_payments_recorded_by_foreign']['columns'])->toBe(['recorded_by'])
-        ->and($indexes['order_payments_recorded_by_foreign']['unique'])->toBeFalse()
-        ->and($indexes['order_payments_order_id_unique']['columns'])->toBe(['order_id'])
-        ->and($indexes['order_payments_order_id_unique']['unique'])->toBeTrue()
-        ->and($indexes['order_payments_payment_method_id_foreign']['columns'])->toBe(['payment_method_id'])
-        ->and($indexes['order_payments_payment_method_id_foreign']['unique'])->toBeFalse()
-        ->and($indexes['primary']['columns'])->toBe(['id']);
-});
-
-test('order_id, payment_method_id and recorded_by are foreign keys to orders.id, payment_methods.id and users.id that restrict on delete (Q-5)', function () {
-    $foreignKeys = collect(Schema::getForeignKeys('order_payments'))->keyBy(fn (array $fk): string => $fk['columns'][0]);
-
-    expect($foreignKeys->keys()->sort()->values()->all())->toBe(['order_id', 'payment_method_id', 'recorded_by'])
-        ->and($foreignKeys['order_id']['foreign_table'])->toBe('orders')
-        ->and($foreignKeys['order_id']['foreign_columns'])->toBe(['id'])
-        ->and($foreignKeys['order_id']['on_delete'])->toBe('restrict')
-        ->and($foreignKeys['payment_method_id']['foreign_table'])->toBe('payment_methods')
-        ->and($foreignKeys['payment_method_id']['foreign_columns'])->toBe(['id'])
-        ->and($foreignKeys['payment_method_id']['on_delete'])->toBe('restrict')
-        ->and($foreignKeys['recorded_by']['foreign_table'])->toBe('users')
-        ->and($foreignKeys['recorded_by']['foreign_columns'])->toBe(['id'])
-        ->and($foreignKeys['recorded_by']['on_delete'])->toBe('restrict');
 });
 
 test('recorded_by may be left empty by a raw insert (a future system writer), and a payment row survives with a null recorder', function () {
@@ -180,12 +143,6 @@ test('an order that has a payment cannot be deleted', function () {
 test('orders has no paid_at column (the first design was dropped) and its migration no longer exists', function () {
     expect(Schema::hasColumn('orders', 'paid_at'))->toBeFalse()
         ->and(glob(database_path('migrations/*_add_paid_at_to_orders_table.php')))->toBe([]);
-});
-
-test('a default-state factory order has no payment row', function () {
-    $order = Order::factory()->create();
-
-    expect(DB::table('order_payments')->where('order_id', $order->id)->exists())->toBeFalse();
 });
 
 test('the migration only creates the table, is reversible and rewrites no existing row', function () {

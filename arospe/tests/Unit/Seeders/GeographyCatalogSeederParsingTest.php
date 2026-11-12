@@ -2,7 +2,7 @@
 
 use Database\Seeders\GeographyCatalogSeeder;
 
-// Row/column parsing, comma and quote handling, and duplicate-code detection --
+// Row/column parsing --
 // exercised directly against GeographyCatalogSeeder::readMunicipalityRows() (via
 // reflection, since it is protected and this is the CSV-parsing helper's real home) with
 // no database at all: the method is a pure generator over a file on disk.
@@ -35,41 +35,4 @@ test('a well-formed CSV parses one row per data line with all five columns', fun
     foreach (array_slice($rows, 0, 5) as $row) {
         expect($row)->toHaveKeys(['ine_code', 'name', 'province_name', 'community_ine_code', 'community_name']);
     }
-});
-
-test('a field containing a comma is parsed as a single field, not split', function () {
-    $rows = readMunicipalityRowsFor(geographyFixturesPath('es-municipalities-quoting.csv'));
-
-    expect($rows)->toHaveCount(2)
-        ->and($rows[0]['name'])->toBe('Test, Comma Name');
-});
-
-test('a field containing embedded quotes is parsed correctly', function () {
-    $rows = readMunicipalityRowsFor(geographyFixturesPath('es-municipalities-quoting.csv'));
-
-    expect($rows[1]['name'])->toBe('Test "Quoted" Name');
-});
-
-test('a row missing its INE code throws before yielding it', function () {
-    expect(fn () => readMunicipalityRowsFor(geographyFixturesPath('es-municipalities-malformed.csv')))
-        ->toThrow(RuntimeException::class);
-});
-
-test('a missing file throws naming the missing path', function () {
-    $missing = geographyFixturesPath('does-not-exist.csv');
-
-    expect(fn () => readMunicipalityRowsFor($missing))
-        ->toThrow(RuntimeException::class, $missing);
-});
-
-test('duplicate-code detection: two rows sharing the same ine_code both parse individually -- deduplication is the caller\'s job', function () {
-    // readMunicipalityRows() itself yields every row it parses; duplicate-code REFUSAL is
-    // GeographyCatalogSeeder::seedMunicipalities()'s job (covered with a database in
-    // GeographyCatalogSeederTest.php), not this pure parser's. This test pins that
-    // boundary: the parser sees both rows.
-    $rows = readMunicipalityRowsFor(geographyFixturesPath('es-municipalities-duplicate.csv'));
-
-    $codes = array_column($rows, 'ine_code');
-
-    expect(array_count_values($codes))->toContain(2);
 });

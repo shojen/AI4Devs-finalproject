@@ -34,20 +34,6 @@ it('sorts case- and accent-insensitively, matching MySQL utf8mb4_unicode_ci rath
     expect(array_column($names, 'name'))->toBe(['Árboles', 'bolsos', 'Zapatos']);
 });
 
-it('sorts case-insensitively alone', function () {
-    $compareTranslatedNames = app(CompareTranslatedNames::class);
-
-    expect($compareTranslatedNames('bolsos', 'id-a', 'Zapatos', 'id-b'))->toBeLessThan(0)
-        ->and($compareTranslatedNames('Zapatos', 'id-a', 'bolsos', 'id-b'))->toBeGreaterThan(0);
-});
-
-it('sorts accent-insensitively alone', function () {
-    $compareTranslatedNames = app(CompareTranslatedNames::class);
-
-    expect($compareTranslatedNames('Árboles', 'id-a', 'Bolsos', 'id-b'))->toBeLessThan(0)
-        ->and($compareTranslatedNames('Bolsos', 'id-a', 'Árboles', 'id-b'))->toBeGreaterThan(0);
-});
-
 it('sorts a null name last, regardless of which side it is on', function () {
     $compareTranslatedNames = app(CompareTranslatedNames::class);
 

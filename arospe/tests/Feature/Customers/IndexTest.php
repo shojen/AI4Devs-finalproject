@@ -3,8 +3,7 @@
 // Story 0044 — App\Livewire\Customers\Index, routes/customers.php. Phase 3 step 1 (TDD "red"):
 // neither the route, the component nor its view exist yet, so every test below is EXPECTED to
 // fail — on a missing route / missing class, not on a PHP syntax error or a hang. Red step,
-// mirroring how tests/Feature/Customers/ListCustomersTest.php (story 0041) and
-// tests/Feature/SalesRegions/IndexTest.php (task 0017) were both written before their own
+// mirroring how tests/Feature/SalesRegions/IndexTest.php (task 0017) was written before its own
 // production code existed.
 //
 // This file holds the ROUTE + COMPONENT layer only, per the task file's own split: the

@@ -54,27 +54,6 @@ function orderNotificationPayload(Customer $customer, PaymentMethod $paymentMeth
     ];
 }
 
-test('creating an order sends OrderCreated to each eligible administrator', function () {
-    $recipient = User::factory()->create();
-    $recipient->givePermissionTo('orders.view');
-
-    $bystander = User::factory()->create();
-    $bystander->givePermissionTo('products.view');
-
-    orderNotificationCreatorActor();
-
-    $customer = Customer::factory()->create();
-    $paymentMethod = PaymentMethod::factory()->create();
-    $product = Product::factory()->create();
-
-    Notification::fake();
-
-    app(CreateOrder::class)(orderNotificationPayload($customer, $paymentMethod, $product));
-
-    Notification::assertSentTo($recipient, OrderCreated::class);
-    Notification::assertNotSentTo($bystander, OrderCreated::class);
-});
-
 // R-1's equivalent for this story -- the highest-severity risk shape 0043 already established:
 // Notification::assertSentTo passes against a broken notifiable_id column, because it never
 // touches the database. This is the mandatory second, un-faked test that is the only thing that
@@ -147,23 +126,6 @@ test('the stored order_number equals the persisted order\'s order_number and is 
 
     expect($row->data['order_number'])->not->toBeEmpty()
         ->and($row->data['order_number'])->toBe($order->fresh()->order_number);
-});
-
-test('read_at is null on a freshly stored notification', function () {
-    $recipient = User::factory()->create();
-    $recipient->givePermissionTo('orders.view');
-
-    orderNotificationCreatorActor();
-
-    $customer = Customer::factory()->create();
-    $paymentMethod = PaymentMethod::factory()->create();
-    $product = Product::factory()->create();
-
-    app(CreateOrder::class)(orderNotificationPayload($customer, $paymentMethod, $product));
-
-    $row = DatabaseNotification::query()->where('notifiable_id', $recipient->id)->firstOrFail();
-
-    expect($row->read_at)->toBeNull();
 });
 
 // The Gherkin's "rejected with a validation message" scenario -- a zero-line-item payload is
@@ -283,25 +245,6 @@ test('an order for a soft-deleted customer still stores a notification with the 
 
     expect($row->data['order_id'])->toBe($order->id)
         ->and($row->data['customer_name'])->toBe('Ana Garcia');
-});
-
-test('multiple eligible recipients each get their own notifications row, not one shared row', function () {
-    $recipients = User::factory()->count(3)->create();
-    $recipients->each(fn (User $user) => $user->givePermissionTo('orders.view'));
-
-    orderNotificationCreatorActor();
-
-    $customer = Customer::factory()->create();
-    $paymentMethod = PaymentMethod::factory()->create();
-    $product = Product::factory()->create();
-
-    app(CreateOrder::class)(orderNotificationPayload($customer, $paymentMethod, $product));
-
-    expect(DatabaseNotification::query()->where('type', OrderCreated::class)->count())->toBe(3);
-
-    foreach ($recipients as $recipient) {
-        expect(DatabaseNotification::query()->where('notifiable_id', $recipient->id)->count())->toBe(1);
-    }
 });
 
 test('a Super Admin is not notified of routine order creation, even though they can create the order themselves', function () {

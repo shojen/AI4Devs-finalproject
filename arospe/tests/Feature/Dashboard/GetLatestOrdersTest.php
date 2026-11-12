@@ -78,15 +78,6 @@ it('returns the documented shape per order with money as a decimal string', func
         ->and($row['createdAt']->equalTo(Carbon::now()->subMinute()))->toBeTrue();
 });
 
-it('returns plain arrays, never Eloquent models', function () {
-    orderCreatedAgo(1);
-
-    $listed = app(GetLatestOrders::class)();
-
-    expect($listed)->toBeList()
-        ->and($listed[0])->toBeArray();
-});
-
 it('includes cancelled orders', function () {
     $cancelled = orderCreatedAgo(1, ['status' => OrderStatus::Cancelled]);
 

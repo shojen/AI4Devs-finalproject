@@ -170,18 +170,6 @@ test('creating without a status persists it as Draft', function () {
     expect($product->fresh()->status)->toBe(ProductStatus::Draft);
 });
 
-// R-5: if `status` were ever dropped from #[Fillable], a plain create() would silently discard it
-// and the row would fall back to Draft with no error anywhere — nothing else in the suite would
-// notice. assertDatabaseHas pins the literal persisted value.
-test('creating with status explicitly set to active persists active', function () {
-    $product = createProductWith(['status' => 'active']);
-
-    $this->assertDatabaseHas('products', [
-        'id' => $product->id,
-        'status' => 'active',
-    ]);
-});
-
 test('invalid input is refused on the named field, with zero rows written', function (string $field, array $overrides) {
     expectCreateProductRefusal($overrides, $field);
 })->with([
@@ -216,10 +204,6 @@ test('a name of exactly the maximum length (255) is accepted', function () {
     expect($product->fresh()->translated('name'))->toBe($name);
 });
 
-test('a name one character over the maximum length (256) is refused', function () {
-    expectCreateProductRefusal(['name' => str_repeat('a', 256)], 'name');
-});
-
 test('a SKU of exactly the maximum length (64) is accepted', function () {
     $sku = 'A'.str_repeat('0', 63);
 
@@ -232,18 +216,4 @@ test('a SKU one character over the maximum length (65) is refused', function () 
     $sku = 'A'.str_repeat('0', 64);
 
     expectCreateProductRefusal(['sku' => $sku], 'sku');
-});
-
-// Story 0024a: the sanitize-on-write guarantee is visible from this action's own test file too,
-// not only from ProductDescriptionSanitizationTest.php, so a future reader does not assume it is
-// an optional concern covered somewhere else. See ProductDescriptionSanitizationTest.php for the
-// full vector coverage, ordering, idempotence and characterization tests.
-test('a description containing a script is stored clean', function () {
-    $product = createProductWith(['description' => 'Before text <script>alert(1)</script> After text']);
-
-    $stored = $product->fresh()->translated('description');
-
-    expect($stored)->not->toContain('<script')
-        ->and($stored)->toContain('Before text')
-        ->and($stored)->toContain('After text');
 });

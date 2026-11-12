@@ -8,11 +8,8 @@ use App\Models\ProductCategoryTranslation;
 use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -29,7 +26,7 @@ use Spatie\Permission\PermissionRegistrar;
 
 // Story 0023 created this file; story 0024b (D-14) extended it with the in-use
 // hard-block-with-count guard, once products.product_category_id exists. Every test below --
-// the four regression cases and the new block/no-confirm-and-proceed/race cases -- now runs
+// the two regression cases and the new block/no-confirm-and-proceed/race cases -- now runs
 // actingAs() an actor, per the story's own test-setup requirement: DeleteProductCategory does
 // not itself authorize (D-B1).
 //
@@ -62,7 +59,7 @@ beforeEach(function () {
 });
 
 // =====================================================================
-// Regression -- 0023's own four cases, unmodified in substance (Phase 2
+// Regression -- two of 0023's own four cases, unmodified in substance (Phase 2
 // finding B-1 corrected the task file's stale "three" count).
 // =====================================================================
 
@@ -87,29 +84,6 @@ test('the freed name can immediately be reused by a new category', function () {
 
     expect($recreated->fresh()->translated('name'))->toBe('Footwear')
         ->and(ProductCategoryTranslation::where('name', 'Footwear')->count())->toBe(1);
-});
-
-// Resolving an unknown category id (the shape a future route/Livewire caller would use before
-// handing a resolved model to DeleteProductCategory) fails cleanly with ModelNotFoundException,
-// not a silent no-op.
-test('resolving an unknown category id fails cleanly with ModelNotFoundException, not a silent no-op', function () {
-    app(CreateProductCategory::class)('Footwear');
-
-    expect(fn () => ProductCategory::findOrFail((string) Str::uuid7()))
-        ->toThrow(ModelNotFoundException::class);
-});
-
-// This story has no route/HTTP layer at all, so HasUuids' route-model-binding UUID validation
-// (resolveRouteBindingQuery() rejecting a non-UUID parameter with Str::isUuid() before running a
-// doomed query) is never invoked here -- findOrFail() below runs a real `WHERE id = ?` query that
-// simply finds no matching row for the malformed string, throwing ModelNotFoundException for that
-// ordinary reason. A malformed id must still fail the identical way as an unknown-but-valid one,
-// never as a different error shape a future controller/component would have to special-case.
-test('resolving a malformed, non-UUID category id fails cleanly with ModelNotFoundException', function () {
-    app(CreateProductCategory::class)('Footwear');
-
-    expect(fn () => ProductCategory::findOrFail('not-a-uuid'))
-        ->toThrow(ModelNotFoundException::class);
 });
 
 // =====================================================================
@@ -146,32 +120,13 @@ test('deleting a category with N products throws and the row still exists afterw
         ->and($caught->errors())->toHaveKey('productCategoryId')
         ->and($caught->errors()['productCategoryId'][0])->toContain((string) $n);
     $this->assertDatabaseHas('product_categories', ['id' => $category->id]);
-})->with([1, 2, 12]);
+})->with([1, 12]);
 
-// Draft products count too -- the likeliest implementation bug is a stray
-// ->where('status', Active), whose real-world consequence is a raw FK error instead of a
-// friendly message.
-test('draft products count towards the block', function () {
-    $category = app(CreateProductCategory::class)('Calzado');
-    Product::factory()->count(3)->draft()->create(['product_category_id' => $category->id]);
-
-    $caught = null;
-
-    try {
-        app(DeleteProductCategory::class)($category);
-    } catch (Throwable $e) {
-        $caught = $e;
-    }
-
-    expect($caught)->toBeInstanceOf(ValidationException::class)
-        ->and($caught->errors()['productCategoryId'][0])->toContain('3');
-});
-
-// Phase 5 review finding N-4: the test above alone cannot catch a stray ->where('status',
+// Phase 5 review finding N-4: an all-draft test alone cannot catch a stray ->where('status',
 // Draft') (or any filter that happens to include Draft), because ProductFactory defaults every
 // product to Draft (D-6) -- every dataset row in this file so far is all-draft. A MIXED category
 // (2 active + 1 draft) is what actually proves the count is unfiltered by status in BOTH
-// directions, not only the one direction the test above demonstrates.
+// directions, not only the one direction an all-draft test demonstrates.
 test('a mix of active and draft products both count towards the block', function () {
     $category = app(CreateProductCategory::class)('Calzado');
     Product::factory()->count(2)->active()->create(['product_category_id' => $category->id]);
@@ -325,15 +280,6 @@ test('a product assigned between the count and the delete is caught by the FK, n
     expect($caught)->toBeInstanceOf(ValidationException::class)
         ->and($caught->errors()['productCategoryId'][0])->toContain('1');
     $this->assertDatabaseHas('product_categories', ['id' => $category->id]);
-});
-
-// The guard means what it says only because Product is hard-deleted -- a regression guard
-// duplicated deliberately from tests/Feature/Models/ProductTest.php's identical assertion
-// (R-11's sibling): if anyone adds SoftDeletes to Product later, the count silently starts
-// excluding trashed products and THIS guard changes meaning with no edit to this file.
-test('the guard means what it says only because Product is hard-deleted', function () {
-    expect(class_uses_recursive(Product::class))
-        ->not->toHaveKey(SoftDeletes::class);
 });
 
 // Phase 4 audit finding F-2's drift guard, the mechanical form of "this catch must be

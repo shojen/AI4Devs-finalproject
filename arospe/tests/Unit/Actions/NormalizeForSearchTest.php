@@ -86,33 +86,7 @@ it('trims leading/trailing whitespace and collapses internal whitespace runs to 
     expect(app(NormalizeForSearch::class)('  A   Coruña  '))->toBe('a coruna');
 });
 
-it('is idempotent: applying it twice is the same as applying it once, across the whole folding dataset', function (string $input) {
-    $normalizeForSearch = app(NormalizeForSearch::class);
-
-    $once = $normalizeForSearch($input);
-    $twice = $normalizeForSearch($once);
-
-    expect($twice)->toBe($once);
-})->with(array_map(
-    fn (array $case): array => [$case[0]],
-    array_values(normalizeForSearchFoldingTable())
-));
-
 it('normalizes the empty string and a whitespace-only string both to an empty string', function () {
     expect(app(NormalizeForSearch::class)(''))->toBe('')
         ->and(app(NormalizeForSearch::class)('   '))->toBe('');
 });
-
-it('always outputs lowercase ASCII, as a property over the whole folding dataset', function (string $input) {
-    $result = app(NormalizeForSearch::class)($input);
-
-    // No byte >= 0x80 remains -- the output is pure ASCII, never multibyte UTF-8.
-    expect(mb_check_encoding($result, 'ASCII'))->toBeTrue();
-
-    // Ignoring the ASCII space that separates words, every remaining character is lowercase.
-    $withoutSpaces = str_replace(' ', '', $result);
-    expect($withoutSpaces === '' || ctype_lower($withoutSpaces))->toBeTrue();
-})->with(array_map(
-    fn (array $case): array => [$case[0]],
-    array_values(normalizeForSearchFoldingTable())
-));

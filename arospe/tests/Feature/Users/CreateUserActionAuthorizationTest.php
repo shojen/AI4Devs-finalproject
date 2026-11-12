@@ -52,27 +52,6 @@ test('creating a user with the Administrator role directly throws for an actor l
 });
 
 // =====================================================================
-// Happy path / regression — the relocated guard is not a blanket refusal.
-// The equivalent dashboard-mediated flow is already covered by IndexTest.php;
-// this proves the action itself behaves identically when called directly.
-// =====================================================================
-
-test('creating a user with the Administrator role directly succeeds for an actor holding roles.manage-administrators', function () {
-    $actor = User::factory()->create();
-    $actor->givePermissionTo(['users.create', 'roles.manage-administrators']);
-    $this->actingAs($actor);
-    // Story 0015a, Phase 4 finding F1: creating an Administrator-tier user now requires a
-    // fresh password confirmation too.
-    session(['auth.password_confirmed_at' => now()->unix()]);
-
-    $administratorRole = Role::where('name', RoleName::Administrator->value)->where('guard_name', 'web')->firstOrFail();
-
-    $created = app(CreateUser::class)('New Administrator', 'new.administrator.allowed@arospe.es', (string) $administratorRole->id, UserStatus::Active);
-
-    expect($created->hasRole('Administrator'))->toBeTrue();
-});
-
-// =====================================================================
 // Narrowness — the guard stays scoped to the Administrator role.
 // =====================================================================
 

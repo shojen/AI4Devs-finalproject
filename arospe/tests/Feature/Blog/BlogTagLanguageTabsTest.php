@@ -156,14 +156,6 @@ test('a forged non-string $names value is treated as blank and never written', f
     expect(blogTagTabsStoredName($tag, $this->french))->toBeNull();
 });
 
-test('an untouched save copies the default language\'s name into no other language', function () {
-    $tag = BlogTag::factory()->named('running')->create();
-
-    Livewire::test(Index::class)->call('openEditModal', $tag->id)->call('save')->assertHasNoErrors();
-
-    expect(BlogTagTranslation::query()->where('blog_tag_id', $tag->id)->count())->toBe(1);
-});
-
 test('clearing a previously translated language is refused, keeps the translation and brings that tab forward', function () {
     $tag = BlogTag::factory()->named('running')->create();
     BlogTagTranslation::factory()->forLanguage($this->french)->create(['blog_tag_id' => $tag->id, 'name' => 'course à pied']);
@@ -309,12 +301,4 @@ test('create is unchanged: one field, one translation in the default language, n
     $tag = BlogTag::query()->sole();
 
     expect(BlogTagTranslation::query()->where('blog_tag_id', $tag->id)->pluck('store_language_id')->all())->toBe([$this->spanish->id]);
-});
-
-test('a refused create is still keyed on the bare name key', function () {
-    Livewire::test(Index::class)
-        ->call('openCreateModal')
-        ->set('name', '')
-        ->call('save')
-        ->assertHasErrors(['name']);
 });

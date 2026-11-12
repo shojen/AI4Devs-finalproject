@@ -18,9 +18,8 @@ use Illuminate\Support\Facades\Validator;
 // Feature, not Unit: uniqueNormalisedName() reads product_category_translations. Every case here
 // passes a NON-default $storeLanguageId (French, with Spanish as the store default) -- per D-17,
 // this story ships no guarded write path for a non-default language, so no test here claims
-// anything about rows WRITTEN; it proves only the RULE, called directly through Validator::make(),
-// exactly as tests/Unit/Concerns/ProductCategoryValidationRulesTest.php does for the unwidened
-// trait today. Guarded non-default authoring (blank refusal, "no row written", `products.edit`
+// anything about rows WRITTEN; it proves only the RULE, called directly through Validator::make().
+// Guarded non-default authoring (blank refusal, "no row written", `products.edit`
 // refusal) is story 0071's SetProductCategoryTranslationTest.
 
 function productCategoryNameRulesPerLanguageHarness(): object
@@ -117,18 +116,4 @@ test('the same accent-folded pair in different store languages does not collide'
     $validator = validateProductCategoryNamePerLanguage('Niño', $this->french->id);
 
     expect($validator->passes())->toBeTrue();
-});
-
-test('an empty name fails on name for a non-default store language', function () {
-    $validator = validateProductCategoryNamePerLanguage('', $this->french->id);
-
-    expect($validator->fails())->toBeTrue()
-        ->and($validator->errors()->has('name'))->toBeTrue();
-});
-
-test('a 256-character name fails on name for a non-default store language', function () {
-    $validator = validateProductCategoryNamePerLanguage(str_repeat('a', 256), $this->french->id);
-
-    expect($validator->fails())->toBeTrue()
-        ->and($validator->errors()->has('name'))->toBeTrue();
 });

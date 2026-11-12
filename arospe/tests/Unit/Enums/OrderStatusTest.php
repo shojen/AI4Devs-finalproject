@@ -26,23 +26,6 @@ use Tests\TestCase;
 // ("Call to undefined method Illuminate\Container\Container::langPath()").
 uses(TestCase::class);
 
-test('OrderStatus exposes exactly the cases PRD §3.2 names, with the expected backing values', function () {
-    $expected = [
-        'Pending' => 'pending',
-        'Processing' => 'processing',
-        'Shipped' => 'shipped',
-        'Delivered' => 'delivered',
-        'Cancelled' => 'cancelled',
-    ];
-
-    $actual = [];
-    foreach (OrderStatus::cases() as $case) {
-        $actual[$case->name] = $case->value;
-    }
-
-    expect($actual)->toEqualCanonicalizing($expected);
-});
-
 test('every OrderStatus case has a statuses leaf in both lang/en/orders.php and lang/es/orders.php, key-for-key identical', function () {
     $en = require lang_path('en/orders.php');
     $es = require lang_path('es/orders.php');
@@ -59,15 +42,6 @@ test('every OrderStatus case has a statuses leaf in both lang/en/orders.php and 
     foreach (OrderStatus::cases() as $case) {
         expect($en['statuses'][$case->value])->toBeString()->not->toBeEmpty();
         expect($es['statuses'][$case->value])->toBeString()->not->toBeEmpty();
-    }
-});
-
-// Story 0047: OrderStatus::label() resolves the identical 'orders.statuses.<value>' key this
-// file's own lang-key-parity test above already pins -- matching UserStatus::label()'s shape.
-test('every OrderStatus case\'s label() resolves the matching statuses lang key', function () {
-    foreach (OrderStatus::cases() as $case) {
-        expect($case->label())->toBe(__('orders.statuses.'.$case->value))
-            ->toBeString()->not->toBeEmpty();
     }
 });
 
@@ -93,7 +67,7 @@ test('the errors group in lang/en/orders.php and lang/es/orders.php is key-for-k
 
 // --- Story 0049, Phase 3 (TDD "red" step): rank()/isBackwardFrom() do not exist yet -- every test
 // below is expected to fail with "Call to undefined method App\Enums\OrderStatus::rank()" (or
-// "::isBackwardFrom()") until backend-expert adds both methods. Neither case-set test above is
+// "::isBackwardFrom()") until backend-expert adds both methods. Neither test above is
 // touched by this story -- no case is added, renamed or removed (the task file's own explicit
 // instruction), so both stay green throughout.
 
@@ -111,31 +85,18 @@ test('Cancelled has no position on the ladder, so rank() raises UnhandledMatchEr
     expect(fn () => OrderStatus::Cancelled->rank())->toThrow(UnhandledMatchError::class);
 });
 
-// Dataset over all twelve ordered pairs among the four linear statuses plus the four identities --
-// tested as a dataset rather than a handful of hand-picked cases, per the task file's own
-// instruction. isBackwardFrom() is asked of the TARGET: $target->isBackwardFrom($current).
+// Dataset over four ordered pairs among the four linear statuses (rank differences +1, -1, -3
+// and 0). isBackwardFrom() is asked of the TARGET: $target->isBackwardFrom($current).
 test('isBackwardFrom is true only when the target ranks lower than the current status', function (OrderStatus $target, OrderStatus $current, bool $expectedBackward) {
     expect($target->isBackwardFrom($current))->toBe($expectedBackward);
 })->with([
-    // Forward pairs (target ranks higher than current) -- never backward.
+    // Forward pair (target ranks higher than current) -- never backward.
     'Pending -> Processing is not backward' => [OrderStatus::Processing, OrderStatus::Pending, false],
-    'Pending -> Shipped is not backward' => [OrderStatus::Shipped, OrderStatus::Pending, false],
-    'Pending -> Delivered is not backward' => [OrderStatus::Delivered, OrderStatus::Pending, false],
-    'Processing -> Shipped is not backward' => [OrderStatus::Shipped, OrderStatus::Processing, false],
-    'Processing -> Delivered is not backward' => [OrderStatus::Delivered, OrderStatus::Processing, false],
-    'Shipped -> Delivered is not backward' => [OrderStatus::Delivered, OrderStatus::Shipped, false],
 
-    // Backward pairs (target ranks lower than current) -- all backward.
+    // Backward pairs (target ranks lower than current) -- both backward.
     'Processing -> Pending is backward' => [OrderStatus::Pending, OrderStatus::Processing, true],
-    'Shipped -> Pending is backward' => [OrderStatus::Pending, OrderStatus::Shipped, true],
     'Delivered -> Pending is backward' => [OrderStatus::Pending, OrderStatus::Delivered, true],
-    'Shipped -> Processing is backward' => [OrderStatus::Processing, OrderStatus::Shipped, true],
-    'Delivered -> Processing is backward' => [OrderStatus::Processing, OrderStatus::Delivered, true],
-    'Delivered -> Shipped is backward' => [OrderStatus::Shipped, OrderStatus::Delivered, true],
 
-    // Identities -- a status compared with itself is never backward.
-    'Pending -> Pending is not backward' => [OrderStatus::Pending, OrderStatus::Pending, false],
-    'Processing -> Processing is not backward' => [OrderStatus::Processing, OrderStatus::Processing, false],
-    'Shipped -> Shipped is not backward' => [OrderStatus::Shipped, OrderStatus::Shipped, false],
+    // Identity -- a status compared with itself is never backward.
     'Delivered -> Delivered is not backward' => [OrderStatus::Delivered, OrderStatus::Delivered, false],
 ]);

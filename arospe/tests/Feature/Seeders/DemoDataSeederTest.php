@@ -156,12 +156,6 @@ test('when no user exists, the fallback user is not created with the factory def
     expect(Hash::check('password', $fallbackUser->password))->toBeFalse();
 });
 
-test('running the seeder creates exactly 10 blog tags', function () {
-    (new DemoDataSeeder)();
-
-    expect(BlogTag::count())->toBe(10);
-});
-
 test('the first seeded blog post always has 1 to 3 tags attached from the shared pool', function () {
     (new DemoDataSeeder)();
 

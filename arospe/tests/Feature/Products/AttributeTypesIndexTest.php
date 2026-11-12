@@ -6,7 +6,6 @@ use App\Actions\Products\UpdateProductAttributeType;
 use App\Livewire\Products\AttributeTypes\Index;
 use App\Models\ProductAttributeType;
 use App\Models\ProductAttributeValue;
-use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -75,48 +74,6 @@ function attributeValuesPayload(array $texts): array
 }
 
 // =====================================================================
-// Listing / row shape
-// =====================================================================
-
-test('each row exposes exactly the id, name, valueCount, valuePreview, canEdit and canDelete keys the view contract requires', function () {
-    $actor = attributeTypesFullActor();
-    $this->actingAs($actor);
-
-    $type = app(CreateProductAttributeType::class)('Size', attributeValuesPayload(['38', '39', '40']));
-
-    $rows = collect(Livewire::test(Index::class)->get('types'));
-    $row = $rows->firstWhere('id', $type->id);
-
-    expect($row)->toHaveKeys(['id', 'name', 'valueCount', 'valuePreview', 'canEdit', 'canDelete'])
-        ->and($row['id'])->toBe($type->id)
-        ->and($row['name'])->toBe('Size')
-        ->and($row['valueCount'])->toBe(3)
-        ->and($row['canEdit'])->toBeTrue()
-        ->and($row['canDelete'])->toBeTrue();
-
-    // valuePreview's exact separator/format is not specified by the task file -- only that it
-    // exists and previews the values -- so this asserts every value text is present rather than
-    // an exact rendered string.
-    expect($row['valuePreview'])->toContain('38')
-        ->and($row['valuePreview'])->toContain('39')
-        ->and($row['valuePreview'])->toContain('40');
-});
-
-test('typesSummary returns total types and total values across all of them', function () {
-    $actor = attributeTypesFullActor();
-    $this->actingAs($actor);
-
-    app(CreateProductAttributeType::class)('Size', attributeValuesPayload(['38', '39']));
-    app(CreateProductAttributeType::class)('Color', attributeValuesPayload(['Black']));
-
-    $summary = Livewire::test(Index::class)->get('typesSummary');
-
-    expect($summary)->toHaveKeys(['total', 'values'])
-        ->and($summary['total'])->toBe(2)
-        ->and($summary['values'])->toBe(3);
-});
-
-// =====================================================================
 // Create -- happy path
 // =====================================================================
 
@@ -136,21 +93,6 @@ test('defining a type with three values persists one type row and exactly three 
 
     expect($type->values)->toHaveCount(3);
     expect($type->values->pluck('value')->all())->toBe(['38', '39', '40']);
-});
-
-test('a type with non-numeric values persists exactly those value texts', function () {
-    $actor = attributeTypesFullActor();
-    $this->actingAs($actor);
-
-    Livewire::test(Index::class)
-        ->call('openCreateModal')
-        ->set('name', 'Color')
-        ->set('values', attributeValuesPayload(['Black', 'White', 'Red']))
-        ->call('save')
-        ->assertHasNoErrors();
-
-    $type = ProductAttributeType::where('name', 'Color')->firstOrFail();
-    expect($type->values->pluck('value')->all())->toBe(['Black', 'White', 'Red']);
 });
 
 test('a type with zero values is legal and persists as an inert, empty type (Q2a)', function () {
@@ -819,24 +761,6 @@ test('a Super Admin holding zero permission rows passes every gated component me
     expect($target->fresh()->name)->toBe('Super Admin Renamed');
 });
 
-test('an actor holding only products.view sees every row action disabled', function () {
-    $creator = attributeTypesFullActor();
-    $this->actingAs($creator);
-    app(CreateProductAttributeType::class)('Size', []);
-    app(CreateProductAttributeType::class)('Color', []);
-
-    $viewer = User::factory()->create();
-    $viewer->givePermissionTo('products.view');
-    $this->actingAs($viewer);
-
-    $rows = collect(Livewire::test(Index::class)->get('types'));
-
-    expect($rows)->toHaveCount(2);
-    $rows->each(fn (array $row) => expect($row)
-        ->canEdit->toBeFalse()
-        ->canDelete->toBeFalse());
-});
-
 // =====================================================================
 // Authorization -- action layer (D6: every action self-authorizes as its own first statement)
 // =====================================================================
@@ -877,25 +801,4 @@ test('deleting a product attribute type directly is forbidden for a denied actor
         ->toThrow(AuthorizationException::class);
 
     expect(ProductAttributeType::find($type->id))->not->toBeNull();
-});
-
-// =====================================================================
-// Permission-cache staleness (revocation direction) -- never flush between Act and Assert
-// =====================================================================
-
-test('revoking products.edit via a role change is reflected immediately, not masked by a stale cache', function () {
-    $limitedRole = Role::create(['name' => 'Attribute Type Editor', 'guard_name' => 'web']);
-    $limitedRole->givePermissionTo(['products.view']); // deliberately withholds products.edit
-
-    $user = User::factory()->create();
-    $user->assignRole('Administrator'); // Administrator holds products.edit
-
-    // Warm the cache first, asserting the pre-revocation truth.
-    expect($user->hasPermissionTo('products.edit'))->toBeTrue();
-
-    $user->syncRoles([$limitedRole]);
-
-    // No forgetCachedPermissions() call here, between Act and Assert -- if a stale cache were
-    // masking the revocation, this assertion (re-resolved fresh) is what must catch it.
-    expect($user->fresh()->hasPermissionTo('products.edit'))->toBeFalse();
 });

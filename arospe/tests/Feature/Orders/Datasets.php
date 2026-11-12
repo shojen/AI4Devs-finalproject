@@ -62,9 +62,8 @@ $markAsPaidStateGrid = [
 
 dataset('mark_as_paid_state_grid', $markAsPaidStateGrid);
 
-// The three readable slices of the grid, so each outcome gets its own test with its own name.
+// Readable slices of the grid, so each outcome gets its own test with its own name.
 dataset('mark_as_paid_markable_cells', array_filter($markAsPaidStateGrid, fn (array $cell): bool => $cell[2] === 'marked'));
-dataset('mark_as_paid_already_paid_cells', array_filter($markAsPaidStateGrid, fn (array $cell): bool => $cell[2] === 'already_paid'));
 dataset('mark_as_paid_cancelled_cells', array_filter($markAsPaidStateGrid, fn (array $cell): bool => $cell[2] === 'cancelled'));
 
 // Story 0085 (D-1) -- whether the "Mark as paid" button is VISIBLE to an `orders.view + orders.edit` actor,

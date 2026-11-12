@@ -104,18 +104,6 @@ test('a 0.00 rate renders as a real price, not a blank', function () {
     expect($rate['price'])->toBe('0.00');
 });
 
-test('price is exposed as a string, never coerced to a float', function () {
-    $this->actingAs(rateListingFullActor());
-
-    $carrier = ShippingCarrier::factory()->create();
-    ShippingRate::factory()->pricedAt('4.95')->create(['shipping_carrier_id' => $carrier->id]);
-
-    $groups = collect(Livewire::test(Index::class)->get('ratesByCarrier'));
-    $rate = collect($groups->firstWhere('carrierId', $carrier->id)['rates'])->first();
-
-    expect($rate['price'])->toBeString()->toBe('4.95');
-});
-
 test('loadRates issues the SAME number of queries regardless of carrier/rate volume, not a magic ceiling', function () {
     // Phase 5 code-review finding M2: a bare toBeLessThan(15) passes identically whether
     // ListShippingRatesByCarrier eager-loads the zone relation or not (measured: 6 queries

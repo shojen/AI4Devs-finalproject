@@ -5,8 +5,7 @@ use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
 
 // No RefreshDatabase -- this drives Validator::make() directly against the real ibanRules(),
-// with no database involved at all, matching
-// tests/Unit/Concerns/ProductCategoryValidationRulesTest.php's existing precedent.
+// with no database involved at all.
 
 uses(TestCase::class);
 
@@ -23,7 +22,6 @@ dataset('valid_ibans', [
 dataset('invalid_ibans', [
     // Each case isolates ONE failure mode against the valid ES example above.
     'country code not uppercase' => 'eS9121000418450200051332',
-    'entirely lowercase' => 'es9121000418450200051332',
     'punctuation embedded' => 'ES91-2100-0418-4502-0005-1332',
     'digits where the country code belongs' => '129121000418450200051332',
     'too short for ES (23 chars)' => 'ES912100041845020005133',

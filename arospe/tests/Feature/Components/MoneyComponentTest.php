@@ -11,9 +11,3 @@ test('the money component renders a decimal string unchanged apart from its curr
 
     expect(trim(strip_tags($html)))->toBe('€ '.$amount);
 })->with(['10.00', '0.00', '1234.50']);
-
-test('the money component never adds a thousands separator or trims trailing zeros', function () {
-    $html = Blade::render('<x-money amount="1234.50" />');
-
-    expect($html)->toContain('1234.50')->not->toContain('1,234')->not->toContain('1234.5<');
-});

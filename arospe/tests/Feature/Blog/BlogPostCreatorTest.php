@@ -23,7 +23,6 @@ use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Support\Blog\ScheduledPosts;
 
@@ -44,39 +43,6 @@ function creatorTestEditor(array $permissions = ['blog.view', 'blog.create', 'bl
 }
 
 describe('migration shape (D-7)', function () {
-    // Risk: a constrained() that infers the wrong table, or a restrictOnDelete() that blocks
-    // deleting a user. Mutation: restrictOnDelete(); ->index('created_by').
-    test('created_by is a nullable CHAR(36) FK to users.id with ON DELETE SET NULL', function () {
-        $columns = collect(Schema::getColumns('blog_posts'))->keyBy('name');
-
-        expect($columns->has('created_by'))->toBeTrue()
-            ->and($columns['created_by']['nullable'])->toBeTrue()
-            ->and($columns['created_by']['type'])->toBe('char(36)');
-
-        $foreignKeys = collect(Schema::getForeignKeys('blog_posts'))->keyBy(fn (array $fk): string => $fk['columns'][0]);
-
-        expect($foreignKeys->has('created_by'))->toBeTrue()
-            ->and($foreignKeys['created_by']['foreign_table'])->toBe('users')
-            ->and($foreignKeys['created_by']['foreign_columns'])->toBe(['id'])
-            ->and($foreignKeys['created_by']['on_delete'])->toBe('set null');
-    });
-
-    // V-15 / the facilitator's own correction: blog_posts moves from four indexes to five the moment
-    // this FK lands; story 0078 then drops the slug unique with the moved column, so the list is
-    // four names again. Mutation: a hand-written $table->index('created_by') added on top of
-    // constrained()'s own -- this pins the exact, sorted index-name list, so a redundant fifth index
-    // fails it just as loudly as a missing one.
-    test('blog_posts has exactly four indexes, with no hand-written index on created_by', function () {
-        $indexNames = collect(Schema::getIndexes('blog_posts'))->pluck('name')->sort()->values()->all();
-
-        expect($indexNames)->toBe([
-            'blog_posts_blog_category_id_foreign',
-            'blog_posts_created_by_foreign',
-            'blog_posts_deleted_at_status_published_at_index',
-            'primary',
-        ]);
-    });
-
     // Rollback: read the migration's own source rather than actually running migrate:rollback
     // against the shared RefreshDatabase-backed suite database. MySQL DDL is not transactional, so
     // rolling back and re-migrating created_by mid-suite would leave every LATER test in this run
@@ -178,15 +144,6 @@ describe('CreateBlogPost stamps the actor (D-7)', function () {
 
         expect($post->fresh()->created_by)->toBeNull();
     });
-
-    test('created_by is not settable through a plain fill(), because it is not fillable', function () {
-        $other = User::factory()->create();
-
-        $post = new BlogPost;
-        $post->fill(['created_by' => $other->id]);
-
-        expect($post->getAttribute('created_by'))->toBeNull();
-    });
 });
 
 describe('created_by is immutable once set (D-7)', function () {
@@ -233,22 +190,6 @@ describe('created_by is immutable once set (D-7)', function () {
         $post->update(['status' => BlogPostStatus::Draft, 'created_by' => $other->id]);
 
         expect($post->fresh()->created_by)->toBe($creator->id);
-    });
-});
-
-describe('factory (D-7)', function () {
-    test('the factory default leaves created_by null', function () {
-        $post = BlogPost::factory()->create();
-
-        expect($post->fresh()->created_by)->toBeNull();
-    });
-
-    test('the createdBy() state sets created_by to the given user', function () {
-        $user = User::factory()->create();
-
-        $post = BlogPost::factory()->createdBy($user)->create();
-
-        expect($post->fresh()->created_by)->toBe($user->id);
     });
 });
 

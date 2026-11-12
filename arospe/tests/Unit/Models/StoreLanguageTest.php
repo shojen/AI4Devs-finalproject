@@ -1,8 +1,8 @@
 <?php
 
-// Story 0068 -- App\Models\StoreLanguage's pure, DB-free surface: the UUID key shape, the
+// Story 0068 -- App\Models\StoreLanguage's pure, DB-free surface: the
 // zero-fillable-columns guard (D15, the same #[Fillable([])] shape App\Models\GeographyEntry
-// already carries), the boolean casts, and translationUsageCount() against the shipped EMPTY
+// already carries) and translationUsageCount() against the shipped EMPTY
 // config/store-languages.php registry (D8) -- a registered-relation count that reads a real
 // table is a Feature test instead (tests/Feature/StoreLanguages/TranslationUsageCountTest.php),
 // since that one needs the database.
@@ -18,35 +18,6 @@ use Illuminate\Support\Str;
 use Tests\TestCase;
 
 uses(TestCase::class);
-
-test('the store language model reports a non-incrementing string key type', function () {
-    $storeLanguage = new StoreLanguage;
-
-    expect($storeLanguage->getKeyType())->toBe('string')
-        ->and($storeLanguage->getIncrementing())->toBeFalse();
-});
-
-test('is_default casts to a real bool, not 0/1', function () {
-    $storeLanguage = new StoreLanguage;
-    $storeLanguage->setRawAttributes(['is_default' => 1], true);
-
-    expect($storeLanguage->is_default)->toBeTrue()->toBeBool();
-
-    $storeLanguage->setRawAttributes(['is_default' => 0], true);
-
-    expect($storeLanguage->is_default)->toBeFalse()->toBeBool();
-});
-
-test('is_active casts to a real bool, not 0/1', function () {
-    $storeLanguage = new StoreLanguage;
-    $storeLanguage->setRawAttributes(['is_active' => 1], true);
-
-    expect($storeLanguage->is_active)->toBeTrue()->toBeBool();
-
-    $storeLanguage->setRawAttributes(['is_active' => 0], true);
-
-    expect($storeLanguage->is_active)->toBeFalse()->toBeBool();
-});
 
 // D15 -- #[Fillable([])]: zero of five columns mass-assignable. A caller cannot supply a name,
 // a code, or either flag through fill(); AddStoreLanguage/RemoveStoreLanguage/

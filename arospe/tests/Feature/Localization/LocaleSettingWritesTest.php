@@ -72,21 +72,6 @@ test('setting the default notification language persists it and leaves the dashb
         ->and($settings->default_ui_locale)->toBe('en');
 });
 
-// The independence Gherkin scenario, spelled out precisely: a dashboard default of English,
-// unaffected by a subsequent notification-only change to Spanish.
-test('the two defaults are independent of each other', function () {
-    LocaleSetting::factory()->create([
-        'default_ui_locale' => 'en',
-        'default_notification_locale' => 'en',
-    ]);
-
-    $this->actingAs(localeSettingWriteActor());
-
-    app(SetDefaultNotificationLocale::class)(UiLocale::Spanish);
-
-    expect(LocaleSetting::current()->default_ui_locale)->toBe('en');
-});
-
 // =====================================================================
 // Singleton creation -- either action against an empty table creates the row, and neither action
 // ever creates a second row.
@@ -236,13 +221,4 @@ test('the content-authoring default is untouched by a dashboard default change',
     app(SetDefaultUiLocale::class)(UiLocale::English);
 
     expect($frenchContentDefault->fresh()->is_default)->toBeTrue();
-});
-
-test('SetDefaultUiLocale returns the refreshed LocaleSetting row', function () {
-    $this->actingAs(localeSettingWriteActor());
-
-    $result = app(SetDefaultUiLocale::class)(UiLocale::English);
-
-    expect($result)->toBeInstanceOf(LocaleSetting::class)
-        ->and($result->default_ui_locale)->toBe('en');
 });

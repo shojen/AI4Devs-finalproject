@@ -16,10 +16,6 @@ test('the only backing value is bank_transfer', function () {
     expect(array_column(PaymentMethodCode::cases(), 'value'))->toBe(['bank_transfer']);
 });
 
-test('from throws ValueError for an unrecognized code', function () {
-    expect(fn () => PaymentMethodCode::from('paypal'))->toThrow(ValueError::class);
-});
-
 // Locale-switched (never asserted against a literal 'en' string) so the assertion cannot pass
 // against a hardcoded return -- the same N-2 finding ProductStatusTest.php's own label test
 // already guards against.

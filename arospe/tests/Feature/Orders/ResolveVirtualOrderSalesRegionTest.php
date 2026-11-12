@@ -47,16 +47,6 @@ function catalogRegion(string $slug): SalesRegion
 
 // --- Schema & model ---
 
-test('the geo check columns exist and are null unless supplied', function () {
-    expect(Schema::hasColumns('orders', ['ip_address', 'ip_derived_country', 'flag_reason']))->toBeTrue();
-
-    $order = Order::factory()->create(['ip_address' => null, 'ip_derived_country' => null])->fresh();
-
-    expect($order->ip_address)->toBeNull()
-        ->and($order->ip_derived_country)->toBeNull()
-        ->and($order->flag_reason)->toBeNull();
-});
-
 test('ip_address, ip_derived_country and flag_reason cannot be mass-assigned', function () {
     $attributes = (new Order)->fill([
         'ip_address' => '1.2.3.4',

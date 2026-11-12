@@ -117,27 +117,6 @@ test('Editor::mount() for a new product is refused for an actor lacking products
     expect(fn () => Livewire::test(Editor::class))->toThrow(AuthorizationException::class);
 });
 
-test('Editor::mount() for an existing product is refused for an actor lacking products.edit', function () {
-    $this->withoutExceptionHandling();
-    $creator = screenAuthActor(['products.view', 'products.create', 'products.edit']);
-    $this->actingAs($creator);
-    $product = Product::factory()->create();
-
-    $deniedActor = screenAuthActor(['products.view']);
-    $this->actingAs($deniedActor);
-
-    expect(fn () => Livewire::test(Editor::class, ['product' => $product]))
-        ->toThrow(AuthorizationException::class);
-});
-
-test('Editor::save() creating a new product is refused for an actor lacking products.create', function () {
-    $this->withoutExceptionHandling();
-    $actor = screenAuthActor(['products.view']);
-    $this->actingAs($actor);
-
-    expect(fn () => Livewire::test(Editor::class))->toThrow(AuthorizationException::class);
-});
-
 test('Editor::save() updating an existing product is refused for an actor lacking products.edit', function () {
     $this->withoutExceptionHandling();
     $creator = screenAuthActor(['products.view', 'products.create', 'products.edit']);

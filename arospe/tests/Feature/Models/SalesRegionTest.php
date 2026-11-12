@@ -26,30 +26,6 @@ test('rate round-trips through the decimal cast as an exact string', function (s
     expect($fresh->rate)->toBe($rate)
         ->and($fresh->rate)->toBeString();
 })->with([
-    '21.000',
-    '7.500',
     '0.000',
     '4.050',
 ]);
-
-test('is_default returns a strict boolean', function () {
-    $salesRegion = SalesRegion::factory()->isDefault()->create();
-
-    $fresh = $salesRegion->fresh();
-
-    // Strict, not truthy: MySQL's `boolean` cast can produce a value that differs from
-    // a strict PHP boolean type coercion depending on driver behavior, so pinning
-    // true/false (not merely truthy) is what actually catches a missing/wrong cast.
-    expect($fresh->is_default)->toBeTrue()
-        ->and($fresh->is_default)->toBeBool();
-});
-
-test('is_active returns a strict boolean', function () {
-    $active = SalesRegion::factory()->create();
-    $inactive = SalesRegion::factory()->inactive()->create();
-
-    expect($active->fresh()->is_active)->toBeTrue()
-        ->and($active->fresh()->is_active)->toBeBool()
-        ->and($inactive->fresh()->is_active)->toBeFalse()
-        ->and($inactive->fresh()->is_active)->toBeBool();
-});

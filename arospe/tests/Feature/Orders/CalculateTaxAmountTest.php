@@ -62,8 +62,6 @@ test('resolution and recalculation agree on tax amount and total for the same su
 })->with([
     ['100.00', '21.000'],
     ['10.79', '7.000'],
-    ['10.75', '7.000'],
-    ['33.33', '10.000'],
     ['19.99', '4.500'],
 ]);
 

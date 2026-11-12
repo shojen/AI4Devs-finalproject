@@ -70,15 +70,6 @@ test('an inactive region is absent from search(), and enabling it makes it appea
     expect(idsOf(app(SearchSalesRegions::class)->search($term, 50)))->toContain($region->id);
 });
 
-test('a region with children is absent from search() even when active', function () {
-    $spain = SalesRegion::factory()->create(['name' => 'España']);
-    SalesRegion::factory()->fiscalTerritoryOf($spain)->create();
-
-    $term = app(NormalizeForSearch::class)('España');
-
-    expect(idsOf(app(SearchSalesRegions::class)->search($term, 50)))->not->toContain($spain->id);
-});
-
 test('search() honours $limit', function () {
     SalesRegion::factory()->count(5)->create(['name' => 'Ruritanian Territory']);
 

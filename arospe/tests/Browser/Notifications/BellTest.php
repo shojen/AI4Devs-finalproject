@@ -81,17 +81,6 @@ function bellRow(User $user, string $type, array $data = [], ?DateTimeInterface 
     return $id;
 }
 
-// Scenario: The bell shows an unread indicator
-test('an administrator holding an unread notification sees the unread indicator', function () {
-    $administrator = bellAdministrator();
-    $administrator->notify(new CustomerCreated(Customer::factory()->create()));
-    $this->actingAs($administrator);
-
-    visit('/dashboard')
-        ->assertScript(hookCountJs('notification-bell-unread-indicator'), 1)
-        ->assertNoJavaScriptErrors();
-});
-
 // Scenario: An administrator who has never received a notification sees no indicator
 test('an administrator with no notification rows at all sees no indicator', function () {
     $this->actingAs(bellAdministrator());

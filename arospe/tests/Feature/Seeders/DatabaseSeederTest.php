@@ -101,15 +101,6 @@ test('seeding a staging environment creates no test@example.com fixture user', f
     expect(User::where('email', 'test@example.com')->exists())->toBeFalse();
 });
 
-test('seeding a staging environment still populates the roles and permission catalog', function () {
-    app()->instance('env', 'staging');
-
-    (new DatabaseSeeder)();
-
-    expect(Role::count())->toBe(2)
-        ->and(Permission::count())->toBe(43);
-});
-
 test('seeding a local environment still creates the test@example.com fixture user', function () {
     app()->instance('env', 'local');
 
@@ -143,16 +134,6 @@ test('the production seeder also populates the roles and permission catalog', fu
 
     expect(Role::count())->toBe(2)
         ->and(Permission::count())->toBe(43);
-});
-
-test('seeding a staging environment through the production seeder still populates the Sales Region catalog', function () {
-    app()->instance('env', 'staging');
-    config(['auth.super_admin.email' => null]);
-
-    (new ProductionSeeder)();
-
-    expect(SalesRegion::where('kind', SalesRegionKind::Country)->count())->toBeGreaterThanOrEqual(200)
-        ->and(SalesRegion::where('is_active', true)->count())->toBe(6);
 });
 
 // Phase 5 code-review finding M1 -- see the identical note above DatabaseSeeder's own

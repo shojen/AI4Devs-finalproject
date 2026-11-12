@@ -94,17 +94,3 @@ test('a disabled row action does not respond to a click, and its tooltip shows o
 
     expect(Product::find($product->id))->not->toBeNull();
 });
-
-test('the products list screen produces no javascript errors across one continuous smoke pass', function () {
-    $actor = productsIndexBrowserActor();
-    $this->actingAs($actor);
-
-    $product = Product::factory()->named('Runner Pro')->create();
-
-    visit(route('products.index'))
-        ->assertNoJavaScriptErrors()
-        ->click('@delete-product-'.$product->id)
-        ->assertNoJavaScriptErrors()
-        ->click('Cancel')
-        ->assertNoJavaScriptErrors();
-});

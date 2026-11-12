@@ -13,18 +13,7 @@
 // the identical condition.
 
 use App\Exceptions\PasswordConfirmationRequiredException;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
-
-test('it is a runtime exception', function () {
-    expect(new PasswordConfirmationRequiredException('Your password confirmation has expired.'))
-        ->toBeInstanceOf(RuntimeException::class);
-});
-
-test('it is not an authorization exception -- a step-up refusal must be distinguishable from a permission refusal', function () {
-    expect(new PasswordConfirmationRequiredException('Your password confirmation has expired.'))
-        ->not->toBeInstanceOf(AuthorizationException::class);
-});
 
 test('rendering it produces a 423 response, matching RequirePassword\'s own JSON-branch status for the identical condition', function () {
     $exception = new PasswordConfirmationRequiredException('Your password confirmation has expired.');

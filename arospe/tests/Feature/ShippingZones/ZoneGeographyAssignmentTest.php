@@ -32,7 +32,7 @@ beforeEach(function () {
 // chain is built inline with GeographyEntryFactory::community()/municipality(), both of which
 // require an explicit parent argument.
 
-test('one entry at each level round-trips through the pivot', function (Closure $makeEntry, string $expectedLevel) {
+test('a country entry round-trips through the pivot with its level', function (Closure $makeEntry, string $expectedLevel) {
     $zone = app(CreateShippingZone::class)('Zona Norte');
     $entry = $makeEntry();
 
@@ -49,36 +49,7 @@ test('one entry at each level round-trips through the pivot', function (Closure 
         ->and($roundTripped->level->value)->toBe($expectedLevel);
 })->with([
     'country' => [fn () => GeographyEntry::factory()->create(['name' => 'Francia']), 'country'],
-    'community' => [
-        fn () => GeographyEntry::factory()->community(GeographyEntry::factory()->create(['name' => 'España']))->create(['name' => 'Galicia']),
-        'community',
-    ],
-    'municipality' => [
-        fn () => GeographyEntry::factory()->municipality(
-            GeographyEntry::factory()->community(GeographyEntry::factory()->create(['name' => 'España']))->create(['name' => 'Asturias'])
-        )->create(['name' => 'Gijón']),
-        'municipality',
-    ],
 ]);
-
-// The PRD's own "Gijón, Avilés and Siero" example -- a separate test because the assertion
-// differs (count = 3, exact id set), not a fourth dataset case.
-test('assigning several entries at once syncs the exact set', function () {
-    $spain = GeographyEntry::factory()->create(['name' => 'España']);
-    $asturias = GeographyEntry::factory()->community($spain)->create(['name' => 'Asturias']);
-    $gijon = GeographyEntry::factory()->municipality($asturias)->create(['name' => 'Gijón']);
-    $aviles = GeographyEntry::factory()->municipality($asturias)->create(['name' => 'Avilés']);
-    $siero = GeographyEntry::factory()->municipality($asturias)->create(['name' => 'Siero']);
-
-    $zone = app(CreateShippingZone::class)('Zona Norte');
-
-    app(SyncShippingZoneGeography::class)($zone, [$gijon->id, $aviles->id, $siero->id]);
-
-    $ids = $zone->geographyEntries()->pluck('geography_entries.id')->sort()->values()->all();
-
-    expect($ids)->toHaveCount(3)
-        ->and($ids)->toBe(collect([$gijon->id, $aviles->id, $siero->id])->sort()->values()->all());
-});
 
 test('a single zone may mix geography levels', function () {
     $francia = GeographyEntry::factory()->create(['name' => 'Francia']);

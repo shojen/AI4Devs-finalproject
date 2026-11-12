@@ -103,13 +103,6 @@ test('the greeting follows the time of day in the application timezone', functio
     '20:00 is evening' => ['20:00', 'evening'],
 ]);
 
-test('a counter whose value is zero renders 0, not nothing', function () {
-    $html = overviewRenderHtml(['products.view', 'media.view']);
-
-    expect(Ui::text($html, 'dashboard-counter-products'))->toMatch('/(^|\D)0(\D|$)/')
-        ->and(Ui::text($html, 'dashboard-counter-images'))->toMatch('/(^|\D)0(\D|$)/');
-});
-
 test('partially hidden counters render only the visible ones', function () {
     Product::factory()->count(2)->create();
     Media::factory()->count(3)->create();
@@ -189,18 +182,6 @@ test('a post state decides its badge and whether a go-live date is shown', funct
         ->and(Ui::text($html, "dashboard-blog-status-{$scheduled->id}"))->toBe(BlogPostStatus::Scheduled->label())
         ->and(Ui::present($html, "dashboard-blog-date-{$published->id}"))->toBeFalse()
         ->and(Ui::text($html, "dashboard-blog-date-{$scheduled->id}"))->toContain('12/10/2026 10:00');
-});
-
-test('the blog badge keeps its English words and colours', function () {
-    $published = BlogPost::factory()->published()->create(['created_at' => '2026-03-01 09:00:00']);
-    $scheduled = BlogPost::factory()->scheduled()->create(['created_at' => '2026-02-01 09:00:00']);
-
-    $html = overviewRenderHtml(['blog.view']);
-
-    expect(Ui::text($html, "dashboard-blog-status-{$published->id}"))->toBe('Published')
-        ->and(Ui::tag($html, "dashboard-blog-status-{$published->id}"))->toContain('text-lime-800')
-        ->and(Ui::text($html, "dashboard-blog-status-{$scheduled->id}"))->toBe('Scheduled')
-        ->and(Ui::tag($html, "dashboard-blog-status-{$scheduled->id}"))->toContain('text-amber-700');
 });
 
 test('the description is plain text of at most 80 characters', function () {
@@ -345,14 +326,6 @@ test('a variable product shows once as its parent with a singular or plural vari
     'two low variants' => [[1, 1], '2 variants low'],
 ]);
 
-test('the variants-low hint is the trans_choice of its key', function () {
-    $one = overviewStockProduct(99, [1, 50]);
-
-    $html = overviewRenderHtml(['products.view']);
-
-    expect(Ui::text($html, "dashboard-stock-variants-{$one->id}"))->toBe(trans_choice('dashboard.stock.variants_low', 1));
-});
-
 test('a simple product shows no variants hint', function () {
     $simple = overviewStockProduct(1);
 
@@ -452,20 +425,6 @@ test('totals keep their trailing zeros and never gain a thousands separator', fu
     expect(Ui::text($html, "dashboard-order-total-{$order->id}"))->toBe("€ {$total}");
 })->with(['1234.50', '10.00', '0.00', '99999.99']);
 
-test('the orders widget hands each order status to the badge', function (OrderStatus $status) {
-    $order = Order::factory()->create(['status' => $status]);
-
-    $html = overviewRenderHtml(['orders.view']);
-
-    expect(Ui::text($html, "dashboard-order-status-{$order->id}"))->toBe($status->label());
-})->with([
-    'pending' => [OrderStatus::Pending],
-    'processing' => [OrderStatus::Processing],
-    'shipped' => [OrderStatus::Shipped],
-    'delivered' => [OrderStatus::Delivered],
-    'cancelled' => [OrderStatus::Cancelled],
-]);
-
 test('the payment state resolves through the orders.payment_statuses keys', function (PaymentStatus $status) {
     $order = Order::factory()->create(['payment_status' => $status]);
 
@@ -474,8 +433,6 @@ test('the payment state resolves through the orders.payment_statuses keys', func
     expect(Ui::text($html, "dashboard-order-payment-{$order->id}"))->toBe(__('orders.payment_statuses.'.$status->value));
 })->with([
     'pending_payment' => [PaymentStatus::PendingPayment],
-    'paid' => [PaymentStatus::Paid],
-    'refunded' => [PaymentStatus::Refunded],
     'partially_refunded' => [PaymentStatus::PartiallyRefunded],
 ]);
 

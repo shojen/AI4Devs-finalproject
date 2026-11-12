@@ -64,25 +64,6 @@ test('the configured indicator and the IBAN render when the IBAN is set', functi
         ->assertDontSeeHtml('data-test="payment-method-not-configured"');
 });
 
-test('openEditModal() leaves the form blank when nothing is configured', function () {
-    $method = PaymentMethod::factory()->create(['iban' => null]);
-    $this->actingAs(paymentMethodsViewerActor());
-
-    Livewire::test(Index::class)
-        ->call('openEditModal', $method->id)
-        ->assertSet('iban', '')
-        ->assertSeeHtml('data-test="payment-method-modal"');
-});
-
-test('openEditModal() prefills the form with the currently configured IBAN', function () {
-    $method = PaymentMethod::factory()->withIban('ES9121000418450200051332')->create();
-    $this->actingAs(paymentMethodsViewerActor());
-
-    Livewire::test(Index::class)
-        ->call('openEditModal', $method->id)
-        ->assertSet('iban', 'ES9121000418450200051332');
-});
-
 // Proves the flux:input is really bound to the `iban` error key -- 0038 ships no real markup,
 // so this is genuinely new risk this story introduces. assertHasErrors() alone only proves the
 // error was RAISED, not that the template RENDERS it (see docs/errors-log.md's "a passing

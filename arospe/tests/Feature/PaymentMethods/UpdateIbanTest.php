@@ -82,8 +82,8 @@ test('a lowercase IBAN is accepted and stored uppercased', function () {
 
 // Both halves are mandatory: asserting only that an exception/error was raised passes against an
 // implementation that writes first and validates second. Uses invalid_ibans_after_normalisation
-// (not the full invalid_ibans set), which deliberately excludes the two case-only variants --
-// save() normalises to uppercase BEFORE validating, so those become the valid ES example and are
+// (not the full invalid_ibans set), which deliberately excludes the case-only variant --
+// save() normalises to uppercase BEFORE validating, so it becomes the valid ES example and is
 // correctly accepted, covered separately by the lowercase-input scenario above.
 test('an invalid IBAN is rejected on the iban field, and the previously configured IBAN survives', function (string $invalidIban) {
     $method = PaymentMethod::factory()->create(['iban' => 'DE89370400440532013000']);

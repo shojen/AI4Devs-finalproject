@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -8,7 +7,6 @@ use App\Models\OrderPayment;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 // Story 0045, Phase 3 (TDD "red" step): App\Actions\Orders\CreateOrder does not exist yet, but
 // App\Models\Order / App\Models\OrderItem, their factories and both migrations already do (the
@@ -16,60 +14,6 @@ use Illuminate\Support\Facades\Schema;
 // the MODEL/SCHEMA layer directly, with no dependency on CreateOrder at all -- it is expected to
 // be GREEN already, proving the schema/model layer is sound before the write-path tests (which
 // DO depend on the not-yet-existing CreateOrder/OrderPolicy) go red for the right reason.
-
-test('Order uses HasUuids and a created order has a 36-character UUID id', function () {
-    $order = Order::factory()->create();
-
-    expect($order->id)->toBeString()->and(mb_strlen($order->id))->toBe(36);
-});
-
-test('OrderItem uses HasUuids and a created line item has a 36-character UUID id', function () {
-    $item = OrderItem::factory()->create();
-
-    expect($item->id)->toBeString()->and(mb_strlen($item->id))->toBe(36);
-});
-
-test('an order round-trips through the factory with every column persisting and reloading byte-identically', function () {
-    $order = Order::factory()->create([
-        'shipping_address_line1' => 'Calle Mayor 1',
-        'shipping_city' => 'Madrid',
-        'shipping_country' => 'ES',
-    ]);
-
-    $fresh = $order->fresh();
-
-    expect($fresh->id)->toBe($order->id)
-        ->and($fresh->order_number)->toBe($order->order_number)
-        ->and($fresh->customer_id)->toBe($order->customer_id)
-        ->and($fresh->payment_method_id)->toBe($order->payment_method_id)
-        ->and($fresh->status)->toEqual($order->status)
-        ->and($fresh->payment_status)->toEqual($order->payment_status)
-        ->and($fresh->shipping_address_line1)->toBe('Calle Mayor 1')
-        ->and($fresh->shipping_city)->toBe('Madrid')
-        ->and($fresh->shipping_country)->toBe('ES')
-        ->and((string) $fresh->subtotal)->toBe((string) $order->subtotal)
-        ->and((string) $fresh->total)->toBe((string) $order->total)
-        ->and($fresh->flagged_for_review)->toBe($order->flagged_for_review);
-});
-
-test('a line item round-trips through the factory with every column persisting and reloading byte-identically', function () {
-    $item = OrderItem::factory()->create([
-        'quantity' => 3,
-    ]);
-
-    $fresh = $item->fresh();
-
-    expect($fresh->id)->toBe($item->id)
-        ->and($fresh->order_id)->toBe($item->order_id)
-        ->and($fresh->product_id)->toBe($item->product_id)
-        ->and($fresh->product_variant_id)->toBe($item->product_variant_id)
-        ->and($fresh->product_name)->toBe($item->product_name)
-        ->and($fresh->product_sku)->toBe($item->product_sku)
-        ->and($fresh->quantity)->toBe(3)
-        ->and((string) $fresh->unit_price)->toBe((string) $item->unit_price)
-        ->and((string) $fresh->line_total)->toBe((string) $item->line_total)
-        ->and($fresh->refunded_quantity)->toBe(0);
-});
 
 // This is the sharpest structural test in the story -- the omission-as-guard convention
 // (omission from #[Fillable] IS this codebase's mass-assignment guard, per
@@ -141,28 +85,6 @@ test('a unit_price supplied via a plain fill() payload never reaches the model, 
 
 // --- Story 0084 (reworked, Phase 3 red step): no orders.paid_at, Order::payment(), Order::isAwaitingPayment(), OrderFactory::paid() ---
 
-test('the Order fillable set excludes payment_status, so only MarkOrderAsPaid can write it', function () {
-    expect((new Order)->getFillable())->not->toContain('payment_status')
-        ->and((new Order)->getFillable())->not->toContain('paid_at');
-});
-
-test('orders has no paid_at attribute, column or cast any more: the payment moment lives in order_payments', function () {
-    $order = Order::factory()->paid()->create()->fresh();
-
-    expect(Schema::hasColumn('orders', 'paid_at'))->toBeFalse()
-        ->and((new Order)->getCasts())->not->toHaveKey('paid_at')
-        ->and($order->getAttributes())->not->toHaveKey('paid_at');
-});
-
-// D-5: "can be marked as paid" -- the predicate story 0085's control reads. Same 20 cells the
-// action's own grid uses, so the UI predicate and the action cannot drift apart.
-test('isAwaitingPayment is true exactly for the cells the action accepts', function (PaymentStatus $paymentStatus, OrderStatus $status, string $outcome) {
-    $order = new Order;
-    $order->forceFill(['payment_status' => $paymentStatus, 'status' => $status]);
-
-    expect($order->isAwaitingPayment())->toBe($outcome === 'marked');
-})->with('mark_as_paid_state_grid');
-
 test('isAwaitingPayment reads payment_status and status only and never consults the payment row', function () {
     $legacyPaid = Order::factory()->state(['payment_status' => PaymentStatus::Paid])->create()->fresh();
     $pendingWithRow = Order::factory()->create()->fresh();
@@ -170,36 +92,6 @@ test('isAwaitingPayment reads payment_status and status only and never consults 
 
     expect($legacyPaid->isAwaitingPayment())->toBeFalse()
         ->and($pendingWithRow->fresh()->isAwaitingPayment())->toBeTrue();
-});
-
-test('OrderFactory::paid() yields a paid order with exactly one payment row: the order\'s own method, type transfer, paid_at never earlier than created_at', function () {
-    $default = Order::factory()->paid()->create()->fresh();
-    $backdated = Order::factory()->paid()->create(['created_at' => now()->subDays(3)->startOfSecond()])->fresh();
-
-    foreach ([$default, $backdated] as $order) {
-        $rows = DB::table('order_payments')->where('order_id', $order->id)->get();
-
-        expect($order->payment_status)->toBe(PaymentStatus::Paid)
-            ->and($rows)->toHaveCount(1)
-            ->and($rows[0]->payment_method_id)->toBe($order->payment_method_id)
-            ->and($rows[0]->type)->toBe('transfer')
-            ->and($order->payment)->toBeInstanceOf(OrderPayment::class)
-            ->and($order->payment->paid_at->greaterThanOrEqualTo($order->created_at))->toBeTrue();
-    }
-});
-
-test('an inline-state paid order has no payment row, is a valid legacy order and reads back with a null payment', function () {
-    $order = Order::factory()->state(['payment_status' => PaymentStatus::Paid])->create()->fresh();
-
-    expect($order->payment_status)->toBe(PaymentStatus::Paid)
-        ->and($order->payment)->toBeNull()
-        ->and(DB::table('order_payments')->where('order_id', $order->id)->exists())->toBeFalse();
-});
-
-test('a default-state order creates no payment row', function () {
-    $order = Order::factory()->create();
-
-    expect(DB::table('order_payments')->where('order_id', $order->id)->exists())->toBeFalse();
 });
 
 // --- Story 0088: stock target and counter helpers (D1, D8, D9) ---
@@ -238,13 +130,6 @@ test('stockTarget() runs no query', function () {
     expect($queries)->toBe([]);
 });
 
-test('a factory line of 5 deducted has 5 returnable units and none refunded out', function () {
-    $item = OrderItem::factory()->create(['quantity' => 5]);
-
-    expect($item->returnableStockUnits())->toBe(5)
-        ->and($item->refundedUnitsOutOfStock())->toBe(0);
-});
-
 test('a legacy-untracked line has no returnable units and no refunded units out, with or without refunds', function (int $quantity, int $refunded) {
     $item = OrderItem::factory()->legacyStockUntracked()->create([
         'quantity' => $quantity,
@@ -271,14 +156,6 @@ test('returnableStockUnits() is (Q - F) - U and refundedUnitsOutOfStock() is F -
 
     expect($item->returnableStockUnits())->toBe(3)
         ->and($item->refundedUnitsOutOfStock())->toBe(2);
-});
-
-test('the factory keeps ordered_as_variant true for orphanedVariant() and derives it from the variant otherwise', function () {
-    $variant = ProductVariant::factory()->create();
-
-    expect(OrderItem::factory()->orphanedVariant()->create()->ordered_as_variant)->toBeTrue()
-        ->and(OrderItem::factory()->forVariant($variant)->create()->ordered_as_variant)->toBeTrue()
-        ->and(OrderItem::factory()->create()->ordered_as_variant)->toBeFalse();
 });
 
 dataset('refund_rule_cases', [

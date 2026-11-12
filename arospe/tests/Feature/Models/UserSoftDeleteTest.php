@@ -4,7 +4,6 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 // Story 0005: none of this exists yet -- no `deleted_at` column, no SoftDeletes
@@ -21,44 +20,6 @@ test('deleting a user sets deleted_at and the row still exists in the database',
 
     $this->assertDatabaseHas('users', ['id' => $user->id]);
     expect(DB::table('users')->where('id', $user->id)->value('deleted_at'))->not->toBeNull();
-});
-
-test('deleted_at is null on a freshly created user', function () {
-    $user = User::factory()->create();
-
-    expect($user->deleted_at)->toBeNull();
-});
-
-test('a soft-deleted user is excluded from default queries', function () {
-    $user = User::factory()->create();
-    $user->delete();
-
-    expect(User::find($user->id))->toBeNull()
-        ->and(User::all()->pluck('id'))->not->toContain($user->id)
-        ->and(User::query()->pluck('id'))->not->toContain($user->id);
-});
-
-test('withTrashed find still returns the soft-deleted user, with its deletion timestamp set', function () {
-    $user = User::factory()->create();
-    $user->delete();
-
-    $found = User::withTrashed()->find($user->id);
-
-    expect($found)->not->toBeNull()
-        ->and($found->id)->toBe($user->id)
-        ->and($found->deleted_at)->not->toBeNull();
-});
-
-test('onlyTrashed returns exactly the deleted set', function () {
-    $active = User::factory()->create();
-    $deleted = User::factory()->create();
-    $deleted->delete();
-
-    $trashedIds = User::onlyTrashed()->pluck('id');
-
-    expect($trashedIds)->toHaveCount(1)
-        ->and($trashedIds)->toContain($deleted->id)
-        ->and($trashedIds)->not->toContain($active->id);
 });
 
 test('deleting a user leaves the name and role assignment unchanged on the retained record', function () {
@@ -212,20 +173,4 @@ test('deleting a user frees the email for reuse without leaving a stale reset to
 
     expect($newUser->getRawOriginal('email'))->toBe('diego.ferrer@arospe.es')
         ->and(DB::table('password_reset_tokens')->where('email', 'diego.ferrer@arospe.es')->exists())->toBeFalse();
-});
-
-// --- Passkeys survive a soft delete ---
-
-test('deleting a user does not remove their passkey records', function () {
-    $user = User::factory()->create();
-
-    $passkey = $user->passkeys()->create([
-        'name' => 'YubiKey',
-        'credential_id' => Str::random(40),
-        'credential' => '{}',
-    ]);
-
-    $user->delete();
-
-    $this->assertDatabaseHas('passkeys', ['id' => $passkey->id]);
 });

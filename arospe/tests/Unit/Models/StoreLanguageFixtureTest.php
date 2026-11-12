@@ -2,9 +2,8 @@
 
 // Story 0068 -- App\Models\StoreLanguage::availableLanguages(), the single named reader (D17) of
 // the bundled database/data/iso-639-languages.json fixture, shared by StoreLanguageSeeder and
-// StoreLanguageValidationRules::codeRules(). Exercised against the REAL bundled file, in the
-// spirit of tests/Unit/Seeders/GeographyFixtureIntegrityTest.php's own fixture-shape assertions,
-// but through the model method rather than a raw file parse, since availableLanguages() is the
+// StoreLanguageValidationRules::codeRules(). Exercised against the REAL bundled file,
+// through the model method rather than a raw file parse, since availableLanguages() is the
 // one place this story's contract says the JSON is ever read.
 //
 // uses(TestCase::class), no RefreshDatabase: availableLanguages() resolves a path via the app

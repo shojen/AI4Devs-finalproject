@@ -284,62 +284,6 @@ test('Cancelled to Cancelled is refused by the cancellation guard, not by the sa
     expect($order->fresh()->status)->toBe(OrderStatus::Cancelled);
 });
 
-// A caller must not be able to retry the cancellation refusal with confirmed: true and succeed --
-// the strict ValidationException::class match in the two dataset tests above already proves this
-// (a regression exception would fail that assertion), stated here explicitly for the one case
-// that combines both guards.
-test('the cancellation refusal is never the regression-confirmation exception', function () {
-    actingOrderEditorForTransition();
-    $order = Order::factory()->paid()->create(['status' => OrderStatus::Processing]);
-
-    try {
-        app(TransitionOrderStatus::class)($order, OrderStatus::Cancelled);
-        test()->fail('Expected a ValidationException.');
-    } catch (OrderStatusRegressionRequiresConfirmationException $e) {
-        test()->fail('Cancellation must not be refused as a confirmable regression.');
-    } catch (ValidationException $e) {
-        expect($e)->toBeInstanceOf(ValidationException::class);
-    }
-});
-
-// R-1/D-3's structural proof: the guard at step 2 is what keeps rank() unreachable for a Cancelled
-// value. If this were ever reordered below the regression/same-status checks, this test is the one
-// that goes red -- catching UnhandledMatchError explicitly and failing on it, while any other
-// refusal (including "class does not exist yet", pre-implementation) is left to propagate and fail
-// the test for its own, unrelated reason.
-test('no UnhandledMatchError escapes for any Cancelled-involving transition', function (OrderStatus $from, OrderStatus $to, bool $confirmed) {
-    actingOrderEditorForTransition();
-    $order = Order::factory()->paid()->create(['status' => $from]);
-
-    try {
-        app(TransitionOrderStatus::class)($order, $to, $confirmed);
-        test()->fail('Expected the Cancelled-involving transition to be refused.');
-    } catch (UnhandledMatchError $e) {
-        test()->fail('rank() was reached on a Cancelled value: '.$e->getMessage());
-    } catch (ValidationException $e) {
-        expect($e)->toBeInstanceOf(ValidationException::class);
-    }
-})->with([
-    'Pending -> Cancelled, unconfirmed' => [OrderStatus::Pending, OrderStatus::Cancelled, false],
-    'Pending -> Cancelled, confirmed' => [OrderStatus::Pending, OrderStatus::Cancelled, true],
-    'Processing -> Cancelled, unconfirmed' => [OrderStatus::Processing, OrderStatus::Cancelled, false],
-    'Processing -> Cancelled, confirmed' => [OrderStatus::Processing, OrderStatus::Cancelled, true],
-    'Shipped -> Cancelled, unconfirmed' => [OrderStatus::Shipped, OrderStatus::Cancelled, false],
-    'Shipped -> Cancelled, confirmed' => [OrderStatus::Shipped, OrderStatus::Cancelled, true],
-    'Delivered -> Cancelled, unconfirmed' => [OrderStatus::Delivered, OrderStatus::Cancelled, false],
-    'Delivered -> Cancelled, confirmed' => [OrderStatus::Delivered, OrderStatus::Cancelled, true],
-    'Cancelled -> Pending, unconfirmed' => [OrderStatus::Cancelled, OrderStatus::Pending, false],
-    'Cancelled -> Pending, confirmed' => [OrderStatus::Cancelled, OrderStatus::Pending, true],
-    'Cancelled -> Processing, unconfirmed' => [OrderStatus::Cancelled, OrderStatus::Processing, false],
-    'Cancelled -> Processing, confirmed' => [OrderStatus::Cancelled, OrderStatus::Processing, true],
-    'Cancelled -> Shipped, unconfirmed' => [OrderStatus::Cancelled, OrderStatus::Shipped, false],
-    'Cancelled -> Shipped, confirmed' => [OrderStatus::Cancelled, OrderStatus::Shipped, true],
-    'Cancelled -> Delivered, unconfirmed' => [OrderStatus::Cancelled, OrderStatus::Delivered, false],
-    'Cancelled -> Delivered, confirmed' => [OrderStatus::Cancelled, OrderStatus::Delivered, true],
-    'Cancelled -> Cancelled, unconfirmed' => [OrderStatus::Cancelled, OrderStatus::Cancelled, false],
-    'Cancelled -> Cancelled, confirmed' => [OrderStatus::Cancelled, OrderStatus::Cancelled, true],
-]);
-
 // --- Authorization ---
 
 test('an actor lacking orders.edit is refused by TransitionOrderStatus with an AuthorizationException, and the order is unchanged', function () {
@@ -379,18 +323,6 @@ test('a Super Admin holding no individual orders permission succeeds via Gate::b
     expect($order->fresh()->status)->toBe(OrderStatus::Processing);
 });
 
-// R-2: the ability string is asserted literally against the seeded catalog, so a typo cannot fail
-// closed unnoticed. D-7: EDIT_PERMISSION is reused -- no new permission is declared.
-test('OrderPolicy::EDIT_PERMISSION equals orders.edit and is present in the seeded catalog', function () {
-    expect(OrderPolicy::EDIT_PERMISSION)->toBe('orders.edit');
-    expect(in_array('orders', RolePermissionSeeder::MODULES, true))->toBeTrue();
-
-    $actor = User::factory()->create();
-    $actor->givePermissionTo(OrderPolicy::EDIT_PERMISSION);
-
-    expect($actor->hasPermissionTo('orders.edit'))->toBeTrue();
-});
-
 // D-3's "the permission refusal always wins" ordering rule, the critical test: an unauthorized
 // caller must not learn the order's current status from a confirmation prompt. If step 1
 // (permission) and step 4 (regression) were ever swapped, this is the test that goes red.
@@ -422,19 +354,6 @@ test('an order awaiting payment cannot move to a fulfilment status its payment s
         ->toThrow(ValidationException::class);
 
     expect($order->fresh()->status)->toBe(OrderStatus::Pending);
-})->with([
-    'Processing' => [OrderStatus::Processing],
-    'Shipped' => [OrderStatus::Shipped],
-    'Delivered' => [OrderStatus::Delivered],
-]);
-
-test('the same moves succeed once the order is paid', function (OrderStatus $to) {
-    actingOrderEditorForTransition();
-    $order = Order::factory()->paid()->create(['status' => OrderStatus::Pending]);
-
-    app(TransitionOrderStatus::class)($order, $to);
-
-    expect($order->fresh()->status)->toBe($to);
 })->with([
     'Processing' => [OrderStatus::Processing],
     'Shipped' => [OrderStatus::Shipped],

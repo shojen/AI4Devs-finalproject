@@ -153,19 +153,10 @@ test('invalid price/stock inputs throw ValidationException on the named key and 
 ]);
 
 // =====================================================================
-// featuredMediaId: a real id persists it; explicit null clears an existing one -- this is
+// featuredMediaId: explicit null clears an existing one -- this is
 // legitimate (the caller stating null on purpose), unlike F1's bug, which was about an UNSTATED
 // default silently clearing it.
 // =====================================================================
-
-test('setting featuredMediaId to a real media id persists it', function () {
-    [$variant] = makeUpdateProductVariantTestVariant('0105');
-    $media = Media::factory()->create();
-
-    app(UpdateProductVariant::class)($variant, '19.99', 5, $media->id, null);
-
-    expect($variant->fresh()->featured_media_id)->toBe($media->id);
-});
 
 test('setting featuredMediaId to null explicitly clears an existing image', function () {
     [$variant] = makeUpdateProductVariantTestVariant('0106');

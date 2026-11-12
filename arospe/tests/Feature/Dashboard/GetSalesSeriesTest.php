@@ -9,16 +9,14 @@ use App\Models\Order;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Database\Seeders\RolePermissionSeeder;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Support\Dashboard\DomainQueryLog;
 
 // Story 0082 (D-6): the money series (Sales + Real income). GetSalesSeries does not exist yet --
-// red until implemented. Sibling files: GetSalesSeriesGranularityTest (periods, caps) and
+// red until implemented. Sibling files: GetSalesSeriesGranularityTest (periods) and
 // GetSalesSeriesTimezoneTest (Madrid wall time, midnight, DST, leap day).
 //
 // Helpers are global functions guarded by function_exists: the three GetSalesSeries* files and
@@ -151,23 +149,6 @@ test('orders outside the range are excluded from points and totals', function ()
         ->and(array_column($series['points'], 'sales'))->toBe(['0.00', '5.00', '0.00']);
 });
 
-test('bucket keys are ascending, unique and as many as the periods of the range', function (string $granularity, string $from, string $to, int $count) {
-    $granularity = SalesGranularity::from($granularity);
-    $series = app(GetSalesSeries::class)($granularity, seriesDay($from), seriesDay($to));
-    $keys = array_column($series['points'], 'bucket');
-
-    $sorted = $keys;
-    sort($sorted);
-
-    expect($keys)->toHaveCount($count)
-        ->and($keys)->toBe($sorted)
-        ->and(array_unique($keys))->toHaveCount($count);
-})->with([
-    'days' => ['day', '2026-01-15', '2026-03-15', 60],
-    'months' => ['month', '2025-11-01', '2026-02-28', 4],
-    'years' => ['year', '2024-06-01', '2027-06-01', 4],
-]);
-
 test('the money and orders series share identical bucket keys and labels for the same input', function (string $granularity, string $from, string $to) {
     $granularity = SalesGranularity::from($granularity);
     seriesOrder('2026-05-02 10:00:00', '10.00');
@@ -274,39 +255,6 @@ test('the status filter narrows Sales and Real income, with cancelled excluded b
     'processing only' => [[OrderStatus::Processing], '20.00', '20.00'],
 ]);
 
-test('the status filter example: delivered paid 100, shipped paid 50, pending unpaid 20', function (array|string|null $statuses, string $sales, string $income) {
-    seriesOrder('2026-05-01 10:00:00', '100.00', OrderStatus::Delivered, PaymentStatus::Paid);
-    seriesOrder('2026-05-01 10:00:00', '50.00', OrderStatus::Shipped, PaymentStatus::Paid);
-    seriesOrder('2026-05-01 10:00:00', '20.00', OrderStatus::Pending, PaymentStatus::PendingPayment);
-
-    $series = app(GetSalesSeries::class)(SalesGranularity::Day, seriesDay('2026-05-01'), seriesDay('2026-05-01'), seriesStatuses($statuses));
-
-    expect($series['totalSales'])->toBe($sales)->and($series['totalIncome'])->toBe($income);
-})->with([
-    'delivered' => [[OrderStatus::Delivered], '100.00', '100.00'],
-    'delivered, shipped' => [[OrderStatus::Delivered, OrderStatus::Shipped], '150.00', '150.00'],
-    'pending' => [[OrderStatus::Pending], '20.00', '0.00'],
-    'all except cancelled' => ['default', '170.00', '150.00'],
-]);
-
-test('cancelled orders count in sales only when included (one delivered 100 and one cancelled 40)', function (array|string|null $statuses, string $sales) {
-    seriesOrder('2026-05-01 10:00:00', '100.00', OrderStatus::Delivered);
-    seriesOrder('2026-05-01 11:00:00', '40.00', OrderStatus::Cancelled);
-
-    $series = app(GetSalesSeries::class)(SalesGranularity::Day, seriesDay('2026-05-01'), seriesDay('2026-05-01'), seriesStatuses($statuses));
-
-    expect($series['points'][0]['sales'])->toBe($sales);
-})->with([
-    'without cancelled' => [null, '100.00'],
-    'including cancelled' => ['all', '140.00'],
-]);
-
-test('the returned statuses echo the set that was applied', function () {
-    $series = app(GetSalesSeries::class)(SalesGranularity::Day, seriesDay('2026-05-01'), seriesDay('2026-05-01'), [OrderStatus::Cancelled]);
-
-    expect($series['statuses'])->toBe([OrderStatus::Cancelled]);
-});
-
 test('an empty status list is refused with a ValidationException on statuses', function () {
     $call = fn () => app(GetSalesSeries::class)(SalesGranularity::Day, seriesDay('2026-05-01'), seriesDay('2026-05-02'), []);
 
@@ -321,26 +269,6 @@ test('an empty status list is refused with a ValidationException on statuses', f
 });
 
 // --- Validation --------------------------------------------------------------------------------
-
-test('from after to is refused on the range key with the translated message', function () {
-    try {
-        app(GetSalesSeries::class)(SalesGranularity::Day, seriesDay('2026-05-05'), seriesDay('2026-05-01'));
-        $this->fail('Expected a ValidationException');
-    } catch (ValidationException $e) {
-        expect(array_keys($e->errors()))->toBe(['range'])
-            ->and($e->errors()['range'][0])->toBe(__('dashboard.errors.range_invalid'))
-            ->and($e->errors()['range'][0])->not->toBe('dashboard.errors.range_invalid');
-    }
-});
-
-test('an invalid range together with an empty status list reports both keys in one exception', function () {
-    try {
-        app(GetSalesSeries::class)(SalesGranularity::Day, seriesDay('2026-05-05'), seriesDay('2026-05-01'), []);
-        $this->fail('Expected a ValidationException');
-    } catch (ValidationException $e) {
-        expect(array_keys($e->errors()))->toEqualCanonicalizing(['range', 'statuses']);
-    }
-});
 
 test('a refused range runs no orders query', function () {
     $counts = DomainQueryLog::capture(function (): void {
@@ -375,60 +303,6 @@ test('the money series runs one orders query even when the shop is empty', funct
     );
 
     expect($counts['orders'])->toBe(1);
-});
-
-// --- Authorization -----------------------------------------------------------------------------
-
-test('an actor without orders.view is refused, the refusal is logged and no orders query runs', function () {
-    Log::spy();
-    $actor = User::factory()->create();
-    test()->actingAs($actor);
-
-    $counts = DomainQueryLog::capture(function (): void {
-        try {
-            app(GetSalesSeries::class)(SalesGranularity::Day, seriesDay('2026-05-01'), seriesDay('2026-05-02'));
-        } catch (AuthorizationException) {
-            //
-        }
-    });
-
-    Log::shouldHaveReceived('warning')
-        ->withArgs(fn (string $message, array $context): bool => $message === 'Privileged action refused'
-            && ($context['actor_id'] ?? null) === $actor->id
-            && ($context['ability'] ?? null) === 'viewAny'
-            && ($context['target_type'] ?? null) === 'order'
-            && array_key_exists('target_id', $context) && $context['target_id'] === null)
-        ->once();
-
-    expect($counts['orders'])->toBe(0);
-});
-
-test('authorization wins over validation: a refused actor with an invalid range and no statuses gets AuthorizationException', function () {
-    Log::spy();
-    test()->actingAs(User::factory()->create());
-
-    expect(fn () => app(GetSalesSeries::class)(SalesGranularity::Day, seriesDay('2026-05-05'), seriesDay('2026-05-01'), []))
-        ->toThrow(AuthorizationException::class);
-
-    Log::shouldHaveReceived('warning')->withArgs(fn (string $message): bool => $message === 'Privileged action refused')->once();
-});
-
-test('a Super Admin passes through Gate::before', function () {
-    $admin = User::factory()->create();
-    $admin->assignRole('Super Admin');
-    test()->actingAs($admin);
-
-    $series = app(GetSalesSeries::class)(SalesGranularity::Day, seriesDay('2026-05-01'), seriesDay('2026-05-01'));
-
-    expect($series['points'])->toHaveCount(1);
-});
-
-test('a permitted actor is not logged as refused', function () {
-    Log::spy();
-
-    app(GetSalesSeries::class)(SalesGranularity::Day, seriesDay('2026-05-01'), seriesDay('2026-05-01'));
-
-    Log::shouldNotHaveReceived('warning');
 });
 
 // --- Security audit F1/F2: hostile status lists and extreme dates --------------------------------

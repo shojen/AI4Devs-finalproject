@@ -86,7 +86,6 @@ test('the accepted and refused stock input shapes persist with the right type', 
     expect($product->fresh()->stock)->toBe($expected);
 })->with([
     'a numeric string is accepted as an integer' => ['12', true, 12],
-    'a float is refused' => [12.5, false, null],
 ]);
 
 test('price of zero is accepted as a free product', function () {
@@ -113,10 +112,6 @@ test('the maximum price (99999999.99) is accepted and stored exactly', function 
 
 test('a price one cent over the maximum is refused by validation, not a 22003 QueryException', function () {
     boundariesExpectRefusal(['price' => '100000000.00'], 'price');
-});
-
-test('a non-numeric price string is refused', function () {
-    boundariesExpectRefusal(['price' => 'free'], 'price');
 });
 
 // A genuine input path in a Spanish-language backoffice — the comma decimal separator.

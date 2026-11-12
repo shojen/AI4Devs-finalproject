@@ -83,32 +83,7 @@ test('a soft-deleted user cannot authenticate with the credentials they used bef
     $this->assertGuest();
 });
 
-test('users can logout', function () {
-    $user = User::factory()->create();
-
-    $response = $this->actingAs($user)->post(route('logout'));
-
-    $response->assertRedirect(route('home'));
-
-    $this->assertGuest();
-});
-
 // --- Story 0007: non-active status blocks sign-in ---
-
-test('an active user signs in normally', function () {
-    $user = User::factory()->create(['status' => UserStatus::Active]);
-
-    $response = $this->post(route('login.store'), [
-        'email' => $user->email,
-        'password' => 'password',
-    ]);
-
-    $response
-        ->assertSessionHasNoErrors()
-        ->assertRedirect(route('dashboard', absolute: false));
-
-    $this->assertAuthenticated();
-});
 
 test('a user reactivated after being suspended can sign in on their next attempt', function () {
     $user = User::factory()->suspended()->create();

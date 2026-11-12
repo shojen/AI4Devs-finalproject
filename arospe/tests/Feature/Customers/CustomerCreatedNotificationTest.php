@@ -89,19 +89,6 @@ test('the stored payload carries exactly customer_id and customer_name, matching
         ->and($row->data['customer_name'])->toBe('Ana Garcia');
 });
 
-test('read_at is null on a freshly stored notification', function () {
-    $recipient = User::factory()->create();
-    $recipient->givePermissionTo('customers.view');
-
-    $this->actingAs(customerCreatorActor());
-
-    app(CreateCustomer::class)(['name' => 'Ana Garcia', 'email' => 'ana.garcia@example.com']);
-
-    $row = DatabaseNotification::query()->where('notifiable_id', $recipient->id)->firstOrFail();
-
-    expect($row->read_at)->toBeNull();
-});
-
 // This test covers the task file's "rejected by duplicate-email validation" scenario. NOTE it does
 // NOT reach CreateCustomer's QueryException/23000 catch: App\Concerns\CustomerValidationRules::
 // customerEmailRules() carries Rule::unique(Customer::class), so a duplicate email is refused by

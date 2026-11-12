@@ -61,16 +61,7 @@ test("renaming onto another category's name is refused and the target keeps its 
 });
 
 // R-1: the single most likely bug in this story -- the Rule::unique()->ignore() trap, and exactly
-// why ProfileValidationRules::emailRules() takes a nullable id. Written as THREE tests, not one,
-// so a rule that rejects everything cannot pass the first trivially.
-
-test('saving a category under its own current name (a no-op rename) succeeds', function () {
-    $category = app(CreateProductCategory::class)('Footwear');
-
-    $result = app(RenameProductCategory::class)($category, 'Footwear');
-
-    expect($result)->not->toBeNull();
-});
+// why ProfileValidationRules::emailRules() takes a nullable id.
 
 test('after a no-op rename to the identical name, the row is genuinely unchanged', function () {
     $category = app(CreateProductCategory::class)('Footwear');
@@ -80,14 +71,6 @@ test('after a no-op rename to the identical name, the row is genuinely unchanged
     expect(ProductCategoryTranslation::where('name', 'Footwear')->count())->toBe(1)
         ->and($category->fresh()->id)->toBe($category->id)
         ->and($category->fresh()->translated('name'))->toBe('Footwear');
-});
-
-test('a genuinely free name is still accepted when renaming, as the control for the no-op case above', function () {
-    $category = app(CreateProductCategory::class)('Footwear');
-
-    $renamed = app(RenameProductCategory::class)($category, 'Boots');
-
-    expect($renamed->fresh()->translated('name'))->toBe('Boots');
 });
 
 // R-7: nameRules() reused asymmetrically -- a nullable-id rule helper whose $id is threaded

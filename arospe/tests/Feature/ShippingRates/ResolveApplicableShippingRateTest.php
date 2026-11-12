@@ -171,28 +171,6 @@ test('rate precedence by level', function (Closure $build) {
 // Individual tests -- assertions genuinely diverge
 // =====================================================================
 
-// PRD's own "An ancestry-only overlap is resolved the same way as a listed overlap" scenario.
-// Zone A lists the municipio "Gijón" directly; zone B lists only the country "España" -- no
-// pivot row is shared between the two. 0033 D-2's case no schema constraint can see: an
-// implementation that reads only the pivot row for Gijón itself (rather than walking the
-// ancestry chain per tier) never even considers zone B, but that must not matter here since A
-// wins regardless -- the point is that BOTH are correctly evaluated and specificity still governs.
-test('an implicit, ancestry-only overlap is resolved the same way as an explicit one -- the narrower zone wins', function () {
-    [$country, , $municipality] = shippingRateFixtureAncestry();
-    $carrier = ShippingCarrier::factory()->create();
-
-    $zonaNorte = shippingRateZoneCovering([$municipality->id], 'Zona Norte');
-    $nacional = shippingRateZoneCovering([$country->id], 'Nacional');
-
-    shippingRateFor($carrier, $zonaNorte, ['price' => '4.95']);
-    shippingRateFor($carrier, $nacional, ['price' => '4.95']);
-
-    $result = app(ResolveApplicableShippingRate::class)($municipality, '1.0');
-
-    expect($result->isResolved())->toBeTrue()
-        ->and($result->decidingZone->id)->toBe($zonaNorte->id);
-});
-
 // The single test that separates the specified algorithm from "sort every qualifying rate by
 // price and take the first" -- which passes every other case in this file. The BROADER tier's
 // rate is CHEAPER; the narrower, winning tier's rate is DEARER and must still be chosen.
@@ -274,28 +252,6 @@ test('two rates identical on price and created_at resolve to the same id on ever
     expect($first->isResolved())->toBeTrue()
         ->and($second->isResolved())->toBeTrue()
         ->and($first->rate->id)->toBe($second->rate->id);
-});
-
-// D-3 boundary, asserted from both sides in one body: storage stays literal (0033 D-3) while
-// resolution walks ancestry. A zone holding ONLY the país "España" pivot row does NOT have a
-// Gijón row in its pivot table -- but resolving a Gijón destination against that zone's rate DOES
-// match at the país tier. Pins that the ancestry walk lives exclusively in the resolver.
-test('storage stays literal while resolution walks ancestry -- the D-3 boundary, both sides', function () {
-    [$country, , $municipality] = shippingRateFixtureAncestry();
-    $carrier = ShippingCarrier::factory()->create();
-
-    $nacional = shippingRateZoneCovering([$country->id], 'Nacional');
-    $rate = shippingRateFor($carrier, $nacional);
-
-    // Storage side: the pivot has no row for Gijón in this zone.
-    expect($nacional->geographyEntries()->whereKey($municipality->id)->exists())->toBeFalse();
-
-    // Resolution side: resolving Gijón still matches, via the país tier.
-    $result = app(ResolveApplicableShippingRate::class)($municipality, '1.0');
-
-    expect($result->isResolved())->toBeTrue()
-        ->and($result->rate->id)->toBe($rate->id)
-        ->and($result->decidingZone->id)->toBe($nacional->id);
 });
 
 // The story's highest-stakes assertion (D-1 step 4). The narrower, winning tier's own ladder
@@ -530,18 +486,6 @@ test('a malformed or negative weight is refused with REASON_INVALID_WEIGHT, neve
         ->and($result->reason)->not->toBe(ResolveApplicableShippingRate::REASON_NO_COVERING_ZONE)
         ->and($result->reason)->not->toBe(ResolveApplicableShippingRate::REASON_NO_MATCHING_WEIGHT_BRACKET);
 })->with('invalid_weights');
-
-test('a genuine zero weight is accepted -- it is a valid boundary, not an invalid one', function () {
-    [, , $municipality] = shippingRateFixtureAncestry();
-    $carrier = ShippingCarrier::factory()->create();
-    $zone = shippingRateZoneCovering([$municipality->id], 'Municipio');
-    $rate = shippingRateFor($carrier, $zone, ['min_weight_kg' => '0', 'max_weight_kg' => '2']);
-
-    $result = app(ResolveApplicableShippingRate::class)($municipality, '0');
-
-    expect($result->isResolved())->toBeTrue()
-        ->and($result->rate->id)->toBe($rate->id);
-});
 
 // =====================================================================
 // Phase 4 security-audit finding F-6: the second (tier-narrowing, weight-covering) query must

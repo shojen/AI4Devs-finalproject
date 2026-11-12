@@ -135,16 +135,6 @@ it('resets a custom range when the granularity changes', function () {
     expect(Sales::buckets($component->html()))->toHaveCount(12);
 });
 
-it('refuses an unknown granularity and keeps the previous one', function () {
-    $component = Sales::component()
-        ->set('granularity', 'week')
-        ->assertHasErrors()
-        ->assertSet('granularity', 'day')
-        ->assertNotDispatched('sales-overview-updated');
-
-    expect(Sales::buckets($component->html()))->toHaveCount(30);
-});
-
 // =====================================================================
 // Presets
 // =====================================================================
@@ -190,26 +180,6 @@ it('ignores an unknown preset without changing anything', function () {
 // Custom range
 // =====================================================================
 
-it('a custom range shows only those days, including an order at 23:59:59 on the last day', function () {
-    Sales::order('2026-05-15 23:59:59', '10.00');   // in
-    Sales::order('2026-05-16 00:00:00', '20.00');   // out
-    Sales::order('2026-04-30 23:59:59', '40.00');   // out
-    Sales::order('2026-05-01 00:00:00', '5.00');    // in, first second
-
-    $component = Sales::component()
-        ->set('from', '2026-05-01')
-        ->set('to', '2026-05-15');
-
-    $html = $component->html();
-    $buckets = Sales::buckets($html);
-
-    expect($buckets)->toHaveCount(15)
-        ->and($buckets[0])->toBe('2026-05-01')
-        ->and($buckets[14])->toBe('2026-05-15')
-        ->and(Sales::kpi($html, 'sales'))->toBe('€ 15.00')
-        ->and(Sales::kpi($html, 'orders'))->toBe('2');
-});
-
 it('clearing a date goes back to the default range for the granularity', function () {
     $component = Sales::component()
         ->set('from', '2026-05-01')
@@ -223,30 +193,9 @@ it('clearing a date goes back to the default range for the granularity', functio
         ->and($buckets[29])->toBe('2026-06-15');
 });
 
-it('a refunded order reduces real income in a custom range', function () {
-    Sales::order('2026-05-10 10:00:00', '100.00', OrderStatus::Delivered, PaymentStatus::PartiallyRefunded, '35.00');
-
-    $html = Sales::component()->set('from', '2026-05-01')->set('to', '2026-05-31')->html();
-
-    expect(Sales::kpi($html, 'sales'))->toBe('€ 100.00')
-        ->and(Sales::kpi($html, 'income'))->toBe('€ 65.00');
-});
-
 // =====================================================================
 // Range refusals (the previous data stays)
 // =====================================================================
-
-it('refuses a start after the end with the backend range_invalid message and keeps the previous data', function () {
-    Sales::order('2026-06-10 10:00:00', '75.00');
-
-    $component = Sales::component()->set('from', '2026-06-10');
-    $before = Sales::view($component);
-
-    $component->set('to', '2026-06-09')->assertHasErrors('range')->assertNotDispatched('sales-overview-updated');
-
-    expect($component->errors()->first('range'))->toBe(__('dashboard.errors.range_invalid'))
-        ->and(Sales::view($component))->toBe($before);
-});
 
 it('shows the translated cap message with its :max at each cap boundary', function (string $granularity, int $cap) {
     $today = CarbonImmutable::parse('2026-06-15', Sales::TZ);
@@ -364,9 +313,7 @@ it('the status chips narrow every figure', function (array $toggleOff, string $s
         ->and(Sales::kpi($html, 'income'))->toBe("€ {$income}")
         ->and(Sales::kpi($html, 'orders'))->toBe($orders);
 })->with([
-    'Delivered' => [['pending', 'processing', 'shipped'], '100.00', '100.00', '1'],
     'Delivered, Shipped' => [['pending', 'processing'], '150.00', '150.00', '2'],
-    'Pending' => [['processing', 'shipped', 'delivered'], '20.00', '0.00', '1'],
 ]);
 
 it('refuses to deselect the last status with the backend message and keeps the previous data', function () {

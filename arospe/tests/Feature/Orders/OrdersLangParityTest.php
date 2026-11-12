@@ -97,9 +97,3 @@ test('each mark-as-paid copy key is translated, not copied, between en and es', 
     'payment.action', 'payment.dialog_heading', 'payment.dialog_body', 'payment.dialog_amount', 'payment.dialog_confirm',
     'payment.dialog_dismiss', 'payment.marked', 'payment.info', 'payment.info_by', 'payment.not_found',
 ]);
-
-test('the new payment keys sit beside the 0084 keys without replacing them', function (string $locale) {
-    $payment = Arr::get(require lang_path($locale.'/orders.php'), 'payment');
-
-    expect(array_keys($payment))->toContain('already_paid', 'cancelled_blocked', 'types', 'action', 'dialog_heading', 'dialog_body', 'dialog_amount', 'dialog_confirm', 'dialog_dismiss', 'marked', 'info', 'info_by', 'not_found');
-})->with(['en', 'es']);

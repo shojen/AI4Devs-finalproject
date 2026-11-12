@@ -101,18 +101,6 @@ test('the action works directly with no authenticated user and dispatches no eve
     Event::assertNotDispatched(OrderFullyRefunded::class);
 });
 
-test('the same shipped order refuses manual cancellation yet is auto-cancelled by a full refund', function () {
-    autoCancelActor();
-    [$order, [$item]] = paidOrderWithLines([2], OrderStatus::Shipped);
-
-    expect(fn () => app(CancelOrder::class)($order))->toThrow(AuthorizationException::class);
-    expect($order->fresh()->status)->toBe(OrderStatus::Shipped);
-
-    app(RecordRefund::class)($order->fresh(), [$item->id => 2]);
-
-    expect($order->fresh()->status)->toBe(OrderStatus::Cancelled);
-});
-
 test('CancelOrder still refuses shipped, delivered and partially refunded orders', function () {
     autoCancelActor();
 

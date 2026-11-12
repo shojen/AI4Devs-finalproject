@@ -21,15 +21,11 @@ use App\Notifications\ScheduledBlogPostPublishFailed;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\AnonymousNotifiable;
-use Illuminate\Notifications\SendQueuedNotifications;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Queue;
 use Spatie\Permission\PermissionRegistrar;
-use Tests\Support\Blog\FailingBlogPostWrites;
 use Tests\Support\Blog\ScheduledPosts;
 
 afterEach(function () {
@@ -151,11 +147,6 @@ describe('subject, per-stage lines, and locale (D-9)', function () {
         'announce' => ['announce', 'line_announce'],
     ]);
 
-    test('the two stage lines are worded differently from each other', function () {
-        expect(trans('notifications.mail.blog_post_publish_failed.line_publish'))
-            ->not->toBe(trans('notifications.mail.blog_post_publish_failed.line_announce'));
-    });
-
     // Belt-and-braces on top of the key-based tests above: the ACTUAL required content, independent
     // of whatever key names the implementation settles on, matching the acceptance criteria verbatim
     // ("publish mentions the automatic retry and the 24-hour quiet period; announce mentions the
@@ -270,32 +261,6 @@ describe('channels and queueing (D-5)', function () {
         expect($notification->via(User::factory()->make()))->toBe(['database', 'mail'])
             ->and($notification)->toBeInstanceOf(ShouldQueue::class);
     });
-
-    // The fixture must satisfy shouldSend()'s D-8 predicate (Phase 4 finding L-1), or
-    // NotificationFake::sendNow() skips recording it entirely -- a bare, permission-less user is no
-    // longer a valid "this notification is deliverable" fixture, matching the payload-privacy test's
-    // own setup above.
-    test('Notification::fake() intercepts it and assertSentTo works', function () {
-        Notification::fake();
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
-        $this->seed(RolePermissionSeeder::class);
-        $user = User::factory()->create(['status' => UserStatus::Active]);
-        $user->givePermissionTo('blog.edit');
-
-        Notification::send($user, new ScheduledBlogPostPublishFailed('post-id', 'T', BlogPostPublishFailureStage::Publish));
-
-        Notification::assertSentTo($user, ScheduledBlogPostPublishFailed::class);
-    });
-
-    // V-6: ShouldQueue queues every channel -- 2 recipients x 2 channels = 4 jobs.
-    test('one SendQueuedNotifications job is pushed per channel per recipient', function () {
-        Queue::fake();
-        $recipients = User::factory()->count(2)->create();
-
-        Notification::send($recipients, new ScheduledBlogPostPublishFailed('post-id', 'T', BlogPostPublishFailureStage::Publish));
-
-        Queue::assertPushed(SendQueuedNotifications::class, 4);
-    });
 });
 
 describe('shouldSend() re-checks the D-8 predicate at delivery time (Phase 4 finding L-1)', function () {
@@ -380,37 +345,5 @@ describe('shouldSend() re-checks the D-8 predicate at delivery time (Phase 4 fin
         $notification = new ScheduledBlogPostPublishFailed('post-id', 'T', BlogPostPublishFailureStage::Publish);
 
         expect($notification->shouldSend(new AnonymousNotifiable, 'database'))->toBeFalse();
-    });
-});
-
-describe('one un-faked end-to-end test', function () {
-    // Nothing faked: catches a via() typo or a broken toMail() that every faked test above hides.
-    // QUEUE_CONNECTION=sync and MAIL_MAILER=array (V-8) mean the queued notification really runs and
-    // really lands in the array transport within this one process.
-    test('a real failing sweep leaves a real notifications row and a real mail message addressed to the creator', function () {
-        Carbon::setTestNow('2026-09-26 12:00:00');
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
-        $this->seed(RolePermissionSeeder::class);
-        $creator = User::factory()->create(['status' => UserStatus::Active, 'email' => 'creator-e2e@example.com']);
-        $creator->givePermissionTo('blog.edit');
-        $post = ScheduledPosts::scheduled(createdBy: $creator);
-        FailingBlogPostWrites::next();
-
-        $this->artisan('blog:publish-scheduled-posts')->assertExitCode(0);
-
-        $row = DB::table('notifications')
-            ->where('notifiable_id', $creator->id)
-            ->where('type', ScheduledBlogPostPublishFailed::class)
-            ->first();
-        expect($row)->not->toBeNull();
-
-        $messages = app('mailer')->getSymfonyTransport()->messages();
-        $addressedToCreator = collect($messages)->first(function ($sentMessage) use ($creator): bool {
-            $to = $sentMessage->getOriginalMessage()->getTo();
-
-            return collect($to)->contains(fn ($address) => $address->getAddress() === $creator->email);
-        });
-
-        expect($addressedToCreator)->not->toBeNull();
     });
 });

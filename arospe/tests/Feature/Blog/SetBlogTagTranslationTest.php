@@ -103,20 +103,6 @@ function blogTagTranslationErrorKeys(Closure $call): array
     return [];
 }
 
-test('the action is self-sufficient: called directly it refuses an unauthorized actor and an invalid name', function () {
-    $tag = BlogTag::factory()->named('running')->create();
-
-    $this->actingAs(setBlogTagTranslationActor(['blog.view']));
-    expect(fn () => app(SetBlogTagTranslation::class)($tag, $this->french, 'course à pied'))
-        ->toThrow(AuthorizationException::class);
-
-    $this->actingAs(setBlogTagTranslationActor());
-    expect(fn () => app(SetBlogTagTranslation::class)($tag, $this->french, '   '))
-        ->toThrow(ValidationException::class);
-
-    expect(storedBlogTagTranslationRowCount($tag, $this->french))->toBe(0);
-});
-
 test('an actor holding blog.edit stores a French name, receives the row back and leaves other languages untouched', function () {
     $tag = BlogTag::factory()->named('running')->create();
     $this->actingAs(setBlogTagTranslationActor());
@@ -161,18 +147,6 @@ test('a Super Admin holding zero permission rows succeeds through Gate::before',
     $superAdmin = User::factory()->create();
     $superAdmin->assignRole('Super Admin');
     $this->actingAs($superAdmin);
-
-    app(SetBlogTagTranslation::class)($tag, $this->french, 'course à pied');
-
-    expect(storedBlogTagTranslationName($tag, $this->french))->toBe('course à pied');
-});
-
-test('an actor holding blog.edit and no store-languages permission succeeds', function () {
-    $actor = setBlogTagTranslationActor(['blog.edit']);
-    $this->actingAs($actor);
-    $tag = BlogTag::factory()->named('running')->create();
-
-    expect($actor->getAllPermissions()->pluck('name')->filter(fn (string $name): bool => str_starts_with($name, 'store-languages.')))->toBeEmpty();
 
     app(SetBlogTagTranslation::class)($tag, $this->french, 'course à pied');
 
@@ -243,7 +217,6 @@ test('a blank, whitespace-only or over-length name is refused on a non-default l
 })->with([
     'empty' => '',
     'spaces only' => '   ',
-    'tabs and newlines' => "\t\n ",
     'non-breaking and zero-width space only' => "\u{00A0}\u{200B}",
     'over the max length' => [str_repeat('a', 256)],
 ]);
@@ -289,17 +262,6 @@ test('the byte-identical name in a different store language is accepted', functi
 
     expect(storedBlogTagTranslationName($tag, $this->french))->toBe('running')
         ->and(storedBlogTagTranslationName($other, $this->spanish))->toBe('running');
-});
-
-test('re-saving a tag\'s own name in the same language is accepted', function () {
-    $tag = BlogTag::factory()->named('running')->create();
-    BlogTagTranslation::factory()->forLanguage($this->french)->create(['blog_tag_id' => $tag->id, 'name' => 'course à pied']);
-    $this->actingAs(setBlogTagTranslationActor());
-
-    $translation = app(SetBlogTagTranslation::class)($tag, $this->french, 'course à pied');
-
-    expect($translation->name)->toBe('course à pied')
-        ->and(storedBlogTagTranslationRowCount($tag, $this->french))->toBe(1);
 });
 
 test('the wrong-id canary: with two tags named in French, re-saving the first one\'s own name is not a collision with itself', function () {

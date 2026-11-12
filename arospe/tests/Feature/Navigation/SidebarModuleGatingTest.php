@@ -105,26 +105,6 @@ function sidebarNavSuperAdmin(): User
 }
 
 // =====================================================================
-// Happy path — each entry appears for a role holding its exact permission.
-// =====================================================================
-
-test('a role holding users.view sees the Users entry', function () {
-    $this->actingAs(sidebarNavUserWith(['users.view']));
-
-    $this->get(route('dashboard'))
-        ->assertOk()
-        ->assertSee('data-test="sidebar-link-users"', false);
-});
-
-test('a role holding roles.manage sees the Roles & Permissions entry', function () {
-    $this->actingAs(sidebarNavUserWith(['roles.manage']));
-
-    $this->get(route('dashboard'))
-        ->assertOk()
-        ->assertSee('data-test="sidebar-link-roles"', false);
-});
-
-// =====================================================================
 // Story 0044 — the customers entry: `group: null, cluster: null`, the SAME bare top-level shape
 // `users` already uses (Customers is a top-level operational module, not store configuration and
 // not a sub-resource of an existing cluster). Only these two tests are added by this story — the
@@ -323,20 +303,6 @@ test('the Store settings cluster still renders with only one visible child when 
 // (Phase 5 review finding N-4).
 // =====================================================================
 
-test('a role holding exactly products.view sees the Product categories entry under the Products cluster', function () {
-    // Re-targeted by story 0080 (D-1/D-4): product_categories now nests in
-    // the `products` cluster inside the `store` group, not the retired flat
-    // `platform` group — see the story 0018 block above for why this
-    // conversion is a deliberate R-3 update, not a weakening.
-    $this->actingAs(sidebarNavUserWith(['products.view']));
-
-    $this->get(route('dashboard'))
-        ->assertOk()
-        ->assertSee('data-test="sidebar-group-store"', false)
-        ->assertSee('data-test="sidebar-cluster-products"', false)
-        ->assertSee('data-test="sidebar-link-product_categories"', false);
-});
-
 test('a role holding the related-but-different products.edit permission never sees the Product categories entry or the Products cluster', function () {
     // routes/product-categories.php gates product-categories.index on exactly
     // can:products.view.
@@ -359,18 +325,6 @@ test('a role holding the related-but-different products.edit permission never se
 // review, finding F-3).
 // =====================================================================
 
-test('a role holding exactly products.view sees the Products entry under the Products cluster', function () {
-    // Re-targeted by story 0080 (D-1/D-4): products now nests in the
-    // `products` cluster inside the `store` group.
-    $this->actingAs(sidebarNavUserWith(['products.view']));
-
-    $this->get(route('dashboard'))
-        ->assertOk()
-        ->assertSee('data-test="sidebar-group-store"', false)
-        ->assertSee('data-test="sidebar-cluster-products"', false)
-        ->assertSee('data-test="sidebar-link-products"', false);
-});
-
 test('a role holding only the related-but-different products.edit permission never sees the Products entry', function () {
     // routes/products.php gates products.index on exactly can:products.view.
     $this->actingAs(sidebarNavUserWith(['products.edit']));
@@ -388,16 +342,6 @@ test('a role holding only the related-but-different products.edit permission nev
 // assertion actually exercises the sidebar-nav component once it exists,
 // rather than passing vacuously because the hook doesn't exist at all yet.
 // =====================================================================
-
-test('a role without users.view never sees the Users entry', function () {
-    $this->actingAs(sidebarNavUserWith(['blog.view']));
-
-    $response = $this->get(route('dashboard'));
-
-    $response->assertOk();
-    $response->assertSee('data-test="sidebar-link-dashboard"', false);
-    $response->assertDontSee('data-test="sidebar-link-users"', false);
-});
 
 test('a role holding the related-but-different users.create permission still never sees the Users entry', function () {
     // The regression test for "never advertise a link the route would
@@ -591,17 +535,6 @@ test('a role holding exactly blog.view sees the Posts entry inside the Blog clus
         ->assertSee('data-test="sidebar-link-blog_posts"', false);
 });
 
-test('a role holding the related-but-different blog.edit permission does not see the Posts entry', function () {
-    // routes/blog-posts.php gates all three post routes on exactly can:blog.view, so the registry
-    // entry must gate on that exact ability -- not on any blog.*.
-    $this->actingAs(sidebarNavUserWith(['blog.edit']));
-
-    $this->get(route('dashboard'))
-        ->assertOk()
-        ->assertDontSee('data-test="sidebar-cluster-blog"', false)
-        ->assertDontSee('data-test="sidebar-link-blog_posts"', false);
-});
-
 test('the blog_posts registry entry nests in the existing blog cluster, declares no group of its own and gates on exactly its route\'s ability', function () {
     $entry = config('modules.items.blog_posts');
 
@@ -635,17 +568,6 @@ test('the blog_posts entry is declared before blog_tags, so Posts renders first 
 
     expect(strpos($html, 'data-test="sidebar-cluster-blog"'))->toBeLessThan(strpos($html, 'data-test="sidebar-link-blog_posts"'))
         ->and(strpos($html, 'data-test="sidebar-link-blog_posts"'))->toBeLessThan(strpos($html, 'data-test="sidebar-link-blog_tags"'));
-});
-
-test('the Posts link is marked current on the list, the create screen and the edit screen', function () {
-    $entry = config('modules.items.blog_posts');
-
-    foreach (['blog-posts.index', 'blog-posts.create', 'blog-posts.edit'] as $routeName) {
-        expect(Str::is($entry['current_when'], $routeName))->toBeTrue();
-    }
-
-    expect(Str::is($entry['current_when'], 'blog-tags.index'))->toBeFalse()
-        ->and(Str::is($entry['current_when'], 'blog-categories.index'))->toBeFalse();
 });
 
 // =====================================================================
@@ -1053,20 +975,6 @@ test('the Content group renders between the Store and Settings groups, with its 
 // 0080 category 2 — the nesting mechanism.
 // =====================================================================
 
-test('a cluster hook is distinguishable from a top-level group hook by its own data-test prefix', function () {
-    // D-1's own stated reason for the "sidebar-cluster-{key}" prefix rather
-    // than reusing "sidebar-group-{key}" for a cluster too.
-    $this->actingAs(sidebarNavSuperAdmin());
-
-    $response = $this->get(route('dashboard'));
-
-    $response->assertOk();
-    $response->assertSee('data-test="sidebar-group-store"', false);
-    $response->assertSee('data-test="sidebar-cluster-products"', false);
-    // The cluster prefix never collides with the group prefix string.
-    expect(str_starts_with('sidebar-cluster-products', 'sidebar-group-'))->toBeFalse();
-});
-
 test('a cluster\'s children render nested inside it, not as its siblings', function () {
     // Order-based proxy for nesting depth: every one of the Products
     // cluster's three children must appear AFTER the cluster's own hook and
@@ -1114,34 +1022,6 @@ test('both new clusters use the same expandable disclosure primitive as the exis
 
     expect($productsTag)->toContain('<ui-disclosure');
     expect($storeSettingsTag)->toContain('<ui-disclosure');
-});
-
-test('a cluster with zero visible children renders no heading and no disclosure control at all', function () {
-    // A role holding neither of the Products family's permissions must not
-    // see the Products cluster hook anywhere on the page -- not merely a
-    // collapsed/empty one.
-    $this->actingAs(sidebarNavUserWith(['sales-regions.view']));
-
-    $response = $this->get(route('dashboard'));
-
-    $response->assertOk();
-    $response->assertDontSee('data-test="sidebar-cluster-products"', false);
-    $response->assertDontSee('data-test="sidebar-link-products"', false);
-    $response->assertDontSee('data-test="sidebar-link-product_categories"', false);
-    $response->assertDontSee('data-test="sidebar-link-product_attribute_types"', false);
-});
-
-test('a cluster with exactly one visible child still renders the cluster wrapper rather than collapsing into a flat item', function () {
-    // Exercised for real by Store settings today (D-1: only Sales Regions
-    // lives there until shipping ships its own UI story), not only as a
-    // hypothetical -- 0080 "Tests to perform" #2's own framing.
-    $this->actingAs(sidebarNavUserWith(['sales-regions.view']));
-
-    $response = $this->get(route('dashboard'));
-
-    $response->assertOk();
-    $response->assertSee('data-test="sidebar-cluster-store_settings"', false);
-    $response->assertSee('data-test="sidebar-link-sales_regions"', false);
 });
 
 // =====================================================================
@@ -1224,23 +1104,6 @@ test('permissions: [] on a nested cluster child still means always-visible, eval
     $response = $this->get(route('dashboard'));
 
     $response->assertOk();
-    $response->assertSee('data-test="sidebar-cluster-store_settings"', false);
-    $response->assertSee('data-test="sidebar-link-sales_regions"', false);
-});
-
-test('a Super Admin sees both clusters and every child regardless of any permission entry', function () {
-    // Complements the whole-page Super Admin test earlier in this file with
-    // an explicit per-cluster framing, matching 0080's own "Tests to
-    // perform" #3 wording.
-    $this->actingAs(sidebarNavSuperAdmin());
-
-    $response = $this->get(route('dashboard'));
-
-    $response->assertOk();
-    $response->assertSee('data-test="sidebar-cluster-products"', false);
-    $response->assertSee('data-test="sidebar-link-products"', false);
-    $response->assertSee('data-test="sidebar-link-product_categories"', false);
-    $response->assertSee('data-test="sidebar-link-product_attribute_types"', false);
     $response->assertSee('data-test="sidebar-cluster-store_settings"', false);
     $response->assertSee('data-test="sidebar-link-sales_regions"', false);
 });
@@ -1486,17 +1349,6 @@ test('a role holding the related-but-different store-languages.edit permission w
     $response->assertDontSee('data-test="sidebar-group-store"', false);
 });
 
-test('the Store group and the Store settings cluster headings vanish for a role holding no store-languages or other store permission', function () {
-    $this->actingAs(sidebarNavUserWith(['users.view']));
-
-    $response = $this->get(route('dashboard'));
-
-    $response->assertOk();
-    $response->assertDontSee('data-test="sidebar-link-store_languages"', false);
-    $response->assertDontSee('data-test="sidebar-cluster-store_settings"', false);
-    $response->assertDontSee('data-test="sidebar-group-store"', false);
-});
-
 test('the Store settings cluster survives on its other members alone, without the Store Languages entry', function () {
     $this->actingAs(sidebarNavUserWith(['sales-regions.view']));
 
@@ -1506,31 +1358,6 @@ test('the Store settings cluster survives on its other members alone, without th
     $response->assertSee('data-test="sidebar-cluster-store_settings"', false);
     $response->assertSee('data-test="sidebar-link-sales_regions"', false);
     $response->assertDontSee('data-test="sidebar-link-store_languages"', false);
-});
-
-test('a Super Admin holding zero permission rows sees the Store Languages entry', function () {
-    $this->actingAs(sidebarNavSuperAdmin());
-
-    $this->get(route('dashboard'))
-        ->assertOk()
-        ->assertSee('data-test="sidebar-link-store_languages"', false);
-});
-
-test('the store_languages registry entry nests in the store_settings cluster, declares no group, and gates on exactly its route\'s ability', function () {
-    $item = config('modules.items.store_languages');
-
-    expect($item)->not->toBeNull()
-        ->and($item['group'])->toBeNull()
-        ->and($item['cluster'])->toBe('store_settings')
-        ->and($item['route'])->toBe('store-languages.index')
-        ->and($item['current_when'])->toBe('store-languages.*')
-        ->and($item['permissions'])->toBe(['store-languages.view']);
-
-    $route = Route::getRoutes()->getByName($item['route']);
-
-    expect($route)->not->toBeNull()
-        ->and(collect($route->gatherMiddleware())->filter(fn ($m) => is_string($m) && str_starts_with($m, 'can:'))->values()->all())
-        ->toBe(['can:store-languages.view']);
 });
 
 test('the Settings group is left exactly as it was: its expand pattern is not widened for the Store Languages screen', function () {

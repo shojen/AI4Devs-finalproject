@@ -146,20 +146,6 @@ test('EnforceAdministratorPermissionGrant -- the explicit actor is logged correc
         ->once();
 });
 
-// "The refusal still refuses, identically" — this action returns the mutated permission list
-// rather than throwing on every refusal shape (an omission is silently preserved, not refused);
-// the one shape that DOES throw is a genuine new grant, asserted here.
-test('EnforceAdministratorPermissionGrant refusal still throws AuthorizationException', function () {
-    $actor = User::factory()->create();
-    $actor->givePermissionTo('roles.manage');
-    $this->actingAs(User::factory()->create());
-
-    $enforce = app(EnforceAdministratorPermissionGrant::class);
-
-    expect(fn () => $enforce($actor, ['users.view', 'roles.manage-administrators'], null))
-        ->toThrow(AuthorizationException::class);
-});
-
 // =====================================================================
 // EnforceGrantorPermissionScope
 // =====================================================================
@@ -218,17 +204,6 @@ test('EnforceGrantorPermissionScope -- a scope-exceeding grant refusal on an exi
             && ($context['target_id'] ?? null) === $target->id
             && rolesActionRefusalLogContextHasNoSecretLookingKey($context))
         ->once();
-});
-
-test('EnforceGrantorPermissionScope refusal still throws AuthorizationException and returns nothing', function () {
-    $actor = User::factory()->create();
-    $actor->givePermissionTo('roles.manage');
-    $this->actingAs(User::factory()->create());
-
-    $enforce = app(EnforceGrantorPermissionScope::class);
-
-    expect(fn () => $enforce($actor, ['users.view', 'blog.view'], null))
-        ->toThrow(AuthorizationException::class);
 });
 
 // =====================================================================

@@ -51,13 +51,13 @@ php artisan test --compact tests/Feature/DashboardTest.php
 By name (matches the `test('...')`/`it('...')` description):
 
 ```bash
-php artisan test --compact --filter="authenticated users can visit the dashboard"
+php artisan test --compact --filter="guests are redirected to the login page"
 ```
 
 Scoped to one file plus a filter, when the description isn't unique across the suite:
 
 ```bash
-php artisan test --compact tests/Feature/DashboardTest.php --filter="authenticated users can visit the dashboard"
+php artisan test --compact tests/Feature/DashboardTest.php --filter="guests are redirected to the login page"
 ```
 
 ## Generate a coverage report
@@ -147,6 +147,6 @@ DB_DATABASE=testing<N> php -d memory_limit=1G vendor/bin/pest --compact
 
 Same disclaimer as PHPStan's: this is an environment quirk of this specific host-native WSL2 setup, not a project requirement — CI's `services.mysql` job runs the plain unscoped `php artisan test` successfully at its default memory limit. If an unscoped run fatals with no test output and no list of failures, try this before assuming the suite itself is broken.
 
-_Last updated: 2026-09-29 — Fixed the two links to `.github/workflows/tests.yml`, which were one `../` short and resolved to a non-existent `arospe/.github/`; moved the accumulated revision notes to history._
+_Last updated: 2026-11-11 — Test-suite overtesting cleanup: the `--filter` example names a test that still exists in `DashboardTest.php`._
 
 _Earlier revision notes: [testing--ci--commands.md](../../history/testing--ci--commands.md)._

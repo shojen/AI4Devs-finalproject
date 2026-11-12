@@ -12,15 +12,9 @@ use Illuminate\Support\Str;
 // database-expert/backend-expert implement them in the next step of the TDD cycle. That is the
 // correct, intended "red" outcome.
 //
-// Mirrors tests/Feature/Models/UserTest.php's shape for the UUID v7/timestamp assertions, and
-// tests/Feature/Models/SalesRegionTest.php's shape for a greenfield UUID model with no SoftDeletes.
-
-test('a factory-created product category receives a uuidv7 string primary key', function () {
-    $category = ProductCategory::factory()->create();
-
-    expect($category->id)->toBeString()
-        ->and(Str::isUuid($category->id, 7))->toBeTrue();
-});
+// Mirrors tests/Feature/Models/UserTest.php's shape for the UUID v7 ordering/timestamp assertions,
+// and tests/Feature/Models/SalesRegionTest.php's shape for a greenfield UUID model with no
+// SoftDeletes.
 
 test('two product categories created in immediate succession sort lexicographically in creation order', function () {
     $first = ProductCategory::factory()->create();

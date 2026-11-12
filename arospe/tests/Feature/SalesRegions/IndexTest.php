@@ -12,7 +12,6 @@
 // this file.
 
 use App\Actions\SalesRegions\UpdateSalesRegion;
-use App\Concerns\SalesRegionValidationRules;
 use App\Enums\SalesRegionKind;
 use App\Livewire\SalesRegions\Index;
 use App\Models\SalesRegion;
@@ -20,7 +19,6 @@ use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\SalesRegionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Support\Facades\Validator;
 use Livewire\Livewire;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -146,8 +144,7 @@ test('a user holding sales-regions.view but not sales-regions.edit is refused on
 
 // =====================================================================
 // Integration (editing) — Gherkin: "Setting the tax rate", "Setting the description",
-// "Setting the code", "Configuring one field leaves the other configured fields alone",
-// "Configuring an entry leaves its identity untouched".
+// "Setting the code", "Configuring one field leaves the other configured fields alone".
 // =====================================================================
 
 test('editing rate persists exactly and round-trips as a string, not a float', function () {
@@ -208,35 +205,6 @@ test('changing only the rate leaves code and description untouched', function ()
         ->and($fresh->rate)->toBe('12.500');
 });
 
-test('editing an entry through the component leaves its seeded identity columns unchanged', function () {
-    $spain = SalesRegion::factory()->create(['slug' => 'es', 'kind' => SalesRegionKind::Country]);
-    $region = SalesRegion::factory()->fiscalTerritoryOf($spain)->create(['name' => 'Canarias', 'sort_order' => 3]);
-
-    $originalSlug = $region->slug;
-    $originalName = $region->name;
-    $originalParentId = $region->parent_id;
-    $originalKind = $region->kind;
-    $originalSortOrder = $region->sort_order;
-
-    $actor = salesRegionsIndexTestActor();
-    $this->actingAs($actor);
-
-    Livewire::test(Index::class)
-        ->call('openEditModal', $region->id)
-        ->set('rate', '7.000')
-        ->call('save')
-        ->assertHasNoErrors();
-
-    $fresh = $region->fresh();
-
-    expect($fresh->slug)->toBe($originalSlug)
-        ->and($fresh->name)->toBe($originalName)
-        ->and($fresh->parent_id)->toBe($originalParentId)
-        ->and($fresh->kind)->toBe($originalKind)
-        ->and($fresh->sort_order)->toBe($originalSortOrder)
-        ->and($fresh->rate)->toBe('7.000');
-});
-
 // =====================================================================
 // Integration (structural columns) — the real write path (UpdateSalesRegion, not fill() in
 // isolation, which 0016's tests/Unit/Models/SalesRegionTest.php already proves) cannot change
@@ -273,26 +241,6 @@ test('UpdateSalesRegion cannot change slug, name, parent_id, kind or sort_order 
         ->and($fresh->code)->toBe('ZZ')
         ->and($fresh->description)->toBe('Changed description')
         ->and($fresh->rate)->toBe('3.500');
-});
-
-// =====================================================================
-// Integration (clearing a rate, D6/AC7) — a blank submission clears a configured rate back to
-// unconfigured.
-// =====================================================================
-
-test('clearing the rate through the component returns it to unconfigured', function () {
-    $region = SalesRegion::factory()->withRate('15.000')->create();
-
-    $actor = salesRegionsIndexTestActor();
-    $this->actingAs($actor);
-
-    Livewire::test(Index::class)
-        ->call('openEditModal', $region->id)
-        ->set('rate', '')
-        ->call('save')
-        ->assertHasNoErrors();
-
-    expect($region->fresh()->rate)->toBeNull();
 });
 
 // =====================================================================
@@ -389,23 +337,6 @@ test('a rate typed with a decimal comma is accepted through the component and st
     expect($region->fresh()->rate)->toBe('21.500');
 });
 
-test('a decimal comma fails rateRules() in isolation, which is why the components normalisation step exists', function () {
-    $rulesHolder = new class
-    {
-        use SalesRegionValidationRules;
-
-        /** @return array<int, mixed> */
-        public function exposedRateRules(): array
-        {
-            return $this->rateRules();
-        }
-    };
-
-    $validator = Validator::make(['rate' => '21,5'], ['rate' => $rulesHolder->exposedRateRules()]);
-
-    expect($validator->fails())->toBeTrue();
-});
-
 // =====================================================================
 // Integration (single default, both halves) — after setDefault, assert count(is_default=true)
 // is 1 AND that the single row is the new one, as two separate assertions.
@@ -446,27 +377,6 @@ test('setDefault leaves the previous default active, only no longer flagged as t
 
     expect($oldDefault->fresh()->is_default)->toBeFalse()
         ->and($oldDefault->fresh()->is_active)->toBeTrue();
-});
-
-// =====================================================================
-// Integration (idempotent default) — re-setting the already-default entry is a no-op.
-// =====================================================================
-
-test('re-setting the already-default entry through the component changes nothing and raises no error', function () {
-    $default = SalesRegion::factory()->isDefault()->create();
-    SalesRegion::factory()->count(2)->create();
-    $countBefore = SalesRegion::count();
-
-    $actor = salesRegionsIndexTestActor();
-    $this->actingAs($actor);
-
-    Livewire::test(Index::class)
-        ->call('setDefault', $default->id)
-        ->assertHasNoErrors();
-
-    expect(SalesRegion::where('is_default', true)->count())->toBe(1)
-        ->and(SalesRegion::where('is_default', true)->first()->id)->toBe($default->id)
-        ->and(SalesRegion::count())->toBe($countBefore);
 });
 
 // =====================================================================

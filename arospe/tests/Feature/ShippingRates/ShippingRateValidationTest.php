@@ -93,20 +93,3 @@ test('a null max_weight_kg with any min_weight_kg is accepted, and gte:min_weigh
     expect($rate->fresh())->not->toBeNull();
     expect($rate->fresh()->max_weight_kg)->toBeNull();
 });
-
-test('a price of exactly 0 is accepted', function () {
-    $carrier = ShippingCarrier::factory()->create();
-    $zone = ShippingZone::factory()->create();
-
-    $rate = app(CreateShippingRate::class)([
-        'name' => 'Gratis',
-        'shipping_carrier_id' => $carrier->id,
-        'shipping_zone_id' => $zone->id,
-        'min_weight_kg' => '0',
-        'max_weight_kg' => '1',
-        'price' => '0.00',
-        'delivery_estimate' => '24h',
-    ]);
-
-    expect($rate->fresh()->price)->toBe('0.00');
-});

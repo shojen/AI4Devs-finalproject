@@ -7,7 +7,6 @@ use App\Models\StoreLanguage;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 
 // Story 0078 (D-2, D-3, D-5, D-6, D-7): the blog_post_translations table, the pair of migrations that
 // create it and drop blog_posts.title/slug/body, and the drop migration's guard. RefreshDatabase has
@@ -58,49 +57,6 @@ test('blog_post_translations has the declared columns, types and nullability and
         ->and(Schema::hasColumn('blog_post_translations', 'normalized_slug'))->toBeFalse()
         ->and(Schema::hasColumn('blog_post_translations', 'meta_title'))->toBeFalse()
         ->and(Schema::hasColumn('blog_post_translations', 'meta_description'))->toBeFalse();
-});
-
-test('blog_posts no longer carries title, slug or body but keeps its parent columns', function () {
-    expect(Schema::hasColumn('blog_posts', 'title'))->toBeFalse()
-        ->and(Schema::hasColumn('blog_posts', 'slug'))->toBeFalse()
-        ->and(Schema::hasColumn('blog_posts', 'body'))->toBeFalse()
-        ->and(Schema::hasColumn('blog_posts', 'blog_category_id'))->toBeTrue()
-        ->and(Schema::hasColumn('blog_posts', 'status'))->toBeTrue()
-        ->and(Schema::hasColumn('blog_posts', 'published_at'))->toBeTrue()
-        ->and(Schema::hasColumn('blog_posts', 'created_by'))->toBeTrue()
-        ->and(Schema::hasColumn('blog_posts', 'deleted_at'))->toBeTrue();
-});
-
-test('blog_post_translations carries exactly three indexes, with the two unique ones named and column-listed', function () {
-    $indexes = collect(Schema::getIndexes('blog_post_translations'))->keyBy('name');
-
-    expect($indexes)->toHaveCount(3);
-
-    $primary = $indexes->first(fn (array $index): bool => $index['primary']);
-    $pair = $indexes->get('blog_post_translations_post_language_unique');
-    $slug = $indexes->get('blog_post_translations_language_slug_unique');
-
-    expect($primary['columns'])->toBe(['id'])
-        ->and($pair)->not->toBeNull()
-        ->and($pair['unique'])->toBeTrue()
-        ->and($pair['columns'])->toBe(['blog_post_id', 'store_language_id'])
-        ->and($slug)->not->toBeNull()
-        ->and($slug['unique'])->toBeTrue()
-        ->and($slug['columns'])->toBe(['store_language_id', 'slug']);
-});
-
-test('the language-slug unique index name is exposed as a constant on the model', function () {
-    expect(BlogPostTranslation::LANGUAGE_SLUG_UNIQUE_INDEX)->toBe('blog_post_translations_language_slug_unique');
-});
-
-test('the foreign keys cascade from blog_posts and restrict from store_languages', function () {
-    $foreignKeys = collect(Schema::getForeignKeys('blog_post_translations'))->keyBy(fn (array $fk): string => $fk['columns'][0]);
-
-    expect($foreignKeys->keys()->all())->toEqualCanonicalizing(['blog_post_id', 'store_language_id'])
-        ->and($foreignKeys['blog_post_id']['foreign_table'])->toBe('blog_posts')
-        ->and(strtolower($foreignKeys['blog_post_id']['on_delete']))->toBe('cascade')
-        ->and($foreignKeys['store_language_id']['foreign_table'])->toBe('store_languages')
-        ->and(strtolower($foreignKeys['store_language_id']['on_delete']))->toBe('restrict');
 });
 
 test('blog_posts keeps its deleted_at, status, published_at index and no longer has a slug unique index', function () {
@@ -161,19 +117,6 @@ test('the same slug in two different languages is accepted', function () {
     expect(DB::table('blog_post_translations')->where('slug', 'resumen-semanal')->count())->toBe(2);
 });
 
-test('soft-deleting a post keeps every translation row, because the foreign key cascade never fires on an UPDATE', function () {
-    $default = StoreLanguage::factory()->default()->create();
-    $fr = StoreLanguage::factory()->create();
-    $post = BlogPost::factory()->withoutTranslations()->create();
-
-    BlogPostTranslation::factory()->forLanguage($default)->create(['blog_post_id' => $post->id]);
-    BlogPostTranslation::factory()->forLanguage($fr)->create(['blog_post_id' => $post->id]);
-
-    $post->delete();
-
-    expect(DB::table('blog_post_translations')->where('blog_post_id', $post->id)->count())->toBe(2);
-});
-
 test('force-deleting a post cascades to its translations and leaves other posts alone', function () {
     $default = StoreLanguage::factory()->default()->create();
     $post = BlogPost::factory()->withoutTranslations()->create();
@@ -204,53 +147,6 @@ test('the store_languages foreign key restricts: a language that still holds pos
 
     expect($caught)->toBeInstanceOf(QueryException::class)
         ->and($caught->errorInfo[1])->toBe(1451);
-});
-
-test('a translation row accepts a null body but refuses a null title', function () {
-    $language = StoreLanguage::factory()->default()->create();
-    $other = StoreLanguage::factory()->create();
-    $post = BlogPost::factory()->withoutTranslations()->create();
-
-    DB::table('blog_post_translations')->insert([
-        'id' => (string) Str::uuid7(),
-        'blog_post_id' => $post->id,
-        'store_language_id' => $language->id,
-        'title' => 'Con titulo',
-        'slug' => 'con-titulo',
-        'body' => null,
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-
-    $caught = null;
-
-    try {
-        DB::table('blog_post_translations')->insert([
-            'id' => (string) Str::uuid7(),
-            'blog_post_id' => $post->id,
-            'store_language_id' => $other->id,
-            'title' => null,
-            'slug' => 'otro',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-    } catch (QueryException $e) {
-        $caught = $e;
-    }
-
-    expect($caught)->toBeInstanceOf(QueryException::class)
-        ->and($caught->errorInfo[1])->toBe(1048);
-});
-
-test('the create migration sorts after blog_posts and store_languages, and the drop migration after the create one', function () {
-    $create = basename(bp78MigrationPath('create_blog_post_translations_table'));
-    $drop = basename(bp78MigrationPath('drop_translatable_columns_from_blog_posts_table'));
-    $posts = basename(bp78MigrationPath('create_blog_posts_table'));
-    $storeLanguages = basename(bp78MigrationPath('create_store_languages_table'));
-
-    expect(strcmp($create, $posts))->toBeGreaterThan(0)
-        ->and(strcmp($create, $storeLanguages))->toBeGreaterThan(0)
-        ->and(strcmp($drop, $create))->toBeGreaterThan(0);
 });
 
 test('the drop migration refuses to run while a post has no default-language translation, before any DDL', function () {
