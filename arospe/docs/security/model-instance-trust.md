@@ -42,6 +42,7 @@ value was decided by whoever hydrated the instance, at whatever time they did so
 - [A single predicate on one row can collapse the guard into the write itself](#a-single-predicate-on-one-row-can-collapse-the-guard-into-the-write-itself)
 - [An FK insert shared-locks its parent, so a later FOR UPDATE on the parent deadlocks](#an-fk-insert-shared-locks-its-parent-so-a-later-for-update-on-the-parent-deadlocks)
 - [A multi-step, caller-hydrated decision compares against its OWN pre-refresh snapshot, never the refreshed value](#a-multi-step-caller-hydrated-decision-compares-against-its-own-pre-refresh-snapshot-never-the-refreshed-value)
+- [Translation write actions re-read the language as active through one helper](#translation-write-actions-re-read-the-language-as-active-through-one-helper)
 
 ## A guard must re-read its subject under lock, inside its own transaction
 
@@ -511,10 +512,22 @@ $item->save();
 
 The line is built unsaved, `AdjustOrderStock` locks products (including a variant line's parent) then variants and writes stock, and only then is the line saved. Full ordering convention: [api/orders.md](../api/orders.md#lock-order-convention-project-wide).
 
-_Last updated: 2026-11-10 — story 0088a added the FK-insert shared-lock deadlock section. Earlier content current from story 0064d: replaced the prior placeholder ("a sibling story will add the
-mirror-image example") with the shipped section above — `UpdateUser`'s locked compare-and-set, and the
-❌/✅ pair on which snapshot the write-time conflict check must compare against (the pre-refresh original,
-never the value `refresh()` just wrote), since the two are easy to conflate and conflating them turns the
-whole guard into a silent no-op. Folded the prior `_Previously:` entry (story 0064c, 2026-09-27) into this
-line per the doc-growth-management rule: it added "A single predicate on one row can collapse the guard
-into the write itself" and is otherwise unchanged and still current._
+## Translation write actions re-read the language as active through one helper
+
+Story 0087. Every per-language translation write action (every `app/Actions/**/Set*Translation.php` except the unguarded `SetTranslation` primitive) must, after authorization and before validation, call [`ResolveActiveStoreLanguage`](../../app/Actions/Translations/ResolveActiveStoreLanguage.php) with the caller's `StoreLanguage`, an error key derived server-side, and the localized message, and use **only the returned instance** from then on. The caller's language is untrusted: it may have been deactivated since the editor hydrated it.
+
+```php
+// app/Actions/Products/SetProductTranslation.php
+$activeLanguage = ($this->resolveActiveStoreLanguage)($language, $nameKey, __('products.editor.tabs.language_inactive'));
+```
+
+`tests/Unit/ArchitectureTest.php` enforces it: it discovers every `Set*Translation.php` by glob (a sixth action is picked up automatically), requires the helper in each constructor and forbids an inline `active()` re-read; each action's own test covers the behaviour (a constructor parameter can be injected and never called). The post action reports on the post-level `translation` key because it has no single field to attach to; the others use their `names.{id}` key.
+
+Accepted residuals recorded by the Phase 4 audit:
+
+- **L-1 (CWE-367, accepted):** the check-then-write is not locked, so a concurrent `RemoveStoreLanguage` can deactivate the language between the re-read and the write, leaving one translation row for a now-inactive language. The row is harmless (inactive languages are filtered everywhere) and a lock would add deadlock risk for no data-integrity gain.
+- **L-2:** the guard finds actions by filename only; an action named differently escapes it. A name-independent rule (for example a marker interface) is a possible follow-up.
+
+The deleted-entity race of the same actions (FK 1452 as a 500) is a separate, pending task: [0098](../../ai-spec/tasks/0098-translation-write-actions-deleted-entity-race-backend.md).
+
+_Last updated: 2026-11-13 — story 0087 added the "Translation write actions re-read the language as active through one helper" section (with residuals L-1 and L-2). Earlier sections current from story 0088a and 0064d._
