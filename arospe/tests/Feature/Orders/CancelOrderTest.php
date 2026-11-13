@@ -198,11 +198,24 @@ test('the thrown message is the blocked translation, interpolating neither statu
 
 // --- There is no confirmation bypass ---
 
-test('CancelOrder::__invoke() accepts exactly one parameter, an Order', function () {
-    $method = new ReflectionMethod(CancelOrder::class, '__invoke');
+test('CancelOrder::__invoke() accepts an Order and a bool $adjustStock that defaults to false, and nothing else', function () {
+    $parameters = (new ReflectionMethod(CancelOrder::class, '__invoke'))->getParameters();
 
-    expect($method->getNumberOfParameters())->toBe(1)
-        ->and($method->getParameters()[0]->getType()?->getName())->toBe(Order::class);
+    expect($parameters)->toHaveCount(2)
+        ->and($parameters[0]->getType()?->getName())->toBe(Order::class)
+        ->and($parameters[1]->getName())->toBe('adjustStock')
+        ->and($parameters[1]->getType()?->getName())->toBe('bool')
+        ->and($parameters[1]->isDefaultValueAvailable())->toBeTrue()
+        ->and($parameters[1]->getDefaultValue())->toBeFalse();
+});
+
+test('adjustStock is not a confirmation bypass: a blocked cancellation still throws with adjustStock true', function () {
+    actingSuperAdminCanceller();
+    $order = Order::factory()->create(['status' => OrderStatus::Shipped]);
+
+    expect(fn () => app(CancelOrder::class)($order, adjustStock: true))->toThrow(OrderCancellationBlockedException::class);
+
+    expect($order->fresh()->status)->toBe(OrderStatus::Shipped);
 });
 
 test('a blocked cancellation is not retryable: re-invoking immediately throws the same exception, and the order is unchanged', function () {

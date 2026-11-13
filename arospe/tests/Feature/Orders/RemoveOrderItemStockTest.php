@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Orders\CancelOrder;
 use App\Actions\Orders\RemoveOrderItem;
 use App\Enums\OrderStatus;
 use App\Exceptions\OrderNotEditableException;
@@ -346,3 +347,19 @@ test('a locked re-read whose counters differ from the first read refuses the cal
     expect($fixture['stocked']->fresh()->stock)->toBe(10)
         ->and(OrderItem::query()->whereKey($itemId)->exists())->toBeTrue();
 });
+
+// --- Story 0091: a removal after a cancellation with stock return gives nothing back twice ---
+
+test('removing a line after a cancellation with stock return returns nothing more', function (string $target) {
+    actingRemovalStockEditor('orders.edit', 'orders.refund');
+    $fixture = removalStockFixture($target);
+
+    app(CancelOrder::class)($fixture['order'], true);
+
+    expect($fixture['stocked']->fresh()->stock)->toBe(13);
+
+    removeLine($fixture, true);
+
+    expect(OrderItem::query()->whereKey($fixture['item']->id)->exists())->toBeFalse()
+        ->and($fixture['stocked']->fresh()->stock)->toBe(13);
+})->with(['product', 'variant']);
