@@ -31,6 +31,7 @@ use App\Models\BlogPost;
 use App\Models\BlogTag;
 use App\Models\BlogTagTranslation;
 use App\Models\Media;
+use App\Models\StoreLanguage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\DB;
@@ -84,6 +85,16 @@ function blogPostsEditorJourneyWireContains(string $property, string $needle): s
     JS;
 }
 
+/**
+ * The default store language's id: the editor's default-language panel is the one every journey acts
+ * on (story 0079, D-15). Only that language exists in these journeys, so the WYSIWYG's own hooks stay
+ * unambiguous inside it.
+ */
+function blogPostsEditorJourneyDefaultLanguageId(): string
+{
+    return (string) StoreLanguage::query()->where('is_default', true)->firstOrFail()->id;
+}
+
 function blogPostsEditorJourneyGalleryModal(string $dataTest): string
 {
     return 'dialog[open] [data-test="'.$dataTest.'"]';
@@ -103,9 +114,10 @@ test('a blog editor writes a scheduled post with a body, an image and tags, save
     // Non-zero seconds: Chromium drops ":00" from a datetime-local value, which would make the
     // reopened value differ from the typed one for a reason that has nothing to do with the app.
     $scheduledFor = substr($scheduledFor, 0, -2).'07';
+    $defaultId = blogPostsEditorJourneyDefaultLanguageId();
 
     try {
-        retry(3, function () use ($first, $media, $bodyText, $scheduledFor): void {
+        retry(3, function () use ($first, $media, $bodyText, $scheduledFor, $defaultId): void {
             $title = 'Entrada del viaje '.Str::random(10);
 
             $page = visit(route('blog-posts.create'))->assertNoJavaScriptErrors();
@@ -127,7 +139,7 @@ test('a blog editor writes a scheduled post with a body, an image and tags, save
                 ->assertScript(blogPostsEditorJourneyWireEquals('status', 'scheduled'));
 
             // (3) Title, the FIRST real category option, and the date.
-            $page->fill('title', $title)
+            $page->fill('@blog-post-title-input-'.$defaultId, $title)
                 ->select('blogCategoryId', $first->id)
                 ->assertScript(blogPostsEditorJourneyWireEquals('blogCategoryId', $first->id))
                 ->fill('publishedAt', $scheduledFor)
@@ -141,7 +153,7 @@ test('a blog editor writes a scheduled post with a body, an image and tags, save
                     document.execCommand('insertText', false, 'Texto escrito en el navegador');
                 })()
             JS);
-            $page->assertScript(blogPostsEditorJourneyWireContains('body', $bodyText));
+            $page->assertScript(blogPostsEditorJourneyWireContains("bodies['{$defaultId}']", $bodyText));
 
             $page->click('@wysiwyg-insert-image')
                 ->assertNoJavaScriptErrors()
@@ -151,7 +163,7 @@ test('a blog editor writes a scheduled post with a body, an image and tags, save
                 ->assertNoJavaScriptErrors()
                 ->assertScript("document.querySelector('dialog[open]') === null")
                 ->assertScript("document.querySelector('[data-test=\"wysiwyg-editor-region\"] img') !== null")
-                ->assertScript(blogPostsEditorJourneyWireContains('body', '<img'));
+                ->assertScript(blogPostsEditorJourneyWireContains("bodies['{$defaultId}']", '<img'));
 
             // (5) Tags, by keyboard: type + Enter mints a chip; a suggestion click adds an existing
             //     one; a chip is removed with its own control.
@@ -189,7 +201,7 @@ test('a blog editor writes a scheduled post with a body, an image and tags, save
             //     stored status, and the body is intact in the wire:ignore'd region.
             $page = visit(route('blog-posts.edit', $post))
                 ->assertNoJavaScriptErrors()
-                ->assertValue('title', $title)
+                ->assertValue('@blog-post-title-input-'.$defaultId, $title)
                 ->assertScript('document.querySelector(\'[name="status"]\').value', 'scheduled')
                 ->assertScript('document.querySelector(\'[name="blogCategoryId"]\').value', $first->id)
                 ->assertVisible('@blog-post-published-at')
@@ -201,8 +213,8 @@ test('a blog editor writes a scheduled post with a body, an image and tags, save
             // (8) Edit: drop one chip, retitle, save -- the tag row survives in the catalog.
             $page->click('@tag-chip-remove-invierno')
                 ->assertMissing('@tag-chip-invierno')
-                ->fill('title', $title.' bis')
-                ->assertScript(blogPostsEditorJourneyWireEquals('title', $title.' bis'))
+                ->fill('@blog-post-title-input-'.$defaultId, $title.' bis')
+                ->assertScript(blogPostsEditorJourneyWireEquals("titles['{$defaultId}']", $title.' bis'))
                 ->click('@blog-post-save')
                 ->assertNoJavaScriptErrors()
                 ->assertUrlIs(route('blog-posts.index'));
@@ -223,16 +235,18 @@ test('a refusal is rendered beside its own field in a real browser, and the type
     $this->actingAs(blogPostsEditorJourneyActor());
     $category = BlogCategory::factory()->named('Guías')->create();
 
-    retry(3, function () use ($category): void {
+    $defaultId = blogPostsEditorJourneyDefaultLanguageId();
+
+    retry(3, function () use ($category, $defaultId): void {
         visit(route('blog-posts.create'))
             ->assertNoJavaScriptErrors()
             ->select('blogCategoryId', $category->id)
             ->select('status', 'published')
             ->assertScript(blogPostsEditorJourneyWireEquals('status', 'published'))
-            ->fill('title', 'Sin cuerpo '.Str::random(8))
+            ->fill('@blog-post-title-input-'.$defaultId, 'Sin cuerpo '.Str::random(8))
             ->click('@blog-post-save')
             ->assertNoJavaScriptErrors()
-            ->assertSee(__('validation.required', ['attribute' => 'body']))
+            ->assertSeeIn('@blog-post-body-editor-'.$defaultId, __('validation.required', ['attribute' => 'body']))
             ->assertScript(blogPostsEditorJourneyWireEquals('blogCategoryId', $category->id));
 
         expect(BlogPost::count())->toBe(0);

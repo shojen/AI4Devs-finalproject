@@ -141,6 +141,18 @@ trait BlogPostValidationRules
     }
 
     /**
+     * A NON-default language's body is unconditionally optional (story 0079 D-11): only the store
+     * default language's body gates publishing, through bodyRules(), so this deliberately takes no
+     * status. Translating a Published post never demands a body in every language.
+     *
+     * @return array<int, ValidationRule|array<mixed>|string>
+     */
+    protected function translatedBodyRules(): array
+    {
+        return ['nullable', 'string'];
+    }
+
+    /**
      * The date rule is decided by the submitted status (D-6). `after:now` is strictly `>`: a date
      * equal to the current instant is already publishable, not scheduled.
      *

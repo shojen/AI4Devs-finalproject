@@ -184,16 +184,16 @@ test('the editor opens a post with its default-language title and body, never th
     $post = bprPost('Botas de invierno', "Bottes d'hiver");
 
     Livewire::test(Editor::class, ['blogPost' => $post])
-        ->assertSet('title', 'Botas de invierno')
-        ->assertSet('body', '<p>cuerpo es</p>');
+        ->assertSet('titles.'.$this->default->id, 'Botas de invierno')
+        ->assertSet('bodies.'.$this->default->id, '<p>cuerpo es</p>');
 });
 
 test('the editor shows empty title and body for a post that holds only a French translation', function () {
     $post = bprPost(null, "Bottes d'hiver");
 
     Livewire::test(Editor::class, ['blogPost' => $post])
-        ->assertSet('title', '')
-        ->assertSet('body', '');
+        ->assertSet('titles.'.$this->default->id, '')
+        ->assertSet('bodies.'.$this->default->id, '');
 });
 
 test('the editor does not borrow the French body when the default-language body is null', function () {
@@ -202,8 +202,8 @@ test('the editor does not borrow the French body when the default-language body 
     BlogPostTranslation::factory()->forLanguage($this->fr)->create(['blog_post_id' => $post->id, 'title' => 'Sans corps', 'body' => '<p>corps fr</p>']);
 
     Livewire::test(Editor::class, ['blogPost' => $post])
-        ->assertSet('title', 'Sin cuerpo')
-        ->assertSet('body', '');
+        ->assertSet('titles.'.$this->default->id, 'Sin cuerpo')
+        ->assertSet('bodies.'.$this->default->id, '');
 });
 
 test('saving a French-only post with an empty title is refused and copies no fallback into a default-language row', function () {
@@ -212,7 +212,7 @@ test('saving a French-only post with an empty title is refused and copies no fal
 
     Livewire::test(Editor::class, ['blogPost' => $post])
         ->call('save')
-        ->assertHasErrors(['title']);
+        ->assertHasErrors(['titles.'.$this->default->id]);
 
     expect(DB::table('blog_post_translations')->where('blog_post_id', $post->id)->count())->toBe(1)
         ->and((array) DB::table('blog_post_translations')->where('blog_post_id', $post->id)->first())->toBe($frenchBefore);
@@ -224,8 +224,8 @@ test('saving a French-only post with a typed title adds the default-language row
         ->where('blog_post_id', $post->id)->where('store_language_id', $this->fr->id)->first();
 
     Livewire::test(Editor::class, ['blogPost' => $post])
-        ->set('title', 'Botas nuevas')
-        ->set('body', '<p>Nuevo</p>')
+        ->set('titles.'.$this->default->id, 'Botas nuevas')
+        ->set('bodies.'.$this->default->id, '<p>Nuevo</p>')
         ->call('save')
         ->assertHasNoErrors();
 

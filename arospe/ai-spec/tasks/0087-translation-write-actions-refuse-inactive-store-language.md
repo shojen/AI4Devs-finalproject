@@ -298,7 +298,7 @@ the suite.
 - Builds on 0071, [0073](done/0073-blog-categories-language-tabs-ui.md) (the actions changed) and
   0068 D5 (removal = deactivation).
 - Pending [0076b](done/0076b-product-translation-write-action-backend.md) (new `SetProductTranslation`, which
-  refuses an inactive language itself) and [0079](0079-blog-post-editor-language-tabs-ui.md) are affected
+  refuses an inactive language itself) and [0079](done/0079-blog-post-editor-language-tabs-ui.md) are affected
   by note only (§6); [0077](done/0077-product-editor-language-tabs-ui.md) is affected only through 0076b.
 
 ### Risks
@@ -317,7 +317,7 @@ the suite.
 
 ## 6. Technical backlog / amendment notes
 
-- **Amend [0079](0079-blog-post-editor-language-tabs-ui.md):** `SetBlogPostTranslation` must refuse
+- **Amend [0079](done/0079-blog-post-editor-language-tabs-ui.md):** `SetBlogPostTranslation` must refuse
   an inactive store language per this story; its currently specified "still writable" cases
   (~lines 614 and 1009) are reversed. Consider extracting the shared resolver (D-5) there.
 - **Amend [0076b](done/0076b-product-translation-write-action-backend.md):** its new

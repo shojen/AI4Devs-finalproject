@@ -45,6 +45,14 @@ beforeEach(function () {
 });
 
 /**
+ * The store default language id: 0079 keys the form's title and body by store-language id.
+ */
+function blogPostsEditorDefaultId(): string
+{
+    return StoreLanguage::query()->where('is_default', true)->firstOrFail()->id;
+}
+
+/**
  * @param  array<int, string>  $permissions
  */
 function blogPostsEditorActor(array $permissions = ['blog.view', 'blog.create', 'blog.edit', 'blog.delete']): User
@@ -73,7 +81,12 @@ function blogPostsEditorFill(Testable $component, BlogCategory $category, array 
     ], $overrides);
 
     foreach ($payload as $field => $value) {
-        $component->set($field, $value);
+        $property = match ($field) {
+            'title' => 'titles.'.blogPostsEditorDefaultId(),
+            'body' => 'bodies.'.blogPostsEditorDefaultId(),
+            default => $field,
+        };
+        $component->set($property, $value);
     }
 
     return $component;
@@ -168,11 +181,11 @@ test('edit loads every field, including the complete tag set, and never a null',
     $component = Livewire::test(Editor::class, ['blogPost' => $post]);
 
     $component->assertSet('blogPostId', $post->id)
-        ->assertSet('title', 'Botas de invierno')
+        ->assertSet('titles.'.blogPostsEditorDefaultId(), 'Botas de invierno')
         ->assertSet('blogCategoryId', $category->id)
         ->assertSet('status', 'scheduled')
         ->assertSet('publishedAt', '2027-03-15T10:20:33')
-        ->assertSet('body', '<p>Contenido</p>')
+        ->assertSet('bodies.'.blogPostsEditorDefaultId(), '<p>Contenido</p>')
         ->assertSet('tagNames', ['alfa', 'medio', 'zeta']);
 });
 
@@ -190,7 +203,7 @@ test('a tag with no name in the default language still shows as a chip and survi
     $component = Livewire::test(Editor::class, ['blogPost' => $post])
         ->assertSet('tagNames', ['invierno']);
 
-    $component->set('title', 'Retitulado')->call('save')->assertHasNoErrors();
+    $component->set('titles.'.blogPostsEditorDefaultId(), 'Retitulado')->call('save')->assertHasNoErrors();
 
     expect($post->fresh()->tags()->pluck('blog_tags.id')->all())->toContain($tag->id);
 });
@@ -201,7 +214,7 @@ test('a bodiless draft with no date loads empty strings, never null', function (
 
     $component = Livewire::test(Editor::class, ['blogPost' => $post]);
 
-    $component->assertSet('body', '')
+    $component->assertSet('bodies.'.blogPostsEditorDefaultId(), '')
         ->assertSet('publishedAt', '')
         ->assertSet('tagNames', [])
         ->assertSet('status', 'draft');
@@ -212,7 +225,7 @@ test('editing an existing post retitles it and redirects to the list', function 
     $post = BlogPost::factory()->titled('Botas de invierno')->create();
 
     Livewire::test(Editor::class, ['blogPost' => $post])
-        ->set('title', 'Botas de invierno 2026')
+        ->set('titles.'.blogPostsEditorDefaultId(), 'Botas de invierno 2026')
         ->call('save')
         ->assertHasNoErrors()
         ->assertRedirect(route('blog-posts.index'));
@@ -281,7 +294,7 @@ test('mounting and saving with the right permissions write no refusal warning at
     Log::spy();
 
     blogPostsEditorFill(Livewire::test(Editor::class), $category)->call('save');
-    Livewire::test(Editor::class, ['blogPost' => $post])->set('title', 'Otro título')->call('save');
+    Livewire::test(Editor::class, ['blogPost' => $post])->set('titles.'.blogPostsEditorDefaultId(), 'Otro título')->call('save');
 
     Log::shouldNotHaveReceived('warning');
 });
@@ -312,7 +325,7 @@ test('save() re-authorizes an edit: an actor who lost blog.edit after mounting i
     $this->actingAs($actor);
     $post = BlogPost::factory()->titled('Original')->create();
 
-    $component = Livewire::test(Editor::class, ['blogPost' => $post])->set('title', 'Cambiado');
+    $component = Livewire::test(Editor::class, ['blogPost' => $post])->set('titles.'.blogPostsEditorDefaultId(), 'Cambiado');
     $actor->revokePermissionTo('blog.edit');
     app(PermissionRegistrar::class)->forgetCachedPermissions();
 
@@ -331,7 +344,7 @@ test('saving a post that was deleted while the editor was open is a 404, never a
     $this->actingAs(blogPostsEditorActor());
     $post = BlogPost::factory()->titled('Original')->create();
 
-    $component = Livewire::test(Editor::class, ['blogPost' => $post])->set('title', 'Cambiado');
+    $component = Livewire::test(Editor::class, ['blogPost' => $post])->set('titles.'.blogPostsEditorDefaultId(), 'Cambiado');
     $post->delete();
 
     expect(fn () => $component->call('save'))->toThrow(ModelNotFoundException::class);
@@ -349,8 +362,8 @@ test('a blank title is refused with the message beside the title field', functio
 
     $component = blogPostsEditorFill(Livewire::test(Editor::class), $category, ['title' => '   '])->call('save');
 
-    $component->assertHasErrors(['title']);
-    expect(blogPostsEditorErrors($component, 'title'))->toHaveCount(1)
+    $component->assertHasErrors(['titles.'.blogPostsEditorDefaultId()]);
+    expect(blogPostsEditorErrors($component, 'titles.'.blogPostsEditorDefaultId()))->toHaveCount(1)
         ->and(BlogPost::count())->toBe(0);
 });
 
@@ -441,8 +454,8 @@ test('a refusal on one field leaves the whole form as typed: nothing is reset in
         ->call('addTag', 'invierno')
         ->call('save');
 
-    $component->assertHasErrors(['title'])
-        ->assertSet('body', '<p>Escrito con cariño</p>')
+    $component->assertHasErrors(['titles.'.blogPostsEditorDefaultId()])
+        ->assertSet('bodies.'.blogPostsEditorDefaultId(), '<p>Escrito con cariño</p>')
         ->assertSet('tagNames', ['invierno'])
         ->assertSet('blogCategoryId', $category->id);
 });
@@ -452,16 +465,16 @@ test('a later successful attempt clears the previous refusal', function () {
     $category = BlogCategory::factory()->create();
 
     $component = blogPostsEditorFill(Livewire::test(Editor::class), $category, ['title' => ''])->call('save');
-    $component->assertHasErrors(['title']);
+    $component->assertHasErrors(['titles.'.blogPostsEditorDefaultId()]);
 
-    $component->set('title', 'Ya con título')->call('save')->assertHasNoErrors();
+    $component->set('titles.'.blogPostsEditorDefaultId(), 'Ya con título')->call('save')->assertHasNoErrors();
 });
 
 // =====================================================================
 // Body: 0061b's "visible content" judgement, as the editor reaches it
 // =====================================================================
 
-test('a Draft with an empty body is accepted and stores no body', function () {
+test('a Draft with an empty default-language body is accepted and stores no body', function () {
     $this->actingAs(blogPostsEditorActor());
     $category = BlogCategory::factory()->create();
 
@@ -470,18 +483,18 @@ test('a Draft with an empty body is accepted and stores no body', function () {
     expect(BlogPost::sole()->translated('body'))->toBeNull();
 });
 
-test('a Published post with an empty body is refused', function () {
+test('a Published post with an empty default-language body is refused', function () {
     $this->actingAs(blogPostsEditorActor());
     $category = BlogCategory::factory()->create();
 
     blogPostsEditorFill(Livewire::test(Editor::class), $category, ['status' => 'published', 'body' => ''])
         ->call('save')
-        ->assertHasErrors(['body']);
+        ->assertHasErrors(['bodies.'.blogPostsEditorDefaultId()]);
 
     expect(BlogPost::count())->toBe(0);
 });
 
-test('a Scheduled post with an empty body is refused', function () {
+test('a Scheduled post with an empty default-language body is refused', function () {
     $this->actingAs(blogPostsEditorActor());
     $category = BlogCategory::factory()->create();
 
@@ -489,7 +502,7 @@ test('a Scheduled post with an empty body is refused', function () {
         'status' => 'scheduled',
         'body' => '',
         'publishedAt' => now()->addDay()->format('Y-m-d\TH:i:s'),
-    ])->call('save')->assertHasErrors(['body']);
+    ])->call('save')->assertHasErrors(['bodies.'.blogPostsEditorDefaultId()]);
 
     expect(BlogPost::count())->toBe(0);
 });
@@ -500,7 +513,7 @@ test('a body that renders nothing counts as no body: refused when published, sto
 
     blogPostsEditorFill(Livewire::test(Editor::class), $category, ['status' => 'published', 'body' => '<p><br></p>'])
         ->call('save')
-        ->assertHasErrors(['body']);
+        ->assertHasErrors(['bodies.'.blogPostsEditorDefaultId()]);
     expect(BlogPost::count())->toBe(0);
 
     blogPostsEditorFill(Livewire::test(Editor::class), $category, ['status' => 'draft', 'body' => '<p><br></p>'])
@@ -509,14 +522,14 @@ test('a body that renders nothing counts as no body: refused when published, sto
     expect(BlogPost::sole()->translated('body'))->toBeNull();
 });
 
-test('promoting a bodiless draft to published is refused and the post is still a draft afterwards', function () {
+test('promoting a draft with no default-language body to published is refused and the post is still a draft afterwards', function () {
     $this->actingAs(blogPostsEditorActor());
     $post = BlogPost::factory()->titled('Sin cuerpo')->create();
 
     Livewire::test(Editor::class, ['blogPost' => $post])
         ->set('status', 'published')
         ->call('save')
-        ->assertHasErrors(['body']);
+        ->assertHasErrors(['bodies.'.blogPostsEditorDefaultId()]);
 
     $fresh = $post->fresh();
     expect($fresh->status->value)->toBe('draft')->and($fresh->published_at)->toBeNull();
@@ -528,7 +541,7 @@ test('the same promotion succeeds when a body is supplied in the same save', fun
 
     Livewire::test(Editor::class, ['blogPost' => $post])
         ->set('status', 'published')
-        ->set('body', '<p>Ahora sí hay cuerpo</p>')
+        ->set('bodies.'.blogPostsEditorDefaultId(), '<p>Ahora sí hay cuerpo</p>')
         ->call('save')
         ->assertHasNoErrors();
 
@@ -574,7 +587,7 @@ test('retitling an overdue scheduled post succeeds, because its date is hydrated
 
     Livewire::test(Editor::class, ['blogPost' => $post])
         ->assertSet('publishedAt', '2026-06-01T10:20:33')
-        ->set('title', 'Programada y retitulada')
+        ->set('titles.'.blogPostsEditorDefaultId(), 'Programada y retitulada')
         ->call('save')
         ->assertHasNoErrors();
 
@@ -591,7 +604,7 @@ test('the same retitle still succeeds when the editor was opened BEFORE the date
     $component = Livewire::test(Editor::class, ['blogPost' => $post]);
     $this->travel(2)->days();
 
-    $component->set('title', 'Retitulada')->call('save')->assertHasNoErrors();
+    $component->set('titles.'.blogPostsEditorDefaultId(), 'Retitulada')->call('save')->assertHasNoErrors();
 
     expect($post->fresh()->translated('title'))->toBe('Retitulada');
 });
@@ -643,7 +656,7 @@ test('re-saving an already published post keeps its own date and does not re-sta
     $post = BlogPost::factory()->create(['status' => 'published', 'published_at' => '2026-01-10 08:00:00']);
 
     Livewire::test(Editor::class, ['blogPost' => $post])
-        ->set('title', 'Retitulada')
+        ->set('titles.'.blogPostsEditorDefaultId(), 'Retitulada')
         ->call('save')
         ->assertHasNoErrors();
 
@@ -696,7 +709,7 @@ test('saving an edit without touching the chips keeps every tag: the whole set i
     $post->tags()->attach(BlogTag::factory()->count(12)->create()->modelKeys());
 
     Livewire::test(Editor::class, ['blogPost' => $post])
-        ->set('title', 'Retitulada')
+        ->set('titles.'.blogPostsEditorDefaultId(), 'Retitulada')
         ->call('save')
         ->assertHasNoErrors();
 
@@ -731,7 +744,7 @@ test('the same actor is refused when one name is new, and the whole save rolls b
     $post->tags()->attach([$kept->id]);
 
     $component = Livewire::test(Editor::class, ['blogPost' => $post])
-        ->set('title', 'Cambiado')
+        ->set('titles.'.blogPostsEditorDefaultId(), 'Cambiado')
         ->set('tagNames', ['kept', 'running', 'brand-new']);
 
     $contexts = blogPostsEditorRefusedContexts(function () use ($component): void {
