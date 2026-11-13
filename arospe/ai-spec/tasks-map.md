@@ -18,6 +18,8 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-11-13): `0090-order-line-quantity-and-removal-stock-opt-in-backend.md` passed Phase 2 (INVEST re-review #6 APPROVED by `code-reviewer`) and moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 3 step 0, claimed by `worktree-0090-order-line-quantity-removal-stock-opt-in-backend`). Still pending work, so it keeps its node (now `claimed`) and its `tasks-status.json` entry (`claimed`, carried forward). Link integrity checked in both directions: its own outbound sibling and `done/` links gained a `../` prefix; the inbound links from `0091`, `0094`, `0094a` (now `in-progress/0090-…`) and the done `0088`/`0088a` (now `../in-progress/0090-…`) were rewritten. `0091` stays `ready`; `0094`/`0094a` stay `blocked` on 0090.
+
 **Update (2026-11-12): `0079-blog-post-editor-language-tabs-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0079-blog-post-editor-language-tabs-ui`; full unscoped suite green in 36 chunks, Phase 5 approved). It is the last Epic 5 story. Its node, inventory row, `claimed` class membership and the dashed edge `P0087 -.-> P0079` are dropped; it joins the flat `done/` inventory (Epic 5: 16; `done/` holds 114 files) and its `tasks-status.json` entry is deleted. No pending task depended on it; `0087` drops `0079` from `conflict_risk_with` and stays `ready`. No node is `claimed`; `ai-spec/tasks/in-progress/` is empty again. Link check, both directions: same-depth move, so the moved file's 46 outbound links were re-resolved and all resolve; inbound links were repointed in `0087` (`](done/0079-…)`) and in `done/0021`, `done/0063`, `done/0077`, `done/0078` (bare sibling `](0079-…)`), 22 in all, and resolve. The last inbound link, in `docs/api/products/routeless-components.md`, now points to `../../../ai-spec/tasks/done/0079-blog-post-editor-language-tabs-ui.md`.
 
 **Update (2026-11-12, superseded by the closure above): `0079-blog-post-editor-language-tabs-ui.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 2 approved on the third `code-reviewer` review, Q-1/Q-2 closed by the user, then Phase 3 step 0; claimed by `worktree-0079-blog-post-editor-language-tabs-ui`). Still pending work, so it keeps its node and the dashed pairing `P0087 -.-> P0079`; the node moves from the green `ready` class to the blue `claimed` class and its `tasks-status.json` entry becomes `"claimed"` (`depends_on` still empty, `touches` widened to the story's *Files to create/modify* set, which uses `lang/{en,es}/blog-posts.php`, not `blog.php`). `ai-spec/tasks/in-progress/` holds exactly this one file. Link check, both directions: the moved file's 46 outbound links were repointed one level deeper and all resolve; 22 inbound links under `ai-spec/` were repointed (`0087`: `](in-progress/0079-…)`; `done/0021`, `done/0063`, `done/0077`, `done/0078`: `](../in-progress/0079-…)`) and all resolve. **One inbound link is still stale and is `docs-keeper`'s to fix** (outside `product-owner`'s write scope): `docs/api/products/routeless-components.md` line 43 must become `../../../ai-spec/tasks/in-progress/0079-blog-post-editor-language-tabs-ui.md`.
@@ -637,7 +639,8 @@ flowchart LR
     P0094 -.-> P0096
     P0094a -.-> P0096
     P0095 -.-> P0096
-    class P0090,P0091,P0092b ready;
+    class P0091,P0092b ready;
+    class P0090 claimed;
     class P0094,P0094a,P0095,P0096 pending;
 
     %% Standalone (no PRD epic)

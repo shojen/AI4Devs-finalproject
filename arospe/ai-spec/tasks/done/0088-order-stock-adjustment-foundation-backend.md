@@ -356,7 +356,7 @@ any stock change yet. Shipping this story alone is safe; 0088a then starts deduc
 
 ## Dependencies, risks, open technical questions
 **Depends on:** nothing pending. **Blocks:** [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (and, through it,
-[0090](../0090-order-line-quantity-and-removal-stock-opt-in-backend.md), [0091](../0091-order-cancellation-stock-return-opt-in-backend.md),
+[0090](../in-progress/0090-order-line-quantity-and-removal-stock-opt-in-backend.md), [0091](../0091-order-cancellation-stock-return-opt-in-backend.md),
 [0092b](../0092b-order-refund-stock-return-backend.md)).
 **File overlap without a dependency:** [0092a](0092a-record-refund-lock-order-backend.md) also edits `RecordRefund.php` —
 `conflict_risk_with`; run them in sequence or coordinate.

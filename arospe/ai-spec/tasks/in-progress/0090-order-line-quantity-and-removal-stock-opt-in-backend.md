@@ -1,12 +1,12 @@
 # [0090] Line quantity changes **and** line removal adjust stock only on request (backend)
 
-> **Status: New — Phase 1 output, rewritten after the Phase 2 INVEST review of 2026-11-08; pending re-review.** Epic 3
+> **Status: New — Phase 1 output, rewritten after the Phase 2 INVEST re-review #5 of 2026-11-13; pending re-review.** Epic 3
 > follow-up bug fix, order-stock series. **This story covers both operations**: changing a line's quantity
 > (`UpdateOrderItemQuantity`) **and** removing a line (`RemoveOrderItem`). Fullstack pairs: **related_task_id 0094**
-> (quantity dialog) and **0094a** (removal dialog). Blocked on [0088a](done/0088a-order-stock-auto-deduct-on-create-and-add-backend.md)
-> (automatic deduction and `AdjustOrderStock`) and, through it, [0088](done/0088-order-stock-adjustment-foundation-backend.md) (counters).
+> (quantity dialog) and **0094a** (removal dialog). Blocked on [0088a](../done/0088a-order-stock-auto-deduct-on-create-and-add-backend.md)
+> (automatic deduction and `AdjustOrderStock`) and, through it, [0088](../done/0088-order-stock-adjustment-foundation-backend.md) (counters).
 > **User-confirmed (2026-11-08):** the corrected decrease formula and the **two-counter** model in 0088's
-> [counter model](done/0088-order-stock-adjustment-foundation-backend.md#counter-model-d8-two-counters-user-confirmed-2026-11-08-corrected-after-review-3)
+> [counter model](../done/0088-order-stock-adjustment-foundation-backend.md#counter-model-d8-two-counters-user-confirmed-2026-11-08-corrected-after-review-3)
 > (D8 revised: user-confirmed 2026-11-08 (two counters), corrected after review #3). The "stock not changed" counter rules
 > already ship in 0088 (D10); this story adds the stock-moving branches.
 
@@ -14,7 +14,7 @@
 `UpdateOrderItemQuantity` and `RemoveOrderItem` gain `bool $adjustStock = false`. With `false` (default) stock is never touched,
 as today. With `true`, a quantity increase takes the added units out of stock, a decrease returns only the held-out units that
 no longer fit in the new quantity, and a removal returns the line's returnable units — inside the action's existing
-transaction, after its order-row and item-row locks, through `AdjustOrderStock`. The undeducted-units counter
+transaction, after its `orders` row lock and **before** any `FOR UPDATE` on `order_items` (D-7), through `AdjustOrderStock`. The undeducted-units counter
 (`stock_undeducted_quantity`) follows 0088's rules in both modes; `stock_refunded_not_out_quantity` is never touched here.
 
 ## Type
@@ -22,7 +22,16 @@ backend (related_task_id: 0094, 0094a) | includes database-expert: no
 
 ## Verified facts that shaped the story
 - Both actions already: authorize `orders.edit` (`OrderPolicy::update`) through the refusal-logging wrapper; run the hard block;
-  open `DB::transaction()`; lock the `orders` row, then the item row.
+  open `DB::transaction()`; lock the `orders` row, then the item row (`$lockedOrder->items()->lockForUpdate()->findOrFail()`).
+  `RemoveOrderItem` then also runs a **range** locking read `$lockedOrder->items()->lockForUpdate()->count()` for the last-line
+  guard (F-3), and its NEW-3 docblock note says the `orders` lock is what keeps the item-then-range lock pair deadlock-free.
+- 0088a FD-7/D10 and `docs/api/orders.md#lock-order-convention-project-wide` fix the project lock order as
+  `orders → products (by id) → product_variants (by id) → order_items`, and the **forward rule** (appsec L-1) requires 0090 to
+  call `AdjustOrderStock` **before any `FOR UPDATE` on `order_items`** (a locking read there takes gap locks that can deadlock
+  across two orders). Today's item-row lock and range count therefore sit on the wrong side of the stock locks for this story.
+- Every writer of an existing order's `order_items` (`AddOrderItem`, `UpdateOrderItemQuantity`, `RemoveOrderItem`, `RecordRefund`)
+  locks the `orders` row first; `CreateOrder` only inserts lines of a brand-new order; `AutoCancelFullyRefundedOrder` writes only
+  `orders.status`. The only caller of the two actions (`App\Livewire\Orders\Show`) opens no outer transaction.
 - `UpdateOrderItemQuantity` refuses `quantity < refunded_quantity` and `quantity < 1`; `RemoveOrderItem` refuses a line with
   refunded units and the order's last line (story 0055).
 - Current signatures: `UpdateOrderItemQuantity::__invoke(Order $order, string $orderItemId, int $quantity): OrderItem`,
@@ -45,10 +54,33 @@ backend (related_task_id: 0094, 0094a) | includes database-expert: no
 - **D-4 (user D3) — Removal.** With `adjustStock: true`: stock `+R` (refunded lines cannot be removed, so `R = quantity − U`).
   Without: stock unchanged. The row is deleted either way.
 - **D-5** — An unchanged quantity is a no-op for stock and counters regardless of `adjustStock`.
-- **D-6** — Every existing guard keeps its order and runs **before** any stock change; a refused call never moves stock or the
-  counters.
-- **D-7** — The stock call runs after the item write and before `RecalculateOrderTotals`, in the same transaction; lock order
-  `orders → order_items → products → product_variants` (0088a FD-7).
+- **D-6** — Every existing guard keeps its relative order and runs **before** any stock change; a refused call never moves stock
+  or the counters (a refusal raised after the stock call rolls the whole transaction back, so stock is unchanged either way).
+- **D-7 — Lock order (0088a FD-7/D10, forward rule appsec L-1).** The order is
+  `orders → products (by id) → product_variants (by id) → order_items → totals`; `AdjustOrderStock` is called **before any
+  `FOR UPDATE` on `order_items`** (item row lock **and** `RemoveOrderItem`'s range `items()->lockForUpdate()->count()`). Both
+  actions, inside their existing transaction:
+  1. Lock the `orders` row and re-run the hard block (F-4, unchanged).
+  2. Read the item with a **plain (non-locking) read** through `$lockedOrder->items()->findOrFail($orderItemId)` (F-5 scoping
+     kept) and take Q, F, U and the stock target from it.
+  3. Run every guard on plain reads, in today's order: `UpdateOrderItemQuantity` — `quantity < refunded_quantity`;
+     `RemoveOrderItem` — refunded line, then last line (plain `count()`). Compute the delta and U' (D-2/D-3/D-4).
+  4. If `adjustStock` and the delta ≠ 0, call `AdjustOrderStock` (it locks `products`, then `product_variants`, and writes stock).
+  5. Lock the item (`lockForUpdate()->findOrFail()`) and, for `RemoveOrderItem`, the range count, exactly as today, and
+     **re-verify** on these locked reads that Q, F and U equal the step-2 values and that every guard still passes; on any mismatch
+     throw a `LogicException` (programming-error path; the transaction rolls back, including the stock change). Then write (or delete) the item.
+  6. `RecalculateOrderTotals`, unchanged.
+
+  With `adjustStock: false` (or a zero delta) step 4 is skipped and the rest keeps the same order. Why plain reads in steps 2–3
+  are correct: every writer of an existing order's lines locks the `orders` row first (see *Verified facts*), so step 1
+  serializes them, and the InnoDB read view is created at the first consistent read inside the transaction, i.e. after the
+  `orders` lock is granted. Why step 5 re-verifies anyway: the step-2 snapshot would be stale if a future caller wrapped the
+  action in an outer transaction that had already read `order_items`, or if a future writer skipped the `orders` lock; the locked
+  re-read reads the latest committed row, so a stale snapshot can only cause a refusal, never a wrong stock delta.
+  **This changes the existing locking rationale** of F-3 (the last-line guard is now decided on a plain count and confirmed on
+  the locked count), F-5 (the item is first fetched unlocked) and NEW-3 (the item-then-range lock pair now runs after the stock
+  locks). The `orders` lock remains load-bearing for both deadlock-freedom and correctness. **Phase 4 (appsec-auditor) must
+  re-check this rationale and the two docblocks.**
 - **D-8** — A line with a `null` stock target (0088 D1/D9) moves no stock in either mode; its counters still follow D-2/D-3 (kept
   consistent in case they are read). R is not meaningful for a null-target line (an orphaned line raised with `adjustStock: true`
   keeps U, so R grows although nothing was deducted); tests skip the R = ledger-out check for it.
@@ -95,10 +127,11 @@ Feature: Stock follows a line change only when the order administrator asks for 
     When the order administrator changes the line back to 2 units and adjusts stock
     Then "Mug" stock is unchanged
 
-  Scenario: After raising and lowering again, a cancellation returns exactly the units first taken out
-    Given an order administrator who may refund, with a pending order whose 2-unit "Mug" line was raised to 5 without adjusting stock and lowered back to 2 with stock adjustment, and "Mug" has 8 units in stock
-    When the order administrator cancels the order and returns its units to stock
-    Then "Mug" has 10 units in stock
+  Scenario: After raising without deducting and lowering with adjustment, the line still counts exactly the units first taken out
+    Given an order administrator, with a pending order whose 2-unit "Mug" line was created with its 2 units taken out of stock and then raised to 5 units without adjusting stock, and "Mug" has 8 units in stock
+    When the order administrator changes the line back to 2 units and adjusts stock
+    Then "Mug" still has 8 units in stock
+    And the line counts 2 units to return to stock
 
   Scenario: Lowering a line that was refunded and then raised without deducting returns only units taken out
     Given an order administrator, with a paid order whose 5-unit "Mug" line had 2 units refunded without returning stock and was then raised to 7 units without deducting, and "Mug" has 5 units in stock
@@ -111,7 +144,7 @@ Feature: Stock follows a line change only when the order administrator asks for 
     Then "Mug" has 8 units in stock
 
   Scenario: Lowering a refunded legacy line after a deducted raise returns the deducted unit
-    Given an order administrator, with an order recorded before stock tracking existed whose 3-unit "Mug" line was fully refunded and then raised to 4 deducting 1, and "Mug" has 6 units in stock
+    Given an order administrator, with an order recorded before stock tracking existed holding a 3-unit "Mug" line and a 1-unit "Plate" line, whose "Mug" line was fully refunded and then raised to 4 deducting 1, and "Mug" has 6 units in stock
     When the order administrator changes the line to 3 units and adjusts stock
     Then "Mug" has 7 units in stock
 
@@ -163,16 +196,24 @@ Feature: Stock follows a line change only when the order administrator asks for 
 ```
 
 ## Files to create/modify
-- `app/Actions/Orders/UpdateOrderItemQuantity.php` — `bool $adjustStock = false`; delta and counters from the locked item
-  (D-2/D-3); `AdjustOrderStock` when `adjustStock` and delta ≠ 0; docblock.
-- `app/Actions/Orders/RemoveOrderItem.php` — `bool $adjustStock = false`; return `R` before `$item->delete()` (D-4); docblock.
+- `app/Actions/Orders/UpdateOrderItemQuantity.php` — `bool $adjustStock = false`; D-7 step order (plain read and guards,
+  `AdjustOrderStock` when `adjustStock` and delta ≠ 0, then item lock, re-verify, write); delta and counters per D-2/D-3; docblock
+  (F-4/F-5 notes rewritten for the new order).
+- `app/Actions/Orders/RemoveOrderItem.php` — `bool $adjustStock = false`; D-7 step order (plain read, refunded-line and last-line
+  guards, `AdjustOrderStock` returning `R`, then item lock and range count, re-verify, `$item->delete()`) (D-4); docblock
+  (F-3/F-5/NEW-3 notes rewritten for the new order).
 - `tests/Feature/Orders/UpdateOrderItemQuantityStockTest.php` — new.
 - `tests/Feature/Orders/RemoveOrderItemStockTest.php` — new.
 
 ## Tests to perform
-- [ ] Every Gherkin scenario, for a product line and a variant line (dataset).
+- [ ] Every Gherkin scenario, for a product line and a variant line (dataset), **except**: the deleted-variant scenario (it is
+  itself the null-target case; run once for an `orphanedVariant()` line and once for a line whose product was deleted,
+  `product_id` null) and the two legacy scenarios (run on the product line only: `legacyStockUntracked()` is target-independent,
+  and the "legacy variant" row of the D-3 table already covers a variant legacy line).
 - [ ] Counters after each operation match 0088's two-counter table, with and without `adjustStock` (U' = `max(0, U − d)` on every decrease; K never changed).
-- [ ] **Round trip:** 2 → 5 (no adjust, U 3) → 2 (adjust, k = 0, U 0) → `CancelOrder` with `adjustStock: true` returns **2** (arrange the cancel through the real action once 0091 is merged; until then assert `returnableStockUnits() === 2`).
+- [ ] **Round trip (0090 scope):** created line of 2 (deducted) → 5 (no adjust, U 3) → 2 (adjust, k = 0, U 0): stock unchanged by
+  the last two steps and `returnableStockUnits() === 2`. The end-to-end "cancel returns exactly 2" assertion belongs to **0091**'s
+  tests (`CancelOrder` with `adjustStock`), not to this story.
 - [ ] **Two-counter sequence (0088 sequence 2):** stock 10 → line of 5 (stock 5) → refund 2 without restock → raise to 7 without deducting (U 2) → lower to 2 with adjust → stock **8**, U 0, `returnableStockUnits() === 0`, `refundedUnitsOutOfStock() === 2`. Run through the real actions (`RecordRefund` without `stockReturns` already exists).
 - [ ] **Review #3 sequences through the real actions:** (a) stock 10 → line of 2 → raise to 5 without deducting → refund 3 without restock (`RecordRefund`, counter rule from 0088) → raise to 7 deducting → lower to 3 with adjust → stock **8**; (b) legacy line of 3 → refund 3 → raise to 4 deducting → lower to 3 with adjust → returns **1**.
 - [ ] D-3 numeric table (all with `adjustStock: true` unless noted; K = `stock_refunded_not_out_quantity`):
@@ -191,7 +232,12 @@ Feature: Stock follows a line change only when the order administrator asks for 
 - [ ] A line with `ordered_as_variant = true` and a null variant moves no stock in either action.
 - [ ] Every existing refusal (authorization, hard block, `< refunded`, `< 1`, last line, refunded line, missing item) leaves stock and counters unchanged.
 - [ ] Without the parameter, stock never changes and the counters follow D-2/D-3 (regression for existing callers).
-- [ ] Lock order (query log): `orders` → `order_items` → `products` → `product_variants`.
+- [ ] Lock order (query log), with `adjustStock: true` on a product line and a variant line: `orders` `FOR UPDATE` →
+  `products` `FOR UPDATE` → `product_variants` `FOR UPDATE` (variant line) → stock `UPDATE` → first `order_items` `FOR UPDATE`
+  (and, for `RemoveOrderItem`, the range count `FOR UPDATE`) → item `UPDATE`/`DELETE`; **no** `order_items` locking read appears
+  before the last stock lock/`UPDATE` (forward rule, appsec L-1).
+- [ ] D-7 re-verify: a locked re-read whose Q/F/U differ from the step-2 read refuses the call and rolls the stock change back
+  (arrange by changing the row between the reads, e.g. through a model event hook in the test).
 - [ ] Regression: `UpdateOrderItemQuantityTest`, `RemoveOrderItemTest`, `HardBlockTest`, `OrderLineItemAuthorizationTest` green unchanged.
 
 ## Expected outcome
@@ -202,7 +248,9 @@ and the backend applies exactly that choice atomically, never returning a unit t
 - [ ] Both actions accept `adjustStock` (default `false`) as the last parameter.
 - [ ] With `false`, stock never changes; the counters follow D-2/D-3.
 - [ ] With `true`, stock changes by exactly D-2/D-3/D-4 through `AdjustOrderStock`; negative allowed.
-- [ ] The 2 → 5 → 2 → cancel round-trip returns exactly 2 units, and the two-counter sequence ends at stock 8.
+- [ ] After 2 → 5 (no adjust) → 2 (adjust) the line still counts exactly 2 units to return (`returnableStockUnits() === 2`) and
+  stock is unchanged by those two edits; the two-counter sequence ends at stock 8.
+- [ ] `AdjustOrderStock` runs before any `FOR UPDATE` on `order_items` (D-7, FD-7, appsec L-1).
 - [ ] A refused call never changes stock or the counters; no authorization change.
 
 ## Definition of Done
@@ -217,9 +265,9 @@ Independent: needs 0088a (and 0088) only; no UI. Negotiable: counter rules settl
 parameter each, one formula. Testable: deterministic stock/counter assertions per scenario plus a numeric table.
 
 ## Dependencies, risks, open technical questions
-**Depends on:** [0088a](done/0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (hard) and [0088](done/0088-order-stock-adjustment-foundation-backend.md) (transitively). **Blocks:**
-[0094](0094-order-line-quantity-stock-dialog-ui.md), [0094a](0094a-order-line-removal-stock-dialog-ui.md).
-Shares `RemoveOrderItemStockTest.php` with [0091](0091-order-cancellation-stock-return-opt-in-backend.md) — sequence or coordinate.
+**Depends on:** [0088a](../done/0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (hard), [0092a](../done/0092a-record-refund-lock-order-backend.md) (satisfied: `RecordRefund` locks `orders` first, which the plain-read safety in D-7 relies on) and [0088](../done/0088-order-stock-adjustment-foundation-backend.md) (transitively). **Blocks:**
+[0094](../0094-order-line-quantity-stock-dialog-ui.md), [0094a](../0094a-order-line-removal-stock-dialog-ui.md).
+Shares `RemoveOrderItemStockTest.php` with [0091](../0091-order-cancellation-stock-return-opt-in-backend.md) — sequence or coordinate.
 
 - **OQ-5 — Editing lines of a cancelled order — resolved (user-confirmed 2026-11-08: option (a)).** `isLineItemEditable()` is true on
   `Cancelled`; raising a cancelled order's quantity with `adjustStock` takes stock out for an order that will never ship.
@@ -230,6 +278,20 @@ Shares `RemoveOrderItemStockTest.php` with [0091](0091-order-cancellation-stock-
 - 2026-11-08 — Three Amigos facilitated by product-owner from the backend-expert design and decisions D1, D3, D6, D7.
 - 2026-11-08 — Phase 2 review applied: corrected decrease formula (user decision), round-trip test, scope stated as quantity
   **and** removal.
+- 2026-11-13 — Re-review #5 applied (product-owner, checked against `UpdateOrderItemQuantity`, `RemoveOrderItem`,
+  `AdjustOrderStock`, `docs/api/orders.md` forward rule, 0088a FD-7/D10/L-1):
+  - D-7 rewritten to the real FD-7 order. The reviewer's recommended design (guards on plain reads under the `orders` lock,
+    then `AdjustOrderStock`, then lock and write) is sound per the code: every writer of an existing order's lines locks
+    `orders` first and the only caller opens no outer transaction. One refinement was added rather than invented: step 5
+    re-verifies on the locked rows, because the `$order->refresh()`/`Rule::exists()` reads before the transaction would make a
+    plain read stale if a caller ever wrapped the action in an outer transaction; with the re-verify a stale read can only
+    cause a refusal. Phase 4 must re-check the changed F-3/F-5/NEW-3 rationale.
+  - Round-trip scenario and acceptance bullet restated to what 0090 can verify (`returnableStockUnits() === 2`); the cancel
+    assertion belongs to 0091, which is not a dependency.
+  - Fully-refunded legacy scenario now has a second "Plate" line: with "Mug" as the only line, the full refund would trigger
+    `AutoCancelFullyRefundedOrder` and the edit would run on a `Cancelled` order (still editable per OQ-5, but it would mix
+    auto-cancel into a scenario about the decrease formula).
+  - Product/variant dataset exclusions stated (deleted-variant and legacy scenarios).
 
 ## Approval record
 - Phase 1: complete 2026-11-08 (product-owner).
@@ -237,3 +299,5 @@ Shares `RemoveOrderItemStockTest.php` with [0091](0091-order-cancellation-stock-
 - Phase 2: INVEST re-review 2026-11-08: two-counter model (user decision), numeric table and sequence test, untestable regression bullet reworded → rewritten, pending re-review.
 - Phase 2: INVEST re-review #3 2026-11-08 → rewritten, pending re-review (U' = max(0, U − d) in both modes, k = max(0, d − U), K renamed, review #3 sequences and table rows added; no-adjust counter rules now ship in 0088).
 - Phase 2: INVEST re-review #4 2026-11-08 → rewritten, pending re-review (dependency moved to 0088a after the 0088 split, FD references renumbered, OQ-5 user-confirmed).
+- Phase 2: INVEST re-review #5 2026-11-13 → REJECTED (lock-order contradiction with 0088a FD-7/L-1; round-trip scenario depended on 0091); rewritten, pending re-review
+- Phase 2: INVEST re-review #6 2026-11-13 → APPROVED (code-reviewer; D-7 lock order sound against 0088a FD-7/L-1; non-blocking notes 1, 2, 4 folded in; Phase 4 must re-check the rewritten F-3/F-5/NEW-3 docblock reasons).
