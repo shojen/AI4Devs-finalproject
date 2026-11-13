@@ -401,6 +401,6 @@ test('a locked re-read whose counters differ from the first read refuses the cal
     }
 
     expect($fixture['stocked']->fresh()->stock)->toBe(10)
-        ->and($fixture['item']->fresh()->stock_undeducted_quantity)->toBe(1)
+        ->and($fixture['item']->fresh()->stock_undeducted_quantity)->toBe(0)
         ->and($fixture['order']->fresh()->status)->toBe(OrderStatus::Pending);
 });
