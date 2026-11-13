@@ -8,6 +8,7 @@
 // The actions authorize before they validate, so every test acts as an actor holding the blog.*
 // permissions it needs.
 
+use App\Actions\Translations\ResolveActiveStoreLanguage;
 use App\Livewire\BlogPosts\Editor;
 use App\Models\BlogPost;
 use App\Models\BlogPostTranslation;
@@ -271,4 +272,58 @@ test('an actor who lost blog.edit after mounting cannot write any tab, French in
     expect(fn () => $component->call('save'))->toThrow(AuthorizationException::class);
 
     expect(blogValidationFrenchRowCount($this->french))->toBe(0);
+});
+
+// =====================================================================
+// Story 0087, case 11: a refused inactive language is a general callout, not a tab error (D-8, D-12)
+// =====================================================================
+
+/**
+ * A test double of the shared helper that reproduces the narrow race the editor cannot otherwise
+ * hit: the editor read the language as ACTIVE at click time, and it is deactivated right before the
+ * action's own re-read. It deactivates the passed language and then delegates to the REAL helper, so
+ * the refusal's key and message come from production code, never from the double.
+ */
+function bindDeactivatingActiveLanguageResolver(): void
+{
+    app()->instance(ResolveActiveStoreLanguage::class, new class extends ResolveActiveStoreLanguage
+    {
+        public function __invoke(StoreLanguage $language, string $errorKey, string $message): StoreLanguage
+        {
+            StoreLanguage::query()->whereKey($language->id)->update(['is_active' => false]);
+            StoreLanguage::flushDefaultStoreLanguage();
+
+            return parent::__invoke($language, $errorKey, $message);
+        }
+    });
+}
+
+test('a translation refused because its language was deactivated mid-save shows a danger callout and marks no tab', function () {
+    $post = blogValidationPost([$this->spanish->id => ['title' => 'Titulo', 'body' => '<p>Cuerpo</p>']]);
+    $before = blogValidationSnapshot();
+    bindDeactivatingActiveLanguageResolver();
+
+    Livewire::test(Editor::class, ['blogPost' => $post])
+        ->assertDontSeeHtml('data-test="blog-post-translation-error"')
+        ->set('titles.'.$this->spanish->id, 'Titulo cambiado')
+        ->set('titles.'.$this->french->id, 'Titre')
+        ->call('save')
+        ->assertHasErrors(['translation'])
+        ->assertHasNoErrors(['titles.'.$this->french->id, 'bodies.'.$this->french->id, 'titles.'.$this->spanish->id])
+        ->assertSet('activeLanguageId', $this->spanish->id)
+        ->assertNoRedirect()
+        ->assertSeeHtml('data-test="blog-post-translation-error"')
+        ->assertSee(trans('blog-posts.editor.tabs.language_inactive'));
+
+    expect(blogValidationSnapshot())->toEqual($before);
+});
+
+test('a normal save renders no inactive-language callout', function () {
+    $post = blogValidationPost([$this->spanish->id => ['title' => 'Titulo', 'body' => '<p>Cuerpo</p>']]);
+
+    Livewire::test(Editor::class, ['blogPost' => $post])
+        ->set('titles.'.$this->french->id, 'Titre')
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertDontSeeHtml('data-test="blog-post-translation-error"');
 });

@@ -67,6 +67,7 @@ return [
             'untranslated' => 'This post has no content in this language yet.',
             'slug_label' => 'Slug',
             'slug_hint' => 'as last saved; it updates when you save',
+            'language_inactive' => "One of this post's languages is no longer active for the store. Reload the page and save again.",
         ],
         'tags_label' => 'Tags',
         'tags_hint' => 'Type a tag and press Enter. Existing tags are suggested as you type.',

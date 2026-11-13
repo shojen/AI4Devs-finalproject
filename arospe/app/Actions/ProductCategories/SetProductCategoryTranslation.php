@@ -4,6 +4,7 @@ namespace App\Actions\ProductCategories;
 
 use App\Actions\Auth\LogRefusedPrivilegedAttempt;
 use App\Actions\NormalizeForSearch;
+use App\Actions\Translations\ResolveActiveStoreLanguage;
 use App\Actions\Translations\SetTranslation;
 use App\Concerns\ProductCategoryValidationRules;
 use App\Models\ProductCategory;
@@ -31,6 +32,7 @@ class SetProductCategoryTranslation
     public function __construct(
         private readonly LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt,
         private readonly NormalizeForSearch $normalizeForSearch,
+        private readonly ResolveActiveStoreLanguage $resolveActiveStoreLanguage,
         private readonly SetTranslation $setTranslation,
         private readonly TranslateProductCategoryNameUniqueViolation $translateNameUniqueViolation,
     ) {}
@@ -39,7 +41,7 @@ class SetProductCategoryTranslation
      * Authorize, validate and persist one product category's name in one store language.
      *
      * @throws AuthorizationException when the actor lacks products.edit (logged first)
-     * @throws ValidationException keyed "names.{$language->id}" -- blank, over-length, or
+     * @throws ValidationException keyed "names.{$language->id}" -- inactive language, blank, over-length, or
      *                             duplicate within that store language (incl. the 1062 race)
      * @throws LogicException when the primitive returns an unexpected model
      */
@@ -54,6 +56,8 @@ class SetProductCategoryTranslation
             targetType: 'product_category',
             targetId: $productCategory->id,
         );
+
+        $language = ($this->resolveActiveStoreLanguage)($language, "names.{$language->id}", __('products.categories.index.tabs.language_inactive'));
 
         $name = trim($name);
         $errorKey = "names.{$language->id}";

@@ -34,6 +34,7 @@ return [
                 'name_attribute' => 'name',
                 'untranslated' => 'This category has no name in this language yet.',
                 'translation_requires_edit' => 'You need permission to edit categories to add a translation.',
+                'language_inactive' => 'This language is no longer active for the store.',
             ],
         ],
     ],

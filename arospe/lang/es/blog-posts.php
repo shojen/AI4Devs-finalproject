@@ -67,6 +67,7 @@ return [
             'untranslated' => 'Esta entrada aún no tiene contenido en este idioma.',
             'slug_label' => 'Slug',
             'slug_hint' => 'tal como se guardó; se actualiza al guardar',
+            'language_inactive' => 'Uno de los idiomas de esta entrada ya no está activo en la tienda. Recarga la página y vuelve a guardar.',
         ],
         'tags_label' => 'Etiquetas',
         'tags_hint' => 'Escribe una etiqueta y pulsa Intro. Las etiquetas existentes se sugieren mientras escribes.',

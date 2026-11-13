@@ -35,6 +35,7 @@ return [
                 'untranslated' => 'This category has no name in this language yet.',
                 'translation_requires_edit' => 'You need permission to edit categories to add a translation.',
                 'error_marker' => 'This language has a problem',
+                'language_inactive' => 'This language is no longer active for the store.',
             ],
         ],
     ],

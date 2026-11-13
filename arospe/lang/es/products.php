@@ -33,6 +33,7 @@ return [
                 'untranslated' => 'Esta categoría aún no tiene nombre en este idioma.',
                 'translation_requires_edit' => 'Necesitas permiso para editar categorías para añadir una traducción.',
                 'error_marker' => 'Este idioma tiene un problema',
+                'language_inactive' => 'Este idioma ya no está activo en la tienda.',
             ],
         ],
     ],

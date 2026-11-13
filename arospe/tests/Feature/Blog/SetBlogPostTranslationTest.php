@@ -246,12 +246,96 @@ test('the persisted slug is derived from the stored title and the signature carr
         ->and($parameters)->toBe(['blogPost', 'language', 'title', 'body']);
 });
 
-test('an inactive store language is still writable, since only tab rendering filters on is_active', function () {
+// Story 0087 (supersedes 0079's "inactive language is still writable"): the action refuses a
+// language that is not active for the store, on the POST-LEVEL key `translation` (D-8), so the
+// editor can show it as a general callout; no titles.* / bodies.* key is produced.
+test('an inactive store language is refused and nothing is written to it', function () {
     $german = StoreLanguage::factory()->inactive()->create();
     $post = BlogPost::factory()->titled('Botas', '<p>x</p>')->create();
     $this->actingAs(setBlogPostTranslationActor());
 
-    app(SetBlogPostTranslation::class)($post, $german, 'Stiefel');
+    $errors = setBlogPostTranslationErrors(fn () => app(SetBlogPostTranslation::class)($post, $german, 'Stiefel', '<p>Körper</p>'));
 
-    expect(storedBlogPostTranslation($post, $german)->title)->toBe('Stiefel');
+    expect(array_keys($errors))->toBe(['translation'])
+        ->and($errors['translation'][0])->toBe(trans('blog-posts.editor.tabs.language_inactive'))
+        ->and($errors['translation'][0])->not->toBe('blog-posts.editor.tabs.language_inactive')
+        ->and(storedBlogPostTranslationCount($post, $german))->toBe(0);
+});
+
+test('a language instance loaded while active is not trusted after it is deactivated', function () {
+    $post = BlogPost::factory()->titled('Botas', '<p>x</p>')->create();
+    $this->actingAs(setBlogPostTranslationActor());
+    $stale = StoreLanguage::query()->findOrFail($this->french->id);
+
+    StoreLanguage::query()->whereKey($this->french->id)->update(['is_active' => false]);
+    StoreLanguage::flushDefaultStoreLanguage();
+
+    expect($stale->is_active)->toBeTrue();
+
+    $errors = setBlogPostTranslationErrors(fn () => app(SetBlogPostTranslation::class)($post, $stale, 'Bottes'));
+
+    expect(array_keys($errors))->toBe(['translation'])
+        ->and(storedBlogPostTranslationCount($post, $this->french))->toBe(0);
+});
+
+test('authorization is checked before the language: an unpermitted actor on an inactive language is refused as unauthorized and logged once', function () {
+    Log::spy();
+    $german = StoreLanguage::factory()->inactive()->create();
+    $post = BlogPost::factory()->titled('Botas', '<p>x</p>')->create();
+    $this->actingAs(setBlogPostTranslationActor(['blog.view']));
+
+    expect(fn () => app(SetBlogPostTranslation::class)($post, $german, 'Stiefel'))
+        ->toThrow(AuthorizationException::class);
+
+    expect(storedBlogPostTranslationCount($post, $german))->toBe(0);
+
+    Log::shouldHaveReceived('warning')
+        ->withArgs(fn (string $message): bool => $message === 'Privileged action refused')
+        ->once();
+});
+
+test('the language check runs before the content is validated: a blank title on an inactive language reports only the language error', function () {
+    $german = StoreLanguage::factory()->inactive()->create();
+    $post = BlogPost::factory()->titled('Botas', '<p>x</p>')->create();
+    $this->actingAs(setBlogPostTranslationActor());
+
+    $errors = setBlogPostTranslationErrors(fn () => app(SetBlogPostTranslation::class)($post, $german, '   '));
+
+    expect($errors)->toBe(['translation' => [trans('blog-posts.editor.tabs.language_inactive')]]);
+});
+
+test('an active non-default language remains writable', function () {
+    $post = BlogPost::factory()->titled('Botas', '<p>x</p>')->create();
+    $this->actingAs(setBlogPostTranslationActor());
+
+    app(SetBlogPostTranslation::class)($post, $this->french, 'Bottes');
+
+    expect(storedBlogPostTranslation($post, $this->french)->title)->toBe('Bottes');
+});
+
+test('a refused write leaves an existing translation of the removed language intact', function () {
+    $post = BlogPost::factory()->titled('Botas', '<p>x</p>')->create();
+    $this->actingAs(setBlogPostTranslationActor());
+    app(SetBlogPostTranslation::class)($post, $this->french, 'Bottes', '<p>Corps</p>');
+
+    $this->french->forceFill(['is_active' => false])->save();
+
+    $errors = setBlogPostTranslationErrors(fn () => app(SetBlogPostTranslation::class)($post, $this->french, 'Souliers', '<p>Autre</p>'));
+
+    expect(array_keys($errors))->toBe(['translation'])
+        ->and(storedBlogPostTranslation($post, $this->french))
+        ->title->toBe('Bottes')
+        ->body->toBe('<p>Corps</p>');
+});
+
+test('a language that was removed and re-added becomes writable again', function () {
+    $post = BlogPost::factory()->titled('Botas', '<p>x</p>')->create();
+    $this->actingAs(setBlogPostTranslationActor());
+
+    $this->french->forceFill(['is_active' => false])->save();
+    $this->french->forceFill(['is_active' => true])->save();
+
+    app(SetBlogPostTranslation::class)($post, $this->french, 'Bottes');
+
+    expect(storedBlogPostTranslation($post, $this->french)->title)->toBe('Bottes');
 });

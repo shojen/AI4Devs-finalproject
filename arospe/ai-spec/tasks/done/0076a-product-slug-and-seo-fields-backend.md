@@ -191,7 +191,7 @@ Feature: Per-store-language product slug and SEO fields
 - **`lang/en/products.php`** / **`lang/es/products.php`** (key-for-key identical):
   - `attributes.slug`, `attributes.meta_title` and `attributes.meta_description` leaves, so validation messages name the field.
   - `editor.concurrent_save_retry` (**R-22**): en `'Someone else saved this product at the same moment. Reload the page and try again.'`, es `'Otra persona ha guardado este producto al mismo tiempo. Recarga la página e inténtalo de nuevo.'`. The wording is negotiable in Phase 2. The key name is not, because the translator and its test bind to it.
-  - **File-sharing with [0087](../0087-translation-write-actions-refuse-inactive-store-language.md):** 0087 adds `categories.index.tabs.language_inactive` to the same two files. The arrays do not overlap, but whichever story merges second must rebase onto the other's version of both files and keep both leaves. Never resolve a conflict by taking one side whole.
+  - **File-sharing with [0087](0087-translation-write-actions-refuse-inactive-store-language.md):** 0087 adds `categories.index.tabs.language_inactive` to the same two files. The arrays do not overlap, but whichever story merges second must rebase onto the other's version of both files and keep both leaves. Never resolve a conflict by taking one side whole.
 - **Test files**: every direct caller of `UpdateProduct` passes the three new arguments (mechanical). See the disposition note below.
 
 ### Deliberately not touched
@@ -308,7 +308,7 @@ Each `product_translations` row can carry a slug, a meta title and a meta descri
 - **[0076](../done/0076-translatable-content-retrofit-products-backend.md)**: hard. It supplies `product_translations`, `ProductTranslation` and its `saving` hook, the default-language write in both actions, and the editor's raw-row read.
 - Shipped: [0024](../done/0024-products-core-crud-backend.md) (the actions and their 1062 catches), [0070](../done/0070-translatable-content-mechanism-product-categories-backend.md) (`SetTranslation`), [0068](../done/0068-store-languages-catalog-backend.md).
 - **Dependents:** [0077](0077-product-editor-language-tabs-ui.md) (hard: rule methods, widened signatures).
-- **File-sharing:** [0087](../0087-translation-write-actions-refuse-inactive-store-language.md) also edits `lang/{en,es}/products.php`.
+- **File-sharing:** [0087](0087-translation-write-actions-refuse-inactive-store-language.md) also edits `lang/{en,es}/products.php`.
 
 ### Risks
 - **R-5 — The slug's self-exclusion fails silently and permanently** if it is wired as `->ignore()`. The deliberate two-product test keeps it closed.

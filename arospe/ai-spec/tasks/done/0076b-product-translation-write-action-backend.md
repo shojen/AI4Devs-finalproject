@@ -214,7 +214,7 @@ Named parameters, not `array $fields` (original 0077 **D-19**): the signature is
 
 **D-2 — The action authorizes `update`, always.** A product translation is an edit of an existing product; `ProductPolicy::update()` maps to `products.edit`. No new ability, no translation policy, no `store-languages.*` requirement (authoring content uses a configured language, it does not manage the catalog — 0070 D-13). Consequence for callers: an actor holding only `products.create` cannot write a non-default language, even while creating; 0077 applies 0071 **B-1** at the component for that case.
 
-**D-3 — An inactive store language is refused in the action itself** (owner decision **B**, 2026-11-10; 0075 D-3; the amendment note in [0087](../0087-translation-write-actions-refuse-inactive-store-language.md) §6). Component-side filtering is not enough: the action is the layer that binds callers the editor never sees. Message key `products.editor.tabs.language_inactive`, keyed `names.{id}` like 0075. Ordered after authorization so an unauthorized probe learns nothing about language state.
+**D-3 — An inactive store language is refused in the action itself** (owner decision **B**, 2026-11-10; 0075 D-3; the amendment note in [0087](0087-translation-write-actions-refuse-inactive-store-language.md) §6). Component-side filtering is not enough: the action is the layer that binds callers the editor never sees. Message key `products.editor.tabs.language_inactive`, keyed `names.{id}` like 0075. Ordered after authorization so an unauthorized probe learns nothing about language state.
 
 **D-4 — The duplicate-key translator is widened with a language id, not with `$errorKey` / `$attributeLabel`.** 0071's **L-1** passes one error key because its translator maps one index. `TranslateProductUniqueViolation` maps three indexes to three fields (`products_sku_unique` → `sku`, language-slug → `slug`, product-language natural key → `name`; `TranslateProductUniqueViolation.php:21-38`), so a single `$errorKey` cannot express the mapping. With `$storeLanguageId` given, the slug index maps to `slugs.{id}` and the natural key to `names.{id}`; the SKU branch is unreachable from this path and stays as is. Without it, behaviour is byte-identical. Recorded for Phase 2 because it deviates in form, not intent, from the reviewer's suggested shape.
 
@@ -225,7 +225,7 @@ Named parameters, not `array $fields` (original 0077 **D-19**): the signature is
 ### Dependencies
 - `depends_on`: none pending (0070, 0071, 0075, 0076, 0076a are in `done/`).
 - Dependent: [0077](0077-product-editor-language-tabs-ui.md).
-- `conflict_risk_with`: [0087](../0087-translation-write-actions-refuse-inactive-store-language.md) — both edit `lang/{en,es}/products.php`, and 0087 adds a structural guard (`tests/Unit/ArchitectureTest.php`) for the inactive-language rule. Whichever lands second makes sure that guard covers `SetProductTranslation` and passes.
+- `conflict_risk_with`: [0087](0087-translation-write-actions-refuse-inactive-store-language.md) — both edit `lang/{en,es}/products.php`, and 0087 adds a structural guard (`tests/Unit/ArchitectureTest.php`) for the inactive-language rule. Whichever lands second makes sure that guard covers `SetProductTranslation` and passes.
 
 ### Risks
 - **R-1** The 1062 race test needs failure injection; follow the 0078 errors-log technique rather than mocking `SetTranslation`.

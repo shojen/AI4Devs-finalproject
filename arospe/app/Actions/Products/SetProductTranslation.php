@@ -3,6 +3,7 @@
 namespace App\Actions\Products;
 
 use App\Actions\Auth\LogRefusedPrivilegedAttempt;
+use App\Actions\Translations\ResolveActiveStoreLanguage;
 use App\Actions\Translations\SetTranslation;
 use App\Concerns\ProductValidationRules;
 use App\Models\Product;
@@ -28,6 +29,7 @@ class SetProductTranslation
         private readonly LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt,
         private readonly SanitizeProductDescription $sanitizeProductDescription,
         private readonly CanonicalizeProductSlug $canonicalizeProductSlug,
+        private readonly ResolveActiveStoreLanguage $resolveActiveStoreLanguage,
         private readonly SetTranslation $setTranslation,
         private readonly TranslateProductUniqueViolation $translateProductUniqueViolation,
     ) {}
@@ -35,8 +37,8 @@ class SetProductTranslation
     /**
      * Authorize, validate and persist one product's translation in one ACTIVE store language.
      *
-     * The passed product and language are untrusted: both are re-read, the language through the
-     * `active()` scope. Error keys are derived from the language id, never accepted as input.
+     * The passed product and language are untrusted: both are re-read, the language through
+     * ResolveActiveStoreLanguage. Error keys are derived from the language id, never accepted as input.
      *
      * @throws AuthorizationException when the actor lacks products.edit (logged first)
      * @throws ValidationException keyed "{names|slugs|descriptions|metaTitles|metaDescriptions}.{$language->id}"
@@ -62,13 +64,7 @@ class SetProductTranslation
 
         $nameKey = "names.{$language->id}";
 
-        $activeLanguage = StoreLanguage::query()->active()->find($language->id);
-
-        if ($activeLanguage === null) {
-            throw ValidationException::withMessages([
-                $nameKey => __('products.editor.tabs.language_inactive'),
-            ]);
-        }
+        $activeLanguage = ($this->resolveActiveStoreLanguage)($language, $nameKey, __('products.editor.tabs.language_inactive'));
 
         $languageId = $activeLanguage->id;
         $name = trim($name);

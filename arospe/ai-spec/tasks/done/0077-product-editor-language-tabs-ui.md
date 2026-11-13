@@ -249,7 +249,7 @@ Feature: Per-store-language content in the product editor
 
 ## Files to create/modify
 
-Phase 3 of this story must not run in the same batch as any story touching the files below (Parallel Agent File-Ownership Rule); today that is [0087](../0087-translation-write-actions-refuse-inactive-store-language.md) (`lang/{en,es}/products.php`).
+Phase 3 of this story must not run in the same batch as any story touching the files below (Parallel Agent File-Ownership Rule); today that is [0087](0087-translation-write-actions-refuse-inactive-store-language.md) (`lang/{en,es}/products.php`).
 
 ### Modify
 
@@ -398,7 +398,7 @@ A catalog administrator opening a product sees a tab per active store language, 
 ### Dependencies
 - `depends_on`: [0076b](0076b-product-translation-write-action-backend.md) (closed 2026-11-10, PR pending) — `SetProductTranslation`, the `products.attributes.{name,description}` labels and `products.editor.tabs.language_inactive`. Unblocked: Phase 3 may start once the 0076b branch is merged into the base.
 - Shipped and consumed: [0021](0021-wysiwyg-rich-text-editor-component.md), [0027](0027-products-list-and-editor-ui.md), [0070](0070-translatable-content-mechanism-product-categories-backend.md), [0071](0071-product-categories-language-tabs-ui.md), [0075](0075-blog-tags-language-tabs-ui.md), [0076](0076-translatable-content-retrofit-products-backend.md), [0076a](0076a-product-slug-and-seo-fields-backend.md).
-- `conflict_risk_with`: [0087](../0087-translation-write-actions-refuse-inactive-store-language.md) (`lang/{en,es}/products.php`; its inactive-language rule, which this story relies on through 0076b) and [0079](0079-blog-post-editor-language-tabs-ui.md) (sibling editor-tabs pattern; 0079 cites this story's D-numbers). Not a dependency on either.
+- `conflict_risk_with`: [0087](0087-translation-write-actions-refuse-inactive-store-language.md) (`lang/{en,es}/products.php`; its inactive-language rule, which this story relies on through 0076b) and [0079](0079-blog-post-editor-language-tabs-ui.md) (sibling editor-tabs pattern; 0079 cites this story's D-numbers). Not a dependency on either.
 
 ### Risks
 - **R-1** `wire:model="descriptions.{id}"` on a `#[Modelable]` child is a dotted array path; Phase 3 proves it binds and writes back (B-2/B-4) before building the rest. UUIDs contain no `.`.

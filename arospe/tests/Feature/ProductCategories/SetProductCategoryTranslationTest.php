@@ -10,6 +10,7 @@ use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -337,12 +338,114 @@ test('calling twice for the same category and language updates the row rather th
         ->and(storedTranslationName($category, $this->french))->toBe('Souliers');
 });
 
-test('an inactive store language is still writable through the action', function () {
+// Story 0087 (supersedes 0071's "inactive language is still writable"): the action refuses a
+// language that is not active for the store, on names.{id}, and writes nothing.
+test('an inactive store language is refused and nothing is written to it', function () {
     $inactive = StoreLanguage::factory()->inactive()->create();
     $category = ProductCategory::factory()->named('Calzado')->create();
     $this->actingAs(setProductCategoryTranslationActor());
 
-    app(SetProductCategoryTranslation::class)($category, $inactive, 'Kategorie');
+    $errors = productCategoryTranslationErrors(fn () => app(SetProductCategoryTranslation::class)($category, $inactive, 'Kategorie'));
 
-    expect(storedTranslationName($category, $inactive))->toBe('Kategorie');
+    expect(array_keys($errors))->toBe(["names.{$inactive->id}"])
+        ->and($errors["names.{$inactive->id}"][0])->toBe(trans('products.categories.index.tabs.language_inactive'))
+        ->and($errors["names.{$inactive->id}"][0])->not->toBe('products.categories.index.tabs.language_inactive')
+        ->and(storedTranslationRowCount($category, $inactive))->toBe(0);
 });
+
+test('a language instance loaded while active is not trusted after it is deactivated', function () {
+    $category = ProductCategory::factory()->named('Calzado')->create();
+    $this->actingAs(setProductCategoryTranslationActor());
+    $stale = StoreLanguage::query()->findOrFail($this->french->id);
+
+    StoreLanguage::query()->whereKey($this->french->id)->update(['is_active' => false]);
+    StoreLanguage::flushDefaultStoreLanguage();
+
+    expect($stale->is_active)->toBeTrue();
+
+    $errors = productCategoryTranslationErrors(fn () => app(SetProductCategoryTranslation::class)($category, $stale, 'Chaussures'));
+
+    expect(array_keys($errors))->toBe(["names.{$this->french->id}"])
+        ->and(storedTranslationRowCount($category, $this->french))->toBe(0);
+});
+
+test('authorization is checked before the language: an unpermitted actor on an inactive language is refused as unauthorized and logged once', function () {
+    Log::spy();
+    $inactive = StoreLanguage::factory()->inactive()->create();
+    $category = ProductCategory::factory()->named('Calzado')->create();
+    $this->actingAs(setProductCategoryTranslationActor([]));
+
+    $caught = null;
+    try {
+        app(SetProductCategoryTranslation::class)($category, $inactive, 'Kategorie');
+    } catch (Throwable $e) {
+        $caught = $e;
+    }
+
+    expect($caught)->toBeInstanceOf(AuthorizationException::class)
+        ->and(storedTranslationRowCount($category, $inactive))->toBe(0);
+
+    Log::shouldHaveReceived('warning')
+        ->withArgs(fn (string $message): bool => $message === 'Privileged action refused')
+        ->once();
+});
+
+test('the language check runs before the content is validated: a blank name on an inactive language reports only the language error', function () {
+    $inactive = StoreLanguage::factory()->inactive()->create();
+    $category = ProductCategory::factory()->named('Calzado')->create();
+    $this->actingAs(setProductCategoryTranslationActor());
+
+    $errors = productCategoryTranslationErrors(fn () => app(SetProductCategoryTranslation::class)($category, $inactive, '   '));
+
+    expect($errors)->toBe(["names.{$inactive->id}" => [trans('products.categories.index.tabs.language_inactive')]]);
+});
+
+test('the active default and an active non-default language remain writable', function () {
+    $category = ProductCategory::factory()->named('Calzado')->create();
+    $this->actingAs(setProductCategoryTranslationActor());
+
+    app(SetProductCategoryTranslation::class)($category, $this->spanish, 'Calzado nuevo');
+    app(SetProductCategoryTranslation::class)($category, $this->french, 'Chaussures');
+
+    expect(storedTranslationName($category, $this->spanish))->toBe('Calzado nuevo')
+        ->and(storedTranslationName($category, $this->french))->toBe('Chaussures');
+});
+
+test('a refused write leaves an existing translation of the removed language intact', function () {
+    $category = ProductCategory::factory()->named('Calzado')->create();
+    $this->actingAs(setProductCategoryTranslationActor());
+    app(SetProductCategoryTranslation::class)($category, $this->french, 'Chaussures');
+
+    $this->french->forceFill(['is_active' => false])->save();
+
+    $errors = productCategoryTranslationErrors(fn () => app(SetProductCategoryTranslation::class)($category, $this->french, 'Souliers'));
+
+    expect(array_keys($errors))->toBe(["names.{$this->french->id}"])
+        ->and(storedTranslationName($category, $this->french))->toBe('Chaussures');
+});
+
+test('a language that was removed and re-added becomes writable again', function () {
+    $category = ProductCategory::factory()->named('Calzado')->create();
+    $this->actingAs(setProductCategoryTranslationActor());
+
+    $this->french->forceFill(['is_active' => false])->save();
+    $this->french->forceFill(['is_active' => true])->save();
+
+    app(SetProductCategoryTranslation::class)($category, $this->french, 'Chaussures');
+
+    expect(storedTranslationName($category, $this->french))->toBe('Chaussures');
+});
+
+/**
+ * @return array<string, array<int, string>>
+ */
+function productCategoryTranslationErrors(Closure $call): array
+{
+    try {
+        $call();
+    } catch (ValidationException $e) {
+        return $e->errors();
+    }
+
+    return [];
+}

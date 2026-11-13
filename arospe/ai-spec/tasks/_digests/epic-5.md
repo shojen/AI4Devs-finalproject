@@ -67,7 +67,7 @@ closed earlier and are not backfilled here (read their `done/` files or `docs/`)
 ## Story 0075 — Blog tags language tabs (frontend)
 
 - `app/Actions/Blog/SetBlogTagTranslation` is the self-sufficient non-default-language tag writer: logged `update` (target_type `blog_tag`) first, re-reads the tag and the language via `StoreLanguage::query()->active()`, **refuses an inactive language** (`names.{languageId}`, message `blog-tags.index.tabs.language_inactive`), own `Validator` with `nameRules()`, derived key, 1062 re-keyed — story 0075 (D-3).
-- The 0071/0073 sibling actions still accept an inactive language and pin it in tests; aligning them is story 0087 (human decision) — story 0075.
+- The 0071/0073 sibling actions accepted an inactive language until story 0087 aligned them (all five `Set*Translation` actions now refuse it) — story 0075.
 - `BlogTags\Index`: `public array $names` keyed by language id; `#[Locked] $activeLanguageId` and `$originalTranslatedLanguageIds` (view-only hint, `save()` decides from re-read rows); `setActiveLanguageTab(string)`; edit modal only, create form keeps bare `blog-tag-name-input` with no tabs — story 0075 (D-7, D-8).
 - `save()` authorizes the batch, writes changed languages only in one `DB::transaction()`; default language via `RenameBlogTag` with `name` re-keyed to `names.{defaultId}`; blank untranslated non-default tab skipped; blank default/previously translated refused; errored tab becomes active — story 0075 (D-9, D-12).
 - Hooks: `blog-tag-name-input-{languageId}` plus the strip's `language-tab-*`/`language-name-error-*`/`language-untranslated-*`; list shows the store-default name or `—` — story 0075.
@@ -111,11 +111,11 @@ closed earlier and are not backfilled here (read their `done/` files or `docs/`)
 ## Story 0076b — Product translation write action (backend)
 
 - `App\Actions\Products\SetProductTranslation::__invoke(Product, StoreLanguage, string $name, ?string $description = null, ?string $slug = null, ?string $metaTitle = null, ?string $metaDescription = null): ProductTranslation` — logged `update` authorize (`target_type` `product`) first, then re-reads the product; no new permission, route, policy or migration — story 0076b.
-- It refuses an inactive or unknown language on `names.{id}` with `products.editor.tabs.language_inactive` (D-3); the 0087 structural guard must cover it, whichever of 0076b/0087 lands second — story 0076b.
+- It refuses an inactive or unknown language on `names.{id}` with `products.editor.tabs.language_inactive` (D-3); covered by the 0087 structural guard — story 0076b.
 - Sanitises the description and canonicalises the slug before validating nested data; meta fields are trimmed and nulled; name/meta stay stored unsanitised, so renderers must escape (carried to 0077 and the storefront) — story 0076b.
 - `TranslateProductUniqueViolation::__invoke(QueryException, ?string $storeLanguageId = null)`: non-null re-keys slug/natural-key errors to `slugs.{id}`/`names.{id}`; null and the `sku` branch unchanged — story 0076b.
 - New lang keys (en/es): `products.attributes.{name,description}`, `products.editor.tabs.language_inactive` — story 0076b.
-- Accepted residuals: check-to-write race on language deactivation (L-1); product deleted between re-read and save gives an FK 1452 500 as in `SetProductCategoryTranslation` (L-2, fix belongs to the shared helper backlogged by 0087 D-5) — story 0076b.
+- Accepted residuals: check-to-write race on language deactivation (L-1); product deleted between re-read and save gives an FK 1452 500 as in `SetProductCategoryTranslation` (L-2; not part of 0087's language helper (0087 D-13), its fix is pending task 0098, which also covers `SetProductCategoryTranslation`) — story 0076b.
 
 ## Story 0077 — Product editor language tabs (UI)
 
@@ -136,4 +136,9 @@ closed earlier and are not backfilled here (read their `done/` files or `docs/`)
 - `BlogPosts\Editor` holds `$titles`/`$bodies` keyed by active language id; `#[Locked]`: `$languages`, `$defaultLanguageId`, `$originalTranslatedLanguageIds`, `$persistedSlugs`; the field arrays are not. Blanking a previously translated tab is refused on `titles.{id}`; an untouched untranslated tab is skipped — story 0079.
 - One outer `DB::transaction` wraps default (`Create/UpdateBlogPost`) plus every engaged language (`SetBlogPostTranslation`); errors are re-keyed and the first erroring tab activated — story 0079.
 - Lang keys (en/es): `blog-posts.editor.tabs.{untranslated,slug_label,slug_hint}` — story 0079.
-- Accepted: L-1 no inactive-language check inside the action (aligned by story 0087); L-2 any import/seeder calling the unguarded `SetTranslation` must sanitize (see `docs/security/html-sanitization.md`) — story 0079.
+- Accepted: L-1 no inactive-language check inside the action (closed by story 0087); L-2 any import/seeder calling the unguarded `SetTranslation` must sanitize (see `docs/security/html-sanitization.md`) — story 0079.
+- `App\Actions\Translations\ResolveActiveStoreLanguage::__invoke(StoreLanguage $language, string $errorKey, string $message): StoreLanguage` re-reads the language via `active()->find()` and throws a `ValidationException` keyed `$errorKey`; non-final on purpose (tests bind a subclass double); authorizes nothing — story 0087.
+- Order in every `Set*Translation` action: authorize → entity re-read → helper (use only the returned instance) → validate → write — story 0087.
+- Guard: `tests/Unit/ArchitectureTest.php` globs `app/Actions/**/Set*Translation.php` (minus `SetTranslation`) and requires the helper in each constructor; filename-only discovery is accepted residual L-2, the unlocked check-then-write vs `RemoveStoreLanguage` is L-1 (CWE-367) — story 0087.
+- `SetBlogPostTranslation` reports on the post-level `translation` key (`blog-posts.editor.tabs.language_inactive`), shown by a danger callout `data-test="blog-post-translation-error"` in `blog-posts/editor.blade.php`; new `language_inactive` keys (en/es) in `blog.php` (`categories.tabs`) and `products.php` (category tabs) — story 0087.
+- Deleted-entity race (FK 1452 as a 500) is not part of 0087; pending task 0098 — story 0087.

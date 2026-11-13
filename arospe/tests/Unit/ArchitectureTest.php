@@ -3,6 +3,7 @@
 use App\Actions\Blog\FindOrCreateBlogTag;
 use App\Actions\Blog\SyncBlogPostTags;
 use App\Actions\Shipping\ResolveApplicableShippingRate;
+use App\Actions\Translations\ResolveActiveStoreLanguage;
 use Spatie\Permission\Models\Role;
 
 // Story 0008 (re-audit F1): App\Models\Role is the only role model class application code may
@@ -188,3 +189,79 @@ arch('App\Livewire\BlogPosts does not sync post tags directly')
 arch('App\Livewire\BlogPosts does not resolve or mint tags directly')
     ->expect('App\Livewire\BlogPosts')
     ->not->toUse(FindOrCreateBlogTag::class);
+
+// Story 0087 (D-6): every per-language translation WRITE action goes through the shared
+// App\Actions\Translations\ResolveActiveStoreLanguage helper, so a store language that is no longer
+// active can never be written into. Pest's arch() cannot select classes by filename pattern, so this
+// is a plain test: it discovers every `app/Actions/**/Set*Translation.php` by glob (a sixth action is
+// picked up automatically), except the unguarded SetTranslation primitive, then checks by reflection
+// that the constructor takes the helper and that no inline `active()` re-read copy remains. A
+// constructor parameter can still be injected and never called; the behavioural tests of each action
+// close that gap.
+//
+// Discovery uses dirname(__DIR__) because tests/Unit has no TestCase, hence no base_path().
+/**
+ * @return array<string, class-string>
+ */
+function translationWriteActionClasses(): array
+{
+    $root = dirname(__DIR__, 2).'/app/Actions';
+    $classes = [];
+
+    foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS)) as $file) {
+        $relative = substr($file->getPathname(), strlen($root) + 1);
+
+        if (! fnmatch('Set*Translation.php', $file->getFilename()) || $relative === 'Translations/SetTranslation.php') {
+            continue;
+        }
+
+        /** @var class-string $class */
+        $class = 'App\\Actions\\'.str_replace('/', '\\', substr($relative, 0, -4));
+        $classes[$relative] = $class;
+    }
+
+    ksort($classes);
+
+    return $classes;
+}
+
+test('the structural guard discovers the five current Set*Translation write actions', function () {
+    expect(array_keys(translationWriteActionClasses()))->toBe([
+        'Blog/SetBlogCategoryTranslation.php',
+        'Blog/SetBlogPostTranslation.php',
+        'Blog/SetBlogTagTranslation.php',
+        'ProductCategories/SetProductCategoryTranslation.php',
+        'Products/SetProductTranslation.php',
+    ]);
+});
+
+test('every Set*Translation write action takes ResolveActiveStoreLanguage in its constructor', function () {
+    $offenders = [];
+
+    foreach (translationWriteActionClasses() as $class) {
+        $parameterTypes = array_map(
+            fn (ReflectionParameter $parameter): ?string => $parameter->getType() instanceof ReflectionNamedType ? $parameter->getType()->getName() : null,
+            (new ReflectionClass($class))->getConstructor()?->getParameters() ?? [],
+        );
+
+        if (! in_array(ResolveActiveStoreLanguage::class, $parameterTypes, true)) {
+            $offenders[] = $class;
+        }
+    }
+
+    expect($offenders)->toBe([], 'These translation write actions do not inject '.ResolveActiveStoreLanguage::class.': '.implode(', ', $offenders));
+});
+
+test('no Set*Translation write action keeps an inline active store language re-read', function () {
+    $offenders = [];
+
+    foreach (translationWriteActionClasses() as $relative => $class) {
+        $source = (string) file_get_contents(dirname(__DIR__, 2).'/app/Actions/'.$relative);
+
+        if (preg_match('/StoreLanguage::query\(\)\s*->\s*active\(\)/', $source) === 1) {
+            $offenders[] = $class;
+        }
+    }
+
+    expect($offenders)->toBe([], 'These translation write actions still inline the active() re-read instead of using the shared helper: '.implode(', ', $offenders));
+});
