@@ -24,9 +24,9 @@
       "slug": "0092b-order-refund-stock-return-backend",
       "title": "Refunds can return refunded units to stock (backend)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree-0092b-order-refund-stock-return-backend",
+      "claimed_at": "2026-11-13T00:00:00Z",
       "touches": [
         "app/Actions/Orders/RecordRefund.php",
         "app/Concerns/OrderValidationRules.php",
