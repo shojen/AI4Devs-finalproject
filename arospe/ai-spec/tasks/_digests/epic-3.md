@@ -107,3 +107,10 @@ and are not backfilled here — see their own task files in `ai-spec/tasks/done/
 - `CreateOrder` / `AddOrderItem` build the `OrderItem` unsaved (uuid via `newUniqueId()`), call `AdjustOrderStock` (one call for all lines in `CreateOrder`), then `save()`; new lines are written `U = 0`, `K = 0`, `ordered_as_variant`; lines from 0088 and earlier keep `R = 0` — story 0088a.
 - Forward rule for 0090 / 0091 / 0092b: call `AdjustOrderStock` BEFORE any `order_items` `FOR UPDATE` (cross-order gap-lock deadlock, appsec L-1) — story 0088a.
 - Follow-ups: R-2 / appsec L-2 product and variant editors save `stock` from a form value and lose a concurrent deduction (needs its own story); R-5 stock is a signed `INT`, overflow surfaces as 1264 (accepted); 1213 is not retried — story 0088a.
+
+## Story 0090 — Order line quantity change and removal, opt-in stock (backend)
+
+- `UpdateOrderItemQuantity` and `RemoveOrderItem` gained a last parameter `bool $adjustStock = false`; default never moves stock, no new permission (D-9), delta computed from locked rows — story 0090.
+- Rules: raise d with `true` = stock `-d`, U unchanged (without: U `+d`); lower d = U' `max(0, U-d)` in both modes, stock `+max(0, d-U)` only with `true`; removal with `true` = stock `+R`, `R = (Q-F)-U`; unchanged quantity and null-target lines move no stock; K never touched — story 0090.
+- Lock order realised (0088a FD-7/L-1): lock `orders` + hard block, plain read of the line via `$lockedOrder->items()`, guards on plain reads, `AdjustOrderStock` (when `adjustStock` and delta != 0), then item lock (+ range count in `RemoveOrderItem`), re-verify Q/F/U and guards (mismatch = `LogicException`, rollback incl. stock), write/delete, totals — story 0090.
+- Follow-ups unchanged: UI exposure of the opt-in belongs to a later frontend story; 1213 still not retried — story 0090.
