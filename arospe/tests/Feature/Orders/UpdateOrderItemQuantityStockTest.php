@@ -279,7 +279,7 @@ test('review 3 sequence (b): lowering a refunded legacy line after a deducted ra
 
 test('lowering a quantity after a refund with stock return returns only the units that no longer fit', function (string $target) {
     actingQuantityStockEditor();
-    $fixture = quantityStockFixture($target, quantity: 5, itemAttributes: ['refunded_quantity' => 2]);
+    $fixture = quantityStockFixture($target, quantity: 5, itemAttributes: ['refunded_quantity' => 2, 'stock_refunded_not_out_quantity' => 2]);
 
     changeLineQuantity($fixture, 3, true);
 
