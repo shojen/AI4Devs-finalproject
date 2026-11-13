@@ -147,7 +147,7 @@ Estimable/Small: one existing dialog gains a second action, a preview and a guar
 ## Dependencies, risks, open technical questions
 **Depends on:** [0091](0091-order-cancellation-stock-return-opt-in-backend.md), [0093](done/0093-confirm-dialog-secondary-action-ui.md),
 [0094](0094-order-line-quantity-stock-dialog-ui.md) (hard). Shares files with [0094a](0094a-order-line-removal-stock-dialog-ui.md),
-[0096](0096-order-refund-modal-stock-return-ui.md) and [0092b](0092b-order-refund-stock-return-backend.md) (lang) — run sequentially.
+[0096](0096-order-refund-modal-stock-return-ui.md) and [0092b](in-progress/0092b-order-refund-stock-return-backend.md) (lang) — run sequentially.
 - **R-1** — Existing cancellation tests change by design; Phase 5 must check they were adapted, not deleted.
 
 ## Debate record

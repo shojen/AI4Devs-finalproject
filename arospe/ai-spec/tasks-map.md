@@ -18,6 +18,8 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-11-13): `0092b-order-refund-stock-return-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 2 INVEST re-review #6 APPROVED, then Phase 3 step 0; claimed by `worktree-0092b-order-refund-stock-return-backend`). Still pending work, so it keeps its node and edges (`P0092b --> P0096`, `P0092b -.-> P0094/P0094a/P0095`); the node moves from the green `ready` class to the blue `claimed` class and its `tasks-status.json` entry stays `"claimed"` (`depends_on` still empty, claim fields carried forward). `ai-spec/tasks/in-progress/` now holds one file, `0092b`. Link-integrity check, both directions: the file's own outbound `done/` and sibling links gained one `../`; inbound links in `0095`, `0096`, `done/0088`, `done/0088a` and `done/0092a` were repointed to `in-progress/0092b-…`; every relative link resolves.
+
 **Update (2026-11-13, backmerge of `origin/main` into the 0087 branch): the 0087 and 0090 closures are both in `done/`.** Recounted from the directory after the merge, `done/` holds 117 files (Epic 3: 23, Epic 5: 17). The `ready` nodes are `0091`, `0092b` and `0098`; no node is `claimed` and `ai-spec/tasks/in-progress/` is empty. Both entries were removed from `tasks-status.json`.
 
 **Update (2026-11-13): `0090-order-line-quantity-and-removal-stock-opt-in-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0090-order-line-quantity-removal-stock-opt-in-backend`; Phase 2 approved on the sixth review, Phase 4 PASS, Phase 5 approved with the full unscoped suite green in 4 chunks). Its node, inventory row, `claimed` class membership and edges (`P0090 --> P0094/P0094a`, `P0090 -.-> P0091`) are dropped; it joins the flat `done/` inventory (Epic 3 now 23) and its `tasks-status.json` entry is deleted. Dependents recomputed: `0094` had `0090` as its only pending dependency, so it moves `blocked` -> `ready` (green); `0094a` drops `0090` but stays `blocked` on `0094`; `0091`/`0094`/`0094a` lose the `0090` `conflict_risk_with` entry. `ai-spec/tasks/in-progress/` is empty again. Link check: same-depth move, outbound links re-verified; inbound links repointed from `in-progress/0090-…` to `done/0090-…` in `0091`, `0094`, `0094a` and to the bare sibling in `done/0088` and `done/0088a`; all resolve.
@@ -574,7 +576,7 @@ appears as a node in the dependency graph below:
 
 ### Pending — not started (8 numbered + 1 infra doc)
 
-Recounted 2026-11-13 (after the 0087 closure): `ai-spec/tasks/` holds `0090`, `0091`, `0092b`, `0094`, `0094a`, `0095`, `0096` and `0098` plus `ci-database-connection-gap.md`; `ai-spec/tasks/in-progress/` is empty.
+Recounted 2026-11-13 (after `0092b` moved to `in-progress/`): `ai-spec/tasks/` holds `0091`, `0094`, `0094a`, `0095`, `0096` and `0098` plus `ci-database-connection-gap.md`; `ai-spec/tasks/in-progress/` holds `0092b` (claimed).
 
 Re-derived 2026-11-08 from the files actually present in `ai-spec/tasks/` (`0078` closed to `done/`); `0088`–`0096` added 2026-11-08. The earlier table still listed `0072`, `0074`, `0084` and `0085`, all of which are in `done/`.
 
@@ -645,7 +647,8 @@ flowchart LR
     P0094 -.-> P0096
     P0094a -.-> P0096
     P0095 -.-> P0096
-    class P0091,P0092b,P0094 ready;
+    class P0091,P0094 ready;
+    class P0092b claimed;
     class P0094a,P0095,P0096 pending;
 
     %% Standalone (no PRD epic)
@@ -739,7 +742,7 @@ here); yellow (`pending`) = still blocked on at least one open pending dependenc
 ### Pending tasks that are independent of each other and safe to parallelize
 
 These are the tasks whose **entire dependency chain is already `done/`** — nothing pending blocks
-them — the green `ready` nodes in the diagram above (`0091`, `0092b`, `0098` as of 2026-11-13; `0098` became ready when `0087` closed, and `0090` is in `done/`). (`0046`–`0054` and `0057` all had the
+them — the green `ready` nodes in the diagram above (`0091`, `0094`, `0098` as of 2026-11-13, with `0092b` now `claimed`; `0098` became ready when `0087` closed, and `0090` is in `done/`). (`0046`–`0054` and `0057` all had the
 identical property in their own turn — but none of them is listed anywhere in this section any
 more: each closed to `done/` in this or a prior regeneration pass, so per this file's own "`done/`
 tasks are omitted from the graph" rule none has a node at all any more. See the note at the top of

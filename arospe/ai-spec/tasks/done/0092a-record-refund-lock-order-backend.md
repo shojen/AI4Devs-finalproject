@@ -2,7 +2,7 @@
 
 > **Status: New — created 2026-11-08 by splitting former story 0092 after the Phase 2 INVEST review (user decision); pending
 > review.** Epic 3 follow-up, order-stock series. Pure concurrency fix with **no behaviour change**; no UI pair. Its sibling
-> [0092b](../0092b-order-refund-stock-return-backend.md) (refund stock return) depends on it.
+> [0092b](../in-progress/0092b-order-refund-stock-return-backend.md) (refund stock return) depends on it.
 
 ## Description
 `RecordRefund` re-reads and locks the `orders` row **before** locking the order's line rows, matching every other order write
@@ -79,7 +79,7 @@ Independent: no pending dependency. Negotiable: the test harness choice. Valuabl
 screen. Estimable/Small: one method's lock sequence. Testable: query-log assertions on both actions (plus an optional deterministic hook test).
 
 ## Dependencies, risks, open technical questions
-**Depends on:** nothing pending. **Blocks:** [0092b](../0092b-order-refund-stock-return-backend.md).
+**Depends on:** nothing pending. **Blocks:** [0092b](../in-progress/0092b-order-refund-stock-return-backend.md).
 - **R-1** — A lock-order change on a hot path; the query-log assertions are the guard (no real-parallelism test exists in this project).
 - **Open** — none.
 
