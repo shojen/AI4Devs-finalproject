@@ -1,8 +1,8 @@
 # [0091] Order cancellation returns stock only on request (backend)
 
-> **Status: Phase 2 approved 2026-11-13 (INVEST re-review #6); ready for Phase 3 (TDD).** Epic 3
+> **Status: Phase 3 in progress (TDD; moved to in-progress 2026-11-13; Phase 2 approved 2026-11-13, INVEST re-review #6).** Epic 3
 > follow-up bug fix, order-stock series. Fullstack pair: **related_task_id 0095** (the cancel dialog). Blocked on
-> [0088a](done/0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (automatic deduction and `AdjustOrderStock`) and, through it, [0088](done/0088-order-stock-adjustment-foundation-backend.md) (counters).
+> [0088a](../done/0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (automatic deduction and `AdjustOrderStock`) and, through it, [0088](../done/0088-order-stock-adjustment-foundation-backend.md) (counters).
 
 ## Description
 `CancelOrder` gains `bool $adjustStock = false`. With `true`, every line returns its returnable units to its variant or product
@@ -162,8 +162,8 @@ back to inventory. Estimable/Small: one action gains a transaction, a lock and o
 Testable: stock asserted per scenario, both refusal paths, a concurrency test.
 
 ## Dependencies, risks, open technical questions
-**Depends on:** [0088a](done/0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (hard) and [0088](done/0088-order-stock-adjustment-foundation-backend.md) (transitively). **Blocks:**
-[0095](0095-order-cancellation-stock-dialog-ui.md). Also depends on [0090](done/0090-order-line-quantity-and-removal-stock-opt-in-backend.md) (done; the remove-after-cancel case
+**Depends on:** [0088a](../done/0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (hard) and [0088](../done/0088-order-stock-adjustment-foundation-backend.md) (transitively). **Blocks:**
+[0095](../0095-order-cancellation-stock-dialog-ui.md). Also depends on [0090](../done/0090-order-line-quantity-and-removal-stock-opt-in-backend.md) (done; the remove-after-cancel case
 calls `RemoveOrderItem(..., adjustStock: true)` and shares its test file).
 
 - **R-1** — Adding a transaction to `CancelOrder` changes a documented design note from story 0050; the reason (a second write
@@ -182,3 +182,4 @@ calls `RemoveOrderItem(..., adjustStock: true)` and shares its test file).
 - Phase 2: INVEST re-review #4 2026-11-08 → rewritten, pending re-review (dependency moved to 0088a after the 0088 split, FD reference renumbered).
 - Phase 2: INVEST re-review #5 2026-11-13 (code-reviewer) → REJECTED (D-4 locks order_items before stock, contradicting 0088a FD-7/L-1 and the forward rule in docs/api/orders.md; domain-invariants.md DoD item must be unconditional; stale 0090 fallback and line refs); rewritten 2026-11-13 (lock order per 0090 pattern, re-verify test added, DoD unconditional, fallback and refs fixed), pending re-review.
 - Phase 2: INVEST re-review #6 2026-11-13 (code-reviewer) → APPROVED (D-4 lock order now matches 0088a FD-7/L-1, the forward rule in docs/api/orders.md and the pattern 0090 realised in RemoveOrderItem; domain-invariants DoD unconditional; 0090 fallback, line ref and dependency label fixed; re-verify/rollback test added). Non-blocking suggestions applied: re-verify the locked line-id set too; status banner refreshed.
+- Phase 3: started 2026-11-13 — task moved to ai-spec/tasks/in-progress/, claimed by worktree-0091-order-cancellation-stock-return-opt-in-backend.

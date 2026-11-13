@@ -18,6 +18,8 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-11-13): `0091-order-cancellation-stock-return-opt-in-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0).** It is claimed by `worktree-0091-order-cancellation-stock-return-opt-in-backend` in `tasks-status.json` (`status` `claimed`); its node stays in the graph, now styled `claimed` (blue). Of the three stages, `ai-spec/tasks/` and `ai-spec/tasks/in-progress/` hold files now (`0091` is the only in-progress one). No dependency changed. Link check: the move adds one directory level, so the moved file's outbound links were re-pointed (`done/...` and `0095-...` now `../done/...`, `../0095-...`); inbound links in `0092b` and `0095` re-pointed to `in-progress/0091-...` and in `done/0088`, `done/0088a`, `done/0090` to `../in-progress/0091-...`; verified with `realpath -m`.
+
 **Update (2026-11-13, backmerge of `origin/main` into the 0087 branch): the 0087 and 0090 closures are both in `done/`.** Recounted from the directory after the merge, `done/` holds 117 files (Epic 3: 23, Epic 5: 17). The `ready` nodes are `0091`, `0092b` and `0098`; no node is `claimed` and `ai-spec/tasks/in-progress/` is empty. Both entries were removed from `tasks-status.json`.
 
 **Update (2026-11-13): `0090-order-line-quantity-and-removal-stock-opt-in-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0090-order-line-quantity-removal-stock-opt-in-backend`; Phase 2 approved on the sixth review, Phase 4 PASS, Phase 5 approved with the full unscoped suite green in 4 chunks). Its node, inventory row, `claimed` class membership and edges (`P0090 --> P0094/P0094a`, `P0090 -.-> P0091`) are dropped; it joins the flat `done/` inventory (Epic 3 now 23) and its `tasks-status.json` entry is deleted. Dependents recomputed: `0094` had `0090` as its only pending dependency, so it moves `blocked` -> `ready` (green); `0094a` drops `0090` but stays `blocked` on `0094`; `0091`/`0094`/`0094a` lose the `0090` `conflict_risk_with` entry. `ai-spec/tasks/in-progress/` is empty again. Link check: same-depth move, outbound links re-verified; inbound links repointed from `in-progress/0090-…` to `done/0090-…` in `0091`, `0094`, `0094a` and to the bare sibling in `done/0088` and `done/0088a`; all resolve.
@@ -574,7 +576,7 @@ appears as a node in the dependency graph below:
 
 ### Pending — not started (8 numbered + 1 infra doc)
 
-Recounted 2026-11-13 (after the 0087 closure): `ai-spec/tasks/` holds `0090`, `0091`, `0092b`, `0094`, `0094a`, `0095`, `0096` and `0098` plus `ci-database-connection-gap.md`; `ai-spec/tasks/in-progress/` is empty.
+Recounted 2026-11-13 (after the 0091 move to `in-progress/`): `ai-spec/tasks/` holds `0092b`, `0094`, `0094a`, `0095`, `0096` and `0098` plus `ci-database-connection-gap.md`; `ai-spec/tasks/in-progress/` holds `0091` (still pending work, claimed; it keeps its node and registry entry).
 
 Re-derived 2026-11-08 from the files actually present in `ai-spec/tasks/` (`0078` closed to `done/`); `0088`–`0096` added 2026-11-08. The earlier table still listed `0072`, `0074`, `0084` and `0085`, all of which are in `done/`.
 
@@ -645,7 +647,8 @@ flowchart LR
     P0094 -.-> P0096
     P0094a -.-> P0096
     P0095 -.-> P0096
-    class P0091,P0092b,P0094 ready;
+    class P0092b,P0094 ready;
+    class P0091 claimed;
     class P0094a,P0095,P0096 pending;
 
     %% Standalone (no PRD epic)

@@ -7,9 +7,9 @@
       "slug": "0091-order-cancellation-stock-return-opt-in-backend",
       "title": "Order cancellation returns stock only on request (backend)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree-0091-order-cancellation-stock-return-opt-in-backend",
+      "claimed_at": "2026-11-13T17:29:39Z",
       "touches": [
         "app/Actions/Orders/CancelOrder.php",
         "tests/Feature/Orders/CancelOrderTest.php",

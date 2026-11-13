@@ -267,7 +267,7 @@ parameter each, one formula. Testable: deterministic stock/counter assertions pe
 ## Dependencies, risks, open technical questions
 **Depends on:** [0088a](../done/0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (hard), [0092a](../done/0092a-record-refund-lock-order-backend.md) (satisfied: `RecordRefund` locks `orders` first, which the plain-read safety in D-7 relies on) and [0088](../done/0088-order-stock-adjustment-foundation-backend.md) (transitively). **Blocks:**
 [0094](../0094-order-line-quantity-stock-dialog-ui.md), [0094a](../0094a-order-line-removal-stock-dialog-ui.md).
-Shares `RemoveOrderItemStockTest.php` with [0091](../0091-order-cancellation-stock-return-opt-in-backend.md) — sequence or coordinate.
+Shares `RemoveOrderItemStockTest.php` with [0091](../in-progress/0091-order-cancellation-stock-return-opt-in-backend.md) — sequence or coordinate.
 
 - **OQ-5 — Editing lines of a cancelled order — resolved (user-confirmed 2026-11-08: option (a)).** `isLineItemEditable()` is true on
   `Cancelled`; raising a cancelled order's quantity with `adjustStock` takes stock out for an order that will never ship.
