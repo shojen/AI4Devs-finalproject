@@ -226,4 +226,26 @@ trait OrderValidationRules
     {
         return ['required', 'integer', 'min:1'];
     }
+
+    /**
+     * Story 0092b -- shape of RecordRefund's `stock_returns` payload
+     * (`array<order_item_id, units_to_return_to_stock>`). Defensive `array` (the action's typed
+     * parameter already guarantees it); ownership and caps are checked inside the action.
+     *
+     * @return array<int, string>
+     */
+    protected function refundStockReturnRules(): array
+    {
+        return ['array'];
+    }
+
+    /**
+     * Story 0092b -- each `stock_returns` entry: a non-negative integer (`0` is accepted and ignored).
+     *
+     * @return array<int, string>
+     */
+    protected function refundStockReturnUnitRules(): array
+    {
+        return ['integer', 'min:0'];
+    }
 }

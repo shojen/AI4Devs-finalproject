@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use LogicException;
 
 /**
  * Record a refund against one or more of an order's line items, expressed
@@ -35,32 +36,45 @@ use Illuminate\Validation\ValidationException;
  *    -- the items array and every quantity. This is shape only; ownership
  *    and the over-refund guard cannot be static rule arrays (see below).
  * 3. Open a DB::transaction(). Everything below runs inside it (D-12).
- * 4. Re-read the order and THEN its items under row locks, in the same
- *    order every line-item action uses (`orders` -> `order_items`, story
- *    0092a) so a refund and a concurrent line edit cannot deadlock. Not
- *    decoration (R-1): reading state INSIDE the lock is what makes the
- *    guards below atomic with the writes that follow them. The caller's
- *    instance is refreshed on return, as before.
+ * 4. Lock the `orders` row, then read the order's items with a PLAIN, non-locking
+ *    read (story 0092b, D-4; same pattern as story 0090 D-7). Lock order is
+ *    `orders -> products -> product_variants -> order_items` (docs/api/orders.md,
+ *    lock-order convention, appsec L-1): `AdjustOrderStock` locks catalog rows, so it must run
+ *    BEFORE any `FOR UPDATE` on `order_items`. The plain read is safe because every writer of
+ *    an order's lines locks the `orders` row first, which serializes them before this read
+ *    (the InnoDB read view starts after that lock is granted). Guards 5-7 decide on this
+ *    plain read; step 7b confirms it on the locked rows. The caller's instance is
+ *    refreshed on return, as before.
  * 5. Refuse by payment state. PendingPayment and Refunded -> refused
  *    (D-5, a ValidationException -- never an AuthorizationException,
  *    since this is never about WHO is asking). Accepted from Paid and
- *    PartiallyRefunded. Re-checked here, under the lock, rather than
+ *    PartiallyRefunded. Re-checked here, under the `orders` lock, rather than
  *    before the transaction, because a concurrent refund may have flipped
  *    it in between.
  * 6. Refuse by ownership. Every key in $items must be present in the
- *    locked collection -- an id naming another order's line item, or
+ *    order's items -- an id naming another order's line item, or
  *    naming nothing at all, is refused, never a silent skip.
  * 7. Refuse by outstanding units. For each item:
  *    quantity_to_refund <= (quantity - refunded_quantity), evaluated
  *    against the item's CURRENT refunded_quantity, not its original
  *    quantity (D-6) -- the guard's real trigger.
+ * 7a. Validate `$stockReturns` (story 0092b, D-2): every key is a key of `$items`
+ *    (checked before a `0` entry is skipped), units <= the units refunded now, and units <= R
+ *    (`returnableStockUnits()` read before the refund). Business refusals are field-level
+ *    `stock_returns`. Then, when any entry is non-zero, call `AdjustOrderStock` (positive
+ *    deltas), which reports the ids whose stock was actually adjusted.
+ * 7b. Lock the items (`orderBy('id')->lockForUpdate()`) and re-verify Q, F
+ *    (`refunded_quantity`), U and K for every line in `$items` against the plain read; a
+ *    mismatch or a missing line throws a LogicException and the transaction (stock change
+ *    included) rolls back. Every write below uses these LOCKED rows.
  * 8. Write, per item: a `refunds` row (order_item_id, quantity,
  *    amount = quantity x unit_price, refunded_by = Auth::id(),
  *    reason = null -- see the $reason parameter's own docblock) then
  *    increment order_items.refunded_quantity via forceFill(). Story 0088:
  *    before that increment the line's stock counters follow the D8 refund
- *    rule (`applyRefundToStockCounters($quantity, 0)`), persisted in the same
- *    save; no stock is moved.
+ *    rule (`applyRefundToStockCounters($quantity, $restocked)`, `$restocked` being the requested
+ *    units only for lines whose stock `AdjustOrderStock` actually adjusted, 0 otherwise), persisted in the same
+ *    save.
  * 9. Increment orders.refunded_amount by the sum of the amounts just
  *    written.
  * 10. Derive and write orders.payment_status (D-4), from the FINAL state
@@ -86,6 +100,7 @@ class RecordRefund
 
     public function __construct(
         private readonly ToNumericString $toNumericString,
+        private readonly AdjustOrderStock $adjustOrderStock,
     ) {}
 
     /**
@@ -94,22 +109,29 @@ class RecordRefund
      *                               never widens this public-contract signature, but deliberately IGNORED --
      *                               D-11 ships the `refunds.reason` column now and this story writes `null`
      *                               into it unconditionally; nothing here reads or writes a real reason yet.
+     * @param  array<string, int>  $stockReturns  order_item_id => units to put back in stock (default: none);
+     *                                            each at most the units refunded now and at most the units still out of inventory
      */
-    public function __invoke(Order $order, array $items, ?string $reason = null): Order
+    public function __invoke(Order $order, array $items, ?string $reason = null, array $stockReturns = []): Order
     {
         Gate::authorize('orders.refund');
 
         Validator::make(
-            ['items' => $items],
-            ['items' => $this->refundItemsRules(), 'items.*' => $this->refundQuantityRules()],
+            ['items' => $items, 'stock_returns' => $stockReturns],
+            [
+                'items' => $this->refundItemsRules(),
+                'items.*' => $this->refundQuantityRules(),
+                'stock_returns' => $this->refundStockReturnRules(),
+                'stock_returns.*' => $this->refundStockReturnUnitRules(),
+            ],
         )->validate();
 
-        $refreshedOrder = DB::transaction(function () use ($order, $items): Order {
+        $refreshedOrder = DB::transaction(function () use ($order, $items, $stockReturns): Order {
             $lockedOrder = Order::query()->whereKey($order->id)->lockForUpdate()->first()
                 ?? throw (new ModelNotFoundException)->setModel(Order::class, [$order->id]);
 
-            /** @var Collection<string, OrderItem> $lockedItems */
-            $lockedItems = $lockedOrder->items()->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            /** @var Collection<string, OrderItem> $plainItems */
+            $plainItems = $lockedOrder->items()->orderBy('id')->get()->keyBy('id');
 
             if (! $lockedOrder->isRefundable()) {
                 throw ValidationException::withMessages([
@@ -118,7 +140,7 @@ class RecordRefund
             }
 
             foreach (array_keys($items) as $orderItemId) {
-                if (! $lockedItems->has($orderItemId)) {
+                if (! $plainItems->has($orderItemId)) {
                     throw ValidationException::withMessages([
                         'items' => __('orders.refunds.item_not_owned'),
                     ]);
@@ -126,13 +148,45 @@ class RecordRefund
             }
 
             foreach ($items as $orderItemId => $quantityToRefund) {
-                $lineItem = $lockedItems->get($orderItemId);
+                $lineItem = $plainItems->get($orderItemId);
                 $outstanding = $lineItem->quantity - $lineItem->refunded_quantity;
 
                 if ($quantityToRefund > $outstanding) {
                     throw ValidationException::withMessages([
                         'items' => __('orders.refunds.exceeds_outstanding_units'),
                     ]);
+                }
+            }
+
+            $this->assertStockReturnsAllowed($items, $stockReturns, $plainItems);
+
+            $restockDeltas = [];
+
+            foreach ($stockReturns as $orderItemId => $units) {
+                if ($units > 0) {
+                    $restockDeltas[] = ['order_item' => $plainItems->get($orderItemId), 'delta' => $units];
+                }
+            }
+
+            $adjustedItemIds = $restockDeltas === []
+                ? []
+                : ($this->adjustOrderStock)($lockedOrder, $restockDeltas);
+
+            /** @var Collection<string, OrderItem> $lockedItems */
+            $lockedItems = $lockedOrder->items()->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+
+            foreach (array_keys($items) as $orderItemId) {
+                $plain = $plainItems->get($orderItemId);
+                $locked = $lockedItems->get($orderItemId);
+
+                if (
+                    $locked === null
+                    || $locked->quantity !== $plain->quantity
+                    || $locked->refunded_quantity !== $plain->refunded_quantity
+                    || $locked->stock_undeducted_quantity !== $plain->stock_undeducted_quantity
+                    || $locked->stock_refunded_not_out_quantity !== $plain->stock_refunded_not_out_quantity
+                ) {
+                    throw new LogicException('The order line changed while its stock was being adjusted.');
                 }
             }
 
@@ -155,7 +209,11 @@ class RecordRefund
                     'reason' => null,
                 ]);
 
-                $lineItem->applyRefundToStockCounters($quantityToRefund, 0);
+                $restocked = in_array($lineItem->id, $adjustedItemIds, true)
+                    ? (int) ($stockReturns[$lineItem->id] ?? 0)
+                    : 0;
+
+                $lineItem->applyRefundToStockCounters($quantityToRefund, $restocked);
 
                 $lineItem->forceFill([
                     'stock_undeducted_quantity' => $lineItem->stock_undeducted_quantity,
@@ -198,5 +256,42 @@ class RecordRefund
         }
 
         return $refreshedOrder;
+    }
+
+    /**
+     * Story 0092b, D-2: every refusal here is field-level `stock_returns`. The key check runs
+     * before the zero skip; the cap uses R read from the plain items, before the refund.
+     *
+     * @param  array<string, int>  $items
+     * @param  array<string, int>  $stockReturns
+     * @param  Collection<string, OrderItem>  $plainItems
+     *
+     * @throws ValidationException
+     */
+    private function assertStockReturnsAllowed(array $items, array $stockReturns, Collection $plainItems): void
+    {
+        foreach ($stockReturns as $orderItemId => $units) {
+            if (! array_key_exists($orderItemId, $items)) {
+                throw ValidationException::withMessages([
+                    'stock_returns' => __('orders.refunds.stock_return_not_in_refund'),
+                ]);
+            }
+
+            if ($units === 0) {
+                continue;
+            }
+
+            if ($units > $items[$orderItemId]) {
+                throw ValidationException::withMessages([
+                    'stock_returns' => __('orders.refunds.stock_return_exceeds_refunded'),
+                ]);
+            }
+
+            if ($units > $plainItems->get($orderItemId)->returnableStockUnits()) {
+                throw ValidationException::withMessages([
+                    'stock_returns' => __('orders.refunds.stock_return_not_out_of_stock'),
+                ]);
+            }
+        }
     }
 }
