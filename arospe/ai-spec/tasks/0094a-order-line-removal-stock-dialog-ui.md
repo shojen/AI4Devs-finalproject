@@ -137,7 +137,7 @@ Independent: needs 0090, 0093 and 0094's shared dialog state. Negotiable: copy. 
 keep inventory. Estimable/Small: one request method and one branch on an existing dialog. Testable: Livewire and browser cases.
 
 ## Dependencies, risks, open technical questions
-**Depends on:** [0090](in-progress/0090-order-line-quantity-and-removal-stock-opt-in-backend.md),
+**Depends on:** [0090](done/0090-order-line-quantity-and-removal-stock-opt-in-backend.md),
 [0093](done/0093-confirm-dialog-secondary-action-ui.md), [0094](0094-order-line-quantity-stock-dialog-ui.md) (hard). Shares
 `Show.php`, `show.blade.php` and `lang/*/orders.php` with 0094, 0095, 0096 and 0092b (lang) — run sequentially.
 - **R-1** — Removing the public `removeLineItem` changes the component's public surface.

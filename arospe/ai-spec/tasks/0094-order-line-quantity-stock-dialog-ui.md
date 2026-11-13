@@ -3,7 +3,7 @@
 > **Status: New — Phase 1 output, rewritten after the Phase 2 INVEST review of 2026-11-08; pending re-review.** Epic 3
 > follow-up bug fix, order-stock series. **Split (user decision 2026-11-08):** this story covers the **quantity change only**;
 > line removal moved to [0094a](0094a-order-line-removal-stock-dialog-ui.md). Fullstack pair: **related_task_id 0090**. Blocked
-> on [0090](in-progress/0090-order-line-quantity-and-removal-stock-opt-in-backend.md) and [0093](done/0093-confirm-dialog-secondary-action-ui.md).
+> on [0090](done/0090-order-line-quantity-and-removal-stock-opt-in-backend.md) and [0093](done/0093-confirm-dialog-secondary-action-ui.md).
 > It is also the first consumer of 0093's secondary action and owns its interactive checks (Esc / backdrop / X abort,
 > loading-disable, 375px layout).
 > **User-confirmed (2026-11-08):** OQ-3 — a line with zero returnable units still gets the dialog, with a note and only
@@ -186,7 +186,7 @@ Independent: needs 0090 and 0093. Negotiable: copy. Valuable: the administrator 
 edit. Estimable/Small: one flow on one component after the removal split. Testable: Livewire and browser tests per scenario.
 
 ## Dependencies, risks, open technical questions
-**Depends on:** [0090](in-progress/0090-order-line-quantity-and-removal-stock-opt-in-backend.md), [0093](done/0093-confirm-dialog-secondary-action-ui.md)
+**Depends on:** [0090](done/0090-order-line-quantity-and-removal-stock-opt-in-backend.md), [0093](done/0093-confirm-dialog-secondary-action-ui.md)
 (hard). **Blocks:** [0094a](0094a-order-line-removal-stock-dialog-ui.md), [0095](0095-order-cancellation-stock-dialog-ui.md)
 (reuse of the pending state and `stockPreview`). Shares `Show.php`, `show.blade.php` and `lang/*/orders.php` with 0094a, 0095,
 0096 and 0092b (lang) — run sequentially.
