@@ -97,8 +97,9 @@ app/
                        BARE `Gate::authorize('orders.refund')` rather than an OrderPolicy ability
                        (DR-2) -- the state-based refusal is a ValidationException raised inside
                        the action itself, never a policy method; CancelOrder — story 0050, the
-                       four-step action (permission -> already-Cancelled guard -> blocked-state
-                       guard -> forceFill write) self-authorizing `cancel` on OrderPolicy as its
+                       action (permission outside the transaction -> in a transaction: locked
+                       already-Cancelled and blocked-state guards -> optional stock return via
+                       AdjustOrderStock, story 0091 -> forceFill status write) self-authorizing `cancel` on OrderPolicy as its
                        own first statement with a bare Gate::authorize(), NOT a call into or out
                        of TransitionOrderStatus (D-5) -- takes exactly one parameter, an Order,
                        with NO confirmation parameter (D-7, pinned by a reflection test); its
