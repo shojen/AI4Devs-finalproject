@@ -4,6 +4,7 @@ namespace App\Actions\Blog;
 
 use App\Actions\Auth\LogRefusedPrivilegedAttempt;
 use App\Actions\NormalizeForSearch;
+use App\Actions\Translations\ResolveActiveStoreLanguage;
 use App\Actions\Translations\SetTranslation;
 use App\Concerns\BlogCategoryValidationRules;
 use App\Models\BlogCategory;
@@ -31,6 +32,7 @@ class SetBlogCategoryTranslation
     public function __construct(
         private readonly LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt,
         private readonly NormalizeForSearch $normalizeForSearch,
+        private readonly ResolveActiveStoreLanguage $resolveActiveStoreLanguage,
         private readonly SetTranslation $setTranslation,
         private readonly TranslateBlogCategoryNameUniqueViolation $translateNameUniqueViolation,
     ) {}
@@ -39,7 +41,7 @@ class SetBlogCategoryTranslation
      * Authorize, validate and persist one blog category's name in one store language.
      *
      * @throws AuthorizationException when the actor lacks blog.edit (logged first)
-     * @throws ValidationException keyed "names.{$language->id}" -- blank, over-length, or
+     * @throws ValidationException keyed "names.{$language->id}" -- inactive language, blank, over-length, or
      *                             duplicate within that store language (incl. the 1062 race)
      * @throws LogicException when the primitive returns an unexpected model
      */
@@ -54,6 +56,8 @@ class SetBlogCategoryTranslation
             targetType: 'blog_category',
             targetId: $blogCategory->id,
         );
+
+        $language = ($this->resolveActiveStoreLanguage)($language, "names.{$language->id}", __('blog.categories.index.tabs.language_inactive'));
 
         $name = $this->trimName($name);
         $errorKey = "names.{$language->id}";

@@ -28,6 +28,12 @@
         {{-- Per-language title and body (0079). Every panel is always mounted and hidden with x-show,
         never @if: the WYSIWYG's wire:ignore'd region cannot be restored once torn down (0021 D9). --}}
         <div class="space-y-4" data-test="blog-post-language-tabs">
+            @error('translation')
+                <flux:callout icon="exclamation-circle" variant="danger" data-test="blog-post-translation-error">
+                    <flux:callout.text>{{ $message }}</flux:callout.text>
+                </flux:callout>
+            @enderror
+
             <x-language-tab-strip
                 :languages="collect($languages)->map(fn (array $language): object => (object) $language)"
                 :active="$activeLanguageId"

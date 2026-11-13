@@ -4,6 +4,7 @@ namespace App\Actions\Blog;
 
 use App\Actions\Auth\LogRefusedPrivilegedAttempt;
 use App\Actions\Products\SanitizeProductDescription;
+use App\Actions\Translations\ResolveActiveStoreLanguage;
 use App\Actions\Translations\SetTranslation;
 use App\Concerns\BlogPostValidationRules;
 use App\Models\BlogPost;
@@ -22,7 +23,8 @@ use LogicException;
  * for a non-default post translation from a UI path.
  *
  * It takes no slug: BlogPostTranslation's saving hook derives it from the title (0078 D-4). Like its
- * siblings it does NOT filter on `is_active`; only the tab strip does.
+ * siblings it refuses a store language that is no longer active, through ResolveActiveStoreLanguage,
+ * on the post-level "translation" error key (story 0087 D-8).
  */
 final class SetBlogPostTranslation
 {
@@ -32,6 +34,7 @@ final class SetBlogPostTranslation
         private readonly LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt,
         private readonly SanitizeProductDescription $sanitizeBody,
         private readonly BlogBodyHasVisibleContent $bodyHasVisibleContent,
+        private readonly ResolveActiveStoreLanguage $resolveActiveStoreLanguage,
         private readonly SetTranslation $setTranslation,
     ) {}
 
@@ -42,7 +45,8 @@ final class SetBlogPostTranslation
      * cannot point a refusal at the wrong tab.
      *
      * @throws AuthorizationException when the actor lacks blog.edit (logged first)
-     * @throws ValidationException keyed "titles.{$language->id}" / "bodies.{$language->id}"
+     * @throws ValidationException keyed "translation" (inactive language) or "titles.{$language->id}" /
+     *                             "bodies.{$language->id}"
      * @throws LogicException when the primitive returns an unexpected model
      */
     public function __invoke(
@@ -60,6 +64,8 @@ final class SetBlogPostTranslation
 
         // Once authorized the post is re-read: a post deleted meanwhile is a clean 404.
         $blogPost = BlogPost::query()->whereKey($blogPost->getKey())->firstOrFail();
+
+        $language = ($this->resolveActiveStoreLanguage)($language, 'translation', __('blog-posts.editor.tabs.language_inactive'));
 
         $titleKey = "titles.{$language->id}";
         $bodyKey = "bodies.{$language->id}";

@@ -34,6 +34,7 @@ return [
                 'name_attribute' => 'nombre',
                 'untranslated' => 'Esta categoría aún no tiene nombre en este idioma.',
                 'translation_requires_edit' => 'Necesitas permiso para editar categorías para añadir una traducción.',
+                'language_inactive' => 'Este idioma ya no está activo en la tienda.',
             ],
         ],
     ],
