@@ -3,24 +3,6 @@
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
     {
-      "id": "0090",
-      "slug": "0090-order-line-quantity-and-removal-stock-opt-in-backend",
-      "title": "Line quantity changes and line removal adjust stock only on request (backend)",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "app/Actions/Orders/UpdateOrderItemQuantity.php",
-        "app/Actions/Orders/RemoveOrderItem.php",
-        "tests/Feature/Orders/UpdateOrderItemQuantityStockTest.php",
-        "tests/Feature/Orders/RemoveOrderItemStockTest.php"
-      ],
-      "conflict_risk_with": [
-        "0091"
-      ]
-    },
-    {
       "id": "0091",
       "slug": "0091-order-cancellation-stock-return-opt-in-backend",
       "title": "Order cancellation returns stock only on request (backend)",
@@ -35,9 +17,7 @@
         "tests/Feature/Orders/AutoCancelFullyRefundedOrderTest.php",
         "tests/Feature/Orders/RemoveOrderItemStockTest.php"
       ],
-      "conflict_risk_with": [
-        "0090"
-      ]
+      "conflict_risk_with": []
     },
     {
       "id": "0092b",
@@ -64,10 +44,8 @@
       "id": "0094",
       "slug": "0094-order-line-quantity-stock-dialog-ui",
       "title": "Order detail — ask about stock when a line's quantity changes (frontend)",
-      "depends_on": [
-        "0090"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -92,7 +70,6 @@
       "slug": "0094a-order-line-removal-stock-dialog-ui",
       "title": "Order detail — ask about stock when a line is removed (frontend)",
       "depends_on": [
-        "0090",
         "0094"
       ],
       "status": "blocked",

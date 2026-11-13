@@ -18,6 +18,10 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-11-13, backmerge of `origin/main` into the 0087 branch): the 0087 and 0090 closures are both in `done/`.** Recounted from the directory after the merge, `done/` holds 117 files (Epic 3: 23, Epic 5: 17). The `ready` nodes are `0091`, `0092b` and `0098`; no node is `claimed` and `ai-spec/tasks/in-progress/` is empty. Both entries were removed from `tasks-status.json`.
+
+**Update (2026-11-13): `0090-order-line-quantity-and-removal-stock-opt-in-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0090-order-line-quantity-removal-stock-opt-in-backend`; Phase 2 approved on the sixth review, Phase 4 PASS, Phase 5 approved with the full unscoped suite green in 4 chunks). Its node, inventory row, `claimed` class membership and edges (`P0090 --> P0094/P0094a`, `P0090 -.-> P0091`) are dropped; it joins the flat `done/` inventory (Epic 3 now 23) and its `tasks-status.json` entry is deleted. Dependents recomputed: `0094` had `0090` as its only pending dependency, so it moves `blocked` -> `ready` (green); `0094a` drops `0090` but stays `blocked` on `0094`; `0091`/`0094`/`0094a` lose the `0090` `conflict_risk_with` entry. `ai-spec/tasks/in-progress/` is empty again. Link check: same-depth move, outbound links re-verified; inbound links repointed from `in-progress/0090-…` to `done/0090-…` in `0091`, `0094`, `0094a` and to the bare sibling in `done/0088` and `done/0088a`; all resolve.
+
 **Update (2026-11-13): `0087-translation-write-actions-refuse-inactive-store-language.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0087-translation-write-actions-refuse-inactive-language`; Phases 3–6 approved, full unscoped suite green: 6162 tests). Its node, inventory row, `claimed` class membership and the edge `P0087 --> P0098` are dropped; it joins the flat `done/` inventory (Epic 5: 17; `done/` holds 116 files) and its `tasks-status.json` entry is deleted. Dependents recomputed: `0098` had `0087` as its only pending dependency, so `depends_on` is now empty and it moves `blocked` -> `ready` (green); it drops `0087` from `conflict_risk_with` (now empty). No node is `claimed`; `ai-spec/tasks/in-progress/` is empty again. Link check, both directions: same-depth move, so the moved file's `](../done/…)` links became bare siblings and its `../../../docs/…` and `../0098-…` links needed no change; all resolve. Inbound links were repointed and resolve: bare sibling `](0087-…)` in `done/0075` (1), `done/0076a` (2), `done/0076b` (2), `done/0077` (2), `done/0078` (1); `](done/0087-…)` in `0098` (2); `../../ai-spec/tasks/done/0087-…` in `docs/api/blog.md` lines 49 and 120. The Epic 5 digest has no link to the file. No broken link remains.
 
 **Update (2026-11-13, superseded by the closure above): `0087` Phase 2 APPROVED, new pending task `0098`, and `0087` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (claimed by `worktree-0087-translation-write-actions-refuse-inactive-language`, Phase 3 step 0). `code-reviewer` approved `0087` on the re-review with six non-blocking findings, folded into the file; the user closed its Q-3 (a) (post-level callout wording) and Q-4 (a) (0076b residual L-2 out of scope) and asked for a separate task for L-2: **`0098-translation-write-actions-deleted-entity-race-backend.md`** (backend, Phase 1 draft by `product-owner`, Q-1–Q-3 open for the user). `0098` edits the same action and test files as `0087` (`SetProductTranslation`, `SetProductCategoryTranslation` and their tests) and builds on its order, so it gets the hard edge `P0087 --> P0098` (`depends_on: ["0087"]`, yellow `pending`, status `blocked`) and `conflict_risk_with` both ways. `P0087` moves from green `ready` to blue `claimed`. The Epic 5 digest's L-2 line now points to `0098`. Link check, both directions: the moved file's outbound links were repointed one level deeper (`](done/…)` to `](../done/…)`, `](../../docs/…)` to `](../../../docs/…)`, `](0098-…)` to `](../0098-…)`) and all resolve; inbound links were repointed from `](../0087-…)` to `](../in-progress/0087-…)` in `done/0075` (1), `done/0076a` (2), `done/0076b` (2), `done/0077` (2), `done/0078` (1) and resolve; `0098` links to `in-progress/0087-…`. **One inbound link is still stale and is `docs-keeper`'s to fix** (outside `product-owner`'s write scope): `docs/api/blog.md` line 49 must become `../../ai-spec/tasks/in-progress/0087-translation-write-actions-refuse-inactive-store-language.md`. `ai-spec/tasks/in-progress/` holds exactly `0087`.
@@ -472,7 +476,7 @@ appears as a node in the dependency graph below:
 - **Epic 2 — Products, Taxes, Media, Shipping (35):** 0016, 0017, 0018, 0019, 0019a, 0019b,
   0019c, 0019d, 0020, 0021, 0022, 0023, 0024, 0024a, 0024b, 0025, 0026, 0027, 0028, 0029, 0029a,
   0029b, 0030, 0030a, 0031, 0031a, 0032, 0033, 0034, 0035, 0036, 0037, 0038, 0039, 0080.
-- **Epic 3 — Customers, Orders & Notifications (22, recounted 2026-11-12 from `done/`: 0041-0057 plus 0088, 0088a and 0092a):** 0092a — `RecordRefund` locks the order before its lines (backend; closed 2026-11-12): closes the story 0055 lock-order gap; its dependent `0092b` moved `blocked` -> `ready`. 0088 — Order stock adjustment foundation (backend; closed 2026-11-10): order-line stock counters; its dependent `0088a` moved `blocked` -> `ready`. 0041 — the epic's foundation story (the first to close in
+- **Epic 3 — Customers, Orders & Notifications (23, recounted 2026-11-13 from `done/`: 0041-0057 plus 0088, 0088a, 0090 and 0092a):** 0090 — `UpdateOrderItemQuantity` and `RemoveOrderItem` adjust stock only on request (`adjustStock`), stock locked before the line (backend; closed 2026-11-13); 0092a — `RecordRefund` locks the order before its lines (backend; closed 2026-11-12): closes the story 0055 lock-order gap; its dependent `0092b` moved `blocked` -> `ready`. 0088 — Order stock adjustment foundation (backend; closed 2026-11-10): order-line stock counters; its dependent `0088a` moved `blocked` -> `ready`. 0041 — the epic's foundation story (the first to close in
   this epic); its own three former dependents (0042, 0043, 0045) are re-derived against `done/`
   rather than against this pending list from here on. 0042 — Customers soft delete (backend), the
   second story to close in this epic; its own two former dependents (0044, 0047) are re-derived
@@ -577,7 +581,6 @@ Re-derived 2026-11-08 from the files actually present in `ai-spec/tasks/` (`0078
 | ID | Title | Epic area |
 | --- | --- | --- |
 | 0098 | Product translation write actions refuse a deleted product or category cleanly (backend) | Epic 5 — i18n |
-| 0090 | Line quantity changes and removal adjust stock only on request (backend) | Epic 3 — Orders (stock) |
 | 0091 | Order cancellation returns stock only on request (backend) | Epic 3 — Orders (stock) |
 | 0092b | Refunds can return refunded units to stock (backend) | Epic 3 — Orders (stock) |
 | 0094 | Order detail — quantity-change stock dialog (frontend) | Epic 3 — Orders (stock) |
@@ -622,7 +625,6 @@ flowchart LR
 
     subgraph PEND_STOCK["Epic 3 — Order stock (bug fix)"]
         direction TB
-        P0090["0090 Quantity/removal opt-in BE"]
         P0091["0091 Cancel opt-in BE"]
         P0092b["0092b Refund stock return BE"]
         P0094["0094 Quantity stock dialog UI"]
@@ -632,13 +634,10 @@ flowchart LR
     end
     %% (P0089 merged into P0088 and P0092 split into P0092a/P0092b on 2026-11-08; their nodes and edges are dropped.)
     %% (P0088 --> P0090/P0091/P0092b replaced by P0088 --> P0088a --> … on 2026-11-08, review #4 split.)
-    P0090 --> P0094
-    P0090 --> P0094a
     P0094 --> P0094a
     P0091 --> P0095
     P0094 --> P0095
     P0092b --> P0096
-    P0090 -.-> P0091
     P0092b -.-> P0094
     P0092b -.-> P0094a
     P0092b -.-> P0095
@@ -646,8 +645,8 @@ flowchart LR
     P0094 -.-> P0096
     P0094a -.-> P0096
     P0095 -.-> P0096
-    class P0090,P0091,P0092b ready;
-    class P0094,P0094a,P0095,P0096 pending;
+    class P0091,P0092b,P0094 ready;
+    class P0094a,P0095,P0096 pending;
 
     %% Standalone (no PRD epic)
     %% (P0082's own node dropped: 0082 closed to done/ this pass, per the update at the top of this file.)
@@ -740,7 +739,7 @@ here); yellow (`pending`) = still blocked on at least one open pending dependenc
 ### Pending tasks that are independent of each other and safe to parallelize
 
 These are the tasks whose **entire dependency chain is already `done/`** — nothing pending blocks
-them — the green `ready` nodes in the diagram above (`0090`, `0091`, `0092b`, `0098` as of 2026-11-13; `0098` became ready when `0087` closed). (`0046`–`0054` and `0057` all had the
+them — the green `ready` nodes in the diagram above (`0091`, `0092b`, `0098` as of 2026-11-13; `0098` became ready when `0087` closed, and `0090` is in `done/`). (`0046`–`0054` and `0057` all had the
 identical property in their own turn — but none of them is listed anywhere in this section any
 more: each closed to `done/` in this or a prior regeneration pass, so per this file's own "`done/`
 tasks are omitted from the graph" rule none has a node at all any more. See the note at the top of
