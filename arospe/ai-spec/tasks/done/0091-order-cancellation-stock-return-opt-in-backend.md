@@ -1,8 +1,8 @@
 # [0091] Order cancellation returns stock only on request (backend)
 
-> **Status: New — Phase 1 output, rewritten after the Phase 2 INVEST review of 2026-11-08; pending re-review.** Epic 3
+> **Status: Done (closed 2026-11-13; Phase 2 approved 2026-11-13, INVEST re-review #6; Phases 3-7 approved).** Epic 3
 > follow-up bug fix, order-stock series. Fullstack pair: **related_task_id 0095** (the cancel dialog). Blocked on
-> [0088a](done/0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (automatic deduction and `AdjustOrderStock`) and, through it, [0088](done/0088-order-stock-adjustment-foundation-backend.md) (counters).
+> [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (automatic deduction and `AdjustOrderStock`) and, through it, [0088](0088-order-stock-adjustment-foundation-backend.md) (counters).
 
 ## Description
 `CancelOrder` gains `bool $adjustStock = false`. With `true`, every line returns its returnable units to its variant or product
@@ -20,7 +20,7 @@ backend (related_task_id: 0095) | includes database-expert: no
   An ordinary, fully-permitted administrator is therefore refused for a partially refunded, shipped/delivered or already-cancelled
   order **at `Gate::authorize`, as an `AuthorizationException`**; the action's own `ValidationException` / 409 refusals are reached
   only by a super administrator (`Gate::before`). Both refusal paths are tested below.
-- `tests/Feature/Orders/CancelOrderTest.php` (≈ line 218, "There is no confirmation bypass") asserts `__invoke()` has **exactly
+- `tests/Feature/Orders/CancelOrderTest.php` (≈ line 201, "There is no confirmation bypass") asserts `__invoke()` has **exactly
   one** parameter; this story changes that test (see Files).
 - `AutoCancelFullyRefundedOrder` locks the order in its own transaction and writes only `status`.
 - Lines stay editable after cancellation (`isLineItemEditable()` true on `Cancelled`); 0090's rules plus this story's counter
@@ -36,7 +36,12 @@ backend (related_task_id: 0095) | includes database-expert: no
   `OrderItem::returnableStockUnits()` = `(quantity − refunded_quantity) − stock_undeducted_quantity` (never negative: 0088
   keeps `U <= Q − F`). A cancellable order is never `PartiallyRefunded`; a
   fully refunded order in the window before `AutoCancelFullyRefundedOrder` runs returns 0 per line.
-- **D-4** — Lines locked `orderBy('id')->lockForUpdate()` after the order row; then stock rows (0088a FD-7). **`stock_undeducted_quantity`
+- **D-4** — Lock order follows 0088a FD-7 / appsec L-1 and the forward rule in `docs/api/orders.md` (realised by 0090): (1) lock `orders`
+  and re-run both guards; (2) read the lines with a **plain (non-locking) read** through `$lockedOrder->items()` and compute R per line;
+  (3) call `AdjustOrderStock` **once** with the `+R` deltas, only when `adjustStock` is true and some R > 0 — **before any
+  `FOR UPDATE` on `order_items`** (gap locks would deadlock across two orders); (4) only then lock the lines
+  `orderBy('id')->lockForUpdate()` and **re-verify** Q / F / U and the set of line ids against the plain read (a mismatch throws `LogicException` and rolls
+  back, stock included); (5) write the counters; (6) write the status. **`stock_undeducted_quantity`
   = `U + R` per applied line; unchanged for skipped or null-target lines; `stock_refunded_not_out_quantity` never touched** (only ids returned by `AdjustOrderStock` are updated).
 - **D-5 (user D5)** — `AutoCancelFullyRefundedOrder` is **not** changed; a regression test pins that it never moves stock.
 - **D-6 (user D7)** — No authorization change.
@@ -114,14 +119,13 @@ Feature: Cancelling an order returns stock only when the order administrator ask
 
 ## Files to create/modify
 - `app/Actions/Orders/CancelOrder.php` — `bool $adjustStock = false`; transaction + order lock + both guards re-run on the locked
-  row; lines locked by id; `AdjustOrderStock`; `stock_undeducted_quantity` update (D-4); docblock rewritten (D-1, D-2).
-- `tests/Feature/Orders/CancelOrderTest.php` — rewrite the "accepts exactly one parameter" assertion (≈ line 218): `__invoke()`
+  row; plain line read, `AdjustOrderStock`, then lines locked by id and Q/F/U re-verified (D-4, order per 0088a FD-7); `stock_undeducted_quantity` update (D-4); docblock rewritten (D-1, D-2).
+- `tests/Feature/Orders/CancelOrderTest.php` — rewrite the "accepts exactly one parameter" assertion (≈ line 201): `__invoke()`
   has two parameters, the first typed `Order`, the second `bool $adjustStock` with default `false`; keep the assertion that no
   confirmation-bypass parameter exists (no other parameter, a blocked cancellation still throws with `adjustStock: true`).
 - `tests/Feature/Orders/CancelOrderStockTest.php` — new.
 - `tests/Feature/Orders/AutoCancelFullyRefundedOrderTest.php` — add the stock-free regression case.
-- `tests/Feature/Orders/RemoveOrderItemStockTest.php` (created by 0090) — add the remove-after-cancel case (if 0090 is not yet
-  merged, place it in `CancelOrderStockTest.php`).
+- `tests/Feature/Orders/RemoveOrderItemStockTest.php` (created by 0090, merged) — add the remove-after-cancel case.
 
 ## Tests to perform
 - [ ] Every Gherkin scenario, product and variant lines.
@@ -130,6 +134,7 @@ Feature: Cancelling an order returns stock only when the order administrator ask
 - [ ] **Both refusal paths:** an ordinary administrator holding `orders.edit` + `orders.refund` → `AuthorizationException` for partially refunded, shipped and already-cancelled orders (policy state clause); a super administrator → `ValidationException` (already cancelled) / `OrderCancellationBlockedException` (shipped) from the action's guards re-run under the lock. Stock untouched in every case.
 - [ ] Authorization refusal is still first (an unauthorized caller learns nothing).
 - [ ] Concurrency: two cancellations of the same order serialized by the order lock — the second is refused and stock is returned once (pattern of `MarkOrderAsPaidConcurrencyTest`).
+- [ ] Re-verify and rollback: when a line's Q / F / U changes between the plain read and the lock, the action throws `LogicException` and neither stock nor counters nor status change (pattern of 0090's re-verify test).
 - [ ] Signature test rewritten (see Files); `adjustStock: true` never bypasses a refusal.
 - [ ] Regression: `CancelOrderTest` (except the rewritten signature assertion), `AutoCancelFullyRefundedOrderTest`, `ShowCancellationTest` green.
 
@@ -148,7 +153,7 @@ refunded-and-written-off or already returned.
 - [ ] Tests written and green (full suite, unscoped)
 - [ ] Code reviewed (code-reviewer)
 - [ ] No security findings (appsec-auditor)
-- [ ] Documentation updated (docs-keeper): `docs/api/orders.md` (CancelOrder contract, transaction now present), `docs/architecture/authorization/domain-invariants.md` only if it states CancelOrder has no transaction, `ai-spec/tasks/_digests/epic-3.md`
+- [ ] Documentation updated (docs-keeper): `docs/api/orders.md` (CancelOrder contract, transaction now present), `docs/architecture/authorization/domain-invariants.md` (rewrite the 2026-09-17 narrowing note that says `CancelOrder` opens no transaction or lock), the forward rule in `docs/api/orders.md` (mark 0091 as following it), `ai-spec/tasks/_digests/epic-3.md`
 - [ ] Acceptance criteria met
 
 ## INVEST note
@@ -157,9 +162,9 @@ back to inventory. Estimable/Small: one action gains a transaction, a lock and o
 Testable: stock asserted per scenario, both refusal paths, a concurrency test.
 
 ## Dependencies, risks, open technical questions
-**Depends on:** [0088a](done/0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (hard) and [0088](done/0088-order-stock-adjustment-foundation-backend.md) (transitively). **Blocks:**
-[0095](0095-order-cancellation-stock-dialog-ui.md). Soft: [0090](done/0090-order-line-quantity-and-removal-stock-opt-in-backend.md)
-(shared test file; the remove-after-cancel case uses its parameter).
+**Depends on:** [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (hard) and [0088](0088-order-stock-adjustment-foundation-backend.md) (transitively). **Blocks:**
+[0095](../0095-order-cancellation-stock-dialog-ui.md). Also depends on [0090](0090-order-line-quantity-and-removal-stock-opt-in-backend.md) (done; the remove-after-cancel case
+calls `RemoveOrderItem(..., adjustStock: true)` and shares its test file).
 
 - **R-1** — Adding a transaction to `CancelOrder` changes a documented design note from story 0050; the reason (a second write
   now exists) must be recorded in the docblock and the digest so it is not "fixed" back.
@@ -175,3 +180,11 @@ Testable: stock asserted per scenario, both refusal paths, a concurrency test.
 - Phase 2: INVEST re-review 2026-11-08: helper and counter names aligned with the two-counter model (0088 D8) → rewritten, pending re-review.
 - Phase 2: INVEST re-review #3 2026-11-08 → rewritten, pending re-review (K and helper names aligned with the corrected two-counter model, sequence numbers updated, last scenario opens with a named actor).
 - Phase 2: INVEST re-review #4 2026-11-08 → rewritten, pending re-review (dependency moved to 0088a after the 0088 split, FD reference renumbered).
+- Phase 2: INVEST re-review #5 2026-11-13 (code-reviewer) → REJECTED (D-4 locks order_items before stock, contradicting 0088a FD-7/L-1 and the forward rule in docs/api/orders.md; domain-invariants.md DoD item must be unconditional; stale 0090 fallback and line refs); rewritten 2026-11-13 (lock order per 0090 pattern, re-verify test added, DoD unconditional, fallback and refs fixed), pending re-review.
+- Phase 2: INVEST re-review #6 2026-11-13 (code-reviewer) → APPROVED (D-4 lock order now matches 0088a FD-7/L-1, the forward rule in docs/api/orders.md and the pattern 0090 realised in RemoveOrderItem; domain-invariants DoD unconditional; 0090 fallback, line ref and dependency label fixed; re-verify/rollback test added). Non-blocking suggestions applied: re-verify the locked line-id set too; status banner refreshed.
+- Phase 3: started 2026-11-13 — task moved to ai-spec/tasks/in-progress/, claimed by worktree-0091-order-cancellation-stock-return-opt-in-backend.
+- Phase 3: complete 2026-11-13 — tests red (44c457c), `CancelOrder` implemented (6dd2585), one wrong rollback assertion in the re-verify test corrected (114f538); 106/106 green on the four affected files.
+- Phase 4: Security audit 2026-11-13 (appsec-auditor) → APPROVED (authorization first and outside the transaction; `$adjustStock` reachable from no request input, only caller `Show::cancelOrder` passes the default false; `orders` lock serializes cancel/refund/line edits, no double return; lock order `orders` → `AdjustOrderStock` → `order_items FOR UPDATE` matches the forward rule and appsec L-1; U+R written only for applied ids, K untouched; no PII logged, generic exception messages). Non-blocking: Low — `Cancelled` orders remain line-editable, so `AddOrderItem`/a quantity increase can deduct stock after a cancellation (pre-existing, needs a follow-up story); Info — the caller's instance only has `status` synced; no cancellation audit log.
+- Phase 5: Code review 2026-11-13 (code-reviewer) → APPROVED (all acceptance criteria and 11 Gherkin scenarios covered by passing tests; D-1..D-6 realised in `CancelOrder`, lock order `orders` → `AdjustOrderStock` → `order_items FOR UPDATE` matching 0090; 114f538 rollback-assertion fix legitimate; Pint and Larastan level 7 clean; full suite green in directory chunks, Feature + Unit + Browser, 0 failures). Non-blocking: the re-verify test covers only the U mismatch (line-id-set and Q/F branches untested); the caller's instance syncs only `status`.
+- Phase 6: documentation 2026-11-13 (docs-keeper) -> `docs/api/orders.md#cancelorder--opt-in-stock-return-on-cancellation-story-0091`, `docs/architecture/authorization/domain-invariants.md` (0050 no-transaction note rewritten), `docs/conventions/directory-structure/actions.md`, epic-3 decision digest.
+- Phase 7: closure 2026-11-13 -> task moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`; link-integrity check run in both directions; `tasks-map.md` and `tasks-status.json` regenerated (0095 stays blocked on 0094); PR against the worktree's base branch pending.
