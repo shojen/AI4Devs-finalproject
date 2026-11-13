@@ -1,8 +1,8 @@
 # [0091] Order cancellation returns stock only on request (backend)
 
-> **Status: Phase 3 in progress (TDD; moved to in-progress 2026-11-13; Phase 2 approved 2026-11-13, INVEST re-review #6).** Epic 3
+> **Status: Done (closed 2026-11-13; Phase 2 approved 2026-11-13, INVEST re-review #6; Phases 3-7 approved).** Epic 3
 > follow-up bug fix, order-stock series. Fullstack pair: **related_task_id 0095** (the cancel dialog). Blocked on
-> [0088a](../done/0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (automatic deduction and `AdjustOrderStock`) and, through it, [0088](../done/0088-order-stock-adjustment-foundation-backend.md) (counters).
+> [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (automatic deduction and `AdjustOrderStock`) and, through it, [0088](0088-order-stock-adjustment-foundation-backend.md) (counters).
 
 ## Description
 `CancelOrder` gains `bool $adjustStock = false`. With `true`, every line returns its returnable units to its variant or product
@@ -162,8 +162,8 @@ back to inventory. Estimable/Small: one action gains a transaction, a lock and o
 Testable: stock asserted per scenario, both refusal paths, a concurrency test.
 
 ## Dependencies, risks, open technical questions
-**Depends on:** [0088a](../done/0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (hard) and [0088](../done/0088-order-stock-adjustment-foundation-backend.md) (transitively). **Blocks:**
-[0095](../0095-order-cancellation-stock-dialog-ui.md). Also depends on [0090](../done/0090-order-line-quantity-and-removal-stock-opt-in-backend.md) (done; the remove-after-cancel case
+**Depends on:** [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (hard) and [0088](0088-order-stock-adjustment-foundation-backend.md) (transitively). **Blocks:**
+[0095](../0095-order-cancellation-stock-dialog-ui.md). Also depends on [0090](0090-order-line-quantity-and-removal-stock-opt-in-backend.md) (done; the remove-after-cancel case
 calls `RemoveOrderItem(..., adjustStock: true)` and shares its test file).
 
 - **R-1** — Adding a transaction to `CancelOrder` changes a documented design note from story 0050; the reason (a second write
@@ -186,3 +186,5 @@ calls `RemoveOrderItem(..., adjustStock: true)` and shares its test file).
 - Phase 3: complete 2026-11-13 — tests red (44c457c), `CancelOrder` implemented (6dd2585), one wrong rollback assertion in the re-verify test corrected (114f538); 106/106 green on the four affected files.
 - Phase 4: Security audit 2026-11-13 (appsec-auditor) → APPROVED (authorization first and outside the transaction; `$adjustStock` reachable from no request input, only caller `Show::cancelOrder` passes the default false; `orders` lock serializes cancel/refund/line edits, no double return; lock order `orders` → `AdjustOrderStock` → `order_items FOR UPDATE` matches the forward rule and appsec L-1; U+R written only for applied ids, K untouched; no PII logged, generic exception messages). Non-blocking: Low — `Cancelled` orders remain line-editable, so `AddOrderItem`/a quantity increase can deduct stock after a cancellation (pre-existing, needs a follow-up story); Info — the caller's instance only has `status` synced; no cancellation audit log.
 - Phase 5: Code review 2026-11-13 (code-reviewer) → APPROVED (all acceptance criteria and 11 Gherkin scenarios covered by passing tests; D-1..D-6 realised in `CancelOrder`, lock order `orders` → `AdjustOrderStock` → `order_items FOR UPDATE` matching 0090; 114f538 rollback-assertion fix legitimate; Pint and Larastan level 7 clean; full suite green in directory chunks, Feature + Unit + Browser, 0 failures). Non-blocking: the re-verify test covers only the U mismatch (line-id-set and Q/F branches untested); the caller's instance syncs only `status`.
+- Phase 6: documentation 2026-11-13 (docs-keeper) -> `docs/api/orders.md#cancelorder--opt-in-stock-return-on-cancellation-story-0091`, `docs/architecture/authorization/domain-invariants.md` (0050 no-transaction note rewritten), `docs/conventions/directory-structure/actions.md`, epic-3 decision digest.
+- Phase 7: closure 2026-11-13 -> task moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`; link-integrity check run in both directions; `tasks-map.md` and `tasks-status.json` regenerated (0095 stays blocked on 0094); PR against the worktree's base branch pending.

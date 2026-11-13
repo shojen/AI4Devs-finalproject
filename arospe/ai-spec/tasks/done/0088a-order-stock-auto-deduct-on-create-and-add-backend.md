@@ -230,7 +230,7 @@ every later stock change in the series goes through one tested action.
 
 ## Dependencies, risks, open technical questions
 **Depends on:** [0088](../done/0088-order-stock-adjustment-foundation-backend.md) (hard). **Blocks:**
-[0090](0090-order-line-quantity-and-removal-stock-opt-in-backend.md), [0091](../in-progress/0091-order-cancellation-stock-return-opt-in-backend.md),
+[0090](0090-order-line-quantity-and-removal-stock-opt-in-backend.md), [0091](0091-order-cancellation-stock-return-opt-in-backend.md),
 [0092b](../0092b-order-refund-stock-return-backend.md).
 
 - **R-2 — Product editor lost update.** The product and variant editors save `stock` from a form value, so an editor left
