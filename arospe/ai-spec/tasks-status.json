@@ -129,9 +129,9 @@
       "slug": "0098-translation-write-actions-deleted-entity-race-backend",
       "title": "Product translation write actions refuse a deleted product or category cleanly (backend)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree-0098-translation-write-actions-deleted-entity-race-backend",
+      "claimed_at": "2026-11-14T00:00:00Z",
       "touches": [
         "app/Actions/Products/SetProductTranslation.php",
         "app/Actions/ProductCategories/SetProductCategoryTranslation.php",
