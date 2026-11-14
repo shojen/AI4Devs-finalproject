@@ -9,6 +9,7 @@ Part of [Routes](routes.md) — see [routes.md](routes.md#why-this-file-exists) 
 - [`orders.show` — the twelfth permission-gated route, and the first screen governed by three abilities](#ordersshow--the-twelfth-permission-gated-route-and-the-first-screen-governed-by-three-abilities)
 - [`MarkOrderAsPaid` — the action contract (story 0084, no route)](#markorderaspaid--the-action-contract-story-0084-no-route)
 - [Order-line stock counters — side effects of the order actions (story 0088)](#order-line-stock-counters--side-effects-of-the-order-actions-story-0088)
+- [`CancelOrder` — opt-in stock return on cancellation (story 0091)](#cancelorder--opt-in-stock-return-on-cancellation-story-0091)
 - [`AdjustOrderStock` — the stock-adjustment contract (story 0088a)](#adjustorderstock--the-stock-adjustment-contract-story-0088a)
 - [Shared pieces this story introduced](#shared-pieces-this-story-introduced)
 
@@ -95,6 +96,7 @@ No route or signature changed. Four actions maintain the line's stock counters (
 | `RecordRefund` | per refunded line, before `refunded_quantity` is incremented: `OrderItem::applyRefundToStockCounters(quantity, 0)` (D8, `k = 0`), persisted in the same `forceFill()->save()` |
 | `UpdateOrderItemQuantity` | increase by d: `U + d` (stock untouched) or, with `adjustStock: true`, U unchanged and stock `-d`; decrease by d: U' = `max(0, U - d)` in both modes (stock `+max(0, d - U)` only with `adjustStock: true`); K unchanged, written in the same save as `quantity` / `line_total` |
 | `RemoveOrderItem` | the line is deleted; with `adjustStock: true` stock `+R` (see below) |
+| `CancelOrder` | with `adjustStock: true`, per line with R > 0: stock `+R` and `U' = U + R` (applied lines only); K unchanged; no counter write otherwise (see below) |
 
 ## Opt-in stock adjustment on line quantity change and removal (story 0090)
 
@@ -112,6 +114,25 @@ With Q = `quantity`, F = `refunded_quantity`, U = `stock_undeducted_quantity`, K
 - **No-op (D-5).** An unchanged quantity moves no stock and no counter in either mode. **Null target (D-8).** A line with a null `stockTarget()` moves no stock in either mode; its counters still follow the rules above.
 - **Guards first (D-6).** Existing guards (hard block, `quantity < refunded_quantity`, refunded line, last line) keep their order and run before any stock change; a refusal after the stock call rolls the transaction back, so stock is unchanged either way.
 - **Re-verify mismatch.** If the locked re-read's Q / F / U differ from the first read, the action throws `LogicException` (programming-error path) and the stock change rolls back with the transaction.
+
+## `CancelOrder` — opt-in stock return on cancellation (story 0091)
+
+`App\Actions\Orders\CancelOrder::__invoke(Order $order, bool $adjustStock = false): Order`. The default never moves stock (existing callers behave as before); `true` returns each line's units through `AdjustOrderStock`. No route, permission or UI changed; the deltas come from the locked order's lines, never from the request. The action takes `AdjustOrderStock` by constructor injection.
+
+Steps, in order:
+
+1. `Gate::authorize('cancel', $order)` **outside** the transaction (permission refusal wins over any state refusal).
+2. `DB::transaction()` — lock the `orders` row, then re-run both guards on it: already `Cancelled` -> `ValidationException` on `status`; `! isManuallyCancellable()` -> direct `OrderCancellationBlockedException`.
+3. **Plain (non-locking)** read of the lines through `$lockedOrder->items()`; with `adjustStock` compute R = `OrderItem::returnableStockUnits()` per line and call `AdjustOrderStock` once with `+R` deltas (lines with R = 0 are skipped; no call when no delta) — **before** any `FOR UPDATE` on `order_items` (the forward rule below).
+4. Lock the lines (`orderBy('id')->lockForUpdate()`) and re-verify the id set and each line's Q / F / U against the plain read; a mismatch throws `LogicException` and rolls back everything, stock included.
+5. For the line ids `AdjustOrderStock` reported as applied, write `stock_undeducted_quantity = U + R` (lines with a null stock target are not applied, so their counters stay); K is never touched.
+6. Write `status = Cancelled` via `forceFill()`.
+
+After the transaction the caller's own `$order` instance gets `forceFill(['status' => Cancelled])->syncOriginalAttribute('status')` (the write went through the locked copy), so it is not dirty and a later `save()` writes nothing extra.
+
+Why a transaction now, unlike `TransitionOrderStatus`: cancellation with stock return is a second write (catalog stock and line counters) that must commit or roll back with the status change; the transaction also gives the state guards a lock to be re-checked under. `payment_status` is still read and never written; cancelling triggers no refund.
+
+**Known gap (follow-up candidate, not part of 0091).** A `Cancelled` order stays line-editable (`Order::isLineItemEditable()` blocks only `Shipped`/`Delivered`), so `AddOrderItem` or an increase in `UpdateOrderItemQuantity` can still deduct stock after a cancellation. There is no cancellation audit log.
 
 ## `AdjustOrderStock` — the stock-adjustment contract (story 0088a)
 
@@ -145,7 +166,7 @@ orders -> products (by id, including a variant line's parent product)
 
 - `AdjustOrderStock` locks all products in one id-ordered `lockForUpdate()` read, then all variants in another; a variant line's **parent product** is locked in the same products read (locked, never written), then stock is written to the actual target only.
 - **Why stock before the insert (D10).** The `order_items` insert takes a shared (S) lock on the parent `products` / `product_variants` rows through its FK check. A `FOR UPDATE` on that row later in the same transaction is a lock upgrade, and two such transactions deadlock (MySQL 1213). Locking first removes the upgrade. See [security/model-instance-trust.md](../security/model-instance-trust.md#an-fk-insert-shared-locks-its-parent-so-a-later-for-update-on-the-parent-deadlocks).
-- **Forward rule.** Stories 0091 / 0092b must call `AdjustOrderStock` **before** any `FOR UPDATE` on `order_items` (a locking read there takes gap locks that deadlock across two orders; appsec L-1). Story 0090 follows it in `UpdateOrderItemQuantity` and `RemoveOrderItem`: lock `orders` and re-run the hard block; read the line with a **plain (non-locking) read** through `$lockedOrder->items()` and run every guard on plain reads (`RemoveOrderItem`'s last-line check is a plain `count()`); call `AdjustOrderStock` when `adjustStock` and the delta is non-zero; only then lock the item (and, for `RemoveOrderItem`, the range count) and **re-verify** Q / F / U and the guards against the first read (mismatch: `LogicException`, rollback); write or delete; `RecalculateOrderTotals`. The plain reads are safe because the `orders` lock serializes every line writer; the re-verify covers a stale snapshot from a future outer transaction or a writer that skips the `orders` lock.
+- **Forward rule.** Stories 0091 / 0092b must call `AdjustOrderStock` **before** any `FOR UPDATE` on `order_items` (a locking read there takes gap locks that deadlock across two orders; appsec L-1). Stories 0090 (`UpdateOrderItemQuantity`, `RemoveOrderItem`) and 0091 (`CancelOrder`, which plain-reads all lines) follow it. For 0090: lock `orders` and re-run the hard block; read the line with a **plain (non-locking) read** through `$lockedOrder->items()` and run every guard on plain reads (`RemoveOrderItem`'s last-line check is a plain `count()`); call `AdjustOrderStock` when `adjustStock` and the delta is non-zero; only then lock the item (and, for `RemoveOrderItem`, the range count) and **re-verify** Q / F / U and the guards against the first read (mismatch: `LogicException`, rollback); write or delete; `RecalculateOrderTotals`. The plain reads are safe because the `orders` lock serializes every line writer; the re-verify covers a stale snapshot from a future outer transaction or a writer that skips the `orders` lock.
 - **Every order-mutating action locks `orders` first.** `RecordRefund` (story 0092a) locks the `orders` row (`Order::query()->whereKey(..)->lockForUpdate()`) and then the order's items (`orderBy('id')->lockForUpdate()`), the same `orders -> order_items` order as `AddOrderItem`, `UpdateOrderItemQuantity` and `RemoveOrderItem` (the last two now read the item unlocked, call `AdjustOrderStock`, then lock the item; see the forward rule), so a concurrent refund and line-item edit serialize instead of deadlocking. No behaviour, refusal or event changed.
 - A 1213 is not retried by these actions (only the `order_number` collision is).
 - **Known gap (R-2, appsec L-2).** The product and variant editors save `stock` from a form value, so an editor left open overwrites a deduction made meanwhile; follow-up story.
@@ -156,4 +177,4 @@ orders -> products (by id, including a variant line's parent product)
 - **`<x-confirm-dialog>`** ([`confirm-dialog.blade.php`](../../resources/views/components/confirm-dialog.blade.php)) — props `show`, `model`, `heading`, `body`, `confirm-label`, `dismiss-label`, `confirm-action`, `dismiss-action`, `test-prefix`, `variant`, plus the optional `secondary-action` / `secondary-label` pair (story 0093: the second button renders only when **both** are set, hook `-secondary`, labels escaped and supplied by the parent; three-button dialogs stack below `sm` with confirm first and dismiss last, two-button dialogs render unchanged; `wire:target` on both action buttons names both actions; `@close` never runs the secondary action). It holds no state and decides nothing: the parent owns the bool and both methods. `@close` runs the dismiss method (Flux compiles it to `wire:close` on the `<dialog>`), so Esc, backdrop and the X reach the server like the Cancel button. Its inner content is wrapped in `@if ($show)` and the hooks sit on that inner content, never on `<flux:modal>`. It is the repo's first shared anonymous component that is not navigation chrome.
 - **`Order::isLineItemEditable()`** and **`Order::isRefundable()`** ([`app/Models/Order.php`](../../app/Models/Order.php)) — the single copy of the `Shipped`/`Delivered` block and of the `Paid`/`PartiallyRefunded` refund state, read by the actions and by this screen. The three `assertEditable()` bodies still each log and throw (triplicated), but the status set itself now lives once.
 
-_Last updated: 2026-11-13 — Story 0090: `UpdateOrderItemQuantity` / `RemoveOrderItem` take `bool $adjustStock = false` (opt-in stock delta, two-counter rules) and follow the plain-read -> `AdjustOrderStock` -> item lock + re-verify order. Earlier content current from stories 0092a, 0088a, 0093, 0088, 0076 and 0085._
+_Last updated: 2026-11-13 — Story 0091: `CancelOrder` takes `bool $adjustStock = false`, runs in a `DB::transaction()` and follows the plain-read -> `AdjustOrderStock` -> line lock + re-verify order (new section). Earlier content current from stories 0090, 0092a, 0088a, 0093, 0088, 0076 and 0085._

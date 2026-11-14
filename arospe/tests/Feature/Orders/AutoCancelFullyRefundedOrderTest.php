@@ -201,3 +201,16 @@ test('the action returns silently for a missing order', function () {
 test('the listener is registered exactly once', function () {
     expect(Event::getListeners(OrderFullyRefunded::class))->toHaveCount(1);
 });
+
+test('the automatic cancellation after a full refund never moves stock', function () {
+    autoCancelActor();
+    [$order, [$item]] = paidOrderWithLines([2]);
+    $product = Product::query()->findOrFail($item->product_id);
+    $product->forceFill(['stock' => 10])->save();
+
+    app(RecordRefund::class)($order, [$item->id => 2]);
+
+    expect($order->fresh()->status)->toBe(OrderStatus::Cancelled)
+        ->and($product->fresh()->stock)->toBe(10)
+        ->and($item->fresh()->stock_undeducted_quantity)->toBe(0);
+});

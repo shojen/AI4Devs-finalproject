@@ -114,3 +114,12 @@ and are not backfilled here — see their own task files in `ai-spec/tasks/done/
 - Rules: raise d with `true` = stock `-d`, U unchanged (without: U `+d`); lower d = U' `max(0, U-d)` in both modes, stock `+max(0, d-U)` only with `true`; removal with `true` = stock `+R`, `R = (Q-F)-U`; unchanged quantity and null-target lines move no stock; K never touched — story 0090.
 - Lock order realised (0088a FD-7/L-1): lock `orders` + hard block, plain read of the line via `$lockedOrder->items()`, guards on plain reads, `AdjustOrderStock` (when `adjustStock` and delta != 0), then item lock (+ range count in `RemoveOrderItem`), re-verify Q/F/U and guards (mismatch = `LogicException`, rollback incl. stock), write/delete, totals — story 0090.
 - Follow-ups unchanged: UI exposure of the opt-in belongs to a later frontend story; 1213 still not retried — story 0090.
+
+## Story 0091 — Order cancellation, opt-in stock return (backend)
+
+- `CancelOrder::__invoke(Order $order, bool $adjustStock = false): Order`; constructor now injects `AdjustOrderStock`. Default never moves stock; no new permission, route or UI — story 0091.
+- First transaction in `CancelOrder` (0050 had none, a single-column write): `Gate::authorize('cancel')` outside it, then lock `orders` and re-run both guards (Cancelled -> `ValidationException` on `status`, blocked -> `OrderCancellationBlockedException`) on the locked row — story 0091.
+- Lock order realised (0088a FD-7/L-1): plain read of all lines via `$lockedOrder->items()`, R = `returnableStockUnits()` per line, one `AdjustOrderStock` call with `+R` deltas (skipped when none), then `orderBy('id')->lockForUpdate()` on the lines and re-verify the id set and Q/F/U (mismatch = `LogicException`, rollback incl. stock), write `stock_undeducted_quantity = U + R` for applied ids only (K untouched), then status — story 0091.
+- After the transaction the caller's instance gets `forceFill(['status' => Cancelled])->syncOriginalAttribute('status')` (the write went through the locked copy), so it is not left dirty — story 0091.
+- Known pre-existing gap, follow-up story candidate: a `Cancelled` order stays line-editable (`isLineItemEditable()` blocks only `Shipped`/`Delivered`), so `AddOrderItem` / a quantity increase can deduct stock after cancellation; there is no cancellation audit log — story 0091.
+- Docs: `docs/api/orders.md#cancelorder--opt-in-stock-return-on-cancellation-story-0091`; the 0050 "no transaction" note in `docs/architecture/authorization/domain-invariants.md` was rewritten — story 0091.

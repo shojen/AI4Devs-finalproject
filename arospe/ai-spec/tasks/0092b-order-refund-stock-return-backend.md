@@ -164,7 +164,7 @@ Estimable/Small: one parameter, one rule set, four lang keys. Testable: a full v
 
 ## Dependencies, risks, open technical questions
 **Depends on:** [0088a](done/0088a-order-stock-auto-deduct-on-create-and-add-backend.md), [0092a](done/0092a-record-refund-lock-order-backend.md) and [0088](done/0088-order-stock-adjustment-foundation-backend.md) (transitively)
-(hard). **Blocks:** [0096](0096-order-refund-modal-stock-return-ui.md). Soft: [0091](0091-order-cancellation-stock-return-opt-in-backend.md)
+(hard). **Blocks:** [0096](0096-order-refund-modal-stock-return-ui.md). Soft: [0091](done/0091-order-cancellation-stock-return-opt-in-backend.md)
 (the cancel-then-refund case; if not merged, arrange the counters with the factory). Shares `lang/*/orders.php` with
 [0094](0094-order-line-quantity-stock-dialog-ui.md), [0094a](0094a-order-line-removal-stock-dialog-ui.md) and
 [0095](0095-order-cancellation-stock-dialog-ui.md).
