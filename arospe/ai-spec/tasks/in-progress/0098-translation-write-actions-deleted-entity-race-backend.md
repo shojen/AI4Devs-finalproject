@@ -3,9 +3,9 @@
 ## Description
 
 `App\Actions\Products\SetProductTranslation` (story
-[0076b](done/0076b-product-translation-write-action-backend.md)) and
+[0076b](../done/0076b-product-translation-write-action-backend.md)) and
 `App\Actions\ProductCategories\SetProductCategoryTranslation` (story
-[0071](done/0071-product-categories-language-tabs-ui.md)) write a translation row whose
+[0071](../done/0071-product-categories-language-tabs-ui.md)) write a translation row whose
 `product_id` / `product_category_id` foreign key points at the parent. Both parents are **hard
 deleted** (`Product` has no `SoftDeletes`, 0024 D-12; `ProductCategory` likewise), and both translation
 tables declare that FK `cascadeOnDelete()`.
@@ -14,7 +14,7 @@ When the parent row is deleted after the action last saw it and before the trans
 raises **1452** (`ER_NO_REFERENCED_ROW_2`) and the request ends in an unhandled `QueryException`: a
 **500**. This is 0076b's Phase 4 accepted residual **L-2** ("product deleted between re-read and save
 gives an FK 1452 500, same as `SetProductCategoryTranslation`"). Story
-[0087](done/0087-translation-write-actions-refuse-inactive-store-language.md) (decision
+[0087](../done/0087-translation-write-actions-refuse-inactive-store-language.md) (decision
 **D-13**, user decision Q-4 (a), 2026-11-13) kept it out of its scope and the user asked for this
 separate task.
 
@@ -35,7 +35,7 @@ backend | includes database-expert: no (no schema change; the FKs and their name
 
 ## PRD coverage
 
-Epic 5 — Internationalization ([epic-5-internationalization.md](../../docs/PRD/sections/epic-5-internationalization.md)).
+Epic 5 — Internationalization ([epic-5-internationalization.md](../../../docs/PRD/sections/epic-5-internationalization.md)).
 Robustness hardening of a residual accepted at 0076b's Phase 4; no PRD sentence demands it directly.
 
 ## Three Amigos participants
@@ -191,7 +191,7 @@ Feature: Product translation write actions refuse a deleted parent cleanly
 - `app/Actions/ProductCategories/SetProductCategoryTranslation.php` — after the (logged) authorize
   step, re-read the category with `ProductCategory::query()->whereKey($productCategory->getKey())->firstOrFail()`
   (no `active()` call, P-3) and use the re-read instance for `nameRules` and `setTranslation`
-  ([model-instance-trust.md](../../docs/security/model-instance-trust.md)). Order: authorize →
+  ([model-instance-trust.md](../../../docs/security/model-instance-trust.md)). Order: authorize →
   **category re-read** → active language (0087's helper) → validate → write. Inside the existing
   `catch (QueryException)`, before the `TranslateProductCategoryNameUniqueViolation` delegation, map the
   parent-FK 1452 to `ModelNotFoundException` (P-1, P-2); add the `@throws` line.
@@ -210,7 +210,7 @@ Feature: Product translation write actions refuse a deleted parent cleanly
   `Products\Editor`): a `ModelNotFoundException` propagates as Livewire's standard 404 handling,
   the same outcome a deleted blog post or tag already gives (verified read-only, P-6).
 - The blog actions (scope, **Q-3 (a)**): covered by sibling task
-  [0099](0099-blog-translation-write-actions-deleted-entity-race-backend.md).
+  [0099](../0099-blog-translation-write-actions-deleted-entity-race-backend.md).
 
 ## 3. QA test cases / validation scenarios
 
@@ -269,7 +269,7 @@ orphan row; every other database error behaves exactly as before.
 
 ### Dependencies
 
-- **Hard: [0087](done/0087-translation-write-actions-refuse-inactive-store-language.md).** Both
+- **Hard: [0087](../done/0087-translation-write-actions-refuse-inactive-store-language.md).** Both
   tasks edit `SetProductTranslation.php`, `SetProductCategoryTranslation.php` and their two test files;
   this one is numbered after it and builds on its order (authorize → re-read → active language).
   **Satisfied:** 0087 closed to `done/` on 2026-11-13, so this task has no pending dependency and is
@@ -306,7 +306,7 @@ All three **answered by the user on 2026-11-14**: Q-1 (a), Q-2 (a), Q-3 (a).
   the same read-to-write window (blog posts are soft-deleted, so `SetBlogPostTranslation` is not exposed
   to 1452).
   - **(a) (recommended)** Keep the two product-side actions, as the user asked; the blog ones go to
-    sibling task [0099](0099-blog-translation-write-actions-deleted-entity-race-backend.md).
+    sibling task [0099](../0099-blog-translation-write-actions-deleted-entity-race-backend.md).
   - (b) Include `SetBlogCategoryTranslation` and `SetBlogTagTranslation` here.
 
 ## Provenance
@@ -316,4 +316,29 @@ All three **answered by the user on 2026-11-14**: Q-1 (a), Q-2 (a), Q-3 (a).
 asked for this task. Created by `product-owner` on 2026-11-13; Phase 1 debate run and folded in on
 2026-11-14 (`backend-expert`, `backend-qa`); Phase 2 not run.
 
-_Last updated: 2026-11-14, Phase 1 debate outcome folded in (placement, matching, category order, test matrix, R-2 tidy)._
+## Phase 2 — INVEST validation (`code-reviewer`, 2026-11-14)
+
+**Verdict: APPROVED.**
+
+- INVEST: Independent (0087 is in `done/`; 0099 split out), Negotiable (Q-1–Q-3 answered), Valuable
+  (500 → clean 404, no orphan row), Estimable/Small (two actions, two test files, no schema change),
+  Testable (§3 matrix maps every scenario).
+- Gherkin: every scenario opens with a named business-role actor and has a single `When`.
+- Template: all sections present (§3 stands in for "Tests to perform").
+- Code claims verified against source: `SetProductTranslation` re-reads with `firstOrFail()` after
+  authorize and catches `QueryException` into `TranslateProductUniqueViolation`;
+  `SetProductCategoryTranslation` has no parent re-read (authorize → language → validate → write);
+  `ProductCategory` and `Product` have no `SoftDeletes`; both FKs are default-named
+  `constrained()->cascadeOnDelete()` with no later rename (the 2026-11-07 migration only touches the
+  `store_language_id` index); `ArchitectureTest` forbids `StoreLanguage::query()->active()` and
+  requires `ResolveActiveStoreLanguage` in the constructor (a `ProductCategory::query()` re-read does
+  not trip it); `CreateShippingRate` 1452 precedent exists; both Livewire callers catch only
+  `ValidationException`.
+- Non-blocking note for Phase 3: P-2 says "both `handle()` methods"; the actions use `__invoke()`.
+  Add the `@throws ModelNotFoundException` line to `__invoke()`'s docblock.
+
+## Phase 3 — Implementation (TDD)
+
+- 2026-11-14: Phase 3 started; task file moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (claimed by `worktree-0098-translation-write-actions-deleted-entity-race-backend`).
+
+_Last updated: 2026-11-14, Phase 3 started (task moved to in-progress)._
