@@ -40,12 +40,46 @@ Robustness hardening of a residual accepted at 0076b's Phase 4; no PRD sentence 
 
 ## Three Amigos participants
 
-- `product-owner` — facilitator, composed this file (2026-11-13).
-- `backend-expert` — Amigo 1, to confirm the mechanism (**Q-2**) in the debate.
-- `backend-qa` — Amigo 2, to confirm the failure-injection technique (R-1).
+- `product-owner` — facilitator, composed this file (2026-11-13) and folded in the debate (2026-11-14).
+- `backend-expert` — Amigo 1, confirmed the mechanism (**Q-2 (a)**) and its placement.
+- `backend-qa` — Amigo 2, confirmed the failure-injection technique (R-1) and the test matrix.
 
-Phase 1 debate not yet run with the two amigos: this file is the `product-owner` draft created at the
-user's request. Q-1–Q-3 were answered by the user on 2026-11-14 (Q-1 (a), Q-2 (a), Q-3 (a); see §5).
+Q-1–Q-3 were answered by the user on 2026-11-14 (Q-1 (a), Q-2 (a), Q-3 (a); see §5). The Phase 1
+debate ran on 2026-11-14; its outcome is below and the body is amended accordingly.
+
+## Phase 1 debate outcome
+
+Debate with `backend-expert` and `backend-qa`, 2026-11-14. Agreed points (binding for Phase 3):
+
+- **P-1 Placement.** The 1452 handling lives in **each action**, inside the existing
+  `catch (QueryException $exception)` around the `SetTranslation` call, and is checked **before**
+  delegating to the `Translate*UniqueViolation` helper. 1452 and 1062 are disjoint on `errorInfo[1]`,
+  so the order cannot shadow the existing 1062 mapping. **Rejected:** placing it in
+  `TranslateProductUniqueViolation` / `TranslateProductCategoryNameUniqueViolation` —
+  `TranslateProductUniqueViolation` is shared, and both helpers' contract is "throw a
+  `ValidationException` or rethrow unchanged"; a `ModelNotFoundException` does not belong there.
+- **P-2 Matching.** Match only when `errorInfo[1] === 1452` **and**
+  `preg_match('/CONSTRAINT `<name>` FOREIGN KEY/', errorInfo[2])` for the parent FK. Never match on
+  `getMessage()` (it embeds user text, R-3) and never on the table name (the `store_language_id` FK
+  error names the same translation table). Constraint names verified against the migrations
+  (Laravel defaults, no later rename): `product_translations_product_id_foreign` and
+  `product_category_translations_product_category_id_foreign`. On a match throw
+  `(new ModelNotFoundException)->setModel(Product::class, [$key])` /
+  `(new ModelNotFoundException)->setModel(ProductCategory::class, [$key])`. Both `handle()` methods
+  gain a `@throws ModelNotFoundException` docblock line.
+- **P-3 Category action order.** authorize (logged) → `ProductCategory::query()->whereKey(...)->firstOrFail()`
+  (**no** `->active()` scope or call: `tests/Unit/ArchitectureTest.php` ~238–260 forbids an inline
+  `active()` re-read and requires `ResolveActiveStoreLanguage` in the constructor) → 0087's
+  active-language helper → validate → write. The re-read instance is used for `nameRules` and for
+  `setTranslation`.
+- **P-4 Tests.** See §3 (revised). Failure injection uses a `ProductTranslation::creating` /
+  `ProductCategoryTranslation::creating` listener that raw-deletes the parent via
+  `DB::table(...)->where('id', ...)->delete()`, on the non-default language so `creating` fires once;
+  `FOREIGN_KEY_CHECKS` is never disabled.
+- **P-5 R-2 stays open and untested** (user chose Q-2 (a)); see §5.
+- **P-6 Callers.** The implementer verifies that `Products\Editor` and `ProductCategories\Index` do not
+  wrap the action call in a `try`/`catch` that would swallow or remap a `ModelNotFoundException`
+  (they are not modified; this is a read-only check recorded in Phase 3).
 
 ## 1. Refined user story
 
@@ -59,6 +93,9 @@ deleted to be refused as "not found",
 The refusal outcome below is **Q-1 (a)**, chosen by the user on 2026-11-14 (a `ModelNotFoundException`,
 a 404, like the blog siblings).
 
+R-2 (an existing translation row `UPDATE`d after the parent's cascade delete) is **deliberately not
+covered** by any scenario: under Q-2 (a) that window stays open by the user's choice (§5).
+
 ```gherkin
 Feature: Product translation write actions refuse a deleted parent cleanly
 
@@ -71,7 +108,7 @@ Feature: Product translation write actions refuse a deleted parent cleanly
     And a <record> the catalog administrator loaded earlier
     And that <record> has since been deleted
     When the catalog administrator saves a translation of that <record> in "es" through <action>
-    Then the write is refused as not found
+    Then the write is refused as not found for that <record>
     And it is not refused with a server error
     And no translation row exists for that <record>
 
@@ -85,7 +122,7 @@ Feature: Product translation write actions refuse a deleted parent cleanly
     And a <record> exists
     And another administrator deletes that <record> after the action has read it and before the translation is written
     When the catalog administrator saves a translation of that <record> in "es" through <action>
-    Then the write is refused as not found
+    Then the write is refused as not found for that <record>
     And it is not refused with a server error
     And no translation row exists for that <record>
 
@@ -106,17 +143,34 @@ Feature: Product translation write actions refuse a deleted parent cleanly
       | SetProductTranslation          | product          |
       | SetProductCategoryTranslation  | product category |
 
-  Scenario Outline: Other database errors are not disguised as not found
+  Scenario Outline: A deleted parent is refused as not found before the language is checked
     Given a catalog administrator allowed to edit <record>s
-    And a <record> exists
-    And the translation write fails with a database error other than a missing <record>
-    When the catalog administrator saves a translation of that <record> in "es" through <action>
-    Then the original database error is raised unchanged
+    And a <record> that has been deleted
+    And an inactive store language "fr"
+    When the catalog administrator saves a translation of that <record> in "fr" through <action>
+    Then the write is refused as not found for that <record>
+    And it is not refused as a validation error
 
     Examples:
       | action                         | record           |
       | SetProductTranslation          | product          |
       | SetProductCategoryTranslation  | product category |
+
+  Scenario Outline: Other database errors are not disguised as not found
+    Given a catalog administrator allowed to edit <record>s
+    And a <record> exists
+    And the translation write fails with <error>
+    When the catalog administrator saves a translation of that <record> in "es" through <action>
+    Then the original database error is raised unchanged
+
+    Examples:
+      | action                         | record           | error                                                                        |
+      | SetProductTranslation          | product          | a missing-reference error on the store language foreign key                  |
+      | SetProductTranslation          | product          | a duplicate-entry error on an index the action does not handle               |
+      | SetProductTranslation          | product          | an error whose message names the product foreign key but whose constraint does not |
+      | SetProductCategoryTranslation  | product category | a missing-reference error on the store language foreign key                  |
+      | SetProductCategoryTranslation  | product category | a duplicate-entry error on an index the action does not handle               |
+      | SetProductCategoryTranslation  | product category | an error whose message names the category foreign key but whose constraint does not |
 
   Scenario Outline: A save on an existing parent is unchanged
     Given a catalog administrator allowed to edit <record>s
@@ -136,37 +190,45 @@ Feature: Product translation write actions refuse a deleted parent cleanly
 
 - `app/Actions/ProductCategories/SetProductCategoryTranslation.php` — after the (logged) authorize
   step, re-read the category with `ProductCategory::query()->whereKey($productCategory->getKey())->firstOrFail()`
-  and use the re-read instance downstream ([model-instance-trust.md](../../docs/security/model-instance-trust.md)).
-  Order after 0087: authorize → **category re-read** → active language (0087's helper) → validate →
-  write. Plus the race handling chosen in **Q-2**.
-- `app/Actions/Products/SetProductTranslation.php` — the race handling chosen in **Q-2** (its re-read
-  already exists).
+  (no `active()` call, P-3) and use the re-read instance for `nameRules` and `setTranslation`
+  ([model-instance-trust.md](../../docs/security/model-instance-trust.md)). Order: authorize →
+  **category re-read** → active language (0087's helper) → validate → write. Inside the existing
+  `catch (QueryException)`, before the `TranslateProductCategoryNameUniqueViolation` delegation, map the
+  parent-FK 1452 to `ModelNotFoundException` (P-1, P-2); add the `@throws` line.
+- `app/Actions/Products/SetProductTranslation.php` — the same parent-FK 1452 mapping inside its
+  existing `catch (QueryException)`, before the `TranslateProductUniqueViolation` delegation (its
+  re-read already exists); add the `@throws` line.
 - `tests/Feature/Products/SetProductTranslationTest.php`,
   `tests/Feature/ProductCategories/SetProductCategoryTranslationTest.php` — §3's cases.
-- Under **Q-2 (a)**, possibly `app/Actions/Products/TranslateProductUniqueViolation.php` /
-  `app/Actions/ProductCategories/TranslateProductCategoryNameUniqueViolation.php` if the implementer
-  places the 1452 discrimination there instead of in the action; both currently rethrow every
-  non-1062 error unchanged, and that must stay true for every error other than the parent FK 1452.
 
 ### Deliberately not touched
 
+- `app/Actions/Products/TranslateProductUniqueViolation.php` /
+  `app/Actions/ProductCategories/TranslateProductCategoryNameUniqueViolation.php` (**rejected** as the
+  placement, P-1): they keep rethrowing every non-1062 error unchanged.
 - The schema and the FK names. The Livewire components (`ProductCategories\Index`,
   `Products\Editor`): a `ModelNotFoundException` propagates as Livewire's standard 404 handling,
-  the same outcome a deleted blog post or tag already gives.
+  the same outcome a deleted blog post or tag already gives (verified read-only, P-6).
 - The blog actions (scope, **Q-3 (a)**): covered by sibling task
   [0099](0099-blog-translation-write-actions-deleted-entity-race-backend.md).
 
 ## 3. QA test cases / validation scenarios
 
-Feature tests, direct action calls resolved from the container, `RefreshDatabase`.
+Feature tests, direct action calls resolved from the container, `RefreshDatabase`. Every
+`ModelNotFoundException` assertion also checks `getModel()` (`Product::class` / `ProductCategory::class`).
 
 | # | Case | Where | Notes |
 |---|------|-------|-------|
-| 1 | Parent deleted before the call (stale passed instance) → `ModelNotFoundException`; no translation row | both files | for the product this is likely covered already — reuse |
-| 2 | Parent deleted between read and write → `ModelNotFoundException`, not `QueryException`; no translation row | both files | **highest value**; inject the delete with a translation-model `creating`/`saving` listener that deletes the parent through a raw query (the 0078 errors-log technique, as 0076b R-1) |
-| 3 | Unauthorized + deleted → `AuthorizationException`, logged once | both files | proves order |
-| 4 | A 1452 on `store_language_id`, a 1062 on a non-handled index and a non-integrity error are rethrown unchanged | both files | under Q-2 (a) the discrimination is on the **constraint name in `errorInfo[2]`**, never on `getMessage()` (the `TranslateProductCategoryNameUniqueViolation` docblock and the `CreateShippingRate` F-5 precedent) |
-| 5 | Existing parent still writable; existing 1062 mappings unchanged | both files | regression, likely already covered |
+| 1 | Parent deleted before the call (stale passed instance) → `ModelNotFoundException`; zero rows in the translation table | both files | product: reuse the existing test (~line 449), add the zero-row and `getModel()` assertions; category: **new** |
+| 2 | Parent deleted between read and write → `ModelNotFoundException`, not `QueryException`; zero rows in the translation table | both files | **new, highest value**; `ProductTranslation::creating` / `ProductCategoryTranslation::creating` listener raw-deletes the parent with `DB::table(...)->where('id', ...)->delete()`; write on the non-default language so `creating` fires once; never disable `FOREIGN_KEY_CHECKS` |
+| 3 | Unauthorized + deleted → `AuthorizationException`, logged once | both files | **new**; proves order |
+| 3b | Deleted parent + inactive language → `ModelNotFoundException`, not `ValidationException` | both files | **new**; proves re-read precedes the active-language check |
+| 4a | 1452 on the `store_language_id` FK → same `QueryException` rethrown | both files | **new**; separate injection |
+| 4b | 1062 on an index the action does not handle → same instance rethrown | both files | **new**; fake `SetTranslation` throwing a crafted `QueryException`, assert the same instance |
+| 4c | Decoy: `getMessage()` contains the parent FK name, `errorInfo[2]` does not → rethrown unchanged | both files | **new**; R-3 guard |
+| 5 | Existing parent still writable; existing 1062 mappings and 1213 handling unchanged | both files | regression; reuse the 1213 tests (~418 product, ~303 category) and the 1062 race tests |
+
+R-2 is deliberately untested (§5).
 
 ## Expected outcome
 
@@ -176,17 +238,17 @@ orphan row; every other database error behaves exactly as before.
 
 ## Acceptance criteria
 
-- [ ] `SetProductCategoryTranslation` re-reads the category after authorize and uses the re-read instance.
-- [ ] Both actions refuse a parent deleted before the call, and a parent deleted between read and write, with the Q-1 outcome; no translation row is written.
-- [ ] The race handling follows the Q-2 choice; under (a) it matches only the parent FK's 1452 by constraint name in `errorInfo[2]`.
-- [ ] Every other `QueryException` is rethrown unchanged (case 4).
-- [ ] Authorization still runs first (case 3).
-- [ ] 0087's order (authorize → re-read → active language → validate → write) is preserved and its structural guard still passes.
+- [ ] `SetProductCategoryTranslation` re-reads the category after authorize (no inline `active()`) and uses the re-read instance for `nameRules` and `setTranslation`.
+- [ ] Both actions refuse a parent deleted before the call, and a parent deleted between read and write, with a `ModelNotFoundException` whose `getModel()` is the parent class; no translation row is written.
+- [ ] The 1452 mapping sits in each action's existing `catch (QueryException)`, before the `Translate*UniqueViolation` delegation, and matches only `errorInfo[1] === 1452` plus the parent FK constraint name in `errorInfo[2]`.
+- [ ] Every other `QueryException` is rethrown unchanged (cases 4a–4c).
+- [ ] Authorization still runs first (case 3); a deleted parent is refused before the active-language check (case 3b).
+- [ ] 0087's order (authorize → re-read → active language → validate → write) is preserved and its structural guard in `tests/Unit/ArchitectureTest.php` still passes.
 
 ## Definition of Done
 
 - [x] Q-1–Q-3 answered (user, 2026-11-14).
-- [ ] Phase 1 debate completed with `backend-expert` and `backend-qa`.
+- [x] Phase 1 debate completed with `backend-expert` and `backend-qa` (2026-11-14).
 - [ ] Tests written and green (iteration filter, then the **full** suite unscoped).
 - [ ] Pint unscoped and Larastan level 7 clean.
 - [ ] Code reviewed (`code-reviewer`).
@@ -200,6 +262,8 @@ orphan row; every other database error behaves exactly as before.
 
 - **D-1 Scope is the two product-side actions** named by the user (confirmed by Q-3 (a), 2026-11-14).
 - **D-2 Not a schema change.** The FKs keep `cascadeOnDelete()`; the fix is in the actions.
+- **D-3 Placement and matching** per the Phase 1 debate (P-1, P-2): in each action, before the 1062
+  helper, on `errorInfo[1]` plus the constraint name in `errorInfo[2]`.
 
 ## 5. Dependencies, risks, open questions
 
@@ -209,18 +273,17 @@ orphan row; every other database error behaves exactly as before.
   tasks edit `SetProductTranslation.php`, `SetProductCategoryTranslation.php` and their two test files;
   this one is numbered after it and builds on its order (authorize → re-read → active language).
   **Satisfied:** 0087 closed to `done/` on 2026-11-13, so this task has no pending dependency and is
-  `ready` (pending its own Phase 1 debate; Q-1–Q-3 answered 2026-11-14); the `conflict_risk_with` pairing was dropped
-  with it.
+  `ready` (Phase 1 done 2026-11-14); the `conflict_risk_with` pairing was dropped with it.
 
 ### Risks
 
-- **R-1** The race test needs failure injection; follow the 0078 errors-log technique (a model hook),
-  not a mock of `SetTranslation`.
+- **R-1** The race test needs failure injection; use the translation-model `creating` listener with a
+  raw parent delete (P-4, the 0078 errors-log technique), not a mock of `SetTranslation`.
 - **R-2** A translation row loaded before the parent's cascade delete is then `UPDATE`d: zero rows
-  affected, no error, and the action returns a model that no longer exists. Under Q-2 (a) this window
-  stays open; Q-2 (b) closes it. The user chose Q-2 (a) (2026-11-14), so this window stays open.
+  affected, no error, and the action returns a model that no longer exists. The user chose Q-2 (a)
+  (2026-11-14), which leaves this window open; it is accepted and deliberately untested.
 - **R-3** Matching on the error message instead of the constraint name misclassifies errors (the
-  message embeds the user's text). Mitigated by case 4.
+  message embeds the user's text). Mitigated by P-2 and the decoy case 4c.
 
 ### Open questions for the user
 
@@ -250,4 +313,7 @@ All three **answered by the user on 2026-11-14**: Q-1 (a), Q-2 (a), Q-3 (a).
 
 0076b Phase 4 (2026-11-10) accepted L-2 and pointed it at "the shared helper backlogged by 0087 D-5".
 0087's Phase 2 re-review (2026-11-13) kept it out of that helper's scope; the user chose Q-4 (a) and
-asked for this task. Created by `product-owner` on 2026-11-13; Phase 1 debate and Phase 2 not run.
+asked for this task. Created by `product-owner` on 2026-11-13; Phase 1 debate run and folded in on
+2026-11-14 (`backend-expert`, `backend-qa`); Phase 2 not run.
+
+_Last updated: 2026-11-14, Phase 1 debate outcome folded in (placement, matching, category order, test matrix, R-2 tidy)._
