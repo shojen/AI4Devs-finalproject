@@ -342,3 +342,24 @@ asked for this task. Created by `product-owner` on 2026-11-13; Phase 1 debate ru
 - 2026-11-14: Phase 3 started; task file moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (claimed by `worktree-0098-translation-write-actions-deleted-entity-race-backend`).
 
 _Last updated: 2026-11-14, Phase 3 started (task moved to in-progress)._
+
+## Phase 4 — Security audit (`appsec-auditor`, 2026-11-14)
+
+**Verdict: APPROVED.** Reviewed `git diff 13dde8e..HEAD -- app tests`.
+
+1. Authorization order: both actions call `logRefusedPrivilegedAttempt->authorize()` (refusal logged) before the `firstOrFail()` re-read; both policies' `update()` are permission-only, so authorizing on the caller-supplied instance decides nothing from its attributes. An unauthorized actor gets 403, never a 404 existence oracle.
+2. Model-instance trust: the re-read instance (not the passed one) feeds `nameRules`/slug rules and `setTranslation`, consistent with `docs/security/model-instance-trust.md`.
+3. Leakage: the mapped `ModelNotFoundException` carries only the model class and the server-side UUID the admin already holds; production renders a generic 404. No SQL text reaches the client.
+4. Constraint matching: `errorInfo[2]` is the MySQL server message; 1452 text carries schema/constraint identifiers, never column values, so no user-controlled text can forge a match. Pattern is a fixed literal, no ReDoS.
+5. No masking: the branch requires both code 1452 and the parent FK name; the `store_language_id` 1452 and every other `QueryException` still reach the existing `Translate*UniqueViolation` delegation (which rethrows non-1062), covered by test 4a.
+
+Residual (accepted, Low): the read-to-write window is closed by refusal, not by lock (Q-2 (a)).
+
+## Phase 5 — Final code review (`code-reviewer`, 2026-11-14)
+
+**Verdict: APPROVED.** Reviewed `git diff 13dde8e..HEAD -- app tests` (6b89bdb, 958a7e3).
+
+- Acceptance criteria: all six met. The category action re-reads with `firstOrFail()` after the logged authorize and before `ResolveActiveStoreLanguage`, and the re-read instance feeds `nameRules` and `setTranslation`. Both actions map only `errorInfo[1] === 1452` plus the parent FK constraint name in `errorInfo[2]` to `ModelNotFoundException::setModel(<Parent>::class, [$key])`, before the `Translate*UniqueViolation` delegation. §3 cases 1, 2, 3, 3b and 4a–4c are covered in both test files; the regression tests (1062, 1213) still pass. Callers catch only `ValidationException` (P-6 confirmed).
+- Gates: Pint unscoped passed, no files changed. Larastan passes on both changed actions. A full run in this worktree reports one error in the untouched `app/Actions/Products/SanitizeProductDescription.php:98`; the same file passes in the main checkout, so this diff did not introduce it. `composer types:check` hits the default 128M memory limit, so it was run with `--memory-limit=-1`.
+- Full suite on `testing_0098_…`, run sequentially in chunks: Unit 289; Feature 5721 (5 skipped); Browser 290 (3 skipped). Total 6300, 0 failures.
+- Non-blocking: `SetProductTranslation`'s `@throws ModelNotFoundException` line says only "before the write", but the code also throws it for a delete during the write (the category action's wording, "before or during", is correct). `bindProductThrowingSetTranslation` duplicates the category file's `bindThrowingSetTranslation`.
