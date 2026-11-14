@@ -115,7 +115,7 @@ closed earlier and are not backfilled here (read their `done/` files or `docs/`)
 - Sanitises the description and canonicalises the slug before validating nested data; meta fields are trimmed and nulled; name/meta stay stored unsanitised, so renderers must escape (carried to 0077 and the storefront) — story 0076b.
 - `TranslateProductUniqueViolation::__invoke(QueryException, ?string $storeLanguageId = null)`: non-null re-keys slug/natural-key errors to `slugs.{id}`/`names.{id}`; null and the `sku` branch unchanged — story 0076b.
 - New lang keys (en/es): `products.attributes.{name,description}`, `products.editor.tabs.language_inactive` — story 0076b.
-- Accepted residuals: check-to-write race on language deactivation (L-1); product deleted between re-read and save gives an FK 1452 500 as in `SetProductCategoryTranslation` (L-2; not part of 0087's language helper (0087 D-13), its fix is pending task 0098, which also covers `SetProductCategoryTranslation`) — story 0076b.
+- Accepted residuals: check-to-write race on language deactivation (L-1); product deleted between re-read and save gives an FK 1452 500 as in `SetProductCategoryTranslation` (L-2; not part of 0087's language helper (0087 D-13), RESOLVED by story 0098, which also covers `SetProductCategoryTranslation`) — story 0076b.
 
 ## Story 0077 — Product editor language tabs (UI)
 
@@ -141,4 +141,7 @@ closed earlier and are not backfilled here (read their `done/` files or `docs/`)
 - Order in every `Set*Translation` action: authorize → entity re-read → helper (use only the returned instance) → validate → write — story 0087.
 - Guard: `tests/Unit/ArchitectureTest.php` globs `app/Actions/**/Set*Translation.php` (minus `SetTranslation`) and requires the helper in each constructor; filename-only discovery is accepted residual L-2, the unlocked check-then-write vs `RemoveStoreLanguage` is L-1 (CWE-367) — story 0087.
 - `SetBlogPostTranslation` reports on the post-level `translation` key (`blog-posts.editor.tabs.language_inactive`), shown by a danger callout `data-test="blog-post-translation-error"` in `blog-posts/editor.blade.php`; new `language_inactive` keys (en/es) in `blog.php` (`categories.tabs`) and `products.php` (category tabs) — story 0087.
-- Deleted-entity race (FK 1452 as a 500) is not part of 0087; pending task 0098 — story 0087.
+- Deleted-entity race (FK 1452 as a 500) is not part of 0087; resolved by story 0098 — story 0087.
+- Deleted-parent race closed (resolves L-2 of 0076b): `SetProductTranslation` and `SetProductCategoryTranslation` map `errorInfo[1] === 1452` plus the parent FK name in `errorInfo[2]` to `ModelNotFoundException::setModel(<Parent>::class, [$key])` inside their own `catch (QueryException)`, before the `Translate*UniqueViolation` delegation (never in the shared helpers, never on `getMessage()`) — story 0098.
+- `SetProductCategoryTranslation` order is now authorize → `ProductCategory::query()->whereKey()->firstOrFail()` (no `active()`) → `ResolveActiveStoreLanguage` → validate → write; the re-read instance feeds `nameRules` and `setTranslation` — story 0098.
+- Read-to-write window closed by refusal, not by a lock (accepted, Low) — story 0098.
