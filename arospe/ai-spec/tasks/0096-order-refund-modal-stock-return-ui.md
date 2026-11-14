@@ -2,7 +2,7 @@
 
 > **Status: New — Phase 1 output, rewritten after the Phase 2 INVEST review of 2026-11-08; pending re-review.** Epic 3
 > follow-up bug fix, order-stock series. Fullstack pair: **related_task_id 0092b** (backend `RecordRefund` `stockReturns`).
-> Blocked on [0092b](0092b-order-refund-stock-return-backend.md).
+> Unblocked: [0092b](done/0092b-order-refund-stock-return-backend.md).
 > **User-confirmed (2026-11-08):** an over-typed stock-return amount is **clamped silently** to the units refunded on that line.
 
 ## Description
@@ -142,11 +142,16 @@ goods can be put back with the refund itself. Estimable/Small: one modal section
 tests per mode plus browser checks.
 
 ## Dependencies, risks, open technical questions
-**Depends on:** [0092b](0092b-order-refund-stock-return-backend.md) (hard). Shares `Show.php`, `show.blade.php` and
+**Depends on:** [0092b](done/0092b-order-refund-stock-return-backend.md) (hard). Shares `Show.php`, `show.blade.php` and
 `lang/*/orders.php` with [0094](0094-order-line-quantity-stock-dialog-ui.md), [0094a](0094a-order-line-removal-stock-dialog-ui.md)
 and [0095](0095-order-cancellation-stock-dialog-ui.md) — run sequentially.
 - **Resolved (0088 D8)** — the backend caps every stock return at the units still held out of inventory; the UI shows its refusal
   and does not pre-clamp to that cap.
+
+**Follow-ups from 0092b's Phase 4/5 reviews (must be handled here):**
+- Livewire `wire:model` sends numeric strings and the backend `integer` rule accepts them uncast: cast `items` and `stockReturns` to `int` right after validation (in `recordRefund()` or `RecordRefund`), and add a numeric-string test.
+- A concurrent line change makes `RecordRefund` throw `LogicException` (re-verify mismatch): catch it and show a "please retry" message instead of a 500.
+- A refunded line whose product or variant was deleted records the refund but moves no stock: the modal should tell the admin.
 
 ## Debate record
 - 2026-11-08 — Three Amigos facilitated by product-owner from the frontend-expert design and decisions D1, D5, D7.
