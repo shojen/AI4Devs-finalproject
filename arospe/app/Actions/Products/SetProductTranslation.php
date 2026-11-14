@@ -43,7 +43,7 @@ class SetProductTranslation
      *
      * @throws AuthorizationException when the actor lacks products.edit (logged first)
      * @throws ValidationException keyed "{names|slugs|descriptions|metaTitles|metaDescriptions}.{$language->id}"
-     * @throws ModelNotFoundException when the product is deleted before the write (1452 on the parent FK)
+     * @throws ModelNotFoundException when the product is deleted before or during the write (1452 on the parent FK)
      * @throws LogicException when the primitive returns an unexpected model
      */
     public function __invoke(
