@@ -114,3 +114,11 @@ and are not backfilled here — see their own task files in `ai-spec/tasks/done/
 - Rules: raise d with `true` = stock `-d`, U unchanged (without: U `+d`); lower d = U' `max(0, U-d)` in both modes, stock `+max(0, d-U)` only with `true`; removal with `true` = stock `+R`, `R = (Q-F)-U`; unchanged quantity and null-target lines move no stock; K never touched — story 0090.
 - Lock order realised (0088a FD-7/L-1): lock `orders` + hard block, plain read of the line via `$lockedOrder->items()`, guards on plain reads, `AdjustOrderStock` (when `adjustStock` and delta != 0), then item lock (+ range count in `RemoveOrderItem`), re-verify Q/F/U and guards (mismatch = `LogicException`, rollback incl. stock), write/delete, totals — story 0090.
 - Follow-ups unchanged: UI exposure of the opt-in belongs to a later frontend story; 1213 still not retried — story 0090.
+
+## Story 0092b — Refund with optional stock return (backend)
+
+- `RecordRefund::__invoke(Order, array $items, ?string $reason = null, array $stockReturns = [])`; `$stockReturns` is `order_item_id => units`, default `[]` moves no stock, no new permission — story 0092b.
+- Three field-level `stock_returns` refusals: `orders.refunds.stock_return_not_in_refund` (key not in `$items`, checked before a `0` is skipped), `stock_return_exceeds_refunded`, `stock_return_not_out_of_stock` (cap `R = returnableStockUnits()` read before the refund); shape rules `refundStockReturnRules()` / `refundStockReturnUnitRules()` in `OrderValidationRules` — story 0092b.
+- Lock order realised: `orders` lock, plain items read, guards, `AdjustOrderStock` (positive deltas), items lock + re-verify Q/F/U/K (mismatch or missing line = `LogicException`, stock rolled back), writes on locked rows. `k` is credited only for ids `AdjustOrderStock` reports (deleted catalog row = refund recorded, no stock moved) — story 0092b.
+- Forward rule from 0088a is now satisfied by 0090 and 0092b; only 0091 remains — story 0092b.
+- Follow-ups for 0096: cast `items` / `stockReturns` to int after validation (Livewire sends strings); catch the concurrent-change `LogicException` with a retry message; tell the admin when a refunded line moved no stock — story 0092b.
