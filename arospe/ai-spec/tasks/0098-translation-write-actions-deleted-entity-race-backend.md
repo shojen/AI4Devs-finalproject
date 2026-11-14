@@ -45,7 +45,7 @@ Robustness hardening of a residual accepted at 0076b's Phase 4; no PRD sentence 
 - `backend-qa` — Amigo 2, to confirm the failure-injection technique (R-1).
 
 Phase 1 debate not yet run with the two amigos: this file is the `product-owner` draft created at the
-user's request. **Q-1–Q-3 must be answered before Phase 2.**
+user's request. Q-1–Q-3 were answered by the user on 2026-11-14 (Q-1 (a), Q-2 (a), Q-3 (a); see §5).
 
 ## 1. Refined user story
 
@@ -56,8 +56,8 @@ deleted to be refused as "not found",
 
 ## 2. Gherkin — detailed acceptance criteria
 
-The refusal outcome below is the **recommended** option of **Q-1** (a `ModelNotFoundException`, a 404,
-like the blog siblings). If the user picks another option the "Then" lines change accordingly.
+The refusal outcome below is **Q-1 (a)**, chosen by the user on 2026-11-14 (a `ModelNotFoundException`,
+a 404, like the blog siblings).
 
 ```gherkin
 Feature: Product translation write actions refuse a deleted parent cleanly
@@ -153,7 +153,8 @@ Feature: Product translation write actions refuse a deleted parent cleanly
 - The schema and the FK names. The Livewire components (`ProductCategories\Index`,
   `Products\Editor`): a `ModelNotFoundException` propagates as Livewire's standard 404 handling,
   the same outcome a deleted blog post or tag already gives.
-- The blog actions (scope, **Q-3**).
+- The blog actions (scope, **Q-3 (a)**): covered by sibling task
+  [0099](0099-blog-translation-write-actions-deleted-entity-race-backend.md).
 
 ## 3. QA test cases / validation scenarios
 
@@ -184,7 +185,8 @@ orphan row; every other database error behaves exactly as before.
 
 ## Definition of Done
 
-- [ ] Q-1–Q-3 answered and the Phase 1 debate completed with `backend-expert` and `backend-qa`.
+- [x] Q-1–Q-3 answered (user, 2026-11-14).
+- [ ] Phase 1 debate completed with `backend-expert` and `backend-qa`.
 - [ ] Tests written and green (iteration filter, then the **full** suite unscoped).
 - [ ] Pint unscoped and Larastan level 7 clean.
 - [ ] Code reviewed (`code-reviewer`).
@@ -196,7 +198,7 @@ orphan row; every other database error behaves exactly as before.
 
 ## 4. Documented functional decisions
 
-- **D-1 Scope is the two product-side actions** named by the user (pending confirmation in Q-3).
+- **D-1 Scope is the two product-side actions** named by the user (confirmed by Q-3 (a), 2026-11-14).
 - **D-2 Not a schema change.** The FKs keep `cascadeOnDelete()`; the fix is in the actions.
 
 ## 5. Dependencies, risks, open questions
@@ -207,7 +209,7 @@ orphan row; every other database error behaves exactly as before.
   tasks edit `SetProductTranslation.php`, `SetProductCategoryTranslation.php` and their two test files;
   this one is numbered after it and builds on its order (authorize → re-read → active language).
   **Satisfied:** 0087 closed to `done/` on 2026-11-13, so this task has no pending dependency and is
-  `ready` (pending its own Q-1–Q-3 and Phase 1 debate); the `conflict_risk_with` pairing was dropped
+  `ready` (pending its own Phase 1 debate; Q-1–Q-3 answered 2026-11-14); the `conflict_risk_with` pairing was dropped
   with it.
 
 ### Risks
@@ -216,18 +218,20 @@ orphan row; every other database error behaves exactly as before.
   not a mock of `SetTranslation`.
 - **R-2** A translation row loaded before the parent's cascade delete is then `UPDATE`d: zero rows
   affected, no error, and the action returns a model that no longer exists. Under Q-2 (a) this window
-  stays open; Q-2 (b) closes it. To be weighed in the debate.
+  stays open; Q-2 (b) closes it. The user chose Q-2 (a) (2026-11-14), so this window stays open.
 - **R-3** Matching on the error message instead of the constraint name misclassifies errors (the
   message embeds the user's text). Mitigated by case 4.
 
 ### Open questions for the user
 
-- **Q-1 — What should the user get when the parent is gone?**
+All three **answered by the user on 2026-11-14**: Q-1 (a), Q-2 (a), Q-3 (a).
+
+- **Q-1 — What should the user get when the parent is gone?** **Answered (a)** (user, 2026-11-14).
   - **(a) (recommended)** A `ModelNotFoundException` (Livewire's standard 404), exactly what the blog
     post and blog tag actions already give: one consistent "this record no longer exists" outcome.
   - (b) A `ValidationException` on `names.{id}` with a new "this product was deleted" message, which
     keeps the user on the form (but on a record that no longer exists).
-- **Q-2 — How to close the read-to-write window?**
+- **Q-2 — How to close the read-to-write window?** **Answered (a)** (user, 2026-11-14).
   - **(a) (recommended)** Catch the `QueryException`, match **only** 1452 on the parent FK constraint
     (`product_translations_product_id_foreign` / `product_category_translations_product_category_id_foreign`)
     in `errorInfo[2]`, and throw the Q-1 outcome; everything else is rethrown. Small, no locking, and
@@ -235,11 +239,11 @@ orphan row; every other database error behaves exactly as before.
   - (b) Wrap read and write in a transaction with `lockForUpdate()` on the parent row, so a delete
     waits. Closes R-2 too, but adds a lock to every translation save and a deadlock surface with the
     delete actions' own locks.
-- **Q-3 — Scope.** `SetBlogCategoryTranslation` has the same missing re-read, and `SetBlogTagTranslation`
+- **Q-3 — Scope.** **Answered (a)** (user, 2026-11-14). `SetBlogCategoryTranslation` has the same missing re-read, and `SetBlogTagTranslation`
   the same read-to-write window (blog posts are soft-deleted, so `SetBlogPostTranslation` is not exposed
   to 1452).
-  - **(a) (recommended)** Keep the two product-side actions, as the user asked; open a sibling task for
-    the blog ones if wanted.
+  - **(a) (recommended)** Keep the two product-side actions, as the user asked; the blog ones go to
+    sibling task [0099](0099-blog-translation-write-actions-deleted-entity-race-backend.md).
   - (b) Include `SetBlogCategoryTranslation` and `SetBlogTagTranslation` here.
 
 ## Provenance

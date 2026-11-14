@@ -18,6 +18,8 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-11-14): new pending task `0099-blog-translation-write-actions-deleted-entity-race-backend.md`** (backend, Epic 5, Phase 1 draft by `product-owner`), split from `0098` by the user's Q-3 (a) answer; the user also answered `0098`'s Q-1 (a) and Q-2 (a), which `0099` inherits. `0099` has no pending dependency (its prerequisites 0073, 0075 and 0087 are in `done/`), so it is a green `ready` node with no edge; it is independent of `0098` (disjoint code and test write sets: `app/Actions/Blog/*` and two `tests/Feature/Blog/*` files vs the product-side files), so `conflict_risk_with` is empty both ways. `P0098` is restyled blue `claimed` to match `tasks-status.json`, where it is claimed by `worktree-0098-translation-write-actions-deleted-entity-race-backend` (entry carried forward unchanged). `ai-spec/tasks/in-progress/` does not exist yet (no file has moved there). Link check, both directions: `0099`'s outbound links (`done/0073-…`, `done/0075-…`, `done/0087-…`, `0098-…`, `../../docs/PRD/sections/epic-5-internationalization.md`, `../../docs/security/model-instance-trust.md`) resolve; `0098`'s two new `](0099-…)` links resolve; no file links to `0099` from elsewhere.
+
 **Update (2026-11-13): `0091-order-cancellation-stock-return-opt-in-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0091-order-cancellation-stock-return-opt-in-backend`; Phase 4 security audit and Phase 5 code review approved, full unscoped suite green). Its node, inventory row, `claimed` class membership and edge `P0091 --> P0095` are dropped; it joins the flat `done/` inventory (Epic 3: 24; `done/` holds 118 files) and its `tasks-status.json` entry is deleted. Dependents recomputed: `0095` drops `0091` from `depends_on` but stays `blocked` on `0094` (still pending). No node is `claimed`; `ai-spec/tasks/in-progress/` is empty again. Link check, both directions: same-depth move, so the moved file's `](../done/…)` links became bare siblings and its `../0095-…` link needed no change; all resolve. Inbound links were repointed from `in-progress/0091-…` to `done/0091-…` in `0092b` (1) and `0095` (2) and from `../in-progress/0091-…` to the bare sibling in `done/0088`, `done/0088a` and `done/0090`; verified with `realpath -m`.
 
 **Update (2026-11-13, superseded by the closure above): `0091-order-cancellation-stock-return-opt-in-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (Phase 3 step 0).** It is claimed by `worktree-0091-order-cancellation-stock-return-opt-in-backend` in `tasks-status.json` (`status` `claimed`); its node stays in the graph, now styled `claimed` (blue). Of the three stages, `ai-spec/tasks/` and `ai-spec/tasks/in-progress/` hold files now (`0091` is the only in-progress one). No dependency changed. Link check: the move adds one directory level, so the moved file's outbound links were re-pointed (`done/...` and `0095-...` now `../done/...`, `../0095-...`); inbound links in `0092b` and `0095` re-pointed to `in-progress/0091-...` and in `done/0088`, `done/0088a`, `done/0090` to `../in-progress/0091-...`; verified with `realpath -m`.
@@ -576,15 +578,16 @@ appears as a node in the dependency graph below:
   dependent, 0085, drops it and moves to `ready`.
   0093 — Confirmation dialog optional second choice (frontend), closed 2026-11-10: `<x-confirm-dialog>` gains `secondary-action` / `secondary-label`; its dependents 0094, 0094a and 0095 drop it from `depends_on` and stay `blocked` on their other pending dependencies.
 
-### Pending — not started (6 numbered + 1 infra doc)
+### Pending — not started (7 numbered + 1 infra doc)
 
-Recounted 2026-11-13 (after the 0091 closure): `ai-spec/tasks/` holds `0092b`, `0094`, `0094a`, `0095`, `0096` and `0098` plus `ci-database-connection-gap.md`; `ai-spec/tasks/in-progress/` is empty.
+Recounted 2026-11-14 (`0099` added): `ai-spec/tasks/` holds `0092b`, `0094`, `0094a`, `0095`, `0096`, `0098` (claimed) and `0099` plus `ci-database-connection-gap.md`; `ai-spec/tasks/in-progress/` is empty.
 
 Re-derived 2026-11-08 from the files actually present in `ai-spec/tasks/` (`0078` closed to `done/`); `0088`–`0096` added 2026-11-08. The earlier table still listed `0072`, `0074`, `0084` and `0085`, all of which are in `done/`.
 
 | ID | Title | Epic area |
 | --- | --- | --- |
 | 0098 | Product translation write actions refuse a deleted product or category cleanly (backend) | Epic 5 — i18n |
+| 0099 | Blog category and tag translation write actions refuse a deleted parent cleanly (backend) | Epic 5 — i18n |
 | 0092b | Refunds can return refunded units to stock (backend) | Epic 3 — Orders (stock) |
 | 0094 | Order detail — quantity-change stock dialog (frontend) | Epic 3 — Orders (stock) |
 | 0094a | Order detail — line-removal stock dialog (frontend) | Epic 3 — Orders (stock) |
@@ -623,6 +626,7 @@ flowchart LR
     subgraph PEND_I18N["Epic 5 — Internationalization"]
         direction TB
         P0098["0098 Deleted product/category translation race BE"]
+        P0099["0099 Deleted blog category/tag translation race BE"]
     end
     %% (P0087 closed to done/ 2026-11-13; P0087 --> P0098 dropped, 0098 is now ready.)
 
@@ -720,7 +724,8 @@ flowchart LR
     %% (P0084 --> P0085 dropped: 0084 is done; 0085 is done too.)
     %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
-    class P0098 ready;
+    class P0098 claimed;
+    class P0099 ready;
     %% (P0078 closed to done/ 2026-11-08; P0076b closed to done/ 2026-11-10 and no node is `claimed`; P0076b --> P0077 and P0076b -.-> P0087 dropped, 0077 is now ready.)
     %% (P0079 closed to done/ 2026-11-12; P0087 -.-> P0079 dropped, no node is `claimed`.)
     %% (P0075 closed to done/ 2026-10-27; P0073 closed to done/ 2026-10-08; no node remains `claimed`.)
@@ -730,7 +735,7 @@ flowchart LR
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(as of 2026-11-13, after its closure, no node is `claimed`; `0087`, the prior sole `claimed` node, closed to `done/` this pass; as of 2026-11-12 no node was `claimed`; `0079`, the prior sole `claimed` node, closed to `done/` this pass; as of 2026-11-07 no node was `claimed`; `0076`, the prior sole `claimed` node, closed to `done/` this pass; earlier: `0067`, the prior sole `claimed` node, closed to
+(as of 2026-11-14, `0098` is the sole `claimed` node; as of 2026-11-13, after its closure, no node was `claimed`; `0087`, the prior sole `claimed` node, closed to `done/` this pass; as of 2026-11-12 no node was `claimed`; `0079`, the prior sole `claimed` node, closed to `done/` this pass; as of 2026-11-07 no node was `claimed`; `0076`, the prior sole `claimed` node, closed to `done/` this pass; earlier: `0067`, the prior sole `claimed` node, closed to
 `done/` this pass — see the update at the top of this file; `0066` and `0070`, the `claimed` nodes
 before that, both closed to `done/` in an earlier pass, on separate branches reconciled together
 here); yellow (`pending`) = still blocked on at least one open pending dependency.
@@ -740,7 +745,7 @@ here); yellow (`pending`) = still blocked on at least one open pending dependenc
 ### Pending tasks that are independent of each other and safe to parallelize
 
 These are the tasks whose **entire dependency chain is already `done/`** — nothing pending blocks
-them — the green `ready` nodes in the diagram above (`0092b`, `0094`, `0098` as of 2026-11-13; `0098` became ready when `0087` closed, and `0090` is in `done/`). (`0046`–`0054` and `0057` all had the
+them — the green `ready` nodes in the diagram above (`0092b`, `0094`, `0099` as of 2026-11-14; `0098` became ready when `0087` closed and is now `claimed`, and `0099` is independent of it, and `0090` is in `done/`). (`0046`–`0054` and `0057` all had the
 identical property in their own turn — but none of them is listed anywhere in this section any
 more: each closed to `done/` in this or a prior regeneration pass, so per this file's own "`done/`
 tasks are omitted from the graph" rule none has a node at all any more. See the note at the top of
