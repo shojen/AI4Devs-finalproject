@@ -9,7 +9,9 @@ use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\PermissionRegistrar;
@@ -449,3 +451,116 @@ function productCategoryTranslationErrors(Closure $call): array
 
     return [];
 }
+
+/**
+ * Story 0098: raw-deletes the category from inside the translation's `creating` event, i.e. after
+ * the action's read and before the INSERT, so MySQL raises the real 1452. FOREIGN_KEY_CHECKS is
+ * never disabled.
+ */
+function deleteCategoryWhenItsTranslationIsCreated(ProductCategory $category): void
+{
+    ProductCategoryTranslation::creating(function () use ($category): void {
+        DB::table('product_categories')->where('id', $category->id)->delete();
+    });
+}
+
+function productCategoryTranslationRawRowCount(ProductCategory $category): int
+{
+    return DB::table('product_category_translations')->where('product_category_id', $category->id)->count();
+}
+
+test('a category deleted after the caller loaded it raises ModelNotFoundException and leaves no translation row', function () {
+    $category = ProductCategory::factory()->named('Calzado')->create();
+    $this->actingAs(setProductCategoryTranslationActor());
+    $stale = ProductCategory::query()->findOrFail($category->id);
+    $category->delete();
+
+    $caught = null;
+    try {
+        app(SetProductCategoryTranslation::class)($stale, $this->french, 'Chaussures');
+    } catch (Throwable $e) {
+        $caught = $e;
+    }
+
+    expect($caught)->toBeInstanceOf(ModelNotFoundException::class)
+        ->and($caught->getModel())->toBe(ProductCategory::class)
+        ->and(productCategoryTranslationRawRowCount($category))->toBe(0);
+});
+
+test('a category deleted between the action read and the write raises ModelNotFoundException and leaves no translation row', function () {
+    $category = ProductCategory::factory()->named('Calzado')->create();
+    $this->actingAs(setProductCategoryTranslationActor());
+    deleteCategoryWhenItsTranslationIsCreated($category);
+
+    $caught = null;
+    try {
+        app(SetProductCategoryTranslation::class)($category, $this->french, 'Chaussures');
+    } catch (Throwable $e) {
+        $caught = $e;
+    }
+
+    expect($caught)->toBeInstanceOf(ModelNotFoundException::class)
+        ->and($caught->getModel())->toBe(ProductCategory::class)
+        ->and($caught->getIds())->toBe([$category->id])
+        ->and(productCategoryTranslationRawRowCount($category))->toBe(0);
+});
+
+test('authorization is checked first for a deleted category: an unpermitted actor is refused as unauthorized and logged once', function () {
+    Log::spy();
+    $category = ProductCategory::factory()->named('Calzado')->create();
+    $stale = ProductCategory::query()->findOrFail($category->id);
+    $category->delete();
+    $this->actingAs(setProductCategoryTranslationActor([]));
+
+    expect(fn () => app(SetProductCategoryTranslation::class)($stale, $this->french, 'Chaussures'))
+        ->toThrow(AuthorizationException::class);
+
+    Log::shouldHaveReceived('warning')
+        ->withArgs(fn (string $message): bool => $message === 'Privileged action refused')
+        ->once();
+});
+
+test('a deleted category is refused as not found before an inactive language is checked', function () {
+    $inactive = StoreLanguage::factory()->inactive()->create();
+    $category = ProductCategory::factory()->named('Calzado')->create();
+    $stale = ProductCategory::query()->findOrFail($category->id);
+    $category->delete();
+    $this->actingAs(setProductCategoryTranslationActor());
+
+    $caught = null;
+    try {
+        app(SetProductCategoryTranslation::class)($stale, $inactive, 'Kategorie');
+    } catch (Throwable $e) {
+        $caught = $e;
+    }
+
+    expect($caught)->toBeInstanceOf(ModelNotFoundException::class)
+        ->and($caught->getModel())->toBe(ProductCategory::class);
+});
+
+test('a QueryException that is not a category foreign key violation is rethrown unchanged', function (int $code, string $native, ?string $pdoMessage) {
+    $category = ProductCategory::factory()->named('Calzado')->create();
+    $this->actingAs(setProductCategoryTranslationActor());
+
+    $pdoException = new PDOException($pdoMessage ?? $native);
+    $pdoException->errorInfo = ['23000', $code, $native];
+    $exception = new QueryException('mysql', 'insert into `product_category_translations` ...', [], $pdoException);
+    bindThrowingSetTranslation($exception);
+
+    $caught = null;
+    try {
+        app(SetProductCategoryTranslation::class)($category, $this->french, 'Chaussures');
+    } catch (Throwable $e) {
+        $caught = $e;
+    }
+
+    expect($caught)->toBe($exception);
+})->with([
+    'missing store language reference' => [1452, 'Cannot add or update a child row: a foreign key constraint fails (`testing`.`product_category_translations`, CONSTRAINT `product_category_translations_store_language_id_foreign` FOREIGN KEY (`store_language_id`) REFERENCES `store_languages` (`id`))', null],
+    'duplicate entry on an unhandled index' => [1062, "Duplicate entry 'x' for key 'product_category_translations.some_other_unique'", null],
+    'decoy: message names the category foreign key, errorInfo does not' => [
+        1452,
+        'Cannot add or update a child row: a foreign key constraint fails (`testing`.`product_category_translations`, CONSTRAINT `product_category_translations_store_language_id_foreign` FOREIGN KEY (`store_language_id`) REFERENCES `store_languages` (`id`))',
+        'CONSTRAINT `product_category_translations_product_category_id_foreign` FOREIGN KEY',
+    ],
+]);

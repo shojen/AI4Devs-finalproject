@@ -452,9 +452,132 @@ test('a product deleted after the caller loaded it raises ModelNotFoundException
     $stale = Product::query()->findOrFail($product->id);
     $product->delete();
 
-    expect(fn () => app(SetProductTranslation::class)($stale, $this->french, 'Chaussures'))
-        ->toThrow(ModelNotFoundException::class);
+    $caught = null;
+
+    try {
+        app(SetProductTranslation::class)($stale, $this->french, 'Chaussures');
+    } catch (Throwable $t) {
+        $caught = $t;
+    }
+
+    expect($caught)->toBeInstanceOf(ModelNotFoundException::class)
+        ->and($caught->getModel())->toBe(Product::class)
+        ->and(DB::table('product_translations')->where('product_id', $product->id)->count())->toBe(0);
 });
+
+/**
+ * Story 0098: raw-deletes the product from inside the translation's `creating` event, i.e. after
+ * the action's re-read and before the INSERT, so MySQL raises the real 1452. FOREIGN_KEY_CHECKS
+ * is never disabled.
+ */
+function deleteProductWhenItsTranslationIsCreated(Product $product): void
+{
+    ProductTranslation::creating(function () use ($product): void {
+        DB::table('products')->where('id', $product->id)->delete();
+    });
+}
+
+function productTranslationForeignKeyException(int $driverCode, string $nativeMessage, ?string $pdoMessage = null): QueryException
+{
+    $pdoException = new PDOException($pdoMessage ?? $nativeMessage);
+    $pdoException->errorInfo = ['23000', $driverCode, $nativeMessage];
+
+    return new QueryException('mysql', 'insert into `product_translations` ...', [], $pdoException);
+}
+
+function bindProductThrowingSetTranslation(QueryException $exception): void
+{
+    app()->instance(SetTranslation::class, new class($exception) extends SetTranslation
+    {
+        public function __construct(private readonly QueryException $exception) {}
+
+        /**
+         * @param  array<string, string|null>  $attributes
+         */
+        public function __invoke(Model $translatable, StoreLanguage $language, array $attributes): Model
+        {
+            throw $this->exception;
+        }
+    });
+}
+
+test('a product deleted between the action read and the write raises ModelNotFoundException and leaves no translation row', function () {
+    $product = Product::factory()->named('Zapatillas')->create();
+    $this->actingAs(setProductTranslationActor());
+    deleteProductWhenItsTranslationIsCreated($product);
+
+    $caught = null;
+
+    try {
+        app(SetProductTranslation::class)($product, $this->french, 'Chaussures');
+    } catch (Throwable $t) {
+        $caught = $t;
+    }
+
+    expect($caught)->toBeInstanceOf(ModelNotFoundException::class)
+        ->and($caught->getModel())->toBe(Product::class)
+        ->and($caught->getIds())->toBe([$product->id])
+        ->and(DB::table('product_translations')->where('product_id', $product->id)->count())->toBe(0);
+});
+
+test('authorization is checked first for a deleted product: an unpermitted actor is refused as unauthorized and logged once', function () {
+    Log::spy();
+    $product = Product::factory()->named('Zapatillas')->create();
+    $stale = Product::query()->findOrFail($product->id);
+    $product->delete();
+    $this->actingAs(setProductTranslationActor([]));
+
+    expect(fn () => app(SetProductTranslation::class)($stale, $this->french, 'Chaussures'))
+        ->toThrow(AuthorizationException::class);
+
+    Log::shouldHaveReceived('warning')
+        ->withArgs(fn (string $message): bool => $message === 'Privileged action refused')
+        ->once();
+});
+
+test('a deleted product is refused as not found before an inactive language is checked', function () {
+    $inactive = StoreLanguage::factory()->inactive()->create();
+    $product = Product::factory()->named('Zapatillas')->create();
+    $stale = Product::query()->findOrFail($product->id);
+    $product->delete();
+    $this->actingAs(setProductTranslationActor());
+
+    $caught = null;
+
+    try {
+        app(SetProductTranslation::class)($stale, $inactive, 'Kategorie');
+    } catch (Throwable $t) {
+        $caught = $t;
+    }
+
+    expect($caught)->toBeInstanceOf(ModelNotFoundException::class)
+        ->and($caught->getModel())->toBe(Product::class);
+});
+
+test('a QueryException that is not a product foreign key violation is rethrown unchanged', function (int $code, string $native, ?string $pdoMessage) {
+    $product = Product::factory()->named('Zapatillas')->create();
+    $this->actingAs(setProductTranslationActor());
+    $exception = productTranslationForeignKeyException($code, $native, $pdoMessage);
+    bindProductThrowingSetTranslation($exception);
+
+    $caught = null;
+
+    try {
+        app(SetProductTranslation::class)($product, $this->french, 'Chaussures');
+    } catch (Throwable $t) {
+        $caught = $t;
+    }
+
+    expect($caught)->toBe($exception);
+})->with([
+    'missing store language reference' => [1452, 'Cannot add or update a child row: a foreign key constraint fails (`testing`.`product_translations`, CONSTRAINT `product_translations_store_language_id_foreign` FOREIGN KEY (`store_language_id`) REFERENCES `store_languages` (`id`))', null],
+    'duplicate entry on an unhandled index' => [1062, "Duplicate entry 'x' for key 'product_translations.some_other_unique'", null],
+    'decoy: message names the product foreign key, errorInfo does not' => [
+        1452,
+        'Cannot add or update a child row: a foreign key constraint fails (`testing`.`product_translations`, CONSTRAINT `product_translations_store_language_id_foreign` FOREIGN KEY (`store_language_id`) REFERENCES `store_languages` (`id`))',
+        'CONSTRAINT `product_translations_product_id_foreign` FOREIGN KEY',
+    ],
+]);
 
 // Phase 4 audit finding F-5 (shared with ProductAuthorizationTest): strip comments/docblocks via
 // token_get_all() so a prose mention of SetTranslation is never counted as a reference.

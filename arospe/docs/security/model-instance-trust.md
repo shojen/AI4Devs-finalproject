@@ -528,6 +528,6 @@ Accepted residuals recorded by the Phase 4 audit:
 - **L-1 (CWE-367, accepted):** the check-then-write is not locked, so a concurrent `RemoveStoreLanguage` can deactivate the language between the re-read and the write, leaving one translation row for a now-inactive language. The row is harmless (inactive languages are filtered everywhere) and a lock would add deadlock risk for no data-integrity gain.
 - **L-2:** the guard finds actions by filename only; an action named differently escapes it. A name-independent rule (for example a marker interface) is a possible follow-up.
 
-The deleted-entity race of the same actions (FK 1452 as a 500) is a separate, pending task: [0098](../../ai-spec/tasks/0098-translation-write-actions-deleted-entity-race-backend.md).
+The deleted-entity race of the same actions (FK 1452 as a 500) is a separate, pending task: [0098](../../ai-spec/tasks/done/0098-translation-write-actions-deleted-entity-race-backend.md).
 
 _Last updated: 2026-11-13 — story 0087 added the "Translation write actions re-read the language as active through one helper" section (with residuals L-1 and L-2). Earlier sections current from story 0088a and 0064d._

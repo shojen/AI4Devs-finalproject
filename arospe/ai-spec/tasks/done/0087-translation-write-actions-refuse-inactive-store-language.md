@@ -258,7 +258,7 @@ D-14 of 0079); the component test provokes it with a test double (§3 case 11), 
   `app/Actions/ProductCategories/SetProductCategoryTranslation.php` — inject the helper and call it
   **directly after** the (logged) authorize step, with `"names.{$language->id}"` and the domain
   message. These two actions have no entity re-read today and this story adds **none** (a deleted
-  category is task [0098](../0098-translation-write-actions-deleted-entity-race-backend.md)'s concern
+  category is task [0098](0098-translation-write-actions-deleted-entity-race-backend.md)'s concern
   for the product category); every downstream step (trim/validate/`setTranslation`) uses the **returned**
   instance, never the passed one ([model-instance-trust.md](../../../docs/security/model-instance-trust.md)).
 - `app/Actions/Blog/SetBlogPostTranslation.php` — same, with the post-level key `translation` and
@@ -448,7 +448,7 @@ action that skips the helper fails the suite.
 - **D-13 0076b residual L-2 is out of scope** (user decision **Q-4 (a)**, 2026-11-13). A product or
   product category deleted between the action's read and the write raising an FK 1452 500 is an
   entity race on a different table, not language resolution. The user asked for a separate task:
-  [0098](../0098-translation-write-actions-deleted-entity-race-backend.md), which depends on this story
+  [0098](0098-translation-write-actions-deleted-entity-race-backend.md), which depends on this story
   (same action files).
 
 ## 5. Dependencies, risks, open technical questions
@@ -498,7 +498,7 @@ and refusing a write keeps them. The closed files are not edited; this section i
   longer active for the store.", was rejected as unclear outside a tab.)
 - **Q-4 — 0076b residual L-2 (product deleted between re-read and save → FK 1452 500).** Closed
   2026-11-13: user chose **(a)**, out of scope here (**D-13**), and asked for a separate task, created
-  as [0098](../0098-translation-write-actions-deleted-entity-race-backend.md). The Epic 5 digest line
+  as [0098](0098-translation-write-actions-deleted-entity-race-backend.md). The Epic 5 digest line
   (~118) that assigned L-2 to "the shared helper backlogged by 0087 D-5" now points to 0098.
 
 ## Phase 2 record

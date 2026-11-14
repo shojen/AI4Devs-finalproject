@@ -11,6 +11,7 @@ use App\Models\ProductCategory;
 use App\Models\ProductCategoryTranslation;
 use App\Models\StoreLanguage;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -43,6 +44,7 @@ class SetProductCategoryTranslation
      * @throws AuthorizationException when the actor lacks products.edit (logged first)
      * @throws ValidationException keyed "names.{$language->id}" -- inactive language, blank, over-length, or
      *                             duplicate within that store language (incl. the 1062 race)
+     * @throws ModelNotFoundException when the category is deleted before or during the write (1452 on the parent FK)
      * @throws LogicException when the primitive returns an unexpected model
      */
     public function __invoke(
@@ -56,6 +58,8 @@ class SetProductCategoryTranslation
             targetType: 'product_category',
             targetId: $productCategory->id,
         );
+
+        $productCategory = ProductCategory::query()->whereKey($productCategory->getKey())->firstOrFail();
 
         $language = ($this->resolveActiveStoreLanguage)($language, "names.{$language->id}", __('products.categories.index.tabs.language_inactive'));
 
@@ -75,6 +79,11 @@ class SetProductCategoryTranslation
         try {
             $translation = ($this->setTranslation)($productCategory, $language, ['name' => $name]);
         } catch (QueryException $e) {
+            if (($e->errorInfo[1] ?? null) === 1452
+                && preg_match('/CONSTRAINT `product_category_translations_product_category_id_foreign` FOREIGN KEY/', (string) ($e->errorInfo[2] ?? '')) === 1) {
+                throw (new ModelNotFoundException)->setModel(ProductCategory::class, [$productCategory->getKey()]);
+            }
+
             throw ($this->translateNameUniqueViolation)($e, $errorKey, $attributeLabel);
         }
 

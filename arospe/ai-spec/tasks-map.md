@@ -18,6 +18,14 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-11-15, merge of `origin/main` into the 0098 branch): reconciled coordination files.** `origin/main` brought the 0091 and 0092b closures; this branch brings the 0098 closure and the new `0099`. Recounted from the directory, `done/` holds 120 files; pending in `ai-spec/tasks/`: `0094`, `0094a`, `0095`, `0096`, `0099`; `in-progress/` is empty and no node is `claimed`. `tasks-status.json` = main's entries minus `0098`, plus `0099` (`ready`). The per-closure counts quoted in the paragraphs below were taken before this merge.
+
+**Update (2026-11-14): `0098-translation-write-actions-deleted-entity-race-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0098-translation-write-actions-deleted-entity-race-backend`; Phases 3-6 approved, full unscoped suite green: 6300 tests). Its node, inventory row, `claimed` class membership and `tasks-status.json` entry are dropped; it joins the flat `done/` inventory (Epic 5: 18; `done/` holds 119 files). No pending task listed it in `depends_on` or `conflict_risk_with` (`0099` is independent), so no dependent is recomputed. No node is `claimed`; `ai-spec/tasks/in-progress/` is empty again. Link check, both directions: same-depth move, so the moved file's `](../done/…)` links became bare siblings and its other links needed no change; all resolve. Inbound links repointed: `](done/0098-…)` in `0099` (2), `](0098-…)` in `done/0087` (3), `../../ai-spec/tasks/done/0098-…` in `docs/security/model-instance-trust.md` line 531. The Epic 5 digest has no link to the file.
+
+**Update (2026-11-14): `0098-translation-write-actions-deleted-entity-race-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 3 step 0; still claimed by `worktree-0098-translation-write-actions-deleted-entity-race-backend`, `tasks-status.json` entry unchanged: no `depends_on`, status `claimed`). Its node and class stay as they were. Link check, both directions: the moved file's outbound links were repointed one level deeper (`](done/…)` to `](../done/…)`, `](../../docs/…)` to `](../../../docs/…)`, `](0099-…)` to `](../0099-…)`) and resolve; inbound links were repointed in `0099` (2, to `in-progress/0098-…`), `done/0087` (3, to `../in-progress/0098-…`) and `docs/security/model-instance-trust.md` line 531. `ai-spec/tasks/in-progress/` holds exactly `0098`.
+
+**Update (2026-11-14): new pending task `0099-blog-translation-write-actions-deleted-entity-race-backend.md`** (backend, Epic 5, Phase 1 draft by `product-owner`), split from `0098` by the user's Q-3 (a) answer; the user also answered `0098`'s Q-1 (a) and Q-2 (a), which `0099` inherits. `0099` has no pending dependency (its prerequisites 0073, 0075 and 0087 are in `done/`), so it is a green `ready` node with no edge; it is independent of `0098` (disjoint code and test write sets: `app/Actions/Blog/*` and two `tests/Feature/Blog/*` files vs the product-side files), so `conflict_risk_with` is empty both ways. `P0098` is restyled blue `claimed` to match `tasks-status.json`, where it is claimed by `worktree-0098-translation-write-actions-deleted-entity-race-backend` (entry carried forward unchanged). `ai-spec/tasks/in-progress/` does not exist yet (no file has moved there). Link check, both directions: `0099`'s outbound links (`done/0073-…`, `done/0075-…`, `done/0087-…`, `0098-…`, `../../docs/PRD/sections/epic-5-internationalization.md`, `../../docs/security/model-instance-trust.md`) resolve; `0098`'s two new `](0099-…)` links resolve; no file links to `0099` from elsewhere.
+
 **Update (2026-11-14, merge of `origin/main` into the 0092b branch): the 0091 and 0092b closures are both in `done/`.** Recounted from the directory after the merge, `done/` holds 119 files (Epic 3: 25); no node is `claimed`, `ai-spec/tasks/in-progress/` is empty and `ai-spec/tasks/` holds `0094`, `0094a`, `0095`, `0096`, `0098` plus `ci-database-connection-gap.md`. Both entries are removed from `tasks-status.json`. Dependents recomputed: `0095` drops `0091` and stays `blocked` on `0094`; `0096` drops `0092b` and turns `blocked` -> `ready`. The stray `ai-spec/tasks/0092b-…` copy was removed (the closed file lives in `done/`), and the 0092b file's soft link to `0091` was repointed to the bare sibling.
 
 **Update (2026-11-13): `0091-order-cancellation-stock-return-opt-in-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0091-order-cancellation-stock-return-opt-in-backend`; Phase 4 security audit and Phase 5 code review approved, full unscoped suite green). Its node, inventory row, `claimed` class membership and edge `P0091 --> P0095` are dropped; it joins the flat `done/` inventory (Epic 3: 24; `done/` holds 118 files) and its `tasks-status.json` entry is deleted. Dependents recomputed: `0095` drops `0091` from `depends_on` but stays `blocked` on `0094` (still pending). No node is `claimed`; `ai-spec/tasks/in-progress/` is empty again. Link check, both directions: same-depth move, so the moved file's `](../done/…)` links became bare siblings and its `../0095-…` link needed no change; all resolve. Inbound links were repointed from `in-progress/0091-…` to `done/0091-…` in `0092b` (1) and `0095` (2) and from `../in-progress/0091-…` to the bare sibling in `done/0088`, `done/0088a` and `done/0090`; verified with `realpath -m`.
@@ -467,7 +475,7 @@ graph and from the parallelization analysis below.
 
 ## Inventory
 
-### Done (118) — shipped, out of scope for this graph
+### Done (119) — shipped, out of scope for this graph
 
 Already merged into `main`/`finalproject-ARP` and closed via the workflow's Phase 7; see
 [`ai-spec/tasks/done/`](tasks/done/) for each story's full file. Listed here only as IDs, grouped
@@ -536,7 +544,7 @@ appears as a node in the dependency graph below:
   0055 — Orders list + detail/editor UI, the eighteenth story to close and the epic's terminal node:
   nothing named it as a hard dependent, so its closure re-derives no `depends_on`/`status` change
   against this pending list.
-- **Epic 5 — Internationalization (17, recounted 2026-11-13 from `done/`: 0066-0079 incl. 0076a and 0076b, plus 0087):** 0087 — Translation write actions refuse an inactive store language (closed 2026-11-13): shared `ResolveActiveStoreLanguage` used by all five `Set*Translation` actions, structural guard, post-level `translation` refusal shown as a callout in `BlogPosts\Editor`; its dependent `0098` drops it and moves to `ready`. 0079 — Blog post editor language tabs (frontend) (closed 2026-11-12): per-language title/body tabs in `BlogPosts\Editor`, `SetBlogPostTranslation`, `translatedBodyRules()`; the last Epic 5 story, no pending dependent. 0077 — Product editor language tabs (UI) (closed 2026-11-10): per-language arrays and tab strip in `Products\Editor`; no pending task depended on it. 0076b — Product translation write action (backend) (closed 2026-11-10): `SetProductTranslation`; its dependent `0077` drops it and moves to `ready`. 0076a — Product slug and SEO fields, per-store-language (backend) (closed 2026-11-08): `slug`/`meta_title`/`meta_description` on `product_translations`; its dependent `0077` drops it and moves to `ready`. 0078 — Translatable content retrofit, Blog Posts backend (closed 2026-11-08): `blog_post_translations` replaces `blog_posts.title`/`slug`/`body`; its dependent `0079` drops it and moves to `ready`, and `0087` drops it from `conflict_risk_with`. 0076 — Translatable content retrofit, Products backend (closed 2026-11-07): `product_translations` replaces `products.name`/`description`; its dependent `0076a` drops it and moves to `ready`, `0077` drops it and stays `blocked` on `0076a`. 0073 — Blog Categories screen language tabs (frontend), the eighth Epic 5 story to close (2026-10-08): per-language names through tabs, no pending dependent. 0071 — Product Categories taxonomy screen language tabs (frontend), the sixth Epic 5 story to close (2026-10-07): ships the shared `<x-language-tab-strip>`; its dependents 0073/0075/0079 drop it from `depends_on`. 0067 — Admin UI language switcher (frontend), the fourth Epic 5 story to close (2026-10-02): the first personal-language control (account-menu switcher plus a Settings Language tab); it had no hard dependent, and its only pairing, `0069`, drops it from `conflict_risk_with`. 0068 — Store Languages catalog + the app's two
+- **Epic 5 — Internationalization (18, recounted 2026-11-14 from `done/`: 0066-0079 incl. 0076a and 0076b, plus 0087 and 0098):** 0098 — Translation write actions refuse a deleted product or category cleanly (closed 2026-11-14): `SetProductTranslation` and `SetProductCategoryTranslation` map FK 1452 on the parent to `ModelNotFoundException` (404); no pending dependent. 0087 — Translation write actions refuse an inactive store language (closed 2026-11-13): shared `ResolveActiveStoreLanguage` used by all five `Set*Translation` actions, structural guard, post-level `translation` refusal shown as a callout in `BlogPosts\Editor`; its dependent `0098` drops it and moves to `ready`. 0079 — Blog post editor language tabs (frontend) (closed 2026-11-12): per-language title/body tabs in `BlogPosts\Editor`, `SetBlogPostTranslation`, `translatedBodyRules()`; the last Epic 5 story, no pending dependent. 0077 — Product editor language tabs (UI) (closed 2026-11-10): per-language arrays and tab strip in `Products\Editor`; no pending task depended on it. 0076b — Product translation write action (backend) (closed 2026-11-10): `SetProductTranslation`; its dependent `0077` drops it and moves to `ready`. 0076a — Product slug and SEO fields, per-store-language (backend) (closed 2026-11-08): `slug`/`meta_title`/`meta_description` on `product_translations`; its dependent `0077` drops it and moves to `ready`. 0078 — Translatable content retrofit, Blog Posts backend (closed 2026-11-08): `blog_post_translations` replaces `blog_posts.title`/`slug`/`body`; its dependent `0079` drops it and moves to `ready`, and `0087` drops it from `conflict_risk_with`. 0076 — Translatable content retrofit, Products backend (closed 2026-11-07): `product_translations` replaces `products.name`/`description`; its dependent `0076a` drops it and moves to `ready`, `0077` drops it and stays `blocked` on `0076a`. 0073 — Blog Categories screen language tabs (frontend), the eighth Epic 5 story to close (2026-10-08): per-language names through tabs, no pending dependent. 0071 — Product Categories taxonomy screen language tabs (frontend), the sixth Epic 5 story to close (2026-10-07): ships the shared `<x-language-tab-strip>`; its dependents 0073/0075/0079 drop it from `depends_on`. 0067 — Admin UI language switcher (frontend), the fourth Epic 5 story to close (2026-10-02): the first personal-language control (account-menu switcher plus a Settings Language tab); it had no hard dependent, and its only pairing, `0069`, drops it from `conflict_risk_with`. 0068 — Store Languages catalog + the app's two
   default-locale settings, the first Epic 5 story to close, and the root of the entire i18n chain.
   Its two dependents that had it as their *only* pending dependency — 0066 (Admin UI locale
   preference backend) and 0070 (translatable-content mechanism backend) — move from `blocked` to
@@ -584,13 +592,13 @@ appears as a node in the dependency graph below:
 
 ### Pending — not started (5 numbered + 1 infra doc)
 
-Recounted 2026-11-14 (after the 0091 and 0092b closures): `ai-spec/tasks/` holds `0094`, `0094a`, `0095`, `0096` and `0098` plus `ci-database-connection-gap.md`; `ai-spec/tasks/in-progress/` is empty.
+Recounted 2026-11-15 (merge of `origin/main` into the 0098 branch; `0098`, `0091` and `0092b` closed): `ai-spec/tasks/` holds `0094`, `0094a`, `0095`, `0096` and `0099` plus `ci-database-connection-gap.md`; `ai-spec/tasks/in-progress/` is empty.
 
 Re-derived 2026-11-08 from the files actually present in `ai-spec/tasks/` (`0078` closed to `done/`); `0088`–`0096` added 2026-11-08. The earlier table still listed `0072`, `0074`, `0084` and `0085`, all of which are in `done/`.
 
 | ID | Title | Epic area |
 | --- | --- | --- |
-| 0098 | Product translation write actions refuse a deleted product or category cleanly (backend) | Epic 5 — i18n |
+| 0099 | Blog category and tag translation write actions refuse a deleted parent cleanly (backend) | Epic 5 — i18n |
 | 0094 | Order detail — quantity-change stock dialog (frontend) | Epic 3 — Orders (stock) |
 | 0094a | Order detail — line-removal stock dialog (frontend) | Epic 3 — Orders (stock) |
 | 0095 | Order detail — cancel stock dialog (frontend) | Epic 3 — Orders (stock) |
@@ -627,9 +635,9 @@ flowchart LR
 
     subgraph PEND_I18N["Epic 5 — Internationalization"]
         direction TB
-        P0098["0098 Deleted product/category translation race BE"]
+        P0099["0099 Deleted blog category/tag translation race BE"]
     end
-    %% (P0087 closed to done/ 2026-11-13; P0087 --> P0098 dropped, 0098 is now ready.)
+    %% (P0087 closed to done/ 2026-11-13; P0098 closed to done/ 2026-11-14 and its node was dropped.)
 
     subgraph PEND_STOCK["Epic 3 — Order stock (bug fix)"]
         direction TB
@@ -720,7 +728,7 @@ flowchart LR
     %% (P0084 --> P0085 dropped: 0084 is done; 0085 is done too.)
     %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
-    class P0098 ready;
+    class P0099 ready;
     %% (P0078 closed to done/ 2026-11-08; P0076b closed to done/ 2026-11-10 and no node is `claimed`; P0076b --> P0077 and P0076b -.-> P0087 dropped, 0077 is now ready.)
     %% (P0079 closed to done/ 2026-11-12; P0087 -.-> P0079 dropped, no node is `claimed`.)
     %% (P0075 closed to done/ 2026-10-27; P0073 closed to done/ 2026-10-08; no node remains `claimed`.)
@@ -730,7 +738,7 @@ flowchart LR
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(as of 2026-11-13, after its closure, no node is `claimed`; `0087`, the prior sole `claimed` node, closed to `done/` this pass; as of 2026-11-12 no node was `claimed`; `0079`, the prior sole `claimed` node, closed to `done/` this pass; as of 2026-11-07 no node was `claimed`; `0076`, the prior sole `claimed` node, closed to `done/` this pass; earlier: `0067`, the prior sole `claimed` node, closed to
+(as of 2026-11-14, after `0098` closed, no node is `claimed`; `0098` was the sole `claimed` node before; as of 2026-11-13, after its closure, no node was `claimed`; `0087`, the prior sole `claimed` node, closed to `done/` this pass; as of 2026-11-12 no node was `claimed`; `0079`, the prior sole `claimed` node, closed to `done/` this pass; as of 2026-11-07 no node was `claimed`; `0076`, the prior sole `claimed` node, closed to `done/` this pass; earlier: `0067`, the prior sole `claimed` node, closed to
 `done/` this pass — see the update at the top of this file; `0066` and `0070`, the `claimed` nodes
 before that, both closed to `done/` in an earlier pass, on separate branches reconciled together
 here); yellow (`pending`) = still blocked on at least one open pending dependency.
@@ -740,7 +748,7 @@ here); yellow (`pending`) = still blocked on at least one open pending dependenc
 ### Pending tasks that are independent of each other and safe to parallelize
 
 These are the tasks whose **entire dependency chain is already `done/`** — nothing pending blocks
-them — the green `ready` nodes in the diagram above (`0094`, `0096`, `0098` as of 2026-11-14, `0091` and `0092b` having closed; `0098` became ready when `0087` closed, and `0090` is in `done/`). (`0046`–`0054` and `0057` all had the
+them — the green `ready` nodes in the diagram above (`0094`, `0096`, `0099` as of 2026-11-15; `0091`, `0092b` and `0098` closed to `done/`, and `0090` is in `done/`). (`0046`–`0054` and `0057` all had the
 identical property in their own turn — but none of them is listed anywhere in this section any
 more: each closed to `done/` in this or a prior regeneration pass, so per this file's own "`done/`
 tasks are omitted from the graph" rule none has a node at all any more. See the note at the top of
