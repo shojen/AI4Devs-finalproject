@@ -253,7 +253,7 @@ orphan row; every other database error behaves exactly as before.
 - [ ] Pint unscoped and Larastan level 7 clean.
 - [ ] Code reviewed (`code-reviewer`).
 - [ ] No security findings (`appsec-auditor`).
-- [ ] Documentation updated (`docs-keeper`): the product/product-category translation write action
+- [x] Documentation updated (`docs-keeper`): the product/product-category translation write action
   docs and `docs/security/livewire-authorization/action-level-authorization.md` record the clean
   refusal; the Epic 5 digest's L-2 line (~118) is marked resolved by this task.
 - [ ] Acceptance criteria met.
@@ -363,3 +363,7 @@ Residual (accepted, Low): the read-to-write window is closed by refusal, not by 
 - Gates: Pint unscoped passed, no files changed. Larastan passes on both changed actions. A full run in this worktree reports one error in the untouched `app/Actions/Products/SanitizeProductDescription.php:98`; the same file passes in the main checkout, so this diff did not introduce it. `composer types:check` hits the default 128M memory limit, so it was run with `--memory-limit=-1`.
 - Full suite on `testing_0098_…`, run sequentially in chunks: Unit 289; Feature 5721 (5 skipped); Browser 290 (3 skipped). Total 6300, 0 failures.
 - Non-blocking: `SetProductTranslation`'s `@throws ModelNotFoundException` line says only "before the write", but the code also throws it for a delete during the write (the category action's wording, "before or during", is correct). `bindProductThrowingSetTranslation` duplicates the category file's `bindThrowingSetTranslation`.
+
+## Phase 6 — Documentation (`docs-keeper`, 2026-11-14)
+
+**Done.** Updated `docs/api/products/products-index-and-editor.md` (`SetProductTranslation` 1452 mapping), `docs/api/products/product-categories.md` (category re-read and 1452 mapping), `docs/security/livewire-authorization/action-level-authorization.md` (new clean-refusal subsection, single `_Last updated:_` line), and `ai-spec/tasks/_digests/epic-5.md` (L-2 marked resolved by 0098; 0098 decision bullets appended). No schema, route or lang change, so no other docs, README or `../readme.md` change.
