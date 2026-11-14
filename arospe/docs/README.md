@@ -54,7 +54,7 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Shipping](api/shipping.md) | `shipping.zones.index`, `shipping.index`. |
 | [Payment Methods](api/payment-methods.md) | `payment-methods.index`. |
 | [Customers](api/customers.md) | `customers.index`, `customers.show`. |
-| [Orders](api/orders.md) | `orders.index`, `orders.show`, `<x-money>`, `<x-confirm-dialog>`. |
+| [Orders](api/orders.md) | `orders.index`, `orders.show`, `<x-money>`, `<x-confirm-dialog>`, `RecordRefund` stock return, `AdjustOrderStock`. |
 | [Blog](api/blog.md) | `blog-tags.index`, `blog-categories.index`, `blog-posts.index` / `.create` / `.edit`. |
 | [Store Languages](api/store-languages.md) | `store-languages.index`: the two-section Store Languages settings screen (story 0069). |
 | [Dashboard](api/dashboard.md) | the `dashboard` route's ungated contract, the `SalesOverview` card (filters, event, Chart.js charts) or the read-side actions in `app/Actions/Dashboard/` (per-widget gating, counters, latest posts/orders, low stock, sales/orders series, measure definitions). |

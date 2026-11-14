@@ -123,3 +123,11 @@ and are not backfilled here — see their own task files in `ai-spec/tasks/done/
 - After the transaction the caller's instance gets `forceFill(['status' => Cancelled])->syncOriginalAttribute('status')` (the write went through the locked copy), so it is not left dirty — story 0091.
 - Known pre-existing gap, follow-up story candidate: a `Cancelled` order stays line-editable (`isLineItemEditable()` blocks only `Shipped`/`Delivered`), so `AddOrderItem` / a quantity increase can deduct stock after cancellation; there is no cancellation audit log — story 0091.
 - Docs: `docs/api/orders.md#cancelorder--opt-in-stock-return-on-cancellation-story-0091`; the 0050 "no transaction" note in `docs/architecture/authorization/domain-invariants.md` was rewritten — story 0091.
+
+## Story 0092b — Refund with optional stock return (backend)
+
+- `RecordRefund::__invoke(Order, array $items, ?string $reason = null, array $stockReturns = [])`; `$stockReturns` is `order_item_id => units`, default `[]` moves no stock, no new permission — story 0092b.
+- Three field-level `stock_returns` refusals: `orders.refunds.stock_return_not_in_refund` (key not in `$items`, checked before a `0` is skipped), `stock_return_exceeds_refunded`, `stock_return_not_out_of_stock` (cap `R = returnableStockUnits()` read before the refund); shape rules `refundStockReturnRules()` / `refundStockReturnUnitRules()` in `OrderValidationRules` — story 0092b.
+- Lock order realised: `orders` lock, plain items read, guards, `AdjustOrderStock` (positive deltas), items lock + re-verify Q/F/U/K (mismatch or missing line = `LogicException`, stock rolled back), writes on locked rows. `k` is credited only for ids `AdjustOrderStock` reports (deleted catalog row = refund recorded, no stock moved) — story 0092b.
+- Forward rule from 0088a is now satisfied by 0090, 0091 and 0092b — story 0092b.
+- Follow-ups for 0096: cast `items` / `stockReturns` to int after validation (Livewire sends strings); catch the concurrent-change `LogicException` with a retry message; tell the admin when a refunded line moved no stock — story 0092b.
