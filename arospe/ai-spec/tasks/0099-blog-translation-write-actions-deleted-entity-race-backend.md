@@ -19,7 +19,7 @@ the per-language `normalized_name` index and **rethrow everything else unchanged
 an unhandled `QueryException`: a **500**.
 
 This is the blog-side sibling of story
-[0098](in-progress/0098-translation-write-actions-deleted-entity-race-backend.md), split out by the user's answer
+[0098](done/0098-translation-write-actions-deleted-entity-race-backend.md), split out by the user's answer
 to 0098's **Q-3 (a)** (2026-11-14). The real state of the two actions, read from the code on
 2026-11-14:
 
@@ -227,7 +227,7 @@ All three are **inherited from the user's answers on 0098** (2026-11-14) and app
 - **None pending.** It builds on shipped stories only: 0073, 0075 and
   [0087](done/0087-translation-write-actions-refuse-inactive-store-language.md) (the order and the
   `ResolveActiveStoreLanguage` helper), all in `done/`. Status `ready`.
-- **Independent of [0098](in-progress/0098-translation-write-actions-deleted-entity-race-backend.md).** Their code
+- **Independent of [0098](done/0098-translation-write-actions-deleted-entity-race-backend.md).** Their code
   and test write sets are disjoint (0098: `app/Actions/Products/*`, `app/Actions/ProductCategories/*`
   and their two test files; this task: `app/Actions/Blog/*` and two `tests/Feature/Blog/*` files), so
   `conflict_risk_with` is empty. The only shared surface is Phase 6 documentation

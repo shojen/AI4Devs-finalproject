@@ -3,9 +3,9 @@
 ## Description
 
 `App\Actions\Products\SetProductTranslation` (story
-[0076b](../done/0076b-product-translation-write-action-backend.md)) and
+[0076b](0076b-product-translation-write-action-backend.md)) and
 `App\Actions\ProductCategories\SetProductCategoryTranslation` (story
-[0071](../done/0071-product-categories-language-tabs-ui.md)) write a translation row whose
+[0071](0071-product-categories-language-tabs-ui.md)) write a translation row whose
 `product_id` / `product_category_id` foreign key points at the parent. Both parents are **hard
 deleted** (`Product` has no `SoftDeletes`, 0024 D-12; `ProductCategory` likewise), and both translation
 tables declare that FK `cascadeOnDelete()`.
@@ -14,7 +14,7 @@ When the parent row is deleted after the action last saw it and before the trans
 raises **1452** (`ER_NO_REFERENCED_ROW_2`) and the request ends in an unhandled `QueryException`: a
 **500**. This is 0076b's Phase 4 accepted residual **L-2** ("product deleted between re-read and save
 gives an FK 1452 500, same as `SetProductCategoryTranslation`"). Story
-[0087](../done/0087-translation-write-actions-refuse-inactive-store-language.md) (decision
+[0087](0087-translation-write-actions-refuse-inactive-store-language.md) (decision
 **D-13**, user decision Q-4 (a), 2026-11-13) kept it out of its scope and the user asked for this
 separate task.
 
@@ -269,7 +269,7 @@ orphan row; every other database error behaves exactly as before.
 
 ### Dependencies
 
-- **Hard: [0087](../done/0087-translation-write-actions-refuse-inactive-store-language.md).** Both
+- **Hard: [0087](0087-translation-write-actions-refuse-inactive-store-language.md).** Both
   tasks edit `SetProductTranslation.php`, `SetProductCategoryTranslation.php` and their two test files;
   this one is numbered after it and builds on its order (authorize → re-read → active language).
   **Satisfied:** 0087 closed to `done/` on 2026-11-13, so this task has no pending dependency and is
@@ -341,7 +341,7 @@ asked for this task. Created by `product-owner` on 2026-11-13; Phase 1 debate ru
 
 - 2026-11-14: Phase 3 started; task file moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/` (claimed by `worktree-0098-translation-write-actions-deleted-entity-race-backend`).
 
-_Last updated: 2026-11-14, Phase 3 started (task moved to in-progress)._
+_Last updated: 2026-11-14, Phase 3 started (task moved to in-progress); closed in Phase 7._
 
 ## Phase 4 — Security audit (`appsec-auditor`, 2026-11-14)
 
@@ -367,3 +367,7 @@ Residual (accepted, Low): the read-to-write window is closed by refusal, not by 
 ## Phase 6 — Documentation (`docs-keeper`, 2026-11-14)
 
 **Done.** Updated `docs/api/products/products-index-and-editor.md` (`SetProductTranslation` 1452 mapping), `docs/api/products/product-categories.md` (category re-read and 1452 mapping), `docs/security/livewire-authorization/action-level-authorization.md` (new clean-refusal subsection, single `_Last updated:_` line), and `ai-spec/tasks/_digests/epic-5.md` (L-2 marked resolved by 0098; 0098 decision bullets appended). No schema, route or lang change, so no other docs, README or `../readme.md` change.
+
+## Phase 7 — Closure (2026-11-14)
+
+**Status: done.** Phases 3–6 approved (full unscoped suite green: 6300 tests, 0 failures). Task file moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`; claim `worktree-0098-translation-write-actions-deleted-entity-race-backend` released and its `tasks-status.json` entry removed. Link integrity checked in both directions (inbound links repointed in `0099`, `done/0087` and `docs/security/model-instance-trust.md`).

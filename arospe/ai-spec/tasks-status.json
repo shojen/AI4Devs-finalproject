@@ -125,24 +125,6 @@
       ]
     },
     {
-      "id": "0098",
-      "slug": "0098-translation-write-actions-deleted-entity-race-backend",
-      "title": "Product translation write actions refuse a deleted product or category cleanly (backend)",
-      "depends_on": [],
-      "status": "claimed",
-      "claimed_by": "worktree-0098-translation-write-actions-deleted-entity-race-backend",
-      "claimed_at": "2026-11-14T00:00:00Z",
-      "touches": [
-        "app/Actions/Products/SetProductTranslation.php",
-        "app/Actions/ProductCategories/SetProductCategoryTranslation.php",
-        "app/Actions/Products/TranslateProductUniqueViolation.php",
-        "app/Actions/ProductCategories/TranslateProductCategoryNameUniqueViolation.php",
-        "tests/Feature/Products/SetProductTranslationTest.php",
-        "tests/Feature/ProductCategories/SetProductCategoryTranslationTest.php"
-      ],
-      "conflict_risk_with": []
-    },
-    {
       "id": "0099",
       "slug": "0099-blog-translation-write-actions-deleted-entity-race-backend",
       "title": "Blog category and tag translation write actions refuse a deleted parent cleanly (backend)",
