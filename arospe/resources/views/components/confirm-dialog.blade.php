@@ -19,7 +19,9 @@
 
     Story 0093 -- optional second choice: `secondary-action` + `secondary-label` (both required for it
     to render, labels always supplied by the parent). `@close` still runs the DISMISS method, never the
-    secondary one. Three-button dialogs stack below `sm` (confirm first, dismiss last); two-button
+    secondary one. Three-button dialogs ALWAYS stack at full width (confirm first, dismiss last): the
+    panel is `max-w-md`, and three long labels ("Save without changing stock", ...) do not fit in a
+    row at any width (story 0094 found the dismiss button pushed off the panel at `sm`+). Two-button
     dialogs keep their original markup.
 
     Hooks: confirm-dialog-{test-prefix}, confirm-dialog-{test-prefix}-dismiss,
@@ -42,7 +44,7 @@
 
 @php
     $hasSecondary = $secondaryAction !== null && $secondaryLabel !== null;
-    $buttonClass = $hasSecondary ? 'w-full min-h-11 sm:w-auto' : null;
+    $buttonClass = $hasSecondary ? 'w-full min-h-11' : null;
     $confirmTarget = $hasSecondary ? $confirmAction.','.$secondaryAction : $confirmAction;
 @endphp
 
@@ -55,7 +57,7 @@
                 {{ $slot }}
             </div>
 
-            <div @class(['flex gap-3 justify-end' => ! $hasSecondary, 'flex flex-col-reverse gap-3 sm:flex-row sm:justify-end' => $hasSecondary])>
+            <div @class(['flex gap-3 justify-end' => ! $hasSecondary, 'flex flex-col-reverse gap-3' => $hasSecondary])>
                 <flux:button :class="$buttonClass" variant="outline" wire:click="{{ $dismissAction }}" data-test="confirm-dialog-{{ $testPrefix }}-dismiss">
                     {{ $dismissLabel }}
                 </flux:button>

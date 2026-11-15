@@ -178,6 +178,21 @@ return [
         'tax_unresolved' => 'Not yet resolved',
     ],
 
+    // Story 0094 -- the stock dialog on a line's quantity change.
+    'stock' => [
+        'dialog_heading' => 'Update stock?',
+        'dialog_body' => 'Changing this quantity can also change the stock of the product.',
+        'deduct' => '{1} Deduct :count unit from stock|[2,*] Deduct :count units from stock',
+        'return' => '{1} Return :count unit to stock|[2,*] Return :count units to stock',
+        'save_without_stock' => 'Save without changing stock',
+        'keep_editing' => 'Keep editing',
+        'current' => 'Current stock',
+        'resulting' => 'Stock after this change',
+        'negative_warning' => 'This leaves :name at :stock units.',
+        'nothing_to_return' => 'No units of this line are currently out of stock',
+        'changed_meanwhile' => 'This line changed while the dialog was open. Review the new quantity and try again.',
+    ],
+
     'line_items' => [
         'product' => 'Product',
         'sku' => 'SKU',

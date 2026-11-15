@@ -24,6 +24,7 @@ use App\Models\PaymentMethod;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Flux\Flux;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
@@ -130,6 +131,27 @@ class Show extends Component
     public bool $showRefundModal = false;
 
     public bool $showMarkPaidConfirm = false;
+
+    public bool $showStockConfirm = false;
+
+    /**
+     * The pending stock dialog's request (story 0094). All four are `#[Locked]`: `applyStockChoice()`
+     * trusts only what `requestQuantityChange()` recorded, never a client-written value.
+     */
+    #[Locked]
+    public string $pendingStockAction = '';
+
+    #[Locked]
+    public string $pendingItemId = '';
+
+    #[Locked]
+    public int $pendingQuantity = 0;
+
+    /**
+     * The line's quantity when the dialog opened (the stale guard).
+     */
+    #[Locked]
+    public int $pendingFromQuantity = 0;
 
     /**
      * The status a pending backward confirmation would apply. `#[Locked]` AND the only thing that
@@ -446,21 +468,160 @@ class Show extends Component
         $this->refreshOrderState();
     }
 
-    public function updateLineItemQuantity(string $itemId, UpdateOrderItemQuantity $updateOrderItemQuantity): void
+    /**
+     * Story 0094 -- the first half of a quantity change. It never writes for a line that moves stock:
+     * it records the cast target and the line's current quantity in the locked pending props and opens
+     * the stock dialog. It adds no validation of its own (`< 1`, `< refunded` and the hard block stay
+     * the action's to refuse, rendered on apply). A line with no stock target (its catalog row was
+     * deleted) has nothing to ask about and saves directly without moving stock.
+     */
+    public function requestQuantityChange(string $itemId, UpdateOrderItemQuantity $updateOrderItemQuantity): void
     {
         Gate::authorize('update', $this->order);
         $this->resetErrorBag();
 
+        $item = $this->order->items->firstWhere('id', $itemId);
+
+        if (! $item instanceof OrderItem) {
+            $this->addError('lineItems', __('orders.stock.changed_meanwhile'));
+
+            return;
+        }
+
+        $quantity = (int) ($this->editingQuantities[$itemId] ?? 0);
+
+        if ($quantity === $item->quantity) {
+            return;
+        }
+
+        if ($item->stockTarget() === null) {
+            $this->saveQuantity($itemId, $quantity, false, $updateOrderItemQuantity);
+
+            return;
+        }
+
+        $this->pendingStockAction = 'quantity';
+        $this->pendingItemId = $itemId;
+        $this->pendingQuantity = $quantity;
+        $this->pendingFromQuantity = $item->quantity;
+        $this->showStockConfirm = true;
+    }
+
+    /**
+     * The stock dialog's choice: `$adjust` true moves the stock, false saves only the line. Re-authorizes,
+     * refuses an empty or stale request (the line's quantity moved since the dialog opened), and clears
+     * every pending field on every exit path other than a failed authorization.
+     */
+    public function applyStockChoice(bool $adjust, UpdateOrderItemQuantity $updateOrderItemQuantity): void
+    {
+        Gate::authorize('update', $this->order);
+        $this->resetErrorBag();
+
+        $itemId = $this->pendingItemId;
+        $quantity = $this->pendingQuantity;
+        $fromQuantity = $this->pendingFromQuantity;
+        $isPending = $this->pendingStockAction === 'quantity' && $itemId !== '';
+
+        $this->clearPendingStock();
+
+        $item = $isPending ? $this->order->items->firstWhere('id', $itemId) : null;
+
+        if (! $item instanceof OrderItem || $item->quantity !== $fromQuantity) {
+            $this->refreshOrderState();
+            $this->addError('lineItems', __('orders.stock.changed_meanwhile'));
+
+            return;
+        }
+
+        $this->saveQuantity($itemId, $quantity, $adjust, $updateOrderItemQuantity);
+    }
+
+    public function dismissStockConfirm(): void
+    {
+        $this->clearPendingStock();
+        $this->resetErrorBag();
+    }
+
+    /**
+     * The stock dialog's preview, from a fresh read of the pending line and its inventory row.
+     * `units` is what the action will really move, clamped to what the line holds for input it will refuse.
+     *
+     * @return list<array{name: string, variant: string|null, units: int, current: int, resulting: int, willGoNegative: bool}>
+     */
+    #[Computed]
+    public function stockPreview(): array
+    {
+        if ($this->pendingStockAction !== 'quantity' || $this->pendingItemId === '') {
+            return [];
+        }
+
+        $item = OrderItem::query()->where('order_id', $this->orderId)->find($this->pendingItemId);
+        $target = $item?->stockTarget();
+
+        if ($item === null || $target === null) {
+            return [];
+        }
+
+        $row = $target['type'] === 'variant'
+            ? ProductVariant::query()->find($target['id'])
+            : Product::query()->find($target['id']);
+
+        if ($row === null) {
+            return [];
+        }
+
+        $isIncrease = $this->pendingQuantity > $item->quantity;
+        $returnable = max(0, $item->returnableStockUnits());
+        $units = $isIncrease
+            ? $this->pendingQuantity - $item->quantity
+            : min($returnable, max(0, $item->returnableStockUnits() - ($this->pendingQuantity - $item->refunded_quantity)));
+        $resulting = $isIncrease ? $row->stock - $units : $row->stock + $units;
+
+        return [[
+            'name' => $item->product_name,
+            'variant' => $row instanceof ProductVariant ? $row->label() : null,
+            'units' => $units,
+            'current' => $row->stock,
+            'resulting' => $resulting,
+            'willGoNegative' => $resulting < 0,
+        ]];
+    }
+
+    /**
+     * Run the quantity action and render its refusals; the pending state is already cleared by the caller.
+     */
+    private function saveQuantity(string $itemId, int $quantity, bool $adjustStock, UpdateOrderItemQuantity $updateOrderItemQuantity): void
+    {
         try {
-            $updateOrderItemQuantity($this->order, $itemId, (int) ($this->editingQuantities[$itemId] ?? 0));
+            $updateOrderItemQuantity($this->order, $itemId, $quantity, $adjustStock);
         } catch (OrderNotEditableException $exception) {
             $this->refreshOrderState();
             $this->addError('lineItems', $exception->getMessage());
 
             return;
+        } catch (ValidationException $exception) {
+            $this->refreshOrderState();
+            $this->setErrorBag($exception->validator->errors());
+
+            return;
+        } catch (ModelNotFoundException) {
+            $this->refreshOrderState();
+            $this->addError('lineItems', __('orders.stock.changed_meanwhile'));
+
+            return;
         }
 
         $this->refreshOrderState();
+    }
+
+    private function clearPendingStock(): void
+    {
+        $this->pendingStockAction = '';
+        $this->pendingItemId = '';
+        $this->pendingQuantity = 0;
+        $this->pendingFromQuantity = 0;
+        $this->showStockConfirm = false;
+        unset($this->stockPreview);
     }
 
     // ---------------------------------------------------------------------

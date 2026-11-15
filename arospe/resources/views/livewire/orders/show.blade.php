@@ -20,7 +20,7 @@
  *   4. Every wire:model-bound property has a real non-null value in the type the DOM expects.
  *   5. data-test hooks on BOTH branches of every gated control.
  *
- * The line-item section contains NO confirmation control of any kind -- 0048's hard block has no
+ * The line-item section's controls carry no confirmation except the quantity change's stock dialog (0094); 0048's hard block has no
  * confirmation path by design (PRD §3.2), and the reusable confirm-dialog below is used only by the
  * backward status transition, the cancellation and (story 0085) "Mark as paid".
  */
@@ -166,7 +166,7 @@
                                         size="sm"
                                         variant="outline"
                                         data-test="save-quantity-{{ $item['id'] }}"
-                                        wire:click="updateLineItemQuantity(@js($item['id']))"
+                                        wire:click="requestQuantityChange(@js($item['id']))"
                                         class="cursor-pointer!"
                                     >
                                         {{ __('orders.line_items.save_quantity') }}
@@ -459,6 +459,42 @@
             <dt>{{ __('orders.payment.dialog_amount') }}</dt>
             <dd class="font-semibold"><x-money :amount="$order->total" /></dd>
         </dl>
+    </x-confirm-dialog>
+
+    @php($stockRow = $showStockConfirm ? ($this->stockPreview[0] ?? null) : null)
+    @php($stockIncrease = $this->pendingQuantity > $this->pendingFromQuantity)
+    @php($stockUnits = $stockRow['units'] ?? 0)
+    @php($stockMoves = $stockUnits > 0)
+    <x-confirm-dialog
+        :show="$showStockConfirm"
+        model="showStockConfirm"
+        :heading="__('orders.stock.dialog_heading')"
+        :body="__('orders.stock.dialog_body')"
+        :confirm-label="$stockMoves ? trans_choice($stockIncrease ? 'orders.stock.deduct' : 'orders.stock.return', $stockUnits, ['count' => $stockUnits]) : __('orders.stock.save_without_stock')"
+        :dismiss-label="__('orders.stock.keep_editing')"
+        :confirm-action="$stockMoves ? 'applyStockChoice(true)' : 'applyStockChoice(false)'"
+        dismiss-action="dismissStockConfirm"
+        test-prefix="line-stock"
+        :secondary-action="$stockMoves ? 'applyStockChoice(false)' : null"
+        :secondary-label="$stockMoves ? __('orders.stock.save_without_stock') : null"
+    >
+        @if ($stockRow !== null)
+            <dl class="space-y-1" data-test="stock-preview-row-{{ $this->pendingItemId }}">
+                <dt class="font-medium">{{ $stockRow['name'] }}@if ($stockRow['variant']) <span class="font-normal text-zinc-500">({{ $stockRow['variant'] }})</span>@endif</dt>
+                <dd class="text-sm">{{ __('orders.stock.current') }}: <span class="font-semibold">{{ $stockRow['current'] }}</span></dd>
+                <dd class="text-sm">{{ __('orders.stock.resulting') }}: <span class="font-semibold">{{ $stockRow['resulting'] }}</span></dd>
+            </dl>
+
+            @if ($stockRow['willGoNegative'])
+                <flux:callout variant="warning" icon="exclamation-triangle" role="alert" data-test="stock-negative-warning">
+                    <flux:callout.text>{{ __('orders.stock.negative_warning', ['name' => $stockRow['name'], 'stock' => $stockRow['resulting']]) }}</flux:callout.text>
+                </flux:callout>
+            @endif
+
+            @unless ($stockMoves)
+                <flux:text data-test="stock-nothing-to-return">{{ __('orders.stock.nothing_to_return') }}</flux:text>
+            @endunless
+        @endif
     </x-confirm-dialog>
 
     {{-- The refund modal is not a confirm-dialog: it collects per-line units. Its inner content is
