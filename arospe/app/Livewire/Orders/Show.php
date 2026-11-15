@@ -32,6 +32,7 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Renderless;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use LogicException;
 
 /**
  * Order detail and editor: the single consumer surface for every write stories 0048-0052 built
@@ -574,7 +575,7 @@ class Show extends Component
         $returnable = max(0, $item->returnableStockUnits());
         $units = $isIncrease
             ? $this->pendingQuantity - $item->quantity
-            : min($returnable, max(0, $item->returnableStockUnits() - ($this->pendingQuantity - $item->refunded_quantity)));
+            : min($returnable, max(0, $returnable - ($this->pendingQuantity - $item->refunded_quantity)));
         $resulting = $isIncrease ? $row->stock - $units : $row->stock + $units;
 
         return [[
@@ -604,7 +605,7 @@ class Show extends Component
             $this->setErrorBag($exception->validator->errors());
 
             return;
-        } catch (ModelNotFoundException) {
+        } catch (ModelNotFoundException|LogicException) {
             $this->refreshOrderState();
             $this->addError('lineItems', __('orders.stock.changed_meanwhile'));
 

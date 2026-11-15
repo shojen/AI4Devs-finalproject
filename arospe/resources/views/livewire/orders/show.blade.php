@@ -22,7 +22,7 @@
  *
  * The line-item section's controls carry no confirmation except the quantity change's stock dialog (0094); 0048's hard block has no
  * confirmation path by design (PRD §3.2), and the reusable confirm-dialog below is used only by the
- * backward status transition, the cancellation and (story 0085) "Mark as paid".
+ * backward status transition, the cancellation, (story 0085) "Mark as paid" and (story 0094) the quantity change's stock dialog.
  */
 ?>
 @php
