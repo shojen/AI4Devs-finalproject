@@ -20,6 +20,8 @@ task file is correct and this one needs a refresh.
 
 **Update (2026-11-15): `0094a-order-line-removal-stock-dialog-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0094a-order-line-removal-stock-dialog-ui`; Phases 3-6 approved, full unscoped suite green). Its node, inventory row, `claimed` class membership and `tasks-status.json` entry are dropped; inbound links were re-pointed to `done/`. Pending in `ai-spec/tasks/`: `0095`, `0096`, `0099`; `in-progress/` is empty. `done/` holds 122 files; Epic 3 counts 27.
 
+**Update (2026-11-15): 20 new pending tasks, `0100`–`0112` (Epic 6 — Invoicing, plus the Epic 3 customer report `0111`/`0112`)**, Phase 1 by `product-owner` (two facilitators; Three Amigos with the owner's decisions U-1..U-12). Ids were renumbered by one in a single scripted pass so that the unrelated `0099` keeps its number; dependencies are quoted from each file's own header and "Dependencies" section (three headers were corrected in the same pass so they agree with their dependents: `0106a`, `0107`, `0108`). Every dependency has a lower id than its dependent and the graph has no cycle. `0100` is the only new `ready` node (no dependency); the other 19 are `blocked`. Conflict risk with pre-existing pending tasks: `0106`, `0106a`, `0107`, `0108`, `0109a`, `0109b`, `0109c` share `lang/*/orders.php` and, for `0106`, `0106a`, `0107`, `0109b`, `0109c`, also `app/Livewire/Orders/Show.php`, `resources/views/livewire/orders/show.blade.php` or their tests with `0094a`, `0095`, `0096`; finish the stock dialogs first or sequence them. Inside the epic nearly every story touches `lang/*/invoices.php`, so parallel sessions should not work two of them at once without the ownership boundary of `docs/contracts.md`. The existing entries of `tasks-status.json` were left unchanged; the risk is recorded on the new entries. No node is `claimed`.
+
 **Update (2026-11-15): `0094-order-line-quantity-stock-dialog-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0094-order-line-quantity-stock-dialog-ui`; Phases 3-6 approved, full unscoped suite green). Its node, inventory row, `claimed` class membership and `tasks-status.json` entry are dropped; inbound links were re-pointed to `done/`. `0094a` and `0095` lose their only hard dependency and become `ready` (their `conflict_risk_with` on each other and on `0096` stays: all share `Show.php`, `show.blade.php` and `lang/*/orders.php`, run sequentially). `done/` holds 121 files; pending in `ai-spec/tasks/`: `0094a`, `0095`, `0096`, `0099`; `in-progress/` is empty.
 
 **Update (2026-11-15, merge of `origin/main` into the 0098 branch): reconciled coordination files.** `origin/main` brought the 0091 and 0092b closures; this branch brings the 0098 closure and the new `0099`. Recounted from the directory, `done/` holds 120 files; pending in `ai-spec/tasks/`: `0094`, `0094a`, `0095`, `0096`, `0099`; `in-progress/` is empty and no node is `claimed`. `tasks-status.json` = main's entries minus `0098`, plus `0099` (`ready`). The per-closure counts quoted in the paragraphs below were taken before this merge.
@@ -469,7 +471,7 @@ graph and from the parallelization analysis below.
 
 - [Inventory](#inventory)
   - [Done (100) — shipped, out of scope for this graph](#done-100--shipped-out-of-scope-for-this-graph)
-  - [Pending — not started (6 numbered + 1 infra doc)](#pending--not-started-6-numbered--1-infra-doc)
+  - [Pending — not started (24 numbered + 1 infra doc)](#pending--not-started-24-numbered--1-infra-doc)
 - [Dependency graph (pending tasks only)](#dependency-graph-pending-tasks-only)
 - [Analysis](#analysis)
   - [Pending tasks that are independent of each other and safe to parallelize](#pending-tasks-that-are-independent-of-each-other-and-safe-to-parallelize)
@@ -594,7 +596,7 @@ appears as a node in the dependency graph below:
   dependent, 0085, drops it and moves to `ready`.
   0093 — Confirmation dialog optional second choice (frontend), closed 2026-11-10: `<x-confirm-dialog>` gains `secondary-action` / `secondary-label`; its dependents 0094, 0094a and 0095 drop it from `depends_on` and stay `blocked` on their other pending dependencies.
 
-### Pending — not started (5 numbered + 1 infra doc)
+### Pending — not started (24 numbered + 1 infra doc)
 
 Recounted 2026-11-15 (merge of `origin/main` into the 0098 branch; `0098`, `0091` and `0092b` closed): `ai-spec/tasks/` holds `0094`, `0094a`, `0095`, `0096` and `0099` plus `ci-database-connection-gap.md`; `ai-spec/tasks/in-progress/` is empty.
 
@@ -602,6 +604,26 @@ Re-derived 2026-11-08 from the files actually present in `ai-spec/tasks/` (`0078
 
 | ID | Title | Epic area |
 | --- | --- | --- |
+| 0100 | Invoice settings (backend) | Epic 6 — Invoicing |
+| 0100a | Customer tax ID (backend) | Epic 6 — Invoicing |
+| 0100b | Customer tax ID field in the customer form and detail (frontend) | Epic 6 — Invoicing |
+| 0101a | Invoice numbering sequences (backend) | Epic 6 — Invoicing |
+| 0101b | Issue standard invoice — the invoice core (backend) | Epic 6 — Invoicing |
+| 0102 | Invoice PDF rendering and two templates (backend) | Epic 6 — Invoicing |
+| 0103 | Invoice settings screen (frontend) | Epic 6 — Invoicing |
+| 0104 | Send invoice by e-mail, copy on resend (backend) | Epic 6 — Invoicing |
+| 0105 | Automatic issue and send on order creation (backend) | Epic 6 — Invoicing |
+| 0106 | Invoice collection, order debt and the "Partially paid" status (backend) | Epic 6 — Invoicing |
+| 0106a | "Mark as paid" as the invoice shortcut, and the dashboard Real income (backend) | Epic 6 — Invoicing |
+| 0107 | Corrective invoice on refund and on cancellation (backend) | Epic 6 — Invoicing |
+| 0108 | Regenerate invoices after an order edit (backend) | Epic 6 — Invoicing |
+| 0109a | Orders list: invoice send button, and the order invoicing read side (frontend) | Epic 6 — Invoicing |
+| 0109b | Order detail: invoices panel with download, send, collect and undo (frontend) | Epic 6 — Invoicing |
+| 0109c | Order detail: regenerate out-of-date invoices, and the refund limit (frontend) | Epic 6 — Invoicing |
+| 0110 | Billing section: invoice list, filters, send and create invoice (frontend) | Epic 6 — Invoicing |
+| 0110a | Billing: collect and undo a collection from the invoice list (frontend) | Epic 6 — Invoicing |
+| 0111 | Customer report read side (backend) | Epic 3 — Customers (report) |
+| 0112 | Customer report screen with chart (frontend) | Epic 3 — Customers (report) |
 | 0099 | Blog category and tag translation write actions refuse a deleted parent cleanly (backend) | Epic 5 — i18n |
 | 0095 | Order detail — cancel stock dialog (frontend) | Epic 3 — Orders (stock) |
 | 0096 | Order detail — refund modal stock return (frontend) | Epic 3 — Orders (stock) |
@@ -727,6 +749,94 @@ flowchart LR
     %% (P0079 closed to done/ 2026-11-12; P0087 -.-> P0079 dropped, no node is `claimed`.)
     %% (P0075 closed to done/ 2026-10-27; P0073 closed to done/ 2026-10-08; no node remains `claimed`.)
     %% (P0071 --> P0073/P0075/P0079 dropped: 0071 closed to done/ 2026-10-07.)
+    subgraph PEND_INVOICING["Epic 6 — Invoicing"]
+        direction TB
+        P0100["0100 Invoice settings BE"]
+        P0100a["0100a Customer tax ID BE"]
+        P0100b["0100b Customer tax ID field UI"]
+        P0101a["0101a Invoice numbering BE"]
+        P0101b["0101b Issue standard invoice BE"]
+        P0102["0102 Invoice PDF BE"]
+        P0103["0103 Invoice settings screen UI"]
+        P0104["0104 Send invoice by e-mail BE"]
+        P0105["0105 Automatic invoice on order BE"]
+        P0106["0106 Collection, debt, Partially paid BE"]
+        P0106a["0106a Mark as paid shortcut + Real income BE"]
+        P0107["0107 Corrective invoices refund/cancel BE"]
+        P0108["0108 Regenerate after edit BE"]
+        P0109a["0109a Orders list invoice send UI"]
+        P0109b["0109b Order detail invoices panel UI"]
+        P0109c["0109c Regenerate dialog + refund limit UI"]
+        P0110["0110 Billing section UI"]
+        P0110a["0110a Billing collect/undo UI"]
+    end
+    subgraph PEND_REPORT["Epic 3 — Customers (report)"]
+        direction TB
+        P0111["0111 Customer report read side BE"]
+        P0112["0112 Customer report screen UI"]
+    end
+    %% Edges quoted from each task file (2026-11-15). Solid = hard dependency.
+    P0100 --> P0100a
+    P0100a --> P0100b
+    P0100 --> P0101a
+    P0100 --> P0101b
+    P0100a --> P0101b
+    P0101a --> P0101b
+    P0100 --> P0102
+    P0101b --> P0102
+    P0100 --> P0103
+    P0101a --> P0103
+    P0101b --> P0103
+    P0102 --> P0103
+    P0101b --> P0104
+    P0102 --> P0104
+    P0100 --> P0105
+    P0101b --> P0105
+    P0104 --> P0105
+    P0101b --> P0106
+    P0101b --> P0106a
+    P0106 --> P0106a
+    P0101a --> P0107
+    P0101b --> P0107
+    P0106 --> P0107
+    P0101b --> P0108
+    P0106 --> P0108
+    P0107 --> P0108
+    P0104 --> P0109a
+    P0106a --> P0109a
+    P0107 --> P0109a
+    P0108 --> P0109a
+    P0102 --> P0109b
+    P0104 --> P0109b
+    P0106 --> P0109b
+    P0109a --> P0109b
+    P0107 --> P0109c
+    P0108 --> P0109c
+    P0109a --> P0109c
+    P0109b --> P0109c
+    P0101b --> P0110
+    P0102 --> P0110
+    P0104 --> P0110
+    P0106 --> P0110
+    P0109a --> P0110
+    P0109b --> P0110
+    P0106 --> P0110a
+    P0109b --> P0110a
+    P0110 --> P0110a
+    P0106 --> P0111
+    P0106 --> P0112
+    P0111 --> P0112
+    %% Dashed = related, not blocking: 0108 closes 0105's stale-totals limitation; 0111 agrees with 0106a's Real income; 0109b sits next to 0106a's payment line and shows 0107's cancel rules.
+    P0105 -.-> P0108
+    P0106a -.-> P0111
+    P0106a -.-> P0109b
+    P0107 -.-> P0109b
+    %% Shared-file risk with the stock dialogs (no dependency): see the update note at the top.
+    P0096 -.-> P0106a
+    P0096 -.-> P0109b
+    P0096 -.-> P0109c
+    class P0100 ready;
+    class P0100a,P0100b,P0101a,P0101b,P0102,P0103,P0104,P0105,P0106,P0106a,P0107,P0108,P0109a,P0109b,P0109c,P0110,P0110a,P0111,P0112 pending;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
