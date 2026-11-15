@@ -63,7 +63,10 @@ test('changing a quantity re-totals the order on the server', function () {
         ->assertNoJavaScriptErrors()
         ->fill('@quantity-input-'.$item->id, '3')
         ->click('@save-quantity-'.$item->id)
+        ->assertVisible('@confirm-dialog-line-stock')
+        ->click('@confirm-dialog-line-stock-secondary')
         ->assertNoJavaScriptErrors()
+        ->assertMissing('@confirm-dialog-line-stock')
         ->assertSee('€ 30.00');
 
     expect($item->fresh()->quantity)->toBe(3)

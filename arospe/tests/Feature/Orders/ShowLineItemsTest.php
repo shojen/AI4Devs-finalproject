@@ -82,7 +82,8 @@ test('on a Shipped order the line-item section contains NO confirmation control 
         ->not->toMatch('/data-test="[^"]*confirm[^"]*"/')
         ->not->toContain('addLineItem')
         ->not->toContain('removeLineItem')
-        ->not->toContain('updateLineItemQuantity');
+        ->not->toContain('requestQuantityChange')
+        ->not->toContain('applyStockChoice');
 })->with('blocked_order_statuses');
 
 test('even an ENABLED line-item control opens no confirmation: add/remove/save go straight to the action', function () {
@@ -174,7 +175,8 @@ test('a quantity change re-renders the line total and the totals from the STORED
 
     $html = Livewire::test(Show::class, ['order' => $order])
         ->set("editingQuantities.{$item->id}", 3)
-        ->call('updateLineItemQuantity', $item->id)
+        ->call('requestQuantityChange', $item->id)
+        ->call('applyStockChoice', false)
         ->assertHasNoErrors()
         ->html();
 
@@ -243,7 +245,8 @@ test('a quantity below the refunded units renders the refusal against the quanti
 
     Livewire::test(Show::class, ['order' => $order])
         ->set("editingQuantities.{$item->id}", 2)
-        ->call('updateLineItemQuantity', $item->id)
+        ->call('requestQuantityChange', $item->id)
+        ->call('applyStockChoice', false)
         ->assertHasErrors(['quantity']);
 
     expect($item->fresh()->quantity)->toBe(5);
