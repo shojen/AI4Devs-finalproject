@@ -139,7 +139,8 @@ test('an actor holding only orders.view is refused by every mutating and disclos
 })->with([
     'addLineItem' => ['addLineItem', []],
     'removeLineItem' => ['removeLineItem', ['{item}']],
-    'updateLineItemQuantity' => ['updateLineItemQuantity', ['{item}']],
+    'requestQuantityChange' => ['requestQuantityChange', ['{item}']],
+    'applyStockChoice' => ['applyStockChoice', [false]],
     'requestStatusChange' => ['requestStatusChange', []],
     'applyStatusChange' => ['applyStatusChange', []],
     'confirmCancel' => ['confirmCancel', []],

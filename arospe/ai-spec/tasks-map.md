@@ -18,6 +18,8 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-11-15): `0094-order-line-quantity-stock-dialog-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0094-order-line-quantity-stock-dialog-ui`; Phases 3-6 approved, full unscoped suite green). Its node, inventory row, `claimed` class membership and `tasks-status.json` entry are dropped; inbound links were re-pointed to `done/`. `0094a` and `0095` lose their only hard dependency and become `ready` (their `conflict_risk_with` on each other and on `0096` stays: all share `Show.php`, `show.blade.php` and `lang/*/orders.php`, run sequentially). `done/` holds 121 files; pending in `ai-spec/tasks/`: `0094a`, `0095`, `0096`, `0099`; `in-progress/` is empty.
+
 **Update (2026-11-15, merge of `origin/main` into the 0098 branch): reconciled coordination files.** `origin/main` brought the 0091 and 0092b closures; this branch brings the 0098 closure and the new `0099`. Recounted from the directory, `done/` holds 120 files; pending in `ai-spec/tasks/`: `0094`, `0094a`, `0095`, `0096`, `0099`; `in-progress/` is empty and no node is `claimed`. `tasks-status.json` = main's entries minus `0098`, plus `0099` (`ready`). The per-closure counts quoted in the paragraphs below were taken before this merge.
 
 **Update (2026-11-14): `0098-translation-write-actions-deleted-entity-race-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0098-translation-write-actions-deleted-entity-race-backend`; Phases 3-6 approved, full unscoped suite green: 6300 tests). Its node, inventory row, `claimed` class membership and `tasks-status.json` entry are dropped; it joins the flat `done/` inventory (Epic 5: 18; `done/` holds 119 files). No pending task listed it in `depends_on` or `conflict_risk_with` (`0099` is independent), so no dependent is recomputed. No node is `claimed`; `ai-spec/tasks/in-progress/` is empty again. Link check, both directions: same-depth move, so the moved file's `](../done/…)` links became bare siblings and its other links needed no change; all resolve. Inbound links repointed: `](done/0098-…)` in `0099` (2), `](0098-…)` in `done/0087` (3), `../../ai-spec/tasks/done/0098-…` in `docs/security/model-instance-trust.md` line 531. The Epic 5 digest has no link to the file.
@@ -494,7 +496,7 @@ appears as a node in the dependency graph below:
 - **Epic 2 — Products, Taxes, Media, Shipping (35):** 0016, 0017, 0018, 0019, 0019a, 0019b,
   0019c, 0019d, 0020, 0021, 0022, 0023, 0024, 0024a, 0024b, 0025, 0026, 0027, 0028, 0029, 0029a,
   0029b, 0030, 0030a, 0031, 0031a, 0032, 0033, 0034, 0035, 0036, 0037, 0038, 0039, 0080.
-- **Epic 3 — Customers, Orders & Notifications (25, recounted 2026-11-14 from `done/`: 0041-0057 plus 0088, 0088a, 0090, 0091, 0092a and 0092b):** 0091 — `CancelOrder` returns stock only on request (`adjustStock`), first transaction in that action, stock locked before the lines (backend; closed 2026-11-13); its dependent `0095` stays `blocked` on `0094`. 0092b — `RecordRefund` can return refunded units to stock on request (`$stockReturns`), `orders` lock first (backend; closed 2026-11-14); its dependent `0096` turned `ready`. 0090 — `UpdateOrderItemQuantity` and `RemoveOrderItem` adjust stock only on request (`adjustStock`), stock locked before the line (backend; closed 2026-11-13); 0092a — `RecordRefund` locks the order before its lines (backend; closed 2026-11-12): closes the story 0055 lock-order gap; its dependent `0092b` moved `blocked` -> `ready`. 0088 — Order stock adjustment foundation (backend; closed 2026-11-10): order-line stock counters; its dependent `0088a` moved `blocked` -> `ready`. 0041 — the epic's foundation story (the first to close in
+- **Epic 3 — Customers, Orders & Notifications (26, recounted 2026-11-15 from `done/`: 0041-0057 plus 0088, 0088a, 0090, 0091, 0092a, 0092b and 0094):** 0091 — `CancelOrder` returns stock only on request (`adjustStock`), first transaction in that action, stock locked before the lines (backend; closed 2026-11-13); its dependent `0095` became `ready` when `0094` closed. 0092b — `RecordRefund` can return refunded units to stock on request (`$stockReturns`), `orders` lock first (backend; closed 2026-11-14); its dependent `0096` turned `ready`. 0090 — `UpdateOrderItemQuantity` and `RemoveOrderItem` adjust stock only on request (`adjustStock`), stock locked before the line (backend; closed 2026-11-13); 0092a — `RecordRefund` locks the order before its lines (backend; closed 2026-11-12): closes the story 0055 lock-order gap; its dependent `0092b` moved `blocked` -> `ready`. 0088 — Order stock adjustment foundation (backend; closed 2026-11-10): order-line stock counters; its dependent `0088a` moved `blocked` -> `ready`. 0041 — the epic's foundation story (the first to close in
   this epic); its own three former dependents (0042, 0043, 0045) are re-derived against `done/`
   rather than against this pending list from here on. 0042 — Customers soft delete (backend), the
   second story to close in this epic; its own two former dependents (0044, 0047) are re-derived
@@ -599,7 +601,6 @@ Re-derived 2026-11-08 from the files actually present in `ai-spec/tasks/` (`0078
 | ID | Title | Epic area |
 | --- | --- | --- |
 | 0099 | Blog category and tag translation write actions refuse a deleted parent cleanly (backend) | Epic 5 — i18n |
-| 0094 | Order detail — quantity-change stock dialog (frontend) | Epic 3 — Orders (stock) |
 | 0094a | Order detail — line-removal stock dialog (frontend) | Epic 3 — Orders (stock) |
 | 0095 | Order detail — cancel stock dialog (frontend) | Epic 3 — Orders (stock) |
 | 0096 | Order detail — refund modal stock return (frontend) | Epic 3 — Orders (stock) |
@@ -641,21 +642,16 @@ flowchart LR
 
     subgraph PEND_STOCK["Epic 3 — Order stock (bug fix)"]
         direction TB
-        P0094["0094 Quantity stock dialog UI"]
         P0094a["0094a Removal stock dialog UI"]
         P0095["0095 Cancel stock dialog UI"]
         P0096["0096 Refund modal stock UI"]
     end
     %% (P0089 merged into P0088 and P0092 split into P0092a/P0092b on 2026-11-08; their nodes and edges are dropped.)
     %% (P0088 --> P0090/P0091/P0092b replaced by P0088 --> P0088a --> … on 2026-11-08, review #4 split.)
-    P0094 --> P0094a
-    P0094 --> P0095
     P0094a -.-> P0095
-    P0094 -.-> P0096
     P0094a -.-> P0096
     P0095 -.-> P0096
-    class P0094,P0096 ready;
-    class P0094a,P0095 pending;
+    class P0094a,P0095,P0096 ready;
 
     %% Standalone (no PRD epic)
     %% (P0082's own node dropped: 0082 closed to done/ this pass, per the update at the top of this file.)

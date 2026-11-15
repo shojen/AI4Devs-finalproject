@@ -3,7 +3,7 @@
 > **Status: New — Phase 1 output, rewritten after the Phase 2 INVEST review of 2026-11-08; pending re-review.** Epic 3
 > follow-up bug fix, order-stock series. Fullstack pair: **related_task_id 0091**. Blocked on
 > [0091](done/0091-order-cancellation-stock-return-opt-in-backend.md), [0093](done/0093-confirm-dialog-secondary-action-ui.md) and
-> [0094](0094-order-line-quantity-stock-dialog-ui.md) (reuses its `stockPreview` computed).
+> [0094](done/0094-order-line-quantity-stock-dialog-ui.md) (reuses its `stockPreview` computed).
 > **User-confirmed (2026-11-08):** OQ-3 — an order with nothing to return still gets the dialog, with a note and only "Cancel
 > without changing stock" / "Keep order".
 
@@ -146,7 +146,7 @@ Estimable/Small: one existing dialog gains a second action, a preview and a guar
 
 ## Dependencies, risks, open technical questions
 **Depends on:** [0091](done/0091-order-cancellation-stock-return-opt-in-backend.md), [0093](done/0093-confirm-dialog-secondary-action-ui.md),
-[0094](0094-order-line-quantity-stock-dialog-ui.md) (hard). Shares files with [0094a](0094a-order-line-removal-stock-dialog-ui.md),
+[0094](done/0094-order-line-quantity-stock-dialog-ui.md) (hard). Shares files with [0094a](0094a-order-line-removal-stock-dialog-ui.md),
 [0096](0096-order-refund-modal-stock-return-ui.md) and [0092b](done/0092b-order-refund-stock-return-backend.md) (lang) — run sequentially.
 - **R-1** — Existing cancellation tests change by design; Phase 5 must check they were adapted, not deleted.
 

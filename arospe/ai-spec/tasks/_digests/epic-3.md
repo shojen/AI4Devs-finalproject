@@ -131,3 +131,12 @@ and are not backfilled here — see their own task files in `ai-spec/tasks/done/
 - Lock order realised: `orders` lock, plain items read, guards, `AdjustOrderStock` (positive deltas), items lock + re-verify Q/F/U/K (mismatch or missing line = `LogicException`, stock rolled back), writes on locked rows. `k` is credited only for ids `AdjustOrderStock` reports (deleted catalog row = refund recorded, no stock moved) — story 0092b.
 - Forward rule from 0088a is now satisfied by 0090, 0091 and 0092b — story 0092b.
 - Follow-ups for 0096: cast `items` / `stockReturns` to int after validation (Livewire sends strings); catch the concurrent-change `LogicException` with a retry message; tell the admin when a refunded line moved no stock — story 0092b.
+
+## Story 0094 — Order line quantity change asks about stock (frontend)
+
+- `Orders\Show::updateLineItemQuantity` is replaced by `requestQuantityChange` -> dialog -> `applyStockChoice(bool $adjust, UpdateOrderItemQuantity)` / `dismissStockConfirm`; the shared state is `#[Locked]` `pendingStockAction`, `pendingItemId`, `pendingQuantity`, `pendingFromQuantity` plus `showStockConfirm`, all cleared by one private `clearPendingStock()` on every exit path — story 0094. 0094a adds a second concretely typed injected parameter (`RemoveOrderItem`); 0095 reuses `stockPreview`.
+- `stockPreview` is a fresh read; decrease units = `max(0, R - (newQty - F))` clamped to `[0, R]`, so invalid input never previews more than the line holds; a null `stockTarget()` line saves directly with `adjustStock: false` — story 0094.
+- `x-confirm-dialog` always renders `-confirm` and has no hide prop, so the zero-units variant is the two-button form with `-confirm` = "Save without changing stock" (0094a does the same with "Remove without changing stock") — story 0094.
+- The three-button form now always stacks full width: with long labels the `sm:flex-row` row pushed the dismiss button off the `max-w-md` panel (found by the browser test, not by the markup) — story 0094.
+- The concurrent-change `LogicException` from `UpdateOrderItemQuantity` is caught in `saveQuantity` and rendered as `orders.stock.changed_meanwhile`; the stale guard still only compares `quantity` outside the action's transaction (security note, low): passing the expected counters into the action is a follow-up — story 0094.
+- Test support: Livewire `ShowLineItemStockTest`, browser `OrderLineItemStockDialogTest` (scope the X locator to `dialog[open]`: the order page holds several flux modals) — story 0094.

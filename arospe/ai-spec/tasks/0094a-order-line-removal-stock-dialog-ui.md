@@ -2,7 +2,7 @@
 
 > **Status: New — created 2026-11-08 by splitting former 0094 after the Phase 2 INVEST review (user decision); pending review.**
 > Epic 3 follow-up bug fix, order-stock series. Suffix numbering follows the `0076a` precedent so the story sorts after
-> [0094](0094-order-line-quantity-stock-dialog-ui.md) (whose state and dialog it extends) and before
+> [0094](done/0094-order-line-quantity-stock-dialog-ui.md) (whose state and dialog it extends) and before
 > [0095](0095-order-cancellation-stock-dialog-ui.md). Fullstack pair: **related_task_id 0090** (`RemoveOrderItem` `adjustStock`).
 > **User-confirmed (2026-11-08):** OQ-3 — a line with zero returnable units still gets the dialog, with a note and only
 > "Remove without changing stock" / "Keep editing".
@@ -18,7 +18,7 @@ frontend (related_task_id: 0090) | includes database-expert: no
 ## Verified facts that shaped the story
 - `App\Livewire\Orders\Show::removeLineItem(string $itemId, RemoveOrderItem)` is called directly from `remove-line-item-{id}`;
   Remove is disabled on a line with refunded units, and `RemoveOrderItem` refuses that case and the order's last line.
-- 0094 introduces the pending state (`pendingStockAction`, `pendingItemId`, `pendingFromQuantity`, `showStockConfirm`),
+- 0094 introduces the pending state (`pendingStockAction`, `pendingItemId`, `pendingQuantity`, `pendingFromQuantity`, `showStockConfirm`),
   `applyStockChoice()`, `dismissStockConfirm()`, `stockPreview` and the `line-stock` dialog.
 
 ## Decisions
@@ -34,14 +34,16 @@ frontend (related_task_id: 0090) | includes database-expert: no
   and calls `RemoveOrderItem` with `adjustStock: $adjust`.
 - **D-4** — `stockPreview` gains the removal shape: `units = returnableStockUnits()` (= `quantity − stock_undeducted_quantity`, refunded lines cannot
   be removed).
-- **D-5 (OQ-3, user-confirmed)** — When `units` is 0 the dialog shows `orders.stock.nothing_to_return` instead of the confirm
-  button and offers only "Remove without changing stock" and "Keep editing".
+- **D-5 (OQ-3, user-confirmed)** — When `units` is 0 the dialog shows `orders.stock.nothing_to_return` and offers only
+  "Remove without changing stock" and "Keep editing". As in 0094 D-6 (Phase 2 re-review #4, option a), this is the **two-button
+  form**: `x-confirm-dialog` always renders `-confirm` and is not modified, so `-confirm` carries "Remove without changing stock"
+  (`confirm-action="applyStockChoice(false)"`), with no `-secondary` hook and no "Return" label.
 - **D-6 — Copy.** Confirm "Return :count units to stock"; secondary "Remove without changing stock"; dismiss "Keep editing"
   (`orders.stock.*`, en + es).
 - **D-7 — Hooks.** Same `line-stock` dialog hooks as 0094; `remove-line-item-{id}` stays on the same button.
 - **D-8 (user D7)** — `orders.edit` gates request and apply.
 - **D-9 — Errors and pending state.** Every rendered action refusal closes the dialog, refreshes and renders inline — never
-  a 500. **Pending state (`pendingStockAction`, `pendingItemId`, `pendingFromQuantity`, `showStockConfirm`) is
+  a 500. **Pending state (`pendingStockAction`, `pendingItemId`, `pendingQuantity`, `pendingFromQuantity`, `showStockConfirm`) is
   cleared on every exit path of `applyStockChoice()`**: success, every rendered refusal (`OrderNotEditableException`,
   `ValidationException`, not-found item) and the stale-guard path, plus `dismissStockConfirm()`. **A failed re-authorization is
   a 403** (the `Gate::authorize` exception propagates; tests assert `assertForbidden()`); it does not clear pending state, which
@@ -111,7 +113,7 @@ Feature: The order administrator decides whether removing a line returns its uni
 ## Tests to perform
 - [ ] Livewire: request opens the dialog with the removal preview; null-target line removed with `adjustStock: false`, no dialog.
 - [ ] Livewire: both choices call `RemoveOrderItem` with the matching `adjustStock` (assert stock and line deletion); dismiss changes nothing.
-- [ ] Livewire: zero-returnable removal shows the note and only two options (OQ-3).
+- [ ] Livewire: zero-returnable removal shows the note, no `-secondary` hook and no Return label; `-confirm` reads "Remove without changing stock" and runs `applyStockChoice(false)`, plus "Keep editing" (OQ-3).
 - [ ] Refusals (last line, refunded line, shipped order) close the dialog and render inline.
 - [ ] Pending state is empty after success, after each rendered refusal type (authorization failure asserted as forbidden instead, `assertForbidden()`) and after the stale-guard path; an apply with empty pending state is refused and changes nothing.
 - [ ] Security: locked pending state; re-authorization on apply; item of another order → not found; stale guard (line already removed or quantity changed).
@@ -138,7 +140,7 @@ keep inventory. Estimable/Small: one request method and one branch on an existin
 
 ## Dependencies, risks, open technical questions
 **Depends on:** [0090](done/0090-order-line-quantity-and-removal-stock-opt-in-backend.md),
-[0093](done/0093-confirm-dialog-secondary-action-ui.md), [0094](0094-order-line-quantity-stock-dialog-ui.md) (hard). Shares
+[0093](done/0093-confirm-dialog-secondary-action-ui.md), [0094](done/0094-order-line-quantity-stock-dialog-ui.md) (hard). Shares
 `Show.php`, `show.blade.php` and `lang/*/orders.php` with 0094, 0095, 0096 and 0092b (lang) — run sequentially.
 - **R-1** — Removing the public `removeLineItem` changes the component's public surface.
 
