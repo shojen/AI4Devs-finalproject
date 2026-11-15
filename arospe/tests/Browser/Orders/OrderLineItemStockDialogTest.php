@@ -23,6 +23,17 @@ beforeEach(function () {
 });
 
 /**
+ * The save is a Livewire round trip that finishes after the browser call returns: wait (up to 5 s)
+ * for the line to reach the expected quantity before the database assertions run.
+ */
+function waitForLineQuantity(OrderItem $item, int $expected): void
+{
+    for ($attempt = 0; $attempt < 50 && $item->fresh()->quantity !== $expected; $attempt++) {
+        usleep(100_000);
+    }
+}
+
+/**
  * A pending order with one "Mug" line of $quantity units (all deducted from stock) and $stock units left.
  *
  * @return array{0: Order, 1: OrderItem, 2: Product}
@@ -70,6 +81,8 @@ test('deducting the added units updates the line and the stock', function () {
         ->assertMissing('@confirm-dialog-line-stock')
         ->assertSee('€ 50.00');
 
+    waitForLineQuantity($item, 5);
+
     expect($item->fresh()->quantity)->toBe(5)
         ->and($product->fresh()->stock)->toBe(7);
 });
@@ -84,6 +97,8 @@ test('saving without changing stock runs only the secondary choice', function ()
         ->assertNoJavaScriptErrors()
         ->assertMissing('@confirm-dialog-line-stock')
         ->assertSee('€ 50.00');
+
+    waitForLineQuantity($item, 5);
 
     expect($item->fresh()->quantity)->toBe(5)
         ->and($product->fresh()->stock)->toBe(10);
@@ -165,6 +180,8 @@ test('an increase that leaves negative stock is warned about as an alert but sti
         ->assertNoJavaScriptErrors()
         ->assertMissing('@confirm-dialog-line-stock');
 
+    waitForLineQuantity($item, 5);
+
     expect($item->fresh()->quantity)->toBe(5)
         ->and($product->fresh()->stock)->toBe(-2);
 });
@@ -182,6 +199,8 @@ test('lowering a quantity offers to return the removed units', function () {
         ->click('@confirm-dialog-line-stock-confirm')
         ->assertNoJavaScriptErrors()
         ->assertMissing('@confirm-dialog-line-stock');
+
+    waitForLineQuantity($item, 2);
 
     expect($item->fresh()->quantity)->toBe(2)
         ->and($product->fresh()->stock)->toBe(13);
@@ -204,6 +223,8 @@ test('lowering a line with nothing to return explains it and offers only two but
         ->assertNoJavaScriptErrors()
         ->assertMissing('@confirm-dialog-line-stock');
 
+    waitForLineQuantity($item, 2);
+
     expect($item->fresh()->quantity)->toBe(2)
         ->and($product->fresh()->stock)->toBe(10);
 });
@@ -218,6 +239,8 @@ test('a line whose product was deleted is saved without any stock dialog', funct
         ->click('@save-quantity-'.$item->id)
         ->assertNoJavaScriptErrors()
         ->assertMissing('@confirm-dialog-line-stock');
+
+    waitForLineQuantity($item, 4);
 
     expect($item->fresh()->quantity)->toBe(4);
 });
@@ -237,6 +260,8 @@ test('both action buttons are disabled while one of them is loading', function (
     $page->assertScript("document.querySelector('[data-test=\"confirm-dialog-line-stock-confirm\"]').disabled && document.querySelector('[data-test=\"confirm-dialog-line-stock-secondary\"]').disabled")
         ->assertMissing('@confirm-dialog-line-stock')
         ->assertNoJavaScriptErrors();
+
+    waitForLineQuantity($item, 5);
 
     expect($item->fresh()->quantity)->toBe(5)
         ->and($product->fresh()->stock)->toBe(7);
