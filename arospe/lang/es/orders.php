@@ -149,7 +149,10 @@ return [
         'resulting' => 'Stock tras este cambio',
         'negative_warning' => 'Esto deja :name en :stock unidades.',
         'nothing_to_return' => 'Ninguna unidad de esta línea está fuera del stock actualmente',
-        'changed_meanwhile' => 'Esta línea cambió mientras el diálogo estaba abierto. Revisa la nueva cantidad e inténtalo de nuevo.',
+        'changed_meanwhile' => 'Esta línea cambió mientras el diálogo estaba abierto. Revísala e inténtalo de nuevo.',
+        'remove_heading' => '¿Eliminar esta línea?',
+        'remove_body' => 'Eliminar esta línea también puede devolver sus unidades al stock del producto.',
+        'remove_without_stock' => 'Eliminar sin cambiar el stock',
     ],
 
     'line_items' => [

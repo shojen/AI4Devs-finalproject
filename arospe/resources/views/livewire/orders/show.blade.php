@@ -186,7 +186,7 @@
                                         icon="trash"
                                         aria-label="{{ __('orders.line_items.remove') }}"
                                         data-test="remove-line-item-{{ $item['id'] }}"
-                                        wire:click="removeLineItem(@js($item['id']))"
+                                        wire:click="requestRemoveLineItem(@js($item['id']))"
                                         class="cursor-pointer! text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"
                                     />
                                 @else
@@ -462,21 +462,23 @@
     </x-confirm-dialog>
 
     @php($stockRow = $showStockConfirm ? ($this->stockPreview[0] ?? null) : null)
-    @php($stockIncrease = $this->pendingQuantity > $this->pendingFromQuantity)
+    @php($stockRemoving = $this->pendingStockAction === 'remove')
+    @php($stockIncrease = ! $stockRemoving && $this->pendingQuantity > $this->pendingFromQuantity)
+    @php($stockSecondaryLabel = __($stockRemoving ? 'orders.stock.remove_without_stock' : 'orders.stock.save_without_stock'))
     @php($stockUnits = $stockRow['units'] ?? 0)
     @php($stockMoves = $stockUnits > 0)
     <x-confirm-dialog
         :show="$showStockConfirm"
         model="showStockConfirm"
-        :heading="__('orders.stock.dialog_heading')"
-        :body="__('orders.stock.dialog_body')"
-        :confirm-label="$stockMoves ? trans_choice($stockIncrease ? 'orders.stock.deduct' : 'orders.stock.return', $stockUnits, ['count' => $stockUnits]) : __('orders.stock.save_without_stock')"
+        :heading="__($stockRemoving ? 'orders.stock.remove_heading' : 'orders.stock.dialog_heading')"
+        :body="__($stockRemoving ? 'orders.stock.remove_body' : 'orders.stock.dialog_body')"
+        :confirm-label="$stockMoves ? trans_choice($stockIncrease ? 'orders.stock.deduct' : 'orders.stock.return', $stockUnits, ['count' => $stockUnits]) : $stockSecondaryLabel"
         :dismiss-label="__('orders.stock.keep_editing')"
         :confirm-action="$stockMoves ? 'applyStockChoice(true)' : 'applyStockChoice(false)'"
         dismiss-action="dismissStockConfirm"
         test-prefix="line-stock"
         :secondary-action="$stockMoves ? 'applyStockChoice(false)' : null"
-        :secondary-label="$stockMoves ? __('orders.stock.save_without_stock') : null"
+        :secondary-label="$stockMoves ? $stockSecondaryLabel : null"
     >
         @if ($stockRow !== null)
             <dl class="space-y-1" data-test="stock-preview-row-{{ $this->pendingItemId }}">

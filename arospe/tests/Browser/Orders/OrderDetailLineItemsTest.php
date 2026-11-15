@@ -14,6 +14,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
+use Pest\Browser\Execution;
 use Spatie\Permission\PermissionRegistrar;
 
 beforeEach(function () {
@@ -82,9 +83,16 @@ test('removing one of two line items drops it from the page and the order', func
     visit('/orders/'.$order->id)
         ->assertNoJavaScriptErrors()
         ->click('@remove-line-item-'.$remove->id)
+        ->assertVisible('@confirm-dialog-line-stock')
+        ->click('@confirm-dialog-line-stock-secondary')
         ->assertNoJavaScriptErrors()
+        ->assertMissing('@confirm-dialog-line-stock')
         ->assertMissing('@line-item-'.$remove->id)
         ->assertPresent('@line-item-'.$keep->id);
+
+    for ($attempt = 0; $attempt < 50 && OrderItem::query()->whereKey($remove->id)->exists(); $attempt++) {
+        Execution::instance()->wait(0.1);
+    }
 
     expect(OrderItem::query()->whereKey($remove->id)->exists())->toBeFalse();
 });
@@ -97,7 +105,10 @@ test('removing the only remaining line item shows the refusal and keeps the item
 
     visit('/orders/'.$order->id)
         ->click('@remove-line-item-'.$item->id)
+        ->assertVisible('@confirm-dialog-line-stock')
+        ->click('@confirm-dialog-line-stock-secondary')
         ->assertNoJavaScriptErrors()
+        ->assertMissing('@confirm-dialog-line-stock')
         ->assertSee(__('orders.errors.last_line_item_cannot_be_removed'))
         ->assertPresent('@line-item-'.$item->id);
 

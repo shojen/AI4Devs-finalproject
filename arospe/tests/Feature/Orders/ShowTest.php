@@ -138,7 +138,7 @@ test('an actor holding only orders.view is refused by every mutating and disclos
     expect(fn () => $component->call($method, ...$arguments))->toThrow(AuthorizationException::class);
 })->with([
     'addLineItem' => ['addLineItem', []],
-    'removeLineItem' => ['removeLineItem', ['{item}']],
+    'requestRemoveLineItem' => ['requestRemoveLineItem', ['{item}']],
     'requestQuantityChange' => ['requestQuantityChange', ['{item}']],
     'applyStockChoice' => ['applyStockChoice', [false]],
     'requestStatusChange' => ['requestStatusChange', []],
@@ -201,7 +201,7 @@ test('an actor holding orders.refund but not orders.edit can record a refund and
     expect($order->fresh()->payment_status)->toBe(PaymentStatus::Refunded);
 
     $this->withoutExceptionHandling();
-    expect(fn () => Livewire::test(Show::class, ['order' => $order])->call('removeLineItem', $item->id))
+    expect(fn () => Livewire::test(Show::class, ['order' => $order])->call('requestRemoveLineItem', $item->id))
         ->toThrow(AuthorizationException::class);
 });
 
@@ -213,7 +213,8 @@ test('an actor holding orders.edit but not orders.refund can edit line items and
     $this->actingAs(OrdersUi::actor(['orders.view', 'orders.edit']));
 
     Livewire::test(Show::class, ['order' => $order])
-        ->call('removeLineItem', $item->id)
+        ->call('requestRemoveLineItem', $item->id)
+        ->call('applyStockChoice', false)
         ->assertHasNoErrors();
 
     expect($order->items()->count())->toBe(1);

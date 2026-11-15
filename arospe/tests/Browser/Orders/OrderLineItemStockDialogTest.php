@@ -11,6 +11,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
+use Pest\Browser\Execution;
 use Spatie\Permission\PermissionRegistrar;
 
 beforeEach(function () {
@@ -29,7 +30,7 @@ beforeEach(function () {
 function waitForLineQuantity(OrderItem $item, int $expected): void
 {
     for ($attempt = 0; $attempt < 50 && $item->fresh()->quantity !== $expected; $attempt++) {
-        usleep(100_000);
+        Execution::instance()->wait(0.1);
     }
 }
 
@@ -245,6 +246,184 @@ test('a line whose product was deleted is saved without any stock dialog', funct
     expect($item->fresh()->quantity)->toBe(4);
 });
 
+// Story 0094a: removing an order line asks whether to return its units to stock.
+
+/**
+ * The removal is a Livewire round trip that finishes after the browser call returns: wait (up to 5 s)
+ * for the line to be gone before the database assertions run.
+ */
+function waitForLineRemoval(OrderItem $item): void
+{
+    for ($attempt = 0; $attempt < 50 && OrderItem::query()->whereKey($item->id)->exists(); $attempt++) {
+        Execution::instance()->wait(0.1);
+    }
+}
+
+/**
+ * A pending order with a "Mug" line of $quantity units plus a second line, so removing the first is allowed.
+ *
+ * @return array{0: Order, 1: OrderItem, 2: Product}
+ */
+function stockDialogRemovalOrder(int $quantity = 3, int $stock = 10, bool $legacyUntracked = false): array
+{
+    [$order, $item, $product] = stockDialogBrowserOrder($quantity, $stock, $legacyUntracked);
+    OrderItem::factory()->for($order)->create();
+
+    return [$order, $item, $product];
+}
+
+test('removing a line opens a dialog with the removal wording, three choices and the stock preview', function () {
+    [$order, $item] = stockDialogRemovalOrder(3, 10);
+
+    visit('/orders/'.$order->id)
+        ->assertNoJavaScriptErrors()
+        ->click('@remove-line-item-'.$item->id)
+        ->assertVisible('@confirm-dialog-line-stock')
+        ->assertSee('Remove this line?')
+        ->assertSee('Removing this line can also return its units to the stock of the product.')
+        ->assertSeeIn('@confirm-dialog-line-stock-confirm', 'Return 3 units to stock')
+        ->assertSeeIn('@confirm-dialog-line-stock-secondary', 'Remove without changing stock')
+        ->assertSeeIn('@confirm-dialog-line-stock-dismiss', 'Keep editing')
+        ->assertPresent('@stock-preview-row-'.$item->id)
+        ->assertSeeIn('@stock-preview-row-'.$item->id, 'Mug')
+        ->assertSeeIn('@stock-preview-row-'.$item->id, '10')
+        ->assertSeeIn('@stock-preview-row-'.$item->id, '13')
+        ->assertNoJavaScriptErrors();
+
+    expect(OrderItem::query()->whereKey($item->id)->exists())->toBeTrue();
+});
+
+test('returning the units removes the line and puts them back in stock', function () {
+    [$order, $item, $product] = stockDialogRemovalOrder(3, 10);
+
+    visit('/orders/'.$order->id)
+        ->click('@remove-line-item-'.$item->id)
+        ->click('@confirm-dialog-line-stock-confirm')
+        ->assertNoJavaScriptErrors()
+        ->assertMissing('@confirm-dialog-line-stock')
+        ->assertMissing('@line-item-'.$item->id);
+
+    waitForLineRemoval($item);
+
+    expect(OrderItem::query()->whereKey($item->id)->exists())->toBeFalse()
+        ->and($product->fresh()->stock)->toBe(13);
+});
+
+test('removing without changing stock leaves the stock as it was', function () {
+    [$order, $item, $product] = stockDialogRemovalOrder(3, 10);
+
+    visit('/orders/'.$order->id)
+        ->click('@remove-line-item-'.$item->id)
+        ->click('@confirm-dialog-line-stock-secondary')
+        ->assertNoJavaScriptErrors()
+        ->assertMissing('@confirm-dialog-line-stock')
+        ->assertMissing('@line-item-'.$item->id);
+
+    waitForLineRemoval($item);
+
+    expect(OrderItem::query()->whereKey($item->id)->exists())->toBeFalse()
+        ->and($product->fresh()->stock)->toBe(10);
+});
+
+test('keeping editing aborts the removal', function () {
+    [$order, $item, $product] = stockDialogRemovalOrder(3, 10);
+
+    visit('/orders/'.$order->id)
+        ->click('@remove-line-item-'.$item->id)
+        ->assertVisible('@confirm-dialog-line-stock')
+        ->click('@confirm-dialog-line-stock-dismiss')
+        ->assertNoJavaScriptErrors()
+        ->assertMissing('@confirm-dialog-line-stock')
+        ->assertPresent('@line-item-'.$item->id);
+
+    expect(OrderItem::query()->whereKey($item->id)->exists())->toBeTrue()
+        ->and($product->fresh()->stock)->toBe(10);
+});
+
+test('Escape aborts the removal dialog without changing anything', function () {
+    [$order, $item, $product] = stockDialogRemovalOrder(3, 10);
+
+    visit('/orders/'.$order->id)
+        ->click('@remove-line-item-'.$item->id)
+        ->assertVisible('@confirm-dialog-line-stock')
+        ->keys('@confirm-dialog-line-stock-dismiss', 'Escape')
+        ->assertMissing('@confirm-dialog-line-stock')
+        ->assertPresent('@line-item-'.$item->id)
+        ->assertNoJavaScriptErrors();
+
+    expect(OrderItem::query()->whereKey($item->id)->exists())->toBeTrue()
+        ->and($product->fresh()->stock)->toBe(10);
+});
+
+test('clicking the backdrop aborts the removal dialog without changing anything', function () {
+    [$order, $item, $product] = stockDialogRemovalOrder(3, 10);
+
+    $page = visit('/orders/'.$order->id)
+        ->click('@remove-line-item-'.$item->id)
+        ->assertVisible('@confirm-dialog-line-stock');
+
+    $page->script("document.querySelector('dialog[open]').dispatchEvent(new MouseEvent('click', { bubbles: true }))");
+
+    $page->assertMissing('@confirm-dialog-line-stock')
+        ->assertPresent('@line-item-'.$item->id)
+        ->assertNoJavaScriptErrors();
+
+    expect(OrderItem::query()->whereKey($item->id)->exists())->toBeTrue()
+        ->and($product->fresh()->stock)->toBe(10);
+});
+
+test('the close X aborts the removal dialog without changing anything', function () {
+    [$order, $item, $product] = stockDialogRemovalOrder(3, 10);
+
+    visit('/orders/'.$order->id)
+        ->click('@remove-line-item-'.$item->id)
+        ->assertVisible('@confirm-dialog-line-stock')
+        ->click('dialog[open] [aria-label="Close modal"]')
+        ->assertMissing('@confirm-dialog-line-stock')
+        ->assertPresent('@line-item-'.$item->id)
+        ->assertNoJavaScriptErrors();
+
+    expect(OrderItem::query()->whereKey($item->id)->exists())->toBeTrue()
+        ->and($product->fresh()->stock)->toBe(10);
+});
+
+test('removing a line with nothing to return explains it and offers only two buttons', function () {
+    [$order, $item, $product] = stockDialogRemovalOrder(3, 10, legacyUntracked: true);
+
+    visit('/orders/'.$order->id)
+        ->click('@remove-line-item-'.$item->id)
+        ->assertVisible('@confirm-dialog-line-stock')
+        ->assertPresent('@stock-nothing-to-return')
+        ->assertMissing('@confirm-dialog-line-stock-secondary')
+        ->assertSeeIn('@confirm-dialog-line-stock-confirm', 'Remove without changing stock')
+        ->assertDontSee('units to stock')
+        ->assertSeeIn('@confirm-dialog-line-stock-dismiss', 'Keep editing')
+        ->click('@confirm-dialog-line-stock-confirm')
+        ->assertNoJavaScriptErrors()
+        ->assertMissing('@confirm-dialog-line-stock');
+
+    waitForLineRemoval($item);
+
+    expect(OrderItem::query()->whereKey($item->id)->exists())->toBeFalse()
+        ->and($product->fresh()->stock)->toBe(10);
+});
+
+test('a line whose product was deleted is removed without any stock dialog', function () {
+    $order = Order::factory()->create();
+    $item = OrderItem::factory()->for($order)->create(['quantity' => 2]);
+    OrderItem::factory()->for($order)->create();
+    Product::query()->whereKey($item->product_id)->delete();
+
+    visit('/orders/'.$order->id)
+        ->click('@remove-line-item-'.$item->id)
+        ->assertNoJavaScriptErrors()
+        ->assertMissing('@confirm-dialog-line-stock');
+
+    waitForLineRemoval($item);
+
+    expect(OrderItem::query()->whereKey($item->id)->exists())->toBeFalse();
+});
+
 test('both action buttons are disabled while one of them is loading', function () {
     [$order, $item, $product] = stockDialogBrowserOrder(2, 10);
 
@@ -338,4 +517,20 @@ test('the dialog is legible in dark mode', function () {
             })()
             JS)
         ->assertNoJavaScriptErrors();
+});
+
+test('a refused quantity change closes the dialog and keeps the refusal message visible', function () {
+    [$order, $item, $product] = stockDialogBrowserOrder(2, 10);
+
+    visit('/orders/'.$order->id)
+        ->fill('@quantity-input-'.$item->id, '0')
+        ->click('@save-quantity-'.$item->id)
+        ->assertVisible('@confirm-dialog-line-stock')
+        ->click('@confirm-dialog-line-stock-confirm')
+        ->assertNoJavaScriptErrors()
+        ->assertMissing('@confirm-dialog-line-stock')
+        ->assertSee(__('validation.min.numeric', ['attribute' => 'quantity', 'min' => 1]));
+
+    expect($item->fresh()->quantity)->toBe(2)
+        ->and($product->fresh()->stock)->toBe(10);
 });

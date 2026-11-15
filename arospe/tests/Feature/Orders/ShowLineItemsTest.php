@@ -81,12 +81,12 @@ test('on a Shipped order the line-item section contains NO confirmation control 
         ->not->toContain('confirm-dialog')
         ->not->toMatch('/data-test="[^"]*confirm[^"]*"/')
         ->not->toContain('addLineItem')
-        ->not->toContain('removeLineItem')
+        ->not->toContain('requestRemoveLineItem')
         ->not->toContain('requestQuantityChange')
         ->not->toContain('applyStockChoice');
 })->with('blocked_order_statuses');
 
-test('even an ENABLED add or remove control opens no confirmation and goes straight to the action (the quantity save has its stock dialog, see ShowLineItemStockTest)', function () {
+test('even an ENABLED add control opens no confirmation, and a closed section renders no dialog markup (quantity save and remove open the stock dialog on request, see ShowLineItemStockTest and ShowLineItemRemovalStockTest)', function () {
     ordersUiLineEditor();
 
     $order = Order::factory()->withItems(2)->create();
@@ -120,7 +120,8 @@ test('removing the last remaining line item shows the refusal against the line i
     $item = $order->items()->sole();
 
     Livewire::test(Show::class, ['order' => $order])
-        ->call('removeLineItem', $item->id)
+        ->call('requestRemoveLineItem', $item->id)
+        ->call('applyStockChoice', false)
         ->assertHasErrors(['order_item_id'])
         ->assertSee(__('orders.errors.last_line_item_cannot_be_removed'))
         ->assertSee($item->product_name);
@@ -135,7 +136,8 @@ test('removing one of TWO line items succeeds -- a rule asserted only from its r
     [$keep, $remove] = [$order->items()->orderBy('id')->first(), $order->items()->orderByDesc('id')->first()];
 
     $html = Livewire::test(Show::class, ['order' => $order])
-        ->call('removeLineItem', $remove->id)
+        ->call('requestRemoveLineItem', $remove->id)
+        ->call('applyStockChoice', false)
         ->assertHasNoErrors()
         ->html();
 
@@ -157,7 +159,7 @@ test('removing a line re-renders the order totals in the same response (no stale
     $component = Livewire::test(Show::class, ['order' => $order]);
     expect($component->html())->toContain('€ 35.00');
 
-    $component->call('removeLineItem', $b->id);
+    $component->call('requestRemoveLineItem', $b->id)->call('applyStockChoice', false);
 
     expect($component->html())->toContain('€ 10.00')->not->toContain('€ 35.00');
 });
@@ -230,7 +232,8 @@ test('Remove is disabled on a line that carries refunded units, and a forced cal
 
     expect(OrdersUi::disabled($component->html(), 'remove-line-item-'.$refunded->id))->toBeTrue();
 
-    $component->call('removeLineItem', $refunded->id)
+    $component->call('requestRemoveLineItem', $refunded->id)
+        ->call('applyStockChoice', false)
         ->assertHasErrors(['order_item_id'])
         ->assertSee(__('orders.errors.refunded_line_item_cannot_be_removed'));
 
