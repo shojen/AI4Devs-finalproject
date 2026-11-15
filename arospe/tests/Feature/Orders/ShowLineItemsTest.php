@@ -86,7 +86,7 @@ test('on a Shipped order the line-item section contains NO confirmation control 
         ->not->toContain('applyStockChoice');
 })->with('blocked_order_statuses');
 
-test('even an ENABLED line-item control opens no confirmation: add/remove/save go straight to the action', function () {
+test('even an ENABLED add or remove control opens no confirmation and goes straight to the action (the quantity save has its stock dialog, see ShowLineItemStockTest)', function () {
     ordersUiLineEditor();
 
     $order = Order::factory()->withItems(2)->create();

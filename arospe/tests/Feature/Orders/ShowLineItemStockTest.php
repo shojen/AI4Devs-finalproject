@@ -4,6 +4,7 @@
 // from a fresh read, and calls UpdateOrderItemQuantity with the chosen `adjustStock`. Stock and counters are
 // asserted from the database (the real action runs), never from a mock.
 
+use App\Actions\Orders\UpdateOrderItemQuantity;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Livewire\Orders\Show;
@@ -252,6 +253,22 @@ test('a line changed by someone else meanwhile is not applied: stale message, st
 
     expect($item->fresh()->quantity)->toBe(4)
         ->and($product->fresh()->stock)->toBe(10);
+});
+
+test('a race detected inside the action renders the changed-meanwhile message instead of a 500', function () {
+    [$order, $item] = stockDialogLine(2, 10);
+
+    $component = stockDialogRequest($order, $item, 5);
+
+    $this->mock(UpdateOrderItemQuantity::class, function ($mock): void {
+        $mock->shouldReceive('__invoke')->once()->andThrow(new LogicException('The order line changed while its stock was being adjusted.'));
+    });
+
+    $component->call('applyStockChoice', true)
+        ->assertSee(__('orders.stock.changed_meanwhile'))
+        ->assertSet('showStockConfirm', false)
+        ->assertSet('pendingStockAction', '')
+        ->assertSet('pendingItemId', '');
 });
 
 test('applying with empty pending state is refused like a stale request and changes nothing', function () {
