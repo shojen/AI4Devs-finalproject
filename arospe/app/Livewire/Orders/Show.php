@@ -452,21 +452,37 @@ class Show extends Component
         $this->refreshOrderState();
     }
 
-    public function removeLineItem(string $itemId, RemoveOrderItem $removeOrderItem): void
+    /**
+     * Story 0094a -- the first half of a line removal. A line that moves stock records its current
+     * quantity in the locked pending props and opens the stock dialog; a line with no stock target
+     * (its catalog row was deleted) has nothing to ask about and is removed directly without moving
+     * stock. It adds no validation of its own: the refunded-line and last-line refusals stay the
+     * action's, rendered on apply (or directly, for the no-dialog path).
+     */
+    public function requestRemoveLineItem(string $itemId, RemoveOrderItem $removeOrderItem): void
     {
         Gate::authorize('update', $this->order);
         $this->resetErrorBag();
 
-        try {
-            $removeOrderItem($this->order, $itemId);
-        } catch (OrderNotEditableException $exception) {
-            $this->refreshOrderState();
-            $this->addError('lineItems', $exception->getMessage());
+        $item = $this->order->items->firstWhere('id', $itemId);
+
+        if (! $item instanceof OrderItem) {
+            $this->addError('lineItems', __('orders.stock.changed_meanwhile'));
 
             return;
         }
 
-        $this->refreshOrderState();
+        if ($item->stockTarget() === null) {
+            $this->removeLine($itemId, false, $removeOrderItem);
+
+            return;
+        }
+
+        $this->pendingStockAction = 'remove';
+        $this->pendingItemId = $itemId;
+        $this->pendingQuantity = 0;
+        $this->pendingFromQuantity = $item->quantity;
+        $this->showStockConfirm = true;
     }
 
     /**
@@ -513,15 +529,16 @@ class Show extends Component
      * refuses an empty or stale request (the line's quantity moved since the dialog opened), and clears
      * every pending field on every exit path other than a failed authorization.
      */
-    public function applyStockChoice(bool $adjust, UpdateOrderItemQuantity $updateOrderItemQuantity): void
+    public function applyStockChoice(bool $adjust, UpdateOrderItemQuantity $updateOrderItemQuantity, RemoveOrderItem $removeOrderItem): void
     {
         Gate::authorize('update', $this->order);
         $this->resetErrorBag();
 
+        $mode = $this->pendingStockAction;
         $itemId = $this->pendingItemId;
         $quantity = $this->pendingQuantity;
         $fromQuantity = $this->pendingFromQuantity;
-        $isPending = $this->pendingStockAction === 'quantity' && $itemId !== '';
+        $isPending = in_array($mode, ['quantity', 'remove'], true) && $itemId !== '';
 
         $this->clearPendingStock();
 
@@ -534,13 +551,25 @@ class Show extends Component
             return;
         }
 
+        if ($mode === 'remove') {
+            $this->removeLine($itemId, $adjust, $removeOrderItem);
+
+            return;
+        }
+
         $this->saveQuantity($itemId, $quantity, $adjust, $updateOrderItemQuantity);
     }
 
+    /**
+     * Renderless on purpose, like `dismissMarkAsPaid()`: a refused apply closes the dialog server-side,
+     * the modal's `@close` then calls this method, and Livewire does not persist the error bag between
+     * requests -- a re-render here would wipe the refusal message the apply just rendered. The cleared
+     * properties still sync to the client.
+     */
+    #[Renderless]
     public function dismissStockConfirm(): void
     {
         $this->clearPendingStock();
-        $this->resetErrorBag();
     }
 
     /**
@@ -552,7 +581,7 @@ class Show extends Component
     #[Computed]
     public function stockPreview(): array
     {
-        if ($this->pendingStockAction !== 'quantity' || $this->pendingItemId === '') {
+        if (! in_array($this->pendingStockAction, ['quantity', 'remove'], true) || $this->pendingItemId === '') {
             return [];
         }
 
@@ -571,12 +600,18 @@ class Show extends Component
             return [];
         }
 
-        $isIncrease = $this->pendingQuantity > $item->quantity;
         $returnable = max(0, $item->returnableStockUnits());
-        $units = $isIncrease
-            ? $this->pendingQuantity - $item->quantity
-            : min($returnable, max(0, $returnable - ($this->pendingQuantity - $item->refunded_quantity)));
-        $resulting = $isIncrease ? $row->stock - $units : $row->stock + $units;
+
+        if ($this->pendingStockAction === 'remove') {
+            $units = $returnable;
+            $resulting = $row->stock + $units;
+        } else {
+            $isIncrease = $this->pendingQuantity > $item->quantity;
+            $units = $isIncrease
+                ? $this->pendingQuantity - $item->quantity
+                : min($returnable, max(0, $returnable - ($this->pendingQuantity - $item->refunded_quantity)));
+            $resulting = $isIncrease ? $row->stock - $units : $row->stock + $units;
+        }
 
         return [[
             'name' => $item->product_name,
@@ -584,7 +619,7 @@ class Show extends Component
             'units' => $units,
             'current' => $row->stock,
             'resulting' => $resulting,
-            'willGoNegative' => $resulting < 0,
+            'willGoNegative' => $this->pendingStockAction !== 'remove' && $resulting < 0,
         ]];
     }
 
@@ -595,6 +630,33 @@ class Show extends Component
     {
         try {
             $updateOrderItemQuantity($this->order, $itemId, $quantity, $adjustStock);
+        } catch (OrderNotEditableException $exception) {
+            $this->refreshOrderState();
+            $this->addError('lineItems', $exception->getMessage());
+
+            return;
+        } catch (ValidationException $exception) {
+            $this->refreshOrderState();
+            $this->setErrorBag($exception->validator->errors());
+
+            return;
+        } catch (ModelNotFoundException|LogicException) {
+            $this->refreshOrderState();
+            $this->addError('lineItems', __('orders.stock.changed_meanwhile'));
+
+            return;
+        }
+
+        $this->refreshOrderState();
+    }
+
+    /**
+     * Run the removal action and render its refusals; the pending state is already cleared by the caller.
+     */
+    private function removeLine(string $itemId, bool $adjustStock, RemoveOrderItem $removeOrderItem): void
+    {
+        try {
+            $removeOrderItem($this->order, $itemId, $adjustStock);
         } catch (OrderNotEditableException $exception) {
             $this->refreshOrderState();
             $this->addError('lineItems', $exception->getMessage());

@@ -190,7 +190,10 @@ return [
         'resulting' => 'Stock after this change',
         'negative_warning' => 'This leaves :name at :stock units.',
         'nothing_to_return' => 'No units of this line are currently out of stock',
-        'changed_meanwhile' => 'This line changed while the dialog was open. Review the new quantity and try again.',
+        'changed_meanwhile' => 'This line changed while the dialog was open. Review the line and try again.',
+        'remove_heading' => 'Remove this line?',
+        'remove_body' => 'Removing this line can also return its units to the stock of the product.',
+        'remove_without_stock' => 'Remove without changing stock',
     ],
 
     'line_items' => [
