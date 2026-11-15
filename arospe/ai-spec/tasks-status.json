@@ -5,7 +5,7 @@
     {
       "id": "0095",
       "slug": "0095-order-cancellation-stock-dialog-ui",
-      "title": "Order detail \u2014 the cancel confirmation asks whether to return stock (frontend)",
+      "title": "Order detail — the cancel confirmation asks whether to return stock (frontend)",
       "depends_on": [],
       "status": "ready",
       "claimed_by": null,
@@ -32,7 +32,7 @@
     {
       "id": "0096",
       "slug": "0096-order-refund-modal-stock-return-ui",
-      "title": "Order detail \u2014 the refund modal asks whether to return stock (frontend)",
+      "title": "Order detail — the refund modal asks whether to return stock (frontend)",
       "depends_on": [],
       "status": "ready",
       "claimed_by": null,
@@ -62,9 +62,9 @@
       "slug": "0099-blog-translation-write-actions-deleted-entity-race-backend",
       "title": "Blog category and tag translation write actions refuse a deleted parent cleanly (backend)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree-0099-blog-translation-deleted-parent-race-backend",
+      "claimed_at": "2026-11-15T22:50:00Z",
       "touches": [
         "app/Actions/Blog/SetBlogCategoryTranslation.php",
         "app/Actions/Blog/SetBlogTagTranslation.php",
@@ -211,7 +211,7 @@
     {
       "id": "0101b",
       "slug": "0101b-issue-standard-invoice-backend",
-      "title": "Issue standard invoice \u2014 the invoice core (backend)",
+      "title": "Issue standard invoice — the invoice core (backend)",
       "depends_on": [
         "0100",
         "0100a",
