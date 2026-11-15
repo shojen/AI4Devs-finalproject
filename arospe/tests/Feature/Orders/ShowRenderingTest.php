@@ -200,7 +200,13 @@ test('a write re-reads the order once for the refresh, not once per computed', f
         }
     });
 
-    $component->call('removeLineItem', $item->id);
+    // The request only opens the dialog (one render, the memoised order read once or twice); the apply
+    // is the write and keeps the original refresh budget, so each step is bounded on its own.
+    $component->call('requestRemoveLineItem', $item->id);
+    expect($orderReads)->toBeLessThanOrEqual(2);
+
+    $orderReads = 0;
+    $component->call('applyStockChoice', false);
 
     expect($orderReads)->toBeLessThanOrEqual(8);
 });
