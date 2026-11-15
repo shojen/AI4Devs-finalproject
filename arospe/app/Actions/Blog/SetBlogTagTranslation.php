@@ -11,6 +11,7 @@ use App\Models\BlogTag;
 use App\Models\BlogTagTranslation;
 use App\Models\StoreLanguage;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -51,6 +52,7 @@ class SetBlogTagTranslation
      * @throws ValidationException keyed "names.{$language->id}" -- inactive language, blank,
      *                             over-length, or duplicate within that store language (incl. the
      *                             1062 race)
+     * @throws ModelNotFoundException when the tag is deleted before or during the write (1452 on the parent FK)
      * @throws LogicException when the primitive returns an unexpected model
      */
     public function __invoke(
@@ -88,6 +90,11 @@ class SetBlogTagTranslation
         try {
             $translation = ($this->setTranslation)($blogTag, $activeLanguage, ['name' => $name]);
         } catch (QueryException $e) {
+            if (($e->errorInfo[1] ?? null) === 1452
+                && preg_match('/CONSTRAINT `blog_tag_translations_blog_tag_id_foreign` FOREIGN KEY/', (string) ($e->errorInfo[2] ?? '')) === 1) {
+                throw (new ModelNotFoundException)->setModel(BlogTag::class, [$blogTag->getKey()]);
+            }
+
             throw ($this->translateNameUniqueViolation)($e, $errorKey, $attributeLabel);
         }
 
