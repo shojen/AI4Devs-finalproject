@@ -3,8 +3,8 @@
 ## Description
 
 `App\Actions\Blog\SetBlogCategoryTranslation` (story
-[0073](../done/0073-blog-categories-language-tabs-ui.md)) and `App\Actions\Blog\SetBlogTagTranslation`
-(story [0075](../done/0075-blog-tags-language-tabs-ui.md)) write a translation row whose
+[0073](0073-blog-categories-language-tabs-ui.md)) and `App\Actions\Blog\SetBlogTagTranslation`
+(story [0075](0075-blog-tags-language-tabs-ui.md)) write a translation row whose
 `blog_category_id` / `blog_tag_id` foreign key points at the parent. Both parents are **hard deleted**
 (neither `BlogCategory` nor `BlogTag` uses `SoftDeletes`), and both translation tables declare that FK
 `constrained()->cascadeOnDelete()` with Laravel's default constraint name
@@ -19,7 +19,7 @@ the per-language `normalized_name` index and **rethrow everything else unchanged
 an unhandled `QueryException`: a **500**.
 
 This is the blog-side sibling of story
-[0098](../done/0098-translation-write-actions-deleted-entity-race-backend.md), split out by the user's answer
+[0098](0098-translation-write-actions-deleted-entity-race-backend.md), split out by the user's answer
 to 0098's **Q-3 (a)** (2026-11-14). The real state of the two actions, read from the code on
 2026-11-14:
 
@@ -226,9 +226,9 @@ All three are **inherited from the user's answers on 0098** (2026-11-14) and app
 ### Dependencies
 
 - **None pending.** It builds on shipped stories only: 0073, 0075 and
-  [0087](../done/0087-translation-write-actions-refuse-inactive-store-language.md) (the order and the
+  [0087](0087-translation-write-actions-refuse-inactive-store-language.md) (the order and the
   `ResolveActiveStoreLanguage` helper), all in `done/`. Status `ready`.
-- **Independent of [0098](../done/0098-translation-write-actions-deleted-entity-race-backend.md).** Their code
+- **Independent of [0098](0098-translation-write-actions-deleted-entity-race-backend.md).** Their code
   and test write sets are disjoint (0098: `app/Actions/Products/*`, `app/Actions/ProductCategories/*`
   and their two test files; this task: `app/Actions/Blog/*` and two `tests/Feature/Blog/*` files), so
   `conflict_risk_with` is empty. The only shared surface is Phase 6 documentation
@@ -277,3 +277,7 @@ a direct read of both actions, their translators and their migrations; Phase 1 d
 ### Phase 4 — Security audit (appsec-auditor, 2026-11-15): APPROVED
 
 Reviewed `git diff d304052..HEAD -- app/`. Authorization remains the first statement and is logged once, before the re-read; the policy is permission-only, so an unauthorized caller gets 403 whether or not the parent exists (no enumeration oracle). The 1452 guard matches the parent FK constraint name in `errorInfo[2]` only, never `getMessage()`; every other error is rethrown unchanged. `ModelNotFoundException` carries only the model class and the caller's own id, rendered as a generic 404. No findings. Informational (Phase 6): `docs/security/model-instance-trust.md` line 531 still calls the deleted-entity race "pending"; update it to closed by 0098/0099.
+
+### Phase 5 — Final code review (code-reviewer, 2026-11-15): APPROVED
+
+Reviewed `git diff d304052..HEAD -- app tests`. All six acceptance criteria and all five Gherkin outlines (both actions) have a matching test: stale instance, real-1452 race via a `creating` listener (no FK_CHECKS toggle), authorize-first + logged once, re-read before the inactive-language check (3b), non-parent `QueryException` dataset incl. the `errorInfo[2]`-vs-message decoy (4b); case 5 is the existing happy-path/1062 coverage. Code mirrors 0098's `SetProductCategoryTranslation` exactly (guard, placement, `setModel` ids, `@throws`). `afterEach` flushes listeners and resets booted state (R-5). Pint/Larastan reported clean; full suite run by the orchestrator. Non-blocking: in `SetBlogTagTranslationTest` the 4b "fold" was not done — the pre-existing "a foreign-key violation is not misattributed…" and "a tag deleted after it was loaded…" tests now duplicate new cases; optional cleanup. Phase 6 docs pending by design.
