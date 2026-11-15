@@ -273,3 +273,7 @@ a direct read of both actions, their translators and their migrations; Phase 1 d
 - INVEST: Independent (0073, 0075, 0087, 0098 all in `done/`; disjoint write set), Negotiable (D-1–D-5 inherited from 0098's user answers, no open question), Valuable (500 → clean 404, no orphan row), Estimable (two actions, two test files, pattern already shipped in `SetProductCategoryTranslation`), Small, Testable (§3 cases 1–5 map to every acceptance criterion).
 - Gherkin: every scenario opens with a named role (content editor / staff member) and has a single `When`.
 - Consistent with 0098: same inline placement (`errorInfo[1] === 1452` + constraint name in `errorInfo[2]`, before the translator call), same `ModelNotFoundException` outcome, same decoy test (4b ≈ 0098's 4c).
+
+### Phase 4 — Security audit (appsec-auditor, 2026-11-15): APPROVED
+
+Reviewed `git diff d304052..HEAD -- app/`. Authorization remains the first statement and is logged once, before the re-read; the policy is permission-only, so an unauthorized caller gets 403 whether or not the parent exists (no enumeration oracle). The 1452 guard matches the parent FK constraint name in `errorInfo[2]` only, never `getMessage()`; every other error is rethrown unchanged. `ModelNotFoundException` carries only the model class and the caller's own id, rendered as a generic 404. No findings. Informational (Phase 6): `docs/security/model-instance-trust.md` line 531 still calls the deleted-entity race "pending"; update it to closed by 0098/0099.
