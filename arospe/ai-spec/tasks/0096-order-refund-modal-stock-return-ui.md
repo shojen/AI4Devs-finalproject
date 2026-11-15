@@ -143,7 +143,7 @@ tests per mode plus browser checks.
 
 ## Dependencies, risks, open technical questions
 **Depends on:** [0092b](done/0092b-order-refund-stock-return-backend.md) (hard). Shares `Show.php`, `show.blade.php` and
-`lang/*/orders.php` with [0094](in-progress/0094-order-line-quantity-stock-dialog-ui.md), [0094a](0094a-order-line-removal-stock-dialog-ui.md)
+`lang/*/orders.php` with [0094](done/0094-order-line-quantity-stock-dialog-ui.md), [0094a](0094a-order-line-removal-stock-dialog-ui.md)
 and [0095](0095-order-cancellation-stock-dialog-ui.md) — run sequentially.
 - **Resolved (0088 D8)** — the backend caps every stock return at the units still held out of inventory; the UI shows its refusal
   and does not pre-clamp to that cap.

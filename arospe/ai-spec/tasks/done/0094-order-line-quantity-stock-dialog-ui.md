@@ -154,40 +154,41 @@ Feature: The order administrator decides whether a quantity change moves stock
 - `app/Livewire/Orders/Show.php` — D-2 … D-6, D-9; remove the public `updateLineItemQuantity`.
 - `resources/views/livewire/orders/show.blade.php` — `save-quantity-{id}` calls `requestQuantityChange`; `<x-confirm-dialog
   test-prefix="line-stock" …>` with preview slot, warning callout and the zero-units note.
+- `resources/views/components/confirm-dialog.blade.php` — added during Phase 3 (not planned): the three-button form now always stacks full width, because the dismiss button overflowed the `max-w-md` panel from `sm` up; `tests/Feature/Components/ConfirmDialogTest.php` still matches.
 - `lang/en/orders.php`, `lang/es/orders.php` — `orders.stock.*` (incl. `changed_meanwhile`, `nothing_to_return`).
 - `tests/Feature/Orders/ShowLineItemStockTest.php` — new (Livewire).
 - `tests/Feature/Orders/ShowLineItemsTest.php` and `tests/Feature/Orders/ShowTest.php` (authorization dataset, line 142) — update tests that called the removed method.
 - `tests/Browser/Orders/OrderLineItemStockDialogTest.php` — new; `tests/Browser/Orders/OrderDetailLineItemsTest.php` — update.
 
 ## Tests to perform
-- [ ] Livewire: request records the cast `pendingQuantity` / `pendingFromQuantity` and opens the dialog with the right preview; unchanged quantity is a no-op; a null-target line saves with `adjustStock: false` and no dialog.
-- [ ] Livewire: `applyStockChoice(true|false)` calls the action with the matching `adjustStock` (assert stock and counters, not a mock); dismiss clears state and changes nothing.
-- [ ] Livewire: zero-returnable decrease shows the note, no `-secondary` hook and no Deduct/Return label, `-confirm` reads "Save without changing stock" and runs `applyStockChoice(false)`, plus "Keep editing" (OQ-3).
-- [ ] Livewire: the preview `units` is clamped to `[0, returnableStockUnits()]` for negative / below-refunded input.
-- [ ] Livewire: invalid input (`0`, below refunded, empty string) reaches the action on apply and is rendered inline; the request step adds no validation of its own.
-- [ ] Pending state is empty after success, after each rendered refusal type (authorization failure asserted as forbidden instead, `assertForbidden()`) and after the stale-guard path; `applyStockChoice()` with empty pending state is refused and changes nothing.
-- [ ] Security: `#[Locked]` props cannot be set by the client; `applyStockChoice` re-authorizes (revoke permission between request and apply → refused); an item id of another order → not found, nothing written; stale guard fires.
-- [ ] Preview from a fresh read (stock changed after opening → re-render shows the new value); `willGoNegative` only when resulting < 0.
-- [ ] Lang parity.
-- [ ] Browser (also covering 0093's interactive behaviour): three explicitly labelled buttons; secondary runs only the secondary method; Esc, backdrop and X abort; both action buttons disabled while one is loading (confirm that Livewire 4 matches the composite `wire:target="applyStockChoice(true),applyStockChoice(false)"`; a bare `applyStockChoice` target is the fallback); warning has `role="alert"`; stacked at 375px with ≥ 44px targets; dark mode legible.
+- [x] Livewire: request records the cast `pendingQuantity` / `pendingFromQuantity` and opens the dialog with the right preview; unchanged quantity is a no-op; a null-target line saves with `adjustStock: false` and no dialog.
+- [x] Livewire: `applyStockChoice(true|false)` calls the action with the matching `adjustStock` (assert stock and counters, not a mock); dismiss clears state and changes nothing.
+- [x] Livewire: zero-returnable decrease shows the note, no `-secondary` hook and no Deduct/Return label, `-confirm` reads "Save without changing stock" and runs `applyStockChoice(false)`, plus "Keep editing" (OQ-3).
+- [x] Livewire: the preview `units` is clamped to `[0, returnableStockUnits()]` for negative / below-refunded input.
+- [x] Livewire: invalid input (`0`, below refunded, empty string) reaches the action on apply and is rendered inline; the request step adds no validation of its own.
+- [x] Pending state is empty after success, after each rendered refusal type (authorization failure asserted as forbidden instead, `assertForbidden()`) and after the stale-guard path; `applyStockChoice()` with empty pending state is refused and changes nothing.
+- [x] Security: `#[Locked]` props cannot be set by the client; `applyStockChoice` re-authorizes (revoke permission between request and apply → refused); an item id of another order → not found, nothing written; stale guard fires.
+- [x] Preview from a fresh read (stock changed after opening → re-render shows the new value); `willGoNegative` only when resulting < 0.
+- [x] Lang parity.
+- [x] Browser (also covering 0093's interactive behaviour): three explicitly labelled buttons; secondary runs only the secondary method; Esc, backdrop and X abort; both action buttons disabled while one is loading (confirm that Livewire 4 matches the composite `wire:target="applyStockChoice(true),applyStockChoice(false)"`; a bare `applyStockChoice` target is the fallback); warning has `role="alert"`; stacked at 375px with ≥ 44px targets; dark mode legible.
 
 ## Expected outcome
 Every quantity change on a stock-tracked line asks the administrator, shows the stock effect, and applies exactly the chosen
 option.
 
 ## Acceptance criteria
-- [ ] No path on the screen changes a stock-tracked line's quantity without the stock question.
-- [ ] Preview and applied delta always agree (same formula as 0090 D-3).
-- [ ] Zero-returnable decreases follow the confirmed OQ-3 behaviour.
-- [ ] Negative stock is warned, never blocked; pending state is locked and re-validated; refusals never 500.
-- [ ] en/es copy complete; existing hooks preserved.
+- [x] No path on the screen changes a stock-tracked line's quantity without the stock question.
+- [x] Preview and applied delta always agree (same formula as 0090 D-3).
+- [x] Zero-returnable decreases follow the confirmed OQ-3 behaviour.
+- [x] Negative stock is warned, never blocked; pending state is locked and re-validated; refusals never 500.
+- [x] en/es copy complete; existing hooks preserved.
 
 ## Definition of Done
-- [ ] Tests written and green (full suite, unscoped)
-- [ ] Code reviewed (code-reviewer)
-- [ ] No security findings (appsec-auditor)
-- [ ] Documentation updated (docs-keeper): `docs/api/orders.md#orders.show` (methods, locked props, hooks, stock dialog), `ai-spec/tasks/_digests/epic-3.md`
-- [ ] Acceptance criteria met
+- [x] Tests written and green (full suite, unscoped)
+- [x] Code reviewed (code-reviewer)
+- [x] No security findings (appsec-auditor)
+- [x] Documentation updated (docs-keeper): `docs/api/orders.md#orders.show` (methods, locked props, hooks, stock dialog), `ai-spec/tasks/_digests/epic-3.md`
+- [x] Acceptance criteria met
 
 ## INVEST note
 Independent: needs 0090 and 0093. Negotiable: copy. Valuable: the administrator controls and sees the stock effect of every quantity
@@ -214,3 +215,8 @@ edit. Estimable/Small: one flow on one component after the removal split. Testab
 - Phase 2: INVEST re-review #4 2026-11-15 (code-reviewer): REJECTED — D-6/D-8 not implementable as written: `x-confirm-dialog` always renders its confirm button (no prop to hide it) and the component is not in Files to create/modify; state which hook carries "Save without changing stock" in the zero-units dialog (two-button form with confirm-action `applyStockChoice(false)`, or a new optional component prop) and align the "no confirm button" test.
 - Phase 2: story rewritten 2026-11-15 after re-review #4: D-6/D-8 fixed with option (a) (two-button form, `-confirm` = "Save without changing stock", shared component untouched), D-5 clamp added, `ShowTest.php` added to the file list, 0094a pending-state list aligned; pending re-review.
 - Phase 2: INVEST re-review #5 2026-11-15 (code-reviewer): APPROVED — zero-units variant is the two-button form (`-confirm` = "Save without changing stock" → `applyStockChoice(false)`, no `-secondary`), consistent across D-6, D-8, Gherkin, Tests to perform and Files; D-5 clamp to `[0, returnableStockUnits()]` matches `UpdateOrderItemQuantity` (k = max(0, d − U), upper bound reached at newQty = refunded_quantity); no new contradiction.
+- Phase 4: security audit 2026-11-15 (appsec-auditor): APPROVED — orders.edit re-authorized on request and apply (403), pending props #[Locked], item resolved through the order (no IDOR), Blade output escaped, no remaining path skips the stock question; two Low notes (stale guard checks only `quantity` outside the transaction; action LogicException under a concurrent race surfaces as a 500, pre-existing from 0090) left as non-blocking follow-ups.
+- Phase 5: code review 2026-11-15 (code-reviewer): APPROVED — all 12 Gherkin scenarios and the acceptance criteria implemented and covered (ShowLineItemStockTest 39/39 green, browser file covers Esc/backdrop/X, loading-disable, 375px, dark mode); preview formula equals the action (d − U); en/es parity; hooks preserved; confirm-dialog always-stacked change sound and ConfirmDialogTest still matches. Non-blocking: stale test title ShowLineItemsTest.php:89, stale view docblock show.blade.php:22-25, redundant returnableStockUnits() call Show.php:577; docs/api/orders.md:60 and :188 for Phase 6.
+- Phase 5 (full suite, 2026-11-15, unscoped, run in directory chunks on separate databases): `tests/Feature/Orders` 1047/1047; Unit + Actions/Auth/Authorization/Blog/Components/Console/Customers 1814/1814; Dashboard…Notifications 1077 passed + 5 skipped; PaymentMethods…Settings 1494/1494; Shipping…Users 653/653; `tests/Browser` 305 tests, 301 passed + 3 skipped + 1 timeout (`WysiwygEditorOutputHtmlTest`, unrelated, load flake: passes 11/11 alone). Pint unscoped clean; Larastan clean on `Show.php`. Review follow-ups applied: concurrent-change `LogicException` rendered as `changed_meanwhile`, preview formula tidy, docblock, test title.
+- Phase 6: documentation updated 2026-11-15 (`docs/api/orders.md#orders.show`, `ai-spec/tasks/_digests/epic-3.md`).
+- Phase 7: closed 2026-11-15, moved to `done/`. Known low follow-up (appsec): pass the expected counters into `UpdateOrderItemQuantity` so the stale guard runs inside the action's transaction.

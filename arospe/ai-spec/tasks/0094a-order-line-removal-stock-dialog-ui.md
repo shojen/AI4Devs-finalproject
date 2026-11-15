@@ -2,7 +2,7 @@
 
 > **Status: New — created 2026-11-08 by splitting former 0094 after the Phase 2 INVEST review (user decision); pending review.**
 > Epic 3 follow-up bug fix, order-stock series. Suffix numbering follows the `0076a` precedent so the story sorts after
-> [0094](in-progress/0094-order-line-quantity-stock-dialog-ui.md) (whose state and dialog it extends) and before
+> [0094](done/0094-order-line-quantity-stock-dialog-ui.md) (whose state and dialog it extends) and before
 > [0095](0095-order-cancellation-stock-dialog-ui.md). Fullstack pair: **related_task_id 0090** (`RemoveOrderItem` `adjustStock`).
 > **User-confirmed (2026-11-08):** OQ-3 — a line with zero returnable units still gets the dialog, with a note and only
 > "Remove without changing stock" / "Keep editing".
@@ -140,7 +140,7 @@ keep inventory. Estimable/Small: one request method and one branch on an existin
 
 ## Dependencies, risks, open technical questions
 **Depends on:** [0090](done/0090-order-line-quantity-and-removal-stock-opt-in-backend.md),
-[0093](done/0093-confirm-dialog-secondary-action-ui.md), [0094](in-progress/0094-order-line-quantity-stock-dialog-ui.md) (hard). Shares
+[0093](done/0093-confirm-dialog-secondary-action-ui.md), [0094](done/0094-order-line-quantity-stock-dialog-ui.md) (hard). Shares
 `Show.php`, `show.blade.php` and `lang/*/orders.php` with 0094, 0095, 0096 and 0092b (lang) — run sequentially.
 - **R-1** — Removing the public `removeLineItem` changes the component's public surface.
 
