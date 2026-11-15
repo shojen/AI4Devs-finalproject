@@ -11,6 +11,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
+use Pest\Browser\Execution;
 use Spatie\Permission\PermissionRegistrar;
 
 beforeEach(function () {
@@ -29,7 +30,7 @@ beforeEach(function () {
 function waitForLineQuantity(OrderItem $item, int $expected): void
 {
     for ($attempt = 0; $attempt < 50 && $item->fresh()->quantity !== $expected; $attempt++) {
-        usleep(100_000);
+        Execution::instance()->wait(0.1);
     }
 }
 
@@ -254,7 +255,7 @@ test('a line whose product was deleted is saved without any stock dialog', funct
 function waitForLineRemoval(OrderItem $item): void
 {
     for ($attempt = 0; $attempt < 50 && OrderItem::query()->whereKey($item->id)->exists(); $attempt++) {
-        usleep(100_000);
+        Execution::instance()->wait(0.1);
     }
 }
 

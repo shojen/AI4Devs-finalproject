@@ -14,6 +14,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
+use Pest\Browser\Execution;
 use Spatie\Permission\PermissionRegistrar;
 
 beforeEach(function () {
@@ -90,7 +91,7 @@ test('removing one of two line items drops it from the page and the order', func
         ->assertPresent('@line-item-'.$keep->id);
 
     for ($attempt = 0; $attempt < 50 && OrderItem::query()->whereKey($remove->id)->exists(); $attempt++) {
-        usleep(100_000);
+        Execution::instance()->wait(0.1);
     }
 
     expect(OrderItem::query()->whereKey($remove->id)->exists())->toBeFalse();
