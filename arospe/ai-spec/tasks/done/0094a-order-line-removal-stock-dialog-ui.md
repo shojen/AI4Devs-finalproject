@@ -129,29 +129,29 @@ Feature: The order administrator decides whether removing a line returns its uni
 - `tests/Browser/Orders/OrderLineItemStockDialogTest.php` (from 0094) — add removal cases.
 
 ## Tests to perform
-- [ ] Livewire: request opens the dialog with the removal preview; null-target line removed with `adjustStock: false`, no dialog.
-- [ ] Livewire: both choices call `RemoveOrderItem` with the matching `adjustStock` (assert stock and line deletion); dismiss changes nothing.
-- [ ] Livewire: zero-returnable removal shows the note, no `-secondary` hook and no Return label; `-confirm` reads "Remove without changing stock" and runs `applyStockChoice(false)`, plus "Keep editing" (OQ-3).
-- [ ] Refusals (last line, refunded line, shipped order) close the dialog and render inline; a `LogicException` / `ModelNotFoundException` from the action renders `changed_meanwhile` and clears the pending state (mocked action, as in 0094).
-- [ ] Removal mode uses its own heading, body and labels (`remove_heading`, `remove_body`, `return`, `remove_without_stock`), never the quantity-change wording; lang parity covers the three new keys.
-- [ ] Pending state is empty after success, after each rendered refusal type (authorization failure asserted as forbidden instead, `assertForbidden()`) and after the stale-guard path; an apply with empty pending state is refused and changes nothing.
-- [ ] Security: locked pending state; re-authorization on apply; item of another order → not found; stale guard (line already removed or quantity changed).
-- [ ] Lang parity; browser: removal dialog labels and abort paths.
+- [x] Livewire: request opens the dialog with the removal preview; null-target line removed with `adjustStock: false`, no dialog.
+- [x] Livewire: both choices call `RemoveOrderItem` with the matching `adjustStock` (assert stock and line deletion); dismiss changes nothing.
+- [x] Livewire: zero-returnable removal shows the note, no `-secondary` hook and no Return label; `-confirm` reads "Remove without changing stock" and runs `applyStockChoice(false)`, plus "Keep editing" (OQ-3).
+- [x] Refusals (last line, refunded line, shipped order) close the dialog and render inline; a `LogicException` / `ModelNotFoundException` from the action renders `changed_meanwhile` and clears the pending state (mocked action, as in 0094).
+- [x] Removal mode uses its own heading, body and labels (`remove_heading`, `remove_body`, `return`, `remove_without_stock`), never the quantity-change wording; lang parity covers the three new keys.
+- [x] Pending state is empty after success, after each rendered refusal type (authorization failure asserted as forbidden instead, `assertForbidden()`) and after the stale-guard path; an apply with empty pending state is refused and changes nothing.
+- [x] Security: locked pending state; re-authorization on apply; item of another order → not found; stale guard (line already removed or quantity changed).
+- [x] Lang parity; browser: removal dialog labels and abort paths.
 
 ## Expected outcome
 Removing a stock-tracked line always asks whether its units go back to stock and applies exactly the choice.
 
 ## Acceptance criteria
-- [ ] No path on the screen removes a stock-tracked line without the stock question.
-- [ ] Preview and applied delta agree; zero-returnable lines follow OQ-3.
-- [ ] No union-typed injection; refusals never 500; en/es copy complete.
+- [x] No path on the screen removes a stock-tracked line without the stock question.
+- [x] Preview and applied delta agree; zero-returnable lines follow OQ-3.
+- [x] No union-typed injection; refusals never 500; en/es copy complete.
 
 ## Definition of Done
-- [ ] Tests written and green (full suite, unscoped)
-- [ ] Code reviewed (code-reviewer)
-- [ ] No security findings (appsec-auditor)
-- [ ] Documentation updated (docs-keeper): `docs/api/orders.md#orders.show` (removal methods and hooks), `ai-spec/tasks/_digests/epic-3.md`
-- [ ] Acceptance criteria met
+- [x] Tests written and green (full suite, unscoped)
+- [x] Code reviewed (code-reviewer)
+- [x] No security findings (appsec-auditor)
+- [x] Documentation updated (docs-keeper): `docs/api/orders.md#orders.show` (removal methods and hooks), `ai-spec/tasks/_digests/epic-3.md`
+- [x] Acceptance criteria met
 
 ## INVEST note
 Independent: needs 0090, 0093 and 0094's shared dialog state. Negotiable: copy. Valuable: removals can no longer silently lose or
@@ -174,3 +174,8 @@ keep inventory. Estimable/Small: one request method and one branch on an existin
 - Phase 2: INVEST re-review #4 2026-11-15 (code-reviewer, against the merged 0094 code): REJECTED — (1) Files to create/modify incomplete: `tests/Feature/Orders/ShowTest.php` (authorization dataset `removeLineItem` line 141, calls at 204 and 216), `tests/Feature/Orders/ShowRenderingTest.php:203` (query-budget test calls `removeLineItem`; now a two-step flow) and `tests/Browser/Orders/OrderDetailLineItemsTest.php:84,99` (the click now opens the dialog first) all break; (2) the real `line-stock` dialog body `orders.stock.dialog_body` ("Changing this quantity…") and the `$stockIncrease`-driven confirm label are quantity-specific — D-6 must name the removal heading/body keys and state the remove mode always uses `orders.stock.return`; (3) D-2's `requestRemoveLineItem(string $itemId)` cannot remove a null-target line directly without injecting `RemoveOrderItem` (as `requestQuantityChange` injects `UpdateOrderItemQuantity`; `app()` was ruled out in 0094). Non-blocking: name `LogicException`/`ModelNotFoundException` → `changed_meanwhile` in D-9 (mirrors `saveQuantity`); fix D-4's formula parenthetical (`returnableStockUnits()` is `(Q − F) − U`, equal to the action's `Q − U` only because refunded lines are refused) and keep the `max(0, …)` clamp; refresh "Verified facts" to the merged state.
 - Phase 2: story rewritten 2026-11-15 after re-review #4: Files list completed (`ShowTest.php`, `ShowRenderingTest.php`, `OrderDetailLineItemsTest.php`), D-6 names the removal heading/body/label keys and the mode-neutral `changed_meanwhile`, D-2 injects `RemoveOrderItem`, D-9 maps `LogicException`/`ModelNotFoundException`, D-4 formula and the stale fact about 0094 corrected; pending re-review.
 - Phase 2: INVEST re-review #5 2026-11-15 (code-reviewer): APPROVED — the three #4 blockers are resolved and consistent across D-2/D-3/D-6/D-9, Files and Tests; grep of `tests/` and `docs/` for `removeLineItem` / `remove-line-item` finds no file outside the list; 0094's tests assert `changed_meanwhile` via `__()` only; no contradiction with 0095 (own `cancel_changed_meanwhile`, mode chosen by `pendingStockAction`). Non-blocking for Phase 3: in `ShowLineItemsTest.php` the blocked-section `->not->toContain('removeLineItem')` (~84) becomes vacuous after the rename (assert `requestRemoveLineItem` instead), and the "ENABLED add or remove control … goes straight to the action" test title (~88) is no longer true for remove.
+- Phase 4: security audit 2026-11-15 (appsec-auditor): APPROVED, no Critical/High/Medium. `orders.edit` re-authorized on request, apply and inside `RemoveOrderItem`; pending props `#[Locked]` and cleared on every exit; a forged `showStockConfirm` with empty pending only yields `changed_meanwhile`; item lookups scoped to the order (no IDOR); no remaining direct removal method; preview and translations escaped. Low (non-blocking): the stale guard compares only `quantity` and sits outside the action transaction, so a concurrent refund or `stock_undeducted_quantity` change between open and apply makes the shown units differ from the units moved (the action stays internally consistent under its locks; a refund is refused); Info: the broad `LogicException` catch also swallows unrelated programming errors without `report()`.
+- Phase 5: final code review 2026-11-15 (code-reviewer): APPROVED — D-1..D-9 and all 8 Gherkin scenarios implemented in `Show.php`/`show.blade.php` and covered by Livewire (`ShowLineItemRemovalStockTest`, 30 passed) and browser tests; concrete two-parameter injection, no union type; en/es `orders.stock` key sets identical; `remove-line-item-{id}` hook kept; no leftover `removeLineItem` in app/resources/tests/docs; `#[Renderless]` `dismissStockConfirm` accepted (mirrors `dismissMarkAsPaid`, guarded by the browser last-line and quantity-refusal tests). Non-blocking nits only; full suite, Pint and Larastan left to the orchestrator; `docs/api/orders.md#orders.show` removal methods pending Phase 6.
+- Phase 5 (full suite, 2026-11-15, unscoped, run in directory chunks on separate databases): `tests/Feature/Orders` 1077/1077; Unit + Actions/Auth/Authorization/Blog/Components/Console/Customers 1814/1814; Dashboard...Notifications 1077 passed + 5 skipped; PaymentMethods...Settings 1493/1494 (the one error, `GenerateProductVariantCombinationsTest` "refused ... logged against the parent product", a Log-spy test that also failed once in 0094's CI, passes 22/22 alone: unrelated, load flake); Shipping...Users 653/653; `tests/Browser` 315 tests, 312 passed + 3 skipped. Pint unscoped clean; Larastan clean on the whole project.
+- Phase 6: documentation updated 2026-11-15 (`docs/api/orders.md#orders.show`, `ai-spec/tasks/_digests/epic-3.md`).
+- Phase 7: closed 2026-11-15, moved to `done/`. Low follow-ups (appsec, recorded in the epic 3 digest): the stale guard compares only `quantity` outside the action's transaction; the `LogicException` catch is broad.

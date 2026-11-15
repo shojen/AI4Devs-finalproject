@@ -18,7 +18,7 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
-**Update (2026-11-15): `0094a-order-line-removal-stock-dialog-ui.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 3 step 0; Phase 2 APPROVED on re-review #5 after the Files list, D-2/D-6/D-9 were reworked against the merged 0094; claimed by `worktree-0094a-order-line-removal-stock-dialog-ui`). It keeps its node (now `claimed`) and its `tasks-status.json` entry; `ai-spec/tasks/` holds `0095`, `0096`, `0099` and `ai-spec/tasks/in-progress/` holds `0094a`. Inbound links from `0095` were re-pointed.
+**Update (2026-11-15): `0094a-order-line-removal-stock-dialog-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0094a-order-line-removal-stock-dialog-ui`; Phases 3-6 approved, full unscoped suite green). Its node, inventory row, `claimed` class membership and `tasks-status.json` entry are dropped; inbound links were re-pointed to `done/`. Pending in `ai-spec/tasks/`: `0095`, `0096`, `0099`; `in-progress/` is empty. `done/` holds 122 files; Epic 3 counts 27.
 
 **Update (2026-11-15): `0094-order-line-quantity-stock-dialog-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0094-order-line-quantity-stock-dialog-ui`; Phases 3-6 approved, full unscoped suite green). Its node, inventory row, `claimed` class membership and `tasks-status.json` entry are dropped; inbound links were re-pointed to `done/`. `0094a` and `0095` lose their only hard dependency and become `ready` (their `conflict_risk_with` on each other and on `0096` stays: all share `Show.php`, `show.blade.php` and `lang/*/orders.php`, run sequentially). `done/` holds 121 files; pending in `ai-spec/tasks/`: `0094a`, `0095`, `0096`, `0099`; `in-progress/` is empty.
 
@@ -498,7 +498,7 @@ appears as a node in the dependency graph below:
 - **Epic 2 — Products, Taxes, Media, Shipping (35):** 0016, 0017, 0018, 0019, 0019a, 0019b,
   0019c, 0019d, 0020, 0021, 0022, 0023, 0024, 0024a, 0024b, 0025, 0026, 0027, 0028, 0029, 0029a,
   0029b, 0030, 0030a, 0031, 0031a, 0032, 0033, 0034, 0035, 0036, 0037, 0038, 0039, 0080.
-- **Epic 3 — Customers, Orders & Notifications (26, recounted 2026-11-15 from `done/`: 0041-0057 plus 0088, 0088a, 0090, 0091, 0092a, 0092b and 0094):** 0091 — `CancelOrder` returns stock only on request (`adjustStock`), first transaction in that action, stock locked before the lines (backend; closed 2026-11-13); its dependent `0095` became `ready` when `0094` closed. 0092b — `RecordRefund` can return refunded units to stock on request (`$stockReturns`), `orders` lock first (backend; closed 2026-11-14); its dependent `0096` turned `ready`. 0090 — `UpdateOrderItemQuantity` and `RemoveOrderItem` adjust stock only on request (`adjustStock`), stock locked before the line (backend; closed 2026-11-13); 0092a — `RecordRefund` locks the order before its lines (backend; closed 2026-11-12): closes the story 0055 lock-order gap; its dependent `0092b` moved `blocked` -> `ready`. 0088 — Order stock adjustment foundation (backend; closed 2026-11-10): order-line stock counters; its dependent `0088a` moved `blocked` -> `ready`. 0041 — the epic's foundation story (the first to close in
+- **Epic 3 — Customers, Orders & Notifications (27, recounted 2026-11-15 from `done/`: 0041-0057 plus 0088, 0088a, 0090, 0091, 0092a, 0092b, 0094 and 0094a):** 0091 — `CancelOrder` returns stock only on request (`adjustStock`), first transaction in that action, stock locked before the lines (backend; closed 2026-11-13); its dependent `0095` became `ready` when `0094` closed. 0092b — `RecordRefund` can return refunded units to stock on request (`$stockReturns`), `orders` lock first (backend; closed 2026-11-14); its dependent `0096` turned `ready`. 0090 — `UpdateOrderItemQuantity` and `RemoveOrderItem` adjust stock only on request (`adjustStock`), stock locked before the line (backend; closed 2026-11-13); 0092a — `RecordRefund` locks the order before its lines (backend; closed 2026-11-12): closes the story 0055 lock-order gap; its dependent `0092b` moved `blocked` -> `ready`. 0088 — Order stock adjustment foundation (backend; closed 2026-11-10): order-line stock counters; its dependent `0088a` moved `blocked` -> `ready`. 0041 — the epic's foundation story (the first to close in
   this epic); its own three former dependents (0042, 0043, 0045) are re-derived against `done/`
   rather than against this pending list from here on. 0042 — Customers soft delete (backend), the
   second story to close in this epic; its own two former dependents (0044, 0047) are re-derived
@@ -603,7 +603,6 @@ Re-derived 2026-11-08 from the files actually present in `ai-spec/tasks/` (`0078
 | ID | Title | Epic area |
 | --- | --- | --- |
 | 0099 | Blog category and tag translation write actions refuse a deleted parent cleanly (backend) | Epic 5 — i18n |
-| 0094a | Order detail — line-removal stock dialog (frontend) | Epic 3 — Orders (stock) |
 | 0095 | Order detail — cancel stock dialog (frontend) | Epic 3 — Orders (stock) |
 | 0096 | Order detail — refund modal stock return (frontend) | Epic 3 — Orders (stock) |
 | _(no number)_ | Infrastructure fix: no test suite can open a database connection (local fresh setup or CI) — **status: already fixed and documented**, kept out of the numbering and out of the dependency graph below | Infrastructure |
@@ -644,17 +643,13 @@ flowchart LR
 
     subgraph PEND_STOCK["Epic 3 — Order stock (bug fix)"]
         direction TB
-        P0094a["0094a Removal stock dialog UI"]
         P0095["0095 Cancel stock dialog UI"]
         P0096["0096 Refund modal stock UI"]
     end
     %% (P0089 merged into P0088 and P0092 split into P0092a/P0092b on 2026-11-08; their nodes and edges are dropped.)
     %% (P0088 --> P0090/P0091/P0092b replaced by P0088 --> P0088a --> … on 2026-11-08, review #4 split.)
-    P0094a -.-> P0095
-    P0094a -.-> P0096
     P0095 -.-> P0096
     class P0095,P0096 ready;
-    class P0094a claimed;
 
     %% Standalone (no PRD epic)
     %% (P0082's own node dropped: 0082 closed to done/ this pass, per the update at the top of this file.)
