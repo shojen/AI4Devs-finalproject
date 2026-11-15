@@ -12,6 +12,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\PermissionRegistrar;
@@ -359,3 +360,124 @@ test('refusal messages name the field, never the internal names.{language id} ke
             ->toContain(__('blog-tags.index.tabs.name_attribute'));
     }
 })->with(['en' => ['en'], 'es' => ['es']]);
+
+afterEach(function () {
+    // Story 0099: the race tests register a `creating` listener on BlogTagTranslation. Flush it, then
+    // reset the booted state so the model's own `saving` hook is registered again for later tests.
+    BlogTagTranslation::flushEventListeners();
+    BlogTagTranslation::clearBootedModels();
+});
+
+/**
+ * Story 0099: raw-deletes the blog tag from inside the translation's `creating` event, i.e. after
+ * the action's read and before the INSERT, so MySQL raises the real 1452. FOREIGN_KEY_CHECKS is
+ * never disabled.
+ */
+function deleteBlogTagWhenItsTranslationIsCreated(BlogTag $parent): void
+{
+    BlogTagTranslation::creating(function () use ($parent): void {
+        DB::table('blog_tags')->where('id', $parent->id)->delete();
+    });
+}
+
+function blogTagTranslationRawRowCount(BlogTag $parent): int
+{
+    return DB::table('blog_tag_translations')->where('blog_tag_id', $parent->id)->count();
+}
+
+test('a blog tag deleted after the caller loaded it raises ModelNotFoundException and leaves no translation row', function () {
+    $parent = BlogTag::factory()->named('running')->create();
+    $this->actingAs(setBlogTagTranslationActor());
+    $stale = BlogTag::query()->findOrFail($parent->id);
+    $parent->delete();
+
+    $caught = null;
+    try {
+        app(SetBlogTagTranslation::class)($stale, $this->french, 'Guides');
+    } catch (Throwable $e) {
+        $caught = $e;
+    }
+
+    expect($caught)->toBeInstanceOf(ModelNotFoundException::class)
+        ->and($caught->getModel())->toBe(BlogTag::class)
+        ->and(blogTagTranslationRawRowCount($parent))->toBe(0);
+});
+
+test('a blog tag deleted between the action read and the write raises ModelNotFoundException and leaves no translation row', function () {
+    $parent = BlogTag::factory()->named('running')->create();
+    $this->actingAs(setBlogTagTranslationActor());
+    deleteBlogTagWhenItsTranslationIsCreated($parent);
+
+    $caught = null;
+    try {
+        app(SetBlogTagTranslation::class)($parent, $this->french, 'Guides');
+    } catch (Throwable $e) {
+        $caught = $e;
+    }
+
+    expect($caught)->toBeInstanceOf(ModelNotFoundException::class)
+        ->and($caught->getModel())->toBe(BlogTag::class)
+        ->and($caught->getIds())->toBe([$parent->id])
+        ->and(blogTagTranslationRawRowCount($parent))->toBe(0);
+});
+
+test('authorization is checked first for a deleted blog tag: an unpermitted actor is refused as unauthorized and logged once', function () {
+    Log::spy();
+    $parent = BlogTag::factory()->named('running')->create();
+    $stale = BlogTag::query()->findOrFail($parent->id);
+    $parent->delete();
+    $this->actingAs(setBlogTagTranslationActor(['blog.view']));
+
+    expect(fn () => app(SetBlogTagTranslation::class)($stale, $this->french, 'Guides'))
+        ->toThrow(AuthorizationException::class);
+
+    Log::shouldHaveReceived('warning')
+        ->withArgs(fn (string $message): bool => $message === 'Privileged action refused')
+        ->once();
+});
+
+test('a deleted blog tag is refused as not found before an inactive language is checked', function () {
+    $inactive = StoreLanguage::factory()->inactive()->create();
+    $parent = BlogTag::factory()->named('running')->create();
+    $stale = BlogTag::query()->findOrFail($parent->id);
+    $parent->delete();
+    $this->actingAs(setBlogTagTranslationActor());
+
+    $caught = null;
+    try {
+        app(SetBlogTagTranslation::class)($stale, $inactive, 'Kategorie');
+    } catch (Throwable $e) {
+        $caught = $e;
+    }
+
+    expect($caught)->toBeInstanceOf(ModelNotFoundException::class)
+        ->and($caught->getModel())->toBe(BlogTag::class);
+});
+
+test('a QueryException that is not a blog tag foreign key violation is rethrown unchanged', function (int $code, string $native, ?string $pdoMessage) {
+    $parent = BlogTag::factory()->named('running')->create();
+    $this->actingAs(setBlogTagTranslationActor());
+
+    $pdoException = new PDOException($pdoMessage ?? $native);
+    $pdoException->errorInfo = ['23000', $code, $native];
+    $exception = new QueryException('mysql', 'insert into `blog_tag_translations` ...', [], $pdoException);
+    bindThrowingBlogTagSetTranslation($exception);
+
+    $caught = null;
+    try {
+        app(SetBlogTagTranslation::class)($parent, $this->french, 'Guides');
+    } catch (Throwable $e) {
+        $caught = $e;
+    }
+
+    expect($caught)->toBe($exception);
+})->with([
+    'missing store language reference' => [1452, 'Cannot add or update a child row: a foreign key constraint fails (`testing`.`blog_tag_translations`, CONSTRAINT `blog_tag_translations_store_language_id_foreign` FOREIGN KEY (`store_language_id`) REFERENCES `store_languages` (`id`))', null],
+    'duplicate entry on an unhandled index' => [1062, "Duplicate entry 'x' for key 'blog_tag_translations.some_other_unique'", null],
+    'deadlock' => [1213, 'Deadlock found when trying to get lock; try restarting transaction', null],
+    'decoy: message names the blog tag foreign key, errorInfo does not' => [
+        1452,
+        'Cannot add or update a child row: a foreign key constraint fails (`testing`.`blog_tag_translations`, CONSTRAINT `blog_tag_translations_store_language_id_foreign` FOREIGN KEY (`store_language_id`) REFERENCES `store_languages` (`id`))',
+        'CONSTRAINT `blog_tag_translations_blog_tag_id_foreign` FOREIGN KEY',
+    ],
+]);
