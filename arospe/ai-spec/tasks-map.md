@@ -18,6 +18,8 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-11-15): `0099-blog-translation-write-actions-deleted-entity-race-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 3 step 0, claimed by `worktree-0099-blog-translation-deleted-parent-race-backend`; Phase 1 debate and Phase 2 INVEST approved). Its node is now `claimed`; the inbound links from `done/0098-…` were re-pointed to `in-progress/`. No other task shares its write set.
+
 **Update (2026-11-15): `0094a-order-line-removal-stock-dialog-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0094a-order-line-removal-stock-dialog-ui`; Phases 3-6 approved, full unscoped suite green). Its node, inventory row, `claimed` class membership and `tasks-status.json` entry are dropped; inbound links were re-pointed to `done/`. Pending in `ai-spec/tasks/`: `0095`, `0096`, `0099`; `in-progress/` is empty. `done/` holds 122 files; Epic 3 counts 27.
 
 **Update (2026-11-15): 20 new pending tasks, `0100`–`0112` (Epic 6 — Invoicing, plus the Epic 3 customer report `0111`/`0112`)**, Phase 1 by `product-owner` (two facilitators; Three Amigos with the owner's decisions U-1..U-12). Ids were renumbered by one in a single scripted pass so that the unrelated `0099` keeps its number; dependencies are quoted from each file's own header and "Dependencies" section (three headers were corrected in the same pass so they agree with their dependents: `0106a`, `0107`, `0108`). Every dependency has a lower id than its dependent and the graph has no cycle. `0100` is the only new `ready` node (no dependency); the other 19 are `blocked`. Conflict risk with pre-existing pending tasks: `0106`, `0106a`, `0107`, `0108`, `0109a`, `0109b`, `0109c` share `lang/*/orders.php` and, for `0106`, `0106a`, `0107`, `0109b`, `0109c`, also `app/Livewire/Orders/Show.php`, `resources/views/livewire/orders/show.blade.php` or their tests with `0094a`, `0095`, `0096`; finish the stock dialogs first or sequence them. Inside the epic nearly every story touches `lang/*/invoices.php`, so parallel sessions should not work two of them at once without the ownership boundary of `docs/contracts.md`. The existing entries of `tasks-status.json` were left unchanged; the risk is recorded on the new entries. No node is `claimed`.
@@ -744,7 +746,7 @@ flowchart LR
     %% (P0084 --> P0085 dropped: 0084 is done; 0085 is done too.)
     %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
-    class P0099 ready;
+    class P0099 claimed;
     %% (P0078 closed to done/ 2026-11-08; P0076b closed to done/ 2026-11-10 and no node is `claimed`; P0076b --> P0077 and P0076b -.-> P0087 dropped, 0077 is now ready.)
     %% (P0079 closed to done/ 2026-11-12; P0087 -.-> P0079 dropped, no node is `claimed`.)
     %% (P0075 closed to done/ 2026-10-27; P0073 closed to done/ 2026-10-08; no node remains `claimed`.)

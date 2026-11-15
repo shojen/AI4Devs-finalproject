@@ -3,8 +3,8 @@
 ## Description
 
 `App\Actions\Blog\SetBlogCategoryTranslation` (story
-[0073](done/0073-blog-categories-language-tabs-ui.md)) and `App\Actions\Blog\SetBlogTagTranslation`
-(story [0075](done/0075-blog-tags-language-tabs-ui.md)) write a translation row whose
+[0073](../done/0073-blog-categories-language-tabs-ui.md)) and `App\Actions\Blog\SetBlogTagTranslation`
+(story [0075](../done/0075-blog-tags-language-tabs-ui.md)) write a translation row whose
 `blog_category_id` / `blog_tag_id` foreign key points at the parent. Both parents are **hard deleted**
 (neither `BlogCategory` nor `BlogTag` uses `SoftDeletes`), and both translation tables declare that FK
 `constrained()->cascadeOnDelete()` with Laravel's default constraint name
@@ -19,7 +19,7 @@ the per-language `normalized_name` index and **rethrow everything else unchanged
 an unhandled `QueryException`: a **500**.
 
 This is the blog-side sibling of story
-[0098](done/0098-translation-write-actions-deleted-entity-race-backend.md), split out by the user's answer
+[0098](../done/0098-translation-write-actions-deleted-entity-race-backend.md), split out by the user's answer
 to 0098's **Q-3 (a)** (2026-11-14). The real state of the two actions, read from the code on
 2026-11-14:
 
@@ -32,7 +32,7 @@ The calling Livewire components (`BlogCategories\Index::save()`, `BlogTags\Index
 target with `findOrFail()` before calling the action, so through the UI only the read-to-write window
 is reachable; the "deleted before the call" window is reachable by any direct caller of
 `SetBlogCategoryTranslation` (the action is the self-sufficient guard, per
-[model-instance-trust.md](../../docs/security/model-instance-trust.md)). Blog posts are soft-deleted,
+[model-instance-trust.md](../../../docs/security/model-instance-trust.md)). Blog posts are soft-deleted,
 so `SetBlogPostTranslation` is not exposed to 1452 and is out of scope.
 
 ## Type
@@ -41,7 +41,7 @@ backend | includes database-expert: no (no schema change; the FKs and their name
 
 ## PRD coverage
 
-Epic 5 — Internationalization ([epic-5-internationalization.md](../../docs/PRD/sections/epic-5-internationalization.md)).
+Epic 5 — Internationalization ([epic-5-internationalization.md](../../../docs/PRD/sections/epic-5-internationalization.md)).
 Robustness hardening, sibling of 0098; no PRD sentence demands it directly.
 
 ## Three Amigos participants
@@ -50,8 +50,7 @@ Robustness hardening, sibling of 0098; no PRD sentence demands it directly.
 - `backend-expert` — Amigo 1, to confirm the mechanism in the debate.
 - `backend-qa` — Amigo 2, to confirm the failure-injection technique (R-1).
 
-Phase 1 debate not yet run with the two amigos: this file is the `product-owner` draft created at the
-user's request. The functional decisions are **inherited from the user's answers on 0098** (§4); no
+This file is the `product-owner` draft created at the user's request; the debate ran on 2026-11-15 (see the Phase 1 record). The functional decisions are **inherited from the user's answers on 0098** (§4); no
 open question is left for the user.
 
 ## 1. Refined user story
@@ -149,11 +148,11 @@ Feature: Blog category and tag translation write actions refuse a deleted parent
   / `blog_tag_translations_blog_tag_id_foreign` — becomes a `ModelNotFoundException` for the parent
   model; every other `QueryException` (including a 1452 on `store_language_id`) is rethrown unchanged
   through the existing 1062 translator path.
-- Possibly `app/Actions/Blog/TranslateBlogCategoryNameUniqueViolation.php` /
-  `app/Actions/Blog/TranslateBlogTagNameUniqueViolation.php`, only if the implementer places the 1452
-  discrimination there instead of in the action; both currently rethrow every non-1062 error unchanged,
-  and that must stay true for every error other than the parent FK 1452. Follow whatever placement 0098
-  settles on if it has already landed, so the four actions read alike.
+- The two translators (`TranslateBlogCategoryNameUniqueViolation` / `TranslateBlogTagNameUniqueViolation`)
+  are **not touched**: Phase 1 settled on the inline placement of story 0098
+  (`SetProductCategoryTranslation`): the guard is `errorInfo[1] === 1452` plus
+  ``preg_match('/CONSTRAINT `<fk name>` FOREIGN KEY/', (string) ($e->errorInfo[2] ?? ''))``, placed in the
+  action's `catch` before the translator call. Add `@throws ModelNotFoundException` to both docblocks.
 - `tests/Feature/Blog/SetBlogCategoryTranslationTest.php`, `tests/Feature/Blog/SetBlogTagTranslationTest.php`
   — §3's cases.
 
@@ -176,6 +175,8 @@ Feature tests, direct action calls resolved from the container, `RefreshDatabase
 | 2 | Parent deleted between read and write → `ModelNotFoundException`, not `QueryException`; no translation row | both files | **highest value**; inject the delete with a translation-model `creating`/`saving` listener that deletes the parent through a raw query (the 0078 errors-log technique, as 0076b R-1 and 0098 case 2) |
 | 3 | Unauthorized + deleted → `AuthorizationException`, logged once | both files | proves order |
 | 4 | A 1452 on `store_language_id`, a 1062 on a non-handled index and a non-integrity error are rethrown unchanged | both files | discrimination on the **constraint name in `errorInfo[2]`**, never on `getMessage()` (the translators' own docblocks and the `CreateShippingRate` F-5 precedent) |
+| 3b | A deleted parent with an inactive language is refused as not found (proves the re-read precedes `ResolveActiveStoreLanguage`) | both files | added in Phase 1 (backend-qa) |
+| 4b | Case 4 dataset has a decoy row: `errorInfo[2]` names the language FK while the PDO message names the parent FK; plus a 1213 deadlock | both files | reuse `bindThrowingBlogSetTranslation` / `bindThrowingBlogTagSetTranslation`; fold the existing tag 1452-on-`store_language_id` test into it |
 | 5 | Existing parent still writable; existing 1062 mapping on `…_language_normalized_name_unique` unchanged | both files | regression, likely already covered |
 
 ## Expected outcome
@@ -195,7 +196,7 @@ orphan row; every other database error behaves exactly as before.
 
 ## Definition of Done
 
-- [ ] Phase 1 debate completed with `backend-expert` and `backend-qa`.
+- [x] Phase 1 debate completed with `backend-expert` and `backend-qa`.
 - [ ] Tests written and green (iteration filter, then the **full** suite unscoped).
 - [ ] Pint unscoped and Larastan level 7 clean.
 - [ ] Code reviewed (`code-reviewer`).
@@ -225,14 +226,14 @@ All three are **inherited from the user's answers on 0098** (2026-11-14) and app
 ### Dependencies
 
 - **None pending.** It builds on shipped stories only: 0073, 0075 and
-  [0087](done/0087-translation-write-actions-refuse-inactive-store-language.md) (the order and the
+  [0087](../done/0087-translation-write-actions-refuse-inactive-store-language.md) (the order and the
   `ResolveActiveStoreLanguage` helper), all in `done/`. Status `ready`.
-- **Independent of [0098](done/0098-translation-write-actions-deleted-entity-race-backend.md).** Their code
+- **Independent of [0098](../done/0098-translation-write-actions-deleted-entity-race-backend.md).** Their code
   and test write sets are disjoint (0098: `app/Actions/Products/*`, `app/Actions/ProductCategories/*`
   and their two test files; this task: `app/Actions/Blog/*` and two `tests/Feature/Blog/*` files), so
   `conflict_risk_with` is empty. The only shared surface is Phase 6 documentation
   (`action-level-authorization.md`, the Epic 5 digest), a small merge-time overlap, not a dependency.
-  If 0098 lands first, follow its placement of the 1452 discrimination (action vs translator) for
+  0098 has landed; this task follows its placement of the 1452 discrimination (action vs translator) for
   consistency; it is not a prerequisite.
 
 ### Risks
@@ -242,6 +243,10 @@ All three are **inherited from the user's answers on 0098** (2026-11-14) and app
 - **R-2** A translation row loaded before the parent's cascade delete is then `UPDATE`d: zero rows
   affected, no error, and the action returns a model that no longer exists. Under D-2 this window stays
   open, as accepted for 0098.
+- **R-4** `FindOrCreateBlogTag` inserts `BlogTagTranslation` rows directly and has the same 1452 exposure; out
+  of scope here (recorded by `backend-expert` in Phase 1) — candidate follow-up.
+- **R-5** Model listeners used for the failure injection are static: flush them in `afterEach`
+  (`BlogCategoryTranslation::flushEventListeners()` / `BlogTagTranslation::...`) unless the file already does.
 - **R-3** Matching on the error message instead of the constraint name misclassifies errors (the
   message embeds the user's text). Mitigated by case 4.
 
@@ -249,7 +254,22 @@ All three are **inherited from the user's answers on 0098** (2026-11-14) and app
 
 None: Q-1–Q-3 are inherited from 0098's user decisions (D-1–D-3).
 
+## Phase 1 record (2026-11-15)
+
+- `backend-expert`: **approved**. FK names confirmed as Laravel defaults (52 / 44 chars); `store_language_id` FK is
+  `restrictOnDelete`, so constraint-name discrimination is mandatory; re-read goes right after authorize and before
+  `ResolveActiveStoreLanguage`; `ArchitectureTest` guard unaffected; translators stay untouched.
+- `backend-qa`: **approved with adjustments** (cases 3b and 4b above). No existing test breaks from the category re-read.
+
 ## Provenance
 
 Split from 0098 by the user's Q-3 (a) answer (2026-11-14). Created by `product-owner` on 2026-11-14 from
-a direct read of both actions, their translators and their migrations; Phase 1 debate and Phase 2 not run.
+a direct read of both actions, their translators and their migrations; Phase 1 debate and Phase 2 ran on 2026-11-15 (records above).
+
+## Phase 2 — INVEST validation (`code-reviewer`, 2026-11-15)
+
+**Approved.**
+
+- INVEST: Independent (0073, 0075, 0087, 0098 all in `done/`; disjoint write set), Negotiable (D-1–D-5 inherited from 0098's user answers, no open question), Valuable (500 → clean 404, no orphan row), Estimable (two actions, two test files, pattern already shipped in `SetProductCategoryTranslation`), Small, Testable (§3 cases 1–5 map to every acceptance criterion).
+- Gherkin: every scenario opens with a named role (content editor / staff member) and has a single `When`.
+- Consistent with 0098: same inline placement (`errorInfo[1] === 1452` + constraint name in `errorInfo[2]`, before the translator call), same `ModelNotFoundException` outcome, same decoy test (4b ≈ 0098's 4c).
