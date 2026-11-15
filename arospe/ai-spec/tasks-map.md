@@ -18,6 +18,8 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-11-15): `0094-order-line-quantity-stock-dialog-ui.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 3 step 0; Phase 2 APPROVED on re-review #5 after D-6/D-8 were reworked to the two-button form; claimed by `worktree-0094-order-line-quantity-stock-dialog-ui`). It keeps its node (now `claimed`) and its `tasks-status.json` entry; `ai-spec/tasks/` holds `0094a`, `0095`, `0096`, `0099` and `ai-spec/tasks/in-progress/` holds `0094`. Inbound links from `0094a`, `0095`, `0096` and the `done/` files `0088`, `0090`, `0092b`, `0093` were re-pointed. `0094a`'s D-5 got the same two-button wording.
+
 **Update (2026-11-15, merge of `origin/main` into the 0098 branch): reconciled coordination files.** `origin/main` brought the 0091 and 0092b closures; this branch brings the 0098 closure and the new `0099`. Recounted from the directory, `done/` holds 120 files; pending in `ai-spec/tasks/`: `0094`, `0094a`, `0095`, `0096`, `0099`; `in-progress/` is empty and no node is `claimed`. `tasks-status.json` = main's entries minus `0098`, plus `0099` (`ready`). The per-closure counts quoted in the paragraphs below were taken before this merge.
 
 **Update (2026-11-14): `0098-translation-write-actions-deleted-entity-race-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0098-translation-write-actions-deleted-entity-race-backend`; Phases 3-6 approved, full unscoped suite green: 6300 tests). Its node, inventory row, `claimed` class membership and `tasks-status.json` entry are dropped; it joins the flat `done/` inventory (Epic 5: 18; `done/` holds 119 files). No pending task listed it in `depends_on` or `conflict_risk_with` (`0099` is independent), so no dependent is recomputed. No node is `claimed`; `ai-spec/tasks/in-progress/` is empty again. Link check, both directions: same-depth move, so the moved file's `](../done/…)` links became bare siblings and its other links needed no change; all resolve. Inbound links repointed: `](done/0098-…)` in `0099` (2), `](0098-…)` in `done/0087` (3), `../../ai-spec/tasks/done/0098-…` in `docs/security/model-instance-trust.md` line 531. The Epic 5 digest has no link to the file.
@@ -654,7 +656,8 @@ flowchart LR
     P0094 -.-> P0096
     P0094a -.-> P0096
     P0095 -.-> P0096
-    class P0094,P0096 ready;
+    class P0096 ready;
+    class P0094 claimed;
     class P0094a,P0095 pending;
 
     %% Standalone (no PRD epic)

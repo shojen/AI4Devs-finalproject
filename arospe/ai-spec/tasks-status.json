@@ -7,9 +7,9 @@
       "slug": "0094-order-line-quantity-stock-dialog-ui",
       "title": "Order detail \u2014 ask about stock when a line's quantity changes (frontend)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree-0094-order-line-quantity-stock-dialog-ui",
+      "claimed_at": "2026-11-15T00:00:00Z",
       "touches": [
         "app/Livewire/Orders/Show.php",
         "resources/views/livewire/orders/show.blade.php",

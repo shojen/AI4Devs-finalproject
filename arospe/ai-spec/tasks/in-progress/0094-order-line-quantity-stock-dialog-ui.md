@@ -2,8 +2,8 @@
 
 > **Status: New — Phase 1 output, rewritten after the Phase 2 INVEST review of 2026-11-08; pending re-review.** Epic 3
 > follow-up bug fix, order-stock series. **Split (user decision 2026-11-08):** this story covers the **quantity change only**;
-> line removal moved to [0094a](0094a-order-line-removal-stock-dialog-ui.md). Fullstack pair: **related_task_id 0090**. Blocked
-> on [0090](done/0090-order-line-quantity-and-removal-stock-opt-in-backend.md) and [0093](done/0093-confirm-dialog-secondary-action-ui.md).
+> line removal moved to [0094a](../0094a-order-line-removal-stock-dialog-ui.md). Fullstack pair: **related_task_id 0090**. Blocked
+> on [0090](../done/0090-order-line-quantity-and-removal-stock-opt-in-backend.md) and [0093](../done/0093-confirm-dialog-secondary-action-ui.md).
 > It is also the first consumer of 0093's secondary action and owns its interactive checks (Esc / backdrop / X abort,
 > loading-disable, 375px layout).
 > **User-confirmed (2026-11-08):** OQ-3 — a line with zero returnable units still gets the dialog, with a note and only
@@ -23,7 +23,7 @@ frontend (related_task_id: 0090) | includes database-expert: no
 - `App\Livewire\Orders\Show` today calls `updateLineItemQuantity(string $itemId, UpdateOrderItemQuantity)` directly from the
   `save-quantity-{id}` button; it starts with `Gate::authorize('update', $this->order)` and `resetErrorBag()`, renders
   `OrderNotEditableException` inline and calls `refreshOrderState()`
-  ([docs/api/orders.md#orders.show](../../docs/api/orders.md#ordersshow--the-twelfth-permission-gated-route-and-the-first-screen-governed-by-three-abilities)).
+  ([docs/api/orders.md#orders.show](../../../docs/api/orders.md#ordersshow--the-twelfth-permission-gated-route-and-the-first-screen-governed-by-three-abilities)).
 - `#[Locked]` pending state with a stale guard exists for the backward status transition (`pendingStatus`, `pendingFromStatus`).
 - Computeds are read as properties and `unset()` after writes; the error bag is reset at the top of every action; a number input
   is bound to a string (epic-3 digest, story 0055).
@@ -49,14 +49,21 @@ frontend (related_task_id: 0090) | includes database-expert: no
 - **D-5 — Preview.** `#[Computed] stockPreview(): list<array{name, variant, units, current, resulting, willGoNegative}>`, computed
   from a **fresh** DB read of the pending line and its stock row. `units` for a decrease uses the same formula as 0090 D-3
   (`max(0, returnableStockUnits() − (newQty − refunded_quantity))`), for an increase `d`; the dialog never promises more than the
-  action applies.
+  action applies. For input the action will refuse (negative, or below the refunded quantity) `units` is **clamped to
+  `[0, returnableStockUnits()]`**, so the preview never shows more units than the line holds; the apply step still refuses the
+  input inline.
 - **D-6 (OQ-3, user-confirmed) — Zero units to return.** When a decrease would return 0 units (legacy line, units never deducted
   or already returned), the dialog still opens, shows the note `orders.stock.nothing_to_return` ("No units of this line are
-  currently out of stock") instead of the confirm button, and offers only "Save without changing stock" and "Keep editing".
+  currently out of stock") and offers only "Save without changing stock" and "Keep editing". **Implementation (Phase 2 re-review #4,
+  option a):** `x-confirm-dialog` always renders its `-confirm` button and has no prop to hide it, and it is not modified by this
+  story. So this variant is the **two-button form** (no `secondary-*` props): `confirm-action="applyStockChoice(false)"` with
+  `confirm-label` "Save without changing stock", and the dismiss button "Keep editing". There is therefore **no `-secondary` hook
+  and no "Deduct"/"Return" label** in this variant; the `-confirm` hook carries "Save without changing stock".
 - **D-7 — Copy.** Confirm "Deduct :count units from stock" / "Return :count units to stock"; secondary "Save without changing
   stock"; dismiss "Keep editing"; negative warning `flux:callout` with `role="alert"`: "This leaves :name at :stock units." —
   never disables a button. Keys under `orders.stock.*` (en + es, identical sets).
-- **D-8 — Hooks.** Dialog prefix `line-stock` → `confirm-dialog-line-stock`, `-confirm`, `-secondary`, `-dismiss`; preview row
+- **D-8 — Hooks.** Dialog prefix `line-stock` → `confirm-dialog-line-stock`, `-confirm`, `-secondary`, `-dismiss` (`-secondary` only
+  in the stock-moving variants; in the zero-units variant `-confirm` is "Save without changing stock", see D-6); preview row
   `stock-preview-row-{itemId}`; warning `stock-negative-warning`; note `stock-nothing-to-return`. Existing hooks
   `save-quantity-{id}` and `quantity-input-{id}` stay.
 - **D-9 — Errors and pending state.** Every rendered action refusal closes the dialog, refreshes and renders inline — never
@@ -149,19 +156,20 @@ Feature: The order administrator decides whether a quantity change moves stock
   test-prefix="line-stock" …>` with preview slot, warning callout and the zero-units note.
 - `lang/en/orders.php`, `lang/es/orders.php` — `orders.stock.*` (incl. `changed_meanwhile`, `nothing_to_return`).
 - `tests/Feature/Orders/ShowLineItemStockTest.php` — new (Livewire).
-- `tests/Feature/Orders/ShowLineItemsTest.php` — update tests that called the removed method.
+- `tests/Feature/Orders/ShowLineItemsTest.php` and `tests/Feature/Orders/ShowTest.php` (authorization dataset, line 142) — update tests that called the removed method.
 - `tests/Browser/Orders/OrderLineItemStockDialogTest.php` — new; `tests/Browser/Orders/OrderDetailLineItemsTest.php` — update.
 
 ## Tests to perform
 - [ ] Livewire: request records the cast `pendingQuantity` / `pendingFromQuantity` and opens the dialog with the right preview; unchanged quantity is a no-op; a null-target line saves with `adjustStock: false` and no dialog.
 - [ ] Livewire: `applyStockChoice(true|false)` calls the action with the matching `adjustStock` (assert stock and counters, not a mock); dismiss clears state and changes nothing.
-- [ ] Livewire: zero-returnable decrease shows the note, no confirm button, and the two remaining options (OQ-3).
+- [ ] Livewire: zero-returnable decrease shows the note, no `-secondary` hook and no Deduct/Return label, `-confirm` reads "Save without changing stock" and runs `applyStockChoice(false)`, plus "Keep editing" (OQ-3).
+- [ ] Livewire: the preview `units` is clamped to `[0, returnableStockUnits()]` for negative / below-refunded input.
 - [ ] Livewire: invalid input (`0`, below refunded, empty string) reaches the action on apply and is rendered inline; the request step adds no validation of its own.
 - [ ] Pending state is empty after success, after each rendered refusal type (authorization failure asserted as forbidden instead, `assertForbidden()`) and after the stale-guard path; `applyStockChoice()` with empty pending state is refused and changes nothing.
 - [ ] Security: `#[Locked]` props cannot be set by the client; `applyStockChoice` re-authorizes (revoke permission between request and apply → refused); an item id of another order → not found, nothing written; stale guard fires.
 - [ ] Preview from a fresh read (stock changed after opening → re-render shows the new value); `willGoNegative` only when resulting < 0.
 - [ ] Lang parity.
-- [ ] Browser (also covering 0093's interactive behaviour): three explicitly labelled buttons; secondary runs only the secondary method; Esc, backdrop and X abort; both action buttons disabled while one is loading; warning has `role="alert"`; stacked at 375px with ≥ 44px targets; dark mode legible.
+- [ ] Browser (also covering 0093's interactive behaviour): three explicitly labelled buttons; secondary runs only the secondary method; Esc, backdrop and X abort; both action buttons disabled while one is loading (confirm that Livewire 4 matches the composite `wire:target="applyStockChoice(true),applyStockChoice(false)"`; a bare `applyStockChoice` target is the fallback); warning has `role="alert"`; stacked at 375px with ≥ 44px targets; dark mode legible.
 
 ## Expected outcome
 Every quantity change on a stock-tracked line asks the administrator, shows the stock effect, and applies exactly the chosen
@@ -186,8 +194,8 @@ Independent: needs 0090 and 0093. Negotiable: copy. Valuable: the administrator 
 edit. Estimable/Small: one flow on one component after the removal split. Testable: Livewire and browser tests per scenario.
 
 ## Dependencies, risks, open technical questions
-**Depends on:** [0090](done/0090-order-line-quantity-and-removal-stock-opt-in-backend.md), [0093](done/0093-confirm-dialog-secondary-action-ui.md)
-(hard). **Blocks:** [0094a](0094a-order-line-removal-stock-dialog-ui.md), [0095](0095-order-cancellation-stock-dialog-ui.md)
+**Depends on:** [0090](../done/0090-order-line-quantity-and-removal-stock-opt-in-backend.md), [0093](../done/0093-confirm-dialog-secondary-action-ui.md)
+(hard). **Blocks:** [0094a](../0094a-order-line-removal-stock-dialog-ui.md), [0095](../0095-order-cancellation-stock-dialog-ui.md)
 (reuse of the pending state and `stockPreview`). Shares `Show.php`, `show.blade.php` and `lang/*/orders.php` with 0094a, 0095,
 0096 and 0092b (lang) — run sequentially.
 - **R-1** — Removing the public `updateLineItemQuantity` changes the component's public surface; any caller must be updated in the
@@ -203,3 +211,6 @@ edit. Estimable/Small: one flow on one component after the removal split. Testab
 - Phase 2: INVEST review 2026-11-08: findings received → split and rewritten, pending re-review.
 - Phase 2: INVEST re-review 2026-11-08: pending state cleared on every refusal and stale-guard path, leftover app() alternative removed → rewritten, pending re-review.
 - Phase 2: INVEST re-review #3 2026-11-08 → rewritten, pending re-review (D-9 pending-state wording: rendered refusals clear it, failed re-authorization is a 403 asserted with assertForbidden(), next apply re-authorizes).
+- Phase 2: INVEST re-review #4 2026-11-15 (code-reviewer): REJECTED — D-6/D-8 not implementable as written: `x-confirm-dialog` always renders its confirm button (no prop to hide it) and the component is not in Files to create/modify; state which hook carries "Save without changing stock" in the zero-units dialog (two-button form with confirm-action `applyStockChoice(false)`, or a new optional component prop) and align the "no confirm button" test.
+- Phase 2: story rewritten 2026-11-15 after re-review #4: D-6/D-8 fixed with option (a) (two-button form, `-confirm` = "Save without changing stock", shared component untouched), D-5 clamp added, `ShowTest.php` added to the file list, 0094a pending-state list aligned; pending re-review.
+- Phase 2: INVEST re-review #5 2026-11-15 (code-reviewer): APPROVED — zero-units variant is the two-button form (`-confirm` = "Save without changing stock" → `applyStockChoice(false)`, no `-secondary`), consistent across D-6, D-8, Gherkin, Tests to perform and Files; D-5 clamp to `[0, returnableStockUnits()]` matches `UpdateOrderItemQuantity` (k = max(0, d − U), upper bound reached at newQty = refunded_quantity); no new contradiction.
