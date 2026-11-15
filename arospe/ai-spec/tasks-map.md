@@ -18,6 +18,8 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-11-15): `0094a-order-line-removal-stock-dialog-ui.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 3 step 0; Phase 2 APPROVED on re-review #5 after the Files list, D-2/D-6/D-9 were reworked against the merged 0094; claimed by `worktree-0094a-order-line-removal-stock-dialog-ui`). It keeps its node (now `claimed`) and its `tasks-status.json` entry; `ai-spec/tasks/` holds `0095`, `0096`, `0099` and `ai-spec/tasks/in-progress/` holds `0094a`. Inbound links from `0095` were re-pointed.
+
 **Update (2026-11-15): `0094-order-line-quantity-stock-dialog-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0094-order-line-quantity-stock-dialog-ui`; Phases 3-6 approved, full unscoped suite green). Its node, inventory row, `claimed` class membership and `tasks-status.json` entry are dropped; inbound links were re-pointed to `done/`. `0094a` and `0095` lose their only hard dependency and become `ready` (their `conflict_risk_with` on each other and on `0096` stays: all share `Show.php`, `show.blade.php` and `lang/*/orders.php`, run sequentially). `done/` holds 121 files; pending in `ai-spec/tasks/`: `0094a`, `0095`, `0096`, `0099`; `in-progress/` is empty.
 
 **Update (2026-11-15, merge of `origin/main` into the 0098 branch): reconciled coordination files.** `origin/main` brought the 0091 and 0092b closures; this branch brings the 0098 closure and the new `0099`. Recounted from the directory, `done/` holds 120 files; pending in `ai-spec/tasks/`: `0094`, `0094a`, `0095`, `0096`, `0099`; `in-progress/` is empty and no node is `claimed`. `tasks-status.json` = main's entries minus `0098`, plus `0099` (`ready`). The per-closure counts quoted in the paragraphs below were taken before this merge.
@@ -651,7 +653,8 @@ flowchart LR
     P0094a -.-> P0095
     P0094a -.-> P0096
     P0095 -.-> P0096
-    class P0094a,P0095,P0096 ready;
+    class P0095,P0096 ready;
+    class P0094a claimed;
 
     %% Standalone (no PRD epic)
     %% (P0082's own node dropped: 0082 closed to done/ this pass, per the update at the top of this file.)

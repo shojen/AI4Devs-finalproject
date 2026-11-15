@@ -376,7 +376,7 @@ cancel-with-return returned the same units twice.
 
 ### OQ-3 — A line with zero returnable units — resolved (user-confirmed 2026-11-08)
 The dialog is still shown, with a note and only "Save without changing stock" / "Keep editing". See
-[0094](0094-order-line-quantity-stock-dialog-ui.md) and [0094a](../0094a-order-line-removal-stock-dialog-ui.md).
+[0094](0094-order-line-quantity-stock-dialog-ui.md) and [0094a](../in-progress/0094a-order-line-removal-stock-dialog-ui.md).
 
 ### OQ-4 — Virtual products — resolved (user-confirmed 2026-11-08)
 D1 applies as written: every product line moves `products.stock`, including `virtual` products.
