@@ -35,9 +35,9 @@
       "slug": "0100-invoice-settings-backend",
       "title": "Invoice settings (backend)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree-0100-invoice-settings-backend",
+      "claimed_at": "2026-11-16T12:30:00Z",
       "touches": [
         "database/migrations/<ts>_create_invoice_settings_table.php",
         "app/Enums/InvoiceTemplate.php",
