@@ -3,7 +3,7 @@
 > **Status: New — created 2026-11-08 by splitting former 0094 after the Phase 2 INVEST review (user decision); pending review.**
 > Epic 3 follow-up bug fix, order-stock series. Suffix numbering follows the `0076a` precedent so the story sorts after
 > [0094](../done/0094-order-line-quantity-stock-dialog-ui.md) (whose state and dialog it extends) and before
-> [0095](../0095-order-cancellation-stock-dialog-ui.md). Fullstack pair: **related_task_id 0090** (`RemoveOrderItem` `adjustStock`).
+> [0095](0095-order-cancellation-stock-dialog-ui.md). Fullstack pair: **related_task_id 0090** (`RemoveOrderItem` `adjustStock`).
 > **User-confirmed (2026-11-08):** OQ-3 — a line with zero returnable units still gets the dialog, with a note and only
 > "Remove without changing stock" / "Keep editing".
 

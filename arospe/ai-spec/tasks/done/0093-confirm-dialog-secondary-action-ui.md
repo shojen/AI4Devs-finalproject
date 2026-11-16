@@ -3,7 +3,7 @@
 > **Status: Done — closed 2026-11-10 (Phases 1–7 complete).** Epic 3
 > follow-up, order-stock series. No backend pair and no dependency: a backwards-compatible extension of the shared
 > `<x-confirm-dialog>` that the stock dialogs ([0094](0094-order-line-quantity-stock-dialog-ui.md),
-> [0094a](0094a-order-line-removal-stock-dialog-ui.md), [0095](../0095-order-cancellation-stock-dialog-ui.md)) need. This story is
+> [0094a](0094a-order-line-removal-stock-dialog-ui.md), [0095](0095-order-cancellation-stock-dialog-ui.md)) need. This story is
 > limited to what a render test can prove; the interactive checks (Esc / backdrop / X abort, loading-disable, 375px layout) are
 > owned by its first consumer, [0094](0094-order-line-quantity-stock-dialog-ui.md).
 
@@ -85,7 +85,7 @@ for existing dialogs. Estimable/Small: one Blade component. Testable: render tes
 
 ## Dependencies, risks, open technical questions
 **Depends on:** nothing pending. **Blocks:** [0094](0094-order-line-quantity-stock-dialog-ui.md),
-[0094a](0094a-order-line-removal-stock-dialog-ui.md), [0095](../0095-order-cancellation-stock-dialog-ui.md).
+[0094a](0094a-order-line-removal-stock-dialog-ui.md), [0095](0095-order-cancellation-stock-dialog-ui.md).
 - **R-1** — Flux modal + Blaze markup rules (hooks on inner content, single dismiss control in the DOM) must hold for the new button
   ([Livewire and Flux conventions](../../../docs/conventions/base-standards/livewire-and-flux-conventions.md)).
 

@@ -430,18 +430,35 @@
         test-prefix="backward-transition"
     />
 
+    @php($cancelRows = $showCancelConfirm ? $this->stockPreview : [])
+    @php($cancelUnits = collect($cancelRows)->sum('units'))
+    @php($cancelMoves = $cancelUnits > 0)
     <x-confirm-dialog
         :show="$showCancelConfirm"
         model="showCancelConfirm"
         :heading="__('orders.lifecycle.cancel_dialog_heading')"
         :body="__('orders.lifecycle.cancel_dialog_body')"
-        :confirm-label="__('orders.lifecycle.cancel_dialog_confirm')"
-        :dismiss-label="__('orders.lifecycle.dialog_dismiss')"
-        confirm-action="cancelOrder"
+        :confirm-label="$cancelMoves ? trans_choice('orders.stock.cancel_and_return', $cancelUnits, ['count' => $cancelUnits]) : __('orders.stock.cancel_without_stock')"
+        :dismiss-label="__('orders.stock.keep_order')"
+        :confirm-action="$cancelMoves ? 'cancelOrder(true)' : 'cancelOrder(false)'"
         dismiss-action="dismissCancelConfirm"
         test-prefix="cancel-order"
         variant="danger"
-    />
+        :secondary-action="$cancelMoves ? 'cancelOrder(false)' : null"
+        :secondary-label="$cancelMoves ? __('orders.stock.cancel_without_stock') : null"
+    >
+        @foreach ($cancelRows as $cancelRow)
+            <dl class="space-y-1" data-test="cancel-stock-preview-row-{{ $cancelRow['itemId'] }}">
+                <dt class="font-medium">{{ $cancelRow['name'] }}@if ($cancelRow['variant']) <span class="font-normal text-zinc-500">({{ $cancelRow['variant'] }})</span>@endif</dt>
+                <dd class="text-sm">{{ __('orders.stock.current') }}: <span class="font-semibold">{{ $cancelRow['current'] }}</span></dd>
+                <dd class="text-sm">{{ __('orders.stock.resulting') }}: <span class="font-semibold">{{ $cancelRow['resulting'] }}</span></dd>
+            </dl>
+        @endforeach
+
+        @if ($showCancelConfirm && ! $cancelMoves)
+            <flux:text data-test="cancel-stock-nothing-to-return">{{ __('orders.stock.cancel_nothing_to_return') }}</flux:text>
+        @endif
+    </x-confirm-dialog>
 
     {{-- The slot is evaluated eagerly by Blade even while the dialog is closed; it is plain markup here. --}}
     <x-confirm-dialog

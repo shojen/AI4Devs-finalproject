@@ -153,6 +153,11 @@ return [
         'remove_heading' => '¿Eliminar esta línea?',
         'remove_body' => 'Eliminar esta línea también puede devolver sus unidades al stock del producto.',
         'remove_without_stock' => 'Eliminar sin cambiar el stock',
+        'cancel_and_return' => '{1} Cancelar y devolver :count unidad al stock|[2,*] Cancelar y devolver :count unidades al stock',
+        'cancel_without_stock' => 'Cancelar sin cambiar el stock',
+        'keep_order' => 'Mantener el pedido',
+        'cancel_nothing_to_return' => 'Ninguna unidad de este pedido está fuera del stock actualmente',
+        'cancel_changed_meanwhile' => 'Este pedido cambió mientras tanto. Revísalo e inténtalo de nuevo.',
     ],
 
     'line_items' => [
@@ -181,7 +186,6 @@ return [
         'cancel' => 'Cancelar pedido',
         'cancel_dialog_heading' => '¿Cancelar este pedido?',
         'cancel_dialog_body' => 'La cancelación es definitiva: un pedido cancelado no se puede reabrir. Su estado de pago no cambia y no se reembolsa nada automáticamente.',
-        'cancel_dialog_confirm' => 'Cancelar pedido',
         'dialog_dismiss' => 'Dejarlo como está',
     ],
 
