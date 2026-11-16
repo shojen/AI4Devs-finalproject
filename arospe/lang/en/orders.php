@@ -194,6 +194,11 @@ return [
         'remove_heading' => 'Remove this line?',
         'remove_body' => 'Removing this line can also return its units to the stock of the product.',
         'remove_without_stock' => 'Remove without changing stock',
+        'cancel_and_return' => '{1} Cancel and return :count unit to stock|[2,*] Cancel and return :count units to stock',
+        'cancel_without_stock' => 'Cancel without changing stock',
+        'keep_order' => 'Keep order',
+        'cancel_nothing_to_return' => 'No units of this order are currently out of stock',
+        'cancel_changed_meanwhile' => 'This order changed meanwhile. Review it and try again.',
     ],
 
     'line_items' => [
@@ -222,7 +227,6 @@ return [
         'cancel' => 'Cancel order',
         'cancel_dialog_heading' => 'Cancel this order?',
         'cancel_dialog_body' => 'Cancelling is final: an order cannot be reopened once it is cancelled. Its payment state is not changed and nothing is refunded automatically.',
-        'cancel_dialog_confirm' => 'Cancel order',
         'dialog_dismiss' => 'Keep as it is',
     ],
 

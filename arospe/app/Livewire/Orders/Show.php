@@ -170,6 +170,14 @@ class Show extends Component
     #[Locked]
     public string $pendingFromStatus = '';
 
+    /**
+     * The order's status when the cancel dialog opened (story 0095, the stale guard). Empty means no
+     * cancel request is pending: `cancelOrder()` refuses to run without it and `stockPreview` shows no
+     * cancel rows. Cleared on every exit path of the cancel flow.
+     */
+    #[Locked]
+    public string $pendingCancelFromStatus = '';
+
     public function mount(Order $order): void
     {
         Gate::authorize('viewAny', Order::class);
@@ -463,6 +471,7 @@ class Show extends Component
     {
         Gate::authorize('update', $this->order);
         $this->resetErrorBag();
+        $this->clearPendingCancel();
 
         $item = $this->order->items->firstWhere('id', $itemId);
 
@@ -496,6 +505,7 @@ class Show extends Component
     {
         Gate::authorize('update', $this->order);
         $this->resetErrorBag();
+        $this->clearPendingCancel();
 
         $item = $this->order->items->firstWhere('id', $itemId);
 
@@ -573,14 +583,20 @@ class Show extends Component
     }
 
     /**
-     * The stock dialog's preview, from a fresh read of the pending line and its inventory row.
-     * `units` is what the action will really move, clamped to what the line holds for input it will refuse.
+     * The stock dialogs' preview, from a fresh read of the inventory rows. The mode follows the pending
+     * state: the line modes (`quantity` / `remove`) show the pending line; the cancel mode applies only
+     * when no line request is pending (`pendingStockAction === ''`) and a cancel request is. `units` is
+     * what the action will really move, clamped to what the line holds for input it will refuse.
      *
-     * @return list<array{name: string, variant: string|null, units: int, current: int, resulting: int, willGoNegative: bool}>
+     * @return list<array{itemId: string, name: string, variant: string|null, units: int, current: int, resulting: int, willGoNegative: bool}>
      */
     #[Computed]
     public function stockPreview(): array
     {
+        if ($this->pendingStockAction === '' && $this->pendingCancelFromStatus !== '') {
+            return $this->cancelStockPreview();
+        }
+
         if (! in_array($this->pendingStockAction, ['quantity', 'remove'], true) || $this->pendingItemId === '') {
             return [];
         }
@@ -592,9 +608,7 @@ class Show extends Component
             return [];
         }
 
-        $row = $target['type'] === 'variant'
-            ? ProductVariant::query()->find($target['id'])
-            : Product::query()->find($target['id']);
+        $row = $this->stockRow($target);
 
         if ($row === null) {
             return [];
@@ -614,6 +628,7 @@ class Show extends Component
         }
 
         return [[
+            'itemId' => $item->id,
             'name' => $item->product_name,
             'variant' => $row instanceof ProductVariant ? $row->label() : null,
             'units' => $units,
@@ -621,6 +636,66 @@ class Show extends Component
             'resulting' => $resulting,
             'willGoNegative' => $this->pendingStockAction !== 'remove' && $resulting < 0,
         ]];
+    }
+
+    /**
+     * The cancel dialog's rows: one per line with returnable units and a live stock target. Two lines
+     * of the same target show the combined resulting stock, like the backend's aggregation.
+     *
+     * @return list<array{itemId: string, name: string, variant: string|null, units: int, current: int, resulting: int, willGoNegative: bool}>
+     */
+    private function cancelStockPreview(): array
+    {
+        $lines = OrderItem::query()->where('order_id', $this->orderId)->orderBy('id')->get();
+        $unitsByTarget = [];
+
+        foreach ($lines as $item) {
+            $target = $item->stockTarget();
+
+            if ($target !== null && $item->returnableStockUnits() > 0) {
+                $key = $target['type'].':'.$target['id'];
+                $unitsByTarget[$key] = ($unitsByTarget[$key] ?? 0) + $item->returnableStockUnits();
+            }
+        }
+
+        $rows = [];
+
+        foreach ($lines as $item) {
+            $target = $item->stockTarget();
+            $units = $item->returnableStockUnits();
+
+            if ($target === null || $units <= 0) {
+                continue;
+            }
+
+            $row = $this->stockRow($target);
+
+            if ($row === null) {
+                continue;
+            }
+
+            $rows[] = [
+                'itemId' => $item->id,
+                'name' => $item->product_name,
+                'variant' => $row instanceof ProductVariant ? $row->label() : null,
+                'units' => $units,
+                'current' => $row->stock,
+                'resulting' => $row->stock + $unitsByTarget[$target['type'].':'.$target['id']],
+                'willGoNegative' => false,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @param  array{type: string, id: string}  $target
+     */
+    private function stockRow(array $target): Product|ProductVariant|null
+    {
+        return $target['type'] === 'variant'
+            ? ProductVariant::query()->find($target['id'])
+            : Product::query()->find($target['id']);
     }
 
     /**
@@ -771,43 +846,74 @@ class Show extends Component
     // Manual cancellation (0050)
     // ---------------------------------------------------------------------
 
+    /**
+     * Opens the three-way cancel dialog and records the order's current status as the stale guard.
+     */
     public function confirmCancel(): void
     {
         Gate::authorize('cancel', $this->order);
 
+        $this->clearPendingStock();
+        $this->pendingCancelFromStatus = $this->order->status->value;
+        unset($this->stockPreview);
         $this->showCancelConfirm = true;
     }
 
+    #[Renderless]
     public function dismissCancelConfirm(): void
     {
-        $this->showCancelConfirm = false;
+        $this->clearPendingCancel();
     }
 
-    public function cancelOrder(CancelOrder $cancelOrder): void
+    /**
+     * The cancel dialog's choice: `$adjust` true returns the order's units to stock, false cancels only.
+     * Re-authorizes, then refuses an empty guard (no prior `confirmCancel()`) or a changed status like a
+     * stale request; the guard is cleared on every exit path.
+     */
+    public function cancelOrder(bool $adjust, CancelOrder $cancelOrder): void
     {
         Gate::authorize('cancel', $this->order);
         $this->resetErrorBag();
 
+        $fromStatus = $this->pendingCancelFromStatus;
+        $this->clearPendingCancel();
+
+        if ($fromStatus === '' || $fromStatus !== $this->order->status->value) {
+            $this->refreshOrderState();
+            $this->addError('cancel', __('orders.stock.cancel_changed_meanwhile'));
+
+            return;
+        }
+
         try {
-            $cancelOrder($this->order);
+            $cancelOrder($this->order, $adjust);
         } catch (OrderCancellationBlockedException $exception) {
             // Reachable without tampering only for the one actor the policy's state clause cannot
             // bind -- a Super Admin (Gate::before) -- or through a race; rendered, never a 500.
-            $this->showCancelConfirm = false;
             $this->refreshOrderState();
             $this->addError('cancel', $exception->getMessage());
 
             return;
         } catch (ValidationException $exception) {
-            $this->showCancelConfirm = false;
             $this->refreshOrderState();
             $this->addError('cancel', $this->firstMessage($exception));
 
             return;
+        } catch (ModelNotFoundException|LogicException) {
+            $this->refreshOrderState();
+            $this->addError('cancel', __('orders.stock.cancel_changed_meanwhile'));
+
+            return;
         }
 
-        $this->showCancelConfirm = false;
         $this->refreshOrderState();
+    }
+
+    private function clearPendingCancel(): void
+    {
+        $this->pendingCancelFromStatus = '';
+        $this->showCancelConfirm = false;
+        unset($this->stockPreview);
     }
 
     // ---------------------------------------------------------------------
