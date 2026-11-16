@@ -18,6 +18,8 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-11-16): `0100-invoice-settings-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 3 step 0, claimed by `worktree-0100-invoice-settings-backend`; Phase 1 debate and Phase 2 INVEST approved). Its node is now `claimed` (blue); its `tasks-status.json` entry is unchanged. Link check, both directions: the moved file's bare sibling links gained `../` and resolve; inbound links were repointed to `in-progress/0100-…` in `0100a`, `0101a`, `0101b`, `0102`, `0103` and `0105`. `ai-spec/tasks/in-progress/` holds exactly `0100`; pending in `ai-spec/tasks/`: `0096`, `0100a`–`0112`.
+
 **Update (2026-11-16): `0095-order-cancellation-stock-dialog-ui.md` completed Phase 7 and moved from `ai-spec/tasks/` to `ai-spec/tasks/done/`** (worktree `worktree-0095-order-cancellation-stock-dialog-ui`; Phases 3-6 approved, full unscoped suite green). Its node, inventory row, `ready` class membership, the `P0095 -.-> P0096` edge and its `tasks-status.json` entry are dropped; inbound links were re-pointed to `done/`. Pending in `ai-spec/tasks/`: `0096`, `0099`; `in-progress/` is empty. `done/` holds 123 files; Epic 3 counts 28.
 
 **Update (2026-11-16): `0099-blog-translation-write-actions-deleted-entity-race-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0099-blog-translation-deleted-parent-race-backend`; Phases 3-6 approved, full unscoped suite green). Its node, inventory row and `tasks-status.json` entry are dropped; inbound links from `done/0098-…` were re-pointed. Pending in `ai-spec/tasks/`: `0096`, `0100`–`0112`; `in-progress/` is empty. `done/` holds 124 files (after merging `origin/main`, which closed `0095`).
@@ -832,7 +834,7 @@ flowchart LR
     P0096 -.-> P0106a
     P0096 -.-> P0109b
     P0096 -.-> P0109c
-    class P0100 ready;
+    class P0100 claimed;
     class P0100a,P0100b,P0101a,P0101b,P0102,P0103,P0104,P0105,P0106,P0106a,P0107,P0108,P0109a,P0109b,P0109c,P0110,P0110a,P0111,P0112 pending;
 ```
 

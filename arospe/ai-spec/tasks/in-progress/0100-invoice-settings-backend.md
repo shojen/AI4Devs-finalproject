@@ -1,12 +1,12 @@
 # [0100] Invoice settings (backend)
 
-> **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
+> **Status: In progress (Phase 3).** Phase 1 complete 2026-11-15. Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). First story of the epic; no upstream dependency.
-> Dependents: [0100a](0100a-customer-tax-id-backend.md),
-> [0101a](0101a-invoice-numbering-sequences-backend.md),
-> [0102](0102-invoice-pdf-rendering-and-templates-backend.md),
-> [0103](0103-invoice-settings-screen-ui.md),
-> [0105](0105-automatic-invoice-on-order-creation-backend.md).
+> Dependents: [0100a](../0100a-customer-tax-id-backend.md),
+> [0101a](../0101a-invoice-numbering-sequences-backend.md),
+> [0102](../0102-invoice-pdf-rendering-and-templates-backend.md),
+> [0103](../0103-invoice-settings-screen-ui.md),
+> [0105](../0105-automatic-invoice-on-order-creation-backend.md).
 
 ## Description
 One store-wide invoice-settings record: the issuer's fiscal data, logo, two colours, the PDF
@@ -135,7 +135,7 @@ Each is binding for this story.
   of `InvoiceSettingValidationRules`, `normalizeInvoiceSettingAttributes(array $attributes):
   array` (trim, blank to null, colours and country upper-cased with ASCII `strtoupper`, tax ID
   through `normalizeTaxId()`), shared by `SaveInvoiceSettings` and the settings screen
-  ([0103](0103-invoice-settings-screen-ui.md) composes the trait); `invoiceSettingRules()` returns an
+  ([0103](../0103-invoice-settings-screen-ui.md) composes the trait); `invoiceSettingRules()` returns an
   array keyed by field so a single key can be read. Final lang keys in
   `lang/{en,es}/invoice-settings.php`: `validation.year_required_when_reset` (key
   `<series>_year_format`), `validation.prefixes_must_differ` (key `corrective_prefix`),
@@ -386,3 +386,17 @@ counter. Nothing visible changes in the UI yet.
 ## Phase records
 - Phase 1 (Three Amigos) complete on 2026-11-15 — participants: product-owner (facilitator),
   backend-expert, database-expert, backend-qa. Phase 2 (INVEST) pending.
+- Phase 2 (INVEST) **approved** on 2026-11-16 by code-reviewer. Independent (needs only the
+  existing `media` table), Negotiable (open questions Q-0100-1/-3 and FD-8 recorded with a
+  recommended option), Valuable (unblocks 0100a/0101a/0102/0103/0105), Estimable, Small enough
+  (one table, one writer, no UI), Testable (T-1..T-35 map to every AC). Gherkin: every scenario
+  opens with a named business-role actor and has a single `When`. Catalog count verified in the
+  repo: 10 modules x 4 actions + 2 role + 1 order = 43; Administrator holds 42. FD-1..FD-13,
+  class contracts, Files, Tests and AC agree; no blocking contradiction. Non-blocking notes for
+  Phase 3: (1) `RolePermissionSeederTest` also hard-codes Administrator `42` (-> 44), the media
+  re-seed intermediate `39` (-> 41) and registrar `43` (-> 45), not only `43`;
+  `OrderLineItemAuthorizationTest` computes the count from the seeder constants, so the fix there
+  is adding `count(RolePermissionSeeder::INVOICE_PERMISSIONS)` to its formula, not editing a
+  literal; (2) FD-2's "longest number: 27 characters" holds only while the counter fits the
+  padding (FD-2 itself says a wider counter is never truncated) — 0101a must size its column
+  accordingly; (3) cosmetic: FD-13 is listed before FD-12 and there is no T-32.

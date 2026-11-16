@@ -2,7 +2,7 @@
 
 > **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
-> [0100](0100-invoice-settings-backend.md) (the `auto_issue_on_order` flag),
+> [0100](in-progress/0100-invoice-settings-backend.md) (the `auto_issue_on_order` flag),
 > [0101b](0101b-issue-standard-invoice-backend.md) (`IssueInvoiceForOrder`) and
 > [0104](0104-send-invoice-by-email-backend.md) (`RecordInvoiceDeliveries`, `InvoiceSent`).
 > Related: [0106](0106-invoice-collection-order-debt-partially-paid-backend.md) and
@@ -245,7 +245,7 @@ creation behaves exactly as today.
 - [ ] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open technical questions
-- Upstream: [0100](0100-invoice-settings-backend.md), [0101b](0101b-issue-standard-invoice-backend.md),
+- Upstream: [0100](in-progress/0100-invoice-settings-backend.md), [0101b](0101b-issue-standard-invoice-backend.md),
   [0104](0104-send-invoice-by-email-backend.md). The stale-totals limitation is closed by
   [0106](0106-invoice-collection-order-debt-partially-paid-backend.md) (hook) and
   [0108](0108-regenerate-invoices-after-order-edit-backend.md) (mark).
