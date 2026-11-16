@@ -2,7 +2,7 @@
 
 > **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
-> [0100](in-progress/0100-invoice-settings-backend.md) (settings, `InvoiceType`, `SaveInvoiceSettings`),
+> [0100](done/0100-invoice-settings-backend.md) (settings, `InvoiceType`, `SaveInvoiceSettings`),
 > [0100a](0100a-customer-tax-id-backend.md) (`customers.tax_id`) and
 > [0101a](0101a-invoice-numbering-sequences-backend.md) (`AllocateInvoiceNumber`). Dependents:
 > [0102](0102-invoice-pdf-rendering-and-templates-backend.md),
@@ -442,7 +442,7 @@ tables without another migration on `invoices`.
 - [ ] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open technical questions
-- Upstream: [0100](in-progress/0100-invoice-settings-backend.md), [0100a](0100a-customer-tax-id-backend.md),
+- Upstream: [0100](done/0100-invoice-settings-backend.md), [0100a](0100a-customer-tax-id-backend.md),
   [0101a](0101a-invoice-numbering-sequences-backend.md). Downstream: every later invoicing story;
   [0106](0106-invoice-collection-order-debt-partially-paid-backend.md) owns the legacy-order rule
   and `SyncOrderCollection`; [0107](0107-corrective-invoice-on-refund-and-cancellation-backend.md)

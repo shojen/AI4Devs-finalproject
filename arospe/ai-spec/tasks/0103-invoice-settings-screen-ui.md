@@ -2,7 +2,7 @@
 
 > **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
-> [0100](in-progress/0100-invoice-settings-backend.md) (settings, rules, policy, save action),
+> [0100](done/0100-invoice-settings-backend.md) (settings, rules, policy, save action),
 > [0101a](0101a-invoice-numbering-sequences-backend.md) (preview, starting counter) and
 > [0102](0102-invoice-pdf-rendering-and-templates-backend.md) (templates, renderer). Uses the
 > refusal added by [0101b](0101b-issue-standard-invoice-backend.md) once merged. No dependents.
@@ -501,7 +501,7 @@ as a PDF; a viewer reads the same screen without being able to change it.
 - [ ] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open questions
-- Upstream: [0100](in-progress/0100-invoice-settings-backend.md), [0101a](0101a-invoice-numbering-sequences-backend.md),
+- Upstream: [0100](done/0100-invoice-settings-backend.md), [0101a](0101a-invoice-numbering-sequences-backend.md),
   [0102](0102-invoice-pdf-rendering-and-templates-backend.md) (unsaved-invoice render), and
   [0101b](0101b-issue-standard-invoice-backend.md) for T-10 only. Sibling:
   [0110](0110-billing-section-ui.md) owns the "Billing" label FD-1 avoids.

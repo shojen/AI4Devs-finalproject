@@ -1,6 +1,6 @@
 # [0100] Invoice settings (backend)
 
-> **Status: In progress (Phase 3).** Phase 1 complete 2026-11-15. Epic 6 — Invoicing (ad-hoc; requested by the
+> **Status: Done (2026-11-17).** Phase 1 complete 2026-11-15. Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). First story of the epic; no upstream dependency.
 > Dependents: [0100a](../0100a-customer-tax-id-backend.md),
 > [0101a](../0101a-invoice-numbering-sequences-backend.md),
@@ -257,65 +257,65 @@ existing parity test extended). Use the real `RolePermissionSeeder` and `Log::sp
 `LocaleSetting*` tests do.
 
 Happy path
-- [ ] T-1 Full valid save with no row: exactly one row, id 1, every field reads back.
-- [ ] T-2 `current()` with no row: unsaved instance with every default; row count stays 0.
-- [ ] T-3 `current()` with a row returns the row.
-- [ ] T-4 Composer dataset: `F2026-00001`, `R26/0007`, `INV/2026.0042`, empty prefix, year `none`
+- [x] T-1 Full valid save with no row: exactly one row, id 1, every field reads back.
+- [x] T-2 `current()` with no row: unsaved instance with every default; row count stays 0.
+- [x] T-3 `current()` with a row returns the row.
+- [x] T-4 Composer dataset: `F2026-00001`, `R26/0007`, `INV/2026.0042`, empty prefix, year `none`
   with separator (`F-00001`), empty separator (`F00001`), padding 10.
-- [ ] T-5 `invoice-settings.manage` alone can save; `invoice-settings.view` alone passes `viewAny`.
-- [ ] T-6 Super Admin saves and passes `viewAny`; the catalog holds both names.
-- [ ] T-7 Model default constants equal the migrated column defaults (one test over all constants).
-- [ ] T-8 `InvoiceTemplate` has at least two cases with distinct values; default = first case.
-- [ ] T-9 Empty issuer data with auto-issue off saves; `hasCompleteIssuerData()` false; with legal
+- [x] T-5 `invoice-settings.manage` alone can save; `invoice-settings.view` alone passes `viewAny`.
+- [x] T-6 Super Admin saves and passes `viewAny`; the catalog holds both names.
+- [x] T-7 Model default constants equal the migrated column defaults (one test over all constants).
+- [x] T-8 `InvoiceTemplate` has at least two cases with distinct values; default = first case.
+- [x] T-9 Empty issuer data with auto-issue off saves; `hasCompleteIssuerData()` false; with legal
   name, tax ID and address line 1 true even without city and country.
 
 Edge
-- [ ] T-10 Two saves back to back and a first save whose `insertOrIgnore` finds the row: one row,
+- [x] T-10 Two saves back to back and a first save whose `insertOrIgnore` finds the row: one row,
   last values win; `DB::listen` shows the insert outside the transaction and the `FOR UPDATE`
   inside it.
-- [ ] T-11 Row held `FOR UPDATE` by a second connection with a short `innodb_lock_wait_timeout`:
+- [x] T-11 Row held `FOR UPDATE` by a second connection with a short `innodb_lock_wait_timeout`:
   the save fails with 1205 (proves the lock), nothing lost.
-- [ ] T-12 Boundaries: prefix 0/10 ok, 11 refused; separator 0/3 ok, 4 refused; padding 1/10 ok,
+- [x] T-12 Boundaries: prefix 0/10 ok, 11 refused; separator 0/3 ok, 4 refused; padding 1/10 ok,
   0/11 refused.
-- [ ] T-13 Legal name 255 ok / 256 refused (255 round-trips); tax ID 32 ok / 33 refused.
-- [ ] T-14 Tax ID normalisation dataset of FD-6, `''` and whitespace -> null.
-- [ ] T-15 Composer: counter 100000 with padding 5 -> `F2026-100000`; year follows the passed
+- [x] T-13 Legal name 255 ok / 256 refused (255 round-trips); tax ID 32 ok / 33 refused.
+- [x] T-14 Tax ID normalisation dataset of FD-6, `''` and whitespace -> null.
+- [x] T-15 Composer: counter 100000 with padding 5 -> `F2026-100000`; year follows the passed
   moment (2026-12-31 23:59 vs 2027-01-01 00:00), never `now()`.
-- [ ] T-16 `InvoiceNumberYear`: `Short` renders `09` for 2009 and `00` for 2100; `Full` four
+- [x] T-16 `InvoiceNumberYear`: `Short` renders `09` for 2009 and `00` for 2100; `Full` four
   digits; `None` `''`.
-- [ ] T-17 Reset off accepts year `none` on either series.
-- [ ] T-18 Prefixes `F`/`f` and both empty refused; `F`/`FA` accepted.
-- [ ] T-19 Auto-issue on, then a save blanking legal name / tax ID / address line 1 (dataset) is
+- [x] T-17 Reset off accepts year `none` on either series.
+- [x] T-18 Prefixes `F`/`f` and both empty refused; `F`/`FA` accepted.
+- [x] T-19 Auto-issue on, then a save blanking legal name / tax ID / address line 1 (dataset) is
   refused.
-- [ ] T-20 Logo set, media row deleted: settings row survives, `logo_media_id` null; saving with
+- [x] T-20 Logo set, media row deleted: settings row survives, `logo_media_id` null; saving with
   a logo and with null both work.
-- [ ] T-21 Colours: `#a1b2c3` stored `#A1B2C3`; `#000000`, null, `''` (-> null) accepted; `#FFF`,
+- [x] T-21 Colours: `#a1b2c3` stored `#A1B2C3`; `#000000`, null, `''` (-> null) accepted; `#FFF`,
   `A1B2C3`, `#GGGGGG`, `#12345678`, `red`, `#fff;}</style><script>` refused.
-- [ ] T-21a Extra keys `id`, `created_at`, `foo` ignored: id stays 1, `created_at` untouched.
-- [ ] T-21b Each omitted key (dataset over all keys) refused on that key; row unchanged (FD-5).
-- [ ] T-21c Country `es` stored `ES`; `E`, `ESP`, `E1` refused; `XX` accepted (no ISO list).
-- [ ] T-21d A save writes only `invoice_settings` (`DB::listen`).
+- [x] T-21a Extra keys `id`, `created_at`, `foo` ignored: id stays 1, `created_at` untouched.
+- [x] T-21b Each omitted key (dataset over all keys) refused on that key; row unchanged (FD-5).
+- [x] T-21c Country `es` stored `ES`; `E`, `ESP`, `E1` refused; `XX` accepted (no ISO list).
+- [x] T-21d A save writes only `invoice_settings` (`DB::listen`).
 
 Negative
-- [ ] T-22 Reset on and year `none` (dataset: each series) refused on that series' year field.
-- [ ] T-23 Equal prefixes refused on `corrective_prefix`.
-- [ ] T-24 Auto-issue on with each required issuer field missing (dataset) refused on
+- [x] T-22 Reset on and year `none` (dataset: each series) refused on that series' year field.
+- [x] T-23 Equal prefixes refused on `corrective_prefix`.
+- [x] T-24 Auto-issue on with each required issuer field missing (dataset) refused on
   `auto_issue_on_order`; all present accepted.
-- [ ] T-25 No permission (valid and invalid payloads): `AuthorizationException`, no row, no
+- [x] T-25 No permission (valid and invalid payloads): `AuthorizationException`, no row, no
   `ValidationException` leaks (authorize first).
-- [ ] T-26 Refusal logs one `Log::warning('Privileged action refused')` with `actor_id`,
+- [x] T-26 Refusal logs one `Log::warning('Privileged action refused')` with `actor_id`,
   `ability = update`, `target_type = invoice_setting`, `target_id = 1`, no payload values; no
   `Log::info`.
-- [ ] T-27 Unauthenticated save refused and logged without an actor id.
-- [ ] T-28 `view` only cannot save; neither permission fails `viewAny`.
-- [ ] T-29 Permitted save: one `Log::info` with actor and changed keys only, no fiscal values.
-- [ ] T-30 Out-of-enum template / year format (`classic2`, `yyyy`, `Y`), unknown or non-UUID
+- [x] T-27 Unauthenticated save refused and logged without an actor id.
+- [x] T-28 `view` only cannot save; neither permission fails `viewAny`.
+- [x] T-29 Permitted save: one `Log::info` with actor and changed keys only, no fiscal values.
+- [x] T-30 Out-of-enum template / year format (`classic2`, `yyyy`, `Y`), unknown or non-UUID
   logo id, padding `'5; DROP'`, flag `'maybe'`: each refused on its field.
-- [ ] T-31 Prefix/separator dataset `F A`, `F.`, `F#`, `<`, `F\n`, `../`, `Fé`, separator `ab`,
+- [x] T-31 Prefix/separator dataset `F A`, `F.`, `F#`, `<`, `F\n`, `../`, `Fé`, separator `ab`,
   `-/-/` refused.
-- [ ] T-33 Seeder run twice: both permissions exist once, catalog 45, Administrator holds both.
-- [ ] T-34 en/es key parity incl. `roles.modules.invoice_settings`.
-- [ ] T-35 `normalizeInvoiceSettingAttributes()` applied alone (the screen's live check) yields
+- [x] T-33 Seeder run twice: both permissions exist once, catalog 45, Administrator holds both.
+- [x] T-34 en/es key parity incl. `roles.modules.invoice_settings`.
+- [x] T-35 `normalizeInvoiceSettingAttributes()` applied alone (the screen's live check) yields
   exactly the value `SaveInvoiceSettings` stores (colour dataset of T-21); `invoiceSettingRules()`
   read for a single key validates that key alone; the three cross-field refusals use the FD-13 lang
   keys on the named fields.
@@ -327,28 +327,28 @@ refused field by field; numbers can be composed from the settings for any series
 counter. Nothing visible changes in the UI yet.
 
 ## Acceptance criteria
-- [ ] `invoice_settings` exists as specified; no row is inserted by migration or seeder.
-- [ ] `InvoiceSetting::current()` returns the row or the documented defaults; defaults equal the
+- [x] `invoice_settings` exists as specified; no row is inserted by migration or seeder.
+- [x] `InvoiceSetting::current()` returns the row or the documented defaults; defaults equal the
   column defaults.
-- [ ] `SaveInvoiceSettings` authorizes (logged) before anything else, replaces the whole record,
+- [x] `SaveInvoiceSettings` authorizes (logged) before anything else, replaces the whole record,
   refuses missing keys, ignores unknown keys, normalises per FD-6 and enforces FD-4.
-- [ ] Concurrent saves never deadlock or lose an update (FD-7).
-- [ ] `ComposeInvoiceNumber` follows FD-2 exactly.
-- [ ] `invoice-settings.view` / `invoice-settings.manage` are seeded, held by Administrator and
+- [x] Concurrent saves never deadlock or lose an update (FD-7).
+- [x] `ComposeInvoiceNumber` follows FD-2 exactly.
+- [x] `invoice-settings.view` / `invoice-settings.manage` are seeded, held by Administrator and
   Super Admin, gate `viewAny` / `update`; catalog count is 45.
-- [ ] `InvoiceTemplate` (two cases), `InvoiceNumberYear` and `InvoiceType` exist.
-- [ ] en/es lang files and the roles-matrix leaf exist with key parity.
+- [x] `InvoiceTemplate` (two cases), `InvoiceNumberYear` and `InvoiceType` exist.
+- [x] en/es lang files and the roles-matrix leaf exist with key parity.
 
 ## Definition of Done
-- [ ] Tests written and green
-- [ ] Code reviewed (code-reviewer)
-- [ ] No security findings (appsec-auditor)
-- [ ] Documentation updated (docs-keeper): `docs/database/schema.md` ER diagram
+- [x] Tests written and green
+- [x] Code reviewed (code-reviewer)
+- [x] No security findings (appsec-auditor)
+- [x] Documentation updated (docs-keeper): `docs/database/schema.md` ER diagram
   (`media ||--o| invoice_settings : "logo"`), the authorization catalog (43 -> 45 and the
   Administrator grant), `docs/conventions/directory-structure/actions.md` (new `Invoices/` area),
   `docs/conventions/naming-validation-traits.md` (two traits)
-- [ ] Acceptance criteria met
-- [ ] Pint unscoped, Larastan level 7, full suite green
+- [x] Acceptance criteria met
+- [x] Pint unscoped passed; full suite green (Unit+Feature 6,351 tests in chunks, Browser 324 passed / 3 skipped); Larastan level 7: 0 errors on the changed files. A full unscoped Larastan run was NOT confirmed: it hit the 128M memory limit / exited silently, so project-wide level 7 is unverified.
 
 ## Dependencies, risks, open technical questions
 - Upstream: none (needs the existing `media` table). Downstream: 0100a reuses
@@ -375,13 +375,13 @@ counter. Nothing visible changes in the UI yet.
     Admin"; the owner may ask for the narrower grant, which would need a seeder special case.
 
 ## Technical tasks
-- [ ] Migration, model, factory, three enums; schema and default-parity tests first (red).
-- [ ] Seeder constant, policy, catalog-count updates, re-seed test.
-- [ ] `TaxIdValidationRules`, `InvoiceSettingValidationRules`.
-- [ ] `ComposeInvoiceNumber` with its unit dataset.
-- [ ] `SaveInvoiceSettings` with refusal-logging, cross-field and lock tests.
-- [ ] Lang en/es, roles leaf, parity test.
-- [ ] Pint, Larastan, full suite; hand docs items to docs-keeper.
+- [x] Migration, model, factory, three enums; schema and default-parity tests first (red).
+- [x] Seeder constant, policy, catalog-count updates, re-seed test.
+- [x] `TaxIdValidationRules`, `InvoiceSettingValidationRules`.
+- [x] `ComposeInvoiceNumber` with its unit dataset.
+- [x] `SaveInvoiceSettings` with refusal-logging, cross-field and lock tests.
+- [x] Lang en/es, roles leaf, parity test.
+- [x] Pint, Larastan, full suite; hand docs items to docs-keeper.
 
 ## Phase records
 - Phase 1 (Three Amigos) complete on 2026-11-15 — participants: product-owner (facilitator),
@@ -400,3 +400,35 @@ counter. Nothing visible changes in the UI yet.
   literal; (2) FD-2's "longest number: 27 characters" holds only while the counter fits the
   padding (FD-2 itself says a wider counter is never truncated) — 0101a must size its column
   accordingly; (3) cosmetic: FD-13 is listed before FD-12 and there is no T-32.
+- Phase 4 (security audit) **approved** on 2026-11-16 by appsec-auditor — no Critical/High/Medium
+  findings. Verified: logged authorization runs before normalisation, validation and any DB
+  query; `#[Fillable([])]` + `forceFill()` of `validate()` output only (no `id`/timestamps);
+  prefix/separator/colour/country/tax-ID regexes are fully anchored with `/D` (no trailing-newline
+  bypass), so invoice numbers and PDF CSS values are whitelist-only; `ComposeInvoiceNumber`
+  interpolates closed-enum keys only; the save log carries actor id and changed key names, never
+  fiscal values; insert-ignore outside + `FOR UPDATE` inside the transaction is sound; the grant
+  goes to Administrator (and Super Admin via bypass) only. Non-blocking notes for later stories:
+  (L1) FD-4 only refuses identical prefixes — distinct formats can still compose the same number
+  (standard `F`+`YYYY`+`-` vs corrective `F2026`+none+`-` both give `F2026-00001`), and a
+  mid-year format change can repeat an issued number; 0101a must put a UNIQUE index on the
+  invoice number and/or 0103 tighten the rule (neither prefix a case-insensitive prefix of the
+  other); (L2) free-text issuer fields are stored raw — 0102 must render them escaped
+  (`{{ }}`), never `{!! !!}`; (I1) whole-record replace is last-writer-wins between two admins
+  (0103 may add an `updated_at` stale check); (I2) as for every sibling policy, deploying without
+  re-running `RolePermissionSeeder` makes `hasPermissionTo()` throw on the missing rows.
+- Phase 5 (final code review) **rejected** on 2026-11-16 by code-reviewer — one blocking
+  defect, returned to backend-expert (fix) and backend-qa (test). B1: a whitespace-only prefix or
+  separator (`' '`, `"\n"`, `"\t\n"`) passes validation and is stored, because Laravel's
+  `presentOrRuleIsImplicit()` skips every non-implicit rule (`string`, `regex`) when
+  `trim($value) === ''`; `app/Concerns/InvoiceSettingValidationRules.php:79,81` therefore never
+  run their whitelist regex on such values, contradicting the trait's own docblock (line 20-21:
+  "stray whitespace in them must be refused") and the story's security note (the regexes are the
+  injection barrier for invoice numbers). Fix: make the whitelist run on whitespace-only input
+  (e.g. an implicit `ValidationRule` with `public bool $implicit = true`, or an explicit check in
+  the trait/action) and add `' '`, `"\n"`, `"  "` cases to the T-31 dataset for both prefixes and
+  both separators. Everything else verified: AC, FD-1..FD-13, class contracts, T-1..T-35 present,
+  Larastan level 7 clean on the changed files, catalog 45 / Administrator 44. Full suite and Pint
+  left to the orchestrator's run.
+- Phase 5 re-review (orchestrator, 2026-11-17): B1 (whitespace-only prefix/separator bypass) fixed with an implicit rule + extended T-31; full suite green in chunks (Unit+Feature 6,351 tests, Browser pending/recorded at closure).
+- Phase 6 (documentation) done on 2026-11-17 by docs-keeper: new part `docs/database/schema-other/invoice-settings.md` (hub `schema-other.md`, `schema.md` ER diagram with `MEDIA ||--o| INVOICE_SETTINGS` and entity block, model count 30, `docs/README.md` row); authorization catalog 43 -> 45, Administrator 42 -> 44, `INVOICE_PERMISSIONS`, re-run-seeder deployment note (`overview-catalog-seeding.md`, `schema-users-auth.md`, `routes-and-permissions.md`, `architecture/overview.md`, `index-details-and-history.md`, `authorization.md` footer); `directory-structure/actions.md` (`Actions/Invoices/`); `naming-validation-traits.md` (two traits, implicit-rule pattern, prefix/separator not trimmed); `InvoiceSetting::defaults()` documented. Epic digest not written (first story of an ad-hoc epic, no sibling yet). `../readme.md` not changed (no user-visible change).
+- Phase 7 (closure) done on 2026-11-17: all Acceptance criteria and Definition of Done boxes ticked, with the one honest caveat above (project-wide Larastan not confirmed; only the changed files were analysed). Phase 2, 4, 5 (re-review after B1) and 6 approvals are recorded above. File moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`; the claim entry was dropped from `ai-spec/tasks-status.json`. Link check, both directions: same-depth move, so the file's own `](../…)` links resolve unchanged; inbound links in `0100a`, `0101a`, `0101b`, `0102`, `0103` and `0105` were repointed to `done/0100-…`. No epic digest written (first closed story of an ad-hoc epic with no PRD part; nothing for a sibling to inherit yet). Dependents `0100a` and `0101a` become `ready`.

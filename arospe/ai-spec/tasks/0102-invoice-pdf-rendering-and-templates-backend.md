@@ -2,7 +2,7 @@
 
 > **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
-> [0100](in-progress/0100-invoice-settings-backend.md) (`InvoiceTemplate`, settings) and
+> [0100](done/0100-invoice-settings-backend.md) (`InvoiceTemplate`, settings) and
 > [0101b](0101b-issue-standard-invoice-backend.md) (`invoices` with its frozen snapshot columns,
 > `InvoicePolicy`, `invoices.view`, `lang/{en,es}/invoices.php`). Dependents:
 > [0103](0103-invoice-settings-screen-ui.md), [0104](0104-send-invoice-by-email-backend.md),
@@ -294,7 +294,7 @@ template; 0104 can render the same PDF, marked as a copy when required, to attac
 - [ ] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open technical questions
-- Upstream: [0100](in-progress/0100-invoice-settings-backend.md), [0101b](0101b-issue-standard-invoice-backend.md).
+- Upstream: [0100](done/0100-invoice-settings-backend.md), [0101b](0101b-issue-standard-invoice-backend.md).
   Downstream: [0104](0104-send-invoice-by-email-backend.md) attaches `RenderInvoicePdf`'s output
   and implements `hasBeenSent()`; [0103](0103-invoice-settings-screen-ui.md) may preview a sample;
   [0109b](0109b-order-detail-invoices-panel-ui.md) / [0110](0110-billing-section-ui.md) link the download.
