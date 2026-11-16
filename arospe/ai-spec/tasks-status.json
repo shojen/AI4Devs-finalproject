@@ -31,24 +31,6 @@
       ]
     },
     {
-      "id": "0099",
-      "slug": "0099-blog-translation-write-actions-deleted-entity-race-backend",
-      "title": "Blog category and tag translation write actions refuse a deleted parent cleanly (backend)",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "app/Actions/Blog/SetBlogCategoryTranslation.php",
-        "app/Actions/Blog/SetBlogTagTranslation.php",
-        "app/Actions/Blog/TranslateBlogCategoryNameUniqueViolation.php",
-        "app/Actions/Blog/TranslateBlogTagNameUniqueViolation.php",
-        "tests/Feature/Blog/SetBlogCategoryTranslationTest.php",
-        "tests/Feature/Blog/SetBlogTagTranslationTest.php"
-      ],
-      "conflict_risk_with": []
-    },
-    {
       "id": "0100",
       "slug": "0100-invoice-settings-backend",
       "title": "Invoice settings (backend)",

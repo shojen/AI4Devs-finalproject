@@ -20,6 +20,10 @@ task file is correct and this one needs a refresh.
 
 **Update (2026-11-16): `0095-order-cancellation-stock-dialog-ui.md` completed Phase 7 and moved from `ai-spec/tasks/` to `ai-spec/tasks/done/`** (worktree `worktree-0095-order-cancellation-stock-dialog-ui`; Phases 3-6 approved, full unscoped suite green). Its node, inventory row, `ready` class membership, the `P0095 -.-> P0096` edge and its `tasks-status.json` entry are dropped; inbound links were re-pointed to `done/`. Pending in `ai-spec/tasks/`: `0096`, `0099`; `in-progress/` is empty. `done/` holds 123 files; Epic 3 counts 28.
 
+**Update (2026-11-16): `0099-blog-translation-write-actions-deleted-entity-race-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0099-blog-translation-deleted-parent-race-backend`; Phases 3-6 approved, full unscoped suite green). Its node, inventory row and `tasks-status.json` entry are dropped; inbound links from `done/0098-…` were re-pointed. Pending in `ai-spec/tasks/`: `0096`, `0100`–`0112`; `in-progress/` is empty. `done/` holds 124 files (after merging `origin/main`, which closed `0095`).
+
+**Update (2026-11-15): `0099-blog-translation-write-actions-deleted-entity-race-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 3 step 0, claimed by `worktree-0099-blog-translation-deleted-parent-race-backend`; Phase 1 debate and Phase 2 INVEST approved). Its node is now `claimed`; the inbound links from `done/0098-…` were re-pointed to `in-progress/`. No other task shares its write set.
+
 **Update (2026-11-15): `0094a-order-line-removal-stock-dialog-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0094a-order-line-removal-stock-dialog-ui`; Phases 3-6 approved, full unscoped suite green). Its node, inventory row, `claimed` class membership and `tasks-status.json` entry are dropped; inbound links were re-pointed to `done/`. Pending in `ai-spec/tasks/`: `0095`, `0096`, `0099`; `in-progress/` is empty. `done/` holds 122 files; Epic 3 counts 27.
 
 **Update (2026-11-15): 20 new pending tasks, `0100`–`0112` (Epic 6 — Invoicing, plus the Epic 3 customer report `0111`/`0112`)**, Phase 1 by `product-owner` (two facilitators; Three Amigos with the owner's decisions U-1..U-12). Ids were renumbered by one in a single scripted pass so that the unrelated `0099` keeps its number; dependencies are quoted from each file's own header and "Dependencies" section (three headers were corrected in the same pass so they agree with their dependents: `0106a`, `0107`, `0108`). Every dependency has a lower id than its dependent and the graph has no cycle. `0100` is the only new `ready` node (no dependency); the other 19 are `blocked`. Conflict risk with pre-existing pending tasks: `0106`, `0106a`, `0107`, `0108`, `0109a`, `0109b`, `0109c` share `lang/*/orders.php` and, for `0106`, `0106a`, `0107`, `0109b`, `0109c`, also `app/Livewire/Orders/Show.php`, `resources/views/livewire/orders/show.blade.php` or their tests with `0094a`, `0095`, `0096`; finish the stock dialogs first or sequence them. Inside the epic nearly every story touches `lang/*/invoices.php`, so parallel sessions should not work two of them at once without the ownership boundary of `docs/contracts.md`. The existing entries of `tasks-status.json` were left unchanged; the risk is recorded on the new entries. No node is `claimed`.
@@ -626,7 +630,6 @@ Re-derived 2026-11-08 from the files actually present in `ai-spec/tasks/` (`0078
 | 0110a | Billing: collect and undo a collection from the invoice list (frontend) | Epic 6 — Invoicing |
 | 0111 | Customer report read side (backend) | Epic 3 — Customers (report) |
 | 0112 | Customer report screen with chart (frontend) | Epic 3 — Customers (report) |
-| 0099 | Blog category and tag translation write actions refuse a deleted parent cleanly (backend) | Epic 5 — i18n |
 | 0096 | Order detail — refund modal stock return (frontend) | Epic 3 — Orders (stock) |
 | _(no number)_ | Infrastructure fix: no test suite can open a database connection (local fresh setup or CI) — **status: already fixed and documented**, kept out of the numbering and out of the dependency graph below | Infrastructure |
 
@@ -658,10 +661,6 @@ flowchart LR
     classDef ready fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:1px;
     classDef claimed fill:#dbeafe,stroke:#2563eb,color:#1e3a8a,stroke-width:1px;
 
-    subgraph PEND_I18N["Epic 5 — Internationalization"]
-        direction TB
-        P0099["0099 Deleted blog category/tag translation race BE"]
-    end
     %% (P0087 closed to done/ 2026-11-13; P0098 closed to done/ 2026-11-14 and its node was dropped.)
 
     subgraph PEND_STOCK["Epic 3 — Order stock (bug fix)"]
@@ -743,7 +742,6 @@ flowchart LR
     %% (P0084 --> P0085 dropped: 0084 is done; 0085 is done too.)
     %% (P0083 -.-> P0085 and P0083 --> P0086 dropped: 0083 is done; 0086 is now ready.)
 
-    class P0099 ready;
     %% (P0078 closed to done/ 2026-11-08; P0076b closed to done/ 2026-11-10 and no node is `claimed`; P0076b --> P0077 and P0076b -.-> P0087 dropped, 0077 is now ready.)
     %% (P0079 closed to done/ 2026-11-12; P0087 -.-> P0079 dropped, no node is `claimed`.)
     %% (P0075 closed to done/ 2026-10-27; P0073 closed to done/ 2026-10-08; no node remains `claimed`.)
@@ -851,7 +849,7 @@ here); yellow (`pending`) = still blocked on at least one open pending dependenc
 ### Pending tasks that are independent of each other and safe to parallelize
 
 These are the tasks whose **entire dependency chain is already `done/`** — nothing pending blocks
-them — the green `ready` nodes in the diagram above (`0094`, `0096`, `0099` as of 2026-11-15; `0091`, `0092b` and `0098` closed to `done/`, and `0090` is in `done/`). (`0046`–`0054` and `0057` all had the
+them — the green `ready` nodes in the diagram above (`0094`, `0096` as of 2026-11-15; `0099` closed to `done/` 2026-11-16; `0091`, `0092b` and `0098` closed to `done/`, and `0090` is in `done/`). (`0046`–`0054` and `0057` all had the
 identical property in their own turn — but none of them is listed anywhere in this section any
 more: each closed to `done/` in this or a prior regeneration pass, so per this file's own "`done/`
 tasks are omitted from the graph" rule none has a node at all any more. See the note at the top of
