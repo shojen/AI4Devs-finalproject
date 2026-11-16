@@ -22,7 +22,7 @@ class User extends Authenticatable implements PasskeyUser
 The authorization foundation is **live and in real use**: roles and permissions are seeded, the package's middleware aliases are registered, a `Gate::before` hook grants the Super Admin role a blanket bypass, and — since task 0004 — the first gated route and the first policy exist.
 
 - Two roles are seeded — `Super Admin` and `Administrator` — both on the `web` guard.
-- A 43-permission catalog is seeded under the `<module-slug>.<action>` convention — 38 until story 0019 added the tenth module slug, `media`, and 42 until story 0051 added `orders.refund`, the catalog's first non-CRUD permission on a non-`roles` module.
+- A 45-permission catalog is seeded under the `<module-slug>.<action>` convention — 38 until story 0019 added the tenth module slug, `media`, 42 until story 0051 added `orders.refund`, the catalog's first non-CRUD permission on a non-`roles` module, and 43 until story 0100 added `invoice-settings.view`/`.manage` (the new `INVOICE_PERMISSIONS` constant).
 - `role`, `permission`, and `role_or_permission` are registered as middleware aliases in [`bootstrap/app.php`](../../../bootstrap/app.php) and enforce server-side (403).
 - `App\Providers\AppServiceProvider::configureAuthorization()` installs the Super Admin `Gate::before` bypass.
 - **`users.index` (`GET /users`) is the first permission-gated route**, and it is gated with **`can:users.view`** rather than Spatie's `permission:` middleware — a Livewire-specific correctness requirement, not a style choice. See [How to gate something](how-to-gate.md#gating-a-livewire-route-use-can-never-permission).
@@ -74,9 +74,17 @@ public const ROLE_PERMISSIONS = ['roles.manage', 'roles.manage-administrators'];
  * @var array<int, string>
  */
 public const ORDER_PERMISSIONS = ['orders.refund'];
+
+/**
+ * Invoicing permissions outside the module x action grid (story 0100). Later invoicing
+ * stories append their `invoices.*` names here.
+ *
+ * @var array<int, string>
+ */
+public const INVOICE_PERMISSIONS = ['invoice-settings.view', 'invoice-settings.manage'];
 ```
 
-Ten modules × four actions = **40**, plus the two role-management permissions and the one order-refund permission = **43** total. (Nine modules and 38 total until story 0019 appended `media` to `MODULES`; 42 total until story 0051 added `ORDER_PERMISSIONS` — see [The `media` module, and what a catalog amendment costs](#the-media-module-and-what-a-catalog-amendment-costs) below.)
+Ten modules × four actions = **40**, plus the two role-management permissions, the one order-refund permission and the two invoice-settings permissions = **45** total (43 until story 0100; gated by `App\Policies\InvoiceSettingPolicy`, `viewAny` / `update`). (Nine modules and 38 total until story 0019 appended `media` to `MODULES`; 42 total until story 0051 added `ORDER_PERMISSIONS` — see [The `media` module, and what a catalog amendment costs](#the-media-module-and-what-a-catalog-amendment-costs) below.)
 
 | Module slug | Covers | Permissions |
 | --- | --- | --- |
@@ -123,14 +131,16 @@ grep -rn "\b38\b\|\b37\b" docs/                    # the same number is prose in
 
 > ⚠️ **A new module slug does not come with a rendered label, and nothing fails when it is missing.** The Roles screen composes each matrix row's label as `__('roles.modules.'.str_replace('-','_',$module))` ([conventions/naming.md](../../conventions/naming/translation-keys-and-booleans.md#translation-keys)), so a module with no leaf in `lang/{en,es}/roles.php`'s `modules` array renders its **raw key** — `roles.modules.media` — in the permission matrix. **This ⚠️ said until 2026-08-29 that `media` shipped without that leaf. It did not — the claim was false when written, and is corrected here rather than deleted** (`lang/en/roles.php` has `'media' => 'Media'` and `lang/es/roles.php` has `'media' => 'Medios'`, both present in story 0019's own tree and untouched since). It is the **second** false "verified" finding from that story's Phase 6 pass, alongside the refusal-logging one on [`MediaPolicy`](policies-sales-media-categories.md#mediapolicy--the-fourth-policy-and-the-first-behind-no-route-at-all) below; both were gaps the pass went looking for and reported without the gap existing, and [errors-log.md](../../errors-log/2026-08-28-to-2026-08-31.md#one-docs-pass-reported-two-gaps-that-were-not-there-both-marked-verified--2026-08-29) owns why that happened twice. **The rule itself is unchanged and is why this paragraph stays**: a module with no leaf renders its raw key, nothing fails, and the seeder tests cannot see it because they assert names and counts rather than rendered copy — **so adding a module means adding its `roles.modules.<slug>` leaf to both locales in the same change.** `media` is the evidence that this is doable rather than the evidence that it gets missed.
 
+**Deployment note (story 0100):** existing installs must re-run `RolePermissionSeeder` for Administrator to gain `invoice-settings.view`/`.manage`; the new permissions are held by Administrator (Super Admin via the `Gate::before` bypass). Same partial-upgrade 500 risk as below. `INVOICE_PERMISSIONS` is not a module slug, but the `invoice-settings` slug still has a `roles.modules.invoice_settings` leaf in `lang/{en,es}/roles.php` (`Invoice settings` / `Ajustes de facturas`) so the Roles screen never renders a raw key for it.
+
 **Deployment note:** an already-deployed environment does not gain `media.*` until `db:seed` is re-run. Seeding is already a documented required deployment step ([schema.md](../../database/schema-users-auth.md#roles-permissions-model_has_roles-model_has_permissions-role_has_permissions)) — but note what a *partial* upgrade looks like, since story 0019 recorded it as an accepted risk rather than fixing it: an environment that has run this story's migration and **not** re-seeded reaches `MediaPolicy::viewAny()`, which calls `hasPermissionTo('media.view')` against a name that does not exist yet, and throws `PermissionDoesNotExist` → a **500**, not a clean 403. That is the pre-existing shape every policy shares — six now, since story 0023's `ProductCategoryPolicy` and story 0024's `ProductPolicy` (see [`RolePolicy`](policies-users-roles.md#rolepolicy--the-second-policy)'s own note) — not something `MediaPolicy` introduced.
 
 ## Seeded roles and their grants
 
 | Role | Guard | Explicit permission rows | How it authorizes |
 | --- | --- | --- | --- |
-| `Administrator` | `web` | **42 of 43** — everything except `roles.manage-administrators` | normal Spatie grants |
-| `Super Admin` | `web` | **0 of 43** | the [`Gate::before` bypass](super-admin.md#the-super-admin-bypass) |
+| `Administrator` | `web` | **44 of 45** — everything except `roles.manage-administrators` | normal Spatie grants |
+| `Super Admin` | `web` | **0 of 45** | the [`Gate::before` bypass](super-admin.md#the-super-admin-bypass) |
 
 `roles.manage-administrators` is seeded but held by **no role**: only the Super Admin can exercise it, and it does so through the bypass rather than through a grant.
 
@@ -253,7 +263,7 @@ flowchart TD
 Three rules this encodes:
 
 - **Verification is proof of mailbox ownership, and the grant requires it.** The lookup itself carries `whereNotNull('email_verified_at')` — an unverified row is not a match. A row merely *carrying* the configured address proves nothing: self-registration is enabled, and `App\Livewire\Settings\Profile` lets any signed-in user move their account onto an arbitrary address. Without this condition, squatting on the address an operator intends to use later wins Super Admin on the next reseed. See [errors-log.md](../../errors-log.md) for the incident that established this rule.
-- **An abort degrades to "no grant", never to "no catalog".** Branches 2 and 4 `return` rather than throw. The bootstrap runs inside the seeder's `DB::transaction(...)`, so throwing would roll back the roles and the entire 43-permission catalog with it.
+- **An abort degrades to "no grant", never to "no catalog".** Branches 2 and 4 `return` rather than throw. The bootstrap runs inside the seeder's `DB::transaction(...)`, so throwing would roll back the roles and the entire 45-permission catalog with it.
 - **Every grant, provision and abort is written to the application log**, not only echoed to the console. `Seeder::$command` is `null` whenever the seeder runs outside an Artisan context, so console-only reporting can leave a privilege grant with no trace anywhere. Each entry carries `email`, `user_id` (where one exists) and a machine-readable `outcome` — and never the generated password.
 
 The generated password is never printed, logged, returned, or stored anywhere but the hashed column; the account is unusable until the operator completes the reset. The reset itself reuses the app's existing Fortify broker (`Password::broker()->sendResetLink(...)`) — the same flow documented in [authentication.md](../authentication/features-registration-and-status.md#registration--password-reset) — with no bespoke invite token or route. A delivery failure is `report()`ed to error tracking and downgrades to a console warning; it never fails the seed, because losing the whole catalog to a misconfigured SMTP host would be the worse outcome.
