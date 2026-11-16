@@ -196,7 +196,7 @@ edit. Estimable/Small: one flow on one component after the removal split. Testab
 
 ## Dependencies, risks, open technical questions
 **Depends on:** [0090](../done/0090-order-line-quantity-and-removal-stock-opt-in-backend.md), [0093](../done/0093-confirm-dialog-secondary-action-ui.md)
-(hard). **Blocks:** [0094a](0094a-order-line-removal-stock-dialog-ui.md), [0095](../0095-order-cancellation-stock-dialog-ui.md)
+(hard). **Blocks:** [0094a](0094a-order-line-removal-stock-dialog-ui.md), [0095](0095-order-cancellation-stock-dialog-ui.md)
 (reuse of the pending state and `stockPreview`). Shares `Show.php`, `show.blade.php` and `lang/*/orders.php` with 0094a, 0095,
 0096 and 0092b (lang) — run sequentially.
 - **R-1** — Removing the public `updateLineItemQuantity` changes the component's public surface; any caller must be updated in the
