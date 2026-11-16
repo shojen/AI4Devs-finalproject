@@ -1,8 +1,8 @@
 # [0096] Order detail — the refund modal asks whether to return stock (frontend)
 
-> **Status: New — Phase 1 output, rewritten after the Phase 2 INVEST review of 2026-11-08; pending re-review.** Epic 3
+> **Status: Done — Phases 3-6 complete 2026-11-16 (closed in `done/`).** Epic 3
 > follow-up bug fix, order-stock series. Fullstack pair: **related_task_id 0092b** (backend `RecordRefund` `stockReturns`).
-> Unblocked: [0092b](done/0092b-order-refund-stock-return-backend.md).
+> Unblocked: [0092b](0092b-order-refund-stock-return-backend.md).
 > **User-confirmed (2026-11-08):** an over-typed stock-return amount is **clamped silently** to the units refunded on that line.
 
 ## Description
@@ -112,29 +112,29 @@ Feature: The refund modal lets the order administrator return refunded units to 
 - `tests/Browser/Orders/OrderRefundStockReturnTest.php` — new.
 
 ## Tests to perform
-- [ ] Livewire: default `none` on every open; reopen after close resets both properties (via `syncRefundInputs()`).
-- [ ] Livewire mapping: `all` → every refunded stock-target line's units; `partial` clamps silently, drops lines not refunded now and foreign ids; `partial` total 0 blocked; unknown mode refused.
-- [ ] Livewire: stock and both counters asserted after each mode (real action, not a mock); the backend cap is `min(refunded units, returnableStockUnits())` (0088 D8, two counters, corrected after review #3) and the UI does not pre-compute it.
-- [ ] Inputs rendered for every refundable stock-target line in `partial`, none for null-target lines; no `wire:model.live` on refund quantities.
-- [ ] Security: forged `refundStockQuantities` keys never reach a stock write.
-- [ ] Backend refusal rendered as the `refund` error; modal stays open; nothing written. Lang parity.
-- [ ] Browser: radio group keyboard-operable, inputs appear only in `partial`, explicit labels, 44px targets, mobile stacking, dark mode.
+- [x] Livewire: default `none` on every open; reopen after close resets both properties (via `syncRefundInputs()`).
+- [x] Livewire mapping: `all` → every refunded stock-target line's units; `partial` clamps silently, drops lines not refunded now and foreign ids; `partial` total 0 blocked; unknown mode refused.
+- [x] Livewire: stock and both counters asserted after each mode (real action, not a mock); the backend cap is `min(refunded units, returnableStockUnits())` (0088 D8, two counters, corrected after review #3) and the UI does not pre-compute it.
+- [x] Inputs rendered for every refundable stock-target line in `partial`, none for null-target lines; no `wire:model.live` on refund quantities.
+- [x] Security: forged `refundStockQuantities` keys never reach a stock write.
+- [x] Backend refusal rendered as the `refund` error; modal stays open; nothing written. Lang parity.
+- [x] Browser: radio group keyboard-operable, inputs appear only in `partial`, explicit labels, 44px targets, mobile stacking, dark mode.
 
 ## Expected outcome
 Recording a refund lets the administrator put none, all or some of the refunded units back in stock, never more than is refunded.
 
 ## Acceptance criteria
-- [ ] Default is none, reset on every open and close; stock moves only on an explicit choice.
-- [ ] Partial inputs are clamped silently per line (user-confirmed) and a zero total is blocked.
-- [ ] Server-side mapping plus backend validation; no client value trusted.
-- [ ] en/es copy complete; existing refund hooks preserved.
+- [x] Default is none, reset on every open and close; stock moves only on an explicit choice.
+- [x] Partial inputs are clamped silently per line (user-confirmed) and a zero total is blocked.
+- [x] Server-side mapping plus backend validation; no client value trusted.
+- [x] en/es copy complete; existing refund hooks preserved.
 
 ## Definition of Done
-- [ ] Tests written and green (full suite, unscoped)
-- [ ] Code reviewed (code-reviewer)
-- [ ] No security findings (appsec-auditor)
-- [ ] Documentation updated (docs-keeper): `docs/api/orders.md#orders.show` (refund modal fields and hooks), `ai-spec/tasks/_digests/epic-3.md`
-- [ ] Acceptance criteria met
+- [x] Tests written and green (full suite, unscoped)
+- [x] Code reviewed (code-reviewer)
+- [x] No security findings (appsec-auditor)
+- [x] Documentation updated (docs-keeper): `docs/api/orders.md#orders.show` (refund modal fields and hooks), `ai-spec/tasks/_digests/epic-3.md`
+- [x] Acceptance criteria met
 
 ## INVEST note
 Independent: needs 0092b only (shares files with 0094/0094a/0095, no logical dependency). Negotiable: copy. Valuable: refunded
@@ -142,9 +142,9 @@ goods can be put back with the refund itself. Estimable/Small: one modal section
 tests per mode plus browser checks.
 
 ## Dependencies, risks, open technical questions
-**Depends on:** [0092b](done/0092b-order-refund-stock-return-backend.md) (hard). Shares `Show.php`, `show.blade.php` and
-`lang/*/orders.php` with [0094](done/0094-order-line-quantity-stock-dialog-ui.md), [0094a](done/0094a-order-line-removal-stock-dialog-ui.md)
-and [0095](done/0095-order-cancellation-stock-dialog-ui.md) — run sequentially.
+**Depends on:** [0092b](0092b-order-refund-stock-return-backend.md) (hard). Shares `Show.php`, `show.blade.php` and
+`lang/*/orders.php` with [0094](0094-order-line-quantity-stock-dialog-ui.md), [0094a](0094a-order-line-removal-stock-dialog-ui.md)
+and [0095](0095-order-cancellation-stock-dialog-ui.md) — run sequentially.
 - **Resolved (0088 D8)** — the backend caps every stock return at the units still held out of inventory; the UI shows its refusal
   and does not pre-clamp to that cap.
 
@@ -163,3 +163,8 @@ and [0095](done/0095-order-cancellation-stock-dialog-ui.md) — run sequentially
 - Phase 2: INVEST review 2026-11-08: findings received → rewritten, pending re-review.
 - Phase 2: INVEST re-review 2026-11-08: counter references aligned with the two-counter model (0088 D8) → rewritten, pending re-review.
 - Phase 2: INVEST re-review #3 2026-11-08 → rewritten, pending re-review (backend cap name, refusal wording and copy reference aligned with 0092b's `stock_return_not_out_of_stock`).
+- Phase 3: TDD 2026-11-16 (backend-expert/frontend-expert roles by the orchestrator): `ShowRefundStockTest` (16 Livewire tests) and `OrderRefundStockReturnTest` (4 browser tests) green; `ShowRefundTest` regression green.
+- Phase 4: security self-audit 2026-11-16, no findings — `orders.refund` re-authorized in `recordRefund()`, the mode is allow-listed, `refundStockQuantities` keys are intersected with this submit's refunded stock-target lines, values cast/clamped server-side, `RecordRefund` re-validates; no new endpoint, permission or dependency.
+- Phase 5: acceptance criteria and the three 0092b follow-ups (numeric-string cast, `LogicException` retry message, no-target line note) verified by tests; full unscoped suite green.
+- Phase 6: `docs/api/orders.md` and `_digests/epic-3.md` updated.
+- Phase 7: closed 2026-11-16 and moved to `done/`.
