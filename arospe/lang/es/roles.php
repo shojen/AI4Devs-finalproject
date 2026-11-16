@@ -53,6 +53,7 @@ return [
         'store_languages' => 'Idiomas de la tienda',
         'roles' => 'Roles',
         'media' => 'Medios',
+        'invoice_settings' => 'Ajustes de facturas',
     ],
 
     /*
