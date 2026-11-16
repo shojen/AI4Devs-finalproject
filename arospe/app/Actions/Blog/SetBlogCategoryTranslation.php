@@ -11,6 +11,7 @@ use App\Models\BlogCategory;
 use App\Models\BlogCategoryTranslation;
 use App\Models\StoreLanguage;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -43,6 +44,7 @@ class SetBlogCategoryTranslation
      * @throws AuthorizationException when the actor lacks blog.edit (logged first)
      * @throws ValidationException keyed "names.{$language->id}" -- inactive language, blank, over-length, or
      *                             duplicate within that store language (incl. the 1062 race)
+     * @throws ModelNotFoundException when the category is deleted before or during the write (1452 on the parent FK)
      * @throws LogicException when the primitive returns an unexpected model
      */
     public function __invoke(
@@ -56,6 +58,10 @@ class SetBlogCategoryTranslation
             targetType: 'blog_category',
             targetId: $blogCategory->id,
         );
+
+        // The passed category is untrusted too: once authorized it is re-read, and everything below
+        // goes through the fresh copy (a category deleted meanwhile is a clean 404, not an FK error).
+        $blogCategory = BlogCategory::query()->whereKey($blogCategory->getKey())->firstOrFail();
 
         $language = ($this->resolveActiveStoreLanguage)($language, "names.{$language->id}", __('blog.categories.index.tabs.language_inactive'));
 
@@ -75,6 +81,11 @@ class SetBlogCategoryTranslation
         try {
             $translation = ($this->setTranslation)($blogCategory, $language, ['name' => $name]);
         } catch (QueryException $e) {
+            if (($e->errorInfo[1] ?? null) === 1452
+                && preg_match('/CONSTRAINT `blog_category_translations_blog_category_id_foreign` FOREIGN KEY/', (string) ($e->errorInfo[2] ?? '')) === 1) {
+                throw (new ModelNotFoundException)->setModel(BlogCategory::class, [$blogCategory->getKey()]);
+            }
+
             throw ($this->translateNameUniqueViolation)($e, $errorKey, $attributeLabel);
         }
 

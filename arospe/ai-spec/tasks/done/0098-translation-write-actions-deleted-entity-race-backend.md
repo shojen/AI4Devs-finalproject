@@ -210,7 +210,7 @@ Feature: Product translation write actions refuse a deleted parent cleanly
   `Products\Editor`): a `ModelNotFoundException` propagates as Livewire's standard 404 handling,
   the same outcome a deleted blog post or tag already gives (verified read-only, P-6).
 - The blog actions (scope, **Q-3 (a)**): covered by sibling task
-  [0099](../0099-blog-translation-write-actions-deleted-entity-race-backend.md).
+  [0099](0099-blog-translation-write-actions-deleted-entity-race-backend.md).
 
 ## 3. QA test cases / validation scenarios
 
@@ -306,7 +306,7 @@ All three **answered by the user on 2026-11-14**: Q-1 (a), Q-2 (a), Q-3 (a).
   the same read-to-write window (blog posts are soft-deleted, so `SetBlogPostTranslation` is not exposed
   to 1452).
   - **(a) (recommended)** Keep the two product-side actions, as the user asked; the blog ones go to
-    sibling task [0099](../0099-blog-translation-write-actions-deleted-entity-race-backend.md).
+    sibling task [0099](0099-blog-translation-write-actions-deleted-entity-race-backend.md).
   - (b) Include `SetBlogCategoryTranslation` and `SetBlogTagTranslation` here.
 
 ## Provenance

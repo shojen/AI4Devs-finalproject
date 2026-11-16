@@ -10,7 +10,9 @@ use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\PermissionRegistrar;
@@ -489,3 +491,124 @@ function blogCategoryTranslationErrors(Closure $call): array
 
     return [];
 }
+
+afterEach(function () {
+    // Story 0099: the race tests register a `creating` listener on BlogCategoryTranslation. Flush it, then
+    // reset the booted state so the model's own `saving` hook is registered again for later tests.
+    BlogCategoryTranslation::flushEventListeners();
+    BlogCategoryTranslation::clearBootedModels();
+});
+
+/**
+ * Story 0099: raw-deletes the blog category from inside the translation's `creating` event, i.e. after
+ * the action's read and before the INSERT, so MySQL raises the real 1452. FOREIGN_KEY_CHECKS is
+ * never disabled.
+ */
+function deleteBlogCategoryWhenItsTranslationIsCreated(BlogCategory $parent): void
+{
+    BlogCategoryTranslation::creating(function () use ($parent): void {
+        DB::table('blog_categories')->where('id', $parent->id)->delete();
+    });
+}
+
+function blogCategoryTranslationRawRowCount(BlogCategory $parent): int
+{
+    return DB::table('blog_category_translations')->where('blog_category_id', $parent->id)->count();
+}
+
+test('a blog category deleted after the caller loaded it raises ModelNotFoundException and leaves no translation row', function () {
+    $parent = BlogCategory::factory()->named('Guias')->create();
+    $this->actingAs(setBlogCategoryTranslationActor());
+    $stale = BlogCategory::query()->findOrFail($parent->id);
+    $parent->delete();
+
+    $caught = null;
+    try {
+        app(SetBlogCategoryTranslation::class)($stale, $this->french, 'Guides');
+    } catch (Throwable $e) {
+        $caught = $e;
+    }
+
+    expect($caught)->toBeInstanceOf(ModelNotFoundException::class)
+        ->and($caught->getModel())->toBe(BlogCategory::class)
+        ->and(blogCategoryTranslationRawRowCount($parent))->toBe(0);
+});
+
+test('a blog category deleted between the action read and the write raises ModelNotFoundException and leaves no translation row', function () {
+    $parent = BlogCategory::factory()->named('Guias')->create();
+    $this->actingAs(setBlogCategoryTranslationActor());
+    deleteBlogCategoryWhenItsTranslationIsCreated($parent);
+
+    $caught = null;
+    try {
+        app(SetBlogCategoryTranslation::class)($parent, $this->french, 'Guides');
+    } catch (Throwable $e) {
+        $caught = $e;
+    }
+
+    expect($caught)->toBeInstanceOf(ModelNotFoundException::class)
+        ->and($caught->getModel())->toBe(BlogCategory::class)
+        ->and($caught->getIds())->toBe([$parent->id])
+        ->and(blogCategoryTranslationRawRowCount($parent))->toBe(0);
+});
+
+test('authorization is checked first for a deleted blog category: an unpermitted actor is refused as unauthorized and logged once', function () {
+    Log::spy();
+    $parent = BlogCategory::factory()->named('Guias')->create();
+    $stale = BlogCategory::query()->findOrFail($parent->id);
+    $parent->delete();
+    $this->actingAs(setBlogCategoryTranslationActor(['blog.view']));
+
+    expect(fn () => app(SetBlogCategoryTranslation::class)($stale, $this->french, 'Guides'))
+        ->toThrow(AuthorizationException::class);
+
+    Log::shouldHaveReceived('warning')
+        ->withArgs(fn (string $message): bool => $message === 'Privileged action refused')
+        ->once();
+});
+
+test('a deleted blog category is refused as not found before an inactive language is checked', function () {
+    $inactive = StoreLanguage::factory()->inactive()->create();
+    $parent = BlogCategory::factory()->named('Guias')->create();
+    $stale = BlogCategory::query()->findOrFail($parent->id);
+    $parent->delete();
+    $this->actingAs(setBlogCategoryTranslationActor());
+
+    $caught = null;
+    try {
+        app(SetBlogCategoryTranslation::class)($stale, $inactive, 'Kategorie');
+    } catch (Throwable $e) {
+        $caught = $e;
+    }
+
+    expect($caught)->toBeInstanceOf(ModelNotFoundException::class)
+        ->and($caught->getModel())->toBe(BlogCategory::class);
+});
+
+test('a QueryException that is not a blog category foreign key violation is rethrown unchanged', function (int $code, string $native, ?string $pdoMessage) {
+    $parent = BlogCategory::factory()->named('Guias')->create();
+    $this->actingAs(setBlogCategoryTranslationActor());
+
+    $pdoException = new PDOException($pdoMessage ?? $native);
+    $pdoException->errorInfo = ['23000', $code, $native];
+    $exception = new QueryException('mysql', 'insert into `blog_category_translations` ...', [], $pdoException);
+    bindThrowingBlogSetTranslation($exception);
+
+    $caught = null;
+    try {
+        app(SetBlogCategoryTranslation::class)($parent, $this->french, 'Guides');
+    } catch (Throwable $e) {
+        $caught = $e;
+    }
+
+    expect($caught)->toBe($exception);
+})->with([
+    'missing store language reference' => [1452, 'Cannot add or update a child row: a foreign key constraint fails (`testing`.`blog_category_translations`, CONSTRAINT `blog_category_translations_store_language_id_foreign` FOREIGN KEY (`store_language_id`) REFERENCES `store_languages` (`id`))', null],
+    'duplicate entry on an unhandled index' => [1062, "Duplicate entry 'x' for key 'blog_category_translations.some_other_unique'", null],
+    'deadlock' => [1213, 'Deadlock found when trying to get lock; try restarting transaction', null],
+    'decoy: message names the blog category foreign key, errorInfo does not' => [
+        1452,
+        'Cannot add or update a child row: a foreign key constraint fails (`testing`.`blog_category_translations`, CONSTRAINT `blog_category_translations_store_language_id_foreign` FOREIGN KEY (`store_language_id`) REFERENCES `store_languages` (`id`))',
+        'CONSTRAINT `blog_category_translations_blog_category_id_foreign` FOREIGN KEY',
+    ],
+]);
