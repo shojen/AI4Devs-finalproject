@@ -163,7 +163,7 @@ Testable: stock asserted per scenario, both refusal paths, a concurrency test.
 
 ## Dependencies, risks, open technical questions
 **Depends on:** [0088a](0088a-order-stock-auto-deduct-on-create-and-add-backend.md) (hard) and [0088](0088-order-stock-adjustment-foundation-backend.md) (transitively). **Blocks:**
-[0095](../0095-order-cancellation-stock-dialog-ui.md). Also depends on [0090](0090-order-line-quantity-and-removal-stock-opt-in-backend.md) (done; the remove-after-cancel case
+[0095](0095-order-cancellation-stock-dialog-ui.md). Also depends on [0090](0090-order-line-quantity-and-removal-stock-opt-in-backend.md) (done; the remove-after-cancel case
 calls `RemoveOrderItem(..., adjustStock: true)` and shares its test file).
 
 - **R-1** — Adding a transaction to `CancelOrder` changes a documented design note from story 0050; the reason (a second write

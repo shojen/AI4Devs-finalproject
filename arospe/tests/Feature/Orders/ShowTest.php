@@ -144,7 +144,7 @@ test('an actor holding only orders.view is refused by every mutating and disclos
     'requestStatusChange' => ['requestStatusChange', []],
     'applyStatusChange' => ['applyStatusChange', []],
     'confirmCancel' => ['confirmCancel', []],
-    'cancelOrder' => ['cancelOrder', []],
+    'cancelOrder' => ['cancelOrder', [true]],
     'openRefundModal' => ['openRefundModal', []],
     'recordRefund' => ['recordRefund', []],
 ]);

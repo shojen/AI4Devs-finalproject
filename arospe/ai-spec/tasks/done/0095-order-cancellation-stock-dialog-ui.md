@@ -1,9 +1,8 @@
 # [0095] Order detail — the cancel confirmation asks whether to return stock (frontend)
 
-> **Status: New — Phase 1 output, rewritten after the Phase 2 INVEST review of 2026-11-08; pending re-review.** Epic 3
-> follow-up bug fix, order-stock series. Fullstack pair: **related_task_id 0091**. Blocked on
-> [0091](done/0091-order-cancellation-stock-return-opt-in-backend.md), [0093](done/0093-confirm-dialog-secondary-action-ui.md) and
-> [0094](done/0094-order-line-quantity-stock-dialog-ui.md) (reuses its `stockPreview` computed).
+> **Status: Done — closed 2026-11-16 (Phases 3-6 approved; see the approval record).** Epic 3 follow-up bug fix, order-stock series. Fullstack pair: **related_task_id 0091**. Was blocked on
+> [0091](0091-order-cancellation-stock-return-opt-in-backend.md), [0093](0093-confirm-dialog-secondary-action-ui.md) and
+> [0094](0094-order-line-quantity-stock-dialog-ui.md) (reuses its `stockPreview` computed).
 > **User-confirmed (2026-11-08):** OQ-3 — an order with nothing to return still gets the dialog, with a note and only "Cancel
 > without changing stock" / "Keep order".
 
@@ -116,38 +115,38 @@ Feature: Cancelling an order asks whether to return its units to stock
 - `tests/Browser/Orders/OrderCancellationTest.php` — updated; new secondary-button cases.
 
 ## Tests to perform
-- [ ] Livewire: `confirmCancel()` opens the dialog with the cancel preview and sets `pendingCancelFromStatus`; both choices call `CancelOrder` with the matching `adjustStock` (asserted on stock); keep-order changes nothing.
-- [ ] Only one modal is bound to `showCancelConfirm`; the `line-stock` dialog's flag is untouched by the cancel flow.
-- [ ] `pendingCancelFromStatus` is `''` after `dismissCancelConfirm()` and after every exit path of `cancelOrder()` (success, blocked, validation, stale guard); a direct `cancelOrder(true)` call without `confirmCancel()` is refused like a stale guard and moves no stock.
-- [ ] `stockPreview` returns the line rows while `pendingStockAction` is `'quantity'`/`'remove'` and the cancel rows only when `pendingStockAction === ''`.
-- [ ] Security: `pendingCancelFromStatus` cannot be set by the client; re-authorization on apply (revoke `orders.refund` → refused); stale guard fires on a status change.
-- [ ] Refusals: super administrator on shipped → rendered blocked message, dialog closed, no stock change; already cancelled (race) → rendered validation message.
-- [ ] Preview excludes null-target lines and lines with 0 returnable units; a fully zero order shows the note and two options (OQ-3).
-- [ ] Browser: explicit labels, Esc/backdrop abort, mobile stacking, dark mode.
+- [x] Livewire: `confirmCancel()` opens the dialog with the cancel preview and sets `pendingCancelFromStatus`; both choices call `CancelOrder` with the matching `adjustStock` (asserted on stock); keep-order changes nothing.
+- [x] Only one modal is bound to `showCancelConfirm`; the `line-stock` dialog's flag is untouched by the cancel flow.
+- [x] `pendingCancelFromStatus` is `''` after `dismissCancelConfirm()` and after every exit path of `cancelOrder()` (success, blocked, validation, stale guard); a direct `cancelOrder(true)` call without `confirmCancel()` is refused like a stale guard and moves no stock.
+- [x] `stockPreview` returns the line rows while `pendingStockAction` is `'quantity'`/`'remove'` and the cancel rows only when `pendingStockAction === ''`.
+- [x] Security: `pendingCancelFromStatus` cannot be set by the client; re-authorization on apply (revoke `orders.refund` → refused); stale guard fires on a status change.
+- [x] Refusals: super administrator on shipped → rendered blocked message, dialog closed, no stock change; already cancelled (race) → rendered validation message.
+- [x] Preview excludes null-target lines and lines with 0 returnable units; a fully zero order shows the note and two options (OQ-3).
+- [x] Browser: explicit labels, Esc/backdrop abort, mobile stacking, dark mode.
 
 ## Expected outcome
 Cancelling an order always states its stock effect and applies exactly the administrator's choice.
 
 ## Acceptance criteria
-- [ ] The cancel confirmation is a separate three-way dialog with a preview, on its own flag and prefix.
-- [ ] Stale guard and re-authorization on apply; refusals render inline.
-- [ ] Zero-returnable orders follow OQ-3; en/es copy complete; existing hooks preserved.
+- [x] The cancel confirmation is a separate three-way dialog with a preview, on its own flag and prefix.
+- [x] Stale guard and re-authorization on apply; refusals render inline.
+- [x] Zero-returnable orders follow OQ-3; en/es copy complete; existing hooks preserved.
 
 ## Definition of Done
-- [ ] Tests written and green (full suite, unscoped)
-- [ ] Code reviewed (code-reviewer)
-- [ ] No security findings (appsec-auditor)
-- [ ] Documentation updated (docs-keeper): `docs/api/orders.md#orders.show` (cancel methods, locked prop, hooks), `ai-spec/tasks/_digests/epic-3.md`
-- [ ] Acceptance criteria met
+- [x] Tests written and green (full suite, unscoped)
+- [x] Code reviewed (code-reviewer)
+- [x] No security findings (appsec-auditor)
+- [x] Documentation updated (docs-keeper): `docs/api/orders.md#orders.show` (cancel methods, locked prop, hooks), `ai-spec/tasks/_digests/epic-3.md`
+- [x] Acceptance criteria met
 
 ## INVEST note
 Independent: needs 0091, 0093 and 0094's preview. Negotiable: copy. Valuable: cancelling states and applies its stock effect.
 Estimable/Small: one existing dialog gains a second action, a preview and a guard. Testable: Livewire and browser cases per scenario.
 
 ## Dependencies, risks, open technical questions
-**Depends on:** [0091](done/0091-order-cancellation-stock-return-opt-in-backend.md), [0093](done/0093-confirm-dialog-secondary-action-ui.md),
-[0094](done/0094-order-line-quantity-stock-dialog-ui.md) (hard). Shares files with [0094a](done/0094a-order-line-removal-stock-dialog-ui.md),
-[0096](0096-order-refund-modal-stock-return-ui.md) and [0092b](done/0092b-order-refund-stock-return-backend.md) (lang) — run sequentially.
+**Depends on:** [0091](0091-order-cancellation-stock-return-opt-in-backend.md), [0093](0093-confirm-dialog-secondary-action-ui.md),
+[0094](0094-order-line-quantity-stock-dialog-ui.md) (hard). Shares files with [0094a](0094a-order-line-removal-stock-dialog-ui.md),
+[0096](../0096-order-refund-modal-stock-return-ui.md) and [0092b](0092b-order-refund-stock-return-backend.md) (lang) — run sequentially.
 - **R-1** — Existing cancellation tests change by design; Phase 5 must check they were adapted, not deleted.
 
 ## Debate record
@@ -159,3 +158,10 @@ Estimable/Small: one existing dialog gains a second action, a preview and a guar
 - Phase 1: complete 2026-11-08 (product-owner).
 - Phase 2: INVEST review 2026-11-08: findings received → rewritten, pending re-review.
 - Phase 2: INVEST re-review 2026-11-08: D-3 reset and empty-guard rule, preview mode selection by pendingStockAction, parameter order cancelOrder(bool $adjust, CancelOrder $cancelOrder), matching tests → rewritten, pending re-review.
+- Phase 2: INVEST re-review accepted without further findings; implementation started 2026-11-16 (user: "comienza la tarea").
+- Phase 3: TDD complete 2026-11-16 (backend-expert/frontend-qa roles played by the orchestrator): cancel dialog, guard, preview, copy, Livewire and browser tests green.
+- Phase 4: appsec-auditor 2026-11-16: no finding above Low. Low-1 (two dialog requests pending at once) fixed: `confirmCancel()` clears the line request and both line requests clear the cancel one, with a test. Low-2 (guard compares status only, not line contents) accepted and recorded as a follow-up, like 0094/0094a.
+- Phase 5: code-reviewer 2026-11-16: changes needed (F-1 refusal branches untested, F-2 browser backdrop/mobile/dark/refusal, F-4 quantity mode and single-modal binding, F-6 dead key `orders.lifecycle.cancel_dialog_confirm`, F-7 docs wording) -> all applied. F-3 (Escape test) left as is.
+
+- Phase 6: docs updated 2026-11-16 (`docs/api/orders.md`, epic-3 digest).
+- Phase 7: closed 2026-11-16. Full suite run in directory chunks, green: Unit + Feature (non-Orders) 3091 passed / 5 skipped; remaining Feature dirs 1947 passed; Orders + Customers 1104 passed (before the final one-line clear-pending hardening; the affected Orders files and `tests/Browser/Orders` were rerun after it, green); `tests/Browser` 321 passed / 3 skipped.
