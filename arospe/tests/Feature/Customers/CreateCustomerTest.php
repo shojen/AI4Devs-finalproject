@@ -60,6 +60,7 @@ function customerFullPayload(array $overrides = []): array
         'billing_postal_code' => '28013',
         'billing_province' => 'Madrid',
         'billing_country' => 'ES',
+        'tax_id' => 'B-12345678',
     ], $overrides);
 }
 

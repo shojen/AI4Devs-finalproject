@@ -100,19 +100,12 @@ test('the tax ID is normalised and stored per FD-6 (T-14)', function (?string $i
 
     expect(InvoiceSetting::current()->issuer_tax_id)->toBe($stored)
         ->and(invoiceSettingRulesProbe()->taxId($input))->toBe($stored);
-})->with([
-    'trim, case, keeps punctuation' => [' es-b12.34/5 ', 'ES-B12.34/5'],
-    'inner space removed' => ['ES B123', 'ESB123'],
-    'tab and newline removed' => ["ES\tB1\n23", 'ESB123'],
-    'empty becomes null' => ['', null],
-    'whitespace becomes null' => ['   ', null],
-    'null stays null' => [null, null],
-]);
+})->with('tax_id_normalisation');
 
 test('a tax ID with a character outside letters, digits and - . / is refused (T-14)', function (string $input) {
     expect(InvoiceSettingsPayload::refusedKeys(InvoiceSettingsPayload::valid(['issuer_tax_id' => $input])))->toBe(['issuer_tax_id'])
         ->and(InvoiceSetting::query()->count())->toBe(0);
-})->with(['ES_B1', '<b>', 'ES;B1', 'ES$B1', "ES'B1"]);
+})->with('tax_id_invalid');
 
 test('taxIdRules(required: true) refuses an empty value and the default allows null', function () {
     $probe = new class
