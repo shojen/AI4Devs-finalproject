@@ -48,7 +48,7 @@ class UpdateCustomer
 
         $attributes = $this->normalizeCustomerAttributes($attributes);
 
-        $validated = Validator::make($attributes, $this->customerRules($customer->id))->validate();
+        $validated = Validator::make($attributes, $this->customerRules($customer->id), [], $this->attributeNames())->validate();
 
         try {
             $customer->update($validated);
@@ -65,5 +65,17 @@ class UpdateCustomer
         }
 
         return $customer;
+    }
+
+    /**
+     * Localised attribute names for the field-level messages.
+     *
+     * @return array<string, string>
+     */
+    private function attributeNames(): array
+    {
+        $names = __('customers.attributes');
+
+        return is_array($names) ? $names : [];
     }
 }

@@ -14,6 +14,8 @@ use Illuminate\Validation\Rule;
  */
 trait CustomerValidationRules
 {
+    use TaxIdValidationRules;
+
     /**
      * Every optional customer column — `phone` plus the twelve shipping/billing address columns
      * (`*_country` included). Shared by `App\Actions\Customers\CreateCustomer` and `UpdateCustomer`
@@ -46,6 +48,7 @@ trait CustomerValidationRules
         'shipping_postal_code', 'shipping_province', 'shipping_country',
         'billing_address_line1', 'billing_address_line2', 'billing_city',
         'billing_postal_code', 'billing_province', 'billing_country',
+        'tax_id',
     ];
 
     /**
@@ -64,7 +67,16 @@ trait CustomerValidationRules
             'phone' => $this->customerPhoneRules(),
             ...$this->customerAddressRules('shipping'),
             ...$this->customerAddressRules('billing'),
+            'tax_id' => $this->customerTaxIdRules(),
         ];
+    }
+
+    /**
+     * @return array<int, ValidationRule|array<mixed>|string>
+     */
+    protected function customerTaxIdRules(): array
+    {
+        return $this->taxIdRules();
     }
 
     /**
@@ -185,6 +197,10 @@ trait CustomerValidationRules
                 $trimmed = trim($attributes[$field]);
                 $attributes[$field] = $trimmed === '' ? null : $trimmed;
             }
+        }
+
+        if (array_key_exists('tax_id', $attributes) && is_string($attributes['tax_id'])) {
+            $attributes['tax_id'] = $this->normalizeTaxId($attributes['tax_id']);
         }
 
         foreach (['shipping_country', 'billing_country'] as $countryField) {

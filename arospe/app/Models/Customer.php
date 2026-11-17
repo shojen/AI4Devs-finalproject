@@ -37,6 +37,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $billing_postal_code
  * @property string|null $billing_province
  * @property string|null $billing_country
+ * @property string|null $tax_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -48,6 +49,7 @@ use Illuminate\Support\Carbon;
     'shipping_postal_code', 'shipping_province', 'shipping_country',
     'billing_address_line1', 'billing_address_line2', 'billing_city',
     'billing_postal_code', 'billing_province', 'billing_country',
+    'tax_id',
 ])]
 class Customer extends Model
 {

@@ -20,7 +20,8 @@ trait TaxIdValidationRules
             return null;
         }
 
-        $normalized = strtoupper((string) preg_replace('/\s+/u', '', $value));
+        // Invalid UTF-8 makes preg_replace return null: keep the raw value so the regex rule refuses it.
+        $normalized = strtoupper(preg_replace('/\s+/u', '', $value) ?? $value);
 
         return $normalized === '' ? null : $normalized;
     }
