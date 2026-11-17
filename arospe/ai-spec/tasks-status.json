@@ -7,9 +7,9 @@
       "slug": "0100a-customer-tax-id-backend",
       "title": "Customer tax ID (backend)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree-0100a-customer-tax-id-backend",
+      "claimed_at": "2026-11-17T12:30:00Z",
       "touches": [
         "database/migrations/<ts>_add_tax_id_to_customers_table.php",
         "app/Models/Customer.php",
