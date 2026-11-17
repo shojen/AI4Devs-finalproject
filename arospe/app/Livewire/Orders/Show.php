@@ -56,7 +56,7 @@ use LogicException;
  * the pre-write `$order` would show a stale total, and would hide 0052's auto-cancel.
  *
  * @property-read Order $order
- * @property-read array<int, array{id: string, productName: string, productSku: string, quantity: int, outstandingQuantity: int, unitPrice: string, lineTotal: string, refundedQuantity: int, canRemove: bool}> $lineItems
+ * @property-read array<int, array{id: string, productName: string, productSku: string, quantity: int, outstandingQuantity: int, unitPrice: string, lineTotal: string, refundedQuantity: int, canRemove: bool, hasStockTarget: bool}> $lineItems
  * @property-read bool $canLinkCustomer
  * @property-read bool $canEditLineItems
  * @property-read bool $canTransitionStatus
@@ -116,6 +116,20 @@ class Show extends Component
      * @var array<string, int>
      */
     public array $refundQuantities = [];
+
+    /**
+     * The refund modal's "Return to stock" choice (story 0096): `none` (default), `all` or `partial`.
+     * A string, validated in `recordRefund()`: an unknown value is a refusal, never treated as `none`.
+     */
+    public string $refundStockReturn = 'none';
+
+    /**
+     * Per-line units to return to stock in `partial` mode, keyed by line-item id. Strings, as the
+     * browser sends them; the server casts and clamps them (story 0096, D-3).
+     *
+     * @var array<string, string>
+     */
+    public array $refundStockQuantities = [];
 
     /**
      * The status select's bound value: a real backing-value STRING, never a nullable enum. A null
@@ -202,7 +216,7 @@ class Show extends Component
     }
 
     /**
-     * @return array<int, array{id: string, productName: string, productSku: string, quantity: int, outstandingQuantity: int, unitPrice: string, lineTotal: string, refundedQuantity: int, canRemove: bool}>
+     * @return array<int, array{id: string, productName: string, productSku: string, quantity: int, outstandingQuantity: int, unitPrice: string, lineTotal: string, refundedQuantity: int, canRemove: bool, hasStockTarget: bool}>
      */
     #[Computed]
     public function lineItems(): array
@@ -221,6 +235,8 @@ class Show extends Component
                 // A line with refunded units can never be deleted (refunds.order_item_id is
                 // restrictOnDelete()); RemoveOrderItem refuses it too. This reads a data fact, not a rule.
                 'canRemove' => $item->refunded_quantity === 0,
+                // Story 0096: the refund modal offers a stock input only for a line with a stock target.
+                'hasStockTarget' => $item->stockTarget() !== null,
             ])
             ->values()
             ->all();
@@ -928,6 +944,7 @@ class Show extends Component
             return;
         }
 
+        $this->resetRefundStockState();
         $this->showRefundModal = true;
     }
 
@@ -954,16 +971,86 @@ class Show extends Component
             return;
         }
 
+        $stockReturns = $this->mapRefundStockReturns($items);
+
+        if ($stockReturns === null) {
+            return;
+        }
+
         try {
-            $recordRefund($this->order, $items);
+            $recordRefund($this->order, $items, null, $stockReturns);
         } catch (ValidationException $exception) {
             $this->addError('refund', $this->firstMessage($exception));
+
+            return;
+        } catch (ModelNotFoundException|LogicException) {
+            $this->refreshOrderState();
+            $this->addError('refund', __('orders.refunds.changed_meanwhile'));
 
             return;
         }
 
         $this->showRefundModal = false;
         $this->refreshOrderState();
+    }
+
+    /**
+     * Map the "Return to stock" choice to explicit per-line units (story 0096, D-3). Returns null after
+     * adding the `refund` error when the choice is refused. `partial` units are cast to int and clamped
+     * silently to `0 ... units refunded on that line in this submit`; keys for lines not refunded now,
+     * not on this order or without a stock target are dropped. The backend re-validates everything.
+     *
+     * @param  array<string, int>  $items  line id => units refunded in this submit
+     * @return array<string, int>|null line id => units to return, only positive entries
+     */
+    private function mapRefundStockReturns(array $items): ?array
+    {
+        if (! in_array($this->refundStockReturn, ['none', 'all', 'partial'], true)) {
+            $this->addError('refund', __('orders.refunds.stock_mode_invalid'));
+
+            return null;
+        }
+
+        if ($this->refundStockReturn === 'none') {
+            return [];
+        }
+
+        $stockTargetIds = collect($this->lineItems)
+            ->filter(fn (array $line): bool => $line['hasStockTarget'])
+            ->pluck('id')
+            ->all();
+        $stockReturns = [];
+
+        foreach ($items as $itemId => $refunded) {
+            if (! in_array($itemId, $stockTargetIds, true)) {
+                continue;
+            }
+
+            if ($this->refundStockReturn === 'all') {
+                $units = $refunded;
+            } else {
+                $typed = $this->refundStockQuantities[$itemId] ?? 0;
+                $units = is_numeric($typed) ? min(max(0, (int) $typed), $refunded) : 0;
+            }
+
+            if ($units > 0) {
+                $stockReturns[$itemId] = $units;
+            }
+        }
+
+        if ($this->refundStockReturn === 'partial' && $stockReturns === []) {
+            $this->addError('refund', __('orders.refunds.stock_partial_empty'));
+
+            return null;
+        }
+
+        return $stockReturns;
+    }
+
+    private function resetRefundStockState(): void
+    {
+        $this->refundStockReturn = 'none';
+        $this->refundStockQuantities = [];
     }
 
     // ---------------------------------------------------------------------
@@ -1142,6 +1229,7 @@ class Show extends Component
     private function syncRefundInputs(): void
     {
         $this->refundQuantities = $this->order->items->mapWithKeys(fn (OrderItem $item): array => [$item->id => 0])->all();
+        $this->resetRefundStockState();
     }
 
     private function firstMessage(ValidationException $exception): string

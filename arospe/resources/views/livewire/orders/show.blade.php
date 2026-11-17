@@ -548,6 +548,40 @@
                     <flux:error name="refund" />
                 </div>
 
+                {{-- Story 0096: deferred bindings (no .live), so the per-line inputs are always rendered for
+                     lines with a stock target and shown client-side only in `partial`; the server clamps. --}}
+                <div class="space-y-3" data-test="refund-stock-section">
+                    <flux:radio.group wire:model="refundStockReturn" :label="__('orders.refunds.stock_return_label')" data-test="refund-stock-return">
+                        <flux:radio value="none" :label="__('orders.refunds.stock_none')" data-test="refund-stock-return-none" />
+                        <flux:radio value="all" :label="__('orders.refunds.stock_all')" data-test="refund-stock-return-all" />
+                        <flux:radio value="partial" :label="__('orders.refunds.stock_partial')" data-test="refund-stock-return-partial" />
+                    </flux:radio.group>
+
+                    <div class="space-y-3" x-show="$wire.refundStockReturn === 'partial'" x-cloak data-test="refund-stock-partial-inputs">
+                        <flux:text size="sm">{{ __('orders.refunds.stock_partial_hint') }}</flux:text>
+                        @foreach ($this->lineItems as $item)
+                            @if ($item['outstandingQuantity'] > 0)
+                                @if ($item['hasStockTarget'])
+                                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                        <div class="font-medium">{{ $item['productName'] }}</div>
+                                        <flux:input
+                                            type="number"
+                                            min="0"
+                                            :max="$item['outstandingQuantity']"
+                                            class="w-24"
+                                            wire:model="refundStockQuantities.{{ $item['id'] }}"
+                                            aria-label="{{ __('orders.refunds.stock_units_label') }}: {{ $item['productName'] }}"
+                                            data-test="refund-stock-quantity-{{ $item['id'] }}"
+                                        />
+                                    </div>
+                                @else
+                                    <flux:text size="sm" data-test="refund-stock-untracked-{{ $item['id'] }}">{{ $item['productName'] }}: {{ __('orders.refunds.stock_untracked') }}</flux:text>
+                                @endif
+                            @endif
+                        @endforeach
+                    </div>
+                </div>
+
                 <div class="flex gap-3 justify-end">
                     <flux:button variant="outline" wire:click="closeRefundModal" data-test="refund-dismiss">
                         {{ __('orders.refunds.dismiss') }}

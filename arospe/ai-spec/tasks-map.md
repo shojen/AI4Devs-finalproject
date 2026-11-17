@@ -20,6 +20,8 @@ task file is correct and this one needs a refresh.
 
 **Update (2026-11-17): `0100-invoice-settings-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0100-invoice-settings-backend`; Phases 2-6 approved, full suite green in chunks: Unit+Feature 6,351 tests, Browser 324 passed / 3 skipped; Pint unscoped passed; Larastan level 7 clean on the changed files only, a full unscoped run was not confirmed). Its node, edges (`P0100 --> P0100a/P0101a/P0101b/P0102/P0103/P0105`), `claimed` class membership, inventory row and `tasks-status.json` entry are dropped; it joins the flat `done/` inventory under Epic 6 — Invoicing (`done/` holds 125 files). Dependents recomputed: `0100a` and `0101a` lose their only dependency and turn `blocked` -> `ready`; `0101b` (still waits on `0100a`, `0101a`), `0102`, `0103` and `0105` stay `blocked` on their other pending dependencies. `0100` is removed from every `conflict_risk_with` list. No node is `claimed`; `ai-spec/tasks/in-progress/` is empty. Link check, both directions: same-depth move, so the file's own `](../…)` links resolve unchanged; inbound links in `0100a`, `0101a`, `0101b`, `0102`, `0103` and `0105` were repointed to `done/0100-…`. No epic digest (first closed story of an ad-hoc epic).
 
+**Update (2026-11-16, later): `0096-order-refund-modal-stock-return-ui.md` completed Phase 7 and moved from `ai-spec/tasks/` to `ai-spec/tasks/done/`** (worktree `worktree-0096-order-refund-modal-stock-return-ui`; Phases 3-6 approved, full unscoped suite green). Its node, inventory row, `ready` class membership, `P0096 -.->` edges and its `tasks-status.json` entry are dropped; inbound links were re-pointed. Pending in `ai-spec/tasks/`: the invoicing stories (`0100`–`0112`); `in-progress/` is empty. `done/` holds 125 files after merging `origin/main` (which closed `0099`); Epic 3 counts 29.
+
 **Update (2026-11-16): `0095-order-cancellation-stock-dialog-ui.md` completed Phase 7 and moved from `ai-spec/tasks/` to `ai-spec/tasks/done/`** (worktree `worktree-0095-order-cancellation-stock-dialog-ui`; Phases 3-6 approved, full unscoped suite green). Its node, inventory row, `ready` class membership, the `P0095 -.-> P0096` edge and its `tasks-status.json` entry are dropped; inbound links were re-pointed to `done/`. Pending in `ai-spec/tasks/`: `0096`, `0099`; `in-progress/` is empty. `done/` holds 123 files; Epic 3 counts 28.
 
 **Update (2026-11-16): `0099-blog-translation-write-actions-deleted-entity-race-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0099-blog-translation-deleted-parent-race-backend`; Phases 3-6 approved, full unscoped suite green). Its node, inventory row and `tasks-status.json` entry are dropped; inbound links from `done/0098-…` were re-pointed. Pending in `ai-spec/tasks/`: `0096`, `0100`–`0112`; `in-progress/` is empty. `done/` holds 124 files (after merging `origin/main`, which closed `0095`).
@@ -508,7 +510,7 @@ appears as a node in the dependency graph below:
 - **Epic 2 — Products, Taxes, Media, Shipping (35):** 0016, 0017, 0018, 0019, 0019a, 0019b,
   0019c, 0019d, 0020, 0021, 0022, 0023, 0024, 0024a, 0024b, 0025, 0026, 0027, 0028, 0029, 0029a,
   0029b, 0030, 0030a, 0031, 0031a, 0032, 0033, 0034, 0035, 0036, 0037, 0038, 0039, 0080.
-- **Epic 3 — Customers, Orders & Notifications (28, recounted 2026-11-16 from `done/`: 0041-0057 plus 0088, 0088a, 0090, 0091, 0092a, 0092b, 0094, 0094a and 0095):** 0091 — `CancelOrder` returns stock only on request (`adjustStock`), first transaction in that action, stock locked before the lines (backend; closed 2026-11-13); its dependent `0095` became `ready` when `0094` closed. 0092b — `RecordRefund` can return refunded units to stock on request (`$stockReturns`), `orders` lock first (backend; closed 2026-11-14); its dependent `0096` turned `ready`. 0090 — `UpdateOrderItemQuantity` and `RemoveOrderItem` adjust stock only on request (`adjustStock`), stock locked before the line (backend; closed 2026-11-13); 0092a — `RecordRefund` locks the order before its lines (backend; closed 2026-11-12): closes the story 0055 lock-order gap; its dependent `0092b` moved `blocked` -> `ready`. 0088 — Order stock adjustment foundation (backend; closed 2026-11-10): order-line stock counters; its dependent `0088a` moved `blocked` -> `ready`. 0041 — the epic's foundation story (the first to close in
+- **Epic 3 — Customers, Orders & Notifications (29, recounted 2026-11-16 from `done/`: 0041-0057 plus 0088, 0088a, 0090, 0091, 0092a, 0092b, 0094, 0094a, 0095 and 0096):** 0091 — `CancelOrder` returns stock only on request (`adjustStock`), first transaction in that action, stock locked before the lines (backend; closed 2026-11-13); its dependent `0095` became `ready` when `0094` closed. 0092b — `RecordRefund` can return refunded units to stock on request (`$stockReturns`), `orders` lock first (backend; closed 2026-11-14); its dependent `0096` turned `ready`. 0090 — `UpdateOrderItemQuantity` and `RemoveOrderItem` adjust stock only on request (`adjustStock`), stock locked before the line (backend; closed 2026-11-13); 0092a — `RecordRefund` locks the order before its lines (backend; closed 2026-11-12): closes the story 0055 lock-order gap; its dependent `0092b` moved `blocked` -> `ready`. 0088 — Order stock adjustment foundation (backend; closed 2026-11-10): order-line stock counters; its dependent `0088a` moved `blocked` -> `ready`. 0041 — the epic's foundation story (the first to close in
   this epic); its own three former dependents (0042, 0043, 0045) are re-derived against `done/`
   rather than against this pending list from here on. 0042 — Customers soft delete (backend), the
   second story to close in this epic; its own two former dependents (0044, 0047) are re-derived
@@ -632,7 +634,6 @@ Re-derived 2026-11-08 from the files actually present in `ai-spec/tasks/` (`0078
 | 0110a | Billing: collect and undo a collection from the invoice list (frontend) | Epic 6 — Invoicing |
 | 0111 | Customer report read side (backend) | Epic 3 — Customers (report) |
 | 0112 | Customer report screen with chart (frontend) | Epic 3 — Customers (report) |
-| 0096 | Order detail — refund modal stock return (frontend) | Epic 3 — Orders (stock) |
 | _(no number)_ | Infrastructure fix: no test suite can open a database connection (local fresh setup or CI) — **status: already fixed and documented**, kept out of the numbering and out of the dependency graph below | Infrastructure |
 
 ## Dependency graph (pending tasks only)
@@ -665,13 +666,8 @@ flowchart LR
 
     %% (P0087 closed to done/ 2026-11-13; P0098 closed to done/ 2026-11-14 and its node was dropped.)
 
-    subgraph PEND_STOCK["Epic 3 — Order stock (bug fix)"]
-        direction TB
-        P0096["0096 Refund modal stock UI"]
-    end
     %% (P0089 merged into P0088 and P0092 split into P0092a/P0092b on 2026-11-08; their nodes and edges are dropped.)
     %% (P0088 --> P0090/P0091/P0092b replaced by P0088 --> P0088a --> … on 2026-11-08, review #4 split.)
-    class P0096 ready;
 
     %% Standalone (no PRD epic)
     %% (P0082's own node dropped: 0082 closed to done/ this pass, per the update at the top of this file.)
@@ -824,9 +820,6 @@ flowchart LR
     P0106a -.-> P0109b
     P0107 -.-> P0109b
     %% Shared-file risk with the stock dialogs (no dependency): see the update note at the top.
-    P0096 -.-> P0106a
-    P0096 -.-> P0109b
-    P0096 -.-> P0109c
     class P0100a,P0101a ready;
     class P0100b,P0101b,P0102,P0103,P0104,P0105,P0106,P0106a,P0107,P0108,P0109a,P0109b,P0109c,P0110,P0110a,P0111,P0112 pending;
 ```

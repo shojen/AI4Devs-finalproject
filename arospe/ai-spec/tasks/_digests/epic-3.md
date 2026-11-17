@@ -155,3 +155,9 @@ and are not backfilled here — see their own task files in `ai-spec/tasks/done/
 - `stockPreview` now has a cancel mode, chosen only when `pendingStockAction === ''` and the guard is set (one row per returnable line with a live target, same-target lines show the combined resulting stock); every row carries `itemId`. Zero-returnable orders use the two-button form (`-confirm` = "Cancel without changing stock") — story 0095.
 - `dismissCancelConfirm()` is `#[Renderless]` like `dismissStockConfirm()`; a Livewire test that simulates a race must use `forceFill()` for `status` (it is not mass-assignable), and a non-super-admin cannot apply a cancel on an order already cancelled (the policy answers 403 before the guard) — story 0095.
 
+## Story 0096 — Refund modal returns stock (frontend)
+
+- `refundStockReturn` (`none|all|partial`) and `refundStockQuantities` are deferred bindings reset by `resetRefundStockState()` (open + `syncRefundInputs()`); the server maps them in `mapRefundStockReturns()` (silent clamp to the refunded units, unknown mode refused, zero `partial` total refused) and passes `RecordRefund`'s `$stockReturns` — story 0096.
+- Because the refund quantities stay deferred, the per-line stock inputs are always rendered for stock-target lines (`lineItems[].hasStockTarget`) and toggled client-side with `x-show="$wire.refundStockReturn === 'partial'"`; Livewire tests assert DOM presence, the browser test asserts visibility.
+- `ModelNotFoundException|LogicException` from `RecordRefund` render `orders.refunds.changed_meanwhile`; the UI does not pre-clamp to `returnableStockUnits()`, the backend refusal is shown — story 0096. After a restock, `refundedUnitsOutOfStock()` is 0 but `stock_refunded_not_out_quantity` equals the refunded units (K counts units back in inventory).
+

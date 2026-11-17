@@ -54,6 +54,16 @@ return [
         'dismiss' => 'Cancelar',
         'confirm' => 'Reembolsar',
         'nothing_selected' => 'Introduce al menos una unidad a reembolsar.',
+        'stock_return_label' => 'Devolver al stock',
+        'stock_none' => 'Ninguna',
+        'stock_all' => 'Todas las unidades reembolsadas',
+        'stock_partial' => 'Algunas unidades',
+        'stock_partial_hint' => 'Hasta las unidades que reembolses en esta línea',
+        'stock_units_label' => 'Unidades a devolver al stock',
+        'stock_partial_empty' => 'Elige al menos una unidad que devolver, o selecciona Ninguna.',
+        'stock_mode_invalid' => 'Esa opción no es válida.',
+        'changed_meanwhile' => 'Este pedido cambió mientras tanto. Revísalo e inténtalo de nuevo.',
+        'stock_untracked' => 'Esta línea no tiene stock que devolver, así que no se devolverán unidades de ella.',
     ],
 
     'cancellation' => [

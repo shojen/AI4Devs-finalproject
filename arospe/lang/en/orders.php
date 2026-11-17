@@ -85,6 +85,16 @@ return [
         'dismiss' => 'Cancel',
         'confirm' => 'Refund',
         'nothing_selected' => 'Enter at least one unit to refund.',
+        'stock_return_label' => 'Return to stock',
+        'stock_none' => 'None',
+        'stock_all' => 'All refunded units',
+        'stock_partial' => 'Some units',
+        'stock_partial_hint' => 'Up to the units you refund on this line',
+        'stock_units_label' => 'Units to return to stock',
+        'stock_partial_empty' => 'Choose at least one unit to return, or pick None.',
+        'stock_mode_invalid' => 'That choice is not valid.',
+        'changed_meanwhile' => 'This order changed meanwhile. Review it and try again.',
+        'stock_untracked' => 'This line has no stock to return, so no units will be returned for it.',
     ],
 
     // Story 0050 -- App\Actions\Orders\CancelOrder's two refusals. No screen copy here (story 0055
