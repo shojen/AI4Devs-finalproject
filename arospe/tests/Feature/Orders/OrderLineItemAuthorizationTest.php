@@ -138,7 +138,8 @@ test('the orders.edit ability string is literally what the three actions authori
 test('the seeded permission catalog is byte-identical to what RolePermissionSeeder alone produces -- no new permission was added for line-item editing', function () {
     $expectedCount = count(RolePermissionSeeder::MODULES) * count(RolePermissionSeeder::ACTIONS)
         + count(RolePermissionSeeder::ROLE_PERMISSIONS)
-        + count(RolePermissionSeeder::ORDER_PERMISSIONS);
+        + count(RolePermissionSeeder::ORDER_PERMISSIONS)
+        + count(RolePermissionSeeder::INVOICE_PERMISSIONS);
 
     expect(Permission::query()->count())->toBe($expectedCount);
 

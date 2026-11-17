@@ -51,6 +51,7 @@ return [
         'store_languages' => 'Store languages',
         'roles' => 'Roles',
         'media' => 'Media',
+        'invoice_settings' => 'Invoice settings',
     ],
 
     /*

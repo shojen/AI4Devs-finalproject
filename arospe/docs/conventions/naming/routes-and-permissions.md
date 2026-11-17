@@ -45,6 +45,13 @@ public const ROLE_PERMISSIONS = ['roles.manage', 'roles.manage-administrators'];
  * @var array<int, string>
  */
 public const ORDER_PERMISSIONS = ['orders.refund'];
+
+/**
+ * Invoicing permissions outside the module x action grid (story 0100).
+ *
+ * @var array<int, string>
+ */
+public const INVOICE_PERMISSIONS = ['invoice-settings.view', 'invoice-settings.manage'];
 ```
 
 ✅ Good — `sales-regions.delete`, `payment-methods.view`, `roles.manage-administrators`, `orders.refund`: kebab-case slug, dot separator, verb (or verb phrase, itself kebab-cased) after the dot.

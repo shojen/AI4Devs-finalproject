@@ -2,7 +2,7 @@
 
 > **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
-> [0100](0100-invoice-settings-backend.md) (it owns the shared tax-ID rule). Dependents:
+> [0100](done/0100-invoice-settings-backend.md) (it owns the shared tax-ID rule). Dependents:
 > [0100b](0100b-customer-tax-id-field-ui.md) (form field and detail line) and
 > [0101b](0101b-issue-standard-invoice-backend.md) (copies the value onto each invoice).
 
@@ -206,7 +206,7 @@ actions; existing screens keep working unchanged and never erase a stored tax ID
 - [ ] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open technical questions
-- Upstream: [0100](0100-invoice-settings-backend.md) (`TaxIdValidationRules`). Downstream:
+- Upstream: [0100](done/0100-invoice-settings-backend.md) (`TaxIdValidationRules`). Downstream:
   [0100b](0100b-customer-tax-id-field-ui.md) sends the field from the form;
   [0101b](0101b-issue-standard-invoice-backend.md) copies it into `invoices.recipient_tax_id`
   and owns the "issued invoice unchanged" test.

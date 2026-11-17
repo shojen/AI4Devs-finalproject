@@ -51,6 +51,15 @@ class RolePermissionSeeder extends Seeder
     public const ORDER_PERMISSIONS = ['orders.refund'];
 
     /**
+     * Invoicing permissions outside the module x action grid (story 0100, FD-8). Held by the
+     * system Administrator role like every catalog permission; later invoicing stories append
+     * their `invoices.*` names here. Gate App\Policies\InvoiceSettingPolicy.
+     *
+     * @var array<int, string>
+     */
+    public const INVOICE_PERMISSIONS = ['invoice-settings.view', 'invoice-settings.manage'];
+
+    /**
      * Run the database seeds.
      */
     public function run(): void
@@ -132,7 +141,7 @@ class RolePermissionSeeder extends Seeder
             }
         }
 
-        return [...$modulePermissions, ...self::ROLE_PERMISSIONS, ...self::ORDER_PERMISSIONS];
+        return [...$modulePermissions, ...self::ROLE_PERMISSIONS, ...self::ORDER_PERMISSIONS, ...self::INVOICE_PERMISSIONS];
     }
 
     /**

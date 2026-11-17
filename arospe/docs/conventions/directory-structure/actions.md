@@ -34,6 +34,14 @@ app/
                        by a test), the same "collaborator of an already-authorized action" shape
                        as CalculateTaxAmount
   Actions/Fortify/    Fortify contract implementations (CreatesNewUsers, ResetsUserPasswords)
+  Actions/Invoices/    Domain actions for the Invoicing area (story 0100): SaveInvoiceSettings --
+                       the only writer of `invoice_settings`; self-authorizes `update` on
+                       InvoiceSetting::class through LogRefusedPrivilegedAttempt as its first
+                       statement, validates through InvoiceSettingValidationRules, then writes
+                       under a FOR UPDATE lock -- and ComposeInvoiceNumber, a pure
+                       (series, settings, moment, counter) -> string composer that authorizes
+                       nothing and never reads now() or the database (see
+                       database/schema-other/invoice-settings.md)
   Actions/Localization/ Cross-cutting, not a module area (D24) -- the app's two default-locale
                        settings (SetDefaultUiLocale, SetDefaultNotificationLocale -- story 0068),
                        filed separately from Actions/StoreLanguages/ below even though both write

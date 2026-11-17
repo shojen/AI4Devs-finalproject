@@ -18,6 +18,8 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-11-17): `0100-invoice-settings-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0100-invoice-settings-backend`; Phases 2-6 approved, full suite green in chunks: Unit+Feature 6,351 tests, Browser 324 passed / 3 skipped; Pint unscoped passed; Larastan level 7 clean on the changed files only, a full unscoped run was not confirmed). Its node, edges (`P0100 --> P0100a/P0101a/P0101b/P0102/P0103/P0105`), `claimed` class membership, inventory row and `tasks-status.json` entry are dropped; it joins the flat `done/` inventory under Epic 6 — Invoicing (`done/` holds 125 files). Dependents recomputed: `0100a` and `0101a` lose their only dependency and turn `blocked` -> `ready`; `0101b` (still waits on `0100a`, `0101a`), `0102`, `0103` and `0105` stay `blocked` on their other pending dependencies. `0100` is removed from every `conflict_risk_with` list. No node is `claimed`; `ai-spec/tasks/in-progress/` is empty. Link check, both directions: same-depth move, so the file's own `](../…)` links resolve unchanged; inbound links in `0100a`, `0101a`, `0101b`, `0102`, `0103` and `0105` were repointed to `done/0100-…`. No epic digest (first closed story of an ad-hoc epic).
+
 **Update (2026-11-16, later): `0096-order-refund-modal-stock-return-ui.md` completed Phase 7 and moved from `ai-spec/tasks/` to `ai-spec/tasks/done/`** (worktree `worktree-0096-order-refund-modal-stock-return-ui`; Phases 3-6 approved, full unscoped suite green). Its node, inventory row, `ready` class membership, `P0096 -.->` edges and its `tasks-status.json` entry are dropped; inbound links were re-pointed. Pending in `ai-spec/tasks/`: the invoicing stories (`0100`–`0112`); `in-progress/` is empty. `done/` holds 125 files after merging `origin/main` (which closed `0099`); Epic 3 counts 29.
 
 **Update (2026-11-16): `0095-order-cancellation-stock-dialog-ui.md` completed Phase 7 and moved from `ai-spec/tasks/` to `ai-spec/tasks/done/`** (worktree `worktree-0095-order-cancellation-stock-dialog-ui`; Phases 3-6 approved, full unscoped suite green). Its node, inventory row, `ready` class membership, the `P0095 -.-> P0096` edge and its `tasks-status.json` entry are dropped; inbound links were re-pointed to `done/`. Pending in `ai-spec/tasks/`: `0096`, `0099`; `in-progress/` is empty. `done/` holds 123 files; Epic 3 counts 28.
@@ -595,6 +597,7 @@ appears as a node in the dependency graph below:
   are new pending files. 0064b — Scheduled post publish failure notification (backend), the tenth to close
   (0063 closed ninth, per the Update note above): it had no hard dependent of its own; `0065` and `0078` drop
   it from `conflict_risk_with`.
+- **Epic 6 — Invoicing (ad-hoc, 1):** 0100 — Invoice settings (backend), closed 2026-11-17: adds the single-row `invoice_settings` table, `InvoiceSetting::current()`, `SaveInvoiceSettings`, `ComposeInvoiceNumber`, the `invoice-settings.view`/`manage` permissions and the shared tax-ID rule; its dependents `0100a` and `0101a` drop it and move to `ready`.
 - **Standalone (no PRD epic) (8, recounted 2026-11-12: 0081, 0082, 0083, 0084, 0085, 0086, 0093, 0097):** 0081 — Demo data seeder command, closed 2026-09-30, this pass's
   own closure. Requested directly by the project owner rather than derived from a PRD epic; ships
   `database/seeders/DemoDataSeeder.php` and the `php artisan demo:generate-data` console command.
@@ -612,7 +615,6 @@ Re-derived 2026-11-08 from the files actually present in `ai-spec/tasks/` (`0078
 
 | ID | Title | Epic area |
 | --- | --- | --- |
-| 0100 | Invoice settings (backend) | Epic 6 — Invoicing |
 | 0100a | Customer tax ID (backend) | Epic 6 — Invoicing |
 | 0100b | Customer tax ID field in the customer form and detail (frontend) | Epic 6 — Invoicing |
 | 0101a | Invoice numbering sequences (backend) | Epic 6 — Invoicing |
@@ -744,7 +746,6 @@ flowchart LR
     %% (P0071 --> P0073/P0075/P0079 dropped: 0071 closed to done/ 2026-10-07.)
     subgraph PEND_INVOICING["Epic 6 — Invoicing"]
         direction TB
-        P0100["0100 Invoice settings BE"]
         P0100a["0100a Customer tax ID BE"]
         P0100b["0100b Customer tax ID field UI"]
         P0101a["0101a Invoice numbering BE"]
@@ -769,21 +770,15 @@ flowchart LR
         P0112["0112 Customer report screen UI"]
     end
     %% Edges quoted from each task file (2026-11-15). Solid = hard dependency.
-    P0100 --> P0100a
     P0100a --> P0100b
-    P0100 --> P0101a
-    P0100 --> P0101b
     P0100a --> P0101b
     P0101a --> P0101b
-    P0100 --> P0102
     P0101b --> P0102
-    P0100 --> P0103
     P0101a --> P0103
     P0101b --> P0103
     P0102 --> P0103
     P0101b --> P0104
     P0102 --> P0104
-    P0100 --> P0105
     P0101b --> P0105
     P0104 --> P0105
     P0101b --> P0106
@@ -825,8 +820,8 @@ flowchart LR
     P0106a -.-> P0109b
     P0107 -.-> P0109b
     %% Shared-file risk with the stock dialogs (no dependency): see the update note at the top.
-    class P0100 ready;
-    class P0100a,P0100b,P0101a,P0101b,P0102,P0103,P0104,P0105,P0106,P0106a,P0107,P0108,P0109a,P0109b,P0109c,P0110,P0110a,P0111,P0112 pending;
+    class P0100a,P0101a ready;
+    class P0100b,P0101b,P0102,P0103,P0104,P0105,P0106,P0106a,P0107,P0108,P0109a,P0109b,P0109c,P0110,P0110a,P0111,P0112 pending;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
