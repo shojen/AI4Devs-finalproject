@@ -40,16 +40,16 @@ function customersIndexRenderingActor(array $permissions = ['customers.view', 'c
 }
 
 /**
- * The fifteen writable form fields the component's public surface promises (task file, Component
- * section) -- three identity fields plus six shipping and six billing address fields, each a
- * public string wire:model target.
+ * The sixteen writable form fields the component's public surface promises (task file, Component
+ * section; story 0100b added `taxId`) -- four identity fields plus six shipping and six billing
+ * address fields, each a public string wire:model target.
  *
  * @return array<int, string>
  */
 function customersIndexRenderingBoundFieldNames(): array
 {
     return [
-        'name', 'email', 'phone',
+        'name', 'email', 'phone', 'taxId',
         'shippingAddressLine1', 'shippingAddressLine2', 'shippingCity',
         'shippingPostalCode', 'shippingProvince', 'shippingCountry',
         'billingAddressLine1', 'billingAddressLine2', 'billingCity',
@@ -177,24 +177,24 @@ test('the create action renders enabled for an actor holding customers.create', 
 // movable, per the errors-log lesson about an over-count reading as the true number).
 // =====================================================================
 
-test('the create/edit modal renders exactly the fifteen bound form inputs, and the counting method is proven to move', function () {
+test('the create/edit modal renders exactly the sixteen bound form inputs, and the counting method is proven to move', function () {
     $actor = customersIndexRenderingActor();
     $this->actingAs($actor);
 
     $html = Livewire::test(Index::class)->call('openCreateModal')->html();
 
-    $allFifteen = customersIndexRenderingBoundFieldNames();
-    expect(customersIndexRenderingCountBoundFields($html, $allFifteen))->toBe(15);
+    $allSixteen = customersIndexRenderingBoundFieldNames();
+    expect(customersIndexRenderingCountBoundFields($html, $allSixteen))->toBe(16);
 
     // Prove the count is genuinely discriminating rather than a constant that would pass
     // regardless of what actually rendered: re-run the identical delimiter-scoped counting
-    // method against the SAME html, searching for only fourteen of the fifteen names, and
+    // method against the SAME html, searching for only fifteen of the sixteen names, and
     // confirm the match total drops by exactly one. A selector that also matched a sibling or
     // wrapper element (the errors-log failure mode this test guards against) would not move
     // predictably like this.
-    $fourteen = $allFifteen;
-    array_pop($fourteen);
-    expect(customersIndexRenderingCountBoundFields($html, $fourteen))->toBe(14);
+    $fifteen = $allSixteen;
+    array_pop($fifteen);
+    expect(customersIndexRenderingCountBoundFields($html, $fifteen))->toBe(15);
 });
 
 // =====================================================================
