@@ -408,7 +408,7 @@ test('a malformed tax ID keeps the modal open with its error, and a corrected va
         ->fill('taxId', 'ES_B1')
         ->click('@save-customer-button')
         ->assertNoJavaScriptErrors()
-        ->assertSee(__('customers.attributes.tax_id'))
+        ->assertSee(__('validation.regex', ['attribute' => __('customers.attributes.tax_id')]))
         ->assertPresent('@customer-modal');
 
     expect($customer->fresh()->tax_id)->toBe('B-12345678');
@@ -456,6 +456,6 @@ test('the tax ID input is visible and full width on a phone viewport, with a rea
         ->fill('taxId', 'ES_B1')
         ->click('@save-customer-button')
         ->assertNoJavaScriptErrors()
-        ->assertSee(__('customers.attributes.tax_id'))
+        ->assertSee(__('validation.regex', ['attribute' => __('customers.attributes.tax_id')]))
         ->assertPresent('@customer-modal');
 });
