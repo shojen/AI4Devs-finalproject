@@ -18,6 +18,8 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-11-18): `0100a-customer-tax-id-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0100a-customer-tax-id-backend`; Phases 2-6 approved, full suite green in chunks: 4,782 tests, 8 skipped; Pint and Larastan level 7 clean on the changed files). Its node, edges (`P0100a --> P0100b/P0101b`), `claimed` membership, inventory row and `tasks-status.json` entry are dropped. Dependents recomputed: `0100b` loses its only dependency and turns `blocked` -> `ready`; `0101b` still waits on `0101a`. Link check, both directions: same-depth move from `in-progress/`; inbound links in `0100b`, `0101b` and `done/0100` were repointed to `done/0100a-…`. No epic digest.
+
 **Update (2026-11-17): `0100-invoice-settings-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0100-invoice-settings-backend`; Phases 2-6 approved, full suite green in chunks: Unit+Feature 6,351 tests, Browser 324 passed / 3 skipped; Pint unscoped passed; Larastan level 7 clean on the changed files only, a full unscoped run was not confirmed). Its node, edges (`P0100 --> P0100a/P0101a/P0101b/P0102/P0103/P0105`), `claimed` class membership, inventory row and `tasks-status.json` entry are dropped; it joins the flat `done/` inventory under Epic 6 — Invoicing (`done/` holds 125 files). Dependents recomputed: `0100a` and `0101a` lose their only dependency and turn `blocked` -> `ready`; `0101b` (still waits on `0100a`, `0101a`), `0102`, `0103` and `0105` stay `blocked` on their other pending dependencies. `0100` is removed from every `conflict_risk_with` list. No node is `claimed`; `ai-spec/tasks/in-progress/` is empty. Link check, both directions: same-depth move, so the file's own `](../…)` links resolve unchanged; inbound links in `0100a`, `0101a`, `0101b`, `0102`, `0103` and `0105` were repointed to `done/0100-…`. No epic digest (first closed story of an ad-hoc epic).
 
 **Update (2026-11-16, later): `0096-order-refund-modal-stock-return-ui.md` completed Phase 7 and moved from `ai-spec/tasks/` to `ai-spec/tasks/done/`** (worktree `worktree-0096-order-refund-modal-stock-return-ui`; Phases 3-6 approved, full unscoped suite green). Its node, inventory row, `ready` class membership, `P0096 -.->` edges and its `tasks-status.json` entry are dropped; inbound links were re-pointed. Pending in `ai-spec/tasks/`: the invoicing stories (`0100`–`0112`); `in-progress/` is empty. `done/` holds 125 files after merging `origin/main` (which closed `0099`); Epic 3 counts 29.
@@ -615,7 +617,6 @@ Re-derived 2026-11-08 from the files actually present in `ai-spec/tasks/` (`0078
 
 | ID | Title | Epic area |
 | --- | --- | --- |
-| 0100a | Customer tax ID (backend) | Epic 6 — Invoicing |
 | 0100b | Customer tax ID field in the customer form and detail (frontend) | Epic 6 — Invoicing |
 | 0101a | Invoice numbering sequences (backend) | Epic 6 — Invoicing |
 | 0101b | Issue standard invoice — the invoice core (backend) | Epic 6 — Invoicing |
@@ -746,7 +747,6 @@ flowchart LR
     %% (P0071 --> P0073/P0075/P0079 dropped: 0071 closed to done/ 2026-10-07.)
     subgraph PEND_INVOICING["Epic 6 — Invoicing"]
         direction TB
-        P0100a["0100a Customer tax ID BE"]
         P0100b["0100b Customer tax ID field UI"]
         P0101a["0101a Invoice numbering BE"]
         P0101b["0101b Issue standard invoice BE"]
@@ -770,8 +770,6 @@ flowchart LR
         P0112["0112 Customer report screen UI"]
     end
     %% Edges quoted from each task file (2026-11-15). Solid = hard dependency.
-    P0100a --> P0100b
-    P0100a --> P0101b
     P0101a --> P0101b
     P0101b --> P0102
     P0101a --> P0103
@@ -820,15 +818,14 @@ flowchart LR
     P0106a -.-> P0109b
     P0107 -.-> P0109b
     %% Shared-file risk with the stock dialogs (no dependency): see the update note at the top.
-    class P0101a ready;
-    class P0100a claimed;
-    class P0100b,P0101b,P0102,P0103,P0104,P0105,P0106,P0106a,P0107,P0108,P0109a,P0109b,P0109c,P0110,P0110a,P0111,P0112 pending;
+    class P0100b,P0101a ready;
+    class P0101b,P0102,P0103,P0104,P0105,P0106,P0106a,P0107,P0108,P0109a,P0109b,P0109c,P0110,P0110a,P0111,P0112 pending;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(as of 2026-11-17, `0100a` is the sole `claimed` node (Phase 3 started); as of 2026-11-14, after `0098` closed, no node was `claimed`; `0098` was the sole `claimed` node before; as of 2026-11-13, after its closure, no node was `claimed`; `0087`, the prior sole `claimed` node, closed to `done/` this pass; as of 2026-11-12 no node was `claimed`; `0079`, the prior sole `claimed` node, closed to `done/` this pass; as of 2026-11-07 no node was `claimed`; `0076`, the prior sole `claimed` node, closed to `done/` this pass; earlier: `0067`, the prior sole `claimed` node, closed to
+(as of 2026-11-18, after `0100a` closed, no node is `claimed`; as of 2026-11-17, `0100a` was the sole `claimed` node; as of 2026-11-14, after `0098` closed, no node was `claimed`; `0098` was the sole `claimed` node before; as of 2026-11-13, after its closure, no node was `claimed`; `0087`, the prior sole `claimed` node, closed to `done/` this pass; as of 2026-11-12 no node was `claimed`; `0079`, the prior sole `claimed` node, closed to `done/` this pass; as of 2026-11-07 no node was `claimed`; `0076`, the prior sole `claimed` node, closed to `done/` this pass; earlier: `0067`, the prior sole `claimed` node, closed to
 `done/` this pass — see the update at the top of this file; `0066` and `0070`, the `claimed` nodes
 before that, both closed to `done/` in an earlier pass, on separate branches reconciled together
 here); yellow (`pending`) = still blocked on at least one open pending dependency.

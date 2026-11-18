@@ -84,8 +84,9 @@ customers keep null). `down()` drops the column; the docblock states that this l
   `attributes` block in `lang/{en,es}/customers.php` holds a `tax_id` leaf, and both
   `CreateCustomer` and `UpdateCustomer` pass attribute names as the fourth argument of
   `Validator::make()` (same shape as `SaveInvoiceSettings::attributeNames()`), so a tax-ID error
-  reads with the translated field name instead of "tax id". Only `tax_id` is added to the block
-  in this story; the other customer fields keep today's messages. Reason: validation errors are
+  reads with the translated field name instead of "tax id". The block as shipped covers all 16 customer fields, not only `tax_id`
+  (accepted by code-reviewer at Phase 5, 2026-11-18: every customer field error now uses its
+  translated name, an improvement). Reason: validation errors are
   shown on the admin screen in both locales (0100b).
 
 ## Gherkin
@@ -310,3 +311,11 @@ actions; existing screens keep working unchanged and never erase a stored tax ID
   Downstream flags for 0100b/0101b/0104: escape on render (`{{ }}`), never build file paths from
   `tax_id` (`../` passes the charset), guard CSV formula injection on export, gate display by
   the customer view permission, and treat any invoice snapshot as a retained PII copy.
+- Phase 5 (code review) on 2026-11-18 by code-reviewer: **approved, conditional on the full suite
+  being green** — every acceptance criterion, FD-1..FD-10 and T-1..T-21 traced to code and tests
+  in 312723e/0d78d21; Pint unscoped clean. Non-blocking: the `attributes` block lists all 16
+  customer fields, not only `tax_id` as FD-10 says, so every customer field error message now
+  uses the translated name (an improvement; accept and record it, or trim it to `tax_id`); the
+  Phase 4 Low (invalid UTF-8) is fixed in `TaxIdValidationRules` and covered by the shared
+  invalid dataset. Phase 6 must update `docs/database/schema-other/customers.md`, the ER
+  diagram in `docs/database/schema.md`, `docs/api/customers.md` and the lang-file notes.
