@@ -1,50 +1,13 @@
 {
-  "generated_at": "2026-11-17T12:00:00Z",
+  "generated_at": "2026-11-18T12:00:00Z",
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
-    {
-      "id": "0101a",
-      "slug": "0101a-invoice-numbering-sequences-backend",
-      "title": "Invoice numbering sequences (backend)",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "database/migrations/<ts>_create_invoice_sequences_table.php",
-        "app/Models/InvoiceSequence.php",
-        "database/factories/InvoiceSequenceFactory.php",
-        "app/Actions/Invoices/AllocateInvoiceNumber.php",
-        "lang/en/invoice-settings.php",
-        "lang/es/invoice-settings.php",
-        "tests/Support/Invoices/Numbering.php",
-        "app/Actions/Invoices/PeekNextInvoiceNumber.php",
-        "app/Actions/Invoices/SetInvoiceSequenceStart.php",
-        "tests/Feature/Invoices/"
-      ],
-      "conflict_risk_with": [
-        "0101b",
-        "0102",
-        "0103",
-        "0104",
-        "0105",
-        "0106",
-        "0107",
-        "0108",
-        "0109a",
-        "0109b",
-        "0110",
-        "0110a"
-      ]
-    },
     {
       "id": "0101b",
       "slug": "0101b-issue-standard-invoice-backend",
       "title": "Issue standard invoice — the invoice core (backend)",
-      "depends_on": [
-        "0101a"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -81,7 +44,6 @@
         "tests/Feature/Orders/OrderLineItemAuthorizationTest.php"
       ],
       "conflict_risk_with": [
-        "0101a",
         "0102",
         "0103",
         "0104",
@@ -140,7 +102,6 @@
         "tests/Feature/Invoices/Pdf/"
       ],
       "conflict_risk_with": [
-        "0101a",
         "0101b",
         "0103",
         "0104",
@@ -158,7 +119,6 @@
       "slug": "0103-invoice-settings-screen-ui",
       "title": "Invoice settings screen (frontend)",
       "depends_on": [
-        "0101a",
         "0101b",
         "0102"
       ],
@@ -190,7 +150,6 @@
         "tests/Browser/InvoiceSettings/InvoiceSettingsScreenTest.php"
       ],
       "conflict_risk_with": [
-        "0101a",
         "0101b",
         "0102",
         "0104",
@@ -238,7 +197,6 @@
         "tests/Feature/Orders/OrderLineItemAuthorizationTest.php"
       ],
       "conflict_risk_with": [
-        "0101a",
         "0101b",
         "0102",
         "0103",
@@ -273,7 +231,6 @@
         "tests/Feature/Orders/CreateOrderStockTest.php"
       ],
       "conflict_risk_with": [
-        "0101a",
         "0101b",
         "0102",
         "0103",
@@ -333,7 +290,6 @@
       ],
       "conflict_risk_with": [
         "0095",
-        "0101a",
         "0101b",
         "0102",
         "0103",
@@ -397,7 +353,6 @@
       "slug": "0107-corrective-invoice-on-refund-and-cancellation-backend",
       "title": "Corrective invoice on refund and on cancellation (backend)",
       "depends_on": [
-        "0101a",
         "0101b",
         "0106"
       ],
@@ -430,7 +385,6 @@
       ],
       "conflict_risk_with": [
         "0095",
-        "0101a",
         "0101b",
         "0102",
         "0103",
@@ -483,7 +437,6 @@
       ],
       "conflict_risk_with": [
         "0095",
-        "0101a",
         "0101b",
         "0102",
         "0103",
@@ -525,7 +478,6 @@
       ],
       "conflict_risk_with": [
         "0095",
-        "0101a",
         "0101b",
         "0106",
         "0106a",
@@ -573,7 +525,6 @@
       ],
       "conflict_risk_with": [
         "0095",
-        "0101a",
         "0101b",
         "0102",
         "0103",
@@ -655,7 +606,6 @@
         "tests/Browser/Invoices/"
       ],
       "conflict_risk_with": [
-        "0101a",
         "0101b",
         "0102",
         "0103",
@@ -691,7 +641,6 @@
         "tests/Browser/Invoices/CollectInvoiceTest.php"
       ],
       "conflict_risk_with": [
-        "0101a",
         "0101b",
         "0102",
         "0103",
@@ -726,7 +675,6 @@
         "lang/es/customers.php"
       ],
       "conflict_risk_with": [
-        "0100a",
         "0112"
       ]
     },
@@ -766,7 +714,6 @@
         "tests/Feature/Customers/ShowRenderingTest.php"
       ],
       "conflict_risk_with": [
-        "0100a",
         "0111"
       ]
     }

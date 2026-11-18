@@ -32,4 +32,11 @@ return [
         'prefixes_must_differ' => 'The corrective invoice prefix must differ from the standard invoice prefix.',
         'auto_issue_requires_issuer' => 'Automatic invoicing needs the legal name, tax ID and address line 1 to be filled in.',
     ],
+
+    'numbering' => [
+        'start_already_issued' => 'The starting counter can no longer be changed because this series has already issued invoices.',
+        'start_invalid' => 'The starting counter must be a whole number between 1 and 4,294,967,294.',
+        'clock_skew' => 'The invoice date is earlier than the last invoice issued in this series. Check the system clock.',
+        'overflow' => 'The invoice counter has reached its maximum value and no further numbers can be issued.',
+    ],
 ];

@@ -48,3 +48,17 @@ test('lang/en/roles.php and lang/es/roles.php keep the same keys', function () {
     expect(array_values(array_diff($en, $es)))->toBe([])
         ->and(array_values(array_diff($es, $en)))->toBe([]);
 });
+
+test('the story 0101a numbering messages exist, are non-empty and differ between the two locales', function (string $key) {
+    $en = Arr::get(require lang_path('en/invoice-settings.php'), $key);
+    $es = Arr::get(require lang_path('es/invoice-settings.php'), $key);
+
+    expect($en)->toBeString()->not->toBe('')
+        ->and($es)->toBeString()->not->toBe('')
+        ->and($es)->not->toBe($en);
+})->with([
+    'numbering.start_already_issued',
+    'numbering.start_invalid',
+    'numbering.clock_skew',
+    'numbering.overflow',
+]);

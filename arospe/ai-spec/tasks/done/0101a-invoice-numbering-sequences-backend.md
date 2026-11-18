@@ -1,13 +1,13 @@
 # [0101a] Invoice numbering sequences (backend)
 
-> **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
+> **Status: Done (closed 2026-11-18, Phase 7).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
-> [0100](done/0100-invoice-settings-backend.md) (settings, `ComposeInvoiceNumber`, `InvoiceType`,
-> `InvoiceSettingPolicy`). Dependents: [0101b](0101b-issue-standard-invoice-backend.md) (issues
-> standard invoices with these numbers), [0103](0103-invoice-settings-screen-ui.md) (preview and
+> [0100](0100-invoice-settings-backend.md) (settings, `ComposeInvoiceNumber`, `InvoiceType`,
+> `InvoiceSettingPolicy`). Dependents: [0101b](../0101b-issue-standard-invoice-backend.md) (issues
+> standard invoices with these numbers), [0103](../0103-invoice-settings-screen-ui.md) (preview and
 > starting counter on the screen),
-> [0107](0107-corrective-invoice-on-refund-and-cancellation-backend.md) and
-> [0108](0108-regenerate-invoices-after-order-edit-backend.md) (corrective numbers).
+> [0107](../0107-corrective-invoice-on-refund-and-cancellation-backend.md) and
+> [0108](../0108-regenerate-invoices-after-order-edit-backend.md) (corrective numbers).
 
 ## Description
 Two gap-free counters, one for standard and one for corrective invoices, with the optional
@@ -53,7 +53,7 @@ backend | includes database-expert: yes
 | `series` | varchar(20) | not null, UNIQUE | `InvoiceType` value |
 | `last_number` | int unsigned | not null, default 0 | last value handed out |
 | `last_year` | smallint unsigned | null | calendar year (app timezone) of the last allocation; null = never allocated |
-| `last_issued_at` | timestamp | null | moment of the last allocation |
+| `last_issued_at` | dateTime | null | moment of the last allocation, stored in the app timezone (D-2: not `timestamp`) |
 | `created_at`, `updated_at` | timestamp | null | |
 
 The migration itself inserts the two rows (`standard`, `corrective`; `last_number` 0, nulls) with
@@ -62,7 +62,10 @@ other index. `down()`: `Schema::dropIfExists`.
 
 ## Decisions
 - **FD-1 One row per series (the redesign).** No per-year buckets and no seeding. Allocation,
-  inside the caller's transaction: `year` = year of the issue moment in `config('app.timezone')`;
+  inside the caller's transaction: the issue moment `$at` is first converted to
+  `config('app.timezone')` (`$at->setTimezone(config('app.timezone'))` on an immutable copy), and
+  that converted moment is used **both** for `year` and for composing the printed number (so the
+  year token can never disagree with the counter's year); `year` = year of the converted moment;
   if yearly reset is on **and** `last_year` is not null **and** `year > last_year`, next = 1;
   otherwise next = `last_number + 1`; then write `last_number = next`, `last_year = year`,
   `last_issued_at = issue moment`. Reason: a bucket-per-year table needs a seed rule when a bucket
@@ -94,10 +97,14 @@ other index. `down()`: `Schema::dropIfExists`.
   `ValidationException` on `number`, nothing consumed. A counter wider than the padding is
   never truncated (`F2026-100000`).
 - **FD-7 Preview is read-only and gated by `invoice-settings.view`.** `PeekNextInvoiceNumber`
-  authorizes `viewAny` (logged), accepts unsaved candidate settings (validated through 0100's
-  `invoiceSettingRules()`, so a candidate prefix cannot inject markup), and composes
-  `nextCounter()` with the candidate format: no lock, no write. `invoice-settings.manage` alone
-  does not grant preview (the screen is unreachable without `view` anyway).
+  authorizes `viewAny` (logged), accepts unsaved candidate input as a **raw array** (never a
+  model: a model with an enum cast such as `standard_year_format` throws `ValueError` on
+  `forceFill(['standard_year_format' => 'XX'])` before the action could run, so an invalid
+  candidate could never become a `ValidationException` and the screen would answer 500),
+  validates it through 0100's `invoiceSettingRules()` (so a candidate prefix cannot inject
+  markup) **before** any `InvoiceSetting` is built, then composes `nextCounter()` with the
+  candidate format: no lock, no write. `invoice-settings.manage` alone does not grant preview
+  (the screen is unreachable without `view` anyway). Details in FD-12.
 - **FD-8 Starting counter.** `SetInvoiceSequenceStart` authorizes `update` (logged) **before**
   reading any state (a refusal must not reveal whether the series has issued), validates
   `1 <= startAt <= 4294967294`, then in a transaction locks settings `FOR SHARE` and the series
@@ -112,20 +119,46 @@ other index. `down()`: `Schema::dropIfExists`.
   but turning reset on forces one (BR-0100-7), so the new numbers print differently. Any residual
   printed collision caused by a format change is caught by 0101b's `UNIQUE(number)` and the
   BR-0100-9 settings check (accepted risk, recorded for 0101b).
-- **FD-12 Partial candidate and error keys (screen contract).** `PeekNextInvoiceNumber` accepts a
-  partial candidate: it overlays the series' four numbering fields (`<series>_prefix`,
-  `<series>_year_format`, `<series>_separator`, `<series>_padding`) and `reset_numbering_yearly` on
-  the saved settings and validates only that subset with `Arr::only($this->invoiceSettingRules(),
-  ...)`; fields absent from the candidate are taken from the saved settings.
+- **FD-12 Partial candidate and error keys (screen contract).** `PeekNextInvoiceNumber` takes
+  `?array $candidate` (`array<string, mixed>`, raw screen input, partial allowed). Steps, in
+  order: (1) authorize `viewAny` (logged); (2) when `$candidate` is null, compose from
+  `InvoiceSetting::current()` and skip 3-5; (3) the subset keys are the series' four numbering
+  fields (`<series>_prefix`, `<series>_year_format`, `<series>_separator`, `<series>_padding`)
+  plus `reset_numbering_yearly`; candidate keys outside the subset are ignored; (4) overlay
+  `Arr::only($candidate, <subset>)` on `Arr::only(InvoiceSetting::current()->attributesToArray(),
+  <subset>)` (saved values as plain scalars, enums as their string values), so fields absent from
+  the candidate are taken from the saved settings; pass the result through
+  `normalizeInvoiceSettingAttributes()` for parity with Save (subset-safe; it currently changes
+  no numbering key); (5) validate with `Validator::make($data, Arr::only($this->invoiceSettingRules(),
+  <subset>))->validate()` — a failure is a `ValidationException` keyed by the offending field
+  (e.g. `standard_year_format`), and no model is built; (6) only then build the model to compose
+  (`InvoiceSetting::current()` replicated, or `new InvoiceSetting`, `forceFill()` of the validated
+  subset; never saved) and return the composed `nextCounter()` number.
+  **Intentionally skipped:** the partial preview validates field rules only, not 0100's cross-field
+  rules performed by `SaveInvoiceSettings` (reset on requires a year token, i.e. year `none` with
+  reset on; corrective prefix must differ from the standard prefix case-insensitively). A
+  candidate with reset on and year `none` previews a number without a year; Save refuses it. This
+  is by design, not a bug, and 0103 QA must not file it as one (Save remains the single gate for
+  cross-field consistency).
   `SetInvoiceSequenceStart` raises `invoice-settings.numbering.start_already_issued` and
   `start_invalid` on the key `start_at`. The settings screen reads the sequence state through its
   own read action (`ReadInvoiceSequenceState`, owned by
-  [0103](0103-invoice-settings-screen-ui.md)), never the table directly.
+  [0103](../0103-invoice-settings-screen-ui.md)), never the table directly.
 - **FD-10 No new permission or policy.** Both public actions reuse `InvoiceSettingPolicy`.
 - **FD-11 Out of this story:** `AssertNumberingFormatIsFree` and the "next number already exists"
   settings refusal (0101b, it reads `invoices.number`; it calls `nextCounter()`), the
   collision-error message, and the end-to-end rollback with a real invoice insert (0101b repeats
   it).
+
+## Deviations recorded in Phase 3
+- **D-1 No `InvoiceSequenceFactory`.** `UNIQUE(series)` and the two migration-created rows make a
+  factory `create()` impossible, and a factory that only updates a row is not a factory. Fixtures
+  use `Tests\Support\Invoices\Numbering::arrange()` (and `row()`, `snapshot()`, `allocate()`, the
+  probe-connection helpers). The Files list and Technical tasks above are amended accordingly.
+- **D-2 `last_issued_at` is `dateTime`, not `timestamp`.** The allocator stores and compares an
+  app-timezone wall-clock value; `timestamp` would convert through the MySQL session timezone.
+  A DST fall-back hour is ambiguous for a wall-clock column (accepted, I2); the effect is a refusal,
+  never a duplicate.
 
 ## Class contracts
 - `App\Models\InvoiceSequence`: `HasUuids`, `#[Fillable([])]`, casts (`last_number` int,
@@ -140,8 +173,10 @@ other index. `down()`: `Schema::dropIfExists`.
     0101b on the invoice, not part of any unique key);
   - `nextCounter(InvoiceType $series, InvoiceSetting $settings, CarbonInterface $at): int` —
     the FD-1 formula, read-only, no lock.
-- `App\Actions\Invoices\PeekNextInvoiceNumber::__invoke(InvoiceType $series, ?InvoiceSetting
-  $settings = null, ?CarbonInterface $at = null): string`.
+- `App\Actions\Invoices\PeekNextInvoiceNumber::__invoke(InvoiceType $series, ?array $candidate =
+  null, ?CarbonInterface $at = null): string` — `$candidate` is `array<string, mixed>` raw partial
+  input (FD-12); the class `use`s `InvoiceSettingValidationRules`; `$at` defaults
+  to now and is converted to the app timezone as in FD-1.
 - `App\Actions\Invoices\SetInvoiceSequenceStart::__invoke(InvoiceType $series, int $startAt): void`.
 
 ## Gherkin
@@ -210,8 +245,12 @@ Feature: Invoice numbering sequences
 
 ## Files to create/modify
 - `database/migrations/<ts>_create_invoice_sequences_table.php` — table and the two rows.
-- `app/Models/InvoiceSequence.php`, `database/factories/InvoiceSequenceFactory.php` (states for
-  test arrangement on the existing rows, e.g. `atNumber()`, `issuedIn()`).
+- `app/Models/InvoiceSequence.php`. **No factory (deviation D-1, below):** fixtures are
+  `Tests\Support\Invoices\Numbering::arrange()`, which updates the existing migration-created row
+  (`forceFill()->save()` on `InvoiceSequence::where('series', ...)->sole()`) and never `create()`s one,
+  which would fail on `UNIQUE(series)`.
+- `app/Concerns/InvoiceSettingValidationRules.php` — `attributeNames()` moved into the trait so
+  Save and Peek share it.
 - `app/Actions/Invoices/AllocateInvoiceNumber.php`, `PeekNextInvoiceNumber.php`,
   `SetInvoiceSequenceStart.php`.
 - `lang/{en,es}/invoice-settings.php` — `numbering.start_already_issued`,
@@ -240,8 +279,9 @@ Happy path
 - [ ] T-6 Start 1500 on a fresh series: first number `...01500`, `last_issued_at` still null after
   the start.
 - [ ] T-7 Preview for saved settings: exact next number of each series; row unchanged.
-- [ ] T-8 Preview for candidate settings (new prefix, `YY`, padding 3): candidate format with the
-  real next counter; nothing persisted.
+- [ ] T-8 Preview for a raw candidate array (`['standard_prefix' => 'INV', 'standard_year_format'
+  => 'YY', 'standard_padding' => 3]`): candidate format with the real next counter; nothing
+  persisted (settings row and sequence rows unchanged).
 - [ ] R-1 Schema: exactly two rows after migrate, `last_number 0`, `last_year`/`last_issued_at`
   null, UNIQUE on `series` only, no `sequence_year` column; `down()` drops the table.
 
@@ -249,7 +289,9 @@ Year rule
 - [ ] R-2 Reset on, `last_year 2026`, `last_number 7`: dataset of five instants (2026-12-31
   23:59:59, 2027-01-01 00:00 in the app timezone, and the 22:59/23:00 UTC pair around it, plus a
   mid-2026 instant) -> 1 for 2027 instants, 8 for 2026 instants; the year follows the app
-  timezone, not UTC.
+  timezone, not UTC. The UTC pair also asserts the full printed number (`F2026-00008` for 22:59
+  UTC, `F2027-00001` for 23:00 UTC with app timezone `Europe/Madrid`), proving the year token is
+  composed from the converted moment, not the raw UTC one.
 - [ ] R-3 Reset off across a year turn continues; `last_year` still updated. First ever
   allocation with reset on is `last_number + 1` (no restart).
 - [ ] R-4 ON (10 issued in 2026) -> OFF (5 more) -> ON: next is 16; the whole run is
@@ -295,13 +337,16 @@ Guards and negative
   `target_type = invoice_setting`); unauthenticated caller refused and logged.
 - [ ] T-27 Preview without `invoice-settings.view` (including `manage` only): refused, one
   warning, nothing read.
-- [ ] T-28 Candidate settings with an invalid prefix (`F.`, `<b>`, 11 chars), unknown year
-  token or padding 11: `ValidationException` on that field, no preview returned.
+- [ ] T-28 Raw candidate array with an invalid prefix (`F.`, `<b>`, 11 chars), unknown year
+  token (`standard_year_format => 'XX'`) or padding 11: `ValidationException` on that field (never
+  a `ValueError` or 500), no preview returned, no model built.
 - [ ] T-31 Forcing a second row with the same `series` -> `QueryException` (23000);
   `last_number` rejects negatives.
-- [ ] T-33 Partial candidate (only a new standard prefix): the preview uses it with the saved
-  separator, padding, year token and reset flag; an invalid value in the candidate is refused on
-  its own field; fields outside the subset are not validated.
+- [ ] T-33 Partial raw candidate (`['standard_prefix' => 'INV']` only): the preview uses it with
+  the saved separator, padding, year token and reset flag; an invalid value in the candidate is
+  refused on its own field; keys outside the subset (e.g. an invalid `primary_color`, or the other
+  series' fields) are ignored and not validated; reset on with year `none` is previewed, not
+  refused (cross-field rules are Save's, FD-12).
 - [ ] T-34 Start refusals carry the key `start_at` with the FD-12 messages.
 - [ ] T-32 Only `AllocateInvoiceNumber` and `SetInvoiceSequenceStart` write `InvoiceSequence`
   (arch-style assertion); no route or Livewire property exposes it.
@@ -312,33 +357,33 @@ either series, with the yearly restart applied exactly at the first issue of a n
 settings screen can preview the next numbers and set a starting counter once.
 
 ## Acceptance criteria
-- [ ] `invoice_sequences` exists as specified with its two rows created by the migration.
-- [ ] Allocation follows FD-1 and is rolled back with the caller's transaction (FD-2).
-- [ ] Locks are taken in the FD-3 order; the reset flag comes from the locked settings (FD-4).
-- [ ] Clock skew and counter overflow are refused without consuming a number (FD-5, FD-6).
-- [ ] The preview never writes or locks and is gated by `invoice-settings.view` (FD-7).
-- [ ] The starting counter works only before the first allocation, is gated by
+- [x] `invoice_sequences` exists as specified with its two rows created by the migration.
+- [x] Allocation follows FD-1 and is rolled back with the caller's transaction (FD-2).
+- [x] Locks are taken in the FD-3 order; the reset flag comes from the locked settings (FD-4).
+- [x] Clock skew and counter overflow are refused without consuming a number (FD-5, FD-6).
+- [x] The preview never writes or locks and is gated by `invoice-settings.view` (FD-7).
+- [x] The starting counter works only before the first allocation, is gated by
   `invoice-settings.manage` and logs refusals (FD-8).
-- [ ] en/es lang keys exist with parity.
+- [x] en/es lang keys exist with parity.
 
 ## Definition of Done
-- [ ] Tests written and green
-- [ ] Code reviewed (code-reviewer)
-- [ ] No security findings (appsec-auditor)
-- [ ] Documentation updated (docs-keeper): ER diagram (`invoice_sequences`, standalone),
+- [x] Tests written and green
+- [x] Code reviewed (code-reviewer)
+- [x] No security findings (appsec-auditor)
+- [x] Documentation updated (docs-keeper): ER diagram (`invoice_sequences`, standalone),
   the invoicing schema doc, `docs/conventions/directory-structure/actions.md`, the lock-order
   rule (sequence rows are always the last locks of an issuing transaction)
-- [ ] Acceptance criteria met
-- [ ] Pint unscoped, Larastan level 7, full suite green
+- [x] Acceptance criteria met
+- [x] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open technical questions
-- Upstream: [0100](done/0100-invoice-settings-backend.md). Downstream:
-  [0101b](0101b-issue-standard-invoice-backend.md) calls `lock()` and `__invoke()` inside its issuing
+- Upstream: [0100](0100-invoice-settings-backend.md). Downstream:
+  [0101b](../0101b-issue-standard-invoice-backend.md) calls `lock()` and `__invoke()` inside its issuing
   transaction, adds `UNIQUE(number)`, the collision message and `AssertNumberingFormatIsFree`
   (via `nextCounter()`), and repeats the rollback test with a real insert;
-  [0103](0103-invoice-settings-screen-ui.md) calls the preview and the starting counter;
-  [0107](0107-corrective-invoice-on-refund-and-cancellation-backend.md) /
-  [0108](0108-regenerate-invoices-after-order-edit-backend.md) lock both series in one call.
+  [0103](../0103-invoice-settings-screen-ui.md) calls the preview and the starting counter;
+  [0107](../0107-corrective-invoice-on-refund-and-cancellation-backend.md) /
+  [0108](../0108-regenerate-invoices-after-order-edit-backend.md) lock both series in one call.
 - Risk: the whole epic's numbering correctness rests on FD-1..FD-3; the concurrency and rollback
   tests are mandatory, not optional.
 - Settled for 0101b (database decision, 2026-11-15): the only unique key on numbering is
@@ -354,7 +399,7 @@ settings screen can preview the next numbers and set a starting counter once.
   needed for migration from another tool, cannot create gaps or duplicates); (b) not offered.
 
 ## Technical tasks
-- [ ] Schema test, migration with the two rows, model, factory.
+- [ ] Schema test, migration with the two rows, model (no factory, see D-1).
 - [ ] `AllocateInvoiceNumber` (`lock`, `__invoke`, `nextCounter`) with the year-rule,
   lock-order, concurrency and rollback tests.
 - [ ] `PeekNextInvoiceNumber` with candidate-settings validation.
@@ -365,3 +410,20 @@ settings screen can preview the next numbers and set a starting counter once.
 ## Phase records
 - Phase 1 (Three Amigos) complete on 2026-11-15 — participants: product-owner (facilitator),
   backend-expert, database-expert, backend-qa. Phase 2 (INVEST) pending.
+- Phase 2 (INVEST) **FAIL** on 2026-11-17 by code-reviewer — blocking issue B-1:
+  `PeekNextInvoiceNumber` took `?InvoiceSetting $settings` as the candidate, but
+  `forceFill(['standard_year_format' => 'XX'])` throws `ValueError` (enum cast) before the action
+  runs, so FD-7/FD-12/T-28/T-33 were unimplementable and 0103's screen would answer 500. Returned
+  to product-owner and fixed on 2026-11-17: the contract now takes `?array $candidate` (raw
+  partial input) validated before any model is built (FD-7, FD-12, class contract, T-8, T-28,
+  T-33; 0103's contract summary and FD-5 aligned). Non-blocking clarifications folded in: FD-1
+  timezone conversion before year and composition (R-2 asserts the printed number), factory
+  states update the migration-created rows, preview intentionally skips 0100's cross-field rules.
+  Phase 2 re-check pending.
+- Phase 2 (INVEST) PASSED 2026-11-17 by code-reviewer
+- Phase 3 started 2026-11-17: task moved to `in-progress/` (claimed by `worktree-0101a-invoice-numbering-sequences-backend`); TDD red tests first.
+- Phase 3 complete 2026-11-17: tests green (targeted), test-issue loop done (second-session lock tests settled; see the errors-log entry "A test that needs a second session to contend for locks cannot sit on RefreshDatabase's outer transaction"). Deviations D-1 and D-2 recorded above.
+- Phase 4 (security audit) PASS 2026-11-17 by appsec-auditor after one return loop: F1 (High) and F2 (Medium), F3 and F5 fixed; L1 fixed in Phase 5. Accepted: L2, L3, I1 (`lock()` and `__invoke()` at the same transaction nesting level, documented for 0101b/0107/0108), I2 (DST fall-back ambiguity of the `dateTime` column), F4.
+- Phase 5 (final code review) PASS 2026-11-17 by code-reviewer. Full suite run 2026-11-17/18 in directory chunks, all green: Unit + Orders + Localization + Customers + Invoices + InvoiceSettings 1915/1915; Blog + Products + ProductCategories 2113/2113; Models..Providers 1603 (1598 passed, 5 pre-existing skips); Media..Translations 864/864; Browser 328 (325 passed, 3 skips). Pint unscoped clean; Larastan 0 errors on the touched paths.
+- Phase 6 (documentation) done 2026-11-17 by docs-keeper: ER diagram, `docs/database/schema-other/invoice-sequences.md`, actions.md, lock-order rule, authorization catalog note, testing fixtures section, errors-log entry, epic-6 digest.
+- Phase 7 (closure) 2026-11-18: all Definition of Done and acceptance boxes ticked; task moved from `in-progress/` to `done/`; link integrity checked in both directions; `ai-spec/tasks-map.md` and `ai-spec/tasks-status.json` regenerated (0101a dropped; 0101b stays blocked on 0100a). PR against the worktree's base branch follows; never merged by the agent.

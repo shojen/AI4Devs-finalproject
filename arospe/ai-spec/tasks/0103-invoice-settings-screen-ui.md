@@ -3,7 +3,7 @@
 > **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
 > [0100](done/0100-invoice-settings-backend.md) (settings, rules, policy, save action),
-> [0101a](0101a-invoice-numbering-sequences-backend.md) (preview, starting counter) and
+> [0101a](done/0101a-invoice-numbering-sequences-backend.md) (preview, starting counter) and
 > [0102](0102-invoice-pdf-rendering-and-templates-backend.md) (templates, renderer). Uses the
 > refusal added by [0101b](0101b-issue-standard-invoice-backend.md) once merged. No dependents.
 
@@ -74,11 +74,15 @@ From 0100:
   `reset_numbering_yearly`, `auto_issue_on_order`.
 
 From 0101a:
-- `PeekNextInvoiceNumber::__invoke(InvoiceType $series, ?InvoiceSetting $settings = null,
-  ?CarbonInterface $at = null): string` — logged `viewAny`; no lock, no write. A candidate built
-  with `new InvoiceSetting` + `forceFill()` of **only** the numbering subset is enough: the
-  action overlays the series' four numbering fields and `reset_numbering_yearly` on the saved
-  settings and validates only those keys; invalid -> `ValidationException` keyed by the field.
+- `PeekNextInvoiceNumber::__invoke(InvoiceType $series, ?array $candidate = null,
+  ?CarbonInterface $at = null): string` — logged `viewAny`; no lock, no write. `$candidate` is
+  the **raw screen input** (`array<string, mixed>`, partial allowed), never a model: building an
+  `InvoiceSetting` from unvalidated input throws `ValueError` on the enum cast (e.g. year format
+  `XX`) and would answer 500. The action overlays the series' four numbering fields and
+  `reset_numbering_yearly` from the candidate on the saved settings, ignores other keys, validates
+  only those keys and builds a model only after validation; invalid -> `ValidationException`
+  keyed by the field. It checks field rules only, not 0100's cross-field rules (reset on with
+  year `none` is previewed, not refused; Save refuses it) — by design, see FD-5.
 - `SetInvoiceSequenceStart::__invoke(InvoiceType $series, int $startAt): void` — logged `update`
   before any read; `1 <= startAt <= 4294967294` (`invoice-settings.numbering.start_invalid`,
   key `start_at`); refused once the series has issued (`numbering.start_already_issued`, key
@@ -253,9 +257,13 @@ locale (0102's file), en and es.
   series has issued, the line states the start is locked. The modal states that numbers used
   outside the store cannot be detected (0101a risk).
 - **FD-5 Live next-number preview over the numbering subset plus the reset flag** (gaps G-1 and
-  G-4). The candidate is `new InvoiceSetting` + `forceFill()` of the eight numbering fields of
-  both series and `reset_numbering_yearly`, passed to `PeekNextInvoiceNumber` for each series;
-  backend confirmed the subset suffices (other fields come from the saved settings). The eight
+  G-4). The candidate is a raw array of the screen's current input for the eight numbering
+  fields of both series and `reset_numbering_yearly` (exactly as typed, no model, no
+  `forceFill()`), passed to `PeekNextInvoiceNumber` for each series; the action keeps only that
+  series' subset, and other fields come from the saved settings (0101a FD-12). The preview does
+  not apply 0100's cross-field rules (reset on requires a year token; prefixes must differ), so
+  reset on with year `none` shows a number without a year while Save refuses it: intended, not a
+  bug, and QA must not file it as one. The eight
   inputs use `wire:model.live.debounce.400ms`, and the reset checkbox `wire:model.live`, because
   the flag changes the next number at a year change and makes year `none` invalid; leaving it out
   would show a stale number. A `ValidationException` from the peek is caught in the computed: the
@@ -501,7 +509,7 @@ as a PDF; a viewer reads the same screen without being able to change it.
 - [ ] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open questions
-- Upstream: [0100](done/0100-invoice-settings-backend.md), [0101a](0101a-invoice-numbering-sequences-backend.md),
+- Upstream: [0100](done/0100-invoice-settings-backend.md), [0101a](done/0101a-invoice-numbering-sequences-backend.md),
   [0102](0102-invoice-pdf-rendering-and-templates-backend.md) (unsaved-invoice render), and
   [0101b](0101b-issue-standard-invoice-backend.md) for T-10 only. Sibling:
   [0110](0110-billing-section-ui.md) owns the "Billing" label FD-1 avoids.

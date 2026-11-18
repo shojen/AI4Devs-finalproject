@@ -1,10 +1,10 @@
 # [0101b] Issue standard invoice — the invoice core (backend)
 
 > **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
-> owner on 2026-11-14, not yet in docs/PRD). Blocked on
+> owner on 2026-11-14, not yet in docs/PRD). **Unblocked** (all predecessors done):
 > [0100](done/0100-invoice-settings-backend.md) (settings, `InvoiceType`, `SaveInvoiceSettings`),
 > [0100a](done/0100a-customer-tax-id-backend.md) (`customers.tax_id`) and
-> [0101a](0101a-invoice-numbering-sequences-backend.md) (`AllocateInvoiceNumber`). Dependents:
+> [0101a](done/0101a-invoice-numbering-sequences-backend.md) (`AllocateInvoiceNumber`). Dependents:
 > [0102](0102-invoice-pdf-rendering-and-templates-backend.md),
 > [0104](0104-send-invoice-by-email-backend.md),
 > [0105](0105-automatic-invoice-on-order-creation-backend.md),
@@ -442,8 +442,9 @@ tables without another migration on `invoices`.
 - [ ] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open technical questions
+- Story 0101a notes (I1, fixtures): call `AllocateInvoiceNumber::lock()` and `__invoke()` at the **same `DB::transaction` nesting level** (the allocator caches locked rows per transaction record and throws `LogicException` without one). For fixtures use `Tests\Support\Invoices\Numbering` (`arrange()`, `allocate()`, probe connection with `innodb_lock_wait_timeout = 1`); there is no `InvoiceSequenceFactory` (D-1). See [0101a](done/0101a-invoice-numbering-sequences-backend.md).
 - Upstream: [0100](done/0100-invoice-settings-backend.md), [0100a](done/0100a-customer-tax-id-backend.md),
-  [0101a](0101a-invoice-numbering-sequences-backend.md). Downstream: every later invoicing story;
+  [0101a](done/0101a-invoice-numbering-sequences-backend.md). Downstream: every later invoicing story;
   [0106](0106-invoice-collection-order-debt-partially-paid-backend.md) owns the legacy-order rule
   and `SyncOrderCollection`; [0107](0107-corrective-invoice-on-refund-and-cancellation-backend.md)
   adds correctives and `invoice_lines.refund_id`;

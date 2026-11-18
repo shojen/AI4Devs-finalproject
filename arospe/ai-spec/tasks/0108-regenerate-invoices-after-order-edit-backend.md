@@ -325,6 +325,7 @@ more than the order is worth.
 - [ ] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open technical questions
+- Story 0101a note (I1): call `AllocateInvoiceNumber::lock()` and `__invoke()` at the **same `DB::transaction` nesting level**; lock both series in one `lock()` call. See [0101a](done/0101a-invoice-numbering-sequences-backend.md).
 - Upstream: [0101b](0101b-issue-standard-invoice-backend.md),
   [0106](0106-invoice-collection-order-debt-partially-paid-backend.md),
   [0107](0107-corrective-invoice-on-refund-and-cancellation-backend.md). Downstream:

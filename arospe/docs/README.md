@@ -37,7 +37,7 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Users & Auth](database/schema-users-auth.md) | `users`, `passkeys`, permission tables, infrastructure tables. |
 | [Products & Taxes](database/schema-products.md) (hub, 5 parts) | `sales_regions`, `media`, categories, `products`, gallery/region pivots, attributes, variants. |
 | [Shipping](database/schema-shipping.md) (hub, 3 parts) | `geography_entries`, zones, carriers, rates. |
-| [Payment Methods, Customers, Notifications & Invoice Settings](database/schema-other.md) (hub, 4 parts) | `payment_methods`, `customers`, `notifications`, `invoice_settings`. |
+| [Payment Methods, Customers, Notifications, Invoice Settings & Invoice Sequences](database/schema-other.md) (hub, 5 parts) | `payment_methods`, `customers`, `notifications`, `invoice_settings`, `invoice_sequences` (gap-free invoice counters, `AllocateInvoiceNumber`). |
 | [Orders](database/schema-orders.md) (hub, 4 parts) | `orders`, `order_items`, `refunds`, `order_payments`, snapshots and derived totals. |
 | [Blog](database/schema-blog.md) | `blog_categories`, `blog_tags` (stored `normalized_name` uniqueness, folded-length bound), `blog_posts` (soft delete, derived slug, status-governed `published_at`) and the `blog_post_tag` pivot (cascade contract). |
 | [Internationalization](database/schema-localization.md) | `store_languages` (content-authoring language catalog, find-or-create reactivation) and `locale_settings` (this repo's first singleton table: fixed-literal PK, atomic upsert, no enum cast). |
@@ -95,4 +95,4 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Errors log archive](errors-log-archive.md) | the topic index points at an entry dated before 2026-08-27. |
 | [Revision history](history/) | you need the old `_Previously:` revision notes of a doc (moved out of the doc itself; one file per doc, named after its path). |
 
-_Last updated: 2026-10-03 — Story 0086: the Dashboard row now covers the `SalesOverview` card._
+_Last updated: 2026-11-17 — Story 0101a: the schema-other hub row now covers `invoice_sequences` (5 parts)._
