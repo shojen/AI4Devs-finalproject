@@ -7,9 +7,9 @@
       "slug": "0100b-customer-tax-id-field-ui",
       "title": "Customer tax ID field in the customer form and detail (frontend)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree-0100b-customer-tax-id-field-ui",
+      "claimed_at": "2026-11-18T12:00:00Z",
       "touches": [
         "app/Livewire/Customers/Index.php",
         "resources/views/livewire/customers.blade.php",
