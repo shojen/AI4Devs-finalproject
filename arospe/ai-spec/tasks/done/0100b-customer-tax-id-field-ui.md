@@ -1,8 +1,8 @@
 # [0100b] Customer tax ID field in the customer form and detail (frontend)
 
-> **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
+> **Status: Done (2026-11-18).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
-> [0100a](../done/0100a-customer-tax-id-backend.md) (column, rule, normaliser). No dependents; the
+> [0100a](0100a-customer-tax-id-backend.md) (column, rule, normaliser). No dependents; the
 > value it lets managers enter is copied onto invoices by
 > [0101b](../0101b-issue-standard-invoice-backend.md).
 
@@ -289,7 +289,7 @@ validation error.
 - [ ] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open questions
-- Upstream: [0100a](../done/0100a-customer-tax-id-backend.md). Without it the validator has no
+- Upstream: [0100a](0100a-customer-tax-id-backend.md). Without it the validator has no
   `tax_id` rule and the actions drop the key silently, so Phase 3 starts only after 0100a is in
   `done/`. Downstream use of the value: [0101b](../0101b-issue-standard-invoice-backend.md)
   (snapshot) and [0102](../0102-invoice-pdf-rendering-and-templates-backend.md) (printed).
@@ -375,3 +375,4 @@ validation error.
 - Phase 4 (security audit) **approved** on 2026-11-18 by appsec-auditor — no vulnerabilities. F-1 (Informational, owner decision, = FD-9 / Q-0100b-2): the tax ID of a natural person (NIF = DNI) is shown to every `customers.view` holder; acceptable for the MVP if the owner confirms, otherwise gate the detail line behind `update`. F-2 (Informational): form values stay in the Livewire snapshot after dismissing the modal with Escape (same as email/phone/address today); optional `updatedShowModal(false)` reset. F-3 (Informational): no raw-input cap before normalising; negligible. No code change required.
 - Phase 5 (final review) **approved after one fix** on 2026-11-18 by code-reviewer: browser journeys B-2/B-5 asserted the attribute name, which matches the field label before saving (case-insensitive `assertSee`), so they could not fail; now they assert `__('validation.regex', [...])` (fixed, test commit). Full suite green in three chunks (Unit + Feature part 1: 1954 passed; Feature part 2: 4525 passed, 5 skipped; Browser: 330 passed, 3 skipped; skips pre-existing), Pint unscoped and Larastan level 7 (whole project) clean. Non-blocking follow-ups: B-5 does not assert full width; `attributeNames()` is now duplicated in `Customers\Index`, `CreateCustomer` and `UpdateCustomer` (candidate for `CustomerValidationRules`).
 - Phase 6 (documentation) complete on 2026-11-18 by docs-keeper: `docs/api/customers.md` (new section: modal field, always-sent key, detail line, error re-key, attribute names) and `docs/errors-log.md` plus its 2026-09-25 to 2026-10-02 part (new entry on the snake_case error-key pitfall in components that call `Validator::make()` themselves, with the proposed audit of `Shipping\Index`, `Shipping\Zones`, `Products\Editor`, `Settings\Language`, `Settings\LanguageSwitcher`; topic index and hub row updated). `docs/README.md` needs no change (no row changed). No stage move or dependency edit, so `tasks-map.md` / `tasks-status.json` are unchanged. The parent `../readme.md` has no per-field customer detail to update.
+- Phase 7 (closure) complete on 2026-11-18: moved to `done/`, link integrity checked in both directions, `tasks-map.md` and `tasks-status.json` regenerated; PR opened against `main`.
