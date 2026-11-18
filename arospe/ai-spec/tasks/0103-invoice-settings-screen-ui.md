@@ -275,7 +275,7 @@ locale (0102's file), en and es.
   `correctivePrefix`, `logo_media_id` -> `logoMediaId`) except `reset_numbering_yearly` ->
   `isNumberingResetYearly` and `auto_issue_on_order` -> `isAutoIssueEnabled`; `start_at` ->
   `startAt` in the modal. A private method in this component (the predicate-named booleans make a
-  shared `Str::camel` concern insufficient; [0100b](0100b-customer-tax-id-field-ui.md) keeps its
+  shared `Str::camel` concern insufficient; [0100b](done/0100b-customer-tax-id-field-ui.md) keeps its
   own).
 - **FD-9 Read-only is a disabled fieldset and no write controls, never hidden values.** A viewer
   may read what is stored, including the preview lines and the sample PDF (both `viewAny`). The

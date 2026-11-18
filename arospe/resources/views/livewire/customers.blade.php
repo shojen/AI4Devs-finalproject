@@ -179,6 +179,7 @@
                     <flux:input wire:model="name" :label="__('Name')" required autofocus />
                     <flux:input wire:model="email" :label="__('Email')" type="email" required />
                     <flux:input wire:model="phone" :label="__('Phone')" />
+                    <flux:input wire:model="taxId" :label="__('customers.form.tax_id')" :description="__('customers.form.tax_id_hint')" autocomplete="off" data-test="customer-tax-id-input" />
                 </div>
 
                 <div class="space-y-4">

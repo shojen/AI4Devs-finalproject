@@ -49,3 +49,18 @@ test('a customer with no orders shows the empty-history message on the detail pa
         ->assertNoJavaScriptErrors()
         ->assertSee(__('customers.detail.no_orders'));
 });
+
+test('the detail shows the stored tax ID, or the not-provided placeholder when there is none (B-4)', function () {
+    $withTaxId = Customer::factory()->withTaxId('B-12345678')->create();
+    $withoutTaxId = Customer::factory()->create(['tax_id' => null]);
+
+    $this->actingAs(customerDetailBrowserActor());
+
+    visit(route('customers.show', $withTaxId))
+        ->assertNoJavaScriptErrors()
+        ->assertSeeIn('@customer-tax-id', 'B-12345678');
+
+    visit(route('customers.show', $withoutTaxId))
+        ->assertNoJavaScriptErrors()
+        ->assertSeeIn('@customer-tax-id', __('customers.detail.tax_id_not_provided'));
+});

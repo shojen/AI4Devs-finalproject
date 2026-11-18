@@ -41,6 +41,7 @@
 use App\Models\Customer;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
+use Pest\Browser\Execution;
 use Spatie\Permission\PermissionRegistrar;
 
 beforeEach(function () {
@@ -175,6 +176,7 @@ test('opening the edit modal pre-fills every field with the customers currently 
         'name' => 'Ana García',
         'email' => 'ana.garcia@example.com',
         'phone' => '+34 600 222 333',
+        'tax_id' => 'B-12345678',
         'shipping_address_line1' => 'Calle Mayor 1',
         'shipping_address_line2' => 'Piso 2',
         'shipping_city' => 'Madrid',
@@ -197,6 +199,7 @@ test('opening the edit modal pre-fills every field with the customers currently 
         ->assertValue('name', 'Ana García')
         ->assertValue('email', 'ana.garcia@example.com')
         ->assertValue('phone', '+34 600 222 333')
+        ->assertValue('taxId', 'B-12345678')
         ->assertValue('shippingAddressLine1', 'Calle Mayor 1')
         ->assertValue('shippingAddressLine2', 'Piso 2')
         ->assertValue('shippingCity', 'Madrid')
@@ -350,4 +353,109 @@ test('a view-only actor sees both row actions rendered disabled', function () {
         ->assertNoJavaScriptErrors()
         ->assertDisabled('@edit-customer-'.$customer->id)
         ->assertDisabled('@delete-customer-'.$customer->id);
+});
+
+// =====================================================================
+// Story 0100b -- the tax ID field (B-1, B-2, B-3, B-5).
+// =====================================================================
+
+/**
+ * Poll the customer's stored tax ID until it equals $expected (or give up after about 5 s), so a
+ * database assertion never races the Livewire round trip the browser just triggered.
+ */
+function customersBrowserWaitForTaxId(Customer $customer, ?string $expected): ?string
+{
+    for ($attempt = 0; $attempt < 50; $attempt++) {
+        $current = $customer->fresh()->tax_id;
+
+        if ($current === $expected) {
+            return $current;
+        }
+
+        Execution::instance()->wait(0.1);
+    }
+
+    return $customer->fresh()->tax_id;
+}
+
+test('a manager records a messy tax ID through the edit modal and the detail shows it normalised (B-1)', function () {
+    $this->actingAs(customersBrowserActor());
+    $customer = Customer::factory()->create(['tax_id' => null]);
+
+    visit('/customers')
+        ->assertNoJavaScriptErrors()
+        ->click('@edit-customer-'.$customer->id)
+        ->assertPresent('@customer-modal')
+        ->fill('taxId', ' b-12345678 ')
+        ->click('@save-customer-button')
+        ->assertNoJavaScriptErrors()
+        ->assertMissing('@customer-modal');
+
+    expect(customersBrowserWaitForTaxId($customer, 'B-12345678'))->toBe('B-12345678');
+
+    visit(route('customers.show', $customer))
+        ->assertNoJavaScriptErrors()
+        ->assertSeeIn('@customer-tax-id', 'B-12345678');
+});
+
+test('a malformed tax ID keeps the modal open with its error, and a corrected value saves (B-2)', function () {
+    $this->actingAs(customersBrowserActor());
+    $customer = Customer::factory()->withTaxId('B-12345678')->create();
+
+    visit('/customers')
+        ->assertNoJavaScriptErrors()
+        ->click('@edit-customer-'.$customer->id)
+        ->fill('taxId', 'ES_B1')
+        ->click('@save-customer-button')
+        ->assertNoJavaScriptErrors()
+        ->assertSee(__('validation.regex', ['attribute' => __('customers.attributes.tax_id')]))
+        ->assertPresent('@customer-modal');
+
+    expect($customer->fresh()->tax_id)->toBe('B-12345678');
+
+    visit('/customers')
+        ->click('@edit-customer-'.$customer->id)
+        ->fill('taxId', 'ESB87654321')
+        ->click('@save-customer-button')
+        ->assertNoJavaScriptErrors()
+        ->assertMissing('@customer-modal');
+
+    expect(customersBrowserWaitForTaxId($customer, 'ESB87654321'))->toBe('ESB87654321');
+});
+
+test('the edit modal shows the stored tax ID, and clearing it saves null and reopens empty (B-3)', function () {
+    $this->actingAs(customersBrowserActor());
+    $customer = Customer::factory()->withTaxId('B-12345678')->create();
+
+    visit('/customers')
+        ->assertNoJavaScriptErrors()
+        ->click('@edit-customer-'.$customer->id)
+        ->assertValue('taxId', 'B-12345678')
+        ->fill('taxId', '')
+        ->click('@save-customer-button')
+        ->assertNoJavaScriptErrors()
+        ->assertMissing('@customer-modal')
+        ->click('@edit-customer-'.$customer->id)
+        ->assertValue('taxId', '');
+
+    expect(customersBrowserWaitForTaxId($customer, null))->toBeNull();
+});
+
+test('the tax ID input is visible and full width on a phone viewport, with a readable error in dark mode (B-5)', function () {
+    $this->actingAs(customersBrowserActor());
+
+    visit('/customers')
+        ->inDarkMode()
+        ->resize(375, 800)
+        ->assertNoJavaScriptErrors()
+        ->click('@create-customer')
+        ->assertPresent('@customer-modal')
+        ->assertVisible('@customer-tax-id-input')
+        ->fill('name', 'Telefono')
+        ->fill('email', 'telefono@example.com')
+        ->fill('taxId', 'ES_B1')
+        ->click('@save-customer-button')
+        ->assertNoJavaScriptErrors()
+        ->assertSee(__('validation.regex', ['attribute' => __('customers.attributes.tax_id')]))
+        ->assertPresent('@customer-modal');
 });
