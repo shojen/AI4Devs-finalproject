@@ -30,6 +30,9 @@
             <flux:text>
                 <span class="font-medium">{{ __('Phone') }}:</span> {{ $this->customer->phone ?? '—' }}
             </flux:text>
+            <flux:text data-test="customer-tax-id">
+                <span class="font-medium">{{ __('customers.detail.tax_id') }}:</span> {{ $this->customer->tax_id ?? __('customers.detail.tax_id_not_provided') }}
+            </flux:text>
         </div>
     </div>
 

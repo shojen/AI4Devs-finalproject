@@ -30,6 +30,8 @@ return [
     */
 
     'form' => [
+        'tax_id' => 'Tax ID',
+        'tax_id_hint' => 'Optional. Printed on the customer\'s invoices. Letters, digits and - . / only; spaces are removed.',
         'shipping_heading' => 'Shipping address',
         'billing_heading' => 'Billing address',
         'same_as_shipping' => 'Same as shipping',
@@ -68,6 +70,8 @@ return [
     */
 
     'detail' => [
+        'tax_id' => 'Tax ID',
+        'tax_id_not_provided' => 'Not provided',
         'back_to_list' => 'Back to customers',
         'order_history_heading' => 'Order history',
         'no_orders' => 'This customer has no orders yet.',

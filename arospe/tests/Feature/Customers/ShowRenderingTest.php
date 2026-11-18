@@ -207,3 +207,56 @@ test('total renders as the stored decimal string, never as a float-cast integer'
 
     $component->assertSee('10.00');
 });
+
+// Story 0100b -- the tax ID line of the identity header.
+test('the identity header shows the stored tax ID inside the customer-tax-id hook (T-17)', function () {
+    $customer = Customer::factory()->withTaxId('B-12345678')->create();
+
+    $this->actingAs(customersShowRenderingActor());
+
+    $html = Livewire::test(Show::class, ['customer' => $customer])->html();
+
+    expect($html)->toMatch('/data-test="customer-tax-id".*?'.preg_quote(__('customers.detail.tax_id'), '/').'.*?B-12345678/s');
+});
+
+test('a customer without a tax ID shows the not-provided placeholder (T-17)', function () {
+    $customer = Customer::factory()->create(['tax_id' => null]);
+
+    $this->actingAs(customersShowRenderingActor());
+
+    $html = Livewire::test(Show::class, ['customer' => $customer])->html();
+
+    expect($html)->toMatch('/data-test="customer-tax-id".*?'.preg_quote(__('customers.detail.tax_id_not_provided'), '/').'/s');
+});
+
+test('a stored tax ID containing markup renders escaped (T-18)', function () {
+    $customer = Customer::factory()->create();
+    DB::table('customers')->where('id', $customer->id)->update(['tax_id' => '<b>x</b>']);
+
+    $this->actingAs(customersShowRenderingActor());
+
+    Livewire::test(Show::class, ['customer' => $customer])
+        ->assertDontSeeHtml('<b>x</b>')
+        ->assertSeeHtml('&lt;b&gt;x&lt;/b&gt;');
+});
+
+test('the tax ID label and placeholder resolve in both locales with no raw key shown (T-20)', function (string $locale) {
+    app()->setLocale($locale);
+    $customer = Customer::factory()->create(['tax_id' => null]);
+
+    $this->actingAs(customersShowRenderingActor());
+
+    Livewire::test(Show::class, ['customer' => $customer])
+        ->assertSee(__('customers.detail.tax_id'))
+        ->assertSee(__('customers.detail.tax_id_not_provided'))
+        ->assertDontSee('customers.detail.tax_id');
+})->with(['en', 'es']);
+
+test('without customers.view the detail is refused and the tax ID never reaches the response (T-19)', function () {
+    $customer = Customer::factory()->withTaxId('B-12345678')->create();
+
+    $this->actingAs(customersShowRenderingActor([]))
+        ->get(route('customers.show', $customer))
+        ->assertForbidden()
+        ->assertDontSee('B-12345678');
+});

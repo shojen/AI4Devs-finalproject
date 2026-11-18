@@ -31,6 +31,8 @@ return [
     */
 
     'form' => [
+        'tax_id' => 'Identificador fiscal',
+        'tax_id_hint' => 'Opcional. Se imprime en las facturas del cliente. Solo letras, dígitos y - . /; los espacios se eliminan.',
         'shipping_heading' => 'Dirección de envío',
         'billing_heading' => 'Dirección de facturación',
         'same_as_shipping' => 'Igual que el envío',
@@ -67,6 +69,8 @@ return [
     */
 
     'detail' => [
+        'tax_id' => 'Identificador fiscal',
+        'tax_id_not_provided' => 'No indicado',
         'back_to_list' => 'Volver a clientes',
         'order_history_heading' => 'Historial de pedidos',
         'no_orders' => 'Este cliente todavía no tiene pedidos.',

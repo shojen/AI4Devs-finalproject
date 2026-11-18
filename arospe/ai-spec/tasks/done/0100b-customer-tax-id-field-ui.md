@@ -1,10 +1,10 @@
 # [0100b] Customer tax ID field in the customer form and detail (frontend)
 
-> **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
+> **Status: Done (2026-11-18).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
-> [0100a](done/0100a-customer-tax-id-backend.md) (column, rule, normaliser). No dependents; the
+> [0100a](0100a-customer-tax-id-backend.md) (column, rule, normaliser). No dependents; the
 > value it lets managers enter is copied onto invoices by
-> [0101b](0101b-issue-standard-invoice-backend.md).
+> [0101b](../0101b-issue-standard-invoice-backend.md).
 
 ## Description
 The customer create/edit modal (`Customers\Index`) gains an optional "Tax ID" field, and the
@@ -55,7 +55,7 @@ frontend (related_task_id: 0100a) | includes database-expert: no
 - `CustomerValidationRules::customerRules()` includes `tax_id` (`customerTaxIdRules()`);
   `tax_id` is in `OPTIONAL_FIELDS`; `normalizeCustomerAttributes()` removes all whitespace,
   ASCII-upper-cases, `''` -> null. Rule: string, max 32, only `A-Z 0-9 - . /` (0100a FD-2).
-- `Customer::$tax_id` (`string|null`), fillable; factory state `withTaxId(?string $taxId = null)`.
+- `Customer::$tax_id` (`string|null`), fillable; factory state `withTaxId(string $taxId = 'B-12345678')`.
 - `lang/{en,es}/customers.php` leaf `attributes.tax_id` (shipped by 0100a).
 
 ## Component changes
@@ -68,8 +68,8 @@ frontend (related_task_id: 0100a) | includes database-expert: no
   new `private function rekeyErrorsToProperties(ValidationException $exception): never` whose
   keys are `Str::camel($key)` (`tax_id` -> `taxId`, `billing_country` -> `billingCountry`), so
   every one of the sixteen fields shows its own error (FD-1). The validator receives the
-  attribute name `['tax_id' => __('customers.attributes.tax_id')]` so the message names the
-  field "Tax ID" / "Identificador fiscal" (FD-6).
+  whole `__('customers.attributes')` array as attribute names, exactly as `CreateCustomer` /
+  `UpdateCustomer` do (0100a FD-10), so its messages read the same as the actions' (FD-6).
 - No client-side normalising, upper-casing or `maxlength` (FD-3).
 
 `Customers\Show`: no PHP change (FD-7).
@@ -117,9 +117,12 @@ frontend (related_task_id: 0100a) | includes database-expert: no
   for them; the hint explains the format. Recorded for the owner as Q-0100b-1.
 - **FD-5 Placeholder words, not a dash.** "Not provided" / "No indicado" (BR-0100b-2 says "not
   provided"); a "—" next to Phone's own "—" reads as missing data of either line.
-- **FD-6 Validation message names the field.** The component's own `Validator::make()` gets the
-  `tax_id` attribute name from 0100a's `attributes.tax_id` leaf, so the message never reads
-  "tax id". Other fields keep today's wording (out of scope).
+- **FD-6 Validation messages use the shipped attribute names.** The component's own
+  `Validator::make()` receives the full `__('customers.attributes')` array (as the actions do), so
+  the `tax_id` message names the field with the shipped leaf: `tax ID` (en) / `NIF/CIF` (es).
+  The es leaf is not changed here (0100a's lang file stays untouched), so an es error reads
+  "NIF/CIF" next to the "Identificador fiscal" label (FD-4). Recorded for the owner as Q-0100b-1
+  (label and leaf wording). Other fields keep today's wording (out of scope).
 - **FD-7 No `Show` PHP change.** `customer()` already re-reads the model each render.
 - **FD-8 No list column, no search by tax ID.** Not requested; adds width on phones.
 - **FD-9 Visibility follows the existing contact-data gate** (QA gap G-3, facilitator
@@ -183,7 +186,7 @@ Feature: Customer tax ID in the customer form and detail
       | <b>   |
 
   Scenario: A malformed country code is refused next to its field
-    Given a store manager with permission to edit customers
+    Given a store manager with permission to edit customers, and an existing customer
     When she saves the form with the billing country "ESP"
     Then the form stays open with an error under the billing country field
 
@@ -231,22 +234,23 @@ Component level (`Livewire::test`)
 - [ ] T-7 Creating with a tax ID another customer already has succeeds.
 - [ ] T-8 Dataset `ES_B1`, `B1;`, `<b>`, `B1'--`, a 33-character value: `assertHasErrors(['taxId'])`,
   no error on any other field, nothing written. Red until FD-1 lands.
-- [ ] T-9 The refusal message is rendered inside the modal and names "Tax ID".
+- [ ] T-9 The refusal message is rendered inside the modal and contains `__('customers.attributes.tax_id')` in each locale (en `tax ID`, es `NIF/CIF`), as 0100a's T-17b asserts.
 - [ ] T-10 Bad `billingCountry` and bad `shippingCountry` produce errors on `billingCountry` /
   `shippingCountry` (FD-1 regression).
 - [ ] T-11 Invalid tax ID plus invalid email: both `email` and `taxId` carry errors.
 - [ ] T-12 View-only edit refusal per FD-10: 403, tax ID unchanged.
 - [ ] T-13 View-only create refusal: `save` with no editing id gives 403, no customer written.
 - [ ] T-14 View-only `openEditModal`: 403 and `taxId` stays `''` (value never disclosed).
-- [ ] T-15 `set('taxId', ['a'])` and an integer are refused by the typed property; nothing
-  written, no 500.
+- [ ] T-15 `set('taxId', ['a'])` is refused by the `string` typed property: the test asserts the
+  thrown type error and that no customer is written (the exact exception class is pinned when the
+  red test is written; no integer case).
 - [ ] T-16 `set('editingCustomerId', $other)` refused by `#[Locked]`; the other customer unchanged.
 - [ ] T-17 Show: `customer-tax-id` holds label and value; null shows "Not provided".
 - [ ] T-18 Show: a stored `<b>x</b>` written by a raw `DB::table()` update renders escaped
   (`assertDontSeeHtml('<b>x</b>')`).
 - [ ] T-19 Show without `customers.view`: 403, tax ID absent from the response.
-- [ ] T-20 en and es: the four keys resolve in modal and detail (no raw key shown) and both
-  files hold the same keys.
+- [ ] T-20 en and es: the four keys resolve in modal and detail (no raw key shown); key parity is
+  already covered by the existing `CustomersLangParityTest.php` (no new parity test).
 
 Browser level (Pest 4, bounded waits before database assertions, `assertNoJavaScriptErrors`)
 - [ ] B-1 Edit a customer, `fill('taxId', ' b-12345678 ')`, save; the modal closes; the detail's
@@ -266,7 +270,7 @@ validation error.
 ## Acceptance criteria
 - [ ] The modal shows an optional tax ID field that prefills on edit, resets on create, and is
   always sent on save (FD-2).
-- [ ] A refused tax ID shows its message under the field, naming "Tax ID"; nothing is written.
+- [ ] A refused tax ID shows its message under the field, naming it with `__('customers.attributes.tax_id')`; nothing is written.
 - [ ] Errors of every multi-word field, both country fields at least proven by test, appear
   under their own field (FD-1).
 - [ ] The detail shows the tax ID or "Not provided", escaped.
@@ -278,17 +282,17 @@ validation error.
 - [ ] Tests written and green
 - [ ] Code reviewed (code-reviewer)
 - [ ] No security findings (appsec-auditor) — personal-data visibility (FD-9) reviewed
-- [ ] Documentation updated (docs-keeper): `docs/api/customers.md` (the modal field, the detail
+- [x] Documentation updated (docs-keeper): `docs/api/customers.md` (the modal field, the detail
   line, the error re-key), `docs/errors-log.md` (the snake_case error-key pitfall and the
   proposed audit)
 - [ ] Acceptance criteria met
 - [ ] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open questions
-- Upstream: [0100a](done/0100a-customer-tax-id-backend.md). Without it the validator has no
+- Upstream: [0100a](0100a-customer-tax-id-backend.md). Without it the validator has no
   `tax_id` rule and the actions drop the key silently, so Phase 3 starts only after 0100a is in
-  `done/`. Downstream use of the value: [0101b](0101b-issue-standard-invoice-backend.md)
-  (snapshot) and [0102](0102-invoice-pdf-rendering-and-templates-backend.md) (printed).
+  `done/`. Downstream use of the value: [0101b](../0101b-issue-standard-invoice-backend.md)
+  (snapshot) and [0102](../0102-invoice-pdf-rendering-and-templates-backend.md) (printed).
 - Risk: tests that enumerate the fifteen form fields (`IndexRenderingTest`, the browser
   "pre-fills every field" test) must be updated, not loosened.
 - Risk: the re-key changes which keys the error bag carries; any existing test asserting a
@@ -316,3 +320,59 @@ validation error.
 ## Phase records
 - Phase 1 (Three Amigos) complete on 2026-11-15 — participants: product-owner (facilitator),
   frontend-expert, frontend-qa. Phase 2 (INVEST) pending.
+- Story text corrected 2026-11-18 (FD-6 real attribute names, `withTaxId` signature, T-9, T-15, T-20, country scenario Given); Phase 2 re-run requested.
+- Phase 2 (INVEST) **rejected** on 2026-11-18 by code-reviewer — return to product-owner for the
+  fixes below, then re-run Phase 2. INVEST otherwise passes (Independent: 0100a is merged, no
+  other blocker; Negotiable; Valuable; Estimable; Small: one screen pair; Testable). Gherkin
+  follows rules 1 and 3 (named role actor, single `When`). Verified against the code: the
+  `Customers\Index` facts (fifteen `public string` fields, `FORM_FIELDS`, `#[Locked]`
+  `$editingCustomerId`, authorize-then-copy in `openEditModal()`, `save()` order, unwrapped
+  `Validator::make(...)->validate()` with snake_case keys, explicit `flux:error` only on
+  `shippingCountry`/`billingCountry`), the `Show` facts (`viewAny` in `mount()`, `#[Computed]`
+  `customer()`, header Email/Phone with `?? '—'`), the `BlogPosts\Editor` re-key precedent, and
+  0100a's trait/normaliser/`OPTIONAL_FIELDS`/model all match. Required changes:
+  1. **FD-6 contradicts the shipped code.** The `customers.attributes.tax_id` leaves are
+     `'tax ID'` (en) and `'NIF/CIF'` (es), not "Tax ID" / "Identificador fiscal"; and 0100a FD-10
+     already passes the **whole** `__('customers.attributes')` array to `Validator::make()` in
+     `CreateCustomer`/`UpdateCustomer` (`attributeNames()`), so "other fields keep today's
+     wording" would leave the component's messages inconsistent with the actions'. Rewrite FD-6
+     to pass the full attributes array (same shape as the actions), state the real resulting
+     wording, and either align the es leaf with FD-4's label (a 0100a lang change this story then
+     owns, listed in Files) or accept "NIF/CIF" in messages next to an "Identificador fiscal"
+     label and say so. Update T-9 and the acceptance criterion "naming 'Tax ID'" to assert
+     `__('customers.attributes.tax_id')` per locale, as 0100a's T-17b does.
+  2. **Factory fact is wrong.** The state is `withTaxId(string $taxId = 'B-12345678')`, not
+     `withTaxId(?string $taxId = null)` — fix the Backend contract line (null tax ID = plain
+     factory).
+  3. **T-15 has no assertable outcome.** "Refused by the typed property ... no 500" does not say
+     what the test asserts (which exception `Livewire::test()->set()` raises for an array/int on a
+     `string` property, or that the state is unchanged). State the expected exception/assertion,
+     or drop the "no 500" claim.
+  Non-blocking: scenario "A malformed country code ..." has no customer in its `Given` (add
+  "and a customer"); `CustomersLangParityTest.php` already exists — name it under T-20 instead of
+  implying a new parity test.
+- Phase 2 (INVEST) re-run **approved** on 2026-11-18 by code-reviewer. Every required change
+  verified against the code: (1) FD-6 now passes the full `__('customers.attributes')` array,
+  matching `CreateCustomer::attributeNames()` / `UpdateCustomer::attributeNames()`, and states
+  the real leaves (`tax ID` en / `NIF/CIF` es, confirmed in `lang/{en,es}/customers.php`), with
+  the es label/leaf mismatch accepted and routed to Q-0100b-1; T-9 and the acceptance criterion
+  assert `__('customers.attributes.tax_id')` per locale as 0100a T-17b does. (2) Backend contract
+  reads `withTaxId(string $taxId = 'B-12345678')`, matching `CustomerFactory`. (3) T-15 now
+  asserts the thrown type error and that no customer is written. Non-blocking items also done:
+  the country scenario's `Given` has an existing customer; T-20 names the existing
+  `tests/Feature/Customers/CustomersLangParityTest.php` (recursive `Arr::dot` key parity, so it
+  covers the four new keys). No new contradiction with the code found; the files listed under
+  "Files to create/modify" exist. INVEST passes; ready for Phase 3. Cosmetic only: the
+  "Story text corrected" record sits above the rejection it answers.
+- Phase 3 (TDD) complete on 2026-11-18 by frontend-expert. Red first: `IndexTaxIdTest`, `ShowRenderingTest` and
+  `IndexRenderingTest` additions failed on the missing `taxId` property / view lines / unfixed error
+  keys (14 red). Green: `tests/Feature/Customers` 241 passed (604 assertions); `tests/Browser/Customers`
+  18 passed (133 assertions; the browser journeys were written with the implementation, not red first);
+  Pint unscoped clean (one import fix in the browser test), Larastan level 7 clean on
+  `Customers\Index`. T-15 asserts `TypeError`; T-16 asserts
+  `Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException`. Full suite not run
+  (Phase 5).
+- Phase 4 (security audit) **approved** on 2026-11-18 by appsec-auditor — no vulnerabilities. F-1 (Informational, owner decision, = FD-9 / Q-0100b-2): the tax ID of a natural person (NIF = DNI) is shown to every `customers.view` holder; acceptable for the MVP if the owner confirms, otherwise gate the detail line behind `update`. F-2 (Informational): form values stay in the Livewire snapshot after dismissing the modal with Escape (same as email/phone/address today); optional `updatedShowModal(false)` reset. F-3 (Informational): no raw-input cap before normalising; negligible. No code change required.
+- Phase 5 (final review) **approved after one fix** on 2026-11-18 by code-reviewer: browser journeys B-2/B-5 asserted the attribute name, which matches the field label before saving (case-insensitive `assertSee`), so they could not fail; now they assert `__('validation.regex', [...])` (fixed, test commit). Full suite green in three chunks (Unit + Feature part 1: 1954 passed; Feature part 2: 4525 passed, 5 skipped; Browser: 330 passed, 3 skipped; skips pre-existing), Pint unscoped and Larastan level 7 (whole project) clean. Non-blocking follow-ups: B-5 does not assert full width; `attributeNames()` is now duplicated in `Customers\Index`, `CreateCustomer` and `UpdateCustomer` (candidate for `CustomerValidationRules`).
+- Phase 6 (documentation) complete on 2026-11-18 by docs-keeper: `docs/api/customers.md` (new section: modal field, always-sent key, detail line, error re-key, attribute names) and `docs/errors-log.md` plus its 2026-09-25 to 2026-10-02 part (new entry on the snake_case error-key pitfall in components that call `Validator::make()` themselves, with the proposed audit of `Shipping\Index`, `Shipping\Zones`, `Products\Editor`, `Settings\Language`, `Settings\LanguageSwitcher`; topic index and hub row updated). `docs/README.md` needs no change (no row changed). No stage move or dependency edit, so `tasks-map.md` / `tasks-status.json` are unchanged. The parent `../readme.md` has no per-field customer detail to update.
+- Phase 7 (closure) complete on 2026-11-18: moved to `done/`, link integrity checked in both directions, `tasks-map.md` and `tasks-status.json` regenerated; PR opened against `main`.
