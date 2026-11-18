@@ -41,7 +41,18 @@ app/
                        under a FOR UPDATE lock -- and ComposeInvoiceNumber, a pure
                        (series, settings, moment, counter) -> string composer that authorizes
                        nothing and never reads now() or the database (see
-                       database/schema-other/invoice-settings.md)
+                       database/schema-other/invoice-settings.md). Story 0101a added three
+                       more (database/schema-other/invoice-sequences.md): AllocateInvoiceNumber,
+                       a NON-ACTION collaborator that authorizes nothing and is STATEFUL per
+                       transaction (it caches the rows lock() locked, keyed by the current
+                       DatabaseTransactionRecord; lock() and __invoke() must run at the same
+                       DB::transaction nesting level; outside a transaction, without a
+                       transaction record, or for a series that was not locked it throws
+                       LogicException); PeekNextInvoiceNumber, a logged `viewAny` read-only
+                       preview that takes a RAW partial candidate array (never a model) and
+                       validates field rules only, no cross-field rules, before any model is
+                       built; and SetInvoiceSequenceStart, a logged `update` action that
+                       authorizes before reading any state
   Actions/Localization/ Cross-cutting, not a module area (D24) -- the app's two default-locale
                        settings (SetDefaultUiLocale, SetDefaultNotificationLocale -- story 0068),
                        filed separately from Actions/StoreLanguages/ below even though both write
@@ -290,3 +301,5 @@ app/
                        Phase 4 security audit after shipping ungated on a since-disproven premise
                        — see database/schema-other.md#payment_methods)
 ```
+
+_Last updated: 2026-11-17 — Story 0101a: the `Actions/Invoices/` entry lists AllocateInvoiceNumber, PeekNextInvoiceNumber and SetInvoiceSequenceStart._

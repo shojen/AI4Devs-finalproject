@@ -1,6 +1,6 @@
-# Database Schema — Payment Methods, Customers, Notifications & Invoice Settings — invoice_settings
+# Database Schema — Payment Methods, Customers, Notifications, Invoice Settings & Invoice Sequences — invoice_settings
 
-> Part of [Database Schema — Payment Methods, Customers, Notifications & Invoice Settings](../schema-other.md). **Read this part when:** the task touches the invoice settings singleton: issuer data, logo, numbering formats, `SaveInvoiceSettings`. The other parts are listed in the [hub](../schema-other.md#table-of-contents).
+> Part of [Database Schema — Payment Methods, Customers, Notifications, Invoice Settings & Invoice Sequences](../schema-other.md). **Read this part when:** the task touches the invoice settings singleton: issuer data, logo, numbering formats, `SaveInvoiceSettings`. The other parts are listed in the [hub](../schema-other.md#table-of-contents).
 
 ### `invoice_settings`
 

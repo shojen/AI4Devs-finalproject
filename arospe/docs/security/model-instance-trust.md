@@ -512,6 +512,8 @@ $item->save();
 
 The line is built unsaved, `AdjustOrderStock` locks products (including a variant line's parent) then variants and writes stock, and only then is the line saved. Full ordering convention: [api/orders.md](../api/orders.md#lock-order-convention-project-wide).
 
+**Lock-ordering note (story 0101a).** In any transaction that issues an invoice number, `invoice_settings` `FOR SHARE` then `invoice_sequences` `ORDER BY series FOR UPDATE` (corrective before standard) are always the last locks, after every order, product and invoice lock; one ordered query for both series keeps a two-series issue from deadlocking against another. The settings share lock makes a concurrent `SaveInvoiceSettings` wait. The allocator also fails closed: no transaction record, or a series not locked while others were, throws `LogicException`. See [schema-other/invoice-sequences.md](../database/schema-other/invoice-sequences.md#allocation-allocateinvoicenumber).
+
 ## Translation write actions re-read the language as active through one helper
 
 Story 0087. Every per-language translation write action (every `app/Actions/**/Set*Translation.php` except the unguarded `SetTranslation` primitive) must, after authorization and before validation, call [`ResolveActiveStoreLanguage`](../../app/Actions/Translations/ResolveActiveStoreLanguage.php) with the caller's `StoreLanguage`, an error key derived server-side, and the localized message, and use **only the returned instance** from then on. The caller's language is untrusted: it may have been deactivated since the editor hydrated it.
@@ -530,4 +532,4 @@ Accepted residuals recorded by the Phase 4 audit:
 
 The deleted-entity race of the same actions (FK 1452 as a 500) is closed: the product actions by [0098](../../ai-spec/tasks/done/0098-translation-write-actions-deleted-entity-race-backend.md) and the blog category and tag actions by story 0099 (re-read after the logged authorize, parent-FK 1452 mapped to `ModelNotFoundException`).
 
-_Last updated: 2026-11-16 — story 0099 closed the deleted-parent race for the blog category and tag translation actions (the "pending" note is now resolved). Earlier sections current from stories 0087, 0088a and 0064d._
+_Last updated: 2026-11-17 — story 0101a added the invoice lock-ordering note (settings FOR SHARE, then sequences FOR UPDATE, always last). Earlier: 2026-11-16 — story 0099 closed the deleted-parent race for the blog category and tag translation actions (the "pending" note is now resolved). Earlier sections current from stories 0087, 0088a and 0064d._

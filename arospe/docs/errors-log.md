@@ -6,7 +6,7 @@ A structured log of real mistakes made in this project and the concrete rule ado
 
 ## Browse by topic
 
-An agent working on a specific domain can jump straight to the 1-3 relevant entries below instead of reading the whole log top to bottom — see [contracts.md](contracts/token-and-doc-rules.md#token-efficient-reading-and-dispatch-rule)'s Token-Efficient Reading and Dispatch Rule. Covers all 73 entries across this file and the archive; an entry touching more than one domain is listed under each. `(archive)` marks an entry that lives in [errors-log-archive.md](errors-log-archive.md).
+An agent working on a specific domain can jump straight to the 1-3 relevant entries below instead of reading the whole log top to bottom — see [contracts.md](contracts/token-and-doc-rules.md#token-efficient-reading-and-dispatch-rule)'s Token-Efficient Reading and Dispatch Rule. Covers all 74 entries across this file and the archive; an entry touching more than one domain is listed under each. `(archive)` marks an entry that lives in [errors-log-archive.md](errors-log-archive.md).
 
 **Livewire/Blade/Flux rendering & compilation quirks**
 - [A closure rule's `trans(..., ['attribute' => $attribute])` leaks the raw nested key into the message](errors-log/2026-09-25-to-2026-09-26.md#a-closure-rules-trans-attribute--attribute-leaks-the-raw-nested-key-into-the-message--2026-10-08) — 2026-10-08
@@ -30,6 +30,7 @@ An agent working on a specific domain can jump straight to the 1-3 relevant entr
 - [A conditionally-bound `tooltip` prop rendered an empty tooltip on every enabled row](errors-log/archive-2026-07-21-to-2026-08-17.md#a-conditionally-bound-fluxbutton-tooltip-prop-rendered-an-empty-tooltip-on-every-enabled-row--2026-08-16) — 2026-08-16 (archive)
 
 **Testing/QA process & infrastructure**
+- [A test that needs a second session to contend for locks cannot sit on RefreshDatabase's outer transaction](errors-log/2026-09-25-to-2026-09-26.md#a-test-that-needs-a-second-session-to-contend-for-locks-cannot-sit-on-refreshdatabases-outer-transaction--2026-11-17) — 2026-11-17
 - [Replacing a Livewire component's public properties broke a test outside the story's file list](errors-log/2026-09-25-to-2026-09-26.md#replacing-a-livewire-components-public-properties-broke-a-test-outside-the-storys-file-list--2026-11-10)
 - [Pest global helper functions with the same name in two test files fatal when the files load together](errors-log/2026-09-25-to-2026-09-26.md#pest-global-helper-functions-with-the-same-name-in-two-test-files-fatal-when-the-files-load-together--2026-11-08) — 2026-11-08
 - [A fixture that bypasses a rule the driven layer enforces made the test fail for the wrong reason](errors-log/2026-09-25-to-2026-09-26.md#a-fixture-that-bypasses-a-rule-the-driven-layer-enforces-made-the-test-fail-for-the-wrong-reason--2026-11-08) — 2026-11-08
@@ -77,6 +78,7 @@ An agent working on a specific domain can jump straight to the 1-3 relevant entr
 - [A missing `.env.testing` let a self-healing `migrate:fresh` wipe the shared dev database](errors-log/archive-2026-08-23-to-2026-08-26.md#a-missing-envtesting-file-let-a-self-healing-migratefresh-wipe-the-shared-dev-database--2026-08-26) — 2026-08-26 (archive)
 
 **Database/transactions/migrations**
+- [A test that needs a second session to contend for locks cannot sit on RefreshDatabase's outer transaction](errors-log/2026-09-25-to-2026-09-26.md#a-test-that-needs-a-second-session-to-contend-for-locks-cannot-sit-on-refreshdatabases-outer-transaction--2026-11-17) — 2026-11-17
 - [`DB::transaction($fn, attempts: N)` retried a closure that mutated a model created outside it](errors-log/2026-09-01-to-2026-09-07.md#dbtransactionfn-attempts-n-retried-a-closure-that-mutated-a-model-created-outside-it-producing-a-silent-lost-update-reported-as-success--2026-09-04) — 2026-09-04
 - [Wrapping existing code in `DB::transaction()` moved a cache flush nobody had written](errors-log/archive-2026-08-17-to-2026-08-21.md#wrapping-existing-code-in-a-dbtransaction-moved-a-cache-flush-nobody-had-written--2026-08-21) — 2026-08-21 (archive)
 - [A redundant `users_uuid_unique` index survived the UUID primary-key conversion](errors-log/archive-2026-07-21-to-2026-08-17.md#a-redundant-users_uuid_unique-index-survived-the-uuid-primary-key-conversion--2026-08-12) — 2026-08-12 (archive)
@@ -135,4 +137,4 @@ This document is split into parts so an agent reads only the one its task touche
 | [Entries 2026-09-01 to 2026-09-07](errors-log/2026-09-01-to-2026-09-07.md) | the topic index points at an entry dated 2026-09-01 through 2026-09-07. | A `GeographyEntryFactory` override to `name` silently left `n...; A `flux:fieldset` wrapping a Flux field silently swallows its...; A `.env.testing` missing most of `.env`'s content produced a...; Playwright's `selectOption` fires `change` unconditionally, s...; GitHub Actions' Ubuntu runner ships `libheif` with no AVIF en...; `DB::transaction($fn, attempts: N)` retried a closure that mu...; An action's own parameter default reintroduced the omission a... |
 | [Entries 2026-08-28 to 2026-08-31](errors-log/2026-08-28-to-2026-08-31.md) | the topic index points at an entry dated 2026-08-28 through 2026-08-31. | An absolutely-positioned element with no explicit `top` takes...; A Livewire directive modifier's duration cannot be interpolat...; A bare `@disabled(...)`/`:disabled="..."` inside a `<flux:but...; One docs pass reported two gaps that were not there, both mar...; A stale `public/hot` file from an old `npm run dev` session m...; An Imagick resource limit was requested in the wrong unit, ma...; A test suite's own "runs as non-root" claim was re-verified u...; The full test suite, run repeatedly and heavily in one sessio... |
 
-_Last updated: 2026-11-10 — Story 0077: added one test-process entry (property replacement breaks story-external tests) to the 2026-09-25 to 2026-10-02 part and the Testing/QA topic index._
+_Last updated: 2026-11-17 — Story 0101a: added one test-process entry (second session for lock contention vs RefreshDatabase) to the 2026-09-25 to 2026-10-02 part and the Testing/QA and Database topic indexes._
