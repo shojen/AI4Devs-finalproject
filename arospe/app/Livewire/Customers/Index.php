@@ -8,6 +8,8 @@ use App\Concerns\CustomerValidationRules;
 use App\Models\Customer;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
@@ -40,14 +42,14 @@ class Index extends Component
     use CustomerValidationRules;
 
     /**
-     * The fifteen writable form fields (task file's Component section), in the camelCase shape
+     * The sixteen writable form fields (task file's Component section), in the camelCase shape
      * every `wire:model` target on the view uses. Reused by `openCreateModal()`/`closeModal()`'s
      * `reset()` calls and by `formAttributes()`'s camelCase → snake_case mapping.
      *
      * @var array<int, string>
      */
     private const FORM_FIELDS = [
-        'name', 'email', 'phone',
+        'name', 'email', 'phone', 'taxId',
         'shippingAddressLine1', 'shippingAddressLine2', 'shippingCity',
         'shippingPostalCode', 'shippingProvince', 'shippingCountry',
         'billingAddressLine1', 'billingAddressLine2', 'billingCity',
@@ -59,6 +61,8 @@ class Index extends Component
     public string $email = '';
 
     public string $phone = '';
+
+    public string $taxId = '';
 
     public string $shippingAddressLine1 = '';
 
@@ -148,6 +152,7 @@ class Index extends Component
         $this->name = $customer->name;
         $this->email = $customer->email;
         $this->phone = $customer->phone ?? '';
+        $this->taxId = $customer->tax_id ?? '';
         $this->shippingAddressLine1 = $customer->shipping_address_line1 ?? '';
         $this->shippingAddressLine2 = $customer->shipping_address_line2 ?? '';
         $this->shippingCity = $customer->shipping_city ?? '';
@@ -212,7 +217,16 @@ class Index extends Component
 
         $attributes = $this->normalizeCustomerAttributes($this->formAttributes());
 
-        Validator::make($attributes, $this->customerRules($this->editingCustomerId))->validate();
+        try {
+            Validator::make(
+                $attributes,
+                $this->customerRules($this->editingCustomerId),
+                [],
+                $this->attributeNames(),
+            )->validate();
+        } catch (ValidationException $exception) {
+            $this->rekeyErrorsToProperties($exception);
+        }
 
         if ($target === null) {
             $createCustomer($attributes);
@@ -356,7 +370,7 @@ class Index extends Component
     }
 
     /**
-     * Map this component's fifteen camelCase form properties onto the snake_case column names
+     * Map this component's sixteen camelCase form properties onto the snake_case column names
      * `App\Concerns\CustomerValidationRules` and the two write actions both expect.
      *
      * @return array<string, string>
@@ -367,6 +381,7 @@ class Index extends Component
             'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,
+            'tax_id' => $this->taxId,
             'shipping_address_line1' => $this->shippingAddressLine1,
             'shipping_address_line2' => $this->shippingAddressLine2,
             'shipping_city' => $this->shippingCity,
@@ -380,5 +395,37 @@ class Index extends Component
             'billing_province' => $this->billingProvince,
             'billing_country' => $this->billingCountry,
         ];
+    }
+
+    /**
+     * Rethrow a validation failure with its keys moved from the snake_case column names the
+     * validator saw onto this component's camelCase public properties (`tax_id` -> `taxId`,
+     * `billing_country` -> `billingCountry`). Livewire keeps an error only when its key is a
+     * declared public property, so without this every multi-word field's message was dropped
+     * (story 0100b, FD-1).
+     */
+    private function rekeyErrorsToProperties(ValidationException $exception): never
+    {
+        $errors = [];
+
+        foreach ($exception->errors() as $key => $messages) {
+            $errors[Str::camel($key)] = $messages;
+        }
+
+        throw ValidationException::withMessages($errors);
+    }
+
+    /**
+     * The shipped attribute names (`customers.attributes`), passed whole to the validator exactly
+     * as `CreateCustomer` / `UpdateCustomer` do, so this component's messages read the same as
+     * the actions' (FD-6).
+     *
+     * @return array<string, string>
+     */
+    private function attributeNames(): array
+    {
+        $names = __('customers.attributes');
+
+        return is_array($names) ? $names : [];
     }
 }
