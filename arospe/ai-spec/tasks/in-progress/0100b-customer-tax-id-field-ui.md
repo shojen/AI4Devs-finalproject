@@ -282,7 +282,7 @@ validation error.
 - [ ] Tests written and green
 - [ ] Code reviewed (code-reviewer)
 - [ ] No security findings (appsec-auditor) — personal-data visibility (FD-9) reviewed
-- [ ] Documentation updated (docs-keeper): `docs/api/customers.md` (the modal field, the detail
+- [x] Documentation updated (docs-keeper): `docs/api/customers.md` (the modal field, the detail
   line, the error re-key), `docs/errors-log.md` (the snake_case error-key pitfall and the
   proposed audit)
 - [ ] Acceptance criteria met
@@ -372,3 +372,6 @@ validation error.
   `Customers\Index`. T-15 asserts `TypeError`; T-16 asserts
   `Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException`. Full suite not run
   (Phase 5).
+- Phase 4 (security audit) **approved** on 2026-11-18 by appsec-auditor — no vulnerabilities. F-1 (Informational, owner decision, = FD-9 / Q-0100b-2): the tax ID of a natural person (NIF = DNI) is shown to every `customers.view` holder; acceptable for the MVP if the owner confirms, otherwise gate the detail line behind `update`. F-2 (Informational): form values stay in the Livewire snapshot after dismissing the modal with Escape (same as email/phone/address today); optional `updatedShowModal(false)` reset. F-3 (Informational): no raw-input cap before normalising; negligible. No code change required.
+- Phase 5 (final review) **approved after one fix** on 2026-11-18 by code-reviewer: browser journeys B-2/B-5 asserted the attribute name, which matches the field label before saving (case-insensitive `assertSee`), so they could not fail; now they assert `__('validation.regex', [...])` (fixed, test commit). Full suite green in three chunks (Unit + Feature part 1: 1954 passed; Feature part 2: 4525 passed, 5 skipped; Browser: 330 passed, 3 skipped; skips pre-existing), Pint unscoped and Larastan level 7 (whole project) clean. Non-blocking follow-ups: B-5 does not assert full width; `attributeNames()` is now duplicated in `Customers\Index`, `CreateCustomer` and `UpdateCustomer` (candidate for `CustomerValidationRules`).
+- Phase 6 (documentation) complete on 2026-11-18 by docs-keeper: `docs/api/customers.md` (new section: modal field, always-sent key, detail line, error re-key, attribute names) and `docs/errors-log.md` plus its 2026-09-25 to 2026-10-02 part (new entry on the snake_case error-key pitfall in components that call `Validator::make()` themselves, with the proposed audit of `Shipping\Index`, `Shipping\Zones`, `Products\Editor`, `Settings\Language`, `Settings\LanguageSwitcher`; topic index and hub row updated). `docs/README.md` needs no change (no row changed). No stage move or dependency edit, so `tasks-map.md` / `tasks-status.json` are unchanged. The parent `../readme.md` has no per-field customer detail to update.
