@@ -7,6 +7,7 @@ Part of [Routes](routes.md) — see [routes.md](routes.md#why-this-file-exists) 
 - [`customers.index` — the ninth permission-gated route](#customersindex--the-ninth-permission-gated-route)
 - [`CreateCustomer` / `UpdateCustomer` — the `tax_id` input](#createcustomer--updatecustomer--the-tax_id-input)
 - [`customers.show` — the tenth permission-gated route, and the first with a second, section-level ability](#customersshow--the-tenth-permission-gated-route-and-the-first-with-a-second-section-level-ability)
+- [`Customers\Index` / `Customers\Show` — the tax ID field, the detail line and the error re-key](#customersindex--customersshow--the-tax-id-field-the-detail-line-and-the-error-re-key)
 
 ### `customers.index` — the ninth permission-gated route
 
@@ -80,4 +81,24 @@ Story 0100a (backend only; the form field and detail line are 0100b). Both actio
 - **Localised attribute names** (FD-10): both actions pass `lang/{en,es}/customers.php`'s `attributes` block as the fourth argument of `Validator::make()`, so errors read with the translated field name. The block covers all sixteen customer fields, not only `tax_id`.
 - **Never logged** (FD-8): the tax ID is absent from every log line, refusal-log context and the `NotifyCustomerCreated` payload. Authorization is unchanged (`CustomerPolicy::create`/`update`).
 
-_Last updated: 2026-11-18 — Story 0100a: `CreateCustomer`/`UpdateCustomer` accept `tax_id`._
+### `Customers\Index` / `Customers\Show` — the tax ID field, the detail line and the error re-key
+
+Story 0100b (frontend; the backend contract is the section above). No route, permission or migration changed.
+
+- **Modal field.** [`Customers\Index`](../../app/Livewire/Customers/Index.php) gains `public string $taxId`, the sixteenth entry of `FORM_FIELDS`. The input (`data-test="customer-tax-id-input"`, label `customers.form.tax_id`, description `customers.form.tax_id_hint`) sits after Phone and is not `required`. `openEditModal()` copies `$customer->tax_id ?? ''` only after its `update` authorization, so a view-only actor never receives the value; `openCreateModal()`/`closeModal()` reset it with the other fields.
+- **Always sent (FD-2).** `formAttributes()` sends `tax_id` on every create and edit, blank included: `UpdateCustomer` clears only on an explicit `''`, and this modal is the only caller that can clear it. The loaded value round-trips, so editing another field never erases it.
+- **No client-side formatting (FD-3).** No `maxlength`, no Alpine upper-casing; the server normaliser is the single source of the format and the stored (normalised) value is what the detail and the next edit show.
+- **Detail line.** [`Customers\Show`](../../app/Livewire/Customers/Show.php) (no PHP change, still read-only) renders `data-test="customer-tax-id"` after Phone in the header: the stored value, or `customers.detail.tax_id_not_provided` ("Not provided" / "No indicado"), through `{{ }}` only. It is shown to every `customers.view` holder, exactly like email, phone and addresses (FD-9, owner question Q-0100b-2).
+- **Error re-key (FD-1).** The component runs its own `Validator::make()` on snake_case keys, and Livewire keeps an error only when its key is a declared public property, so every multi-word field's message (`billing_country`, `shipping_city`, ...) used to be dropped: the save was refused with nothing shown. `save()` now catches the `ValidationException` and `rekeyErrorsToProperties()` rethrows it with `Str::camel($key)` keys, so all sixteen fields show their own error (`tax_id` becomes `taxId`). Pitfall recorded in [errors-log](../errors-log/2026-09-25-to-2026-09-26.md#a-component-that-calls-validatormake-itself-drops-every-multi-word-fields-error-because-the-keys-are-snake_case--2026-11-18).
+- **Same wording as the actions (FD-6).** The validator receives the whole `__('customers.attributes')` array (private `attributeNames()`, duplicated in `CreateCustomer`/`UpdateCustomer`), so the `tax_id` message names the field `tax ID` (en) / `NIF/CIF` (es), next to the "Identificador fiscal" label (Q-0100b-1).
+
+```php
+// app/Livewire/Customers/Index.php
+try {
+    Validator::make($attributes, $this->customerRules($this->editingCustomerId), [], $this->attributeNames())->validate();
+} catch (ValidationException $exception) {
+    $this->rekeyErrorsToProperties($exception);
+}
+```
+
+_Last updated: 2026-11-18 — Story 0100b: tax ID modal field, detail line and the snake_case-to-camelCase error re-key in `Customers\Index`._
