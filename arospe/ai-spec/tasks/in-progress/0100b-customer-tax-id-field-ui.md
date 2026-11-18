@@ -364,3 +364,11 @@ validation error.
   covers the four new keys). No new contradiction with the code found; the files listed under
   "Files to create/modify" exist. INVEST passes; ready for Phase 3. Cosmetic only: the
   "Story text corrected" record sits above the rejection it answers.
+- Phase 3 (TDD) complete on 2026-11-18 by frontend-expert. Red first: `IndexTaxIdTest`, `ShowRenderingTest` and
+  `IndexRenderingTest` additions failed on the missing `taxId` property / view lines / unfixed error
+  keys (14 red). Green: `tests/Feature/Customers` 241 passed (604 assertions); `tests/Browser/Customers`
+  18 passed (133 assertions; the browser journeys were written with the implementation, not red first);
+  Pint unscoped clean (one import fix in the browser test), Larastan level 7 clean on
+  `Customers\Index`. T-15 asserts `TypeError`; T-16 asserts
+  `Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException`. Full suite not run
+  (Phase 5).
