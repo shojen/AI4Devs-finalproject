@@ -300,3 +300,13 @@ actions; existing screens keep working unchanged and never erase a stored tax ID
   covers exactly the nullable keys of customerRules()" test guards `tax_id` generically — extend
   that file (T-17c), do not create it; prefer `attributeNames()` returning the whole
   `__('customers.attributes')` block, exactly like `SaveInvoiceSettings::attributeNames()`.
+- Phase 4 (security audit) on 2026-11-18 by appsec-auditor: **approved, no blocking findings** —
+  authorize-before-normalize/validate kept in both actions; `tax_id` is fillable but only
+  `$validated` reaches `create()`/`update()`; regex `^…$/D` anchored, no `m` flag, whitespace
+  stripped first, `string` rule rejects non-strings (`is_string()` guard holds); tax ID absent
+  from logs, refusal context and the `CustomerCreated` payload; no route/permission/seeder added.
+  Low (non-blocking): `normalizeTaxId()`'s `/u` `preg_replace` returns null on invalid UTF-8, so
+  such input silently becomes `null` (clears the value on update) instead of failing validation.
+  Downstream flags for 0100b/0101b/0104: escape on render (`{{ }}`), never build file paths from
+  `tax_id` (`../` passes the charset), guard CSV formula injection on export, gate display by
+  the customer view permission, and treat any invoice snapshot as a retained PII copy.

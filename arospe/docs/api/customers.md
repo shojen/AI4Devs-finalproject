@@ -5,6 +5,7 @@ Part of [Routes](routes.md) — see [routes.md](routes.md#why-this-file-exists) 
 ## Table of Contents
 
 - [`customers.index` — the ninth permission-gated route](#customersindex--the-ninth-permission-gated-route)
+- [`CreateCustomer` / `UpdateCustomer` — the `tax_id` input](#createcustomer--updatecustomer--the-tax_id-input)
 - [`customers.show` — the tenth permission-gated route, and the first with a second, section-level ability](#customersshow--the-tenth-permission-gated-route-and-the-first-with-a-second-section-level-ability)
 
 ### `customers.index` — the ninth permission-gated route
@@ -68,3 +69,15 @@ Six more consequences:
 - **`App\Enums\OrderStatus` gained its `label()` method in this story**, not story 0055 as originally planned when the enum shipped (story 0045's own docblock said as much) — this screen turned out to be the enum's first real rendering consumer, so it is the story that earns `label()` per [naming.md](../conventions/naming/translation-keys-and-booleans.md#translation-keys)'s "add `label()` when a second consumer appears" rule applied to whichever story actually renders first.
 
 The customers list itself gained a third row action alongside edit/delete — an icon-only `:href` link (not a `wire:click`) to `customers.show`, `data-test="view-customer-{id}"`, rendered enabled for every actor who can see the list at all, since the target route gates on the identical `customers.view` ability that rendered the row.
+
+### `CreateCustomer` / `UpdateCustomer` — the `tax_id` input
+
+Story 0100a (backend only; the form field and detail line are 0100b). Both actions accept an optional `tax_id` with the same normalisation and character rule as the issuer tax ID of story 0100 — one shared copy in `App\Concerns\TaxIdValidationRules`, reached through `CustomerValidationRules::customerTaxIdRules()` (see [naming-validation-traits.md](../conventions/naming-validation-traits.md#traits-and-their-methods)).
+
+- **Normalised before validation** (FD-2): all whitespace removed, ASCII upper-cased, `''`/whitespace to `null`; then `string`, max 32, only `A-Z`, `0-9`, `-`, `.`, `/`. `" b-12345678 "` is saved as `B-12345678`; `ES_B1`, `<b>`, `B1;`, `ñ1` are refused on `tax_id`.
+- **Non-strings are refused** (FD-4): an int, bool or array reaches the `string` rule untouched, because the normalisation pass guards with `is_string()` (the files have no `strict_types`; without the guard `123` would be coerced and saved).
+- **Partial update** (FD-3): `UpdateCustomer` called without the `tax_id` key keeps the stored value; an explicit `''` clears it. This holds for `tax_id` only — `name` and `email` stay required on every update, so the other fields do not share the "absent key means unchanged" behaviour. `CreateCustomer` without the key stores `null`.
+- **Localised attribute names** (FD-10): both actions pass `lang/{en,es}/customers.php`'s `attributes` block as the fourth argument of `Validator::make()`, so errors read with the translated field name. The block covers all sixteen customer fields, not only `tax_id`.
+- **Never logged** (FD-8): the tax ID is absent from every log line, refusal-log context and the `NotifyCustomerCreated` payload. Authorization is unchanged (`CustomerPolicy::create`/`update`).
+
+_Last updated: 2026-11-18 — Story 0100a: `CreateCustomer`/`UpdateCustomer` accept `tax_id`._
