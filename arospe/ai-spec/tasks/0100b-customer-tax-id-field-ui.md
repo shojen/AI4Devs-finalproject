@@ -2,7 +2,7 @@
 
 > **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
-> [0100a](0100a-customer-tax-id-backend.md) (column, rule, normaliser). No dependents; the
+> [0100a](done/0100a-customer-tax-id-backend.md) (column, rule, normaliser). No dependents; the
 > value it lets managers enter is copied onto invoices by
 > [0101b](0101b-issue-standard-invoice-backend.md).
 
@@ -285,7 +285,7 @@ validation error.
 - [ ] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open questions
-- Upstream: [0100a](0100a-customer-tax-id-backend.md). Without it the validator has no
+- Upstream: [0100a](done/0100a-customer-tax-id-backend.md). Without it the validator has no
   `tax_id` rule and the actions drop the key silently, so Phase 3 starts only after 0100a is in
   `done/`. Downstream use of the value: [0101b](0101b-issue-standard-invoice-backend.md)
   (snapshot) and [0102](0102-invoice-pdf-rendering-and-templates-backend.md) (printed).

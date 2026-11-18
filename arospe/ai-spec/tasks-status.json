@@ -3,42 +3,11 @@
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
     {
-      "id": "0100a",
-      "slug": "0100a-customer-tax-id-backend",
-      "title": "Customer tax ID (backend)",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "database/migrations/<ts>_add_tax_id_to_customers_table.php",
-        "app/Models/Customer.php",
-        "app/Concerns/CustomerValidationRules.php",
-        "app/Actions/Customers/CreateCustomer.php",
-        "database/factories/CustomerFactory.php",
-        "lang/en/customers.php",
-        "lang/es/customers.php",
-        "tests/Feature/Customers/CreateCustomerTest.php",
-        "tests/Feature/Customers/UpdateCustomerTest.php",
-        "tests/Feature/Customers/PersistenceTest.php",
-        "tests/Feature/Customers/CustomerTaxIdTest.php",
-        "tests/Feature/Customers/CustomerTaxIdAuthorizationTest.php",
-        "app/Actions/Customers/UpdateCustomer.php"
-      ],
-      "conflict_risk_with": [
-        "0100b",
-        "0111",
-        "0112"
-      ]
-    },
-    {
       "id": "0100b",
       "slug": "0100b-customer-tax-id-field-ui",
       "title": "Customer tax ID field in the customer form and detail (frontend)",
-      "depends_on": [
-        "0100a"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -98,7 +67,6 @@
       "slug": "0101b-issue-standard-invoice-backend",
       "title": "Issue standard invoice — the invoice core (backend)",
       "depends_on": [
-        "0100a",
         "0101a"
       ],
       "status": "blocked",

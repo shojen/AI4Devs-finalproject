@@ -47,7 +47,7 @@ class CreateCustomer
 
         $attributes = $this->normalizeCustomerAttributes($attributes);
 
-        $validated = Validator::make($attributes, $this->customerRules())->validate();
+        $validated = Validator::make($attributes, $this->customerRules(), [], $this->attributeNames())->validate();
 
         try {
             $customer = Customer::create($validated);
@@ -90,5 +90,17 @@ class CreateCustomer
         }
 
         return $customer;
+    }
+
+    /**
+     * Localised attribute names for the field-level messages.
+     *
+     * @return array<string, string>
+     */
+    private function attributeNames(): array
+    {
+        $names = __('customers.attributes');
+
+        return is_array($names) ? $names : [];
     }
 }

@@ -16,6 +16,17 @@ use App\Actions\Customers\CreateCustomer;
 // never `new`-ed, per docs/conventions/code-style.md's "an action must be resolved from the
 // container, never `new`-ed" rule.
 
+// Story 0100a (T-17c): the generic guard below would also catch a missing tax_id, but only as a
+// diff; this names the field so the failure says exactly what drifted.
+test('OPTIONAL_FIELDS contains tax_id and customerRules() declares it nullable', function () {
+    /** @var array<string, array<int, mixed>> $rules */
+    $rules = (new ReflectionMethod(CreateCustomer::class, 'customerRules'))->invoke(app(CreateCustomer::class), null);
+
+    expect(CreateCustomer::OPTIONAL_FIELDS)->toContain('tax_id')
+        ->and($rules)->toHaveKey('tax_id')
+        ->and($rules['tax_id'])->toContain('nullable');
+});
+
 test('OPTIONAL_FIELDS covers exactly the nullable keys of customerRules()', function () {
     /** @var array<string, array<int, mixed>> $rules */
     $rules = (new ReflectionMethod(CreateCustomer::class, 'customerRules'))->invoke(app(CreateCustomer::class), null);
