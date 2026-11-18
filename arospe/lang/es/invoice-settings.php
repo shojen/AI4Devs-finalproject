@@ -32,4 +32,11 @@ return [
         'prefixes_must_differ' => 'El prefijo de las facturas rectificativas debe ser distinto del de las facturas.',
         'auto_issue_requires_issuer' => 'La facturación automática necesita la razón social, el NIF/CIF y la línea 1 de la dirección.',
     ],
+
+    'numbering' => [
+        'start_already_issued' => 'El contador inicial ya no se puede cambiar porque esta serie ya ha emitido facturas.',
+        'start_invalid' => 'El contador inicial debe ser un número entero entre 1 y 4.294.967.294.',
+        'clock_skew' => 'La fecha de la factura es anterior a la de la última factura emitida en esta serie. Revisa el reloj del sistema.',
+        'overflow' => 'El contador de facturas ha alcanzado su valor máximo y no se pueden emitir más números.',
+    ],
 ];

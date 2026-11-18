@@ -106,16 +106,4 @@ class SaveInvoiceSettings
             throw ValidationException::withMessages($errors);
         }
     }
-
-    /**
-     * Localised attribute names for the field-level messages.
-     *
-     * @return array<string, string>
-     */
-    private function attributeNames(): array
-    {
-        $names = __('invoice-settings.attributes');
-
-        return is_array($names) ? $names : [];
-    }
 }

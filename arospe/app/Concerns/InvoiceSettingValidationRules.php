@@ -106,4 +106,16 @@ trait InvoiceSettingValidationRules
             }
         };
     }
+
+    /**
+     * Localised attribute names for the field-level messages.
+     *
+     * @return array<string, string>
+     */
+    protected function attributeNames(): array
+    {
+        $names = __('invoice-settings.attributes');
+
+        return is_array($names) ? $names : [];
+    }
 }
