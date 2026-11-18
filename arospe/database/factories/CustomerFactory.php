@@ -34,6 +34,7 @@ class CustomerFactory extends Factory
             'billing_postal_code' => $this->faker->postcode(),
             'billing_province' => $this->province(),
             'billing_country' => 'ES',
+            'tax_id' => null,
         ];
     }
 
@@ -58,6 +59,7 @@ class CustomerFactory extends Factory
             'billing_postal_code' => null,
             'billing_province' => null,
             'billing_country' => null,
+            'tax_id' => null,
         ]);
     }
 
@@ -70,6 +72,16 @@ class CustomerFactory extends Factory
     {
         return $this->state(fn (array $attributes): array => [
             'email' => $email,
+        ]);
+    }
+
+    /**
+     * A customer with a valid, already-normalised tax ID.
+     */
+    public function withTaxId(string $taxId = 'B-12345678'): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'tax_id' => $taxId,
         ]);
     }
 

@@ -70,7 +70,10 @@ tests/
                         Navigation/, PaymentMethods/ since story 0038 — the story's own
                         Datasets.php holds the valid/invalid IBAN pairs shared across its four
                         test files, per Pest's own directory-scoped dataset convention (see
-                        tests/Feature/ShippingRates/Datasets.php for the mechanism)). Dev/
+                        tests/Feature/ShippingRates/Datasets.php for the mechanism);
+                        tests/Datasets/TaxIds.php since story 0100a holds the tax-ID
+                        valid/invalid datasets shared by the invoice-settings and customer
+                        tests, so the two never pin different formats). Dev/
                         (story 0020's MediaGalleryHarnessRouteTest.php) was
                         deleted by story 0027 along with its subject. Story 0031 adds five files to
                         Products/ for the nested VariantBuilder component, of which

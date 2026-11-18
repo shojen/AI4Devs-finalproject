@@ -73,4 +73,32 @@ return [
         'view_detail' => 'Ver :name',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Validation Attribute Names
+    |--------------------------------------------------------------------------
+    |
+    | Localised field names used in validation messages (story 0100a).
+    |
+    */
+
+    'attributes' => [
+        'name' => 'nombre',
+        'email' => 'correo electrónico',
+        'phone' => 'teléfono',
+        'shipping_address_line1' => 'dirección de envío (línea 1)',
+        'shipping_address_line2' => 'dirección de envío (línea 2)',
+        'shipping_city' => 'ciudad de envío',
+        'shipping_postal_code' => 'código postal de envío',
+        'shipping_province' => 'provincia de envío',
+        'shipping_country' => 'país de envío',
+        'billing_address_line1' => 'dirección de facturación (línea 1)',
+        'billing_address_line2' => 'dirección de facturación (línea 2)',
+        'billing_city' => 'ciudad de facturación',
+        'billing_postal_code' => 'código postal de facturación',
+        'billing_province' => 'provincia de facturación',
+        'billing_country' => 'país de facturación',
+        'tax_id' => 'NIF/CIF',
+    ],
+
 ];
