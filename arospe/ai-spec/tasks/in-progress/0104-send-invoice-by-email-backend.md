@@ -2,11 +2,11 @@
 
 > **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
-> [0101b](done/0101b-issue-standard-invoice-backend.md) (invoices, `IssueInvoice`, out-of-date guard,
-> `InvoicePolicy`) and [0102](done/0102-invoice-pdf-rendering-and-templates-backend.md)
+> [0101b](../done/0101b-issue-standard-invoice-backend.md) (invoices, `IssueInvoice`, out-of-date guard,
+> `InvoicePolicy`) and [0102](../done/0102-invoice-pdf-rendering-and-templates-backend.md)
 > (`RenderInvoicePdf`, `ResolveInvoiceLocale`, file-name sanitiser, `Invoice::hasBeenSent()`
-> stub). Dependents: [0105](0105-automatic-invoice-on-order-creation-backend.md) (automatic send),
-> [0109a](0109a-orders-list-invoice-send-ui.md), [0109b](0109b-order-detail-invoices-panel-ui.md) and [0110](0110-billing-section-ui.md) (buttons).
+> stub). Dependents: [0105](../0105-automatic-invoice-on-order-creation-backend.md) (automatic send),
+> [0109a](../0109a-orders-list-invoice-send-ui.md), [0109b](../0109b-order-detail-invoices-panel-ui.md) and [0110](../0110-billing-section-ui.md) (buttons).
 
 ## Description
 Send invoices to the customer by e-mail with the PDFs attached, queued, recording every attempt.
@@ -323,10 +323,10 @@ both permissions.
 - [ ] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open technical questions
-- Upstream: [0101b](done/0101b-issue-standard-invoice-backend.md),
-  [0102](done/0102-invoice-pdf-rendering-and-templates-backend.md). Downstream:
-  [0105](0105-automatic-invoice-on-order-creation-backend.md) calls `RecordInvoiceDeliveries` as
-  the system; [0109a](0109a-orders-list-invoice-send-ui.md), [0109b](0109b-order-detail-invoices-panel-ui.md) / [0110](0110-billing-section-ui.md) call
+- Upstream: [0101b](../done/0101b-issue-standard-invoice-backend.md),
+  [0102](../done/0102-invoice-pdf-rendering-and-templates-backend.md). Downstream:
+  [0105](../0105-automatic-invoice-on-order-creation-backend.md) calls `RecordInvoiceDeliveries` as
+  the system; [0109a](../0109a-orders-list-invoice-send-ui.md), [0109b](../0109b-order-detail-invoices-panel-ui.md) / [0110](../0110-billing-section-ui.md) call
   the two actions.
 - Privacy: the PDF carries the customer's tax ID and address; the transport is the operator's
   responsibility; no customer data in logs or `failure_reason`.
@@ -362,3 +362,8 @@ both permissions.
 ## Phase records
 - Phase 1 (Three Amigos) complete on 2026-11-15 — participants: product-owner (facilitator),
   backend-expert, database-expert, backend-qa. Phase 2 (INVEST) pending.
+- Phase 2 (INVEST) approved on 2026-11-19 by code-reviewer — dependencies 0101b/0102 verified in
+  code (`hasBeenSent()` stub, `InvoicePolicy` view/create only, `IssueInvoiceForOrder`,
+  `RenderInvoicePdf`, `ResolveInvoiceLocale`, `AssertInvoicesAreCurrent`, catalog 47); Gherkin
+  follows the template. Non-blocking notes: the 0102 file-name sanitiser is inline in
+  `DownloadInvoice` (extract it rather than duplicate); story is at the upper bound of Small.
