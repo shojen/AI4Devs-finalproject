@@ -13,6 +13,6 @@ This document is split into parts so an agent reads only the one its task touche
 | [notifications](schema-other/notifications.md) | the task touches database notifications and the `notifiable` UUID morph. | `notifications` |
 | [invoice_settings](schema-other/invoice-settings.md) | the task touches the invoice settings singleton: issuer data, logo, numbering formats, `SaveInvoiceSettings`. | `invoice_settings` |
 | [invoice_sequences](schema-other/invoice-sequences.md) | the task touches the invoice counters: `AllocateInvoiceNumber`, the yearly reset, the starting counter, the issuing lock order. | `invoice_sequences` |
-| [invoices](schema-other/invoices.md) | the task touches issued invoices: `invoices`, `invoice_lines`, `orders.invoice_out_of_date_at`, frozen versus lifecycle columns, foreign-key delete rules. | `invoices`, `invoice_lines`, `orders.invoice_out_of_date_at` |
+| [invoices](schema-other/invoices.md) | the task touches issued invoices or their e-mail deliveries: `invoices`, `invoice_lines`, `invoice_deliveries`, `orders.invoice_out_of_date_at`, frozen versus lifecycle columns, foreign-key delete rules. | `invoices`, `invoice_lines`, `orders.invoice_out_of_date_at` |
 
-_Last updated: 2026-11-19 — Story 0101b: added the [invoices](schema-other/invoices.md) part._
+_Last updated: 2026-11-19 — Story 0104: the invoices part also covers `invoice_deliveries`._
