@@ -25,6 +25,7 @@ class SaveInvoiceSettings
 
     public function __construct(
         private readonly LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt,
+        private readonly AssertNumberingFormatIsFree $assertNumberingFormatIsFree,
     ) {}
 
     /**
@@ -58,8 +59,10 @@ class SaveInvoiceSettings
             'updated_at' => $now,
         ]]);
 
-        $settings = DB::transaction(function () use ($validated): InvoiceSetting {
+        $settings = DB::transaction(function () use ($validated, $now): InvoiceSetting {
             $row = InvoiceSetting::query()->lockForUpdate()->findOrFail(InvoiceSetting::SINGLETON_ID);
+
+            ($this->assertNumberingFormatIsFree)($row->replicate()->forceFill($validated), $now);
 
             $row->forceFill($validated)->save();
 

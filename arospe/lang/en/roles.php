@@ -52,6 +52,7 @@ return [
         'roles' => 'Roles',
         'media' => 'Media',
         'invoice_settings' => 'Invoice settings',
+        'invoices' => 'Invoices',
     ],
 
     /*

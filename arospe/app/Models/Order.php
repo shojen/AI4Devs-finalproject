@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Actions\Orders\ToNumericString;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use Database\Factories\OrderFactory;
@@ -64,6 +65,7 @@ use Illuminate\Support\Carbon;
  * @property string $shipping_amount 'decimal:2' casts to a STRING, not a float
  * @property string $total 'decimal:2' casts to a STRING, not a float
  * @property string $refunded_amount 'decimal:2' casts to a STRING, not a float
+ * @property Carbon|null $invoice_out_of_date_at
  * @property bool $flagged_for_review
  * @property string|null $ip_address
  * @property string|null $ip_derived_country
@@ -88,6 +90,7 @@ use Illuminate\Support\Carbon;
  * @property-read ShippingRate|null $shippingRate
  * @property-read Collection<int, OrderItem> $items
  * @property-read OrderPayment|null $payment
+ * @property-read Collection<int, Invoice> $invoices
  */
 #[Fillable([
     'customer_id', 'payment_method_id',
@@ -118,6 +121,7 @@ class Order extends Model
             'shipping_amount' => 'decimal:2',
             'total' => 'decimal:2',
             'refunded_amount' => 'decimal:2',
+            'invoice_out_of_date_at' => 'datetime',
             'flagged_for_review' => 'boolean',
         ];
     }
@@ -182,6 +186,39 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    /**
+     * The invoices issued for this order (story 0101b).
+     *
+     * @return HasMany<Invoice, $this>
+     */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    /**
+     * What may be invoiced in total: `total - refunded_amount`, 0.00 when the order is Cancelled
+     * (story 0101b, shared definitions).
+     */
+    public function billableAmount(): string
+    {
+        if ($this->status === OrderStatus::Cancelled) {
+            return '0.00';
+        }
+
+        $toNumeric = app(ToNumericString::class);
+
+        return bcsub($toNumeric($this->total), $toNumeric($this->refunded_amount), 2);
+    }
+
+    /**
+     * Are this order's invoices stale after an edit (FD-15)? Set and cleared only by story 0108.
+     */
+    public function isInvoiceOutOfDate(): bool
+    {
+        return $this->invoice_out_of_date_at !== null;
     }
 
     /**
