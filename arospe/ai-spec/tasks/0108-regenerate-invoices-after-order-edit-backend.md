@@ -7,7 +7,7 @@
 > (`SyncOrderCollection`, `AfterOrderTotalsChanged`) and
 > [0107](0107-corrective-invoice-on-refund-and-cancellation-backend.md) (`VoidLiveInvoices`).
 > Closes the stale-totals limitation of
-> [0105](0105-automatic-invoice-on-order-creation-backend.md). Dependents:
+> [0105](in-progress/0105-automatic-invoice-on-order-creation-backend.md). Dependents:
 > [0109a](0109a-orders-list-invoice-send-ui.md) (the describer reads the out-of-date state) and
 > [0109c](0109c-order-detail-regenerate-and-refund-limit-ui.md) (banner, regenerate button and its preview dialog).
 
