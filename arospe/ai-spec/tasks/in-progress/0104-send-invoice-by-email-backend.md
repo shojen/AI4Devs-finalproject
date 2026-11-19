@@ -367,3 +367,5 @@ both permissions.
   `RenderInvoicePdf`, `ResolveInvoiceLocale`, `AssertInvoicesAreCurrent`, catalog 47); Gherkin
   follows the template. Non-blocking notes: the 0102 file-name sanitiser is inline in
   `DownloadInvoice` (extract it rather than duplicate); story is at the upper bound of Small.
+- Phase 3 (TDD) complete on 2026-11-19 — `tests/Feature/Invoices` + `tests/Feature/Seeders` green (858 tests), Pint and Larastan clean; commits 80d6d14 (feat) and 8d06863 (test).
+- Phase 4 (security) approved on 2026-11-19 by appsec-auditor — no Critical/High/Medium. Low notes, none blocking: L1 no rate limit on resend (add in the UI story), L2 customer address in `jobs`/`failed_jobs` payloads (schedule `queue:prune-failed`), L3 at-least-once retry may duplicate a mail if `MarkInvoiceDeliverySent` fails (document), L4 `invoices.send` does not require `invoices.view` (intended; document). `MAIL_MAILER=log` must never be used in production.
