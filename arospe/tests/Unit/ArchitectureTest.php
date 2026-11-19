@@ -507,7 +507,7 @@ test('no routes file registers a write route naming invoices (T-35)', function (
 // Story 0105 (FD-7, T-24): IssueAutomaticInvoice issues fiscal documents with no gate, so it is safe
 // only while it is unreachable from anything but the order creation that already authorized itself.
 test('only CreateOrder references IssueAutomaticInvoice, so no route, controller, component, job or listener reaches it (T-24)', function () {
-    $allowed = ['IssueAutomaticInvoice.php', 'CreateOrder.php'];
+    $allowed = ['app/Actions/Invoices/IssueAutomaticInvoice.php', 'app/Actions/Orders/CreateOrder.php'];
     $offenders = [];
     $referencing = [];
 
@@ -519,16 +519,16 @@ test('only CreateOrder references IssueAutomaticInvoice, so no route, controller
             continue;
         }
 
-        $referencing[] = basename($path);
+        $referencing[] = $path;
 
-        if (! in_array(basename($path), $allowed, true)) {
+        if (! in_array($path, $allowed, true)) {
             $offenders[] = $path;
         }
     }
 
     expect($offenders)->toBe([], 'Only CreateOrder may reference the ungated automatic invoicing: '.implode(', ', $offenders))
-        ->and($referencing)->toContain('CreateOrder.php')
-        ->and($referencing)->toContain('IssueAutomaticInvoice.php');
+        ->and($referencing)->toContain('app/Actions/Orders/CreateOrder.php')
+        ->and($referencing)->toContain('app/Actions/Invoices/IssueAutomaticInvoice.php');
 });
 
 test('IssueAutomaticInvoice and its failure notifier authorize nothing and never read the authenticated user (T-24, FD-6, FD-7)', function (string $file) {
@@ -545,7 +545,7 @@ test('only IssueAutomaticInvoice references NotifyAutomaticInvoiceFailed (T-24)'
     $offenders = [];
 
     foreach (projectPhpSources(['app', 'routes', 'bootstrap', 'config']) as $path => $source) {
-        if (preg_match('/\bNotifyAutomaticInvoiceFailed\b/', $source) === 1 && ! in_array(basename($path), ['NotifyAutomaticInvoiceFailed.php', 'IssueAutomaticInvoice.php'], true)) {
+        if (preg_match('/\bNotifyAutomaticInvoiceFailed\b/', $source) === 1 && ! in_array($path, ['app/Actions/Invoices/NotifyAutomaticInvoiceFailed.php', 'app/Actions/Invoices/IssueAutomaticInvoice.php'], true)) {
             $offenders[] = $path;
         }
     }
