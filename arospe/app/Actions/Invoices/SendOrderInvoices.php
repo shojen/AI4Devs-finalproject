@@ -35,6 +35,7 @@ class SendOrderInvoices
         private readonly ComputeOrderInvoiceBalance $computeOrderInvoiceBalance,
         private readonly IssueInvoiceForOrder $issueInvoiceForOrder,
         private readonly RecordInvoiceDeliveries $recordInvoiceDeliveries,
+        private readonly ClassifyDeliveryFailure $classifyDeliveryFailure,
     ) {}
 
     /**
@@ -64,7 +65,7 @@ class SendOrderInvoices
                 throw $exception;
             }
 
-            report(new RuntimeException('Issued invoice could not be queued: '.app(ClassifyDeliveryFailure::class)($exception)));
+            report(new RuntimeException('Issued invoice could not be queued: '.($this->classifyDeliveryFailure)($exception)));
 
             throw ValidationException::withMessages(['delivery' => [__('invoices.errors.issued_but_not_queued')]]);
         }
