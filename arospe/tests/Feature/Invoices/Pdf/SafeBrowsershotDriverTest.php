@@ -26,7 +26,7 @@ afterEach(function () {
 /**
  * Run the driver up to (not including) the Chromium call and return what Browsershot was given.
  *
- * @return array{url: string, html: string, existedDuring: bool, contentDuring: string, mode: int}|array{}
+ * @return array{url: string, html: string, existedDuring: bool, contentDuring: string, mode: int, blocksLocalFiles: bool}|array{}
  */
 function captureSafeDriverBuild(string $html): array
 {
@@ -36,6 +36,7 @@ function captureSafeDriverBuild(string $html): array
     $driver->customizeBrowsershot(function (Browsershot $browsershot) use (&$captured): void {
         $url = (new ReflectionProperty(Browsershot::class, 'url'))->getValue($browsershot);
         $inlineHtml = (new ReflectionProperty(Browsershot::class, 'html'))->getValue($browsershot);
+        $options = (new ReflectionProperty(Browsershot::class, 'additionalOptions'))->getValue($browsershot);
         $path = str_starts_with($url, 'file://') ? substr($url, 7) : '';
         $exists = $path !== '' && file_exists($path);
 
@@ -45,6 +46,7 @@ function captureSafeDriverBuild(string $html): array
             'existedDuring' => $exists,
             'contentDuring' => $exists ? (string) file_get_contents($path) : '',
             'mode' => $exists ? fileperms($path) & 0777 : 0777,
+            'blocksLocalFiles' => ($options['blockLocalFileAccess'] ?? false) === true,
         ];
 
         throw new RuntimeException('stop-before-chromium');
@@ -80,6 +82,12 @@ test('html with a Browsershot-forbidden token is loaded from a private temp file
     'entity-encoded view-source' => ['<p>view&#45;source</p>'],
     'plain html' => ['<p>Calle Mayor 1</p>'],
 ]);
+
+test('local file access stays blocked when the HTML is loaded from a file (N-1)', function () {
+    $captured = captureSafeDriverBuild('<p>Calle Mayor 1</p>');
+
+    expect($captured['blocksLocalFiles'])->toBeTrue();
+});
 
 test('the temp file is removed afterwards even when the render fails (M-1)', function () {
     $captured = captureSafeDriverBuild('<p>view-source //127.0.0.1</p>');
