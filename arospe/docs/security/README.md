@@ -32,6 +32,7 @@ One row per page — open the page whose *Read when* matches your task. The long
 | [Livewire error-bag persistence](livewire-error-bag-persistence.md) | you call `addError()` on a Livewire component or make a validation message persist. |
 | [Resolving a related pair of ids](related-id-pair-resolution.md) | a payload names two ids that must belong together (a product and one of its variants). |
 | [Constraint-violation discrimination](constraint-violation-discrimination.md) | you catch a `QueryException` and decide which unique index/FK fired: match `errorInfo`, never `getMessage()` (it interpolates the bindings). |
+| [Headless-browser PDF rendering](headless-pdf-rendering.md) | you render data to PDF through Browsershot/Chromium: the four hardening layers (escaping, CSP meta, JS off + host-resolver rules, data-URI images) and why Browsershot's `setHtml()` guard can make a document unrenderable. |
 | [Raw SQL and query-input bounds](raw-sql-and-query-input-bounds.md) | you interpolate into `DB::raw()`, accept an array of enums or a date range from a Livewire/hydrated caller, or build a dashboard aggregate: closed-enum-only interpolation, normalization and DATETIME-year bounds. |
 
-_Last updated: 2026-10-01 — Story 0083: extended three existing pages (Livewire component authorization, Authorization patterns, Blade / Livewire output encoding); no new page. Detailed abstracts and older history live in [index-details-and-history.md](index-details-and-history.md). Add a new page as one row here._
+_Last updated: 2026-11-19 — Story 0102: added the Headless-browser PDF rendering page. Detailed abstracts and older history live in [index-details-and-history.md](index-details-and-history.md). Add a new page as one row here._

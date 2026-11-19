@@ -110,6 +110,16 @@ Documented once, linked everywhere else — do not duplicate these explanations 
 
 Check it with `php artisan schedule:list`, which must show `* * * * * php artisan blog:publish-scheduled-posts`. **Nothing in the app detects a missing cron:** posts scheduled for the future simply never go live, with no error anywhere, so it is the first thing to check when someone reports that scheduling "does not work". A future queued notification (story 0064b's) would additionally need a `queue:work` process, because `QUEUE_CONNECTION=database`.
 
+**Invoice PDF rendering needs a headless Chrome on every host that renders — web and any queue worker (story 0102).** Rendering (`RenderInvoicePdf`, the download route, later the 0104 attachment) runs spatie/laravel-pdf's Browsershot driver, which shells out to Node and puppeteer's Chrome. Required on the host:
+
+- **Node 22 or newer** and npm, reachable at the paths in `LARAVEL_PDF_NODE_BINARY` / `LARAVEL_PDF_NPM_BINARY` when not on `PATH`.
+- **puppeteer and its browser.** `puppeteer` is a **`devDependency`** in `package.json`, so a production `npm ci --omit=dev` installs **no renderer**: install it there deliberately, run `npx puppeteer browsers install chrome-headless-shell` after every puppeteer upgrade, and keep puppeteer current, because Chromium security patches arrive only through it. Point `LARAVEL_PDF_CHROME_PATH` / `LARAVEL_PDF_NODE_MODULES_PATH` at them when they are not in the defaults.
+- **A private temp directory.** `LARAVEL_PDF_TEMP_PATH` defaults to `storage/app/private/pdf-temp` (gitignored, outside the web root). It holds customer PII for the length of a render, so create it with mode `0700` on deploy; the app does not re-chmod an existing directory. A render killed by the OS can leave a file behind, so prune files older than a few minutes if that matters.
+- **Sandbox.** `LARAVEL_PDF_NO_SANDBOX=true` only in containers that run as root (Sail, CI); production renders as an unprivileged user with the sandbox on. The default is `false`.
+- **Env keys.** `LARAVEL_PDF_DRIVER` (leave `browsershot`; `RenderInvoicePdf` pins the driver anyway), `LARAVEL_PDF_NODE_BINARY`, `_NPM_BINARY`, `_CHROME_PATH`, `_NODE_MODULES_PATH`, `_TEMP_PATH`, `_NO_SANDBOX`, and the paper/limit keys `INVOICE_PDF_FORMAT`, `INVOICE_PDF_MARGIN_MM`, `INVOICE_PDF_TIMEOUT_SECONDS`, `INVOICE_PDF_LOGO_MAX_BYTES`, all listed in `.env.example`.
+
+A missing Chrome surfaces as a failed render (a 500 on `invoices.download`), not a startup error. Hardening rules: [security/headless-pdf-rendering.md](../security/headless-pdf-rendering.md).
+
 ## Where things live
 
 | Layer | Path |
@@ -139,4 +149,4 @@ Check it with `php artisan schedule:list`, which must show `* * * * * php artisa
 
 > **A scheduled command is a second entry point, not a node on the request-lifecycle diagram above.** Story 0064's `blog:publish-scheduled-posts` enters through `php artisan schedule:run` (a cron tick), so there is no request, no middleware, no session and no authenticated user: the lifecycle diagram is deliberately left unchanged rather than stretched to cover it, and a second diagram waits for a second scheduled job to earn one. What a reader needs instead is the rule for its writes — [a system-triggered write may be ungated](authorization/domain-invariants.md#a-system-triggered-write-may-be-ungated--autocancelfullyrefundedorder-and-the-three-conditions-that-make-it-safe) — and the testing guide, [scheduled-commands.md](../testing/backend/scheduled-commands.md). The scheduler itself must be on a cron in the deployment (`* * * * * php artisan schedule:run`); nothing in the app detects that it is not.
 
-_Last updated: 2026-10-01 — Story 0083 (Dashboard home overview UI). Added the `Dashboard UI` row and the behavioural-traits note to **Where things live**. Earlier: story 0066 added the global `web`-group middleware row and the `SetUiLocale` lifecycle bullet. The revision history of earlier stories lives in [history/architecture--overview.md](../history/architecture--overview.md)._
+_Last updated: 2026-11-19 — Story 0102: added the invoice PDF runtime prerequisites to the Deployment note (Node 22+, puppeteer as a devDependency, private temp directory, sandbox flag, env keys). Earlier content current from story 0083; older revision history lives in [history/architecture--overview.md](../history/architecture--overview.md)._

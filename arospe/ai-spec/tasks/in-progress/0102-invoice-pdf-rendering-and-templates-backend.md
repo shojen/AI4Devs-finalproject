@@ -391,3 +391,94 @@ template; 0104 can render the same PDF, marked as a copy when required, to attac
   `generatePdfContent()` and `base64()` still return dummy PDF content under the fake, so 0104 can
   attach it in tests. Side effect: composer's `boost:update` hook rewrote `CLAUDE.md`; it was
   restored from git and must not be committed.
+- Phase 4 (security audit) — appsec-auditor, 2026-11-19: **CHANGES REQUESTED (1 Medium, return
+  to Phase 3)**. Verified safe: every snapshot string is Blade-escaped; no `{!!`/script/link/url()
+  in the templates (architecture test); static CSP meta is the first `<head>` element; JS disabled,
+  timeout and `host-resolver-rules=MAP * ~NOTFOUND`; colours re-validated before the CSS context;
+  logo path from the `media` row only, `..`/absolute/NUL refused, `finfo` allow-list without SVG,
+  size cap; `view` authorized through `LogRefusedPrivilegedAttempt` (403 logged, 404 for unknown
+  ids, guest redirect unlogged); file name restricted to `[A-Za-z0-9._-]` (no header injection);
+  30/min per-user throttle; `no_sandbox` env-only default false (true only in the root CI job);
+  `write_options_to_file` true; PDF cache off. `composer audit` / `npm audit`: no advisory for
+  spatie/laravel-pdf 2.14.0, spatie/browsershot 5.5.0 or puppeteer 25.18.1 (other advisories are
+  pre-existing and out of scope).
+  - **M-1 (Medium, availability / business logic, CWE-20):** `BrowsershotDriver` always calls
+    `Browsershot::html($html)`, whose guard throws `HtmlIsNotAllowedToContainFile` when the HTML
+    (raw or entity-decoded) contains `view-source` or `//localhost`/`//127.`-style text. Reproduced:
+    `Browsershot::html('<p>Piso 2 view-source</p>')` throws. Customer-controlled snapshot strings
+    (`recipient_name` from the customer, billing address, product names) reach the template, so a
+    customer can make their own issued (immutable) invoice permanently unrenderable (500 on
+    download, later a failed 0104 attachment). Fix: rebind `laravel-pdf.driver.browsershot` to a
+    `BrowsershotDriver` subclass that writes the HTML to an app-owned private temp file and loads it
+    with `setHtmlFromFilePath()` **(recommended)**, keeping every FD-10 layer and the
+    `withBrowsershot` callback; add a test with `view-source` and `//127.0.0.1` in the billing address
+    and a product name (real-Chromium smoke test plus a driver-level assertion that no exception is
+    raised). Alternative: neutralise those tokens with a U+2060 word joiner before rendering
+    (alters the legal text; not recommended).
+  - **L-1 (Low, information exposure, CWE-377):** Browsershot's temp HTML (customer PII) is written
+    under the system temp dir with `spatie/temporary-directory`'s 0777-minus-umask mode. Set
+    `LARAVEL_PDF_TEMP_PATH` to a private storage directory (document in `.env.example`); the M-1
+    driver should use the same private directory.
+  - **L-2 (Low, DoS, CWE-400):** the throttle bounds rate, not concurrency; 30 parallel requests per
+    user each spawn a Chromium. Consider a `Cache::lock`/funnel concurrency cap around the render
+    (non-blocking; acceptable for an admin-only route if deferred).
+  - **I-1 (Info):** the driver is env-selectable (`LARAVEL_PDF_DRIVER`); the hardening lives only in
+    `withBrowsershot`, so another driver (e.g. cloudflare, which sends PII to a third party) would
+    silently drop it. Consider pinning `'driver' => 'browsershot'` or asserting it in
+    `RenderInvoicePdf`. **I-2:** puppeteer is a devDependency; a production `npm ci --omit=dev`
+    has no renderer, and Chromium security patches arrive only with puppeteer upgrades — keep it
+    current. **I-3:** add `Cache-Control: private, no-store` to the PDF response (PII).
+  - Durable rules recorded in `docs/security/headless-pdf-rendering.md`.
+- Phase 4 re-audit — appsec-auditor, 2026-11-19 (commits 7acfa24, 38f128c): **PASS, with one
+  Low recommendation (N-1)**. M-1 fixed: `SafeBrowsershotDriver` passes `''` to the parent (guard
+  never sees the data) and loads the HTML with `setHtmlFromFilePath()` before the
+  `withBrowsershot` callback; the file is removed in a `finally` of both `generatePdf()`/`savePdf()`,
+  the only parent paths that call `buildBrowsershot()`. L-1 fixed: 0600 file (umask 0077 at
+  creation, no window), random 128-bit name, 0700 directory, default
+  `storage/app/private/pdf-temp` (gitignored, outside the web root); Browsershot's own temp
+  directory uses the same path. I-1 fixed: `->driver('browsershot')` resolves the rebound container
+  key (package providers register before app providers; binding test confirms the subclass).
+  I-3 fixed: `Cache-Control: private, no-store`. L-2 deferred and I-2 an operations note, as decided.
+  - **N-1 (Low, defense in depth, CWE-552) — new, introduced by the fix:** Browsershot sets the
+    puppeteer option `blockLocalFileAccess` only when `$this->html !== ''` (`createCommand()`), so
+    the file-based load silently drops the interception that aborts every `file:` request except
+    the initial navigation. Local-file reads stay blocked by Blade escaping, the template
+    architecture test and the CSP meta (`default-src 'none'; img-src data:`), so not exploitable
+    today; but one regression in any of those would now let `<iframe src="file:///…/.env">` reach
+    the PDF. Recommendation: in the `SafeBrowsershotDriver` wrapper closure, after
+    `setHtmlFromFilePath($filePath)`, add `$browsershot->setOption('blockLocalFileAccess', true);`
+    and assert it in `SafeBrowsershotDriverTest` (read `additionalOptions`). Cheap; fix in this
+    story if possible.
+  - **N-2 (Info):** the `finally` cleanup does not run if the PHP process dies (OOM, SIGKILL, fatal);
+    a PII HTML file can then remain in the 0700 directory. Optional: a scheduled prune of
+    `pdf-temp` files older than a few minutes.
+- Phase 5 (final code review) — code-reviewer, 2026-11-19 (diff `origin/main...HEAD`, through
+  ff6ff7d): **APPROVED, non-blocking notes only.** Verified: every acceptance criterion and
+  FD-1..FD-14 is implemented and covered (T-1..T-30; T-10b/T-2 logo-lookup amendment honoured;
+  N-1 fixed by `setOption('blockLocalFileAccess', true)` in `SafeBrowsershotDriver.php:58`, asserted
+  in `SafeBrowsershotDriverTest`); thin controller in front of `DownloadInvoice`; refusal logged with
+  explicit `targetType`/`targetId`; route has no `can:`; en/es `invoices.pdf.*` key parity (25 keys
+  each, programmatic diff empty); guard works (Pest.php `afterEach` + source scan + negative test).
+  Re-run by reviewer: `tests/Feature/Invoices/Pdf`, `ResolveInvoiceLocaleTest`,
+  `InvoicePdfTemplatesArchitectureTest` 185 passed / 2 skipped (opt-in smoke); Larastan on the
+  touched paths 0 errors. Full suite, Pint and the real smoke taken from the orchestrator's evidence.
+  Non-blocking notes (may be fixed now or left; none changes behaviour):
+  1. `app/Actions/Invoices/BuildInvoicePdfData.php:26` returns `array<string, mixed>`; code-style's
+     "PHPDoc array shapes" rule prefers an `array{locale: string, isCopy: bool, ...}` shape for this
+     fixed-key view model (the story's class contract also says `array<string, mixed>`, so not a
+     violation of the story).
+  2. `BuildInvoicePdfData.php:79` `date(mixed $moment, ...)` — type it `CarbonInterface` (the cast is
+     `datetime`); `mixed` hides the `->format()` call from Larastan.
+  3. `app/Providers/AppServiceProvider.php:38-39` registers the limiter inline in `boot()`; siblings use
+     a named `configure*()` method (`FortifyServiceProvider::configureRateLimiting()`).
+  4. `app/Actions/Invoices/DownloadInvoice.php:29` uses the `request()` helper inside an action;
+     consider letting the controller pass the `Request` (or call `toResponse()` there).
+  5. `app/Actions/Invoices/SafeBrowsershotDriver.php` is a package-driver subclass, not an action;
+     acceptable under the no-new-folder rule, but docs-keeper should record it in
+     `directory-structure/actions.md` so the placement reads as deliberate.
+  6. `tests/Feature/Invoices/Pdf/InvoicePdfSmokeTest.php:30-31` — `not->toContain('root:x:0:0')` cannot
+     fail (Chrome's page content streams are Flate-compressed), and the script is Blade-escaped so
+     "JS did not run" holds even with JavaScript enabled. Hardening is proven by the option-level
+     assertions (`RenderInvoicePdfTest` FD-10, `SafeBrowsershotDriverTest` N-1); the smoke proves a
+     real, bounded render. Accepted as is; do not cite T-30 as proof of the JS/file blocking.
+  Remaining DoD for later phases: documentation (Phase 6) and the closing full-suite gate (Phase 7).

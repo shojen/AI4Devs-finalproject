@@ -214,6 +214,19 @@ Three refusal shapes are excluded, each decided rather than missed:
 
   > ✅ **Story 0048 is that extension, and it makes a different call than this bullet's own "deferred" framing predicted.** `App\Exceptions\OrderNotEditableException` (409) is a state-based refusal in the identical sense — `Role`'s guards refuse on account of the row's own database state, not the actor — but `AddOrderItem`/`RemoveOrderItem`/`UpdateOrderItemQuantity` all call `LogRefusedPrivilegedAttempt::log()` immediately before the throw (Phase 4 finding F-6), so it does **not** join this bullet's exclusion list. The two state-based refusals in this app disagree on whether to log, and that is a decision each one makes on its own facts, not a rule this section states once for both: `Role`'s guards were judged not worth a log line (task 0010, never revisited); Orders' hard block was judged worth one from Phase 1, because a hijacked or over-privileged session repeatedly probing a `Shipped` order's editability is exactly the audit-trail signal this project's refusal-logging convention exists to capture. See [Order editability](domain-invariants.md#order-editability--the-second-state-based-refusal-and-the-shape-three-more-stories-copy) below.
 
+### Refusing a download without a `can:` middleware (story 0102)
+
+`invoices.download` is the one route in the app that is deliberately **not** gated by `can:`. A `can:` refusal never reaches `LogRefusedPrivilegedAttempt` (the middleware throws before any action runs), so a signed-in user without `invoices.view` probing invoice ids would leave no trail. The route therefore carries only `auth`, `verified` and the `invoice-downloads` throttle, and the action authorizes itself as its first statement:
+
+```php
+// app/Actions/Invoices/DownloadInvoice.php
+$this->logRefusedPrivilegedAttempt->authorize('view', $invoice, targetType: 'invoice', targetId: $invoice->id);
+```
+
+The helper resolves a logged target on its own only for `User` and `Role` models, so the call passes `targetType` and `targetId` **explicitly** (as `MarkOrderAsPaid` does for `'order'`). A refusal is a 403 plus one log row (ability `view`, `target_type` `invoice`); an unknown id is a 404 and a guest a redirect, neither logged. Per-route detail in [api/invoices.md](../../api/invoices.md#pdf-rendering-and-download-story-0102).
+
+❌ Do not "tidy" this route to `can:invoices.view`: the refusal would stop being logged. The sidebar-registry drift test only covers routes that have a registry entry, and this route has none.
+
 ### The dashboard read-side actions — one no-throw exception, five refusal-logging actions
 
 Story 0082's [`app/Actions/Dashboard/`](../../../app/Actions/Dashboard/) is the first group of actions behind a route that is itself **ungated** (`dashboard`), so authorization is decided per widget by the action feeding it ([contract table](../../api/dashboard.md#read-side-actions)).
@@ -257,4 +270,4 @@ Three rules generalise from it:
 4. Pin the shape with an **equivalence test** that captures a refusal from the new screen and one from an existing screen in a single `Log::spy()` session and set-equates their key sets — `tests/Feature/Roles/RefusalLoggingTest.php` and `tests/Feature/Users/ActionRefusalLoggingTest.php` do this screen-to-screen and action-to-action respectively. Asserting each screen's shape in isolation lets two conventions drift into existence.
 5. Add a must-not-over-log test beside each: a permitted create/edit/delete still writes its single `Log::info` success line and **no** warning.
 
-_Last updated: 2026-11-10 — Story 0097: added the interrupted-form-restore subsection (the 0015a D4 "lose the form" wart is gone for create and edit). Still current from earlier stories: the dashboard read-side actions subsection (0082), the `update_conflict` refusal reason (0064d) and `activation_refused_status_changed` (0064c)._
+_Last updated: 2026-11-19 — Story 0102: added the no-`can:` download route subsection (logged refusal with explicit `targetType`/`targetId`). Earlier subsections (0097 interrupted-form restore, 0082 dashboard read-side actions, 0064d `update_conflict`) unchanged._

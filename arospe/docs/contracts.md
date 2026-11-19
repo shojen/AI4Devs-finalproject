@@ -35,6 +35,7 @@ This document is split into parts. Each block below gives the **binding core** o
 **Read the full text when:** you diagnose a failing pipeline or review CI.
 
 - List recent runs for the current branch (`gh run list --branch $(git branch --show-current) --limit 5`), view only the failed step (`gh run view <id> --log-failed`), reproduce locally with this project's commands (`php artisan test --compact --filter=...`, `vendor/bin/pint --format agent`, `composer types:check`) before touching code, fix the real cause (the test only if the test is wrong), then push and re-run `/watch-ci after-push` until green.
+- **Known exception:** a `tests/Browser` failure that is the CI-only `Timeout 5000ms exceeded` on a click and that passes locally gets Pest's `->skipOnCi()` on that test, then push and re-watch, one test at a time until green; any other failure is investigated and fixed as above. List every skipped test in the PR hand-over.
 
 ### [Commit granularity and pull request closure](contracts/commits-and-pull-requests.md)
 
@@ -44,4 +45,4 @@ This document is split into parts. Each block below gives the **binding core** o
 - **Pull request:** a finished task ships as a PR against the branch its worktree was created from — never a direct merge. Title `[{task number}] {task title}`; description has exactly three Spanish sections `## Qué cambia` / `## Porqué` / `## Qué impacto tiene` plus the attribution line. Run `/watch-ci after-push` after pushing and after opening the PR; fix a red pipeline before handing over.
 - **Never** merge, approve or close a PR (`gh pr merge`, `gh pr review --approve`, `gh pr close`) — even if asked to "merge it"; that is reserved for the project owner, with no exception.
 
-_Last updated: 2026-09-24 — split into the parts above (docs optimization pass); no rule changed. The prior revision-history footer, if any, stays at the end of the last part._
+_Last updated: 2026-11-19 — CI protocol gained the `skipOnCi()` exception for the known CI-only browser click timeout; the other parts are unchanged (split into parts on 2026-09-24)._

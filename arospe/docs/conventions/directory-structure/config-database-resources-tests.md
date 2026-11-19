@@ -7,7 +7,10 @@
 ```
 config/                Laravel + package config (fortify.php, permission.php,
                         intervention-image.php, livewire.php, ...), plus modules.php — the one
-                        app-owned config file (see below)
+                        app-owned registry (see below); invoicing.php (story 0102) holds the invoice
+                        PDF paper/margin/timeout/logo-size settings (env-backed, no closures), and
+                        laravel-pdf.php is the published spatie/laravel-pdf config (a package file, all
+                        env-driven; its Browsershot temp path defaults to a private storage dir)
 database/
   data/                 Bundled, version-controlled fixture data a seeder reads — not seeder
                         classes (iso-3166-countries.json, shared read-only with story 0032's own
@@ -48,12 +51,17 @@ resources/
                         apply — the class is not named Index), embedded from
                         products/editor.blade.php below a flux:separator, rendered only when
                         $productId !== null
+    invoices/pdf/        Story 0102: the invoice PDF templates (classic.blade.php, modern.blade.php) and
+                        partials/ shared by both. Plain Blade rendered by Browsershot, not Livewire views:
+                        no `{!!`, scripts, links or external URLs (enforced by
+                        tests/Unit/InvoicePdfTemplatesArchitectureTest.php)
     partials/
 routes/                 web.php, plus one file per functional area that web.php requires
                         (settings.php, roles.php, users.php, sales-regions.php,
                         product-categories.php, product-attribute-types.php, products.php,
                         shipping.php, payment-methods.php, customers.php since story 0044, orders.php since story 0055, blog-tags.php,
-                        blog-categories.php and blog-posts.php since stories 0060, 0062 and 0063),
+                        blog-categories.php and blog-posts.php since stories 0060, 0062 and 0063,
+                        invoices.php since story 0102),
                         plus console.php since story 0064 — NOT an area file: loaded by the console kernel,
                         registers no HTTP route, holds the `Schedule::` entries — no
                         api.php yet. web.php no longer
@@ -112,7 +120,10 @@ tests/
                         "Tests\\": "tests/" mapping, no new autoload entry
                        Story 0101b: Support/Invoices/Invoicing.php (static builders for the issuing tests:
                        settings(), defaultStoreLanguage(), manager(), order(), thousandOrder(), sum(),
-                       invoicesOf()), beside 0101a's Support/Invoices/Numbering.php
+                       invoicesOf()), beside 0101a's Support/Invoices/Numbering.php. Story 0102 added
+                       Support/Invoices/FakesPdf.php (swaps the PDF engine for the package fake and, with
+                       the `afterEach` hook in tests/Pest.php, fails any test under Feature/Invoices/Pdf
+                       that neither faked it nor opted out) and PdfFixtures.php (unsaved invoice builders)
   Browser/              Pest browser tests. Mirrors app structure (Auth/, Media/, Components/,
                         Products/ since story 0027, ProductCategories/ since story 0071) — but three of the
                         eleven files sit flat instead (UsersIndexTest.php, RolesIndexTest.php,
