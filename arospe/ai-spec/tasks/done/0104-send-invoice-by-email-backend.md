@@ -2,8 +2,8 @@
 
 > **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
-> [0101b](../done/0101b-issue-standard-invoice-backend.md) (invoices, `IssueInvoice`, out-of-date guard,
-> `InvoicePolicy`) and [0102](../done/0102-invoice-pdf-rendering-and-templates-backend.md)
+> [0101b](0101b-issue-standard-invoice-backend.md) (invoices, `IssueInvoice`, out-of-date guard,
+> `InvoicePolicy`) and [0102](0102-invoice-pdf-rendering-and-templates-backend.md)
 > (`RenderInvoicePdf`, `ResolveInvoiceLocale`, file-name sanitiser, `Invoice::hasBeenSent()`
 > stub). Dependents: [0105](../0105-automatic-invoice-on-order-creation-backend.md) (automatic send),
 > [0109a](../0109a-orders-list-invoice-send-ui.md), [0109b](../0109b-order-detail-invoices-panel-ui.md) and [0110](../0110-billing-section-ui.md) (buttons).
@@ -302,29 +302,29 @@ recorded; an order without invoice can be issued and sent in one confirmed step 
 both permissions.
 
 ## Acceptance criteria
-- [ ] `invoice_deliveries` exists as specified.
-- [ ] Original/copy follows FD-1 and holds under concurrency.
-- [ ] Recipient, e-mail validation, deleted customer and out-of-date rules hold (FD-2..FD-5).
-- [ ] Single and order-level sends follow FD-6..FD-8, including "Issue and send".
-- [ ] Dispatch failure and status transitions follow FD-9 and FD-10.
-- [ ] Mails are queued, localised and carry the right PDFs (FD-11); downloads of sent invoices
+- [x] `invoice_deliveries` exists as specified.
+- [x] Original/copy follows FD-1 and holds under concurrency.
+- [x] Recipient, e-mail validation, deleted customer and out-of-date rules hold (FD-2..FD-5).
+- [x] Single and order-level sends follow FD-6..FD-8, including "Issue and send".
+- [x] Dispatch failure and status transitions follow FD-9 and FD-10.
+- [x] Mails are queued, localised and carry the right PDFs (FD-11); downloads of sent invoices
   carry the COPY mark (FD-12).
-- [ ] `invoices.send` seeded (catalog 48); refusals logged per FD-14; en/es parity.
+- [x] `invoices.send` seeded (catalog 48); refusals logged per FD-14; en/es parity.
 
 ## Definition of Done
-- [ ] Tests written and green
-- [ ] Code reviewed (code-reviewer)
-- [ ] No security findings (appsec-auditor)
-- [ ] Documentation updated (docs-keeper): ER (`invoice_deliveries`), the invoicing schema doc,
+- [x] Tests written and green
+- [x] Code reviewed (code-reviewer)
+- [x] No security findings (appsec-auditor)
+- [x] Documentation updated (docs-keeper): ER (`invoice_deliveries`), the invoicing schema doc,
   authorization catalog (48), the invoices API doc, the queue-worker operational note (a worker
   must run; `MAIL_MAILER=log` writes attachments to the log in development; production needs a
   TLS mailer)
-- [ ] Acceptance criteria met
-- [ ] Pint unscoped, Larastan level 7, full suite green
+- [x] Acceptance criteria met
+- [x] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open technical questions
-- Upstream: [0101b](../done/0101b-issue-standard-invoice-backend.md),
-  [0102](../done/0102-invoice-pdf-rendering-and-templates-backend.md). Downstream:
+- Upstream: [0101b](0101b-issue-standard-invoice-backend.md),
+  [0102](0102-invoice-pdf-rendering-and-templates-backend.md). Downstream:
   [0105](../0105-automatic-invoice-on-order-creation-backend.md) calls `RecordInvoiceDeliveries` as
   the system; [0109a](../0109a-orders-list-invoice-send-ui.md), [0109b](../0109b-order-detail-invoices-panel-ui.md) / [0110](../0110-billing-section-ui.md) call
   the two actions.
@@ -350,13 +350,13 @@ both permissions.
     (b) no cap.
 
 ## Technical tasks
-- [ ] Migration, model, factory, enum, `Invoice` relations and `hasBeenSent()`.
-- [ ] `invoices.send`, `InvoicePolicy::send`, roles segment, count tests.
-- [ ] `RecordInvoiceDeliveries` with the matrix and concurrency tests.
-- [ ] `InvoiceSent` (locale, attachments, `failed()`), `MarkInvoiceDeliverySent`.
-- [ ] `SendInvoice`, `SendOrderInvoices` (issue-and-send, refusals, dispatch failure) with
+- [x] Migration, model, factory, enum, `Invoice` relations and `hasBeenSent()`.
+- [x] `invoices.send`, `InvoicePolicy::send`, roles segment, count tests.
+- [x] `RecordInvoiceDeliveries` with the matrix and concurrency tests.
+- [x] `InvoiceSent` (locale, attachments, `failed()`), `MarkInvoiceDeliverySent`.
+- [x] `SendInvoice`, `SendOrderInvoices` (issue-and-send, refusals, dispatch failure) with
   authorization and logging tests.
-- [ ] Config keys, lang en/es; Pint, Larastan, targeted then full suite; hand docs items to
+- [x] Config keys, lang en/es; Pint, Larastan, targeted then full suite; hand docs items to
   docs-keeper.
 
 ## Phase records
@@ -369,3 +369,6 @@ both permissions.
   `DownloadInvoice` (extract it rather than duplicate); story is at the upper bound of Small.
 - Phase 3 (TDD) complete on 2026-11-19 — `tests/Feature/Invoices` + `tests/Feature/Seeders` green (858 tests), Pint and Larastan clean; commits 80d6d14 (feat) and 8d06863 (test).
 - Phase 4 (security) approved on 2026-11-19 by appsec-auditor — no Critical/High/Medium. Low notes, none blocking: L1 no rate limit on resend (add in the UI story), L2 customer address in `jobs`/`failed_jobs` payloads (schedule `queue:prune-failed`), L3 at-least-once retry may duplicate a mail if `MarkInvoiceDeliverySent` fails (document), L4 `invoices.send` does not require `invoices.view` (intended; document). `MAIL_MAILER=log` must never be used in production.
+- Phase 5 (final code review) approved on 2026-11-19 by code-reviewer after one blocker was fixed: the `InvoiceSettingPolicyTest` catalog assertion did not include `invoices.send` (commits 5aeaacf and 13253b1). Full suite in chunks: Unit + Feature A-H 2634 passed / 5 skipped, I-O 2491 / 2 skipped, P-U 2155 with only that one failure, now fixed and re-verified, Browser 330 / 3 skipped. Pint unscoped clean; Larastan level 7 with 0 errors. Non-blocking note: the 0109a screen must handle both `invoices.errors.cancelled` and `nothing_to_send`.
+- Phase 6 (documentation) complete on 2026-11-19 by docs-keeper (commit e877205): ER (`invoice_deliveries`), invoicing schema, authorization catalog (48), invoices API and the queue-worker operational note.
+- Phase 7 (closure) on 2026-11-19: moved to `ai-spec/tasks/done/`; two-direction link check passed; `tasks-map.md`, `tasks-status.json` and the epic 6 digest updated.
