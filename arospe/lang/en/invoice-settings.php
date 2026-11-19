@@ -38,5 +38,6 @@ return [
         'start_invalid' => 'The starting counter must be a whole number between 1 and 4,294,967,294.',
         'clock_skew' => 'The invoice date is earlier than the last invoice issued in this series. Check the system clock.',
         'overflow' => 'The invoice counter has reached its maximum value and no further numbers can be issued.',
+        'next_number_exists' => 'The next invoice number under this format already exists. Choose a different prefix or year format.',
     ],
 ];

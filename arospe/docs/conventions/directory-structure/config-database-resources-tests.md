@@ -110,6 +110,9 @@ tests/
                         real seeder's own fixturePath() override hook exists specifically so this
                         test double can exist; autoloaded via composer.json's existing
                         "Tests\\": "tests/" mapping, no new autoload entry
+                       Story 0101b: Support/Invoices/Invoicing.php (static builders for the issuing tests:
+                       settings(), defaultStoreLanguage(), manager(), order(), thousandOrder(), sum(),
+                       invoicesOf()), beside 0101a's Support/Invoices/Numbering.php
   Browser/              Pest browser tests. Mirrors app structure (Auth/, Media/, Components/,
                         Products/ since story 0027, ProductCategories/ since story 0071) — but three of the
                         eleven files sit flat instead (UsersIndexTest.php, RolesIndexTest.php,

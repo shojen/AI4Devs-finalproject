@@ -4,7 +4,7 @@
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
 > [0100a](0100a-customer-tax-id-backend.md) (column, rule, normaliser). No dependents; the
 > value it lets managers enter is copied onto invoices by
-> [0101b](../0101b-issue-standard-invoice-backend.md).
+> [0101b](0101b-issue-standard-invoice-backend.md).
 
 ## Description
 The customer create/edit modal (`Customers\Index`) gains an optional "Tax ID" field, and the
@@ -291,7 +291,7 @@ validation error.
 ## Dependencies, risks, open questions
 - Upstream: [0100a](0100a-customer-tax-id-backend.md). Without it the validator has no
   `tax_id` rule and the actions drop the key silently, so Phase 3 starts only after 0100a is in
-  `done/`. Downstream use of the value: [0101b](../0101b-issue-standard-invoice-backend.md)
+  `done/`. Downstream use of the value: [0101b](0101b-issue-standard-invoice-backend.md)
   (snapshot) and [0102](../0102-invoice-pdf-rendering-and-templates-backend.md) (printed).
 - Risk: tests that enumerate the fifteen form fields (`IndexRenderingTest`, the browser
   "pre-fills every field" test) must be updated, not loosened.

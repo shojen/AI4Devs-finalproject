@@ -3,7 +3,7 @@
 > **Status: Done (closed 2026-11-18, Phase 7).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
 > [0100](0100-invoice-settings-backend.md) (settings, `ComposeInvoiceNumber`, `InvoiceType`,
-> `InvoiceSettingPolicy`). Dependents: [0101b](../0101b-issue-standard-invoice-backend.md) (issues
+> `InvoiceSettingPolicy`). Dependents: [0101b](0101b-issue-standard-invoice-backend.md) (issues
 > standard invoices with these numbers), [0103](../0103-invoice-settings-screen-ui.md) (preview and
 > starting counter on the screen),
 > [0107](../0107-corrective-invoice-on-refund-and-cancellation-backend.md) and
@@ -378,7 +378,7 @@ settings screen can preview the next numbers and set a starting counter once.
 
 ## Dependencies, risks, open technical questions
 - Upstream: [0100](0100-invoice-settings-backend.md). Downstream:
-  [0101b](../0101b-issue-standard-invoice-backend.md) calls `lock()` and `__invoke()` inside its issuing
+  [0101b](0101b-issue-standard-invoice-backend.md) calls `lock()` and `__invoke()` inside its issuing
   transaction, adds `UNIQUE(number)`, the collision message and `AssertNumberingFormatIsFree`
   (via `nextCounter()`), and repeats the rollback test with a real insert;
   [0103](../0103-invoice-settings-screen-ui.md) calls the preview and the starting counter;

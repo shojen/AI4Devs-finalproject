@@ -5,7 +5,7 @@
 > [0100](done/0100-invoice-settings-backend.md) (settings, rules, policy, save action),
 > [0101a](done/0101a-invoice-numbering-sequences-backend.md) (preview, starting counter) and
 > [0102](0102-invoice-pdf-rendering-and-templates-backend.md) (templates, renderer). Uses the
-> refusal added by [0101b](0101b-issue-standard-invoice-backend.md) once merged. No dependents.
+> refusal added by [0101b](done/0101b-issue-standard-invoice-backend.md) once merged. No dependents.
 
 ## Description
 A store-settings screen where a manager edits every invoice setting of 0100 in one form: the
@@ -511,7 +511,7 @@ as a PDF; a viewer reads the same screen without being able to change it.
 ## Dependencies, risks, open questions
 - Upstream: [0100](done/0100-invoice-settings-backend.md), [0101a](done/0101a-invoice-numbering-sequences-backend.md),
   [0102](0102-invoice-pdf-rendering-and-templates-backend.md) (unsaved-invoice render), and
-  [0101b](0101b-issue-standard-invoice-backend.md) for T-10 only. Sibling:
+  [0101b](done/0101b-issue-standard-invoice-backend.md) for T-10 only. Sibling:
   [0110](0110-billing-section-ui.md) owns the "Billing" label FD-1 avoids.
 - Risk (INVEST Small): the screen plus two read actions, a route and a modal is the largest
   frontend story of the epic. Split line if Phase 2 asks: 0103 (form, preview lines, thumbnails)

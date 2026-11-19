@@ -42,7 +42,7 @@ test('seeding a production environment still populates the roles and permission 
     (new DatabaseSeeder)();
 
     expect(Role::count())->toBe(2)
-        ->and(Permission::count())->toBe(45);
+        ->and(Permission::count())->toBe(47);
 });
 
 // F-2 (Phase 5 review, story 0016): DatabaseSeeder::run() calls SalesRegionSeeder
@@ -133,7 +133,7 @@ test('the production seeder also populates the roles and permission catalog', fu
     (new ProductionSeeder)();
 
     expect(Role::count())->toBe(2)
-        ->and(Permission::count())->toBe(45);
+        ->and(Permission::count())->toBe(47);
 });
 
 // Phase 5 code-review finding M1 -- see the identical note above DatabaseSeeder's own

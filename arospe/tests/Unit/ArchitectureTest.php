@@ -265,3 +265,241 @@ test('no Set*Translation write action keeps an inline active store language re-r
 
     expect($offenders)->toBe([], 'These translation write actions still inline the active() re-read instead of using the shared helper: '.implode(', ', $offenders));
 });
+
+// Story 0101b (FD-3, T-20): invoices and invoice lines are immutable through the application. The
+// model guard lives in model events, so a bulk query-builder write bypasses it; this test fails when
+// any file under app/ writes either table that way. A plain test, not arch(): Pest cannot match a
+// call pattern. The scanner is itself pinned by the offending samples below, so it cannot go vacuous.
+//
+// Statement-level matching (`[^;]*`) so a chain broken over several lines is still one statement.
+/**
+ * @return array<int, string> the matched bulk-write snippets of the source
+ */
+function invoiceBulkWriteOffences(string $source): array
+{
+    $verbs = 'update|delete|forceDelete|upsert|insert|insertOrIgnore|insertUsing|truncate|increment|decrement|updateOrInsert|updateFrom';
+    $patterns = [
+        '/\b(?:Invoice|InvoiceLine)::(?:query|where\w*|whereKey|withoutGlobalScopes|newQuery|on|onWriteConnection)\([^;]*?->(?:'.$verbs.')\(/s',
+        '/\b(?:Invoice|InvoiceLine)::(?:'.$verbs.')\(/',
+        '/->(?:lines|invoices|correctives)\(\)[^;]*?->(?:'.$verbs.')\(/s',
+        '/DB::table\(\s*[\'"]invoices?(?:_lines)?[\'"]/',
+        '/->table\(\s*[\'"]invoices?(?:_lines)?[\'"]/',
+        '/\bupdate\s+`?invoices?(?:_lines)?`?\s+set\b/i',
+        '/\b(?:delete\s+from|insert\s+into|truncate(?:\s+table)?)\s+`?invoices?(?:_lines)?`?(?![\w])/i',
+    ];
+    $found = [];
+
+    foreach ($patterns as $pattern) {
+        if (preg_match_all($pattern, $source, $matches) > 0) {
+            array_push($found, ...$matches[0]);
+        }
+    }
+
+    // Event-bypassing shapes, only in files that deal with invoices: they skip the immutability guard.
+    if (preg_match('/\bInvoice(?:Line)?\b/', $source) === 1) {
+        $bypasses = [
+            '/->(?:saveQuietly|deleteQuietly|forceDeleteQuietly)\(/',
+            '/\bwithoutEvents\(/',
+            '/(?:->|::)unsetEventDispatcher\(/',
+            '/->(?:newQuery|newModelQuery)\([^;]*?->(?:'.$verbs.')\(/s',
+        ];
+
+        foreach ($bypasses as $pattern) {
+            if (preg_match_all($pattern, $source, $matches) > 0) {
+                array_push($found, ...$matches[0]);
+            }
+        }
+    }
+
+    return $found;
+}
+
+/**
+ * Every PHP file under the given project-relative directories, as relative path => contents.
+ *
+ * @param  array<int, string>  $directories
+ * @return array<string, string>
+ */
+function projectPhpSources(array $directories): array
+{
+    $root = dirname(__DIR__, 2);
+    $sources = [];
+
+    foreach ($directories as $directory) {
+        if (! is_dir("{$root}/{$directory}")) {
+            continue;
+        }
+
+        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator("{$root}/{$directory}", FilesystemIterator::SKIP_DOTS)) as $file) {
+            if ($file->isFile() && str_ends_with($file->getFilename(), '.php')) {
+                $sources[substr($file->getPathname(), strlen($root) + 1)] = (string) file_get_contents($file->getPathname());
+            }
+        }
+    }
+
+    ksort($sources);
+
+    return $sources;
+}
+
+test('the invoice bulk-write scanner flags every shape of query-builder write (T-20)', function (string $snippet) {
+    expect(invoiceBulkWriteOffences($snippet))->not->toBe([]);
+})->with([
+    'query update' => ['Invoice::query()->where("id", $id)->update(["total" => 1]);'],
+    'query delete' => ['Invoice::query()->delete();'],
+    'multi-line chain' => ["Invoice::query()\n    ->whereKey(\$id)\n    ->update(['voided_at' => now()]);"],
+    'where upsert' => ['InvoiceLine::where("a", 1)->upsert($rows, ["id"]);'],
+    'static insert' => ['Invoice::insert($rows);'],
+    'static upsert' => ['InvoiceLine::upsert($rows, ["id"]);'],
+    'relation bulk delete' => ['$order->invoices()->delete();'],
+    'lines relation update' => ['$invoice->lines()->update(["quantity" => 2]);'],
+    'DB table invoices' => ["DB::table('invoices')->where('id', \$id)->update(\$x);"],
+    'DB table invoice_lines' => ['DB::table("invoice_lines")->delete();'],
+    'raw statement' => ['DB::statement("UPDATE invoices SET total = 0");'],
+    'raw delete' => ['DB::delete("delete from invoice_lines where 1");'],
+    'save quietly' => ['$invoice = Invoice::find($id); $invoice->saveQuietly();'],
+    'delete quietly' => ['$invoice = Invoice::find($id); $invoice->deleteQuietly();'],
+    'force delete quietly' => ['$invoiceLine = InvoiceLine::find($id); $invoiceLine->forceDeleteQuietly();'],
+    'without events' => ['Invoice::withoutEvents(fn () => $invoice->save());'],
+    'unset dispatcher' => ['Invoice::unsetEventDispatcher();'],
+    'new query chain' => ['$invoice = new Invoice; $invoice->newQuery()->where("id", 1)->update(["total" => 0]);'],
+    'new model query chain' => ['$line = new InvoiceLine; $line->newModelQuery()->delete();'],
+]);
+
+test('the invoice bulk-write scanner does not flag the legitimate reads and model writes (T-20)', function (string $snippet) {
+    expect(invoiceBulkWriteOffences($snippet))->toBe([]);
+})->with([
+    'read query' => ['Invoice::query()->where("order_id", $id)->lockForUpdate()->get();'],
+    'model create' => ['Invoice::create($x); $invoice->save();'],
+    'settings write' => ['InvoiceSetting::query()->insertOrIgnore([["id" => 1]]);'],
+    'sequence write' => ['InvoiceSequence::query()->where("series", "standard")->update(["last_number" => 2]);'],
+    'unrelated table' => ['DB::table("orders")->update(["x" => 1]);'],
+    'voided_at and collection model writes' => ['$invoice->voided_at = now(); $invoice->forceFill(["collected_at" => now()])->save();'],
+    'quiet save outside invoice files' => ['$order->saveQuietly();'],
+]);
+
+test('no code under app/ writes the invoices or invoice_lines tables through a query builder (FD-3, T-20)', function () {
+    $offenders = [];
+
+    foreach (projectPhpSources(['app']) as $path => $source) {
+        $found = invoiceBulkWriteOffences($source);
+
+        if ($found !== []) {
+            $offenders[$path] = $found;
+        }
+    }
+
+    expect($offenders)->toBe([], 'These files bulk-write invoices, bypassing the immutability guard: '.json_encode($offenders));
+});
+
+// Story 0101b (FD-13, T-25b): IssueInvoiceForOrder is the ungated core of issuing. Only already
+// authorized actions or system follow-ons may reference it. The allowed set is matched by file
+// basename so the exact folder of the later stories' classes (0104, 0105, 0106a) stays free.
+test('only the four FD-13 callers reference IssueInvoiceForOrder (T-25b)', function () {
+    $allowed = [
+        'IssueInvoiceForOrder.php', 'IssueInvoice.php', 'SendOrderInvoices.php', 'MarkOrderAsPaid.php', 'IssueAutomaticInvoice.php',
+    ];
+    $offenders = [];
+    $referencing = [];
+
+    foreach (projectPhpSources(['app', 'routes', 'bootstrap', 'config']) as $path => $source) {
+        if (preg_match('/\bIssueInvoiceForOrder\b/', $source) !== 1) {
+            continue;
+        }
+
+        $referencing[] = basename($path);
+
+        if (! in_array(basename($path), $allowed, true)) {
+            $offenders[] = $path;
+        }
+    }
+
+    expect($offenders)->toBe([], 'Only the FD-13 callers may reference the ungated core: '.implode(', ', $offenders))
+        // The gated entry point must really delegate to the core, or the whole fence is empty.
+        ->and($referencing)->toContain('IssueInvoice.php')
+        ->and($referencing)->toContain('IssueInvoiceForOrder.php');
+});
+
+// Story 0101b (F-2): CreateStandardInvoice is the only writer of invoices and lines, and only the
+// ungated core (and the later named writers, by basename) may call it.
+test('only the issuing core and the named later writers reference CreateStandardInvoice (T-25b)', function () {
+    $allowed = ['CreateStandardInvoice.php', 'IssueInvoiceForOrder.php', 'MarkOrderAsPaid.php', 'RegenerateOrderInvoices.php', 'IssueAutomaticInvoice.php'];
+    $offenders = [];
+    $referencing = [];
+
+    foreach (projectPhpSources(['app', 'routes', 'bootstrap', 'config']) as $path => $source) {
+        if (preg_match('/\bCreateStandardInvoice\b/', $source) !== 1) {
+            continue;
+        }
+
+        $referencing[] = basename($path);
+
+        if (! in_array(basename($path), $allowed, true)) {
+            $offenders[] = $path;
+        }
+    }
+
+    expect($offenders)->toBe([], 'Only the issuing core may reference the transaction-bound writer: '.implode(', ', $offenders))
+        ->and($referencing)->toContain('IssueInvoiceForOrder.php');
+});
+
+test('only CreateStandardInvoice creates Invoice or InvoiceLine rows under app/ (F-2)', function () {
+    $offenders = [];
+    $writers = [];
+
+    foreach (projectPhpSources(['app']) as $path => $source) {
+        if (preg_match('/\b(?:Invoice|InvoiceLine)::(?:forceCreate|create|firstOrCreate|updateOrCreate|forceFill)\(|new\s+(?:Invoice|InvoiceLine)\b/', $source) !== 1) {
+            continue;
+        }
+
+        $writers[] = basename($path);
+
+        if (basename($path) !== 'CreateStandardInvoice.php') {
+            $offenders[] = $path;
+        }
+    }
+
+    expect($offenders)->toBe([], 'Invoice rows may only be created by CreateStandardInvoice: '.implode(', ', $offenders))
+        ->and($writers)->toContain('CreateStandardInvoice.php');
+});
+
+test('no Livewire component, view or route file references the ungated issuing core (T-25b)', function () {
+    $offenders = [];
+    $root = dirname(__DIR__, 2);
+
+    foreach (['resources/views', 'resources/js'] as $directory) {
+        if (! is_dir("{$root}/{$directory}")) {
+            continue;
+        }
+
+        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator("{$root}/{$directory}", FilesystemIterator::SKIP_DOTS)) as $file) {
+            if ($file->isFile() && str_contains((string) file_get_contents($file->getPathname()), 'IssueInvoiceForOrder')) {
+                $offenders[] = substr($file->getPathname(), strlen($root) + 1);
+            }
+        }
+    }
+
+    foreach (projectPhpSources(['app/Livewire', 'app/Http', 'routes']) as $path => $source) {
+        if (str_contains($source, 'IssueInvoiceForOrder')) {
+            $offenders[] = $path;
+        }
+    }
+
+    expect($offenders)->toBe([]);
+});
+
+// Story 0101b (T-35): no route file registers a write verb for anything invoice-related. The runtime
+// twin (route:list) is in tests/Feature/Invoices/InvoiceImmutabilityTest.php.
+test('no routes file registers a write route naming invoices (T-35)', function () {
+    $offenders = [];
+
+    foreach (projectPhpSources(['routes']) as $path => $source) {
+        foreach (preg_split('/\R/', $source) ?: [] as $number => $line) {
+            if (preg_match('/Route::(?:post|put|patch|delete|any|match|resource|apiResource)\b/i', $line) === 1 && stripos($line, 'invoice') !== false) {
+                $offenders[] = $path.':'.($number + 1);
+            }
+        }
+    }
+
+    expect($offenders)->toBe([]);
+});

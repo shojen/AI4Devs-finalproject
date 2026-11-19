@@ -2,7 +2,7 @@
 
 > **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
-> [0101b](0101b-issue-standard-invoice-backend.md) (`IssueInvoice`, `ComputeOrderInvoiceBalance`,
+> [0101b](done/0101b-issue-standard-invoice-backend.md) (`IssueInvoice`, `ComputeOrderInvoiceBalance`,
 > amount rules, `InvoicePolicy`), [0102](0102-invoice-pdf-rendering-and-templates-backend.md)
 > (`invoices.download`), [0104](0104-send-invoice-by-email-backend.md) (`SendInvoice`),
 > [0106](0106-invoice-collection-order-debt-partially-paid-backend.md) (collected state, debt,
@@ -394,7 +394,7 @@ what is left to invoice.
 - [ ] `npm run build` passes; Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open questions
-- Upstream: [0101b](0101b-issue-standard-invoice-backend.md),
+- Upstream: [0101b](done/0101b-issue-standard-invoice-backend.md),
   [0102](0102-invoice-pdf-rendering-and-templates-backend.md),
   [0104](0104-send-invoice-by-email-backend.md),
   [0106](0106-invoice-collection-order-debt-partially-paid-backend.md),

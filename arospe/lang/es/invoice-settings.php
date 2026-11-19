@@ -38,5 +38,6 @@ return [
         'start_invalid' => 'El contador inicial debe ser un número entero entre 1 y 4.294.967.294.',
         'clock_skew' => 'La fecha de la factura es anterior a la de la última factura emitida en esta serie. Revisa el reloj del sistema.',
         'overflow' => 'El contador de facturas ha alcanzado su valor máximo y no se pueden emitir más números.',
+        'next_number_exists' => 'El siguiente número de factura con este formato ya existe. Elige otro prefijo o formato de año.',
     ],
 ];

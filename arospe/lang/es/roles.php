@@ -54,6 +54,7 @@ return [
         'roles' => 'Roles',
         'media' => 'Medios',
         'invoice_settings' => 'Ajustes de facturas',
+        'invoices' => 'Facturas',
     ],
 
     /*

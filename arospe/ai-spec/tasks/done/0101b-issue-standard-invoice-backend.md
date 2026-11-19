@@ -1,17 +1,17 @@
 # [0101b] Issue standard invoice — the invoice core (backend)
 
-> **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
+> **Status: Done (Phase 2 PASS 2026-11-18; Phases 3 to 6 complete 2026-11-19; closed 2026-11-19, PR to follow).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). **Unblocked** (all predecessors done):
-> [0100](done/0100-invoice-settings-backend.md) (settings, `InvoiceType`, `SaveInvoiceSettings`),
-> [0100a](done/0100a-customer-tax-id-backend.md) (`customers.tax_id`) and
-> [0101a](done/0101a-invoice-numbering-sequences-backend.md) (`AllocateInvoiceNumber`). Dependents:
-> [0102](0102-invoice-pdf-rendering-and-templates-backend.md),
-> [0104](0104-send-invoice-by-email-backend.md),
-> [0105](0105-automatic-invoice-on-order-creation-backend.md),
-> [0106](0106-invoice-collection-order-debt-partially-paid-backend.md),
-> [0107](0107-corrective-invoice-on-refund-and-cancellation-backend.md),
-> [0108](0108-regenerate-invoices-after-order-edit-backend.md),
-> [0110](0110-billing-section-ui.md).
+> [0100](0100-invoice-settings-backend.md) (settings, `InvoiceType`, `SaveInvoiceSettings`),
+> [0100a](0100a-customer-tax-id-backend.md) (`customers.tax_id`) and
+> [0101a](0101a-invoice-numbering-sequences-backend.md) (`AllocateInvoiceNumber`). Dependents:
+> [0102](../0102-invoice-pdf-rendering-and-templates-backend.md),
+> [0104](../0104-send-invoice-by-email-backend.md),
+> [0105](../0105-automatic-invoice-on-order-creation-backend.md),
+> [0106](../0106-invoice-collection-order-debt-partially-paid-backend.md),
+> [0107](../0107-corrective-invoice-on-refund-and-cancellation-backend.md),
+> [0108](../0108-regenerate-invoices-after-order-edit-backend.md),
+> [0110](../0110-billing-section-ui.md).
 
 ## Description
 Create the invoice tables and issue a standard invoice for an order: for the whole uninvoiced
@@ -53,12 +53,18 @@ backend | includes database-expert: yes
   `AssertWithinColumnCeiling`. Project lock order (story 0088a FD-7): `orders` -> `products` ->
   `product_variants` -> stock -> `order_items`. Deadlock 1213 is not retried.
 - Customers are soft-deleted; a refusal is logged through `LogRefusedPrivilegedAttempt`.
-- 0101a: one `invoice_sequences` row per series; `AllocateInvoiceNumber::lock()` takes settings
-  `FOR SHARE` then the sequence rows `FOR UPDATE` and returns the locked settings;
-  `__invoke(InvoiceType, CarbonInterface $issuedAt)` returns number, series, `sequence_year`
-  (calendar year of the allocation) and `sequence_number`; `nextCounter()` is read-only.
+- 0101a: one `invoice_sequences` row per series; the real signature is
+  `AllocateInvoiceNumber::lock(list<InvoiceType> $series, CarbonInterface $at): array{settings:
+  InvoiceSetting, sequences: array}` (settings `FOR SHARE`, then the sequence rows `FOR UPDATE`;
+  it returns an array, not the settings model); `__invoke(InvoiceType, CarbonInterface
+  $issuedAt)` returns number, series, `sequence_year` (calendar year of the allocation) and
+  `sequence_number`; `nextCounter()` is read-only and runs an **unlocked** SELECT on
+  `invoice_sequences` (C-3, C-4).
 - The seeded catalog has 45 permissions after 0100; Administrator is synced with every catalog
-  permission except `roles.manage-administrators`.
+  permission except `roles.manage-administrators` (44 today, 46 after this story).
+  `lang/en/roles.php` already has the `invoice_settings` leaf (C-9).
+- There is no order-delete action, route or UI: `Order.php` documents that orders are never
+  deleted (C-6). There is no media delete action either (C-7).
 
 ## Shared definitions (epic arithmetic used here)
 - **Billable** = `total - refunded_amount` (0.00 when the order is `Cancelled`).
@@ -139,7 +145,9 @@ the column). No backfill.
   `->delete`, `DB::table('invoices'...)`, `upsert`). A direct database edit is outside the
   application and outside this epic (no triggers; legal e-invoicing out of scope).
 - **FD-4 Order cannot be deleted once invoiced.** Enforced by `restrictOnDelete()` on
-  `invoices.order_id`, tested; no delete path changes.
+  `invoices.order_id`, tested at foreign-key level (T-22); no delete path changes. The
+  application has no order-delete action, route or UI (orders are never deleted, `Order.php`),
+  so this is a data-integrity guarantee, not a user flow (C-6).
 - **FD-5 Snapshot.** Issuer from the settings read under the share lock in the issuing
   transaction; recipient name and tax ID from the customer (`withTrashed`, a soft-deleted
   customer does not break issuing), recipient address from the **order's** billing snapshot;
@@ -150,6 +158,9 @@ the column). No backfill.
   quantity, unit price, line total) with `kind = item`, and shipping goes in the header. Every
   other invoice has one line, `kind = adjustment`, `order_item_id` null, quantity 1, description
   "Payment on account of order N" (translated at issue in the store language and stored).
+  The language comes from `App\Actions\Invoices\ResolveInvoiceLocale` (introduced here, reused
+  by 0102 FD-8): the default store language code when `lang/{code}/invoices.php` exists, else
+  `config('app.fallback_locale')`; never the ambient or the admin's UI locale.
 - **FD-7 Stored order values win (QA G-2).** An itemised invoice copies the order's stored
   `subtotal`, `tax_amount` and `shipping_amount`; per-line taxes are allocated by largest
   remainder (stable on ties) so they sum exactly to the stored tax. Nothing is recomputed, so an
@@ -177,18 +188,27 @@ the column). No backfill.
   `200.5`, `200.50`), normalised to scale 2; comma decimals, exponents, surrounding spaces,
   arrays, `INF` and values above the column ceiling (99999999.99) are refused; screens convert
   localised input before calling. Omitted amount = the uninvoiced amount.
-- **FD-12 Lock order and timing.** One transaction: `orders` row `FOR UPDATE`, read the order's
-  invoices, `AllocateInvoiceNumber::lock([Standard])` (settings `FOR SHARE`, sequence
-  `FOR UPDATE`), take `issued_at = now()` after the lock, allocate, insert invoice and lines. The
-  cap is safe because every invoice writer locks the order first. There is no issue-date
-  parameter (no back-dating).
-- **FD-13 Gated action, ungated core.** `IssueInvoice` (authorize `create` with logging, validate
+- **FD-12 Lock order and timing.** One transaction: `orders` row `FOR UPDATE` (re-taken at the
+  top of `CreateStandardInvoice`, which does not trust the caller's instance); take `$at =
+  now()` **once**, right after the order lock; `AllocateInvoiceNumber::lock([InvoiceType::Standard],
+  $at)` (settings `FOR SHARE`, sequence `FOR UPDATE`; returns `array{settings, sequences}`);
+  only then read the order's invoices with a **locking read** (`lockForUpdate()`), because under
+  REPEATABLE READ a plain SELECT reads the transaction snapshot, not the latest committed rows,
+  which would break the cap for a waiter (T-11) and for callers that read before calling inside
+  their own transaction (C-1). The sequence lock goes before the invoices read so that two
+  issuers for different orders that both have no invoices never deadlock (the invoices read
+  takes a gap lock on `order_id`, which would otherwise collide with the other issuer's insert
+  intention while it waits for the sequence row, F-1). Order items and the customer are also
+  read with `sharedLock()`. Allocate with `__invoke(Standard, $at)` (the same instant, used as
+  `issued_at`, C-3); insert invoice and lines. The cap is safe because every invoice writer
+  locks the order first. There is no issue-date parameter (no back-dating).
+- **FD-13 Gated action, ungated core.** `IssueInvoice` (authorize `create` on invoices AND `orders.view` (`OrderPolicy::viewAny`, F-3 owner decision) with logging, validate
   the amount, call the core) is the only entry point a screen may call.
   `IssueInvoiceForOrder` holds the transaction and is ungated; only already-authorized actions or
   system follow-ons may call it: `IssueInvoice`, `SendOrderInvoices` (0104), `MarkOrderAsPaid`
   (0106a), `IssueAutomaticInvoice` (0105). An architecture test lists these callers and fails on
   any other reference (routes, Livewire components). `CreateStandardInvoice` is the
-  transaction-bound writer (refuses to run outside a transaction, for another order's locked row,
+  transaction-bound writer (refuses to run outside a transaction, for an order not read from the database in this transaction (e.g. freshly created),
   or with a non-positive / over-ceiling total) and accepts an optional collection record used by
   0106 and 0108.
 - **FD-14 Legacy paid orders until 0106 (QA G-4).** Here an invoice for a paid order without
@@ -197,13 +217,19 @@ the column). No backfill.
 - **FD-15 Out-of-date guard.** `Order::isInvoiceOutOfDate()` and `AssertInvoicesAreCurrent` live
   here; issuing calls the guard. 0104, 0106, 0106a and 0107 add their calls; only 0108 sets and
   clears the column. Every existing order reads "not out of date".
-- **FD-16 Numbering format check (BR-0100-9).** `AssertNumberingFormatIsFree` runs inside
-  `SaveInvoiceSettings` after its row lock: for each series it composes the next number under the
-  proposed format (0101a's `nextCounter()`) and refuses the save when that number already exists
-  in `invoices.number` (case-insensitive by collation), with the error on that series' prefix.
+- **FD-16 Numbering format check (0100 FD-12 / 0101a FD-11).** `AssertNumberingFormatIsFree`
+  runs inside `SaveInvoiceSettings` after its `lockForUpdate()` and before `save()`: the proposed
+  model is built the way `PeekNextInvoiceNumber` builds it (`$row->replicate()->forceFill($validated)`,
+  C-4); for each series it composes the next number under the proposed format (0101a's
+  `nextCounter()`, an unlocked SELECT on `invoice_sequences`) and refuses the save when that
+  number already exists in `invoices.number` (case-insensitive by collation), with the error on
+  that series' prefix.
 - **FD-17 Permissions.** `invoices.view` and `invoices.create` are appended to the seeder's
   `INVOICE_PERMISSIONS` (catalog 45 -> 47); Administrator and Super Admin hold them. Refusal log
-  `target_type` is `invoice`.
+  `target_type` is `invoice`. F-3 (owner decision): issuing also requires `orders.view` (the caller
+  must be able to see the order); no catalog change. Every refusal path (neither, `invoices.create`
+  without `orders.view`, `orders.view` without `invoices.create`) throws the same
+  `AuthorizationException` and logs once as `create` on `invoice`, before any state read.
 - **FD-19 Error keys (screen contract).** `IssueInvoice` raises `amount` (below 0.01, above the
   uninvoiced amount, above the column ceiling, the legacy whole-amount rule of 0106), `issuer`
   (incomplete issuer data), `number` (collision, FD-2) and `invoice` (cancelled, out of date,
@@ -212,11 +238,14 @@ the column). No backfill.
   `AssertNumberingFormatIsFree` throws on `<series>_prefix` with
   `invoice-settings.numbering.next_number_exists`. Screens build their read sides on these tables
   through their own read actions (`DescribeOrderInvoicing` in
-  [0109a](0109a-orders-list-invoice-send-ui.md); `ListInvoices` and `FindInvoiceableOrders` in
-  [0110](0110-billing-section-ui.md)).
+  [0109a](../0109a-orders-list-invoice-send-ui.md); `ListInvoices` and `FindInvoiceableOrders` in
+  [0110](../0110-billing-section-ui.md)).
 - **FD-18 Logo restrict.** `invoices.logo_media_id` is `restrictOnDelete`, so a gallery image used
   on an issued invoice cannot be deleted (the frozen look; owner question Q-0102-5 (a)). No media
-  delete action exists today; a future one must turn this into a friendly refusal.
+  delete action exists today; a future one must turn this into a friendly refusal. The docs must
+  state that `invoice_settings.logo_media_id` (`nullOnDelete`) and `invoices.logo_media_id`
+  (`restrictOnDelete`) differ on purpose: the settings may lose their logo, an issued invoice's
+  frozen look may not (C-7).
 
 ## Class contracts
 - Enums: `App\Enums\InvoiceLineKind` (`Item='item'`, `Adjustment='adjustment'`),
@@ -237,10 +266,11 @@ the column). No backfill.
   $actor): Invoice` (ungated, FD-13).
 - `App\Actions\Invoices\CreateStandardInvoice::__invoke(Order $lockedOrder, string $amount,
   ?User $actor, ?array $collected = null): Invoice`.
-- `App\Actions\Invoices\ComputeOrderInvoiceBalance::__invoke(Order $order): array{billable:
+- `App\Actions\Invoices\ComputeOrderInvoiceBalance::__invoke(Order $order, bool $locking = false): array{billable:
   string, netInvoiced: string, uninvoiced: string, liveCount: int, components: array<string,
   string>, invoicedComponents: array<string, string>}`.
 - `App\Actions\Invoices\SplitInvoiceAmount` and `BuildInvoiceLines` (pure).
+- `App\Actions\Invoices\ResolveInvoiceLocale::__invoke(): string` (store-language code or fallback).
 - `App\Actions\Invoices\AssertInvoicesAreCurrent::__invoke(Order $lockedOrder, string $errorKey =
   'invoice'): void`.
 - `App\Actions\Invoices\AssertNumberingFormatIsFree::__invoke(InvoiceSetting $proposed,
@@ -290,10 +320,11 @@ Feature: Issue a standard invoice
     Then the change is refused
     And the invoice is unchanged
 
-  Scenario: An invoiced order cannot be deleted
-    Given a store manager with permission to delete orders, and an order with an invoice
-    When she attempts to delete the order
-    Then the deletion is refused
+  Scenario: An invoiced order cannot be removed from the database
+    Given an order with an issued invoice
+    When the order row is deleted directly in the database
+    Then the deletion is refused by the invoice's foreign key
+    And the order and its invoice remain
 
   Scenario: A numbering format that would repeat a number is refused
     Given a store manager with permission to manage invoice settings, and invoice F2026-00001 already issued
@@ -321,8 +352,12 @@ Feature: Issue a standard invoice
   AssertNumberingFormatIsFree}.php`.
 - `app/Actions/Invoices/SaveInvoiceSettings.php` (0100) — call `AssertNumberingFormatIsFree`
   after the row lock.
-- `database/seeders/RolePermissionSeeder.php` — two names; `lang/{en,es}/roles.php` —
-  `modules.invoices` leaf; catalog-count tests 45 -> 47.
+- `database/seeders/RolePermissionSeeder.php` — two names; `lang/{en,es}/roles.php` — add the
+  new `modules.invoices` leaf next to the existing `invoice_settings` one, en/es parity (C-9);
+  catalog-count tests 45 -> 47 and Administrator 44 -> 46 in
+  `tests/Feature/Seeders/RolePermissionSeederTest.php` and
+  `tests/Feature/Seeders/DatabaseSeederTest.php` (C-8); docs-keeper updates the counts in
+  `docs/architecture/authorization*`.
 - `lang/{en,es}/invoices.php` (new) — `errors.*` (including `issuer_incomplete`) and the
   concept-line description; `lang/{en,es}/invoice-settings.php` — `numbering.next_number_exists`.
 - Tests below. No route, config or `modules.php` change.
@@ -332,84 +367,90 @@ Real actions and database; only the clock and a second connection are arranged. 
 strings in every assertion.
 
 Happy path
-- [ ] T-1 Whole uninvoiced amount: one standard invoice, number from 0101a, `issued_at` now,
+- [x] T-1 Whole uninvoiced amount: one standard invoice, number from 0101a, `issued_at` now,
   `issued_by` the actor, lifecycle columns null, `reason`/`corrects_invoice_id` null.
-- [ ] T-2 Itemised (FD-6): lines copied; `subtotal`, `tax_amount`, `shipping_amount`, `total`
+- [x] T-2 Itemised (FD-6): lines copied; `subtotal`, `tax_amount`, `shipping_amount`, `total`
   equal the order's stored values; line sum = subtotal.
-- [ ] T-3 Five 200.00 invoices on 1000.00: five numbers, concept lines, a sixth refused; sums per
+- [x] T-3 Five 200.00 invoices on 1000.00: five numbers, concept lines, a sixth refused; sums per
   component equal the order's.
-- [ ] T-4 Split dataset (thirds; 0.01 + rest; 999.99 then 0.01; 1.00 repeatedly on 7.00): each
+- [x] T-4 Split dataset (thirds; 0.01 + rest; 999.99 then 0.01; 1.00 repeatedly on 7.00): each
   invoice's base + tax + shipping = its total; the last absorbs rounding. Seeded randomised
   property test in `tests/Unit/Actions/Invoices/SplitInvoiceAmountTest.php`.
-- [ ] T-5 Cent-edge itemised dataset (rates 10 / 21 / 7.5, 0.005 residues): per-line tax sums to
+- [x] T-5 Cent-edge itemised dataset (rates 10 / 21 / 7.5, 0.005 residues): per-line tax sums to
   the stored order tax (largest remainder, stable ties).
-- [ ] T-5b Order whose stored `tax_amount` differs from a fresh recomputation: the invoice uses
+- [x] T-5b Order whose stored `tax_amount` differs from a fresh recomputation: the invoice uses
   the stored value (FD-7).
-- [ ] T-6 Null `tax_rate`: invoice and lines tax 0.00, rate null.
-- [ ] T-7 Partially refunded order invoiced for its whole billable amount: one concept line.
-- [ ] T-8 Earlier invoices all voided (net invoiced 0.00): invoiced whole again, itemised.
-- [ ] T-9 Policy: `view` holder passes `viewAny`/`view`; `create` holder passes `create`; Super
+- [x] T-6 Null `tax_rate`: invoice and lines tax 0.00, rate null.
+- [x] T-7 Partially refunded order invoiced for its whole billable amount: one concept line.
+- [x] T-8 Earlier invoices all voided (net invoiced 0.00): invoiced whole again, itemised.
+- [x] T-9 Policy: `view` holder passes `viewAny`/`view`; `create` holder passes `create`; Super
   Admin all; re-seed gives catalog 47 and Administrator both names.
-- [ ] T-10 Snapshot: issuer = settings, recipient name/tax ID = customer, recipient address =
+- [x] T-10 Snapshot: issuer = settings, recipient name/tax ID = customer, recipient address =
   order billing snapshot, look = settings, `order_number` = order's.
 
 Edge
-- [ ] T-11 Two issuers of 600.00 on 1000.00 (second connection holds `orders FOR UPDATE`, short
+- [x] T-11 Two issuers of 600.00 on 1000.00 (second connection holds `orders FOR UPDATE`, short
   `innodb_lock_wait_timeout`): the waiter fails with 1205; after commit it is refused by the cap;
-  exactly one 600.00 invoice exists. Highest risk.
-- [ ] T-12 `DB::listen`: `orders FOR UPDATE`, invoice reads, settings `FOR SHARE`, sequence
-  `FOR UPDATE`, then inserts.
-- [ ] T-13 Failure dataset (invoice insert, line insert, cap, collision): nothing written,
-  sequence row unchanged, next issue reuses the number; a failure after commit changes nothing.
-- [ ] T-14 Amount dataset: `0.01`, `1000.00`, `200`, `200.5` accepted; `0.00`, `-0.01`,
+  exactly one 600.00 invoice exists. Highest risk. The probe connection cannot see or lock
+  uncommitted `RefreshDatabase` rows, so the test builds a **committed** fixture graph on the probe
+  (customer, payment method, order, items, and the committed invoice/sequence changes) and
+  cleans it up in `finally`, restoring the sequence rows to their migration state; tests may
+  delete invoices through the query builder (the FD-3 architecture test covers `app/` only).
+  Follow `tests/Feature/Invoices/AllocateInvoiceNumberConcurrencyTest.php` (C-2).
+- [x] T-12 `DB::listen`: `orders FOR UPDATE`, invoice reads as a locking read (`FOR SHARE` /
+  `FOR UPDATE`, C-1), settings `FOR SHARE`, sequence `FOR UPDATE`, then inserts.
+- [x] T-13 Failure dataset (invoice insert, line insert, cap, collision): nothing written,
+  sequence row unchanged, next issue reuses the number; an exception thrown after the transaction returned leaves invoice, lines and counter committed and consistent.
+- [x] T-14 Amount dataset: `0.01`, `1000.00`, `200`, `200.5` accepted; `0.00`, `-0.01`,
   `1000.01`, `200.005`, `' 200.00'`, `'2e2'`, `'200,50'`, `'abc'`, `''`, array, `INF`,
   `100000000.00` refused on `amount`, no counter movement.
-- [ ] T-15 Billable 0.00 (fully refunded merchandise, zero order): refused, nothing left.
-- [ ] T-16 Invoiced, then refunded below net invoiced: uninvoiced 0.00, issuing refused (FD-9).
-- [ ] T-17 Issues at 2026-12-31 23:59:59 and 2027-01-01 00:00:00: `issued_at` and the number's
+- [x] T-15 Billable 0.00 (fully refunded merchandise, zero order): refused, nothing left.
+- [x] T-16 Invoiced, then refunded below net invoiced: uninvoiced 0.00, issuing refused (FD-9).
+- [x] T-17 Issues at 2026-12-31 23:59:59 and 2027-01-01 00:00:00: `issued_at` and the number's
   year follow the issue moment; the signature has no date.
-- [ ] T-18 After changing settings, customer (edit, rename, soft-delete), order billing address
+- [x] T-18 After changing settings, customer (edit, rename, soft-delete), order billing address
   or line prices: every invoice column and line unchanged (dataset of 8); deleting the logo media
   row is refused by the foreign key.
-- [ ] T-19 Each frozen column (dataset over all of them) set and saved through the model: guard
+- [x] T-19 Each frozen column (dataset over all of them) set and saved through the model: guard
   throws; lifecycle columns writable; `delete()` throws; line update and delete throw.
-- [ ] T-20 Bulk `Invoice::query()->update()` bypasses model events (boundary documented); the
+- [x] T-20 Bulk `Invoice::query()->update()` bypasses model events (boundary documented); the
   architecture test fails if `app/` code writes the invoice tables by query builder.
-- [ ] T-21 Soft-deleted customer: issuing works (`withTrashed`); null customer tax ID -> null
+- [x] T-21 Soft-deleted customer: issuing works (`withTrashed`); null customer tax ID -> null
   `recipient_tax_id`.
-- [ ] T-22 Deleting an invoiced order fails on the foreign key; an order without invoices still
-  deletes.
-- [ ] T-23 Removing an invoiced order line: succeeds; the invoice line keeps description, SKU,
+- [x] T-22 Deleting an invoiced order row (query builder, no application path exists) fails on
+  the foreign key; an order without invoices still deletes.
+- [x] T-23 Removing an invoiced order line: succeeds; the invoice line keeps description, SKU,
   amounts and gets `order_item_id` null.
-- [ ] T-24 Forced number collision: validation error on `number` after rollback, counter not
-  consumed; another unique violation propagates.
-- [ ] T-25 `CreateStandardInvoice` outside a transaction, for another order, or with a
+- [x] T-24 Forced number collision: validation error on `number` after rollback, counter not
+  consumed; a 1062 on another index propagates as a `QueryException`.
+- [x] T-25 `CreateStandardInvoice` outside a transaction, for another order, or with a
   non-positive / over-ceiling total: `LogicException`, nothing written.
-- [ ] T-25b Architecture test: only the four FD-13 callers reference `IssueInvoiceForOrder`.
+- [x] T-25b Architecture test: only the four FD-13 callers reference `IssueInvoiceForOrder`.
 
 Negative
-- [ ] T-26 Without `invoices.create` (none, view only, `invoice-settings.manage` only), valid or
+- [x] T-26 Without both `invoices.create` and `orders.view` (none, view only, `invoice-settings.manage`
+  only, `invoices.create` without `orders.view`, `orders.view` without `invoices.create`), valid or
   invalid amount, any order state: `AuthorizationException` before any state read; same refusal
   everywhere; nothing written.
-- [ ] T-27 One `Log::warning('Privileged action refused')` (`ability = create`, `target_type =
+- [x] T-27 One `Log::warning('Privileged action refused')` (`ability = create`, `target_type =
   invoice`, no amount or issuer data); unauthenticated caller refused and logged.
-- [ ] T-28 Issuer data missing (legal name, tax ID, address line 1, no settings row): refused on
+- [x] T-28 Issuer data missing (legal name, tax ID, address line 1, no settings row): refused on
   `issuer` with `invoices.errors.issuer_incomplete`; city and country may be empty.
-- [ ] T-28b Error-key matrix (FD-19): each refusal raises exactly its key; `AssertInvoicesAreCurrent`
+- [x] T-28b Error-key matrix (FD-19): each refusal raises exactly its key; `AssertInvoicesAreCurrent`
   with a custom key raises on that key.
-- [ ] T-29 Cancelled order (manual and auto-cancel, also with billable > 0 after a full refund):
+- [x] T-29 Cancelled order (manual and auto-cancel, also with billable > 0 after a full refund):
   refused.
-- [ ] T-30 Out-of-date order refused; every existing order and factory default is not out of date.
-- [ ] T-31 Amount just above, equal to billable after a prior invoice, or double: refused, message
+- [x] T-30 Out-of-date order refused; every existing order and factory default is not out of date.
+- [x] T-31 Amount just above, equal to billable after a prior invoice, or double: refused, message
   states the remaining amount.
-- [ ] T-32 Missing customer row: refused, no partial rows.
-- [ ] T-33 `SaveInvoiceSettings` with a format whose next number exists (standard prefix back
+- [x] T-32 Missing customer row: refused, no partial rows.
+- [x] T-33 `SaveInvoiceSettings` with a format whose next number exists (standard prefix back
   to an earlier one; corrective clash; year token change): refused on `<series>_prefix` with
   `invoice-settings.numbering.next_number_exists`, row unchanged;
   a free format saves.
-- [ ] T-34 Next number equal to an existing one ignoring case: refused (collation).
-- [ ] T-35 No route writes or deletes invoices (`route:list` and architecture assertion).
-- [ ] T-37 Product name with markup stored raw (escaping is 0102's); description and SKU fit the
+- [x] T-34 Next number equal to an existing one ignoring case: refused (collation).
+- [x] T-35 No route writes or deletes invoices (`route:list` and architecture assertion).
+- [x] T-37 Product name with markup stored raw (escaping is 0102's); description and SKU fit the
   source column lengths (255 / 128).
 
 ## Expected outcome
@@ -419,36 +460,36 @@ through the application; later stories can issue, correct, collect and render on
 tables without another migration on `invoices`.
 
 ## Acceptance criteria
-- [ ] The three migrations create exactly the columns and keys above; only `UNIQUE(number)` on
+- [x] The three migrations create exactly the columns and keys above; only `UNIQUE(number)` on
   numbering.
-- [ ] Issuing follows the cap, refusals and amount format (FD-9..FD-11) with authorization first.
-- [ ] Itemised vs concept lines and all sums follow FD-6..FD-8 to the cent.
-- [ ] Concurrent issuers can never exceed the uninvoiced amount; failures consume no number.
-- [ ] Snapshots never change after later edits (FD-5); immutability holds through the
+- [x] Issuing follows the cap, refusals and amount format (FD-9..FD-11) with authorization first.
+- [x] Itemised vs concept lines and all sums follow FD-6..FD-8 to the cent.
+- [x] Concurrent issuers can never exceed the uninvoiced amount; failures consume no number.
+- [x] Snapshots never change after later edits (FD-5); immutability holds through the
   application (FD-3); invoiced orders cannot be deleted (FD-4).
-- [ ] `IssueInvoiceForOrder` is reachable only from the listed callers (FD-13).
-- [ ] The settings save refuses a format whose next number already exists (FD-16).
-- [ ] Permissions seeded (catalog 47); refusals logged; en/es lang parity.
+- [x] `IssueInvoiceForOrder` is reachable only from the listed callers (FD-13).
+- [x] The settings save refuses a format whose next number already exists (FD-16).
+- [x] Permissions seeded (catalog 47); refusals logged; en/es lang parity.
 
 ## Definition of Done
-- [ ] Tests written and green
-- [ ] Code reviewed (code-reviewer)
-- [ ] No security findings (appsec-auditor)
-- [ ] Documentation updated (docs-keeper): ER diagram (`invoices`, `invoice_lines`,
+- [x] Tests written and green
+- [x] Code reviewed (code-reviewer)
+- [x] No security findings (appsec-auditor)
+- [x] Documentation updated (docs-keeper): ER diagram (`invoices`, `invoice_lines`,
   `orders.invoice_out_of_date_at`), the invoicing schema doc, authorization catalog (47), the
   invoices API doc, directory structure (actions), the lock-order rule, and the statement that
   legal e-invoicing rules are out of scope
-- [ ] Acceptance criteria met
-- [ ] Pint unscoped, Larastan level 7, full suite green
+- [x] Acceptance criteria met
+- [x] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open technical questions
-- Story 0101a notes (I1, fixtures): call `AllocateInvoiceNumber::lock()` and `__invoke()` at the **same `DB::transaction` nesting level** (the allocator caches locked rows per transaction record and throws `LogicException` without one). For fixtures use `Tests\Support\Invoices\Numbering` (`arrange()`, `allocate()`, probe connection with `innodb_lock_wait_timeout = 1`); there is no `InvoiceSequenceFactory` (D-1). See [0101a](done/0101a-invoice-numbering-sequences-backend.md).
-- Upstream: [0100](done/0100-invoice-settings-backend.md), [0100a](done/0100a-customer-tax-id-backend.md),
-  [0101a](done/0101a-invoice-numbering-sequences-backend.md). Downstream: every later invoicing story;
-  [0106](0106-invoice-collection-order-debt-partially-paid-backend.md) owns the legacy-order rule
-  and `SyncOrderCollection`; [0107](0107-corrective-invoice-on-refund-and-cancellation-backend.md)
+- Story 0101a notes (I1, fixtures): call `AllocateInvoiceNumber::lock()` and `__invoke()` at the **same `DB::transaction` nesting level** (the allocator caches locked rows per transaction record and throws `LogicException` without one). For fixtures use `Tests\Support\Invoices\Numbering` (`arrange()`, `allocate()`, probe connection with `innodb_lock_wait_timeout = 1`); there is no `InvoiceSequenceFactory` (D-1). See [0101a](0101a-invoice-numbering-sequences-backend.md).
+- Upstream: [0100](0100-invoice-settings-backend.md), [0100a](0100a-customer-tax-id-backend.md),
+  [0101a](0101a-invoice-numbering-sequences-backend.md). Downstream: every later invoicing story;
+  [0106](../0106-invoice-collection-order-debt-partially-paid-backend.md) owns the legacy-order rule
+  and `SyncOrderCollection`; [0107](../0107-corrective-invoice-on-refund-and-cancellation-backend.md)
   adds correctives and `invoice_lines.refund_id`;
-  [0108](0108-regenerate-invoices-after-order-edit-backend.md) writes the out-of-date column.
+  [0108](../0108-regenerate-invoices-after-order-edit-backend.md) writes the out-of-date column.
 - Release risk (FD-9, FD-14): between this story and 0107, a refund after invoicing leaves more
   invoiced than billable, and a legacy paid order can get an uncollected invoice; ship 0101b to
   0107 in one release.
@@ -463,17 +504,24 @@ tables without another migration on `invoices`.
     a QR code to 0102 and a submission story).
 
 ## Technical tasks
-- [ ] Schema tests; three migrations; models, factories, enums.
-- [ ] Immutability guards with one test per frozen column; architecture tests (bulk writes,
+- [x] Schema tests; three migrations; models, factories, enums.
+- [x] Immutability guards with one test per frozen column; architecture tests (bulk writes,
   allowed callers).
-- [ ] `InvoicePolicy`, seeder names, catalog-count updates, roles leaf.
-- [ ] `ComputeOrderInvoiceBalance`, `SplitInvoiceAmount`, `BuildInvoiceLines` with cent-edge and
+- [x] `InvoicePolicy`, seeder names, catalog-count updates, roles leaf.
+- [x] `ComputeOrderInvoiceBalance`, `SplitInvoiceAmount`, `BuildInvoiceLines` with cent-edge and
   property tests.
-- [ ] `CreateStandardInvoice`, `IssueInvoiceForOrder`, `IssueInvoice` with authorization,
+- [x] `CreateStandardInvoice`, `IssueInvoiceForOrder`, `IssueInvoice` with authorization,
   logging, concurrency and rollback tests.
-- [ ] `AssertInvoicesAreCurrent`; `AssertNumberingFormatIsFree` hooked into `SaveInvoiceSettings`.
-- [ ] Lang en/es; Pint, Larastan, targeted then full suite; hand docs items to docs-keeper.
+- [x] `AssertInvoicesAreCurrent`; `AssertNumberingFormatIsFree` hooked into `SaveInvoiceSettings`.
+- [x] Lang en/es; Pint, Larastan, targeted then full suite; hand docs items to docs-keeper.
 
 ## Phase records
 - Phase 1 (Three Amigos) complete on 2026-11-15 — participants: product-owner (facilitator),
-  backend-expert, database-expert, backend-qa. Phase 2 (INVEST) pending.
+  backend-expert, database-expert, backend-qa.
+- Phase 2 (INVEST, code-reviewer) PASS 2026-11-18; corrections C-1..C-9 folded in. Phase 3
+  started 2026-11-18.
+- Phase 3 (TDD) complete 2026-11-19: three agents worked the story (tests first, red; then the schema/models and the actions/policy), looped red to green until the targeted suites passed.
+- Phase 4 (appsec-auditor) complete 2026-11-19: findings F-1..F-7 fixed (F-1 gap-lock deadlock between issuers resolved by taking the sequence lock before the locking read of the order's invoices; F-3 resolved by owner decision: issuing requires `invoices.create` AND `orders.view`, no catalog change; the rest fixed in code with tests); re-audit clean. Accepted risks recorded in the docs: N-1 (deleting the logo media against the settings share lock can deadlock; any future media-delete path must lock settings first) and I-1 (restrict FKs on `issued_by` and `logo_media_id` need clean refusals in future delete flows).
+- Phase 5 (code-reviewer) complete 2026-11-19: first pass FAIL on B-1 (the concept line was translated in the ambient or admin locale instead of the store language), fixed by introducing `ResolveInvoiceLocale` (store-language code when `lang/{code}/invoices.php` exists, else the fallback locale) with its test; the non-blocking notes were fixed; second pass PASS. Pint unscoped clean, Larastan level 7 with 0 errors, full suite green in 5 directory chunks on 2026-11-19.
+- Phase 6 (docs-keeper) complete 2026-11-19: ER diagram (`invoices`, `invoice_lines`, `orders.invoice_out_of_date_at`), `docs/database/schema-other/invoices.md`, authorization catalog 47 / Administrator 46 and `InvoicePolicy`, `docs/api/invoices.md` (action contracts, error-key matrix, out-of-scope statement), directory-structure entries, the invoicing lock-order rule with N-1 / I-1 in `docs/api/orders.md`, localization rule, errors-log entries, epic 6 digest.
+- Phase 7 (closure) complete 2026-11-19: file moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`; two-direction link-integrity check run (own `../done/` links made bare, pending-sibling links keep `../`; inbound links in `0102`, `0103`, `0104`, `0105`, `0106`, `0106a`, `0107`, `0108`, `0110` repointed to `done/0101b-…` and in `done/0100a`, `done/0100b`, `done/0101a` to bare `0101b-…`); `ai-spec/tasks-map.md` and `ai-spec/tasks-status.json` regenerated. PR against `main` to follow.
