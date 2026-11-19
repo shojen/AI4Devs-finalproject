@@ -20,7 +20,7 @@ beforeEach(function () {
 test('the policy permission constants are literals of the catalog', function () {
     expect(InvoiceSettingPolicy::VIEW_PERMISSION)->toBe('invoice-settings.view')
         ->and(InvoiceSettingPolicy::MANAGE_PERMISSION)->toBe('invoice-settings.manage')
-        ->and(RolePermissionSeeder::INVOICE_PERMISSIONS)->toBe(['invoice-settings.view', 'invoice-settings.manage', 'invoices.view', 'invoices.create']);
+        ->and(RolePermissionSeeder::INVOICE_PERMISSIONS)->toBe(['invoice-settings.view', 'invoice-settings.manage', 'invoices.view', 'invoices.create', 'invoices.send']);
 });
 
 test('viewAny is allowed for a holder of invoice-settings.view alone, denied for a holder of neither', function () {
