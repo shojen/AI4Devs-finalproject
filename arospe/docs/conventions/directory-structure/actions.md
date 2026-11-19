@@ -53,6 +53,17 @@ app/
                        validates field rules only, no cross-field rules, before any model is
                        built; and SetInvoiceSequenceStart, a logged `update` action that
                        authorizes before reading any state
+                       Story 0101b added the issuing family (api/invoices.md,
+                       database/schema-other/invoices.md): IssueInvoice -- the ONLY entry point a
+                       screen may call (logged `create` authorization on invoices plus orders.view
+                       before any state read; validates the amount); IssueInvoiceForOrder -- the
+                       UNGATED transaction owner, callable only by IssueInvoice, SendOrderInvoices,
+                       MarkOrderAsPaid and IssueAutomaticInvoice (architecture test); and the
+                       collaborators that authorize nothing: CreateStandardInvoice (transaction-bound
+                       writer), ComputeOrderInvoiceBalance, SplitInvoiceAmount and BuildInvoiceLines
+                       (pure), AssertInvoicesAreCurrent (out-of-date guard),
+                       AssertNumberingFormatIsFree (called by SaveInvoiceSettings) and
+                       ResolveInvoiceLocale (the store-language code of an invoice's text)
   Actions/Localization/ Cross-cutting, not a module area (D24) -- the app's two default-locale
                        settings (SetDefaultUiLocale, SetDefaultNotificationLocale -- story 0068),
                        filed separately from Actions/StoreLanguages/ below even though both write
@@ -302,4 +313,4 @@ app/
                        — see database/schema-other.md#payment_methods)
 ```
 
-_Last updated: 2026-11-17 — Story 0101a: the `Actions/Invoices/` entry lists AllocateInvoiceNumber, PeekNextInvoiceNumber and SetInvoiceSequenceStart._
+_Last updated: 2026-11-19 — Story 0101b: the `Actions/Invoices/` entry lists the issuing family and its allowed-callers rule. Story 0101a: the `Actions/Invoices/` entry lists AllocateInvoiceNumber, PeekNextInvoiceNumber and SetInvoiceSequenceStart._

@@ -7,6 +7,8 @@
 ```
 app/
   Concerns/            Shared traits (validation rule sets, incl. BlogCategoryValidationRules — story 0058; BlogTagValidationRules — story 0059 (two name-rule methods, `nameFormatRules()` and `nameRules()`, because create and find-or-create disagree about what an existing name means); LocaleSettingValidationRules — story 0069 (the two dashboard-default locale rule methods, consumed only by `Livewire\StoreLanguages\Index`); BlogPostValidationRules — story 0061 (field-named methods, two of them status-parameterised: `bodyRules()` and `publishedAtRules()`); ResolvesSalesRegionFromAddress — the country/Spain-postal-prefix → Sales Region mapping shared by the physical and virtual tax-region resolvers; ResolvesFlagReasonLabel — story 0055, the `flag_reason` → copy resolution shared by the orders list marker and the detail callout, so the two never word one flag differently; HasTranslations — story 0070, the FIRST behavioural (non-validation-rules) trait in this folder: per-field fallback resolution and bounded eager loading for any `<Entity>` with an `<entity>_translations` child table, mixed into ProductCategory alongside its companion interface Translatable; ChecksAbilitiesSafely — story 0083, the second behavioural trait: `allowsSafely()` is `Gate::allows()` that treats a missing permission row (Spatie's `PermissionDoesNotExist`, the only exception it catches) as a deny, for the ungated dashboard (see architecture/authorization.md); InteractsWithUiLocale — story 0067, the first behavioural trait for a Livewire component: the interface-language switchers' shared `currentLocale()` computed and `applyUiLocale()` persist-then-redirect, used by Settings\LanguageSwitcher and Settings\Language — see conventions/base-standards.md#behavioural-traits-in-appconcerns and database/schema.md's product_category_translations entry)
+                       Story 0101b: InvoiceValidationRules (invoiceAmountRules() and invoiceAmountMessages(), the
+                       dot-decimal amount rule set IssueInvoice validates with and the invoicing screens reuse)
   Console/Commands/    Artisan commands (PublishScheduledBlogPosts, `blog:publish-scheduled-posts` — story 0064,
                        the app's first: run every minute by the schedule entry in routes/console.php. The
                        command owns the selection and the per-post loop, Actions/Blog/PublishScheduledBlogPost
@@ -45,6 +47,8 @@ app/
                        constant (sqlFormat() for SQL, keyFormat(), step(), maxBuckets()) so the
                        dashboard series never branch on the case; OrderStatus gained
                        defaultDashboardSet(), the dashboard's default status filter)
+                       Story 0101b: InvoiceLineKind (item, adjustment) and InvoiceCorrectionReason (refund,
+                       order_edited, order_cancelled; written from 0107/0108 only)
   Exceptions/          Domain exceptions that render their own response (ImmutableRoleException → 403,
                        RoleInUseException → 409, PasswordConfirmationRequiredException → 423,
                        OrderNotEditableException → 409 since story 0048 -- the state-based hard

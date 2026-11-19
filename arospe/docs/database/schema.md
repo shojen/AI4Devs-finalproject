@@ -30,7 +30,14 @@ erDiagram
     PRODUCTS ||--o{ PRODUCT_TRANSLATIONS : product_id
     STORE_LANGUAGES ||--o{ PRODUCT_TRANSLATIONS : store_language_id
     MEDIA ||--o{ PRODUCTS : "featured_media_id (nullable)"
-    MEDIA ||--o| INVOICE_SETTINGS : "logo"
+    MEDIA ||--o| INVOICE_SETTINGS : "logo (nullOnDelete)"
+    MEDIA ||--o{ INVOICES : "logo_media_id (restrict)"
+    ORDERS ||--o{ INVOICES : "order_id (restrict)"
+    INVOICES ||--o{ INVOICES : "corrects_invoice_id (restrict)"
+    USERS ||--o{ INVOICES : "issued_by, collected_by (restrict)"
+    PAYMENT_METHODS ||--o{ INVOICES : "collection_payment_method_id (restrict)"
+    INVOICES ||--o{ INVOICE_LINES : "invoice_id (restrict)"
+    ORDER_ITEMS |o--o{ INVOICE_LINES : "order_item_id (nullOnDelete)"
     PRODUCT_MEDIA }o--|| PRODUCTS : product_id
     PRODUCT_MEDIA }o--|| MEDIA : media_id
     PRODUCT_SALES_REGION }o--|| PRODUCTS : product_id
@@ -110,6 +117,54 @@ erDiagram
         int last_number
         smallint last_year
         datetime last_issued_at
+    }
+    INVOICES {
+        uuid id PK
+        uuid order_id FK
+        string order_number
+        string type
+        string reason
+        string series
+        smallint sequence_year
+        int sequence_number
+        string number UK
+        timestamp issued_at
+        uuid corrects_invoice_id FK
+        timestamp voided_at
+        string template
+        string primary_color
+        string accent_color
+        uuid logo_media_id FK
+        string issuer_legal_name
+        string issuer_tax_id
+        string recipient_name
+        string recipient_tax_id
+        decimal tax_rate
+        decimal subtotal
+        decimal shipping_amount
+        decimal tax_amount
+        decimal total
+        uuid issued_by FK
+        timestamp collected_at
+        uuid collected_by FK
+        uuid collection_payment_method_id FK
+        string collection_type
+        boolean collection_carried_over
+    }
+    INVOICE_LINES {
+        uuid id PK
+        uuid invoice_id FK
+        uuid order_item_id FK
+        smallint position
+        string kind
+        string description
+        string sku
+        int quantity
+        decimal unit_price
+        decimal tax_rate
+        decimal line_subtotal
+        decimal tax_amount
+        decimal line_total
     }
 
     USERS {
@@ -330,6 +385,7 @@ erDiagram
         decimal shipping_amount
         decimal total
         decimal refunded_amount
+        timestamp invoice_out_of_date_at
         boolean flagged_for_review
         string ip_address
         string ip_derived_country
@@ -487,17 +543,17 @@ Split by domain into separate files, per [contracts.md](../contracts/token-and-d
 - **[Users & Auth](schema-users-auth.md)** — read if the task touches [`users`](schema-users-auth.md#users), [`passkeys`](schema-users-auth.md#passkeys), the `spatie/laravel-permission` tables ([`roles`/`permissions`/`model_has_roles`/`model_has_permissions`/`role_has_permissions`](schema-users-auth.md#roles-permissions-model_has_roles-model_has_permissions-role_has_permissions)), or the [infrastructure tables](schema-users-auth.md#infrastructure-tables) tied to authentication (`password_reset_tokens`, `sessions`, `cache`, `jobs`).
 - **[Products & Taxes](schema-products.md)** — read if the task touches [`sales_regions`](schema-products/sales-regions-and-media.md#sales_regions), [`media`](schema-products/sales-regions-and-media.md#media), [`product_categories`](schema-products/categories-and-products.md#product_categories), [`product_translations`](schema-products/categories-and-products.md#product_translations) (story 0076: `products` lost `name`/`description` to it), [`product_category_translations`](schema-products/categories-and-products.md#product_category_translations) (this app's first per-language content table, and the `App\Concerns\HasTranslations`/`App\Actions\Translations\SetTranslation` mechanism it pilots), [`products`](schema-products/categories-and-products.md#products), [`product_media`](schema-products/gallery-and-region-pivots.md#product_media), [`product_sales_region`](schema-products/gallery-and-region-pivots.md#product_sales_region), [`product_attribute_types`](schema-products/attribute-types-and-values.md#product_attribute_types), [`product_attribute_values`](schema-products/attribute-types-and-values.md#product_attribute_values), [`product_variants`](schema-products/variants.md#product_variants), or [`product_variant_values`](schema-products/variants.md#product_variant_values). Example: a task about products only needs the [`products`](schema-products/categories-and-products.md#products) anchor (plus [`product_media`](schema-products/gallery-and-region-pivots.md#product_media)/[`product_sales_region`](schema-products/gallery-and-region-pivots.md#product_sales_region) if it also touches the gallery or region assignment) — not the rest of the file.
 - **[Shipping](schema-shipping.md)** — read if the task touches [`geography_entries`](schema-shipping/geography-entries.md#geography_entries) (the shipping geography catalog, physically independent of `sales_regions`), [`shipping_zones`](schema-shipping/zones.md#shipping_zones), [`shipping_zone_geography_entry`](schema-shipping/zones.md#shipping_zone_geography_entry), [`shipping_carriers`](schema-shipping/carriers-and-rates.md#shipping_carriers), or [`shipping_rates`](schema-shipping/carriers-and-rates.md#shipping_rates).
-- **[Payment Methods, Customers, Notifications, Invoice Settings & Invoice Sequences](schema-other.md)** — read if the task touches [`payment_methods`](schema-other/payment-methods.md#payment_methods), [`customers`](schema-other/customers.md#customers), [`notifications`](schema-other/notifications.md#notifications), [`invoice_settings`](schema-other/invoice-settings.md#invoice_settings), or [`invoice_sequences`](schema-other/invoice-sequences.md#invoice_sequences) (the two gap-free invoice counters, story 0101a).
+- **[Payment Methods, Customers, Notifications, Invoice Settings, Invoice Sequences & Invoices](schema-other.md)** — read if the task touches [`payment_methods`](schema-other/payment-methods.md#payment_methods), [`customers`](schema-other/customers.md#customers), [`notifications`](schema-other/notifications.md#notifications), [`invoice_settings`](schema-other/invoice-settings.md#invoice_settings), or [`invoice_sequences`](schema-other/invoice-sequences.md#invoice_sequences) (the two gap-free invoice counters, story 0101a); the [invoices schema](schema-other/invoices.md) (`invoices` and the insert-only `invoice_lines`, story 0101b).
 - **[Orders](schema-orders.md)** — read if the task touches [`orders`](schema-orders/orders.md#orders), [`order_items`](schema-orders/items-and-refunds.md#order_items), or [`refunds`](schema-orders/items-and-refunds.md#refunds), or [`order_payments`](schema-orders/payments.md#order_payments): the price-at-time-of-order and address-snapshot invariants, `order_number` generation, the three-way delete-behaviour rule these tables exercise together, [why `orders.subtotal`/`.tax_amount`/`.total` are derived and *re-derived* rather than write-once, and `order_items.unit_price` is immutable after insert](schema-orders/snapshots-totals-and-rules.md#totals-are-derived-and-re-derived-not-write-once) (story 0048), and — since story 0051 — the refund event log `order_items.refunded_quantity`/`orders.refunded_amount` are derived from.
 - **[Blog](schema-blog.md)** — read if the task touches [`blog_categories`](schema-blog.md#blog_categories) (the blog taxonomy, physically independent of `product_categories`): [`blog_category_translations`](schema-blog.md#blog_category_translations) (story 0072: the name moved off `blog_categories` into a per-language table whose per-language unique key is `normalized_name`, backfilled by the creating migration), the `Str::ascii()` expansion ceiling, the hard delete, and the shipped in-use delete guard (`withTrashed()` count, `blogCategoryId` error key); [`blog_tags`](schema-blog.md#blog_tags) (a second standalone taxonomy; story 0074 moved its name to [`blog_tag_translations`](schema-blog.md#blog_tag_translations), written in one transaction with the parent, default-language-only find-or-create plus a bounded fallback): `name` 100 with the folded length bounded in validation, the two name-rule methods, the unconditional delete and the pivot cascade it relies on; [`blog_posts`](schema-blog.md#blog_posts) (the third soft-deleting model, slug derived and reserved, nullable `body`, `published_at` governed by `status`, the `(deleted_at, status, published_at)` index); or [`blog_post_tag`](schema-blog.md#blog_post_tag) (the composite-PK pivot, both FKs cascading, `SyncBlogPostTags` as its only writer).
 - **[Internationalization](schema-localization.md)** — read if the task touches [`store_languages`](schema-localization.md#store_languages) (the admin-managed content-authoring language catalog: the find-or-create reactivation shape, the bundled ISO 639-1 fixture, the honestly-half-implemented removal warning) or [`locale_settings`](schema-localization.md#locale_settings) (this repo's first singleton table: the fixed-literal PK, the atomic upsert, why neither locale column is enum-cast, and the three-tier `tryFrom()` resolution chain).
 
 ## Notes
 
-- `app/Models/` holds thirty-one classes (`ls app/Models/*.php`, recounted rather than incremented blind): `User` (Epic 1); twenty-four Epic 2/3/4/5/6 domain models — `SalesRegion`, `Media`, `ProductCategory`, `ProductTranslation` (story 0076, [schema-products/categories-and-products.md](schema-products/categories-and-products.md#product_translations) — the first translation model with two translatable columns), `ProductCategoryTranslation` (story 0070, [schema-products/categories-and-products.md](schema-products/categories-and-products.md#product_category_translations) — this app's first model whose rows are per-language content), `BlogCategory` (story 0058, [schema-blog.md](schema-blog.md)), `BlogCategoryTranslation` (story 0072, same file), `BlogTag` (story 0059, same file), `BlogTagTranslation` (story 0074, same file), `BlogPost` (story 0061, same file), `BlogPostTranslation` (story 0078, same file), `Product`, `ProductAttributeType`, `ProductAttributeValue`, `ProductVariant`, `GeographyEntry` (the only `bigint`-PK model with an auto-increment key), `ShippingZone`, `ShippingCarrier`, `ShippingRate`, `PaymentMethod`, `Customer`, `Order`, `OrderItem` (story 0045), `Refund` (story 0051, [schema-orders.md](schema-orders.md)), `InvoiceSetting` (story 0100, [schema-other/invoice-settings.md](schema-other/invoice-settings.md) — a second fixed-key singleton, `TINYINT` id 1), `InvoiceSequence` (story 0101a, [schema-other/invoice-sequences.md](schema-other/invoice-sequences.md) — a UUIDv7 model with exactly two migration-created rows, no factory), `StoreLanguage` and `LocaleSetting` (story 0068, [schema-localization.md](schema-localization.md) — `LocaleSetting` is the only model with a fixed, non-incrementing `TINYINT` key); and `Role`, a `spatie/laravel-permission` subclass over the package's own `roles` table — no column, no migration of its own (see [architecture/authorization.md](../architecture/authorization/super-admin.md#the-super-admin-roles-invariants)). **Five pivot tables have no model class at all** — `product_media`, `product_sales_region`, `product_variant_values`, `shipping_zone_geography_entry`, `blog_post_tag` — reached only through the owning models' `BelongsToMany`, the same shape the vendored `role_has_permissions`/`model_has_roles` pivots use.
+- `app/Models/` holds thirty-three classes (`ls app/Models/*.php`, recounted rather than incremented blind): `User` (Epic 1); twenty-six Epic 2/3/4/5/6 domain models — `SalesRegion`, `Media`, `ProductCategory`, `ProductTranslation` (story 0076, [schema-products/categories-and-products.md](schema-products/categories-and-products.md#product_translations) — the first translation model with two translatable columns), `ProductCategoryTranslation` (story 0070, [schema-products/categories-and-products.md](schema-products/categories-and-products.md#product_category_translations) — this app's first model whose rows are per-language content), `BlogCategory` (story 0058, [schema-blog.md](schema-blog.md)), `BlogCategoryTranslation` (story 0072, same file), `BlogTag` (story 0059, same file), `BlogTagTranslation` (story 0074, same file), `BlogPost` (story 0061, same file), `BlogPostTranslation` (story 0078, same file), `Product`, `ProductAttributeType`, `ProductAttributeValue`, `ProductVariant`, `GeographyEntry` (the only `bigint`-PK model with an auto-increment key), `ShippingZone`, `ShippingCarrier`, `ShippingRate`, `PaymentMethod`, `Customer`, `Order`, `OrderItem` (story 0045), `Refund` (story 0051, [schema-orders.md](schema-orders.md)), `InvoiceSetting` (story 0100, [schema-other/invoice-settings.md](schema-other/invoice-settings.md) — a second fixed-key singleton, `TINYINT` id 1), `Invoice` and `InvoiceLine` (story 0101b, [schema-other/invoices.md](schema-other/invoices.md)), `InvoiceSequence` (story 0101a, [schema-other/invoice-sequences.md](schema-other/invoice-sequences.md) — a UUIDv7 model with exactly two migration-created rows, no factory), `StoreLanguage` and `LocaleSetting` (story 0068, [schema-localization.md](schema-localization.md) — `LocaleSetting` is the only model with a fixed, non-incrementing `TINYINT` key); and `Role`, a `spatie/laravel-permission` subclass over the package's own `roles` table — no column, no migration of its own (see [architecture/authorization.md](../architecture/authorization/super-admin.md#the-super-admin-roles-invariants)). **Five pivot tables have no model class at all** — `product_media`, `product_sales_region`, `product_variant_values`, `shipping_zone_geography_entry`, `blog_post_tag` — reached only through the owning models' `BelongsToMany`, the same shape the vendored `role_has_permissions`/`model_has_roles` pivots use.
 - For migration authoring conventions (naming, `down()` requirements, real examples), see [database/migrations.md](migrations.md).
 - **UUID (v7) primary keys.** Each table's PK type (`uuid` vs `bigint`) is already visible directly in the ER diagram above, and each per-domain schema file states its own table's status against [ADR 0001](../decisions/0001-uuid-primary-keys.md) at the point that table is documented — so this section no longer restates a consolidated status list. The ADR is the single source of truth for the policy and its full history: which entities it covers, the one named `bigint` exception (`geography_entries`), and every amendment since. The model-side convention (`HasUuids`, `@property string $id`, no restated `$keyType`/`$incrementing`) is in [conventions/base-standards.md](../conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys); the migration-side pattern is in [database/migrations.md](migrations/uuid-primary-keys.md#uuid-primary-keys).
 
-_Last updated: 2026-11-18 — Story 0101a: standalone `INVOICE_SEQUENCES` joined the diagram (no relationships), the model inventory counts thirty-one. Story 0100a: `CUSTOMERS` gained `tax_id`. Story 0100: `INVOICE_SETTINGS` joined the diagram (`MEDIA ||--o| INVOICE_SETTINGS`). Story 0088: `ORDER_ITEMS` gained `ordered_as_variant`, `stock_undeducted_quantity` and `stock_refunded_not_out_quantity`. Story 0078 (blog posts retrofit, backend): `BLOG_POST_TRANSLATIONS` joined the diagram (`BLOG_POSTS ||--o{`, `STORE_LANGUAGES ||--o{`), `BLOG_POSTS` lost `title`/`slug`/`body`. Story 0076a: `PRODUCT_TRANSLATIONS` gained `slug`, `meta_title` and `meta_description`. Earlier diagram changes (0070-0084, 0076) remain current. Every application table is diagrammed, relationships or not — since story 0058._
+_Last updated: 2026-11-19 — Story 0101b: `INVOICES` and `INVOICE_LINES` joined the diagram with their FKs, `ORDERS` gained `invoice_out_of_date_at`, the model inventory counts thirty-three. Story 0101a: standalone `INVOICE_SEQUENCES` joined the diagram (no relationships), the model inventory counts thirty-one. Story 0100a: `CUSTOMERS` gained `tax_id`. Story 0100: `INVOICE_SETTINGS` joined the diagram (`MEDIA ||--o| INVOICE_SETTINGS`). Story 0088: `ORDER_ITEMS` gained `ordered_as_variant`, `stock_undeducted_quantity` and `stock_refunded_not_out_quantity`. Story 0078 (blog posts retrofit, backend): `BLOG_POST_TRANSLATIONS` joined the diagram (`BLOG_POSTS ||--o{`, `STORE_LANGUAGES ||--o{`), `BLOG_POSTS` lost `title`/`slug`/`body`. Story 0076a: `PRODUCT_TRANSLATIONS` gained `slug`, `meta_title` and `meta_description`. Earlier diagram changes (0070-0084, 0076) remain current. Every application table is diagrammed, relationships or not — since story 0058._
 
 _Earlier revision notes: [database--schema.md](../history/database--schema.md)._

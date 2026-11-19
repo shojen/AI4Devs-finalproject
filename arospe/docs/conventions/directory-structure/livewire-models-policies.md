@@ -106,6 +106,8 @@ app/
                        each reached only through the owning models' BelongsToMany (e.g.
                        Product::gallery(), ProductVariant::values()), the same shape the vendored
                        permission pivots use
+                       Story 0101b: Invoice (frozen-column and no-delete guards) and InvoiceLine (insert-only), see
+                       database/schema-other/invoices.md
   Notifications/       Notification classes (PendingEmailVerification, UserInvitation,
                        CustomerCreated — story 0043, `database` channel only, not ShouldQueue,
                        dispatched by Actions/Customers/NotifyCustomerCreated; OrderCreated —
@@ -162,6 +164,7 @@ app/
                        constant, D-6) and the first whose boolean genuinely depends on the
                        target row (Order::isManuallyCancellable()) -- see
                        architecture/authorization.md for the full, re-counted caller roster
+                       Story 0101b: InvoicePolicy (viewAny, view, create only; no update or delete ability)
   Providers/           Service providers (AppServiceProvider, FortifyServiceProvider)
   Rules/               Stock Laravel location (`make:rule`), not a new base folder — Iban.php,
                        story 0038, ISO 13616 structure plus the ISO 7064 mod-97 checksum,
