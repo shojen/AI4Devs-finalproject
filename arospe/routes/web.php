@@ -24,3 +24,4 @@ require __DIR__.'/blog-tags.php';
 require __DIR__.'/blog-categories.php';
 require __DIR__.'/blog-posts.php';
 require __DIR__.'/store-languages.php';
+require __DIR__.'/invoices.php';

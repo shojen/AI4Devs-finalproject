@@ -9,4 +9,12 @@ enum InvoiceTemplate: string
 {
     case Classic = 'classic';
     case Modern = 'modern';
+
+    /**
+     * The Blade view that renders this layout (story 0102 FD-4).
+     */
+    public function view(): string
+    {
+        return 'invoices.pdf.'.$this->value;
+    }
 }

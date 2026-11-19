@@ -184,6 +184,15 @@ class Invoice extends Model
     }
 
     /**
+     * Whether the invoice has been sent to its customer (story 0102 FD-7). Always false until the
+     * delivery table of story 0104 exists; 0104 completes it.
+     */
+    public function hasBeenSent(): bool
+    {
+        return false;
+    }
+
+    /**
      * Only standard invoices.
      *
      * @param  Builder<Invoice>  $query
