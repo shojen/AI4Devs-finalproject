@@ -5,7 +5,7 @@
 > [0100](0100-invoice-settings-backend.md) (settings, `InvoiceType`, `SaveInvoiceSettings`),
 > [0100a](0100a-customer-tax-id-backend.md) (`customers.tax_id`) and
 > [0101a](0101a-invoice-numbering-sequences-backend.md) (`AllocateInvoiceNumber`). Dependents:
-> [0102](../0102-invoice-pdf-rendering-and-templates-backend.md),
+> [0102](../in-progress/0102-invoice-pdf-rendering-and-templates-backend.md),
 > [0104](../0104-send-invoice-by-email-backend.md),
 > [0105](../0105-automatic-invoice-on-order-creation-backend.md),
 > [0106](../0106-invoice-collection-order-debt-partially-paid-backend.md),

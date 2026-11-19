@@ -1,12 +1,12 @@
 # [0102] Invoice PDF rendering and two templates (backend)
 
-> **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
+> **Status: In progress (Phase 2 approved 2026-11-19, amended).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
-> [0100](done/0100-invoice-settings-backend.md) (`InvoiceTemplate`, settings) and
-> [0101b](done/0101b-issue-standard-invoice-backend.md) (`invoices` with its frozen snapshot columns,
+> [0100](../done/0100-invoice-settings-backend.md) (`InvoiceTemplate`, settings) and
+> [0101b](../done/0101b-issue-standard-invoice-backend.md) (`invoices` with its frozen snapshot columns,
 > `InvoicePolicy`, `invoices.view`, `lang/{en,es}/invoices.php`). Dependents:
-> [0103](0103-invoice-settings-screen-ui.md), [0104](0104-send-invoice-by-email-backend.md),
-> [0109b](0109b-order-detail-invoices-panel-ui.md), [0110](0110-billing-section-ui.md).
+> [0103](../0103-invoice-settings-screen-ui.md), [0104](../0104-send-invoice-by-email-backend.md),
+> [0109b](../0109b-order-detail-invoices-panel-ui.md), [0110](../0110-billing-section-ui.md).
 
 ## Description
 Turn an issued invoice into a PDF, on demand, from its frozen snapshot only, with two selectable
@@ -80,8 +80,8 @@ backend | includes database-expert: no
   ships that method returning `false`, and 0104 implements it with its delivery table and owns
   the "sent invoice downloads as a copy" test (QA G-3). The mark is a translated string in the
   invoice locale.
-- **FD-8 Locale.** `ResolveInvoiceLocale` returns the default `StoreLanguage` code when the app
-  has `invoices.pdf.*` translations for it, else `config('app.fallback_locale')`; it never reads
+- **FD-8 Locale.** `ResolveInvoiceLocale` (shipped by 0101b, reused unchanged) returns the default
+  `StoreLanguage` code when `lang/{code}/invoices.php` exists, else `config('app.fallback_locale')`; it never reads
   the admin's UI locale. Every string is translated with an explicit locale argument, and the
   ambient `App::getLocale()` is unchanged after a render (queue worker and request differ).
 - **FD-9 Money.** `FormatInvoiceMoney` formats the stored decimal string per locale (`1.234,56 €`
@@ -95,21 +95,23 @@ backend | includes database-expert: no
   System fonts only. Colours are re-checked against `^#[0-9A-Fa-f]{6}$` and emitted only as CSS
   custom properties; an invalid stored value falls back to the template default.
 - **FD-11 Logo as a server-built data URI.** `LoadInvoiceLogo` reads the frozen
-  `logo_media_id`'s file from the public disk (refusing `..`, absolute paths or anything outside
+  `logo_media_id`'s original file (`Media::path`, never the `webp_path`/`avif_path`
+  derivatives) from the public disk (refusing `..`, absolute paths or anything outside
   the disk root), accepts only PNG, JPEG or WebP by `finfo` mime (never SVG), up to
   `config('invoicing.pdf.logo_max_bytes')`; otherwise, or when the file is missing, it returns
   null and the PDF renders without a logo.
 - **FD-12 Download.** Route `GET invoices/{invoice}/pdf` named `invoices.download`, middleware
   `auth`, `verified` and a named throttle (30 per minute per user, Q-0102-6), **no** `can:`: the
   action `DownloadInvoice` authorizes `view` on the invoice through the logging helper so a
-  refusal is logged and returns 403 (an unprivileged `can:` refusal would not be logged). The
+  refusal is logged and returns 403, passing `targetType: 'invoice'` and `targetId: $invoice->id`
+  explicitly (the helper auto-resolves only `User`/`Role` targets; as `MarkOrderAsPaid` does) (an unprivileged `can:` refusal would not be logged). The
   file name is `invoice-` + the number with every character outside `[A-Za-z0-9._-]` replaced by
   `-`, plus `.pdf` (the number may contain `/`). A voided invoice, a cancelled order's or a
   soft-deleted customer's invoice stays downloadable.
 - **FD-14 Unsaved invoices and the SAMPLE mark (settings preview).** `BuildInvoicePdfData` and
   `RenderInvoicePdf` work on an unsaved `Invoice` whose `lines` relation is set in memory (no
   query, no write); this is used by the settings preview, whose read action `PreviewInvoicePdf` is
-  owned by [0103](0103-invoice-settings-screen-ui.md). Both take `bool $isSample = false`; when
+  owned by [0103](../0103-invoice-settings-screen-ui.md). Both take `bool $isSample = false`; when
   true the PDF prints a translated "SAMPLE" mark (`invoices.pdf.sample`) on both templates
   (accepted default Q-0103-3 (a)), independently of the COPY mark.
 - **FD-13 Paper and timing in config.** `config/invoicing.php` `pdf`: `format` (A4),
@@ -177,7 +179,7 @@ Feature: Invoice PDF
     Then its labels are in Spanish and amounts are written like "1.234,56 €"
 
   Scenario: A user without permission cannot download
-    Given a sales assistant without permission to view invoices
+    Given a user without permission to view invoices
     When she requests an invoice PDF
     Then she receives a refusal
     And the attempt is logged
@@ -191,13 +193,13 @@ Feature: Invoice PDF
 - `app/Enums/InvoiceTemplate.php` — `view()`.
 - `app/Models/Invoice.php` — `hasBeenSent()` stub.
 - `app/Actions/Invoices/{RenderInvoicePdf, BuildInvoicePdfData, LoadInvoiceLogo,
-  ResolveInvoiceLocale, FormatInvoiceMoney, DownloadInvoice}.php`.
+  FormatInvoiceMoney, DownloadInvoice}.php` (`ResolveInvoiceLocale` already exists from 0101b).
 - `app/Http/Controllers/InvoiceDownloadController.php`; `routes/invoices.php` (required from
   `routes/web.php`); the named rate limiter registered in a service provider.
 - `resources/views/invoices/pdf/{classic, modern}.blade.php`,
   `resources/views/invoices/pdf/partials/{head, header, parties, lines, totals,
   corrective-notice, copy-mark}.blade.php`.
-- `lang/{en,es}/invoices.php` — group `pdf` (labels, reasons, COPY, SAMPLE, corrective title).
+- `lang/{en,es}/invoices.php` (modified, exist since 0101b) — add group `pdf` (labels, reasons, COPY, SAMPLE, corrective title).
 - `.github/workflows/tests.yml` — Node and a Chrome path for the opt-in smoke (devops-engineer).
 - Tests below; `tests/Support/Invoices/FakesPdf.php`.
 
@@ -210,7 +212,8 @@ test fails if one does not, so no test starts Chromium by accident.
 Happy path
 - [ ] T-1 (V) Dataset over `InvoiceTemplate::cases()`: every FD-5 field printed.
 - [ ] T-2 (V) `BuildInvoicePdfData` with a query log: no query on `orders`, `customers`,
-  `invoice_settings`, `media` (logo via `LoadInvoiceLogo` only); only snapshot values.
+  `invoice_settings`; the only `media` query is one primary-key lookup inside `LoadInvoiceLogo`
+  (none when the logo is null); only snapshot values.
 - [ ] T-3 (V) After changing settings, customer and order (dataset of 6 mutations) the data and
   HTML are identical to before; the invoice's own template is used. Top risk.
 - [ ] T-4 (V) Same invoice and flag rendered twice a day apart: identical HTML (FD-3).
@@ -222,7 +225,7 @@ Happy path
 - [ ] T-9 (F) `assertViewIs($template->view())`, data keys, format and margins from config,
   file name; no storage write.
 - [ ] T-10b (V) An unsaved invoice with in-memory lines renders in both templates with no query
-  and no write; `isSample = true` prints the SAMPLE mark, false does not; both marks can coexist.
+  (except the single `LoadInvoiceLogo` media lookup when a logo is set) and no write; `isSample = true` prints the SAMPLE mark, false does not; both marks can coexist.
 - [ ] T-10 (V) Logo present: `<img>` with a `data:image/...;base64,` source; none without logo.
 
 Edge
@@ -243,7 +246,7 @@ Edge
   printed.
 - [ ] T-17 (V) Corrective data read from the frozen `corrects` row; null reason prints no reason
   line.
-- [ ] T-18 (V) Default store language `fr` without translations, or none: fallback locale; UI
+- [ ] T-18 (V, extends `tests/Feature/Invoices/ResolveInvoiceLocaleTest.php`) Default store language `fr` without translations, or none: fallback locale; UI
   locale never read; `App::getLocale()` unchanged after render.
 - [ ] T-19 (H) File names for `F2026-00001`, `F/2026/0001`, `INV.2026/7`, `a b`, `..\x`,
   `"quote"`, `é/ü`: only `[A-Za-z0-9._-]`, `.pdf`, no `/`, quote, CR or LF in the header.
@@ -294,10 +297,10 @@ template; 0104 can render the same PDF, marked as a copy when required, to attac
 - [ ] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open technical questions
-- Upstream: [0100](done/0100-invoice-settings-backend.md), [0101b](done/0101b-issue-standard-invoice-backend.md).
-  Downstream: [0104](0104-send-invoice-by-email-backend.md) attaches `RenderInvoicePdf`'s output
-  and implements `hasBeenSent()`; [0103](0103-invoice-settings-screen-ui.md) may preview a sample;
-  [0109b](0109b-order-detail-invoices-panel-ui.md) / [0110](0110-billing-section-ui.md) link the download.
+- Upstream: [0100](../done/0100-invoice-settings-backend.md), [0101b](../done/0101b-issue-standard-invoice-backend.md).
+  Downstream: [0104](../0104-send-invoice-by-email-backend.md) attaches `RenderInvoicePdf`'s output
+  and implements `hasBeenSent()`; [0103](../0103-invoice-settings-screen-ui.md) may preview a sample;
+  [0109b](../0109b-order-detail-invoices-panel-ui.md) / [0110](../0110-billing-section-ui.md) link the download.
 - **Operations note (runtime prerequisites).** Rendering needs Node 22 or newer on the host that
   renders (web and queue worker), Chrome installed by puppeteer (or an existing Chromium pointed
   to by the package's Chrome-path key), and the package's `LARAVEL_PDF_*` environment keys (Node
@@ -328,7 +331,7 @@ template; 0104 can render the same PDF, marked as a copy when required, to attac
 ## Technical tasks
 - [ ] Install spike (FD-1): composer and npm packages, published config, one real render in Sail
   and CI; record versions and fake assertions here, or stop and report to the owner.
-- [ ] `ResolveInvoiceLocale`, `FormatInvoiceMoney`, `LoadInvoiceLogo` with tests.
+- [ ] `FormatInvoiceMoney`, `LoadInvoiceLogo` with tests (`ResolveInvoiceLocale` reused; extend its test).
 - [ ] `BuildInvoicePdfData` with the zero-query and determinism tests.
 - [ ] Templates, partials, CSP head; architecture, escaping and parity tests.
 - [ ] `RenderInvoicePdf` with Browsershot hardening; `FakesPdf` helper and guard test.
@@ -338,4 +341,40 @@ template; 0104 can render the same PDF, marked as a copy when required, to attac
 
 ## Phase records
 - Phase 1 (Three Amigos) complete on 2026-11-15 — participants: product-owner (facilitator),
-  backend-expert, backend-qa. Phase 2 (INVEST) pending.
+  backend-expert, backend-qa.
+- Phase 2 (INVEST + docs consistency) — code-reviewer, 2026-11-19: **APPROVED with required
+  amendments** (to be applied by product-owner before Phase 3 starts; none changes scope).
+  INVEST: Independent (0100/0101b are in `done/`; downstream only consumes the contracts),
+  Negotiable (Q-0102-1..6 open with recommended defaults), Valuable (download + 0104 attachment),
+  Estimable (the FD-1 spike gates the only unknown and returns U-1 to the owner on failure),
+  Testable (30 concrete tests over V/F/H/R levels). Small: large (6 actions, 9 views, 3 deps,
+  CI change), but the parts are not separately shippable — templates without a renderer or a
+  route deliver nothing, and the spike + FD-14 contract unblock 0103/0104 — so no split; Phase 3
+  should follow the technical-task order and commit per layer. Verified against code: `Invoice`
+  has `template` (plain string, no enum cast — FD-4's loud failure must come from
+  `InvoiceTemplate::from()`), `primary_color`, `accent_color`, `logo_media_id`
+  (FK `media`, `restrictOnDelete`, so Q-0102-5 (a) already holds), `order_number`,
+  `corrects_invoice_id`/`corrects()`, `reason` (`refund`/`order_edited`/`order_cancelled`);
+  `InvoiceTemplate` has only `Classic`/`Modern`; `InvoicePolicy::view` checks `invoices.view`;
+  `LogRefusedPrivilegedAttempt::authorize()` exists; `routes/*.php` are `require`d from
+  `routes/web.php`; `StoreLanguage::defaultStoreLanguage()` exists. Required amendments:
+  1. **`ResolveInvoiceLocale` already exists** (0101b, with
+     `tests/Feature/Invoices/ResolveInvoiceLocaleTest.php`, used by `CreateStandardInvoice`).
+     Remove it from "Files to create" and the technical task "`ResolveInvoiceLocale` ... with
+     tests"; mark it "reused". Reword FD-8 to its real rule — default store language when
+     `lang/{code}/invoices.php` exists, else `app.fallback_locale` (not "has `invoices.pdf.*`
+     translations"); T-18 extends the existing test file rather than a new one.
+  2. **T-2 / T-10b contradict FD-11.** `LoadInvoiceLogo(?string $mediaId)` must read the
+     `media` row to find the file, so a render with a logo queries `media`. Restate T-2 as "the
+     only `media` query is one primary-key lookup inside `LoadInvoiceLogo`", and T-10b's "no
+     query" as "no query except that logo lookup when `logo_media_id` is set" (or test it with a
+     null logo).
+  3. **FD-11 must name which file.** `Media` stores `path` (original), `webp_path` and
+     `avif_path`; state which one is read (recommended: `path`, the original, mime-checked; AVIF
+     is outside the accepted list).
+  4. **FD-12 / T-23 logging call:** the helper auto-resolves only `User`/`Role` targets, so
+     `DownloadInvoice` must pass `targetType: 'invoice'`, `targetId: $invoice->id` explicitly
+     (as `MarkOrderAsPaid` does); add that to the class contract or FD-12.
+  5. `lang/{en,es}/invoices.php` already exist (0101b): list them as **modified** (add the
+     `pdf` group), not created. Minor: the Gherkin actor "sales assistant" is not a seeded role;
+     the test should build a user without `invoices.view` (per T-23's dataset).

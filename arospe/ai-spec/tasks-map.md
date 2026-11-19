@@ -18,6 +18,8 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-11-19): `0102-invoice-pdf-rendering-and-templates-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 2 INVEST passed and amended, then Phase 3 step 0; claimed by `worktree-0102-invoice-pdf-rendering-and-templates-backend`). Still pending work, so it keeps its node and edges; its `tasks-status.json` entry moves `ready` -> `claimed` and its graph class from `ready` to `claimed`. `ai-spec/tasks/in-progress/` now holds exactly this one file. Link check, both directions: the file's own `done/` links became `../done/` and its pending-sibling links (`0103`, `0104`, `0109b`, `0110`) gained `../`; inbound links in `0103`, `0104`, `0109b`, `0110` were repointed to `in-progress/0102-…` and in `done/0100`, `done/0100b`, `done/0101b` to `../in-progress/0102-…`; verified with `realpath -m`, no broken link.
+
 **Update (2026-11-19): `0101b-issue-standard-invoice-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0101b-issue-standard-invoice-backend`; Phases 2-6 approved, Phase 4 findings F-1..F-7 fixed, Phase 5 B-1 fixed; full suite green in 5 directory chunks on 2026-11-19; Pint unscoped clean; Larastan level 7 with 0 errors). Its node, every edge touching it (`P0101b --> P0102/P0103/P0104/P0105/P0106/P0106a/P0107/P0108/P0110`), `claimed` class membership, inventory row and `tasks-status.json` entry are dropped; `0101b` is also removed from every `conflict_risk_with` list. It joins the flat `done/` inventory under Epic 6 — Invoicing (`done/` holds 130 files). Dependents recomputed: `0102` and `0106` lose their only dependency and turn `blocked` -> `ready`; `0103` (waits on `0102`), `0104` (`0102`), `0105` (`0104`), `0106a` (`0106`), `0107` (`0106`), `0108` (`0106`, `0107`) and `0110` (`0102`, `0104`, `0106`, `0109a`, `0109b`) stay `blocked`. No node is `claimed`; `ai-spec/tasks/in-progress/` was removed (empty). Link check, both directions: same-depth move, so the file's own pending-sibling links keep `../` and its `../done/…` links became bare; inbound links in `0102`, `0103`, `0104`, `0105`, `0106`, `0106a`, `0107`, `0108`, `0110` were repointed to `done/0101b-…` and in `done/0100a`, `done/0100b`, `done/0101a` to bare `0101b-…`. The epic digest `_digests/epic-6.md` names the story but links no path; no `docs/` page links to it.
 
 **Update (2026-11-18, superseded by the closure above): `0101b-issue-standard-invoice-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 2 INVEST passed with corrections C-1..C-9 folded in, then Phase 3 step 0; claimed by `worktree-0101b-issue-standard-invoice-backend`). Still pending work, so it keeps its node and edges; its `tasks-status.json` entry moves `ready` -> `claimed` and its graph class from `ready` to `claimed`. `ai-spec/tasks/in-progress/` now holds exactly this one file. Link check, both directions: the file's own `done/` links became `../done/` and its pending-sibling links gained `../`; inbound links in `0102`, `0103`, `0104`, `0105`, `0106`, `0106a`, `0107`, `0108`, `0110` were repointed to `in-progress/0101b-…`, and in `done/0100a`, `done/0100b`, `done/0101a` to `../in-progress/0101b-…`.
@@ -621,7 +623,7 @@ appears as a node in the dependency graph below:
 
 ### Pending — not started (15 numbered + 1 infra doc)
 
-Recounted 2026-11-19 (`0101b` closed): `ai-spec/tasks/` holds `0102`–`0112` (15 numbered files) plus `ci-database-connection-gap.md`; `ai-spec/tasks/in-progress/` does not exist (empty).
+Recounted 2026-11-19 (`0101b` closed): `ai-spec/tasks/` holds `0102`–`0112` (15 numbered files) plus `ci-database-connection-gap.md`; `ai-spec/tasks/in-progress/` holds only `0102` (moved there 2026-11-19, Phase 3 step 0).
 
 Recounted 2026-11-15 (merge of `origin/main` into the 0098 branch; `0098`, `0091` and `0092b` closed): `ai-spec/tasks/` holds `0094`, `0094a`, `0095`, `0096` and `0099` plus `ci-database-connection-gap.md`; `ai-spec/tasks/in-progress/` is empty.
 
@@ -813,14 +815,15 @@ flowchart LR
     P0106a -.-> P0109b
     P0107 -.-> P0109b
     %% Shared-file risk with the stock dialogs (no dependency): see the update note at the top.
-    class P0102,P0106 ready;
+    class P0106 ready;
+    class P0102 claimed;
     class P0103,P0104,P0105,P0106a,P0107,P0108,P0109a,P0109b,P0109c,P0110,P0110a,P0111,P0112 pending;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(as of 2026-11-19, after `0101b` closed, no node is `claimed`; earlier on 2026-11-18 `0101b` was the sole `claimed` node; after `0100b` closed, no node was `claimed`; earlier on 2026-11-18 `0100b` was the sole `claimed` node (Phase 3 started), and after `0100a` closed, no node was `claimed`; as of 2026-11-17, `0100a` was the sole `claimed` node; as of 2026-11-14, after `0098` closed, no node was `claimed`; `0098` was the sole `claimed` node before; as of 2026-11-13, after its closure, no node was `claimed`; `0087`, the prior sole `claimed` node, closed to `done/` this pass; as of 2026-11-12 no node was `claimed`; `0079`, the prior sole `claimed` node, closed to `done/` this pass; as of 2026-11-07 no node was `claimed`; `0076`, the prior sole `claimed` node, closed to `done/` this pass; earlier: `0067`, the prior sole `claimed` node, closed to
+(as of 2026-11-19, `0102` is the sole `claimed` node (Phase 3 started); earlier that day, after `0101b` closed, no node was `claimed`; earlier on 2026-11-18 `0101b` was the sole `claimed` node; after `0100b` closed, no node was `claimed`; earlier on 2026-11-18 `0100b` was the sole `claimed` node (Phase 3 started), and after `0100a` closed, no node was `claimed`; as of 2026-11-17, `0100a` was the sole `claimed` node; as of 2026-11-14, after `0098` closed, no node was `claimed`; `0098` was the sole `claimed` node before; as of 2026-11-13, after its closure, no node was `claimed`; `0087`, the prior sole `claimed` node, closed to `done/` this pass; as of 2026-11-12 no node was `claimed`; `0079`, the prior sole `claimed` node, closed to `done/` this pass; as of 2026-11-07 no node was `claimed`; `0076`, the prior sole `claimed` node, closed to `done/` this pass; earlier: `0067`, the prior sole `claimed` node, closed to
 `done/` this pass — see the update at the top of this file; `0066` and `0070`, the `claimed` nodes
 before that, both closed to `done/` in an earlier pass, on separate branches reconciled together
 here); yellow (`pending`) = still blocked on at least one open pending dependency.
