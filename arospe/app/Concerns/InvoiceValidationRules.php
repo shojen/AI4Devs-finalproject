@@ -34,6 +34,24 @@ trait InvoiceValidationRules
     }
 
     /**
+     * The address an invoice is mailed to (story 0104 FD-3): a syntactically valid address with a
+     * dotted domain, no whitespace and at most 254 characters. No DNS lookup.
+     *
+     * @return array<int, ValidationRule|Closure|string>
+     */
+    protected function invoiceRecipientEmailRules(): array
+    {
+        return [
+            'bail',
+            'required',
+            'string',
+            'max:254',
+            'regex:/^[^@\s]+@[^@\s]+\.[^@\s.]+$/D',
+            'email:rfc',
+        ];
+    }
+
+    /**
      * Messages of the amount rules, keyed by `amount.<rule>`.
      *
      * @return array<string, string>

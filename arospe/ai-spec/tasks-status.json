@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-19T12:00:00Z",
+  "generated_at": "2026-11-19T18:00:00Z",
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
     {
@@ -35,49 +35,6 @@
         "tests/Browser/InvoiceSettings/InvoiceSettingsScreenTest.php"
       ],
       "conflict_risk_with": [
-        "0104",
-        "0105",
-        "0106",
-        "0107",
-        "0108",
-        "0109b",
-        "0110",
-        "0110a"
-      ]
-    },
-    {
-      "id": "0104",
-      "slug": "0104-send-invoice-by-email-backend",
-      "title": "Send invoice by e-mail, copy on resend (backend)",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "database/migrations/<ts>_create_invoice_deliveries_table.php",
-        "app/Models/InvoiceDelivery.php",
-        "database/factories/InvoiceDeliveryFactory.php",
-        "app/Enums/InvoiceDeliveryStatus.php",
-        "app/Models/Invoice.php",
-        "app/Policies/InvoicePolicy.php",
-        "app/Actions/Invoices/SendInvoice.php",
-        "app/Actions/Invoices/SendOrderInvoices.php",
-        "app/Actions/Invoices/RecordInvoiceDeliveries.php",
-        "app/Notifications/InvoiceSent.php",
-        "app/Listeners/MarkInvoiceDeliverySent.php",
-        "database/seeders/RolePermissionSeeder.php",
-        "lang/en/roles.php",
-        "lang/es/roles.php",
-        "config/invoicing.php",
-        "lang/en/invoices.php",
-        "lang/es/invoices.php",
-        "tests/Feature/Invoices/Pdf/DownloadInvoiceTest.php",
-        "tests/Feature/Invoices/Delivery/",
-        "tests/Feature/Seeders/RolePermissionSeederTest.php",
-        "tests/Feature/Orders/OrderLineItemAuthorizationTest.php"
-      ],
-      "conflict_risk_with": [
-        "0103",
         "0105",
         "0106",
         "0107",
@@ -91,10 +48,8 @@
       "id": "0105",
       "slug": "0105-automatic-invoice-on-order-creation-backend",
       "title": "Automatic issue and send on order creation (backend)",
-      "depends_on": [
-        "0104"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -109,7 +64,6 @@
       ],
       "conflict_risk_with": [
         "0103",
-        "0104",
         "0106",
         "0107",
         "0108",
@@ -164,7 +118,6 @@
       "conflict_risk_with": [
         "0095",
         "0103",
-        "0104",
         "0105",
         "0106a",
         "0107",
@@ -254,7 +207,6 @@
       "conflict_risk_with": [
         "0095",
         "0103",
-        "0104",
         "0105",
         "0106",
         "0106a",
@@ -303,7 +255,6 @@
       "conflict_risk_with": [
         "0095",
         "0103",
-        "0104",
         "0105",
         "0106",
         "0106a",
@@ -320,7 +271,6 @@
       "slug": "0109a-orders-list-invoice-send-ui",
       "title": "Orders list: invoice send button, and the order invoicing read side (frontend)",
       "depends_on": [
-        "0104",
         "0106a",
         "0107",
         "0108"
@@ -355,7 +305,6 @@
       "slug": "0109b-order-detail-invoices-panel-ui",
       "title": "Order detail: invoices panel with download, send, collect and undo (frontend)",
       "depends_on": [
-        "0104",
         "0106",
         "0109a"
       ],
@@ -387,7 +336,6 @@
       "conflict_risk_with": [
         "0095",
         "0103",
-        "0104",
         "0105",
         "0106",
         "0106a",
@@ -438,7 +386,6 @@
       "slug": "0110-billing-section-ui",
       "title": "Billing section: invoice list, filters, send and create invoice (frontend)",
       "depends_on": [
-        "0104",
         "0106",
         "0109a",
         "0109b"
@@ -464,7 +411,6 @@
       ],
       "conflict_risk_with": [
         "0103",
-        "0104",
         "0105",
         "0106",
         "0107",
@@ -497,7 +443,6 @@
       ],
       "conflict_risk_with": [
         "0103",
-        "0104",
         "0105",
         "0106",
         "0107",

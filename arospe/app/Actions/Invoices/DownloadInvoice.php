@@ -16,13 +16,14 @@ class DownloadInvoice
     public function __construct(
         private LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt,
         private RenderInvoicePdf $renderInvoicePdf,
+        private BuildInvoicePdfFileName $buildInvoicePdfFileName,
     ) {}
 
     public function __invoke(Invoice $invoice): Response
     {
         $this->logRefusedPrivilegedAttempt->authorize('view', $invoice, targetType: 'invoice', targetId: $invoice->id);
 
-        $name = 'invoice-'.preg_replace('/[^A-Za-z0-9._-]/u', '-', $invoice->number).'.pdf';
+        $name = ($this->buildInvoicePdfFileName)($invoice);
 
         $response = ($this->renderInvoicePdf)($invoice, $invoice->hasBeenSent())
             ->download($name)

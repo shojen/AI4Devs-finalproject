@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Actions\Orders\ToNumericString;
 use App\Enums\InvoiceCorrectionReason;
+use App\Enums\InvoiceDeliveryStatus;
 use App\Enums\InvoiceType;
 use Database\Factories\InvoiceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -74,6 +75,7 @@ use LogicException;
  * @property-read Invoice|null $corrects
  * @property-read Collection<int, Invoice> $correctives
  * @property-read User|null $issuedBy
+ * @property-read Collection<int, InvoiceDelivery> $deliveries
  */
 #[Fillable([])]
 class Invoice extends Model
@@ -184,12 +186,30 @@ class Invoice extends Model
     }
 
     /**
-     * Whether the invoice has been sent to its customer (story 0102 FD-7). Always false until the
-     * delivery table of story 0104 exists; 0104 completes it.
+     * Every e-mail delivery attempt of this invoice (story 0104).
+     *
+     * @return HasMany<InvoiceDelivery, $this>
+     */
+    public function deliveries(): HasMany
+    {
+        return $this->hasMany(InvoiceDelivery::class);
+    }
+
+    /**
+     * The most recently queued delivery, or null when none exists.
+     */
+    public function latestDelivery(): ?InvoiceDelivery
+    {
+        return $this->deliveries()->latest('queued_at')->latest('id')->first();
+    }
+
+    /**
+     * Whether the invoice has been sent to its customer: true iff a `sent` delivery exists
+     * (stories 0102 FD-7 and 0104).
      */
     public function hasBeenSent(): bool
     {
-        return false;
+        return $this->deliveries()->where('status', InvoiceDeliveryStatus::Sent->value)->exists();
     }
 
     /**

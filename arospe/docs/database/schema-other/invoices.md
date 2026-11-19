@@ -88,6 +88,25 @@ Only the foreign-key indexes exist. **The database `SET NULL` on `order_item_id`
 
 `TIMESTAMP` null, after `refunded_amount`. Null means the order's invoices are current; every existing order reads null (no backfill). Story 0101b only reads it (`Order::isInvoiceOutOfDate()`, `AssertInvoicesAreCurrent`); only story 0108 sets and clears it.
 
+### `invoice_deliveries`
+
+Source: `database/migrations/2026_11_19_144639_create_invoice_deliveries_table.php` (story 0104). Model [`App\Models\InvoiceDelivery`](../../../app/Models/InvoiceDelivery.php) (`HasUuids`, `status` cast to `App\Enums\InvoiceDeliveryStatus`), factory `InvoiceDeliveryFactory` with states `queued()`, `sent()`, `failed()`, `copy()`. One row per invoice per e-mail send attempt; `Invoice::deliveries()`, `latestDelivery()` and `hasBeenSent()` (true iff a `sent` row exists) read it.
+
+| Column | Type | Null / default | Notes |
+| --- | --- | --- | --- |
+| `id` | uuid PK | | |
+| `invoice_id` | FK `invoices`, restrict | not null | |
+| `recipient_email` | varchar(255) | not null | the customer's address at send time, frozen |
+| `is_copy` | boolean | not null, default false | false only for the original |
+| `status` | varchar(20) | not null, default `queued` | `queued`, `sent`, `failed` |
+| `sent_by` | FK `users`, restrict | null | null = the system (automatic send, story 0105) |
+| `queued_at` | timestamp | not null | |
+| `sent_at`, `failed_at` | timestamp | null | |
+| `failure_reason` | text | null | sanitised, at most 500 characters |
+| `created_at`, `updated_at` | timestamp | | |
+
+Only the foreign-key indexes exist. Rows are never deleted and a `sent` row never changes status again. `down()` is `dropIfExists`, which discards the whole delivery history. How the original-versus-copy decision and the status transitions work: [api/invoices.md](../../api/invoices.md#sending-invoices-by-e-mail-story-0104).
+
 ### Foreign-key delete rules (deliberate)
 
 - **Restrict everywhere on `invoices`** (`order_id`, `corrects_invoice_id`, `logo_media_id`, `issued_by`, `collected_by`, `collection_payment_method_id`) and on `invoice_lines.invoice_id`. An invoiced order cannot be deleted (FD-4); the application has no order-delete path anyway, so this is a data-integrity guarantee tested at foreign-key level.
@@ -96,6 +115,6 @@ Only the foreign-key indexes exist. **The database `SET NULL` on `order_item_id`
 
 ### Migrations
 
-In order: `create_invoices_table`, `create_invoice_lines_table`, `add_invoice_out_of_date_at_to_orders_table`. `down()` reverses them: `invoice_lines` is dropped before `invoices` (the child before the parent), then the `orders` column is dropped. Rolling back discards every issued invoice and every out-of-date marker; there is no backfill in either direction.
+In order: `create_invoices_table`, `create_invoice_lines_table`, `add_invoice_out_of_date_at_to_orders_table`, and (story 0104) `create_invoice_deliveries_table`. `down()` reverses them: `invoice_lines` is dropped before `invoices` (the child before the parent), then the `orders` column is dropped. Rolling back discards every issued invoice and every out-of-date marker; there is no backfill in either direction.
 
-_Last updated: 2026-11-19 — Story 0101b: part created._
+_Last updated: 2026-11-19 — Story 0104: added the `invoice_deliveries` table (the part now also covers it); story 0101b tables unchanged._
