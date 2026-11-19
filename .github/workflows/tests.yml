@@ -86,6 +86,20 @@ jobs:
       - name: Install Node Dependencies
         run: npm ci
 
+      # Browser used by spatie/browsershot (via puppeteer) for the opt-in real PDF render
+      # smoke test. Cached on the lockfile because the pinned puppeteer version decides
+      # which chrome-headless-shell build is downloaded.
+      - name: Cache Puppeteer Browser
+        id: puppeteer-cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cache/puppeteer
+          key: puppeteer-${{ runner.os }}-${{ hashFiles('arospe/package-lock.json') }}
+
+      - name: Install Puppeteer Browser (chrome-headless-shell)
+        if: steps.puppeteer-cache.outputs.cache-hit != 'true'
+        run: npx puppeteer browsers install chrome-headless-shell
+
       - name: Install Playwright Browser (Chromium)
         run: npx --no playwright install --with-deps chromium
 
@@ -109,3 +123,11 @@ jobs:
 
       - name: Run Tests
         run: php artisan test --parallel
+
+      # Opt-in real render (launches headless Chrome); skipped in the suite above unless
+      # INVOICE_PDF_E2E is set. LARAVEL_PDF_NO_SANDBOX is required as the job runs as root.
+      - name: Run Invoice PDF Render Smoke Test
+        env:
+          INVOICE_PDF_E2E: '1'
+          LARAVEL_PDF_NO_SANDBOX: 'true'
+        run: php artisan test tests/Feature/Invoices/Pdf/InvoicePdfSmokeTest.php
