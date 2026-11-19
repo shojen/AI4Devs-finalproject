@@ -292,7 +292,7 @@ validation error.
 - Upstream: [0100a](0100a-customer-tax-id-backend.md). Without it the validator has no
   `tax_id` rule and the actions drop the key silently, so Phase 3 starts only after 0100a is in
   `done/`. Downstream use of the value: [0101b](0101b-issue-standard-invoice-backend.md)
-  (snapshot) and [0102](../in-progress/0102-invoice-pdf-rendering-and-templates-backend.md) (printed).
+  (snapshot) and [0102](0102-invoice-pdf-rendering-and-templates-backend.md) (printed).
 - Risk: tests that enumerate the fifteen form fields (`IndexRenderingTest`, the browser
   "pre-fills every field" test) must be updated, not loosened.
 - Risk: the re-key changes which keys the error bag carries; any existing test asserting a

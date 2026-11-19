@@ -1,9 +1,9 @@
 # [0102] Invoice PDF rendering and two templates (backend)
 
-> **Status: In progress (Phase 2 approved 2026-11-19, amended).** Epic 6 — Invoicing (ad-hoc; requested by the
+> **Status: Done (closed 2026-11-19, Phase 7).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
-> [0100](../done/0100-invoice-settings-backend.md) (`InvoiceTemplate`, settings) and
-> [0101b](../done/0101b-issue-standard-invoice-backend.md) (`invoices` with its frozen snapshot columns,
+> [0100](0100-invoice-settings-backend.md) (`InvoiceTemplate`, settings) and
+> [0101b](0101b-issue-standard-invoice-backend.md) (`invoices` with its frozen snapshot columns,
 > `InvoicePolicy`, `invoices.view`, `lang/{en,es}/invoices.php`). Dependents:
 > [0103](../0103-invoice-settings-screen-ui.md), [0104](../0104-send-invoice-by-email-backend.md),
 > [0109b](../0109b-order-detail-invoices-panel-ui.md), [0110](../0110-billing-section-ui.md).
@@ -297,7 +297,7 @@ template; 0104 can render the same PDF, marked as a copy when required, to attac
 - [ ] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open technical questions
-- Upstream: [0100](../done/0100-invoice-settings-backend.md), [0101b](../done/0101b-issue-standard-invoice-backend.md).
+- Upstream: [0100](0100-invoice-settings-backend.md), [0101b](0101b-issue-standard-invoice-backend.md).
   Downstream: [0104](../0104-send-invoice-by-email-backend.md) attaches `RenderInvoicePdf`'s output
   and implements `hasBeenSent()`; [0103](../0103-invoice-settings-screen-ui.md) may preview a sample;
   [0109b](../0109b-order-detail-invoices-panel-ui.md) / [0110](../0110-billing-section-ui.md) link the download.
@@ -482,3 +482,5 @@ template; 0104 can render the same PDF, marked as a copy when required, to attac
      assertions (`RenderInvoicePdfTest` FD-10, `SafeBrowsershotDriverTest` N-1); the smoke proves a
      real, bounded render. Accepted as is; do not cite T-30 as proof of the JS/file blocking.
   Remaining DoD for later phases: documentation (Phase 6) and the closing full-suite gate (Phase 7).
+- Phase 6 (documentation) — docs-keeper, 2026-11-19: **DONE**. Updated `docs/api/routes.md` and `docs/api/invoices.md` (`invoices.download`, the PDF actions, templates, marks, config), the authorization refusal-logging part (logged refusal without `can:`, explicit `targetType`/`targetId`), `docs/conventions/directory-structure*` (`resources/views/invoices/pdf/`, `config/invoicing.php`, `routes/invoices.php`, `FakesPdf`, and why `SafeBrowsershotDriver` sits in `app/Actions/Invoices/`), `docs/conventions/localization.md` (`invoices.pdf.*`, PDF language rule), `docs/architecture/overview.md` (deployment prerequisites: Node 22+, puppeteer devDependency, private temp directory, sandbox flag, env keys), `docs/testing` (`FakesPdf` guard, opt-in smoke, CI steps), `docs/security/headless-pdf-rendering.md` and its index row, the `skipOnCi()` exception in `docs/contracts/ci-protocol.md`, three `docs/errors-log.md` entries, `docs/README.md` and the root `README.md` (Node/puppeteer setup). The Phase 5 non-blocking notes 1-4 and 6 stay follow-ups here only (nothing was added to `docs/`); note 5 is resolved by the directory-structure entry.
+- Phase 7 (closure) — 2026-11-19: full suite green in directory chunks (Unit + Orders + Localization + Customers + Invoices + InvoiceSettings 2526 passed / 2 skipped; Blog + Products + ProductCategories 2113 / 2113; remaining Feature 2463 passed plus `TopbarTest` repaired, Layout 75 / 75; Browser 330 passed / 3 skipped); Pint unscoped clean; Larastan level 7 clean on the touched paths. File moved to `done/` with the two-direction link check and the `tasks-map.md` / `tasks-status.json` regeneration. Dependents: `0103` and `0104` are now `ready`; `0109b` and `0110` stay `blocked` on their other dependencies.

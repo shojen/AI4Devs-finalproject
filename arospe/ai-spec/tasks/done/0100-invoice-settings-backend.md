@@ -4,7 +4,7 @@
 > owner on 2026-11-14, not yet in docs/PRD). First story of the epic; no upstream dependency.
 > Dependents: [0100a](0100a-customer-tax-id-backend.md),
 > [0101a](0101a-invoice-numbering-sequences-backend.md),
-> [0102](../in-progress/0102-invoice-pdf-rendering-and-templates-backend.md),
+> [0102](0102-invoice-pdf-rendering-and-templates-backend.md),
 > [0103](../0103-invoice-settings-screen-ui.md),
 > [0105](../0105-automatic-invoice-on-order-creation-backend.md).
 
