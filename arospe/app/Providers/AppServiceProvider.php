@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Actions\Invoices\SafeBrowsershotDriver;
 use App\Models\Role;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -22,7 +23,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton('laravel-pdf.driver.browsershot', fn (): SafeBrowsershotDriver => new SafeBrowsershotDriver((array) config('laravel-pdf.browsershot')));
     }
 
     /**

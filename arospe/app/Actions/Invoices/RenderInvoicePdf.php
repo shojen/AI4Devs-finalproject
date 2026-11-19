@@ -28,6 +28,7 @@ class RenderInvoicePdf
         $timeoutMilliseconds = (int) config('invoicing.pdf.timeout_seconds') * 1000;
 
         return Pdf::view($template->view(), ($this->buildData)($invoice, $isCopy, $locale, $isSample))
+            ->driver('browsershot')
             ->format((string) config('invoicing.pdf.format'))
             ->margins($margin, $margin, $margin, $margin, 'mm')
             ->withBrowsershot(function (Browsershot $browsershot) use ($timeoutMilliseconds): void {

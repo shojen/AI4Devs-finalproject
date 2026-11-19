@@ -24,8 +24,12 @@ class DownloadInvoice
 
         $name = 'invoice-'.preg_replace('/[^A-Za-z0-9._-]/u', '-', $invoice->number).'.pdf';
 
-        return ($this->renderInvoicePdf)($invoice, $invoice->hasBeenSent())
+        $response = ($this->renderInvoicePdf)($invoice, $invoice->hasBeenSent())
             ->download($name)
             ->toResponse(request());
+
+        $response->headers->set('Cache-Control', 'private, no-store');
+
+        return $response;
     }
 }
