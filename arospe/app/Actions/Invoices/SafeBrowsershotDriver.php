@@ -55,6 +55,7 @@ class SafeBrowsershotDriver extends BrowsershotDriver
 
         $this->customizeBrowsershot = function (Browsershot $browsershot) use ($filePath, $original): void {
             $browsershot->setHtmlFromFilePath($filePath);
+            $browsershot->setOption('blockLocalFileAccess', true);
 
             if ($original instanceof Closure) {
                 $original($browsershot);
