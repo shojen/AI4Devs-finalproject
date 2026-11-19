@@ -1,8 +1,8 @@
-# Invoices — issuing actions (no routes)
+# Invoices — issuing actions and the PDF download
 
 > **Read this when:** you call, change or add to the invoicing actions in `app/Actions/Invoices/` (issuing a standard invoice, the invoice balance, the out-of-date guard, the numbering-format check). Tables and columns are in [database/schema-other/invoices.md](../database/schema-other/invoices.md); numbering in [invoice-sequences.md](../database/schema-other/invoice-sequences.md).
 
-Story 0101b (Epic 6 — Invoicing) ships **no route, no Livewire component and no screen**. The contract surface is the set of actions below; screens (0109a, 0110) and system follow-ons (0104, 0105, 0106a) build on them. `php artisan route:list` shows nothing invoice-related, and an architecture test asserts that no route writes or deletes invoices.
+Story 0101b (Epic 6 — Invoicing) ships **no Livewire component and no screen**. The contract surface is the set of actions below; screens (0109a, 0110) and system follow-ons (0104, 0105, 0106a) build on them. Since story 0102 there is exactly **one** invoice route, the read-only PDF download (see [the download section](#pdf-rendering-and-download-story-0102)); an architecture test still asserts that no route writes or deletes invoices.
 
 ## Out of scope, stated plainly
 
@@ -22,7 +22,12 @@ Story 0101b (Epic 6 — Invoicing) ships **no route, no Livewire component and n
 | `BuildInvoiceLines` | `itemised(iterable $items, string $storedTax, ?string $taxRate): array`, `adjustment(string $description, string $base, string $tax, ?string $taxRate): array` | Pure line builders. |
 | `AssertInvoicesAreCurrent` | `__invoke(Order $lockedOrder, string $errorKey = 'invoice'): void` | Out-of-date guard (FD-15). |
 | `AssertNumberingFormatIsFree` | `__invoke(InvoiceSetting $proposed, CarbonInterface $at): void` | Called by `SaveInvoiceSettings` after its row lock, before `save()`. |
-| `ResolveInvoiceLocale` | `__invoke(): string` | Language the stored concept line is written in. |
+| `ResolveInvoiceLocale` | `__invoke(): string` | Language the stored concept line is written in; story 0102 reuses it unchanged for the PDF. |
+| `DownloadInvoice` | `__invoke(Invoice $invoice): Symfony\...\Response` | Story 0102. Authorizes `view`, renders and returns the PDF attachment. |
+| `RenderInvoicePdf` | `__invoke(Invoice $invoice, bool $isCopy, bool $isSample = false): Spatie\LaravelPdf\PdfBuilder` | Story 0102. Builds the hardened PDF from the frozen snapshot; nothing is stored. Also used by 0104 (attachment) and 0103 (preview, unsaved invoice). |
+| `BuildInvoicePdfData` | `__invoke(Invoice $invoice, bool $isCopy, string $locale, bool $isSample = false): array` | Story 0102. Pure view-model builder; reads the invoice, its `lines` and `corrects` only, never `orders`, `customers` or `invoice_settings`. |
+| `LoadInvoiceLogo` | `__invoke(?string $mediaId): ?string` | Story 0102. The frozen logo as a data URI, or `null`. |
+| `FormatInvoiceMoney` | `__invoke(string $amount, string $locale): string` | Story 0102. Locale formatting of a stored decimal string, never through a float. |
 
 `App\Concerns\InvoiceValidationRules` supplies `invoiceAmountRules()` and `invoiceAmountMessages()` (used by `IssueInvoice`; the screens reuse them).
 
@@ -48,6 +53,33 @@ Only already-authorized actions or system follow-ons: `IssueInvoice`, `SendOrder
 ### `CreateStandardInvoice` guards
 
 It throws `LogicException` (nothing written) when it runs outside a transaction, for an order that was not read from the database (a freshly created instance), or with a non-positive or over-ceiling total. It does not trust the caller's order instance: it re-reads the order `FOR UPDATE` itself.
+
+## PDF rendering and download (story 0102)
+
+`GET /invoices/{invoice}/pdf` (`invoices.download`, [`routes/invoices.php`](../../routes/invoices.php)) is served by the thin `App\Http\Controllers\InvoiceDownloadController` in front of `DownloadInvoice`. Middleware: `auth`, `verified` and `throttle:invoice-downloads` (30 per minute per user, bounding Chromium cost). It has **no `can:` on purpose**, so the refusal is logged (see [authorization](../architecture/authorization/step-up-and-refusal-logging.md#refusing-a-download-without-a-can-middleware-story-0102)).
+
+```php
+// app/Actions/Invoices/DownloadInvoice.php
+$this->logRefusedPrivilegedAttempt->authorize('view', $invoice, targetType: 'invoice', targetId: $invoice->id);
+
+$name = 'invoice-'.preg_replace('/[^A-Za-z0-9._-]/u', '-', $invoice->number).'.pdf';
+```
+
+| Case | Result |
+| --- | --- |
+| Guest | Redirect to login (not logged) |
+| Signed in without `invoices.view` | 403 and one refusal log |
+| Unknown invoice id | 404 |
+| Voided invoice, cancelled order, soft-deleted customer | Still downloads |
+| Success | `application/pdf` attachment, `Cache-Control: private, no-store` |
+
+- **File name.** `invoice-` + the number with every character outside `[A-Za-z0-9._-]` replaced by `-` (numbers may contain `/`), plus `.pdf`.
+- **Snapshot only.** The PDF is rendered on demand from the invoice's own frozen columns, lines and `corrects` row: its `template`, colours and logo included. Two renders of one invoice give identical view data and HTML, not identical bytes (a PDF embeds a creation time).
+- **Templates.** `App\Enums\InvoiceTemplate::view()` maps `classic` / `modern` to `resources/views/invoices/pdf/{classic,modern}.blade.php`, which both include the shared partials in `resources/views/invoices/pdf/partials/`; a stored value that is not a case fails loudly.
+- **COPY and SAMPLE marks.** `RenderInvoicePdf` takes `$isCopy` (downloads pass `Invoice::hasBeenSent()`, which returns `false` until story 0104 implements it) and `$isSample` (the settings preview of 0103). Both marks are translated strings (`invoices.pdf.copy`, `invoices.pdf.sample`).
+- **Language.** `ResolveInvoiceLocale`, never the admin's UI locale; see [localization](../conventions/localization.md#the-invoice-pdf-uses-the-same-language-story-0102).
+- **Hardening and the driver.** Rules and rationale in [security/headless-pdf-rendering.md](../security/headless-pdf-rendering.md); runtime prerequisites in the [deployment note](../architecture/overview.md#deployment-note).
+- **Config.** `config/invoicing.php` `pdf`: `format` (`INVOICE_PDF_FORMAT`, `a4`), `margin_mm` (`INVOICE_PDF_MARGIN_MM`, 15), `timeout_seconds` (`INVOICE_PDF_TIMEOUT_SECONDS`, 30), `logo_max_bytes` (`INVOICE_PDF_LOGO_MAX_BYTES`, 1 MiB); plus the published `config/laravel-pdf.php`.
 
 ## Amount format (FD-11)
 
@@ -80,4 +112,4 @@ A dot-decimal string with at most two decimals (`200`, `200.5`, `200.50`), norma
 
 The issuing lock order and its rationale are in [orders.md](orders.md#lock-order-convention-project-wide).
 
-_Last updated: 2026-11-19 — Story 0101b: page created (no routes; action contracts, error-key matrix, out-of-scope statements)._
+_Last updated: 2026-11-19 — Story 0102: added the PDF actions, the `invoices.download` route contract, templates, marks and config; story 0101b's issuing contracts are unchanged._

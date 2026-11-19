@@ -2,6 +2,7 @@
 
 use App\Models\StoreLanguage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\Invoices\FakesPdf;
 use Tests\TestCase;
 
 /*
@@ -24,6 +25,11 @@ pest()->extend(TestCase::class)
     // database, so no Unit test may call defaultStoreLanguage()/translated().
     ->beforeEach(fn () => StoreLanguage::flushDefaultStoreLanguage())
     ->in('Feature', 'Browser');
+
+// Story 0102: every test of the invoice PDF folder fakes the PDF engine (guard against starting Chromium).
+pest()->beforeEach(fn () => FakesPdf::reset())
+    ->afterEach(fn () => FakesPdf::assertUsed())
+    ->in('Feature/Invoices/Pdf');
 
 /*
 |--------------------------------------------------------------------------

@@ -22,6 +22,7 @@
         "lightningcss-linux-x64-gnu": "^1.29.1"
     },
     "devDependencies": {
-        "playwright": "^1.61.1"
+        "playwright": "^1.61.1",
+        "puppeteer": "^25.18.1"
     }
 }

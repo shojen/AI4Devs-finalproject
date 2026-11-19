@@ -26,6 +26,7 @@ Confirmed against `composer.json` and `package.json`:
 - **Laravel Tinker** `^3.0`
 - **Laravel Chisel** `^0.1.0`
 - **spatie/laravel-permission** `^8.3` — roles and permissions
+- **spatie/laravel-pdf** `^2.14` + **spatie/browsershot** `^5.5` — invoice PDF rendering through a headless Chrome (needs Node 22+ and puppeteer's `chrome-headless-shell`; see [Invoice PDF rendering](#invoice-pdf-rendering))
 - **symfony/html-sanitizer** `^8.1` — allow-list HTML sanitizer, applied to `products.description` on write before persistence (see [`docs/security/html-sanitization.md`](docs/security/html-sanitization.md))
 
 ### Frontend
@@ -189,6 +190,16 @@ Install and build (or watch) frontend assets:
 ./vendor/bin/sail npm run dev      # Vite dev server with hot reload
 ./vendor/bin/sail npm run build    # Production build
 ```
+
+### Invoice PDF rendering
+
+Invoice PDFs are rendered by a headless Chrome driven from Node (Node 22 or newer). After `npm install`, install the browser once, and again after every puppeteer upgrade:
+
+```bash
+./vendor/bin/sail npx puppeteer browsers install chrome-headless-shell
+```
+
+In Sail (and any container running as root) set `LARAVEL_PDF_NO_SANDBOX=true` in `.env`; never set it on a production host. Deployment prerequisites (puppeteer is a dev dependency, the private temp directory) are in [`docs/architecture/overview.md`](docs/architecture/overview.md#deployment-note); the hardening rules are in [`docs/security/headless-pdf-rendering.md`](docs/security/headless-pdf-rendering.md). The real-render smoke test is opt-in: `INVOICE_PDF_E2E=1 php artisan test tests/Feature/Invoices/Pdf/InvoicePdfSmokeTest.php`.
 
 ### Database
 

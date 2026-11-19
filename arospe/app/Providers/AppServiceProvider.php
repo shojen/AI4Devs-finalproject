@@ -2,13 +2,17 @@
 
 namespace App\Providers;
 
+use App\Actions\Invoices\SafeBrowsershotDriver;
 use App\Models\Role;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\ParallelTesting;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -19,7 +23,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton('laravel-pdf.driver.browsershot', fn (): SafeBrowsershotDriver => new SafeBrowsershotDriver((array) config('laravel-pdf.browsershot')));
     }
 
     /**
@@ -30,6 +34,9 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         $this->configureAuthorization();
         $this->configureParallelTesting();
+
+        RateLimiter::for('invoice-downloads', fn (Request $request): Limit => Limit::perMinute(30)
+            ->by((string) ($request->user()?->getAuthIdentifier() ?? $request->ip())));
     }
 
     /**

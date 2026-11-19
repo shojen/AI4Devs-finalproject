@@ -64,6 +64,15 @@ app/
                        (pure), AssertInvoicesAreCurrent (out-of-date guard),
                        AssertNumberingFormatIsFree (called by SaveInvoiceSettings) and
                        ResolveInvoiceLocale (the store-language code of an invoice's text)
+                       Story 0102 added the PDF family (api/invoices.md): DownloadInvoice (logged
+                       `view` authorization, then the attachment), RenderInvoicePdf, BuildInvoicePdfData
+                       (pure view model), LoadInvoiceLogo and FormatInvoiceMoney -- and
+                       SafeBrowsershotDriver, which is NOT an action: it is a subclass of the
+                       spatie/laravel-pdf BrowsershotDriver, rebound in AppServiceProvider::register()
+                       to load the HTML from a private temp file (security/headless-pdf-rendering.md).
+                       It sits here on purpose: it is only ever used by this area's render action, and
+                       a new base folder (app/Pdf, app/Drivers) needs approval, so a single
+                       package-driver subclass does not justify one. A second one is the signal to ask
   Actions/Localization/ Cross-cutting, not a module area (D24) -- the app's two default-locale
                        settings (SetDefaultUiLocale, SetDefaultNotificationLocale -- story 0068),
                        filed separately from Actions/StoreLanguages/ below even though both write
@@ -313,4 +322,4 @@ app/
                        — see database/schema-other.md#payment_methods)
 ```
 
-_Last updated: 2026-11-19 — Story 0101b: the `Actions/Invoices/` entry lists the issuing family and its allowed-callers rule. Story 0101a: the `Actions/Invoices/` entry lists AllocateInvoiceNumber, PeekNextInvoiceNumber and SetInvoiceSequenceStart._
+_Last updated: 2026-11-19 — Story 0102: the `Actions/Invoices/` entry lists the PDF family and records why the `SafeBrowsershotDriver` package-driver subclass lives there. Earlier entries (0100, 0101a, 0101b) unchanged._

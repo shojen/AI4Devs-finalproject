@@ -3,66 +3,11 @@
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
     {
-      "id": "0102",
-      "slug": "0102-invoice-pdf-rendering-and-templates-backend",
-      "title": "Invoice PDF rendering and two templates (backend)",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "config/invoicing.php",
-        "config/laravel-pdf.php",
-        "app/Enums/InvoiceTemplate.php",
-        "app/Models/Invoice.php",
-        "app/Actions/Invoices/RenderInvoicePdf.php",
-        "app/Actions/Invoices/BuildInvoicePdfData.php",
-        "app/Actions/Invoices/LoadInvoiceLogo.php",
-        "app/Actions/Invoices/ResolveInvoiceLocale.php",
-        "app/Actions/Invoices/FormatInvoiceMoney.php",
-        "app/Actions/Invoices/DownloadInvoice.php",
-        "app/Http/Controllers/InvoiceDownloadController.php",
-        "routes/invoices.php",
-        "routes/web.php",
-        "resources/views/invoices/pdf/classic.blade.php",
-        "resources/views/invoices/pdf/modern.blade.php",
-        "resources/views/invoices/pdf/partials/head.blade.php",
-        "resources/views/invoices/pdf/partials/header.blade.php",
-        "resources/views/invoices/pdf/partials/parties.blade.php",
-        "resources/views/invoices/pdf/partials/lines.blade.php",
-        "resources/views/invoices/pdf/partials/totals.blade.php",
-        "resources/views/invoices/pdf/partials/corrective-notice.blade.php",
-        "resources/views/invoices/pdf/partials/copy-mark.blade.php",
-        "lang/en/invoices.php",
-        "lang/es/invoices.php",
-        ".github/workflows/tests.yml",
-        "tests/Support/Invoices/FakesPdf.php",
-        "composer.json",
-        "composer.lock",
-        "package.json",
-        ".env.example",
-        "tests/Feature/Invoices/Pdf/"
-      ],
-      "conflict_risk_with": [
-        "0103",
-        "0104",
-        "0105",
-        "0106",
-        "0107",
-        "0108",
-        "0109b",
-        "0110",
-        "0110a"
-      ]
-    },
-    {
       "id": "0103",
       "slug": "0103-invoice-settings-screen-ui",
       "title": "Invoice settings screen (frontend)",
-      "depends_on": [
-        "0102"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -90,7 +35,6 @@
         "tests/Browser/InvoiceSettings/InvoiceSettingsScreenTest.php"
       ],
       "conflict_risk_with": [
-        "0102",
         "0104",
         "0105",
         "0106",
@@ -105,10 +49,8 @@
       "id": "0104",
       "slug": "0104-send-invoice-by-email-backend",
       "title": "Send invoice by e-mail, copy on resend (backend)",
-      "depends_on": [
-        "0102"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -135,7 +77,6 @@
         "tests/Feature/Orders/OrderLineItemAuthorizationTest.php"
       ],
       "conflict_risk_with": [
-        "0102",
         "0103",
         "0105",
         "0106",
@@ -167,7 +108,6 @@
         "tests/Feature/Orders/CreateOrderStockTest.php"
       ],
       "conflict_risk_with": [
-        "0102",
         "0103",
         "0104",
         "0106",
@@ -223,7 +163,6 @@
       ],
       "conflict_risk_with": [
         "0095",
-        "0102",
         "0103",
         "0104",
         "0105",
@@ -314,7 +253,6 @@
       ],
       "conflict_risk_with": [
         "0095",
-        "0102",
         "0103",
         "0104",
         "0105",
@@ -364,7 +302,6 @@
       ],
       "conflict_risk_with": [
         "0095",
-        "0102",
         "0103",
         "0104",
         "0105",
@@ -418,7 +355,6 @@
       "slug": "0109b-order-detail-invoices-panel-ui",
       "title": "Order detail: invoices panel with download, send, collect and undo (frontend)",
       "depends_on": [
-        "0102",
         "0104",
         "0106",
         "0109a"
@@ -450,7 +386,6 @@
       ],
       "conflict_risk_with": [
         "0095",
-        "0102",
         "0103",
         "0104",
         "0105",
@@ -503,7 +438,6 @@
       "slug": "0110-billing-section-ui",
       "title": "Billing section: invoice list, filters, send and create invoice (frontend)",
       "depends_on": [
-        "0102",
         "0104",
         "0106",
         "0109a",
@@ -529,7 +463,6 @@
         "tests/Browser/Invoices/"
       ],
       "conflict_risk_with": [
-        "0102",
         "0103",
         "0104",
         "0105",
@@ -563,7 +496,6 @@
         "tests/Browser/Invoices/CollectInvoiceTest.php"
       ],
       "conflict_risk_with": [
-        "0102",
         "0103",
         "0104",
         "0105",

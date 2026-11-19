@@ -4,7 +4,7 @@
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
 > [0100](done/0100-invoice-settings-backend.md) (settings, rules, policy, save action),
 > [0101a](done/0101a-invoice-numbering-sequences-backend.md) (preview, starting counter) and
-> [0102](0102-invoice-pdf-rendering-and-templates-backend.md) (templates, renderer). Uses the
+> [0102](done/0102-invoice-pdf-rendering-and-templates-backend.md) (templates, renderer). Uses the
 > refusal added by [0101b](done/0101b-issue-standard-invoice-backend.md) once merged. No dependents.
 
 ## Description
@@ -510,7 +510,7 @@ as a PDF; a viewer reads the same screen without being able to change it.
 
 ## Dependencies, risks, open questions
 - Upstream: [0100](done/0100-invoice-settings-backend.md), [0101a](done/0101a-invoice-numbering-sequences-backend.md),
-  [0102](0102-invoice-pdf-rendering-and-templates-backend.md) (unsaved-invoice render), and
+  [0102](done/0102-invoice-pdf-rendering-and-templates-backend.md) (unsaved-invoice render), and
   [0101b](done/0101b-issue-standard-invoice-backend.md) for T-10 only. Sibling:
   [0110](0110-billing-section-ui.md) owns the "Billing" label FD-1 avoids.
 - Risk (INVEST Small): the screen plus two read actions, a route and a modal is the largest

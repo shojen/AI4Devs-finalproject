@@ -1,12 +1,12 @@
 # [0102] Invoice PDF rendering and two templates (backend)
 
-> **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
+> **Status: Done (closed 2026-11-19, Phase 7).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
-> [0100](done/0100-invoice-settings-backend.md) (`InvoiceTemplate`, settings) and
-> [0101b](done/0101b-issue-standard-invoice-backend.md) (`invoices` with its frozen snapshot columns,
+> [0100](0100-invoice-settings-backend.md) (`InvoiceTemplate`, settings) and
+> [0101b](0101b-issue-standard-invoice-backend.md) (`invoices` with its frozen snapshot columns,
 > `InvoicePolicy`, `invoices.view`, `lang/{en,es}/invoices.php`). Dependents:
-> [0103](0103-invoice-settings-screen-ui.md), [0104](0104-send-invoice-by-email-backend.md),
-> [0109b](0109b-order-detail-invoices-panel-ui.md), [0110](0110-billing-section-ui.md).
+> [0103](../0103-invoice-settings-screen-ui.md), [0104](../0104-send-invoice-by-email-backend.md),
+> [0109b](../0109b-order-detail-invoices-panel-ui.md), [0110](../0110-billing-section-ui.md).
 
 ## Description
 Turn an issued invoice into a PDF, on demand, from its frozen snapshot only, with two selectable
@@ -80,8 +80,8 @@ backend | includes database-expert: no
   ships that method returning `false`, and 0104 implements it with its delivery table and owns
   the "sent invoice downloads as a copy" test (QA G-3). The mark is a translated string in the
   invoice locale.
-- **FD-8 Locale.** `ResolveInvoiceLocale` returns the default `StoreLanguage` code when the app
-  has `invoices.pdf.*` translations for it, else `config('app.fallback_locale')`; it never reads
+- **FD-8 Locale.** `ResolveInvoiceLocale` (shipped by 0101b, reused unchanged) returns the default
+  `StoreLanguage` code when `lang/{code}/invoices.php` exists, else `config('app.fallback_locale')`; it never reads
   the admin's UI locale. Every string is translated with an explicit locale argument, and the
   ambient `App::getLocale()` is unchanged after a render (queue worker and request differ).
 - **FD-9 Money.** `FormatInvoiceMoney` formats the stored decimal string per locale (`1.234,56 €`
@@ -95,21 +95,23 @@ backend | includes database-expert: no
   System fonts only. Colours are re-checked against `^#[0-9A-Fa-f]{6}$` and emitted only as CSS
   custom properties; an invalid stored value falls back to the template default.
 - **FD-11 Logo as a server-built data URI.** `LoadInvoiceLogo` reads the frozen
-  `logo_media_id`'s file from the public disk (refusing `..`, absolute paths or anything outside
+  `logo_media_id`'s original file (`Media::path`, never the `webp_path`/`avif_path`
+  derivatives) from the public disk (refusing `..`, absolute paths or anything outside
   the disk root), accepts only PNG, JPEG or WebP by `finfo` mime (never SVG), up to
   `config('invoicing.pdf.logo_max_bytes')`; otherwise, or when the file is missing, it returns
   null and the PDF renders without a logo.
 - **FD-12 Download.** Route `GET invoices/{invoice}/pdf` named `invoices.download`, middleware
   `auth`, `verified` and a named throttle (30 per minute per user, Q-0102-6), **no** `can:`: the
   action `DownloadInvoice` authorizes `view` on the invoice through the logging helper so a
-  refusal is logged and returns 403 (an unprivileged `can:` refusal would not be logged). The
+  refusal is logged and returns 403, passing `targetType: 'invoice'` and `targetId: $invoice->id`
+  explicitly (the helper auto-resolves only `User`/`Role` targets; as `MarkOrderAsPaid` does) (an unprivileged `can:` refusal would not be logged). The
   file name is `invoice-` + the number with every character outside `[A-Za-z0-9._-]` replaced by
   `-`, plus `.pdf` (the number may contain `/`). A voided invoice, a cancelled order's or a
   soft-deleted customer's invoice stays downloadable.
 - **FD-14 Unsaved invoices and the SAMPLE mark (settings preview).** `BuildInvoicePdfData` and
   `RenderInvoicePdf` work on an unsaved `Invoice` whose `lines` relation is set in memory (no
   query, no write); this is used by the settings preview, whose read action `PreviewInvoicePdf` is
-  owned by [0103](0103-invoice-settings-screen-ui.md). Both take `bool $isSample = false`; when
+  owned by [0103](../0103-invoice-settings-screen-ui.md). Both take `bool $isSample = false`; when
   true the PDF prints a translated "SAMPLE" mark (`invoices.pdf.sample`) on both templates
   (accepted default Q-0103-3 (a)), independently of the COPY mark.
 - **FD-13 Paper and timing in config.** `config/invoicing.php` `pdf`: `format` (A4),
@@ -177,7 +179,7 @@ Feature: Invoice PDF
     Then its labels are in Spanish and amounts are written like "1.234,56 €"
 
   Scenario: A user without permission cannot download
-    Given a sales assistant without permission to view invoices
+    Given a user without permission to view invoices
     When she requests an invoice PDF
     Then she receives a refusal
     And the attempt is logged
@@ -191,13 +193,13 @@ Feature: Invoice PDF
 - `app/Enums/InvoiceTemplate.php` — `view()`.
 - `app/Models/Invoice.php` — `hasBeenSent()` stub.
 - `app/Actions/Invoices/{RenderInvoicePdf, BuildInvoicePdfData, LoadInvoiceLogo,
-  ResolveInvoiceLocale, FormatInvoiceMoney, DownloadInvoice}.php`.
+  FormatInvoiceMoney, DownloadInvoice}.php` (`ResolveInvoiceLocale` already exists from 0101b).
 - `app/Http/Controllers/InvoiceDownloadController.php`; `routes/invoices.php` (required from
   `routes/web.php`); the named rate limiter registered in a service provider.
 - `resources/views/invoices/pdf/{classic, modern}.blade.php`,
   `resources/views/invoices/pdf/partials/{head, header, parties, lines, totals,
   corrective-notice, copy-mark}.blade.php`.
-- `lang/{en,es}/invoices.php` — group `pdf` (labels, reasons, COPY, SAMPLE, corrective title).
+- `lang/{en,es}/invoices.php` (modified, exist since 0101b) — add group `pdf` (labels, reasons, COPY, SAMPLE, corrective title).
 - `.github/workflows/tests.yml` — Node and a Chrome path for the opt-in smoke (devops-engineer).
 - Tests below; `tests/Support/Invoices/FakesPdf.php`.
 
@@ -210,7 +212,8 @@ test fails if one does not, so no test starts Chromium by accident.
 Happy path
 - [ ] T-1 (V) Dataset over `InvoiceTemplate::cases()`: every FD-5 field printed.
 - [ ] T-2 (V) `BuildInvoicePdfData` with a query log: no query on `orders`, `customers`,
-  `invoice_settings`, `media` (logo via `LoadInvoiceLogo` only); only snapshot values.
+  `invoice_settings`; the only `media` query is one primary-key lookup inside `LoadInvoiceLogo`
+  (none when the logo is null); only snapshot values.
 - [ ] T-3 (V) After changing settings, customer and order (dataset of 6 mutations) the data and
   HTML are identical to before; the invoice's own template is used. Top risk.
 - [ ] T-4 (V) Same invoice and flag rendered twice a day apart: identical HTML (FD-3).
@@ -222,7 +225,7 @@ Happy path
 - [ ] T-9 (F) `assertViewIs($template->view())`, data keys, format and margins from config,
   file name; no storage write.
 - [ ] T-10b (V) An unsaved invoice with in-memory lines renders in both templates with no query
-  and no write; `isSample = true` prints the SAMPLE mark, false does not; both marks can coexist.
+  (except the single `LoadInvoiceLogo` media lookup when a logo is set) and no write; `isSample = true` prints the SAMPLE mark, false does not; both marks can coexist.
 - [ ] T-10 (V) Logo present: `<img>` with a `data:image/...;base64,` source; none without logo.
 
 Edge
@@ -243,7 +246,7 @@ Edge
   printed.
 - [ ] T-17 (V) Corrective data read from the frozen `corrects` row; null reason prints no reason
   line.
-- [ ] T-18 (V) Default store language `fr` without translations, or none: fallback locale; UI
+- [ ] T-18 (V, extends `tests/Feature/Invoices/ResolveInvoiceLocaleTest.php`) Default store language `fr` without translations, or none: fallback locale; UI
   locale never read; `App::getLocale()` unchanged after render.
 - [ ] T-19 (H) File names for `F2026-00001`, `F/2026/0001`, `INV.2026/7`, `a b`, `..\x`,
   `"quote"`, `é/ü`: only `[A-Za-z0-9._-]`, `.pdf`, no `/`, quote, CR or LF in the header.
@@ -294,10 +297,10 @@ template; 0104 can render the same PDF, marked as a copy when required, to attac
 - [ ] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open technical questions
-- Upstream: [0100](done/0100-invoice-settings-backend.md), [0101b](done/0101b-issue-standard-invoice-backend.md).
-  Downstream: [0104](0104-send-invoice-by-email-backend.md) attaches `RenderInvoicePdf`'s output
-  and implements `hasBeenSent()`; [0103](0103-invoice-settings-screen-ui.md) may preview a sample;
-  [0109b](0109b-order-detail-invoices-panel-ui.md) / [0110](0110-billing-section-ui.md) link the download.
+- Upstream: [0100](0100-invoice-settings-backend.md), [0101b](0101b-issue-standard-invoice-backend.md).
+  Downstream: [0104](../0104-send-invoice-by-email-backend.md) attaches `RenderInvoicePdf`'s output
+  and implements `hasBeenSent()`; [0103](../0103-invoice-settings-screen-ui.md) may preview a sample;
+  [0109b](../0109b-order-detail-invoices-panel-ui.md) / [0110](../0110-billing-section-ui.md) link the download.
 - **Operations note (runtime prerequisites).** Rendering needs Node 22 or newer on the host that
   renders (web and queue worker), Chrome installed by puppeteer (or an existing Chromium pointed
   to by the package's Chrome-path key), and the package's `LARAVEL_PDF_*` environment keys (Node
@@ -328,7 +331,7 @@ template; 0104 can render the same PDF, marked as a copy when required, to attac
 ## Technical tasks
 - [ ] Install spike (FD-1): composer and npm packages, published config, one real render in Sail
   and CI; record versions and fake assertions here, or stop and report to the owner.
-- [ ] `ResolveInvoiceLocale`, `FormatInvoiceMoney`, `LoadInvoiceLogo` with tests.
+- [ ] `FormatInvoiceMoney`, `LoadInvoiceLogo` with tests (`ResolveInvoiceLocale` reused; extend its test).
 - [ ] `BuildInvoicePdfData` with the zero-query and determinism tests.
 - [ ] Templates, partials, CSP head; architecture, escaping and parity tests.
 - [ ] `RenderInvoicePdf` with Browsershot hardening; `FakesPdf` helper and guard test.
@@ -338,4 +341,146 @@ template; 0104 can render the same PDF, marked as a copy when required, to attac
 
 ## Phase records
 - Phase 1 (Three Amigos) complete on 2026-11-15 — participants: product-owner (facilitator),
-  backend-expert, backend-qa. Phase 2 (INVEST) pending.
+  backend-expert, backend-qa.
+- Phase 2 (INVEST + docs consistency) — code-reviewer, 2026-11-19: **APPROVED with required
+  amendments** (to be applied by product-owner before Phase 3 starts; none changes scope).
+  INVEST: Independent (0100/0101b are in `done/`; downstream only consumes the contracts),
+  Negotiable (Q-0102-1..6 open with recommended defaults), Valuable (download + 0104 attachment),
+  Estimable (the FD-1 spike gates the only unknown and returns U-1 to the owner on failure),
+  Testable (30 concrete tests over V/F/H/R levels). Small: large (6 actions, 9 views, 3 deps,
+  CI change), but the parts are not separately shippable — templates without a renderer or a
+  route deliver nothing, and the spike + FD-14 contract unblock 0103/0104 — so no split; Phase 3
+  should follow the technical-task order and commit per layer. Verified against code: `Invoice`
+  has `template` (plain string, no enum cast — FD-4's loud failure must come from
+  `InvoiceTemplate::from()`), `primary_color`, `accent_color`, `logo_media_id`
+  (FK `media`, `restrictOnDelete`, so Q-0102-5 (a) already holds), `order_number`,
+  `corrects_invoice_id`/`corrects()`, `reason` (`refund`/`order_edited`/`order_cancelled`);
+  `InvoiceTemplate` has only `Classic`/`Modern`; `InvoicePolicy::view` checks `invoices.view`;
+  `LogRefusedPrivilegedAttempt::authorize()` exists; `routes/*.php` are `require`d from
+  `routes/web.php`; `StoreLanguage::defaultStoreLanguage()` exists. Required amendments:
+  1. **`ResolveInvoiceLocale` already exists** (0101b, with
+     `tests/Feature/Invoices/ResolveInvoiceLocaleTest.php`, used by `CreateStandardInvoice`).
+     Remove it from "Files to create" and the technical task "`ResolveInvoiceLocale` ... with
+     tests"; mark it "reused". Reword FD-8 to its real rule — default store language when
+     `lang/{code}/invoices.php` exists, else `app.fallback_locale` (not "has `invoices.pdf.*`
+     translations"); T-18 extends the existing test file rather than a new one.
+  2. **T-2 / T-10b contradict FD-11.** `LoadInvoiceLogo(?string $mediaId)` must read the
+     `media` row to find the file, so a render with a logo queries `media`. Restate T-2 as "the
+     only `media` query is one primary-key lookup inside `LoadInvoiceLogo`", and T-10b's "no
+     query" as "no query except that logo lookup when `logo_media_id` is set" (or test it with a
+     null logo).
+  3. **FD-11 must name which file.** `Media` stores `path` (original), `webp_path` and
+     `avif_path`; state which one is read (recommended: `path`, the original, mime-checked; AVIF
+     is outside the accepted list).
+  4. **FD-12 / T-23 logging call:** the helper auto-resolves only `User`/`Role` targets, so
+     `DownloadInvoice` must pass `targetType: 'invoice'`, `targetId: $invoice->id` explicitly
+     (as `MarkOrderAsPaid` does); add that to the class contract or FD-12.
+  5. `lang/{en,es}/invoices.php` already exist (0101b): list them as **modified** (add the
+     `pdf` group), not created. Minor: the Gherkin actor "sales assistant" is not a seeded role;
+     the test should build a user without `invoices.view` (per T-23's dataset).
+- Phase 3, task 1 (FD-1 install spike) — PASSED 2026-11-19. Installed `spatie/laravel-pdf`
+  2.14.0, `spatie/browsershot` 5.5.0 and npm `puppeteer` ^25.18.1 (dev) on PHP 8.5.0 /
+  Laravel 13 / Node 24. A real render (`Pdf::html(...)->format('a4')->base64()`) returned a valid
+  `%PDF-` of about 7.6 KB once `npx puppeteer browsers install chrome-headless-shell` had run
+  (Browsershot needs the headless shell matching puppeteer; `LARAVEL_PDF_NO_SANDBOX=true` for
+  root containers). Package config published to `config/laravel-pdf.php`; env keys:
+  `LARAVEL_PDF_DRIVER`, `_NODE_BINARY`, `_NPM_BINARY`, `_CHROME_PATH`, `_NODE_MODULES_PATH`,
+  `_NO_SANDBOX` (listed in `.env.example`). `Pdf::fake()` returns `FakePdfBuilder` with
+  `assertViewIs`, `assertViewHas`, `assertSee`, `assertDontSee`, `assertSaved`,
+  `assertBrowsershot`, `assertRespondedWithPdf`, `assertQueued`, `assertNotQueued`;
+  `generatePdfContent()` and `base64()` still return dummy PDF content under the fake, so 0104 can
+  attach it in tests. Side effect: composer's `boost:update` hook rewrote `CLAUDE.md`; it was
+  restored from git and must not be committed.
+- Phase 4 (security audit) — appsec-auditor, 2026-11-19: **CHANGES REQUESTED (1 Medium, return
+  to Phase 3)**. Verified safe: every snapshot string is Blade-escaped; no `{!!`/script/link/url()
+  in the templates (architecture test); static CSP meta is the first `<head>` element; JS disabled,
+  timeout and `host-resolver-rules=MAP * ~NOTFOUND`; colours re-validated before the CSS context;
+  logo path from the `media` row only, `..`/absolute/NUL refused, `finfo` allow-list without SVG,
+  size cap; `view` authorized through `LogRefusedPrivilegedAttempt` (403 logged, 404 for unknown
+  ids, guest redirect unlogged); file name restricted to `[A-Za-z0-9._-]` (no header injection);
+  30/min per-user throttle; `no_sandbox` env-only default false (true only in the root CI job);
+  `write_options_to_file` true; PDF cache off. `composer audit` / `npm audit`: no advisory for
+  spatie/laravel-pdf 2.14.0, spatie/browsershot 5.5.0 or puppeteer 25.18.1 (other advisories are
+  pre-existing and out of scope).
+  - **M-1 (Medium, availability / business logic, CWE-20):** `BrowsershotDriver` always calls
+    `Browsershot::html($html)`, whose guard throws `HtmlIsNotAllowedToContainFile` when the HTML
+    (raw or entity-decoded) contains `view-source` or `//localhost`/`//127.`-style text. Reproduced:
+    `Browsershot::html('<p>Piso 2 view-source</p>')` throws. Customer-controlled snapshot strings
+    (`recipient_name` from the customer, billing address, product names) reach the template, so a
+    customer can make their own issued (immutable) invoice permanently unrenderable (500 on
+    download, later a failed 0104 attachment). Fix: rebind `laravel-pdf.driver.browsershot` to a
+    `BrowsershotDriver` subclass that writes the HTML to an app-owned private temp file and loads it
+    with `setHtmlFromFilePath()` **(recommended)**, keeping every FD-10 layer and the
+    `withBrowsershot` callback; add a test with `view-source` and `//127.0.0.1` in the billing address
+    and a product name (real-Chromium smoke test plus a driver-level assertion that no exception is
+    raised). Alternative: neutralise those tokens with a U+2060 word joiner before rendering
+    (alters the legal text; not recommended).
+  - **L-1 (Low, information exposure, CWE-377):** Browsershot's temp HTML (customer PII) is written
+    under the system temp dir with `spatie/temporary-directory`'s 0777-minus-umask mode. Set
+    `LARAVEL_PDF_TEMP_PATH` to a private storage directory (document in `.env.example`); the M-1
+    driver should use the same private directory.
+  - **L-2 (Low, DoS, CWE-400):** the throttle bounds rate, not concurrency; 30 parallel requests per
+    user each spawn a Chromium. Consider a `Cache::lock`/funnel concurrency cap around the render
+    (non-blocking; acceptable for an admin-only route if deferred).
+  - **I-1 (Info):** the driver is env-selectable (`LARAVEL_PDF_DRIVER`); the hardening lives only in
+    `withBrowsershot`, so another driver (e.g. cloudflare, which sends PII to a third party) would
+    silently drop it. Consider pinning `'driver' => 'browsershot'` or asserting it in
+    `RenderInvoicePdf`. **I-2:** puppeteer is a devDependency; a production `npm ci --omit=dev`
+    has no renderer, and Chromium security patches arrive only with puppeteer upgrades — keep it
+    current. **I-3:** add `Cache-Control: private, no-store` to the PDF response (PII).
+  - Durable rules recorded in `docs/security/headless-pdf-rendering.md`.
+- Phase 4 re-audit — appsec-auditor, 2026-11-19 (commits 7acfa24, 38f128c): **PASS, with one
+  Low recommendation (N-1)**. M-1 fixed: `SafeBrowsershotDriver` passes `''` to the parent (guard
+  never sees the data) and loads the HTML with `setHtmlFromFilePath()` before the
+  `withBrowsershot` callback; the file is removed in a `finally` of both `generatePdf()`/`savePdf()`,
+  the only parent paths that call `buildBrowsershot()`. L-1 fixed: 0600 file (umask 0077 at
+  creation, no window), random 128-bit name, 0700 directory, default
+  `storage/app/private/pdf-temp` (gitignored, outside the web root); Browsershot's own temp
+  directory uses the same path. I-1 fixed: `->driver('browsershot')` resolves the rebound container
+  key (package providers register before app providers; binding test confirms the subclass).
+  I-3 fixed: `Cache-Control: private, no-store`. L-2 deferred and I-2 an operations note, as decided.
+  - **N-1 (Low, defense in depth, CWE-552) — new, introduced by the fix:** Browsershot sets the
+    puppeteer option `blockLocalFileAccess` only when `$this->html !== ''` (`createCommand()`), so
+    the file-based load silently drops the interception that aborts every `file:` request except
+    the initial navigation. Local-file reads stay blocked by Blade escaping, the template
+    architecture test and the CSP meta (`default-src 'none'; img-src data:`), so not exploitable
+    today; but one regression in any of those would now let `<iframe src="file:///…/.env">` reach
+    the PDF. Recommendation: in the `SafeBrowsershotDriver` wrapper closure, after
+    `setHtmlFromFilePath($filePath)`, add `$browsershot->setOption('blockLocalFileAccess', true);`
+    and assert it in `SafeBrowsershotDriverTest` (read `additionalOptions`). Cheap; fix in this
+    story if possible.
+  - **N-2 (Info):** the `finally` cleanup does not run if the PHP process dies (OOM, SIGKILL, fatal);
+    a PII HTML file can then remain in the 0700 directory. Optional: a scheduled prune of
+    `pdf-temp` files older than a few minutes.
+- Phase 5 (final code review) — code-reviewer, 2026-11-19 (diff `origin/main...HEAD`, through
+  ff6ff7d): **APPROVED, non-blocking notes only.** Verified: every acceptance criterion and
+  FD-1..FD-14 is implemented and covered (T-1..T-30; T-10b/T-2 logo-lookup amendment honoured;
+  N-1 fixed by `setOption('blockLocalFileAccess', true)` in `SafeBrowsershotDriver.php:58`, asserted
+  in `SafeBrowsershotDriverTest`); thin controller in front of `DownloadInvoice`; refusal logged with
+  explicit `targetType`/`targetId`; route has no `can:`; en/es `invoices.pdf.*` key parity (25 keys
+  each, programmatic diff empty); guard works (Pest.php `afterEach` + source scan + negative test).
+  Re-run by reviewer: `tests/Feature/Invoices/Pdf`, `ResolveInvoiceLocaleTest`,
+  `InvoicePdfTemplatesArchitectureTest` 185 passed / 2 skipped (opt-in smoke); Larastan on the
+  touched paths 0 errors. Full suite, Pint and the real smoke taken from the orchestrator's evidence.
+  Non-blocking notes (may be fixed now or left; none changes behaviour):
+  1. `app/Actions/Invoices/BuildInvoicePdfData.php:26` returns `array<string, mixed>`; code-style's
+     "PHPDoc array shapes" rule prefers an `array{locale: string, isCopy: bool, ...}` shape for this
+     fixed-key view model (the story's class contract also says `array<string, mixed>`, so not a
+     violation of the story).
+  2. `BuildInvoicePdfData.php:79` `date(mixed $moment, ...)` — type it `CarbonInterface` (the cast is
+     `datetime`); `mixed` hides the `->format()` call from Larastan.
+  3. `app/Providers/AppServiceProvider.php:38-39` registers the limiter inline in `boot()`; siblings use
+     a named `configure*()` method (`FortifyServiceProvider::configureRateLimiting()`).
+  4. `app/Actions/Invoices/DownloadInvoice.php:29` uses the `request()` helper inside an action;
+     consider letting the controller pass the `Request` (or call `toResponse()` there).
+  5. `app/Actions/Invoices/SafeBrowsershotDriver.php` is a package-driver subclass, not an action;
+     acceptable under the no-new-folder rule, but docs-keeper should record it in
+     `directory-structure/actions.md` so the placement reads as deliberate.
+  6. `tests/Feature/Invoices/Pdf/InvoicePdfSmokeTest.php:30-31` — `not->toContain('root:x:0:0')` cannot
+     fail (Chrome's page content streams are Flate-compressed), and the script is Blade-escaped so
+     "JS did not run" holds even with JavaScript enabled. Hardening is proven by the option-level
+     assertions (`RenderInvoicePdfTest` FD-10, `SafeBrowsershotDriverTest` N-1); the smoke proves a
+     real, bounded render. Accepted as is; do not cite T-30 as proof of the JS/file blocking.
+  Remaining DoD for later phases: documentation (Phase 6) and the closing full-suite gate (Phase 7).
+- Phase 6 (documentation) — docs-keeper, 2026-11-19: **DONE**. Updated `docs/api/routes.md` and `docs/api/invoices.md` (`invoices.download`, the PDF actions, templates, marks, config), the authorization refusal-logging part (logged refusal without `can:`, explicit `targetType`/`targetId`), `docs/conventions/directory-structure*` (`resources/views/invoices/pdf/`, `config/invoicing.php`, `routes/invoices.php`, `FakesPdf`, and why `SafeBrowsershotDriver` sits in `app/Actions/Invoices/`), `docs/conventions/localization.md` (`invoices.pdf.*`, PDF language rule), `docs/architecture/overview.md` (deployment prerequisites: Node 22+, puppeteer devDependency, private temp directory, sandbox flag, env keys), `docs/testing` (`FakesPdf` guard, opt-in smoke, CI steps), `docs/security/headless-pdf-rendering.md` and its index row, the `skipOnCi()` exception in `docs/contracts/ci-protocol.md`, three `docs/errors-log.md` entries, `docs/README.md` and the root `README.md` (Node/puppeteer setup). The Phase 5 non-blocking notes 1-4 and 6 stay follow-ups here only (nothing was added to `docs/`); note 5 is resolved by the directory-structure entry.
+- Phase 7 (closure) — 2026-11-19: full suite green in directory chunks (Unit + Orders + Localization + Customers + Invoices + InvoiceSettings 2526 passed / 2 skipped; Blog + Products + ProductCategories 2113 / 2113; remaining Feature 2463 passed plus `TopbarTest` repaired, Layout 75 / 75; Browser 330 passed / 3 skipped); Pint unscoped clean; Larastan level 7 clean on the touched paths. File moved to `done/` with the two-direction link check and the `tasks-map.md` / `tasks-status.json` regeneration. Dependents: `0103` and `0104` are now `ready`; `0109b` and `0110` stay `blocked` on their other dependencies.

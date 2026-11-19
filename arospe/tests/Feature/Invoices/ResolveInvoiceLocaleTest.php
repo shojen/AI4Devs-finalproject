@@ -33,3 +33,30 @@ test('the ambient locale is never read nor changed', function () {
     expect(app(ResolveInvoiceLocale::class)())->toBe('es')
         ->and(app()->getLocale())->toBe('en');
 });
+
+// Story 0102 T-18 -- the PDF reuses the resolver unchanged: a store language without app translations
+// (e.g. `fr`) or no default language at all gives the fallback locale, whatever the UI locale is.
+test('a default store language without translations falls back even when the UI locale has them', function () {
+    config(['app.fallback_locale' => 'en']);
+    $this->seed(StoreLanguageSeeder::class);
+    StoreLanguage::query()->where('is_default', true)->firstOrFail()->forceFill(['code' => 'fr'])->save();
+    app()->setLocale('es');
+
+    expect(app(ResolveInvoiceLocale::class)())->toBe('en')
+        ->and(app()->getLocale())->toBe('es');
+});
+
+test('no default store language falls back whatever the UI locale is', function () {
+    config(['app.fallback_locale' => 'en']);
+    app()->setLocale('es');
+
+    expect(app(ResolveInvoiceLocale::class)())->toBe('en')
+        ->and(app()->getLocale())->toBe('es');
+});
+
+test('the store language wins over a different UI locale', function () {
+    $this->seed(StoreLanguageSeeder::class);
+    app()->setLocale('en');
+
+    expect(app(ResolveInvoiceLocale::class)())->toBe('es');
+});

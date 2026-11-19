@@ -3,7 +3,7 @@
 > **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Second of three stories split from the former 0109
 > (INVEST "Small", approved 2026-11-15). Blocked on
-> [0102](0102-invoice-pdf-rendering-and-templates-backend.md) (download route),
+> [0102](done/0102-invoice-pdf-rendering-and-templates-backend.md) (download route),
 > [0104](0104-send-invoice-by-email-backend.md) (send actions),
 > [0106](0106-invoice-collection-order-debt-partially-paid-backend.md) (collect, undo, debt) and
 > [0109a](0109a-orders-list-invoice-send-ui.md) (`DescribeOrderInvoicing`). Dependents:
@@ -381,7 +381,7 @@ sees only the debt.
 - [ ] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open questions
-- Upstream (final list): [0102](0102-invoice-pdf-rendering-and-templates-backend.md),
+- Upstream (final list): [0102](done/0102-invoice-pdf-rendering-and-templates-backend.md),
   [0104](0104-send-invoice-by-email-backend.md),
   [0106](0106-invoice-collection-order-debt-partially-paid-backend.md),
   [0109a](0109a-orders-list-invoice-send-ui.md). Downstream:
