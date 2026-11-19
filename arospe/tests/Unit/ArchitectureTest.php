@@ -503,3 +503,52 @@ test('no routes file registers a write route naming invoices (T-35)', function (
 
     expect($offenders)->toBe([]);
 });
+
+// Story 0105 (FD-7, T-24): IssueAutomaticInvoice issues fiscal documents with no gate, so it is safe
+// only while it is unreachable from anything but the order creation that already authorized itself.
+test('only CreateOrder references IssueAutomaticInvoice, so no route, controller, component, job or listener reaches it (T-24)', function () {
+    $allowed = ['IssueAutomaticInvoice.php', 'CreateOrder.php'];
+    $offenders = [];
+    $referencing = [];
+
+    foreach (projectPhpSources(['app', 'routes', 'bootstrap', 'config']) as $path => $source) {
+        // Docblock mentions (IssueInvoiceForOrder lists its callers) are not references.
+        $code = (string) preg_replace(['!/\*.*?\*/!s', '!//[^\n]*!'], '', $source);
+
+        if (preg_match('/\bIssueAutomaticInvoice\b/', $code) !== 1) {
+            continue;
+        }
+
+        $referencing[] = basename($path);
+
+        if (! in_array(basename($path), $allowed, true)) {
+            $offenders[] = $path;
+        }
+    }
+
+    expect($offenders)->toBe([], 'Only CreateOrder may reference the ungated automatic invoicing: '.implode(', ', $offenders))
+        ->and($referencing)->toContain('CreateOrder.php')
+        ->and($referencing)->toContain('IssueAutomaticInvoice.php');
+});
+
+test('IssueAutomaticInvoice and its failure notifier authorize nothing and never read the authenticated user (T-24, FD-6, FD-7)', function (string $file) {
+    $sources = array_filter(projectPhpSources(['app']), fn (string $source, string $path): bool => basename($path) === $file, ARRAY_FILTER_USE_BOTH);
+
+    expect($sources)->toHaveCount(1);
+
+    $code = (string) preg_replace(['!/\*.*?\*/!s', '!//[^\n]*!'], '', (string) array_values($sources)[0]);
+
+    expect($code)->not->toMatch('/\bGate\b|->authorize\(|->can\(|LogRefusedPrivilegedAttempt|\bAuth::|\bauth\(|Facades\\\\Auth|->user\(|\brequest\(|\bRequest\b/');
+})->with(['IssueAutomaticInvoice.php', 'NotifyAutomaticInvoiceFailed.php']);
+
+test('only IssueAutomaticInvoice references NotifyAutomaticInvoiceFailed (T-24)', function () {
+    $offenders = [];
+
+    foreach (projectPhpSources(['app', 'routes', 'bootstrap', 'config']) as $path => $source) {
+        if (preg_match('/\bNotifyAutomaticInvoiceFailed\b/', $source) === 1 && ! in_array(basename($path), ['NotifyAutomaticInvoiceFailed.php', 'IssueAutomaticInvoice.php'], true)) {
+            $offenders[] = $path;
+        }
+    }
+
+    expect($offenders)->toBe([]);
+});
