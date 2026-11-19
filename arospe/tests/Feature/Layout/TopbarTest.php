@@ -168,9 +168,10 @@ test('every authenticated app screen is covered by the dataset or an explicit ex
     $excludedPrefixes = ['verification.', 'password.', 'passkey.', 'two-factor.', 'login', 'register', 'email-change.'];
     // Story 0069 -- store-languages.index (a placeholder view under story 0068, hence its former
     // exclusion here) is now a real, titled screen and lives in topbarScreens() above.
+    // Story 0102 -- invoices.download streams a PDF file, so it has no topbar to cover.
     $covered = array_merge(
         collect(topbarScreens())->pluck(0)->all(),
-        ['customers.show', 'orders.show', 'products.edit', 'blog-posts.edit'],
+        ['customers.show', 'orders.show', 'products.edit', 'blog-posts.edit', 'invoices.download'],
     );
 
     $uncovered = collect(Route::getRoutes()->getRoutes())
