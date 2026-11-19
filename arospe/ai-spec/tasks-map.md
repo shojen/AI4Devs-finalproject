@@ -18,6 +18,10 @@ remain the source of truth for any individual story's dependencies; this file on
 and cross-references what those files already state — if the two ever disagree, the individual
 task file is correct and this one needs a refresh.
 
+**Update (2026-11-19): `0101b-issue-standard-invoice-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0101b-issue-standard-invoice-backend`; Phases 2-6 approved, Phase 4 findings F-1..F-7 fixed, Phase 5 B-1 fixed; full suite green in 5 directory chunks on 2026-11-19; Pint unscoped clean; Larastan level 7 with 0 errors). Its node, every edge touching it (`P0101b --> P0102/P0103/P0104/P0105/P0106/P0106a/P0107/P0108/P0110`), `claimed` class membership, inventory row and `tasks-status.json` entry are dropped; `0101b` is also removed from every `conflict_risk_with` list. It joins the flat `done/` inventory under Epic 6 — Invoicing (`done/` holds 130 files). Dependents recomputed: `0102` and `0106` lose their only dependency and turn `blocked` -> `ready`; `0103` (waits on `0102`), `0104` (`0102`), `0105` (`0104`), `0106a` (`0106`), `0107` (`0106`), `0108` (`0106`, `0107`) and `0110` (`0102`, `0104`, `0106`, `0109a`, `0109b`) stay `blocked`. No node is `claimed`; `ai-spec/tasks/in-progress/` was removed (empty). Link check, both directions: same-depth move, so the file's own pending-sibling links keep `../` and its `../done/…` links became bare; inbound links in `0102`, `0103`, `0104`, `0105`, `0106`, `0106a`, `0107`, `0108`, `0110` were repointed to `done/0101b-…` and in `done/0100a`, `done/0100b`, `done/0101a` to bare `0101b-…`. The epic digest `_digests/epic-6.md` names the story but links no path; no `docs/` page links to it.
+
+**Update (2026-11-18, superseded by the closure above): `0101b-issue-standard-invoice-backend.md` moved from `ai-spec/tasks/` to `ai-spec/tasks/in-progress/`** (Phase 2 INVEST passed with corrections C-1..C-9 folded in, then Phase 3 step 0; claimed by `worktree-0101b-issue-standard-invoice-backend`). Still pending work, so it keeps its node and edges; its `tasks-status.json` entry moves `ready` -> `claimed` and its graph class from `ready` to `claimed`. `ai-spec/tasks/in-progress/` now holds exactly this one file. Link check, both directions: the file's own `done/` links became `../done/` and its pending-sibling links gained `../`; inbound links in `0102`, `0103`, `0104`, `0105`, `0106`, `0106a`, `0107`, `0108`, `0110` were repointed to `in-progress/0101b-…`, and in `done/0100a`, `done/0100b`, `done/0101a` to `../in-progress/0101b-…`.
+
 **Update (2026-11-18): `0100b-customer-tax-id-field-ui.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0100b-customer-tax-id-field-ui`; Phases 2-6 approved, full suite green in chunks: 6,817 tests, 8 skipped; Pint and Larastan level 7 clean). Its node, `claimed` membership, inventory row and `tasks-status.json` entry (and its `conflict_risk_with` mentions) are dropped. It had no dependents, so no status changes. Link check, both directions: same-depth move from `in-progress/`; inbound links in `0103` and `done/0100a` were repointed; outbound links resolve. No epic digest.
 
 **Update (2026-11-18): `0101a-invoice-numbering-sequences-backend.md` completed Phase 7 and moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`** (claimed by `worktree-0101a-invoice-numbering-sequences-backend`; Phases 2-6 approved, full suite green in chunks: Unit+Orders+Localization+Customers+Invoices+InvoiceSettings 1915/1915, Blog+Products+ProductCategories 2113/2113, Models..Providers 1603 (1598 passed, 5 pre-existing skips), Media..Translations 864/864, Browser 328 (325 passed, 3 skips); Pint unscoped clean; Larastan 0 errors on the touched paths). Its node, edges (`P0101a --> P0101b/P0103/P0107`), `claimed` class membership, inventory row and `tasks-status.json` entry are dropped; it joins the flat `done/` inventory under Epic 6 — Invoicing. Dependents recomputed: `0101b` (its other predecessors `0100`, `0100a` closed too, so it turns `blocked` -> `ready`), `0103` (waits on `0101b`, `0102`) and `0107` (waits on `0101b`, `0106`) lose only `0101a` and stay `blocked`; `0108` already depended on `0101b`/`0106`/`0107`. No node is `claimed`; `ai-spec/tasks/in-progress/` was removed (empty). Link check, both directions: same-depth move, so the file's own links resolve (`done/` sibling `0100` now bare, pending siblings keep `../`); inbound links in `0101b`, `0103`, `0107` and `done/0100` were repointed to `done/0101a-…` / bare `0101a-…`. Epic digest `_digests/epic-6.md` exists and links no path.
@@ -605,7 +609,7 @@ appears as a node in the dependency graph below:
   are new pending files. 0064b — Scheduled post publish failure notification (backend), the tenth to close
   (0063 closed ninth, per the Update note above): it had no hard dependent of its own; `0065` and `0078` drop
   it from `conflict_risk_with`.
-- **Epic 6 — Invoicing (ad-hoc, 1):** 0100 — Invoice settings (backend), closed 2026-11-17: adds the single-row `invoice_settings` table, `InvoiceSetting::current()`, `SaveInvoiceSettings`, `ComposeInvoiceNumber`, the `invoice-settings.view`/`manage` permissions and the shared tax-ID rule; its dependents `0100a` and `0101a` drop it and move to `ready`. 0101a — Invoice numbering sequences (backend), closed 2026-11-18: adds `invoice_sequences` (one row per series), `AllocateInvoiceNumber`, `PeekNextInvoiceNumber` and `SetInvoiceSequenceStart`; `0101b`, `0103` and `0107` drop it and stay `blocked`.
+- **Epic 6 — Invoicing (ad-hoc, 3):** 0100 — Invoice settings (backend), closed 2026-11-17: adds the single-row `invoice_settings` table, `InvoiceSetting::current()`, `SaveInvoiceSettings`, `ComposeInvoiceNumber`, the `invoice-settings.view`/`manage` permissions and the shared tax-ID rule; its dependents `0100a` and `0101a` drop it and move to `ready`. 0101a — Invoice numbering sequences (backend), closed 2026-11-18: adds `invoice_sequences` (one row per series), `AllocateInvoiceNumber`, `PeekNextInvoiceNumber` and `SetInvoiceSequenceStart`; `0101b`, `0103` and `0107` drop it and stay `blocked`. 0101b — Issue standard invoice, the invoice core (backend), closed 2026-11-19: adds `invoices`, `invoice_lines`, `orders.invoice_out_of_date_at`, `IssueInvoice`/`IssueInvoiceForOrder`/`CreateStandardInvoice`, `InvoicePolicy` and the `invoices.*` permissions; `0102` and `0106` drop it and move to `ready`, the other Epic 6 dependents stay `blocked`.
 - **Standalone (no PRD epic) (8, recounted 2026-11-12: 0081, 0082, 0083, 0084, 0085, 0086, 0093, 0097):** 0081 — Demo data seeder command, closed 2026-09-30, this pass's
   own closure. Requested directly by the project owner rather than derived from a PRD epic; ships
   `database/seeders/DemoDataSeeder.php` and the `php artisan demo:generate-data` console command.
@@ -615,7 +619,9 @@ appears as a node in the dependency graph below:
   dependent, 0085, drops it and moves to `ready`.
   0093 — Confirmation dialog optional second choice (frontend), closed 2026-11-10: `<x-confirm-dialog>` gains `secondary-action` / `secondary-label`; its dependents 0094, 0094a and 0095 drop it from `depends_on` and stay `blocked` on their other pending dependencies.
 
-### Pending — not started (24 numbered + 1 infra doc)
+### Pending — not started (15 numbered + 1 infra doc)
+
+Recounted 2026-11-19 (`0101b` closed): `ai-spec/tasks/` holds `0102`–`0112` (15 numbered files) plus `ci-database-connection-gap.md`; `ai-spec/tasks/in-progress/` does not exist (empty).
 
 Recounted 2026-11-15 (merge of `origin/main` into the 0098 branch; `0098`, `0091` and `0092b` closed): `ai-spec/tasks/` holds `0094`, `0094a`, `0095`, `0096` and `0099` plus `ci-database-connection-gap.md`; `ai-spec/tasks/in-progress/` is empty.
 
@@ -623,7 +629,6 @@ Re-derived 2026-11-08 from the files actually present in `ai-spec/tasks/` (`0078
 
 | ID | Title | Epic area |
 | --- | --- | --- |
-| 0101b | Issue standard invoice — the invoice core (backend) | Epic 6 — Invoicing |
 | 0102 | Invoice PDF rendering and two templates (backend) | Epic 6 — Invoicing |
 | 0103 | Invoice settings screen (frontend) | Epic 6 — Invoicing |
 | 0104 | Send invoice by e-mail, copy on resend (backend) | Epic 6 — Invoicing |
@@ -751,7 +756,6 @@ flowchart LR
     %% (P0071 --> P0073/P0075/P0079 dropped: 0071 closed to done/ 2026-10-07.)
     subgraph PEND_INVOICING["Epic 6 — Invoicing"]
         direction TB
-        P0101b["0101b Issue standard invoice BE"]
         P0102["0102 Invoice PDF BE"]
         P0103["0103 Invoice settings screen UI"]
         P0104["0104 Send invoice by e-mail BE"]
@@ -771,20 +775,13 @@ flowchart LR
         P0111["0111 Customer report read side BE"]
         P0112["0112 Customer report screen UI"]
     end
+    %% (P0101b --> P0102/P0103/P0104/P0105/P0106/P0106a/P0107/P0108/P0110 dropped: 0101b closed to done/ 2026-11-19; 0102 and 0106 are now ready.)
     %% Edges quoted from each task file (2026-11-15). Solid = hard dependency.
-    P0101b --> P0102
-    P0101b --> P0103
     P0102 --> P0103
-    P0101b --> P0104
     P0102 --> P0104
-    P0101b --> P0105
     P0104 --> P0105
-    P0101b --> P0106
-    P0101b --> P0106a
     P0106 --> P0106a
-    P0101b --> P0107
     P0106 --> P0107
-    P0101b --> P0108
     P0106 --> P0108
     P0107 --> P0108
     P0104 --> P0109a
@@ -799,7 +796,6 @@ flowchart LR
     P0108 --> P0109c
     P0109a --> P0109c
     P0109b --> P0109c
-    P0101b --> P0110
     P0102 --> P0110
     P0104 --> P0110
     P0106 --> P0110
@@ -817,14 +813,14 @@ flowchart LR
     P0106a -.-> P0109b
     P0107 -.-> P0109b
     %% Shared-file risk with the stock dialogs (no dependency): see the update note at the top.
-    class P0101b ready;
-    class P0102,P0103,P0104,P0105,P0106,P0106a,P0107,P0108,P0109a,P0109b,P0109c,P0110,P0110a,P0111,P0112 pending;
+    class P0102,P0106 ready;
+    class P0103,P0104,P0105,P0106a,P0107,P0108,P0109a,P0109b,P0109c,P0110,P0110a,P0111,P0112 pending;
 ```
 
 Legend: green (`ready`) = unblocked and unclaimed, safe to hand to a new session today; blue
 (`claimed`) = unblocked but a session already has it (per
 [`tasks-status.json`](tasks-status.json)) — do not start it without checking that registry first
-(as of 2026-11-18, after `0100b` closed, no node is `claimed`; earlier on 2026-11-18 `0100b` was the sole `claimed` node (Phase 3 started), and after `0100a` closed, no node was `claimed`; as of 2026-11-17, `0100a` was the sole `claimed` node; as of 2026-11-14, after `0098` closed, no node was `claimed`; `0098` was the sole `claimed` node before; as of 2026-11-13, after its closure, no node was `claimed`; `0087`, the prior sole `claimed` node, closed to `done/` this pass; as of 2026-11-12 no node was `claimed`; `0079`, the prior sole `claimed` node, closed to `done/` this pass; as of 2026-11-07 no node was `claimed`; `0076`, the prior sole `claimed` node, closed to `done/` this pass; earlier: `0067`, the prior sole `claimed` node, closed to
+(as of 2026-11-19, after `0101b` closed, no node is `claimed`; earlier on 2026-11-18 `0101b` was the sole `claimed` node; after `0100b` closed, no node was `claimed`; earlier on 2026-11-18 `0100b` was the sole `claimed` node (Phase 3 started), and after `0100a` closed, no node was `claimed`; as of 2026-11-17, `0100a` was the sole `claimed` node; as of 2026-11-14, after `0098` closed, no node was `claimed`; `0098` was the sole `claimed` node before; as of 2026-11-13, after its closure, no node was `claimed`; `0087`, the prior sole `claimed` node, closed to `done/` this pass; as of 2026-11-12 no node was `claimed`; `0079`, the prior sole `claimed` node, closed to `done/` this pass; as of 2026-11-07 no node was `claimed`; `0076`, the prior sole `claimed` node, closed to `done/` this pass; earlier: `0067`, the prior sole `claimed` node, closed to
 `done/` this pass — see the update at the top of this file; `0066` and `0070`, the `claimed` nodes
 before that, both closed to `done/` in an earlier pass, on separate branches reconciled together
 here); yellow (`pending`) = still blocked on at least one open pending dependency.

@@ -4,7 +4,7 @@
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
 > [0106](0106-invoice-collection-order-debt-partially-paid-backend.md) (`ApplyInvoiceCollection`,
 > `SyncOrderCollection`, `collected_amount`, `PartiallyPaid`) and
-> [0101b](0101b-issue-standard-invoice-backend.md) (`IssueInvoiceForOrder`). Ships in the same
+> [0101b](done/0101b-issue-standard-invoice-backend.md) (`IssueInvoiceForOrder`). Ships in the same
 > release as 0106. Dependent: [0109a](0109a-orders-list-invoice-send-ui.md). Related:
 > [0109b](0109b-order-detail-invoices-panel-ui.md) builds the invoices panel next to the payment line
 > this story changes (not a dependency).
@@ -322,7 +322,7 @@ money, including partial collections, without moving past figures.
 
 ## Dependencies, risks, open technical questions
 - Upstream: [0106](0106-invoice-collection-order-debt-partially-paid-backend.md) (same release),
-  [0101b](0101b-issue-standard-invoice-backend.md). Downstream:
+  [0101b](done/0101b-issue-standard-invoice-backend.md). Downstream:
   [0109a](0109a-orders-list-invoice-send-ui.md) changes the list's reflection test and [0109b](0109b-order-detail-invoices-panel-ui.md) builds the invoices panel; it does not redo the payment line (FD-10).
   [0107](0107-corrective-invoice-on-refund-and-cancellation-backend.md)'s correctives lower
   `collected_amount` and so Real income after a refund.

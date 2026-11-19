@@ -4,7 +4,7 @@
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
 > [0100](../done/0100-invoice-settings-backend.md) (it owns the shared tax-ID rule). Dependents:
 > [0100b](0100b-customer-tax-id-field-ui.md) (form field and detail line) and
-> [0101b](../0101b-issue-standard-invoice-backend.md) (copies the value onto each invoice).
+> [0101b](0101b-issue-standard-invoice-backend.md) (copies the value onto each invoice).
 
 ## Description
 Customers gain an optional tax ID, stored on `customers` and accepted by `CreateCustomer` and
@@ -254,7 +254,7 @@ actions; existing screens keep working unchanged and never erase a stored tax ID
 ## Dependencies, risks, open technical questions
 - Upstream: [0100](../done/0100-invoice-settings-backend.md) (`TaxIdValidationRules`). Downstream:
   [0100b](0100b-customer-tax-id-field-ui.md) sends the field from the form;
-  [0101b](../0101b-issue-standard-invoice-backend.md) copies it into `invoices.recipient_tax_id`
+  [0101b](0101b-issue-standard-invoice-backend.md) copies it into `invoices.recipient_tax_id`
   and owns the "issued invoice unchanged" test.
 - Risk: the value later appears on PDFs and in mail attachments; the whitelist removes HTML/CSS
   metacharacters at the source and Blade escapes at render (0102). Flag the personal-data aspect

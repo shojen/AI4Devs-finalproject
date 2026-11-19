@@ -2,7 +2,7 @@
 
 > **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
-> [0101b](0101b-issue-standard-invoice-backend.md) (invoices with their collection columns,
+> [0101b](done/0101b-issue-standard-invoice-backend.md) (invoices with their collection columns,
 > `IssueInvoiceForOrder`, `CreateStandardInvoice`, `AssertInvoicesAreCurrent`). Ships in the same
 > release as [0106a](0106a-mark-as-paid-invoice-shortcut-and-real-income-backend.md) (FD-13).
 > Dependents: [0106a](0106a-mark-as-paid-invoice-shortcut-and-real-income-backend.md),
@@ -354,7 +354,7 @@ orders paid before invoicing keep a debt of 0.00 and get collected invoices.
 - [ ] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open technical questions
-- Upstream: [0101b](0101b-issue-standard-invoice-backend.md). Downstream:
+- Upstream: [0101b](done/0101b-issue-standard-invoice-backend.md). Downstream:
   [0106a](0106a-mark-as-paid-invoice-shortcut-and-real-income-backend.md) (same release; reuses
   `ApplyInvoiceCollection` and `SyncOrderCollection`),
   [0107](0107-corrective-invoice-on-refund-and-cancellation-backend.md) (U-11 / U-12 predicates,
