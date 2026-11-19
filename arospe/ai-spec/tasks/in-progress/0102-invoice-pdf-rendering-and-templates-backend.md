@@ -378,3 +378,16 @@ template; 0104 can render the same PDF, marked as a copy when required, to attac
   5. `lang/{en,es}/invoices.php` already exist (0101b): list them as **modified** (add the
      `pdf` group), not created. Minor: the Gherkin actor "sales assistant" is not a seeded role;
      the test should build a user without `invoices.view` (per T-23's dataset).
+- Phase 3, task 1 (FD-1 install spike) — PASSED 2026-11-19. Installed `spatie/laravel-pdf`
+  2.14.0, `spatie/browsershot` 5.5.0 and npm `puppeteer` ^25.18.1 (dev) on PHP 8.5.0 /
+  Laravel 13 / Node 24. A real render (`Pdf::html(...)->format('a4')->base64()`) returned a valid
+  `%PDF-` of about 7.6 KB once `npx puppeteer browsers install chrome-headless-shell` had run
+  (Browsershot needs the headless shell matching puppeteer; `LARAVEL_PDF_NO_SANDBOX=true` for
+  root containers). Package config published to `config/laravel-pdf.php`; env keys:
+  `LARAVEL_PDF_DRIVER`, `_NODE_BINARY`, `_NPM_BINARY`, `_CHROME_PATH`, `_NODE_MODULES_PATH`,
+  `_NO_SANDBOX` (listed in `.env.example`). `Pdf::fake()` returns `FakePdfBuilder` with
+  `assertViewIs`, `assertViewHas`, `assertSee`, `assertDontSee`, `assertSaved`,
+  `assertBrowsershot`, `assertRespondedWithPdf`, `assertQueued`, `assertNotQueued`;
+  `generatePdfContent()` and `base64()` still return dummy PDF content under the fake, so 0104 can
+  attach it in tests. Side effect: composer's `boost:update` hook rewrote `CLAUDE.md`; it was
+  restored from git and must not be committed.
