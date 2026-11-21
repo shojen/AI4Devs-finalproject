@@ -265,6 +265,17 @@ return [
             'current_when' => 'store-languages.*',
             'permissions' => ['store-languages.view'],
         ],
+        // Story 0103 -- Invoice settings sit in the same `store_settings` cluster, right after Store
+        // languages. 'permissions' is EXACTLY the ability routes/invoice-settings.php's `can:` enforces.
+        'invoice_settings' => [
+            'group' => null,
+            'cluster' => 'store_settings',
+            'label' => 'navigation.items.invoice_settings',
+            'icon' => 'document-text',
+            'route' => 'invoice-settings.index',
+            'current_when' => 'invoice-settings.*',
+            'permissions' => ['invoice-settings.view'],
+        ],
         // Story 0044 -- Customers is a top-level operational module like `users` (a bare item,
         // group: null, cluster: null), not store configuration and not a sub-resource of an
         // existing cluster. 'permissions' is EXACTLY the ability routes/customers.php's own

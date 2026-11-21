@@ -68,6 +68,10 @@ return [
         'subtitle' => 'Choose the languages your store content is written in and the dashboard defaults.',
     ],
 
+    'invoice_settings' => [
+        'subtitle' => 'Issuer data, logo, template and numbering of your invoices.',
+    ],
+
     'customers' => [
         'title' => 'Customers',
         'subtitle' => "Your store's customers and their order history.",
