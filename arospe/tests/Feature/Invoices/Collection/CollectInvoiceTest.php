@@ -121,6 +121,21 @@ test('undoing a collection clears the five columns, recomputes the amount, resto
         ->once();
 });
 
+test('the undo warning records what the collection was before it was cleared', function () {
+    app(CollectInvoice::class)($this->first, $this->method, OrderPaymentType::Card);
+    Log::spy();
+
+    app(UndoInvoiceCollection::class)($this->first->fresh());
+
+    Log::shouldHaveReceived('warning')
+        ->withArgs(fn (mixed ...$arguments): bool => ($arguments[1]['previous_collected_by'] ?? null) === $this->actor->id
+            && ($arguments[1]['previous_payment_method_id'] ?? null) === $this->method->id
+            && ($arguments[1]['previous_collection_type'] ?? null) === OrderPaymentType::Card->value
+            && ($arguments[1]['was_carried_over'] ?? null) === false
+            && is_string($arguments[1]['previous_collected_at'] ?? null))
+        ->once();
+});
+
 test('collecting then undoing then collecting again counts the invoice once (T-4)', function () {
     app(CollectInvoice::class)($this->first, $this->method, OrderPaymentType::Card);
     app(UndoInvoiceCollection::class)($this->first->fresh());

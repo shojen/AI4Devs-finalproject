@@ -176,7 +176,5 @@ test('a permitted call logs no refusal (T-24)', function (string $ability) {
 
     runCollectionAbility($ability, $invoice);
 
-    Log::shouldHaveReceived('warning')
-        ->withArgs(fn (mixed ...$arguments): bool => ($arguments[0] ?? null) === 'Privileged action refused')
-        ->never();
+    Log::shouldNotHaveReceived('warning', ['Privileged action refused', Mockery::any()]);
 })->with(['collect', 'uncollect']);
