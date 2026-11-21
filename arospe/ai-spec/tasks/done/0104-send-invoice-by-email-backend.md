@@ -5,7 +5,7 @@
 > [0101b](0101b-issue-standard-invoice-backend.md) (invoices, `IssueInvoice`, out-of-date guard,
 > `InvoicePolicy`) and [0102](0102-invoice-pdf-rendering-and-templates-backend.md)
 > (`RenderInvoicePdf`, `ResolveInvoiceLocale`, file-name sanitiser, `Invoice::hasBeenSent()`
-> stub). Dependents: [0105](../0105-automatic-invoice-on-order-creation-backend.md) (automatic send),
+> stub). Dependents: [0105](0105-automatic-invoice-on-order-creation-backend.md) (automatic send),
 > [0109a](../0109a-orders-list-invoice-send-ui.md), [0109b](../0109b-order-detail-invoices-panel-ui.md) and [0110](../0110-billing-section-ui.md) (buttons).
 
 ## Description
@@ -325,7 +325,7 @@ both permissions.
 ## Dependencies, risks, open technical questions
 - Upstream: [0101b](0101b-issue-standard-invoice-backend.md),
   [0102](0102-invoice-pdf-rendering-and-templates-backend.md). Downstream:
-  [0105](../0105-automatic-invoice-on-order-creation-backend.md) calls `RecordInvoiceDeliveries` as
+  [0105](0105-automatic-invoice-on-order-creation-backend.md) calls `RecordInvoiceDeliveries` as
   the system; [0109a](../0109a-orders-list-invoice-send-ui.md), [0109b](../0109b-order-detail-invoices-panel-ui.md) / [0110](../0110-billing-section-ui.md) call
   the two actions.
 - Privacy: the PDF carries the customer's tax ID and address; the transport is the operator's

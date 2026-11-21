@@ -6,7 +6,7 @@
 > [0101a](0101a-invoice-numbering-sequences-backend.md),
 > [0102](0102-invoice-pdf-rendering-and-templates-backend.md),
 > [0103](0103-invoice-settings-screen-ui.md),
-> [0105](../0105-automatic-invoice-on-order-creation-backend.md).
+> [0105](0105-automatic-invoice-on-order-creation-backend.md).
 
 ## Description
 One store-wide invoice-settings record: the issuer's fiscal data, logo, two colours, the PDF

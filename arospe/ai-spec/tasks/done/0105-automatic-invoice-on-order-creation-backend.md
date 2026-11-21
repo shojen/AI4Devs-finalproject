@@ -1,12 +1,12 @@
 # [0105] Automatic issue and send on order creation (backend)
 
-> **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
+> **Status: Done (Phase 7 closed 2026-11-21; Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
-> [0100](done/0100-invoice-settings-backend.md) (the `auto_issue_on_order` flag),
-> [0101b](done/0101b-issue-standard-invoice-backend.md) (`IssueInvoiceForOrder`) and
-> [0104](done/0104-send-invoice-by-email-backend.md) (`RecordInvoiceDeliveries`, `InvoiceSent`).
-> Related: [0106](0106-invoice-collection-order-debt-partially-paid-backend.md) and
-> [0108](0108-regenerate-invoices-after-order-edit-backend.md) close the stale-totals limitation
+> [0100](0100-invoice-settings-backend.md) (the `auto_issue_on_order` flag),
+> [0101b](0101b-issue-standard-invoice-backend.md) (`IssueInvoiceForOrder`) and
+> [0104](0104-send-invoice-by-email-backend.md) (`RecordInvoiceDeliveries`, `InvoiceSent`).
+> Related: [0106](../0106-invoice-collection-order-debt-partially-paid-backend.md) and
+> [0108](../0108-regenerate-invoices-after-order-edit-backend.md) close the stale-totals limitation
 > (FD-9).
 
 ## Description
@@ -225,30 +225,30 @@ any manual step, and no invoicing problem ever loses or alters an order; with it
 creation behaves exactly as today.
 
 ## Acceptance criteria
-- [ ] Flag off: `CreateOrder` behaves exactly as before, without touching invoice tables.
-- [ ] Flag on: one itemised invoice for the whole billable amount, issued and queued as the
+- [x] Flag off: `CreateOrder` behaves exactly as before, without touching invoice tables.
+- [x] Flag on: one itemised invoice for the whole billable amount, issued and queued as the
   original by the system (FD-1, FD-4, FD-6).
-- [ ] Idempotent per order (FD-3); zero orders skipped; earlier orders never touched (FD-10).
-- [ ] Issue and send failures follow FD-5 and notify per FD-8 (recipients, keys-only payload,
+- [x] Idempotent per order (FD-3); zero orders skipped; earlier orders never touched (FD-10).
+- [x] Issue and send failures follow FD-5 and notify per FD-8 (recipients, keys-only payload,
   hourly dedupe).
-- [ ] Reachability enforced (FD-7).
-- [ ] The stale-totals limitation and its owners are documented (FD-9).
-- [ ] en/es `invoices.automatic.*` keys exist with parity.
+- [x] Reachability enforced (FD-7).
+- [x] The stale-totals limitation and its owners are documented (FD-9).
+- [x] en/es `invoices.automatic.*` keys exist with parity.
 
 ## Definition of Done
-- [ ] Tests written and green
-- [ ] Code reviewed (code-reviewer)
-- [ ] No security findings (appsec-auditor) — an ungated system path issues fiscal documents
-- [ ] Documentation updated (docs-keeper): the orders API doc (`CreateOrder` side effect and
+- [x] Tests written and green
+- [x] Code reviewed (code-reviewer)
+- [x] No security findings (appsec-auditor) — an ungated system path issues fiscal documents
+- [x] Documentation updated (docs-keeper): the orders API doc (`CreateOrder` side effect and
   callback order), the invoices API doc, the stale-totals limitation and its owners
-- [ ] Acceptance criteria met
-- [ ] Pint unscoped, Larastan level 7, full suite green
+- [x] Acceptance criteria met
+- [x] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open technical questions
-- Upstream: [0100](done/0100-invoice-settings-backend.md), [0101b](done/0101b-issue-standard-invoice-backend.md),
-  [0104](done/0104-send-invoice-by-email-backend.md). The stale-totals limitation is closed by
-  [0106](0106-invoice-collection-order-debt-partially-paid-backend.md) (hook) and
-  [0108](0108-regenerate-invoices-after-order-edit-backend.md) (mark).
+- Upstream: [0100](0100-invoice-settings-backend.md), [0101b](0101b-issue-standard-invoice-backend.md),
+  [0104](0104-send-invoice-by-email-backend.md). The stale-totals limitation is closed by
+  [0106](../0106-invoice-collection-order-debt-partially-paid-backend.md) (hook) and
+  [0108](../0108-regenerate-invoices-after-order-edit-backend.md) (mark).
 - Contention: automatic issues of one series serialise on its sequence row (short critical
   section); a bulk import issues sequentially.
 - Incomplete issuer data with the flag on makes every order fail to invoice; the hourly dedupe
@@ -276,4 +276,9 @@ creation behaves exactly as today.
 
 ## Phase records
 - Phase 1 (Three Amigos) complete on 2026-11-15 — participants: product-owner (facilitator),
-  backend-expert, backend-qa. Phase 2 (INVEST) pending.
+  backend-expert, backend-qa.
+- Phase 2 (INVEST) approved on 2026-11-19 by code-reviewer — INVEST met; Gherkin follows the template; dependency signatures of 0100/0101b/0104 verified against the merged code (no mismatch). Phase 3 notes: wrap the send transaction itself to catch RecordInvoiceDeliveries' after-commit RuntimeException; deadlock/lock-wait retry lives in IssueAutomaticInvoice; issuer-incomplete state is test-only (forceFill).
+- Phase 4 (appsec-auditor, 2026-11-19): APPROVED — no Critical/High/Medium findings; reachability enforced by architecture tests, keys-only payload, per-order idempotency re-checked under row lock. Low: stage-wide dedupe hides later failures for 1h (accepted, Q-0105-3); architecture test compares file names only (fixed in Phase 5); concurrent manual issue surfaces as 'unexpected' (follow-up, noise only).
+- Phase 5 (code review) approved on 2026-11-19 by code-reviewer — AC 1–7 and FD-1..FD-11 verified in code; T-1..T-28 present; Larastan L7 and Pint clean; conditional on the full suite being green (orchestrator).
+- Phase 6 (docs) done on 2026-11-19: automatic invoicing documented (commit `docs(invoicing)`).
+- Phase 7 (closure) complete 2026-11-21: all Acceptance criteria and Definition of Done boxes ticked; file moved from `ai-spec/tasks/in-progress/` to `ai-spec/tasks/done/`; two-direction link-integrity check run. Full suite in directory chunks: Unit + Feature A 3802 tests (3795 passed, 7 skipped), Feature B 3535 passed, Browser 333 (330 passed, 3 skipped), 0 failures; Pint unscoped clean; Larastan level 7 clean (Phase 5).

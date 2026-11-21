@@ -60,4 +60,21 @@ return [
     'lines' => [
         'payment_on_account' => 'Pago a cuenta del pedido :number',
     ],
+
+    // Story 0105: texto de la notificación cuando falla la facturación automática de un pedido nuevo.
+    'automatic' => [
+        'title' => 'Ha fallado la factura automática',
+        'stages' => [
+            'issue' => 'No se pudo emitir la factura.',
+            'send' => 'La factura se emitió pero no se pudo enviar.',
+        ],
+        'reasons' => [
+            'issuer_incomplete' => 'Los datos del emisor en los ajustes de facturas están incompletos.',
+            'number_collision' => 'El número de factura ya estaba en uso.',
+            'lock_timeout' => 'La base de datos estaba ocupada; vuelve a intentarlo.',
+            'customer_deleted' => 'El cliente fue eliminado, por lo que la factura no se envió.',
+            'send_failed' => 'No se pudo poner en cola el envío de la factura.',
+            'unexpected' => 'Se produjo un error inesperado; consulta el registro de la aplicación.',
+        ],
+    ],
 ];

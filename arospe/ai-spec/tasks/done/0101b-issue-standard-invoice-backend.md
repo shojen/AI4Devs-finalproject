@@ -7,7 +7,7 @@
 > [0101a](0101a-invoice-numbering-sequences-backend.md) (`AllocateInvoiceNumber`). Dependents:
 > [0102](0102-invoice-pdf-rendering-and-templates-backend.md),
 > [0104](0104-send-invoice-by-email-backend.md),
-> [0105](../0105-automatic-invoice-on-order-creation-backend.md),
+> [0105](0105-automatic-invoice-on-order-creation-backend.md),
 > [0106](../0106-invoice-collection-order-debt-partially-paid-backend.md),
 > [0107](../0107-corrective-invoice-on-refund-and-cancellation-backend.md),
 > [0108](../0108-regenerate-invoices-after-order-edit-backend.md),
