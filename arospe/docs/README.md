@@ -55,7 +55,7 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Payment Methods](api/payment-methods.md) | `payment-methods.index`. |
 | [Customers](api/customers.md) | `customers.index`, `customers.show`. |
 | [Orders](api/orders.md) | `orders.index`, `orders.show`, `<x-money>`, `<x-confirm-dialog>`, `RecordRefund` stock return, `AdjustOrderStock`. |
-| [Invoices](api/invoices.md) | you call or change the invoicing actions (`IssueInvoice`, the balance, the out-of-date guard) or the PDF render and `invoices.download` route (stories 0101b, 0102). |
+| [Invoices](api/invoices.md) | you call or change the invoicing actions (`IssueInvoice`, the balance, the out-of-date guard) or the PDF render and `invoices.download` route, or the invoice settings screen and its sample-PDF preview (stories 0101b, 0102, 0103). |
 | [Blog](api/blog.md) | `blog-tags.index`, `blog-categories.index`, `blog-posts.index` / `.create` / `.edit`. |
 | [Store Languages](api/store-languages.md) | `store-languages.index`: the two-section Store Languages settings screen (story 0069). |
 | [Dashboard](api/dashboard.md) | the `dashboard` route's ungated contract, the `SalesOverview` card (filters, event, Chart.js charts) or the read-side actions in `app/Actions/Dashboard/` (per-widget gating, counters, latest posts/orders, low stock, sales/orders series, measure definitions). |
@@ -96,4 +96,4 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Errors log archive](errors-log-archive.md) | the topic index points at an entry dated before 2026-08-27. |
 | [Revision history](history/) | you need the old `_Previously:` revision notes of a doc (moved out of the doc itself; one file per doc, named after its path). |
 
-_Last updated: 2026-11-19 — Story 0102: the Invoices API row covers the PDF render and `invoices.download`; the security index count is 19 pages. Still current from story 0101b: the schema-other hub row covers `invoices` / `invoice_lines` (6 parts)._
+_Last updated: 2026-11-19 — Story 0103: the Invoices API row covers the invoice settings screen and preview route. Still current from story 0102: the security index count is 19 pages; from story 0101b: the schema-other hub row covers `invoices` / `invoice_lines` (6 parts)._
