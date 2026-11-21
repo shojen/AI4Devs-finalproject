@@ -3,7 +3,7 @@
 > **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). First of three stories split from the former 0109
 > (INVEST "Small", approved 2026-11-15). Blocked on
-> [0104](0104-send-invoice-by-email-backend.md), [0106a](0106a-mark-as-paid-invoice-shortcut-and-real-income-backend.md),
+> [0104](done/0104-send-invoice-by-email-backend.md), [0106a](0106a-mark-as-paid-invoice-shortcut-and-real-income-backend.md),
 > [0107](0107-corrective-invoice-on-refund-and-cancellation-backend.md) and
 > [0108](0108-regenerate-invoices-after-order-edit-backend.md) (their refusals are what the
 > read side mirrors). Dependents: [0109b](0109b-order-detail-invoices-panel-ui.md),
@@ -346,7 +346,7 @@ ask one tested collaborator what is possible.
 - [ ] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open questions
-- Upstream (final list): [0104](0104-send-invoice-by-email-backend.md),
+- Upstream (final list): [0104](done/0104-send-invoice-by-email-backend.md),
   [0106a](0106a-mark-as-paid-invoice-shortcut-and-real-income-backend.md),
   [0107](0107-corrective-invoice-on-refund-and-cancellation-backend.md),
   [0108](0108-regenerate-invoices-after-order-edit-backend.md) (transitively 0101b and 0106). The

@@ -1,4 +1,4 @@
-# Invoices — issuing actions and the PDF download
+# Invoices — issuing actions, the PDF download and e-mail delivery
 
 > **Read this when:** you call, change or add to the invoicing actions in `app/Actions/Invoices/` (issuing a standard invoice, the invoice balance, the out-of-date guard, the numbering-format check). Tables and columns are in [database/schema-other/invoices.md](../database/schema-other/invoices.md); numbering in [invoice-sequences.md](../database/schema-other/invoice-sequences.md).
 
@@ -76,7 +76,7 @@ $name = 'invoice-'.preg_replace('/[^A-Za-z0-9._-]/u', '-', $invoice->number).'.p
 - **File name.** `invoice-` + the number with every character outside `[A-Za-z0-9._-]` replaced by `-` (numbers may contain `/`), plus `.pdf`.
 - **Snapshot only.** The PDF is rendered on demand from the invoice's own frozen columns, lines and `corrects` row: its `template`, colours and logo included. Two renders of one invoice give identical view data and HTML, not identical bytes (a PDF embeds a creation time).
 - **Templates.** `App\Enums\InvoiceTemplate::view()` maps `classic` / `modern` to `resources/views/invoices/pdf/{classic,modern}.blade.php`, which both include the shared partials in `resources/views/invoices/pdf/partials/`; a stored value that is not a case fails loudly.
-- **COPY and SAMPLE marks.** `RenderInvoicePdf` takes `$isCopy` (downloads pass `Invoice::hasBeenSent()`, which returns `false` until story 0104 implements it) and `$isSample` (the settings preview of 0103). Both marks are translated strings (`invoices.pdf.copy`, `invoices.pdf.sample`).
+- **COPY and SAMPLE marks.** `RenderInvoicePdf` takes `$isCopy` (downloads pass `Invoice::hasBeenSent()`, true once a `sent` delivery exists since story 0104) and `$isSample` (the settings preview of 0103). Both marks are translated strings (`invoices.pdf.copy`, `invoices.pdf.sample`).
 - **Language.** `ResolveInvoiceLocale`, never the admin's UI locale; see [localization](../conventions/localization.md#the-invoice-pdf-uses-the-same-language-story-0102).
 - **Hardening and the driver.** Rules and rationale in [security/headless-pdf-rendering.md](../security/headless-pdf-rendering.md); runtime prerequisites in the [deployment note](../architecture/overview.md#deployment-note).
 - **Config.** `config/invoicing.php` `pdf`: `format` (`INVOICE_PDF_FORMAT`, `a4`), `margin_mm` (`INVOICE_PDF_MARGIN_MM`, 15), `timeout_seconds` (`INVOICE_PDF_TIMEOUT_SECONDS`, 30), `logo_max_bytes` (`INVOICE_PDF_LOGO_MAX_BYTES`, 1 MiB); plus the published `config/laravel-pdf.php`.
@@ -112,6 +112,44 @@ The backoffice screen for every invoice setting of story 0100, in the Store sett
 
 `App\Http\Controllers\InvoiceSettingsPreviewController::__invoke(InvoiceTemplate $template, PreviewInvoicePdf)` streams the PDF inline as `invoice-preview-<template>.pdf` with `Cache-Control: private, no-store`. Implicit enum binding makes an unknown template a 404 (not logged). The refusal for a user without `invoice-settings.view` is the action's logged 403 (see [authorization](../architecture/authorization/step-up-and-refusal-logging.md#refusing-a-download-without-a-can-middleware-story-0102)). The route shares the `invoice-downloads` limiter with real downloads: one 30-per-minute bucket per user, intended.
 
+## Sending invoices by e-mail (story 0104)
+
+No route and no screen: two self-authorizing actions plus a queued notification. Schema: [`invoice_deliveries`](../database/schema-other/invoices.md#invoice_deliveries); permission: [`invoices.send`](../architecture/authorization/overview-catalog-seeding.md).
+
+| Class | Contract |
+| --- | --- |
+| `SendInvoice` | `__invoke(Invoice $invoice): InvoiceDelivery`. One live standard invoice or one corrective; a voided standard invoice is refused. |
+| `SendOrderInvoices` | `__invoke(Order $order): list<InvoiceDelivery>`. One mail with every live standard invoice plus every corrective not yet sent. With no live standard invoice and an uninvoiced amount it is "Issue and send" (also needs `invoices.create`): pre-checks first, the invoice is issued in its own committed transaction, then sent as the original. |
+| `RecordInvoiceDeliveries` | `__invoke(Order $lockedOrder, list<Invoice> $invoices, ?User $sentBy): list<InvoiceDelivery>`. Transaction-bound and **ungated** (called by the two actions and, as the system with `$sentBy = null`, by story 0105). |
+| `InvoiceSent` | Queued, after-commit notification to an on-demand address with an explicit locale (`ResolveInvoiceLocale`). Its payload is delivery ids only; `toMail()` re-reads the rows and renders each PDF in the worker (nothing is stored), under the sanitised file name of `BuildInvoicePdfFileName`. |
+| `MarkInvoiceDeliverySent` | Listener on `NotificationSent`; ignores every other notification; sets the rows `sent`. The notification's `failed()` sets them `failed` through `ClassifyDeliveryFailure`. |
+
+- **Original or copy.** Decided under the invoice row lock: the send is the original when the invoice has no delivery other than `failed` ones, otherwise a copy (its PDF carries the COPY mark). A double click or an automatic send racing a manual one yields exactly one original; a later send after only failures is an original.
+- **Recipient.** Only the customer's current e-mail, read inside the lock and frozen on the row; no action accepts a recipient. It is validated with the RFC rule before any row or invoice is written.
+- **One operation, one mail.** If any PDF fails to render the whole mail fails and all its rows become `failed`. At most `max_attachments` (10) invoices per mail, checked before any row.
+- **Dispatch failure.** Dispatch is after commit; if it throws, the operation's rows are set `failed` ("dispatch failed") and the error reaches the caller, so a mail that never left cannot turn later sends into copies. A row queued while no worker runs stays `queued`.
+- **Lock order.** `orders` row first, then the invoices `orderBy('id')->lockForUpdate()`, then the inserts; the issue step of "Issue and send" runs before, in its own transaction.
+- **Failure reason.** At most 500 characters, stripped of credentials, file paths and e-mail addresses.
+
+| Key | Raised for | Message key |
+| --- | --- | --- |
+| `invoice` | soft-deleted customer; unusable address; nothing to send; more than the attachment cap; out-of-date order; voided invoice; cancelled order | `customer_deleted`, `customer_email_unusable`, `nothing_to_send`, `too_many_attachments`, plus the existing `out_of_date`, `cancelled` |
+| `delivery` | "Issue and send" committed the invoice but the delivery step failed | `issued_but_not_queued` (the screen must say the invoice exists and is sent manually) |
+
+Permission refusals are `AuthorizationException` only. Refusal log: `target_type` `invoice` (single) or `order` (order-level). Mail strings live in `lang/{en,es}/invoices.php` under `mail` (`subject`, `greeting`, `body`, `copy_notice`).
+
+**Config** (`config/invoicing.php` `delivery`): `tries` (`INVOICE_DELIVERY_TRIES`, 3), `backoff_seconds` (`INVOICE_DELIVERY_BACKOFF_SECONDS`, 60), `timeout_seconds` (`INVOICE_DELIVERY_TIMEOUT_SECONDS`, default 10 x the PDF timeout + 60; it must cover `max_attachments` renders, so override with care), `max_attachments` (10, fixed).
+
+### Operations and known limitations
+
+- **Never `MAIL_MAILER=log` in production.** It is the `.env.example` default; with it a "sent" row records a mail that was only written to the log, and the invoice stops being an original.
+- **A queue worker is required** (`QUEUE_CONNECTION=database`), with headless Chrome on the worker host (see the [deployment note](../architecture/overview.md#deployment-note)); without one rows stay `queued`.
+- **Schedule `queue:prune-failed`.** The customer's address sits in the `jobs` and `failed_jobs` payloads (delivery ids only, but the notifiable is serialized); prune failed jobs on a schedule, for example `queue:prune-failed --hours=168`.
+- **At-least-once delivery.** If `MarkInvoiceDeliverySent` fails after the mail left, a retry can send a duplicate mail; the rows still never end both failed and sent.
+- **No rate limit on resend** in this story; the screen stories (0109a, 0109b, 0110) must add one.
+- **`invoices.send` does not need `invoices.view`** (intended).
+- **Accepted edge cases.** A customer deleted after queueing still receives the mail; a queued original that finally fails leaves a copy made meanwhile marked copy.
+
 ## Amount format (FD-11)
 
 A dot-decimal string with at most two decimals (`200`, `200.5`, `200.50`), normalised to scale 2. Refused: comma decimals, exponents, surrounding spaces, arrays, `INF`, an empty string, values below `0.01` and values above the column ceiling (`99999999.99`). Screens convert localised input before calling. An omitted amount (`null`) means the whole uninvoiced amount.
@@ -143,4 +181,4 @@ A dot-decimal string with at most two decimals (`200`, `200.5`, `200.50`), norma
 
 The issuing lock order and its rationale are in [orders.md](orders.md#lock-order-convention-project-wide).
 
-_Last updated: 2026-11-19 — Story 0103: added the invoice settings screen, its two read/preview actions and the preview route; the 0101b issuing and 0102 download contracts are unchanged._
+_Last updated: 2026-11-19 — Stories 0103 and 0104: added the invoice settings screen (two read/preview actions, preview route) and e-mail delivery (actions, copy rule, error keys, config, operations notes); `hasBeenSent()` is implemented. Story 0102 and 0101b contracts unchanged._

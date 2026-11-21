@@ -4,6 +4,7 @@
 // answers a response with an empty body, so the builder it recorded is inspected instead.
 
 use App\Models\Invoice;
+use App\Models\InvoiceDelivery;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\StoreLanguageSeeder;
@@ -75,6 +76,29 @@ test('a download of an invoice never sent carries no COPY mark (T-20)', function
 
     expect(FakesPdf::respondedHtml($this->fake))->not->toContain(PdfFixtures::label('copy', 'es'));
 });
+
+// T-9b (story 0104, FD-12)
+test('a download of an invoice with a sent delivery carries the COPY mark, and one with only queued or failed deliveries does not (T-9b)', function (string $status, bool $marked) {
+    $invoice = pdfDownloadInvoice();
+
+    if ($status !== 'none') {
+        InvoiceDelivery::factory()->{$status}()->create(['invoice_id' => $invoice->id]);
+    }
+
+    expect($invoice->hasBeenSent())->toBe($marked);
+
+    $this->actingAs($this->viewer)->get(route('invoices.download', $invoice))->assertOk();
+
+    $html = FakesPdf::respondedHtml($this->fake);
+    $label = PdfFixtures::label('copy', 'es');
+
+    expect($marked ? str_contains($html, $label) : ! str_contains($html, $label))->toBeTrue();
+})->with([
+    'sent delivery' => ['sent', true],
+    'queued delivery' => ['queued', false],
+    'failed delivery' => ['failed', false],
+    'no delivery' => ['none', false],
+]);
 
 // T-21
 test('the 31st download by one user within a minute is throttled while another user is unaffected (T-21)', function () {

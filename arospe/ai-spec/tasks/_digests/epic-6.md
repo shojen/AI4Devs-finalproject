@@ -51,3 +51,12 @@ backfilled here (read its `done/` file or `docs/database/schema-other/invoice-se
 - Accepted I-2 (appsec): `setLogo(array $media)` answers 500 on a forged non-array payload; kept consistent with `Products\Editor::setFeaturedImage()`. Optional cross-cutting follow-up: `mixed $media` in both — story 0103.
 - Q-0103-1 (sample PDF preview) and Q-0103-2 (sidebar label) remain open for the owner; built on the recommended options — story 0103.
 - Test note: a refused save still leaves the singleton `invoice_settings` row (insert-ignored before the transaction, 0100); assert unchanged values, not absence — story 0103.
+
+## Story 0104 — Send invoice by e-mail (backend)
+
+- Table `invoice_deliveries` (one row per invoice per send attempt, status `queued`/`sent`/`failed`); `Invoice::hasBeenSent()` is now real and a `sent` delivery makes later downloads carry the COPY mark — story 0104, FD-1/FD-12.
+- Actions: `RecordInvoiceDeliveries` (original-vs-copy matrix, under the order lock; 0105 calls it as the system), `SendInvoice` (single invoice) and `SendOrderInvoices` (order level, issue-and-send for an order with no invoice, needs `invoices.create` + `invoices.send`); `ClassifyDeliveryFailure` is injected into `SendOrderInvoices` — story 0104.
+- `InvoiceSent` is a queued, localised notification (store default language, one PDF attachment per row, at most 10); `MarkInvoiceDeliverySent` is its listener and `failed()` records a sanitised reason — story 0104, FD-9..FD-11.
+- Permission `invoices.send` seeded: catalog 48; refusals logged per FD-14; the permission-catalog assertion in `InvoiceSettingPolicyTest` had to include it — story 0104.
+- Error keys the UI must handle: `invoices.errors.cancelled` and `nothing_to_send` (0109a screen) — story 0104, Phase 5 note.
+- Deferred to UI stories: rate limit on resend (L1); schedule `queue:prune-failed` for customer data in failed-job payloads (L2) — story 0104, Phase 4.

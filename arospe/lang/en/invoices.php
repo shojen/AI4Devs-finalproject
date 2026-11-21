@@ -12,6 +12,18 @@ return [
         'amount_exceeds_remaining' => 'The amount is more than what is left to invoice: :remaining remains.',
         'customer_missing' => 'The customer of this order no longer exists, so it cannot be invoiced.',
         'number_collision' => 'An invoice with this number already exists. Change the invoice prefix in the invoice settings.',
+        'customer_deleted' => 'The customer of this invoice has been deleted, so it cannot be sent. It can still be downloaded.',
+        'customer_email_unusable' => 'The customer e-mail address is not valid. Correct it before sending the invoice.',
+        'nothing_to_send' => 'There is no invoice to send for this order.',
+        'too_many_attachments' => 'A single e-mail can carry at most :max invoices. Send them one by one.',
+        'issued_but_not_queued' => 'The invoice was issued but the e-mail could not be queued. Send the invoice manually.',
+    ],
+
+    'mail' => [
+        'subject' => 'Your invoice :numbers|Your invoices :numbers',
+        'greeting' => 'Hello,',
+        'body' => 'Please find your invoice :numbers attached.|Please find your invoices :numbers attached.',
+        'copy_notice' => 'The attached copies are marked COPY.',
     ],
 
     'pdf' => [

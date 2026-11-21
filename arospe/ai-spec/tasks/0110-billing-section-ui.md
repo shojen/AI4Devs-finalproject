@@ -4,7 +4,7 @@
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
 > [0101b](done/0101b-issue-standard-invoice-backend.md) (`IssueInvoice`, `ComputeOrderInvoiceBalance`,
 > amount rules, `InvoicePolicy`), [0102](done/0102-invoice-pdf-rendering-and-templates-backend.md)
-> (`invoices.download`), [0104](0104-send-invoice-by-email-backend.md) (`SendInvoice`),
+> (`invoices.download`), [0104](done/0104-send-invoice-by-email-backend.md) (`SendInvoice`),
 > [0106](0106-invoice-collection-order-debt-partially-paid-backend.md) (collected state, debt,
 > legacy rule), [0109a](0109a-orders-list-invoice-send-ui.md) (`DescribeOrderInvoicing`, send dialog
 > copy) and [0109b](0109b-order-detail-invoices-panel-ui.md) (shared invoice badges). Dependent:
@@ -396,7 +396,7 @@ what is left to invoice.
 ## Dependencies, risks, open questions
 - Upstream: [0101b](done/0101b-issue-standard-invoice-backend.md),
   [0102](done/0102-invoice-pdf-rendering-and-templates-backend.md),
-  [0104](0104-send-invoice-by-email-backend.md),
+  [0104](done/0104-send-invoice-by-email-backend.md),
   [0106](0106-invoice-collection-order-debt-partially-paid-backend.md),
   [0109a](0109a-orders-list-invoice-send-ui.md), [0109b](0109b-order-detail-invoices-panel-ui.md).
   Downstream: [0110a](0110a-billing-collect-and-undo-ui.md).

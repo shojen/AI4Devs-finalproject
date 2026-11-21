@@ -15,6 +15,8 @@ class InvoicePolicy
 
     public const CREATE_PERMISSION = 'invoices.create';
 
+    public const SEND_PERMISSION = 'invoices.send';
+
     /**
      * Determine whether the user can list invoices.
      */
@@ -37,5 +39,14 @@ class InvoicePolicy
     public function create(User $actor): bool
     {
         return $actor->hasPermissionTo(self::CREATE_PERMISSION);
+    }
+
+    /**
+     * Determine whether the user can send invoices by e-mail (story 0104). The target is optional
+     * because an order-level send has no single invoice.
+     */
+    public function send(User $actor, ?Invoice $target = null): bool
+    {
+        return $actor->hasPermissionTo(self::SEND_PERMISSION);
     }
 }
