@@ -6,6 +6,8 @@
 
 Source: `database/migrations/2026_10_02_005300_create_order_payments_table.php` (story 0084) — a greenfield UUID `create_*` migration. It replaced the first design's `orders.paid_at` column, which was never merged: **`orders` has no `paid_at`**; the payment moment lives here.
 
+> **Frozen as a legacy record (story 0106, FD-10).** Collection now lives on the invoice (`invoices.collected_at`, `collected_by`, `collection_payment_method_id`, `collection_type`, `collection_carried_over`) and on `orders.collected_amount`. This table is kept and no new writer is added (`MarkOrderAsPaid` is unchanged in 0106 and keeps writing it until story 0106a replaces that path; it is never written after 0106a), and it is still read by `Order::payment()` for legacy orders (paid before invoicing existed) and by the migration/legacy invoicing that carry a payment over onto an invoice. New orders' payment line comes from `Order::latestCollectedInvoice()`.
+
 Model: [`App\Models\OrderPayment`](../../../app/Models/OrderPayment.php); reached from an order through `Order::payment()` (`HasOne`, `null` while no payment exists). Columns in physical order:
 
 | Column | Type | Notes |
@@ -30,4 +32,4 @@ Model: [`App\Models\OrderPayment`](../../../app/Models/OrderPayment.php); reache
 
 The `UNIQUE` index is declared on `order_id` **before** the foreign key, so MySQL reuses it as the FK's supporting index and no redundant `order_payments_order_id_foreign` is created; `payment_method_id` gets the usual FK-created index. No hand-written index and none on `paid_at` (follow-up if a payment-date filter ever ships, see [Dashboard follow-ups](../../api/dashboard.md#known-limitations-and-follow-ups)).
 
-_Last updated: 2026-10-02 — Story 0084 amendment: `recorded_by` (nullable FK to `users`, restrict) and `OrderPayment::recordedBy()`._
+_Last updated: 2026-11-21 — Story 0106: the table is frozen as the legacy payment record (collection moved to invoices); the `recorded_by` column and `OrderPayment::recordedBy()` (story 0084) are unchanged._

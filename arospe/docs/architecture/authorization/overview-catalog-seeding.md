@@ -22,7 +22,7 @@ class User extends Authenticatable implements PasskeyUser
 The authorization foundation is **live and in real use**: roles and permissions are seeded, the package's middleware aliases are registered, a `Gate::before` hook grants the Super Admin role a blanket bypass, and — since task 0004 — the first gated route and the first policy exist.
 
 - Two roles are seeded — `Super Admin` and `Administrator` — both on the `web` guard.
-- A 48-permission catalog is seeded under the `<module-slug>.<action>` convention — 38 until story 0019 added the tenth module slug, `media`, 42 until story 0051 added `orders.refund`, the catalog's first non-CRUD permission on a non-`roles` module, 43 until story 0100 added `invoice-settings.view`/`.manage` (the new `INVOICE_PERMISSIONS` constant), and 45 until story 0101b added `invoices.view`/`.create`.
+- A 49-permission catalog is seeded under the `<module-slug>.<action>` convention — 38 until story 0019 added the tenth module slug, `media`, 42 until story 0051 added `orders.refund`, the catalog's first non-CRUD permission on a non-`roles` module, 43 until story 0100 added `invoice-settings.view`/`.manage` (the new `INVOICE_PERMISSIONS` constant), and 45 until story 0101b added `invoices.view`/`.create`.
 - `role`, `permission`, and `role_or_permission` are registered as middleware aliases in [`bootstrap/app.php`](../../../bootstrap/app.php) and enforce server-side (403).
 - `App\Providers\AppServiceProvider::configureAuthorization()` installs the Super Admin `Gate::before` bypass.
 - **`users.index` (`GET /users`) is the first permission-gated route**, and it is gated with **`can:users.view`** rather than Spatie's `permission:` middleware — a Livewire-specific correctness requirement, not a style choice. See [How to gate something](how-to-gate.md#gating-a-livewire-route-use-can-never-permission).
@@ -81,10 +81,10 @@ public const ORDER_PERMISSIONS = ['orders.refund'];
  *
  * @var array<int, string>
  */
-public const INVOICE_PERMISSIONS = ['invoice-settings.view', 'invoice-settings.manage', 'invoices.view', 'invoices.create', 'invoices.send'];
+public const INVOICE_PERMISSIONS = ['invoice-settings.view', 'invoice-settings.manage', 'invoices.view', 'invoices.create', 'invoices.send', 'invoices.collect'];
 ```
 
-Ten modules × four actions = **40**, plus the two role-management permissions, the one order-refund permission and the five invoicing permissions = **48** total (47 until story 0104, 45 until story 0101b, 43 until story 0100; the two `invoice-settings.*` names are gated by `App\Policies\InvoiceSettingPolicy`, `viewAny` / `update`, the two `invoices.*` names by `InvoicePolicy`). (Nine modules and 38 total until story 0019 appended `media` to `MODULES`; 42 total until story 0051 added `ORDER_PERMISSIONS` — see [The `media` module, and what a catalog amendment costs](#the-media-module-and-what-a-catalog-amendment-costs) below.)
+Ten modules × four actions = **40**, plus the two role-management permissions, the one order-refund permission and the six invoicing permissions = **49** total (48 until story 0106, 47 until story 0104, 45 until story 0101b, 43 until story 0100; the two `invoice-settings.*` names are gated by `App\Policies\InvoiceSettingPolicy`, `viewAny` / `update`, the two `invoices.*` names by `InvoicePolicy`). (Nine modules and 38 total until story 0019 appended `media` to `MODULES`; 42 total until story 0051 added `ORDER_PERMISSIONS` — see [The `media` module, and what a catalog amendment costs](#the-media-module-and-what-a-catalog-amendment-costs) below.)
 
 | Module slug | Covers | Permissions |
 | --- | --- | --- |
@@ -139,14 +139,16 @@ grep -rn "\b38\b\|\b37\b" docs/                    # the same number is prose in
 
 **Sending invoices: `invoices.send` (story 0104).** `InvoicePolicy::SEND_PERMISSION = 'invoices.send'` and `send(User, ?Invoice $target = null)` (the target is optional because an order-level send has no single invoice). Administrator holds it, Super Admin through the bypass; existing installs must re-run `RolePermissionSeeder`; `lang/{en,es}/roles.php` gained the `send` action label. `invoices.send` deliberately does **not** require `invoices.view` (intended; the screens that expose the button gate their own visibility). "Issue and send" on an order with no invoice additionally requires `invoices.create`. Authorization runs before any state is read; a refusal is logged with `target_type` `invoice` (single send) or `order` (order-level send), never with an e-mail address. See [api/invoices.md](../../api/invoices.md#sending-invoices-by-e-mail-story-0104).
 
+**Collecting invoices: `invoices.collect` (story 0106).** `InvoicePolicy::COLLECT_PERMISSION = 'invoices.collect'`; two abilities, `collect(User, Invoice)` and `uncollect(User, Invoice)`, share it. Administrator holds it, Super Admin through the bypass; existing installs must re-run `RolePermissionSeeder`; `lang/{en,es}/roles.php` gained the `collect` action label. Refusals are logged with `target_type = invoice` and the ability name.
+
 **Deployment note:** an already-deployed environment does not gain `media.*` until `db:seed` is re-run. Seeding is already a documented required deployment step ([schema.md](../../database/schema-users-auth.md#roles-permissions-model_has_roles-model_has_permissions-role_has_permissions)) — but note what a *partial* upgrade looks like, since story 0019 recorded it as an accepted risk rather than fixing it: an environment that has run this story's migration and **not** re-seeded reaches `MediaPolicy::viewAny()`, which calls `hasPermissionTo('media.view')` against a name that does not exist yet, and throws `PermissionDoesNotExist` → a **500**, not a clean 403. That is the pre-existing shape every policy shares — six now, since story 0023's `ProductCategoryPolicy` and story 0024's `ProductPolicy` (see [`RolePolicy`](policies-users-roles.md#rolepolicy--the-second-policy)'s own note) — not something `MediaPolicy` introduced.
 
 ## Seeded roles and their grants
 
 | Role | Guard | Explicit permission rows | How it authorizes |
 | --- | --- | --- | --- |
-| `Administrator` | `web` | **47 of 48** — everything except `roles.manage-administrators` | normal Spatie grants |
-| `Super Admin` | `web` | **0 of 48** | the [`Gate::before` bypass](super-admin.md#the-super-admin-bypass) |
+| `Administrator` | `web` | **48 of 49** — everything except `roles.manage-administrators` | normal Spatie grants |
+| `Super Admin` | `web` | **0 of 49** | the [`Gate::before` bypass](super-admin.md#the-super-admin-bypass) |
 
 `roles.manage-administrators` is seeded but held by **no role**: only the Super Admin can exercise it, and it does so through the bypass rather than through a grant.
 
@@ -276,4 +278,4 @@ The generated password is never printed, logged, returned, or stored anywhere bu
 
 Bootstrapping is idempotent: a provisioned account is created **verified**, so the next run matches branch 3 — no second account, no second reset email.
 
-_Last updated: 2026-11-19 — Story 0104: catalog 48 (Administrator 47), `invoices.send` and `InvoicePolicy::send`. Story 0101b: `invoices.view`/`.create`, `InvoicePolicy` (no update/delete), dual-permission rule for issuing. Story 0101a: numbering reuses the invoice-settings permissions._
+_Last updated: 2026-11-21 — Story 0106: catalog now 49 (`invoices.collect`; Administrator 48), `InvoicePolicy::collect`/`uncollect`._

@@ -12,6 +12,7 @@ Part of [Routes](routes.md) — see [routes.md](routes.md#why-this-file-exists) 
 - [`RecordRefund` — optional stock return (story 0092b, no route)](#recordrefund--optional-stock-return-story-0092b-no-route)
 - [`CancelOrder` — opt-in stock return on cancellation (story 0091)](#cancelorder--opt-in-stock-return-on-cancellation-story-0091)
 - [`AdjustOrderStock` — the stock-adjustment contract (story 0088a)](#adjustorderstock--the-stock-adjustment-contract-story-0088a)
+- [Derived payment status and the `PartiallyPaid` matrix (story 0106)](#derived-payment-status-and-the-partiallypaid-matrix-story-0106)
 - [Shared pieces this story introduced](#shared-pieces-this-story-introduced)
 
 ## `orders.index` — the eleventh permission-gated route, and a list with exactly one write
@@ -194,10 +195,39 @@ orders -> products (by id, including a variant line's parent product)
 - A 1213 is not retried by these actions (only the `order_number` collision is).
 - **Known gap (R-2, appsec L-2).** The product and variant editors save `stock` from a form value, so an editor left open overwrites a deduction made meanwhile; follow-up story.
 
+## Derived payment status and the `PartiallyPaid` matrix (story 0106)
+
+No route. An order's `payment_status` is derived from its invoices; the schema side is [`orders.collected_amount`](../database/schema-orders/orders.md#orders). `App\Actions\Invoices\SyncOrderCollection(Order $lockedOrder): void` (transaction-bound, throws `LogicException` outside one, idempotent) recomputes `collected_amount` and then `payment_status` on the locked order and **never touches `status`**. It is called by `CollectInvoice`, `UndoInvoiceCollection`, `ApplyInvoiceCollection`'s callers and, through `App\Actions\Invoices\AfterOrderTotalsChanged(Order $lockedOrder)`, by `RecalculateOrderTotals` (so by all three line-item actions). Story 0108 adds the out-of-date mark and the tax/shipping resolver wiring to that same hook.
+
+`App\Actions\Invoices\ResolveOrderPaymentStatus` is pure; first matching row wins:
+
+| # | Condition | Result |
+| --- | --- | --- |
+| 0 | order is `Cancelled`, or legacy-shaped (no invoice) | stored status unchanged |
+| 1 | `refunded_amount > 0` and every line fully refunded | `Refunded` |
+| 2 | `refunded_amount > 0` otherwise | `PartiallyRefunded` |
+| 3 | billable > 0 and debt = 0.00 | `Paid` |
+| 4 | net collected > 0 | `PartiallyPaid` |
+| 5 | otherwise | `PendingPayment` |
+
+Billable = `total - refunded_amount`; debt = `max(0.00, billable - net collected)` (`Order::debt()`). The "every line fully refunded" test is the shared `App\Actions\Orders\EveryLineFullyRefunded`, used by both `RecordRefund` and the table so they cannot drift. A refunded order that still carries debt shows its refund state with the debt beside it.
+
+**`PaymentStatus::allowsOrderStatus()` matrix** (gates only a transition's target):
+
+| Payment status | Allowed order statuses |
+| --- | --- |
+| `PendingPayment` | Pending, Cancelled |
+| `PartiallyPaid` (story 0106) | Pending only |
+| `Paid` | all |
+| `Refunded` | Cancelled |
+| `PartiallyRefunded` | Pending, Processing, Shipped, Delivered |
+
+A derivation never moves the order status: a `Processing` order that becomes `PartiallyPaid` stays `Processing` and may only go back to `Pending`. `Order::isAwaitingPayment()` is now `PendingPayment` or `PartiallyPaid` (not cancelled); `MarkOrderAsPaid` is unchanged and refuses a `PartiallyPaid` order until story 0106a (same release), a test pins this. `isRefundable()` and `isManuallyCancellable()` are unchanged (the U-11/U-12 predicates ship in story 0107). The status label comes from `orders.payment_statuses.partially_paid` ("Partially paid" / "Parcialmente pagado"); the badge `match` arms in the orders list, order detail and latest-orders widget use an orange arm, keeping the zinc fallback. Collect and undo actions: [Invoices - collection](invoices.md#collecting-an-invoice-story-0106).
+
 ## Shared pieces this story introduced
 
 - **`<x-money :amount>`** ([`money.blade.php`](../../resources/views/components/money.blade.php)) prints `€ {amount}` from the stored decimal string, with no cast or formatting. Story 0047's customer order history was retrofitted to it.
 - **`<x-confirm-dialog>`** ([`confirm-dialog.blade.php`](../../resources/views/components/confirm-dialog.blade.php)) — props `show`, `model`, `heading`, `body`, `confirm-label`, `dismiss-label`, `confirm-action`, `dismiss-action`, `test-prefix`, `variant`, plus the optional `secondary-action` / `secondary-label` pair (story 0093: the second button renders only when **both** are set, hook `-secondary`, labels escaped and supplied by the parent; three-button dialogs always stack at full width with confirm first and dismiss last (story 0094: the row overflowed the `max-w-md` panel from `sm` up), two-button dialogs render unchanged; `wire:target` on both action buttons names both actions; `@close` never runs the secondary action). It holds no state and decides nothing: the parent owns the bool and both methods. `@close` runs the dismiss method (Flux compiles it to `wire:close` on the `<dialog>`), so Esc, backdrop and the X reach the server like the Cancel button. Its inner content is wrapped in `@if ($show)` and the hooks sit on that inner content, never on `<flux:modal>`. It is the repo's first shared anonymous component that is not navigation chrome.
 - **`Order::isLineItemEditable()`** and **`Order::isRefundable()`** ([`app/Models/Order.php`](../../app/Models/Order.php)) — the single copy of the `Shipped`/`Delivered` block and of the `Paid`/`PartiallyRefunded` refund state, read by the actions and by this screen. The three `assertEditable()` bodies still each log and throw (triplicated), but the status set itself now lives once.
 
-_Last updated: 2026-11-19 — Story 0105: `CreateOrder` registers the automatic-invoicing after-commit callback before the created-order notification. Earlier content current from stories 0101b, 0096, 0095, 0094a, 0094, 0091, 0092b, 0090, 0092a, 0088a, 0093, 0088, 0076 and 0085._
+_Last updated: 2026-11-21 — Story 0106: derived payment status truth table, `PartiallyPaid` matrix, `AfterOrderTotalsChanged` hook and `isAwaitingPayment()` widening; the `MarkOrderAsPaid`, `RecordRefund`, `CancelOrder` and `AdjustOrderStock` contracts are unchanged (`RecordRefund` now uses `EveryLineFullyRefunded`)._

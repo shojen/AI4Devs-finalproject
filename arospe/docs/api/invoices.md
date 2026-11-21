@@ -187,6 +187,23 @@ When `auto_issue_on_order` is on, a new order gets one itemised invoice for its 
 - **Retry.** The issue is retried once, only on deadlock (1213) or lock wait timeout (1205).
 - **Stale-totals limitation (FD-9).** If an order's totals change after creation without a line edit (tax or shipping resolved later through the region resolvers), the auto-issued invoice goes stale silently. Until story 0108 marks every totals writer out of date (0106 adds the shared after-totals-changed hook), a future checkout must resolve tax and shipping before `CreateOrder` commits.
 
+## Collecting an invoice (story 0106)
+
+No route and no screen yet (the UI is stories 0109b/0110a): two self-authorizing actions. Schema: [`orders.collected_amount`](../database/schema-orders/orders.md#orders) and the five collection columns on `invoices` ([invoices schema](../database/schema-other/invoices.md)); status derivation: [Orders - derived payment status](orders.md#derived-payment-status-and-the-partiallypaid-matrix-story-0106).
+
+| Class | Contract |
+| --- | --- |
+| `CollectInvoice` | `__invoke(Invoice $invoice, PaymentMethod $method, OrderPaymentType $type): Invoice`. Logged `authorize('collect')` first, then one transaction: `orders` row `FOR UPDATE`, `AssertInvoicesAreCurrent`, invoice row `FOR UPDATE`, refusals, then `ApplyInvoiceCollection`. Collection is whole-invoice (no amount); the actor is the authenticated user, the moment the server clock, `collection_carried_over = false`. Returns the invoice refreshed with `order` loaded (new debt and payment status). `Log::info`. |
+| `UndoInvoiceCollection` | `__invoke(Invoice $invoice): Invoice`. Logged `authorize('uncollect')`, same locks, clears the five columns, then `SyncOrderCollection`. `Log::warning` (a financial reversal). |
+| `ApplyInvoiceCollection` | `__invoke(Order $lockedOrder, list<Invoice> $lockedInvoices, PaymentMethod $method, OrderPaymentType $type, User $actor): void`. Ungated collaborator (reused by story 0106a); writes the columns and syncs the order. |
+| `ComputeOrderInvoiceBalance` | gains `netCollected`, `debt` and `isLegacy` in its result. |
+
+- **Refusals** are `ValidationException`s keyed `invoice` (keys under `invoices.errors.*`, en/es parity). Collect: `collect_voided`, `collect_corrective` (a corrective is collected together with the invoice it corrects), `already_collected`, `collection_cancelled`, and the out-of-date guard. Undo: `not_collected`, `collect_voided`, `undo_has_corrective`, `undo_has_refund`, `collection_cancelled`, out-of-date. A missing payment method is keyed `payment_method` (`payment_method_missing`). Authorization always comes first.
+- **Net collected** = signed sum of collected standard invoices plus correctives of collected invoices; correctives carry no collection columns of their own.
+- **Permission:** both abilities share `invoices.collect` (`InvoicePolicy::COLLECT_PERMISSION`); see [authorization catalog](../architecture/authorization/overview-catalog-seeding.md#permission-catalog). Refusals are logged with `target_type = invoice`.
+- **Legacy invoicing.** `IssueInvoiceForOrder` on an order with no invoice and a paid-like stored status may only invoice the whole uninvoiced amount (error on `amount`) and the invoice is born collected (`collection_carried_over = true`).
+- **Order model additions:** `collected_amount` cast, `debt(): string`, `latestCollectedInvoice()` (feeds the order's payment line); `Invoice::collectedBy()`, `collectionPaymentMethod()`, `isCollected()`, scopes `collected()` / `uncollected()`.
+
 ## Order model additions
 
 `Order::invoices()` (`HasMany`), `Order::billableAmount(): string`, `Order::isInvoiceOutOfDate(): bool` and the `invoice_out_of_date_at` datetime cast. Every existing order reads "not out of date"; only 0108 writes the column.
@@ -195,4 +212,4 @@ When `auto_issue_on_order` is on, a new order gets one itemised invoice for its 
 
 The issuing lock order and its rationale are in [orders.md](orders.md#lock-order-convention-project-wide).
 
-_Last updated: 2026-11-21 — Stories 0103, 0104 and 0105: invoice settings screen (read/preview actions, preview route), e-mail delivery (actions, copy rule, error keys, config), and automatic invoicing on order creation (actions, notification, failure scopes, FD-9 limitation); `hasBeenSent()` is implemented. Stories 0102 and 0101b contracts unchanged._
+_Last updated: 2026-11-21 — Story 0106: collect/undo actions, `ApplyInvoiceCollection`, refusal keys, `invoices.collect` and legacy invoicing; the stories 0101b-0105 contracts are unchanged._

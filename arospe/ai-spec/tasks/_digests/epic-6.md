@@ -67,3 +67,15 @@ backfilled here (read its `done/` file or `docs/database/schema-other/invoice-se
 - Idempotent per order (re-checked under the order row lock), zero-amount orders skipped, earlier orders never touched; issues via `IssueInvoiceForOrder` as the system and sends the original via `RecordInvoiceDeliveries` (`sent_by` null).
 - `AutomaticInvoiceFailed` notification: keys-only payload, hourly dedupe per stage (accepted Low: later failures hidden for 1h); strings in `invoices.automatic.*` (en/es parity).
 - Reachability enforced by architecture tests; known limitation: stale totals after order edits, closed by 0106 (hook) and 0108 (mark) — story 0105, FD-9.
+
+## Story 0106 — Invoice collection, order debt and "Partially paid" (backend)
+
+- Column `orders.collected_amount decimal(10,2) default 0`, never incremented: `SyncOrderCollection(Order $lockedOrder): void` recomputes it (orders with invoices: net collected; legacy paid-like: billable; cancelled keeps the stored value) and then `payment_status`, inside the caller's order lock, never touching `status` — story 0106, FD-1.
+- Derived status lives in the pure `ResolveOrderPaymentStatus` (truth table: cancelled/legacy unchanged, refund states, `Paid` at debt 0, `PartiallyPaid` when net collected > 0, else `PendingPayment`); the "every line fully refunded" test is the shared `EveryLineFullyRefunded`, also used by `RecordRefund` — story 0106.
+- `PaymentStatus::PartiallyPaid = 'partially_paid'` allows order status `Pending` only; `Order::isAwaitingPayment()` includes it; `Order::debt(): string`, `latestCollectedInvoice()` — story 0106, FD-7/FD-8/FD-10.
+- Actions: `CollectInvoice(Invoice, PaymentMethod, OrderPaymentType): Invoice` (returns invoice with `order` loaded), `UndoInvoiceCollection(Invoice): Invoice`, ungated `ApplyInvoiceCollection(Order, list<Invoice>, PaymentMethod, OrderPaymentType, User): void` (0106a reuses it); refusals are `ValidationException` keyed `invoice`, keys `invoices.errors.*` — story 0106, FD-3..FD-6.
+- Permission `invoices.collect` (catalog 49) shared by `InvoicePolicy::collect` and `uncollect` — story 0106, FD-16.
+- Shared hook `AfterOrderTotalsChanged(Order $lockedOrder)` is called by `RecalculateOrderTotals`; in 0106 it only runs `SyncOrderCollection`; 0108 adds the out-of-date mark and the tax/shipping resolver wiring — story 0106, FD-15.
+- Migration `add_collected_amount_to_orders_table` carries collection over onto live standard invoices of paid-like orders (`collection_carried_over = true`) before backfilling; it never writes `payment_status`; `down()` does not revert the carry-over — story 0106.
+- `order_payments` is frozen as the legacy record (read by `Order::payment()`); `MarkOrderAsPaid` is unchanged until 0106a and still refuses a `PartiallyPaid` order (pinned by a test) — story 0106, FD-10/FD-13.
+- For 0107/0108: a voided invoice must not stay collected. Collect and undo refuse voided invoices, so any action that voids a collected invoice must clear its collection (or refuse) and run `SyncOrderCollection` in the same transaction; U-11/U-12 predicates (`isRefundable()`, `isManuallyCancellable()`) are 0107's — story 0106.
