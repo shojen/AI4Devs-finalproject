@@ -56,6 +56,8 @@ return [
         'corrects' => 'Corrects invoice',
         'reason' => 'Reason',
         'copy' => 'COPY',
+        'sample_customer' => 'Sample customer',
+        'sample_item' => 'Sample item',
         'sample' => 'SAMPLE',
         'reasons' => [
             'refund' => 'Refund',

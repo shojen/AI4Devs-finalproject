@@ -2,7 +2,7 @@
 
 > **Read this when:** you call, change or add to the invoicing actions in `app/Actions/Invoices/` (issuing a standard invoice, the invoice balance, the out-of-date guard, the numbering-format check). Tables and columns are in [database/schema-other/invoices.md](../database/schema-other/invoices.md); numbering in [invoice-sequences.md](../database/schema-other/invoice-sequences.md).
 
-Story 0101b (Epic 6 — Invoicing) ships **no Livewire component and no screen**. The contract surface is the set of actions below; screens (0109a, 0110) and system follow-ons (0104, 0105, 0106a) build on them. Since story 0102 there is exactly **one** invoice route, the read-only PDF download (see [the download section](#pdf-rendering-and-download-story-0102)); an architecture test still asserts that no route writes or deletes invoices.
+Story 0101b (Epic 6 — Invoicing) ships **no Livewire component and no screen**. The contract surface is the set of actions below; screens (0109a, 0110) and system follow-ons (0104, 0105, 0106a) build on them. Since story 0102 the only invoice route is the read-only PDF download (see [the download section](#pdf-rendering-and-download-story-0102)); story 0103 adds the [settings screen](#invoice-settings-screen-story-0103) and its sample-PDF preview route; an architecture test still asserts that no route writes or deletes invoices.
 
 ## Out of scope, stated plainly
 
@@ -80,6 +80,37 @@ $name = 'invoice-'.preg_replace('/[^A-Za-z0-9._-]/u', '-', $invoice->number).'.p
 - **Language.** `ResolveInvoiceLocale`, never the admin's UI locale; see [localization](../conventions/localization.md#the-invoice-pdf-uses-the-same-language-story-0102).
 - **Hardening and the driver.** Rules and rationale in [security/headless-pdf-rendering.md](../security/headless-pdf-rendering.md); runtime prerequisites in the [deployment note](../architecture/overview.md#deployment-note).
 - **Config.** `config/invoicing.php` `pdf`: `format` (`INVOICE_PDF_FORMAT`, `a4`), `margin_mm` (`INVOICE_PDF_MARGIN_MM`, 15), `timeout_seconds` (`INVOICE_PDF_TIMEOUT_SECONDS`, 30), `logo_max_bytes` (`INVOICE_PDF_LOGO_MAX_BYTES`, 1 MiB); plus the published `config/laravel-pdf.php`.
+
+## Invoice settings screen (story 0103)
+
+The backoffice screen for every invoice setting of story 0100, in the Store settings cluster. No new table or permission: it reads `invoice-settings.view` and writes through `invoice-settings.manage` (`InvoiceSettingPolicy`).
+
+| Route | Name | Middleware |
+| --- | --- | --- |
+| `GET /invoice-settings` | `invoice-settings.index` | `auth`, `verified`, `can:invoice-settings.view` ([`routes/invoice-settings.php`](../../routes/invoice-settings.php)) |
+| `GET /invoice-settings/preview/{template}` | `invoice-settings.preview` | `auth`, `verified`, `throttle:invoice-downloads`, **no `can:`** ([`routes/invoices.php`](../../routes/invoices.php)) |
+
+**Sidebar.** `config/modules.php` `items.invoice_settings` sits in the `store_settings` cluster right after `store_languages` (`group => null`, `permissions` exactly `['invoice-settings.view']`, `current_when => 'invoice-settings.*'`, label `navigation.items.invoice_settings`); topbar subtitle `topbar.invoice_settings.subtitle`.
+
+### `App\Livewire\InvoiceSettings\Index`
+
+- **Mount.** `Gate::authorize('viewAny', InvoiceSetting::class)`, then `fillFromSettings(InvoiceSetting::current())` (null columns become `''`).
+- **Write methods authorize themselves** (the disabled fieldset of a read-only viewer is not security). Each calls `authorizeUpdate()`: `LogRefusedPrivilegedAttempt::authorize('update', InvoiceSetting::class, targetType: 'invoice_setting', ...)`, so a refusal is a 403 plus one log.
+- **Methods.** `save()` sends the complete key set of `formAttributes()` to `SaveInvoiceSettings` (last write wins, no version check) and refills the form from the stored row so normalised values show; `setLogo(array $media)` (listens to `invoice-logo-selected`); `removeLogo()`; `updatedPrimaryColor()` / `updatedAccentColor()` (validate with the save's normaliser and rule, error on the property only); `openStartModal(string $series)`; `setStart(SetInvoiceSequenceStart)`.
+- **Error re-key.** The action throws snake_case keys; `rekeyErrors()` maps them to component properties with `Str::camel`, except `reset_numbering_yearly` to `isNumberingResetYearly` and `auto_issue_on_order` to `isAutoIssueEnabled` (`IRREGULAR_PROPERTIES`). `setStart` re-keys `start_at` to `startAt`.
+- **Logo.** `logoMediaId` and `startSeries` are `#[Locked]`. `setLogo()` gate order: `update` on `InvoiceSetting`, then `viewAny` on `Media`, both through the refusal-logging helper (same as `Products\Editor::setFeaturedImage()`). The preview URL is derived from the id read from the database, never from the event payload; an unknown id is a silent no-op. A forged non-array payload fails the `array $media` type and answers 500; accepted, consistent with `setFeaturedImage` (a `mixed $media` change for both is an optional follow-up). Only Save persists the logo.
+- **Colours.** The colour inputs use `wire:model.live.blur`, not `.blur` (see [errors-log](../errors-log.md) topic Livewire rendering). A colour error is the `flux:input`'s own auto-rendered error under the input (the screen wraps its sections in a native `<fieldset>`, which does not swallow it, unlike `flux:fieldset`); only the logo needs an explicit `<flux:error name="logoMediaId" />`. The only value written into a `style` attribute is `safePrimaryColor` / `safeAccentColor` (`^#[0-9A-Fa-f]{6}$`, else `null`).
+- **Computeds.** `canManage`, `canChooseLogo` (`update` and `viewAny` on `Media`, through `allowsSafely`), `logo`, `templateOptions`, `yearOptions`, `safePrimaryColor`, `safeAccentColor`, `nextNumbers`, `sequenceState`. `nextNumbers` calls `PeekNextInvoiceNumber` with the format being typed and returns `null` for a series whose format is invalid; it writes nothing and never puts errors in the bag.
+- **Read-only model.** Without `invoice-settings.manage` the form is a disabled fieldset and every write method refuses. The start-number control opens only while `sequenceState[series].hasIssued` is false; `setStart` still refuses an issued series with `start_already_issued`.
+
+### Read and preview actions
+
+| Class | Signature | Role |
+| --- | --- | --- |
+| `ReadInvoiceSequenceState` | `__invoke(): array{standard: S, corrective: S}`, `S = array{hasIssued: bool, lastNumber: int, lastYear: int\|null, lastIssuedAt: CarbonImmutable\|null}` | Authorizes `viewAny` on `InvoiceSetting` (logged), one query on `invoice_sequences`. `hasIssued` follows `last_issued_at` (a starting number moves the counter without issuing). A missing row reads `0`/`null`. |
+| `PreviewInvoicePdf` | `__invoke(InvoiceTemplate $template): PdfBuilder` | Authorizes `viewAny` on `InvoiceSetting` (logged). Builds an **unsaved** `Invoice` plus two in-memory `InvoiceLine`s from the saved settings; the number is only peeked (`PeekNextInvoiceNumber`), nothing is written or consumed. Sample customer and item strings (`invoices.pdf.sample_customer`, `sample_item`) are translated in the `ResolveInvoiceLocale` language, never the admin's. Renders with `RenderInvoicePdf($invoice, false, isSample: true)`. |
+
+`App\Http\Controllers\InvoiceSettingsPreviewController::__invoke(InvoiceTemplate $template, PreviewInvoicePdf)` streams the PDF inline as `invoice-preview-<template>.pdf` with `Cache-Control: private, no-store`. Implicit enum binding makes an unknown template a 404 (not logged). The refusal for a user without `invoice-settings.view` is the action's logged 403 (see [authorization](../architecture/authorization/step-up-and-refusal-logging.md#refusing-a-download-without-a-can-middleware-story-0102)). The route shares the `invoice-downloads` limiter with real downloads: one 30-per-minute bucket per user, intended.
 
 ## Sending invoices by e-mail (story 0104)
 
@@ -164,4 +195,4 @@ When `auto_issue_on_order` is on, a new order gets one itemised invoice for its 
 
 The issuing lock order and its rationale are in [orders.md](orders.md#lock-order-convention-project-wide).
 
-_Last updated: 2026-11-19 — Story 0105: automatic invoicing on order creation (actions, notification, failure scopes, FD-9 limitation). Stories 0104, 0102 and 0101b contracts unchanged._
+_Last updated: 2026-11-21 — Stories 0103, 0104 and 0105: invoice settings screen (read/preview actions, preview route), e-mail delivery (actions, copy rule, error keys, config), and automatic invoicing on order creation (actions, notification, failure scopes, FD-9 limitation); `hasBeenSent()` is implemented. Stories 0102 and 0101b contracts unchanged._

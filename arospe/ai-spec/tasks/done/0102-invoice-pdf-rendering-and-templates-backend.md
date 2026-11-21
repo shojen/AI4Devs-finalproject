@@ -5,7 +5,7 @@
 > [0100](0100-invoice-settings-backend.md) (`InvoiceTemplate`, settings) and
 > [0101b](0101b-issue-standard-invoice-backend.md) (`invoices` with its frozen snapshot columns,
 > `InvoicePolicy`, `invoices.view`, `lang/{en,es}/invoices.php`). Dependents:
-> [0103](../0103-invoice-settings-screen-ui.md), [0104](0104-send-invoice-by-email-backend.md),
+> [0103](0103-invoice-settings-screen-ui.md), [0104](0104-send-invoice-by-email-backend.md),
 > [0109b](../0109b-order-detail-invoices-panel-ui.md), [0110](../0110-billing-section-ui.md).
 
 ## Description
@@ -111,7 +111,7 @@ backend | includes database-expert: no
 - **FD-14 Unsaved invoices and the SAMPLE mark (settings preview).** `BuildInvoicePdfData` and
   `RenderInvoicePdf` work on an unsaved `Invoice` whose `lines` relation is set in memory (no
   query, no write); this is used by the settings preview, whose read action `PreviewInvoicePdf` is
-  owned by [0103](../0103-invoice-settings-screen-ui.md). Both take `bool $isSample = false`; when
+  owned by [0103](0103-invoice-settings-screen-ui.md). Both take `bool $isSample = false`; when
   true the PDF prints a translated "SAMPLE" mark (`invoices.pdf.sample`) on both templates
   (accepted default Q-0103-3 (a)), independently of the COPY mark.
 - **FD-13 Paper and timing in config.** `config/invoicing.php` `pdf`: `format` (A4),
@@ -299,7 +299,7 @@ template; 0104 can render the same PDF, marked as a copy when required, to attac
 ## Dependencies, risks, open technical questions
 - Upstream: [0100](0100-invoice-settings-backend.md), [0101b](0101b-issue-standard-invoice-backend.md).
   Downstream: [0104](0104-send-invoice-by-email-backend.md) attaches `RenderInvoicePdf`'s output
-  and implements `hasBeenSent()`; [0103](../0103-invoice-settings-screen-ui.md) may preview a sample;
+  and implements `hasBeenSent()`; [0103](0103-invoice-settings-screen-ui.md) may preview a sample;
   [0109b](../0109b-order-detail-invoices-panel-ui.md) / [0110](../0110-billing-section-ui.md) link the download.
 - **Operations note (runtime prerequisites).** Rendering needs Node 22 or newer on the host that
   renders (web and queue worker), Chrome installed by puppeteer (or an existing Chromium pointed
