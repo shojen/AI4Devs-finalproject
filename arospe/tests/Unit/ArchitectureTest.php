@@ -454,12 +454,15 @@ test('only CreateStandardInvoice creates Invoice or InvoiceLine rows under app/ 
 
         $writers[] = basename($path);
 
-        if (basename($path) !== 'CreateStandardInvoice.php') {
+        $isUnsavedSampleBuilder = basename($path) === 'PreviewInvoicePdf.php'
+            && preg_match('/->(?:save|saveQuietly|push|saveOrFail)\(|::(?:create|forceCreate|insert)\(|->(?:create|forceCreate)\(/', $source) !== 1;
+
+        if (basename($path) !== 'CreateStandardInvoice.php' && ! $isUnsavedSampleBuilder) {
             $offenders[] = $path;
         }
     }
 
-    expect($offenders)->toBe([], 'Invoice rows may only be created by CreateStandardInvoice: '.implode(', ', $offenders))
+    expect($offenders)->toBe([], 'Invoice rows may only be created by CreateStandardInvoice (the 0103 sample preview builds unsaved models and never persists): '.implode(', ', $offenders))
         ->and($writers)->toContain('CreateStandardInvoice.php');
 });
 

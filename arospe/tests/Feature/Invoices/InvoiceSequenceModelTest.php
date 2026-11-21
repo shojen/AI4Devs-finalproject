@@ -90,7 +90,10 @@ test('no route or Livewire component exposes the sequence model (T-32)', functio
     foreach ($paths as $path) {
         foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS)) as $file) {
             if ($file->getExtension() === 'php') {
-                expect(file_get_contents($file->getPathname()))->not->toContain('InvoiceSequence');
+                $source = (string) file_get_contents($file->getPathname());
+
+                expect(preg_match('/\bInvoiceSequence\b/', $source))->toBe(0, $file->getFilename().' references the InvoiceSequence model')
+                    ->and($source)->not->toContain('invoice_sequences');
             }
         }
     }
