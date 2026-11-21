@@ -3,6 +3,7 @@
 namespace App\Actions\Orders;
 
 use App\Actions\Auth\LogRefusedPrivilegedAttempt;
+use App\Actions\Invoices\IssueAutomaticInvoice;
 use App\Concerns\OrderValidationRules;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
@@ -55,11 +56,16 @@ class CreateOrder
         private readonly LogRefusedPrivilegedAttempt $logRefusedPrivilegedAttempt,
         private readonly NotifyOrderCreated $notifyOrderCreated,
         private readonly AdjustOrderStock $adjustOrderStock,
+        private readonly IssueAutomaticInvoice $issueAutomaticInvoice,
     ) {}
 
     /**
      * Create a new order: a customer plus one or more priced line items,
      * with the price frozen at the moment of ordering (PRD §3.2).
+     *
+     * Story 0105: after the commit, two callbacks run in this order -- the automatic invoicing
+     * (IssueAutomaticInvoice, a no-op unless `auto_issue_on_order` is on; it never throws and
+     * never undoes the order), then the created-order notification.
      *
      * Self-authorizes `create` on `Order::class` as its own first
      * statement, through the refusal-logging wrapper -- never a bare
@@ -383,6 +389,12 @@ class CreateOrder
         // commit regardless of nesting, so the guarantee holds no matter what a future caller
         // does. See this method's own docblock for why this may never move inside the closure
         // or the catch block above.
+        //
+        // Story 0105 (FD-1): the automatic invoicing is registered FIRST, so a failing admin
+        // notification (documented F-A: it can throw after commit) can never lose the invoice.
+        // IssueAutomaticInvoice never throws and never undoes the order.
+        $orderId = $order->id;
+        DB::afterCommit(fn () => ($this->issueAutomaticInvoice)($orderId));
         DB::afterCommit(fn () => ($this->notifyOrderCreated)($order));
 
         return $order;

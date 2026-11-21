@@ -142,6 +142,20 @@ A dot-decimal string with at most two decimals (`200`, `200.5`, `200.50`), norma
 - **Split (FD-8).** Shipping part and tax part are `round_half_up(component x amount / billable)`, base is the rest (the larger part is reduced by 0.01 if the base would go negative); the last invoice (amount equals the uninvoiced) takes each component minus what was already invoiced, so the invoices sum exactly to the order's base, tax and shipping. All arithmetic is bcmath strings, never floats.
 - **Uninvoiced never negative (FD-9).** `max(0.00, billable - net invoiced)`; `Order::billableAmount()` is `total - refunded_amount`, `0.00` when cancelled.
 
+## Automatic invoicing on order creation (story 0105)
+
+When `auto_issue_on_order` is on, a new order gets one itemised invoice for its whole billable amount, issued and queued to the customer as the original, right after the order commits. Off (the default) changes nothing; switching it never scans existing orders.
+
+| Class | Contract |
+| --- | --- |
+| `IssueAutomaticInvoice` | `__invoke(string $orderId): void`. Never throws. Called only by `CreateOrder` from a `DB::afterCommit` callback (architecture test). Ungated, never reads the authenticated user: `issued_by` and `sent_by` are null. Skips: flag off, missing or cancelled order, order that already has any invoice (idempotent), billable `0.00`. |
+| `NotifyAutomaticInvoiceFailed` | `__invoke(Order $order, string $stage, Throwable $cause): void`. Notifies holders of `invoices.create` or `invoices.send` (Super Admin excluded, no recipient: log only). One notification per stage per hour (`Cache::add`, key `invoices.automatic-failed.<stage>`). |
+| `App\Notifications\AutomaticInvoiceFailed` | `database` channel; payload is exactly `order_id`, `order_number`, `stage` (`issue` or `send`), `reason_key`. Never the exception text (it goes to the log via `report()`). Copy in `lang/{en,es}/invoices.php` group `automatic`. |
+
+- **Two failure scopes.** An issue failure leaves the order untouched and consumes no number; a send failure (including a soft-deleted customer) leaves the invoice issued and a later manual send is an original. Neither propagates to `CreateOrder`.
+- **Retry.** The issue is retried once, only on deadlock (1213) or lock wait timeout (1205).
+- **Stale-totals limitation (FD-9).** If an order's totals change after creation without a line edit (tax or shipping resolved later through the region resolvers), the auto-issued invoice goes stale silently. Until story 0108 marks every totals writer out of date (0106 adds the shared after-totals-changed hook), a future checkout must resolve tax and shipping before `CreateOrder` commits.
+
 ## Order model additions
 
 `Order::invoices()` (`HasMany`), `Order::billableAmount(): string`, `Order::isInvoiceOutOfDate(): bool` and the `invoice_out_of_date_at` datetime cast. Every existing order reads "not out of date"; only 0108 writes the column.
@@ -150,4 +164,4 @@ A dot-decimal string with at most two decimals (`200`, `200.5`, `200.50`), norma
 
 The issuing lock order and its rationale are in [orders.md](orders.md#lock-order-convention-project-wide).
 
-_Last updated: 2026-11-19 — Story 0104: added e-mail delivery (actions, copy rule, error keys, config, operations notes); `hasBeenSent()` is implemented. Story 0102 and 0101b contracts unchanged._
+_Last updated: 2026-11-19 — Story 0105: automatic invoicing on order creation (actions, notification, failure scopes, FD-9 limitation). Stories 0104, 0102 and 0101b contracts unchanged._
