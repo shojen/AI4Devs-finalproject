@@ -48,9 +48,9 @@
       "slug": "0106-invoice-collection-order-debt-partially-paid-backend",
       "title": "Invoice collection, order debt and the \"Partially paid\" status (backend)",
       "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
+      "status": "claimed",
+      "claimed_by": "worktree-0106-invoice-collection-order-debt-partially-paid-backend",
+      "claimed_at": "2026-11-21T19:00:00Z",
       "touches": [
         "database/migrations/<ts>_add_collected_amount_to_orders_table.php",
         "app/Enums/PaymentStatus.php",
