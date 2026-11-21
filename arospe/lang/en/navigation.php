@@ -37,6 +37,7 @@ return [
         'shipping_carriers' => 'Carriers & rates',
         'payment_methods' => 'Payment methods',
         'store_languages' => 'Store languages',
+        'invoice_settings' => 'Invoice settings',
         'customers' => 'Customers',
         'orders' => 'Orders',
         'blog_posts' => 'Posts',

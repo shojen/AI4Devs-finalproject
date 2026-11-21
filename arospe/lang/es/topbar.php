@@ -64,6 +64,10 @@ return [
         'subtitle' => 'Elige los idiomas en los que está escrito el contenido de tu tienda y los valores predeterminados del panel.',
     ],
 
+    'invoice_settings' => [
+        'subtitle' => 'Datos del emisor, logo, plantilla y numeración de tus facturas.',
+    ],
+
     'customers' => [
         'title' => 'Clientes',
         'subtitle' => 'Los clientes de la tienda y su historial de pedidos.',

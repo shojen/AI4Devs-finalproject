@@ -225,6 +225,8 @@ $this->logRefusedPrivilegedAttempt->authorize('view', $invoice, targetType: 'inv
 
 The helper resolves a logged target on its own only for `User` and `Role` models, so the call passes `targetType` and `targetId` **explicitly** (as `MarkOrderAsPaid` does for `'order'`). A refusal is a 403 plus one log row (ability `view`, `target_type` `invoice`); an unknown id is a 404 and a guest a redirect, neither logged. Per-route detail in [api/invoices.md](../../api/invoices.md#pdf-rendering-and-download-story-0102).
 
+A second route follows the same rule: `invoice-settings.preview` (story 0103, [`routes/invoices.php`](../../../routes/invoices.php)) deliberately has no `can:invoice-settings.view` either. `PreviewInvoicePdf` authorizes `viewAny` on `InvoiceSetting` through the helper with explicit `targetType: 'invoice_setting'` and `targetId: InvoiceSetting::SINGLETON_ID`, so a refusal is a 403 plus one log row; the settings screen itself (`invoice-settings.index`) keeps its `can:`. An unknown template is a 404 through implicit enum binding.
+
 ❌ Do not "tidy" this route to `can:invoices.view`: the refusal would stop being logged. The sidebar-registry drift test only covers routes that have a registry entry, and this route has none.
 
 ### The dashboard read-side actions — one no-throw exception, five refusal-logging actions
@@ -270,4 +272,4 @@ Three rules generalise from it:
 4. Pin the shape with an **equivalence test** that captures a refusal from the new screen and one from an existing screen in a single `Log::spy()` session and set-equates their key sets — `tests/Feature/Roles/RefusalLoggingTest.php` and `tests/Feature/Users/ActionRefusalLoggingTest.php` do this screen-to-screen and action-to-action respectively. Asserting each screen's shape in isolation lets two conventions drift into existence.
 5. Add a must-not-over-log test beside each: a permitted create/edit/delete still writes its single `Log::info` success line and **no** warning.
 
-_Last updated: 2026-11-19 — Story 0102: added the no-`can:` download route subsection (logged refusal with explicit `targetType`/`targetId`). Earlier subsections (0097 interrupted-form restore, 0082 dashboard read-side actions, 0064d `update_conflict`) unchanged._
+_Last updated: 2026-11-19 — Story 0103: the no-`can:` subsection also covers `invoice-settings.preview`. Earlier subsections (0102 download route, 0097 interrupted-form restore, 0082 dashboard read-side actions, 0064d `update_conflict`) are unchanged._

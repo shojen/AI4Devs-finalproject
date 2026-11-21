@@ -4,7 +4,7 @@
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
 > [0100](0100-invoice-settings-backend.md) (settings, `ComposeInvoiceNumber`, `InvoiceType`,
 > `InvoiceSettingPolicy`). Dependents: [0101b](0101b-issue-standard-invoice-backend.md) (issues
-> standard invoices with these numbers), [0103](../0103-invoice-settings-screen-ui.md) (preview and
+> standard invoices with these numbers), [0103](0103-invoice-settings-screen-ui.md) (preview and
 > starting counter on the screen),
 > [0107](../0107-corrective-invoice-on-refund-and-cancellation-backend.md) and
 > [0108](../0108-regenerate-invoices-after-order-edit-backend.md) (corrective numbers).
@@ -143,7 +143,7 @@ other index. `down()`: `Schema::dropIfExists`.
   `SetInvoiceSequenceStart` raises `invoice-settings.numbering.start_already_issued` and
   `start_invalid` on the key `start_at`. The settings screen reads the sequence state through its
   own read action (`ReadInvoiceSequenceState`, owned by
-  [0103](../0103-invoice-settings-screen-ui.md)), never the table directly.
+  [0103](0103-invoice-settings-screen-ui.md)), never the table directly.
 - **FD-10 No new permission or policy.** Both public actions reuse `InvoiceSettingPolicy`.
 - **FD-11 Out of this story:** `AssertNumberingFormatIsFree` and the "next number already exists"
   settings refusal (0101b, it reads `invoices.number`; it calls `nextCounter()`), the
@@ -381,7 +381,7 @@ settings screen can preview the next numbers and set a starting counter once.
   [0101b](0101b-issue-standard-invoice-backend.md) calls `lock()` and `__invoke()` inside its issuing
   transaction, adds `UNIQUE(number)`, the collision message and `AssertNumberingFormatIsFree`
   (via `nextCounter()`), and repeats the rollback test with a real insert;
-  [0103](../0103-invoice-settings-screen-ui.md) calls the preview and the starting counter;
+  [0103](0103-invoice-settings-screen-ui.md) calls the preview and the starting counter;
   [0107](../0107-corrective-invoice-on-refund-and-cancellation-backend.md) /
   [0108](../0108-regenerate-invoices-after-order-edit-backend.md) lock both series in one call.
 - Risk: the whole epic's numbering correctness rests on FD-1..FD-3; the concurrency and rollback

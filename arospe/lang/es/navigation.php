@@ -38,6 +38,7 @@ return [
         'shipping_carriers' => 'Transportistas y tarifas',
         'payment_methods' => 'Métodos de pago',
         'store_languages' => 'Idiomas de la tienda',
+        'invoice_settings' => 'Ajustes de facturas',
         'customers' => 'Clientes',
         'orders' => 'Pedidos',
         'blog_posts' => 'Entradas',

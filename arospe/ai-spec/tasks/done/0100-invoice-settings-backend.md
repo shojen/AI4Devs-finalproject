@@ -5,7 +5,7 @@
 > Dependents: [0100a](0100a-customer-tax-id-backend.md),
 > [0101a](0101a-invoice-numbering-sequences-backend.md),
 > [0102](0102-invoice-pdf-rendering-and-templates-backend.md),
-> [0103](../0103-invoice-settings-screen-ui.md),
+> [0103](0103-invoice-settings-screen-ui.md),
 > [0105](0105-automatic-invoice-on-order-creation-backend.md).
 
 ## Description
@@ -135,7 +135,7 @@ Each is binding for this story.
   of `InvoiceSettingValidationRules`, `normalizeInvoiceSettingAttributes(array $attributes):
   array` (trim, blank to null, colours and country upper-cased with ASCII `strtoupper`, tax ID
   through `normalizeTaxId()`), shared by `SaveInvoiceSettings` and the settings screen
-  ([0103](../0103-invoice-settings-screen-ui.md) composes the trait); `invoiceSettingRules()` returns an
+  ([0103](0103-invoice-settings-screen-ui.md) composes the trait); `invoiceSettingRules()` returns an
   array keyed by field so a single key can be read. Final lang keys in
   `lang/{en,es}/invoice-settings.php`: `validation.year_required_when_reset` (key
   `<series>_year_format`), `validation.prefixes_must_differ` (key `corrective_prefix`),
