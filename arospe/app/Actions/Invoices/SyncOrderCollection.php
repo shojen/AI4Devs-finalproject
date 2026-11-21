@@ -40,7 +40,7 @@ class SyncOrderCollection
         // A plain re-read: the caller holds the order lock (every writer locks it first), and a
         // second locking read of `orders` would run after the callers' `order_items` locks, against
         // the documented lock order (orders, products, variants, order_items).
-        $order = Order::query()->findOrFail($lockedOrder->getKey());
+        $order = Order::query()->whereKey($lockedOrder->getKey())->firstOrFail();
 
         $balance = ($this->computeOrderInvoiceBalance)($order, true);
         $hasInvoices = Invoice::query()->where('order_id', $order->getKey())->lockForUpdate()->value('id') !== null;
