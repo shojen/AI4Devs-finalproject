@@ -370,3 +370,12 @@ test('PaymentStatus::allowsOrderStatus() encodes the agreed payment/fulfilment m
     'refunded' => [PaymentStatus::Refunded, [OrderStatus::Cancelled]],
     'partially_refunded' => [PaymentStatus::PartiallyRefunded, [OrderStatus::Pending, OrderStatus::Processing, OrderStatus::Shipped, OrderStatus::Delivered]],
 ]);
+
+// Story 0106 (FD-7) -- the new payment state allows Pending only; the full grid lives in PartiallyPaidMatrixTest.
+test('a partially paid order cannot be advanced to Processing by TransitionOrderStatus (story 0106)', function () {
+    actingOrderEditorForTransition();
+    $order = Order::factory()->partiallyPaid()->create(['status' => OrderStatus::Pending]);
+
+    expect(fn () => app(TransitionOrderStatus::class)($order, OrderStatus::Processing))->toThrow(ValidationException::class)
+        ->and($order->fresh()->status)->toBe(OrderStatus::Pending);
+});

@@ -97,3 +97,11 @@ test('each mark-as-paid copy key is translated, not copied, between en and es', 
     'payment.action', 'payment.dialog_heading', 'payment.dialog_body', 'payment.dialog_amount', 'payment.dialog_confirm',
     'payment.dialog_dismiss', 'payment.marked', 'payment.info', 'payment.info_by', 'payment.not_found',
 ]);
+
+// Story 0106 -- the new payment status label exists in both locales.
+test('the partially_paid payment status label exists in both locales and differs from the other labels', function (string $locale) {
+    $labels = Arr::get(require lang_path($locale.'/orders.php'), 'payment_statuses');
+
+    expect($labels['partially_paid'])->toBeString()->not->toBe('')
+        ->and(array_count_values($labels)[$labels['partially_paid']])->toBe(1);
+})->with(['en', 'es']);

@@ -19,6 +19,7 @@ test('PaymentStatus exposes exactly the cases PRD §3.2 names, with the expected
         'Paid' => 'paid',
         'Refunded' => 'refunded',
         'PartiallyRefunded' => 'partially_refunded',
+        'PartiallyPaid' => 'partially_paid',
     ];
 
     $actual = [];
@@ -27,6 +28,14 @@ test('PaymentStatus exposes exactly the cases PRD §3.2 names, with the expected
     }
 
     expect($actual)->toEqualCanonicalizing($expected);
+});
+
+test('PartiallyPaid is labelled Partially paid in English and Parcialmente pagado in Spanish (story 0106)', function () {
+    $en = require lang_path('en/orders.php');
+    $es = require lang_path('es/orders.php');
+
+    expect($en['payment_statuses'][PaymentStatus::PartiallyPaid->value])->toBe('Partially paid')
+        ->and($es['payment_statuses'][PaymentStatus::PartiallyPaid->value])->toBe('Parcialmente pagado');
 });
 
 test('every PaymentStatus case has a payment_statuses leaf in both lang/en/orders.php and lang/es/orders.php, key-for-key identical', function () {

@@ -34,6 +34,13 @@ function ordersUiRenderingActor(array $permissions = ['orders.view', 'customers.
     return $actor;
 }
 
+test('a partially paid order renders the Partially paid label in the payment column (story 0106)', function () {
+    $this->actingAs(ordersUiRenderingActor());
+    Order::factory()->partiallyPaid()->create();
+
+    expect(Livewire::test(Index::class)->html())->toContain(__('orders.payment_statuses.partially_paid'));
+});
+
 test('three orders render their number, customer name, both status labels, total and date', function () {
     $this->actingAs(ordersUiRenderingActor());
 

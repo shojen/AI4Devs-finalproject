@@ -32,7 +32,7 @@ function invoicePolicyUser(string ...$permissions): User
 test('the policy permission constants are the two literals of the catalog (FD-17)', function () {
     expect(InvoicePolicy::VIEW_PERMISSION)->toBe('invoices.view')
         ->and(InvoicePolicy::CREATE_PERMISSION)->toBe('invoices.create')
-        ->and(RolePermissionSeeder::INVOICE_PERMISSIONS)->toBe(['invoice-settings.view', 'invoice-settings.manage', 'invoices.view', 'invoices.create', 'invoices.send']);
+        ->and(RolePermissionSeeder::INVOICE_PERMISSIONS)->toBe(['invoice-settings.view', 'invoice-settings.manage', 'invoices.view', 'invoices.create', 'invoices.send', 'invoices.collect']);
 });
 
 test('viewAny and view are allowed for a holder of invoices.view alone (T-9)', function () {

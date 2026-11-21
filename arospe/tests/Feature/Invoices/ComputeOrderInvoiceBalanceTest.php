@@ -7,6 +7,7 @@
 use App\Actions\Invoices\ComputeOrderInvoiceBalance;
 use App\Models\Invoice;
 use App\Models\Order;
+use Illuminate\Support\Arr;
 use Tests\Support\Invoices\Invoicing;
 
 /**
@@ -20,7 +21,8 @@ function balanceStandardInvoice(Order $order, array $totals, ?DateTimeInterface 
 test('an order with nothing invoiced owes its whole billable amount, split into base, tax and shipping (FD-8)', function () {
     $balance = app(ComputeOrderInvoiceBalance::class)(Invoicing::thousandOrder());
 
-    expect($balance)->toBe([
+    // Story 0106 added netCollected, debt and isLegacy; their own tests live in Collection/.
+    expect(Arr::except($balance, ['netCollected', 'debt', 'isLegacy']))->toBe([
         'billable' => '1000.00',
         'netInvoiced' => '0.00',
         'uninvoiced' => '1000.00',

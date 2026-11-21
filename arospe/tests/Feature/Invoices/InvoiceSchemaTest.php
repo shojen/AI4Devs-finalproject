@@ -186,14 +186,14 @@ test('invoice_lines.invoice_id restricts deletion and invoice_lines.order_item_i
         ->and(Schema::getForeignKeys('invoice_lines'))->toHaveCount(2);
 });
 
-test('orders gains a nullable invoice_out_of_date_at timestamp right after refunded_amount', function () {
+test('orders gains a nullable invoice_out_of_date_at timestamp right after collected_amount (which follows refunded_amount)', function () {
     $columns = collect(Schema::getColumns('orders'))->pluck('name')->values();
     $column = invoiceSchemaColumn('orders', 'invoice_out_of_date_at');
 
     expect($column['nullable'])->toBeTrue()
         ->and($column['type'])->toContain('timestamp')
         ->and($column['default'])->toBeNull()
-        ->and($columns->search('invoice_out_of_date_at'))->toBe($columns->search('refunded_amount') + 1);
+        ->and($columns->search('invoice_out_of_date_at'))->toBe($columns->search('refunded_amount') + 2);
 });
 
 test('the three migrations are reversible: lines before invoices, and the orders column dropped', function () {

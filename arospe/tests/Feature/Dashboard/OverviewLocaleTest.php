@@ -138,6 +138,14 @@ test('order statuses and payment states are Spanish', function () {
         ->and(Ui::text($html, "dashboard-order-total-{$order->id}"))->toBe('€ 100.00');
 });
 
+test('a partially paid order shows the Spanish payment label on the dashboard (story 0106)', function () {
+    $order = Order::factory()->forCustomer(Customer::factory()->create())->partiallyPaid()->create();
+
+    $html = overviewLocaleHtml('es', ['orders.view']);
+
+    expect(Ui::text($html, "dashboard-order-payment-{$order->id}"))->toBe('Parcialmente pagado');
+});
+
 test('the empty states and the nothing-to-show message are Spanish', function () {
     $html = overviewLocaleHtml('es', ['blog.view', 'products.view', 'orders.view']);
 
