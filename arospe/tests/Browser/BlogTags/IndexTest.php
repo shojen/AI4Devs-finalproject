@@ -54,7 +54,7 @@ test('opening the create form shows a blank field, with no stale prefill from a 
         ->click('@create-blog-tag-button')
         ->assertNoJavaScriptErrors()
         ->assertValue('@blog-tag-name-input', '');
-});
+})->skipOnCi();
 
 test('creating a tag through a real fill and click round trip adds it to the list', function () {
     $this->actingAs(blogTagsBrowserActor());

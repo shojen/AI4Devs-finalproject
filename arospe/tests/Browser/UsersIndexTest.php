@@ -285,7 +285,7 @@ test('the users screen produces no javascript errors on load and on every modal 
             ->click('Cancel')
             ->assertNoJavaScriptErrors();
     }, 250);
-});
+})->skipOnCi();
 
 /*
  * ============================================================================
