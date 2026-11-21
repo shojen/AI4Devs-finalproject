@@ -37,7 +37,7 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Users & Auth](database/schema-users-auth.md) | `users`, `passkeys`, permission tables, infrastructure tables. |
 | [Products & Taxes](database/schema-products.md) (hub, 5 parts) | `sales_regions`, `media`, categories, `products`, gallery/region pivots, attributes, variants. |
 | [Shipping](database/schema-shipping.md) (hub, 3 parts) | `geography_entries`, zones, carriers, rates. |
-| [Payment Methods, Customers, Notifications, Invoice Settings, Invoice Sequences & Invoices](database/schema-other.md) (hub, 6 parts) | `payment_methods`, `customers`, `notifications`, `invoice_settings`, `invoice_sequences` (gap-free invoice counters, `AllocateInvoiceNumber`), `invoices` / `invoice_lines` (issued invoices, story 0101b). |
+| [Payment Methods, Customers, Notifications, Invoice Settings, Invoice Sequences & Invoices](database/schema-other.md) (hub, 6 parts) | `payment_methods`, `customers`, `notifications`, `invoice_settings`, `invoice_sequences` (gap-free invoice counters, `AllocateInvoiceNumber`), `invoices` / `invoice_lines` (issued invoices, story 0101b), `invoice_deliveries` (e-mail send log, story 0104). |
 | [Orders](database/schema-orders.md) (hub, 4 parts) | `orders`, `order_items`, `refunds`, `order_payments`, snapshots and derived totals. |
 | [Blog](database/schema-blog.md) | `blog_categories`, `blog_tags` (stored `normalized_name` uniqueness, folded-length bound), `blog_posts` (soft delete, derived slug, status-governed `published_at`) and the `blog_post_tag` pivot (cascade contract). |
 | [Internationalization](database/schema-localization.md) | `store_languages` (content-authoring language catalog, find-or-create reactivation) and `locale_settings` (this repo's first singleton table: fixed-literal PK, atomic upsert, no enum cast). |
@@ -55,7 +55,7 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Payment Methods](api/payment-methods.md) | `payment-methods.index`. |
 | [Customers](api/customers.md) | `customers.index`, `customers.show`. |
 | [Orders](api/orders.md) | `orders.index`, `orders.show`, `<x-money>`, `<x-confirm-dialog>`, `RecordRefund` stock return, `AdjustOrderStock`. |
-| [Invoices](api/invoices.md) | you call or change the invoicing actions (`IssueInvoice`, the balance, the out-of-date guard), the PDF render and `invoices.download` route, or the invoice e-mail (`SendInvoice`, `SendOrderInvoices`, `invoices.send`; stories 0101b, 0102, 0104). |
+| [Invoices](api/invoices.md) | you call or change the invoicing actions (`IssueInvoice`, the balance, the out-of-date guard), the PDF render and `invoices.download` route, the invoice settings screen and its sample-PDF preview, or the invoice e-mail (`SendInvoice`, `SendOrderInvoices`, `invoices.send`; stories 0101b, 0102, 0103, 0104). |
 | [Blog](api/blog.md) | `blog-tags.index`, `blog-categories.index`, `blog-posts.index` / `.create` / `.edit`. |
 | [Store Languages](api/store-languages.md) | `store-languages.index`: the two-section Store Languages settings screen (story 0069). |
 | [Dashboard](api/dashboard.md) | the `dashboard` route's ungated contract, the `SalesOverview` card (filters, event, Chart.js charts) or the read-side actions in `app/Actions/Dashboard/` (per-widget gating, counters, latest posts/orders, low stock, sales/orders series, measure definitions). |
@@ -96,4 +96,4 @@ Technical documentation for this Laravel 13 + Livewire 4 application, kept in sy
 | [Errors log archive](errors-log-archive.md) | the topic index points at an entry dated before 2026-08-27. |
 | [Revision history](history/) | you need the old `_Previously:` revision notes of a doc (moved out of the doc itself; one file per doc, named after its path). |
 
-_Last updated: 2026-11-19 — Story 0104: the Invoices API row covers the invoice e-mail and the schema-other hub row `invoice_deliveries`. Still current from story 0102: the security index count is 19 pages._
+_Last updated: 2026-11-19 — Stories 0103 and 0104: the Invoices API row covers the invoice settings screen and preview route and the invoice e-mail; the schema-other hub row covers `invoices` / `invoice_lines` / `invoice_deliveries`. Still current from story 0102: the security index count is 19 pages._

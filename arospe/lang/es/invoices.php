@@ -47,6 +47,8 @@ return [
         'corrects' => 'Rectifica la factura',
         'reason' => 'Motivo',
         'copy' => 'COPIA',
+        'sample_customer' => 'Cliente de muestra',
+        'sample_item' => 'Artículo de muestra',
         'sample' => 'MUESTRA',
         'reasons' => [
             'refund' => 'Reembolso',

@@ -48,6 +48,7 @@ function topbarScreens(): array
         'shipping zones' => ['shipping.zones.index', 'shipping.zones.index.heading'],
         'payment methods' => ['payment-methods.index', 'payment-methods.index.heading'],
         'store languages' => ['store-languages.index', 'store-languages.index.heading'],
+        'invoice settings' => ['invoice-settings.index', 'invoice-settings.screen.title'],
         'customers' => ['customers.index', 'topbar.customers.title'],
         'orders' => ['orders.index', 'topbar.orders.title'],
         'blog posts' => ['blog-posts.index', 'blog-posts.index.title'],
@@ -169,9 +170,10 @@ test('every authenticated app screen is covered by the dataset or an explicit ex
     // Story 0069 -- store-languages.index (a placeholder view under story 0068, hence its former
     // exclusion here) is now a real, titled screen and lives in topbarScreens() above.
     // Story 0102 -- invoices.download streams a PDF file, so it has no topbar to cover.
+    // Story 0103 -- invoice-settings.preview streams a PDF file, like invoices.download.
     $covered = array_merge(
         collect(topbarScreens())->pluck(0)->all(),
-        ['customers.show', 'orders.show', 'products.edit', 'blog-posts.edit', 'invoices.download'],
+        ['customers.show', 'orders.show', 'products.edit', 'blog-posts.edit', 'invoices.download', 'invoice-settings.preview'],
     );
 
     $uncovered = collect(Route::getRoutes()->getRoutes())

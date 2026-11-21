@@ -245,6 +245,7 @@ Six rules come with it, each load-bearing:
       'roles' => ['group' => 'settings', 'cluster' => null, /* ... */ 'permissions' => ['roles.manage']],
       'sales_regions' => ['group' => null, 'cluster' => 'store_settings', /* ... */ 'permissions' => ['sales-regions.view']],
       'store_languages' => ['group' => null, 'cluster' => 'store_settings', /* ... */ 'permissions' => ['store-languages.view']],   // story 0069: store-wide configuration, so the cluster -- NOT the `settings` group (whose `expanded_when` stays `roles.*`)
+      'invoice_settings' => ['group' => null, 'cluster' => 'store_settings', /* ... */ 'permissions' => ['invoice-settings.view']],   // story 0103: after store_languages; `permissions` is exactly the route's `can:`
       'product_categories' => ['group' => null, 'cluster' => 'products', /* ... */ 'permissions' => ['products.view']],
       'products' => ['group' => null, 'cluster' => 'products', /* ... */ 'permissions' => ['products.view']],
       'product_attribute_types' => ['group' => null, 'cluster' => 'products', /* ... */ 'permissions' => ['products.view']],
@@ -343,4 +344,4 @@ The one place `hasPermissionTo()` is correct is **inside a policy body**, which 
 | Tests | `tests/Feature/Seeders/`, `tests/Feature/Authorization/`, `tests/Feature/Policies/`, `tests/Feature/Users/`, `tests/Feature/Roles/`, `tests/Feature/SalesRegions/`, `tests/Feature/Models/RoleTest.php`, `tests/Feature/Actions/Auth/`, `tests/Unit/Actions/Auth/`, `tests/Unit/Exceptions/` |
 | Security rules derived from this foundation | [`docs/security/`](../../security/README.md) |
 
-_Last updated: 2026-10-03 — Story 0069 (Store Languages screen). The shipped-shape sample gained `items.store_languages`, nested in the `store_settings` cluster (`permissions` exactly `['store-languages.view']`); the `settings` group's `expanded_when` is untouched. Earlier sections unchanged: items declaration order is sidebar render order (story 0063), the order-detail three-ability screen (story 0055), and the per-module sections above._
+_Last updated: 2026-11-19 — Story 0103: the shipped-shape sample gained `items.invoice_settings` in the `store_settings` cluster after `store_languages`; earlier subsections unchanged._
