@@ -1,50 +1,7 @@
 {
-  "generated_at": "2026-11-19T12:00:00Z",
+  "generated_at": "2026-11-21T12:00:00Z",
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
-    {
-      "id": "0103",
-      "slug": "0103-invoice-settings-screen-ui",
-      "title": "Invoice settings screen (frontend)",
-      "depends_on": [],
-      "status": "ready",
-      "claimed_by": null,
-      "claimed_at": null,
-      "touches": [
-        "routes/invoice-settings.php",
-        "routes/web.php",
-        "app/Livewire/InvoiceSettings/Index.php",
-        "resources/views/livewire/invoice-settings.blade.php",
-        "resources/views/components/invoice-template-thumbnail.blade.php",
-        "app/Actions/Invoices/ReadInvoiceSequenceState.php",
-        "app/Actions/Invoices/PreviewInvoicePdf.php",
-        "app/Http/Controllers/InvoiceSettingsPreviewController.php",
-        "config/modules.php",
-        "lang/en/navigation.php",
-        "lang/es/navigation.php",
-        "lang/en/invoice-settings.php",
-        "lang/es/invoice-settings.php",
-        "lang/en/invoices.php",
-        "lang/es/invoices.php",
-        "tests/Feature/InvoiceSettings/IndexTest.php",
-        "tests/Feature/InvoiceSettings/IndexAuthorizationTest.php",
-        "tests/Feature/InvoiceSettings/IndexNumberingPreviewTest.php",
-        "tests/Feature/InvoiceSettings/IndexStartNumberTest.php",
-        "tests/Feature/InvoiceSettings/PreviewInvoicePdfTest.php",
-        "tests/Feature/InvoiceSettings/ReadInvoiceSequenceStateTest.php",
-        "tests/Browser/InvoiceSettings/InvoiceSettingsScreenTest.php"
-      ],
-      "conflict_risk_with": [
-        "0104",
-        "0105",
-        "0106",
-        "0107",
-        "0108",
-        "0109b",
-        "0110",
-        "0110a"
-      ]
-    },
     {
       "id": "0104",
       "slug": "0104-send-invoice-by-email-backend",
@@ -77,7 +34,6 @@
         "tests/Feature/Orders/OrderLineItemAuthorizationTest.php"
       ],
       "conflict_risk_with": [
-        "0103",
         "0105",
         "0106",
         "0107",
@@ -108,7 +64,6 @@
         "tests/Feature/Orders/CreateOrderStockTest.php"
       ],
       "conflict_risk_with": [
-        "0103",
         "0104",
         "0106",
         "0107",
@@ -163,7 +118,6 @@
       ],
       "conflict_risk_with": [
         "0095",
-        "0103",
         "0104",
         "0105",
         "0106a",
@@ -253,7 +207,6 @@
       ],
       "conflict_risk_with": [
         "0095",
-        "0103",
         "0104",
         "0105",
         "0106",
@@ -302,7 +255,6 @@
       ],
       "conflict_risk_with": [
         "0095",
-        "0103",
         "0104",
         "0105",
         "0106",
@@ -386,7 +338,6 @@
       ],
       "conflict_risk_with": [
         "0095",
-        "0103",
         "0104",
         "0105",
         "0106",
@@ -463,7 +414,6 @@
         "tests/Browser/Invoices/"
       ],
       "conflict_risk_with": [
-        "0103",
         "0104",
         "0105",
         "0106",
@@ -496,7 +446,6 @@
         "tests/Browser/Invoices/CollectInvoiceTest.php"
       ],
       "conflict_risk_with": [
-        "0103",
         "0104",
         "0105",
         "0106",

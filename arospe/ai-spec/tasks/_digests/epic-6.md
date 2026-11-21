@@ -39,3 +39,15 @@ backfilled here (read its `done/` file or `docs/database/schema-other/invoice-se
 - Deferred: a render concurrency cap (L-2) and a scheduled prune of `pdf-temp` (N-2); puppeteer must be installed and kept current in production (I-2) — story 0102, Phase 4.
 - Opt-in smoke `INVOICE_PDF_E2E=1` (`InvoicePdfSmokeTest`) proves a real bounded render and the `view-source` case; the JS/file-blocking proof is `RenderInvoicePdfTest` and `SafeBrowsershotDriverTest` — story 0102, Phase 5 note 6.
 
+
+## Story 0103 — Invoice settings screen (frontend)
+
+- Component `App\Livewire\InvoiceSettings\Index` (route `invoice-settings.index`, `can:invoice-settings.view`); every write method authorizes itself through `LogRefusedPrivilegedAttempt` (`update` on `InvoiceSetting`); save errors are re-keyed from snake_case to properties (`IRREGULAR_PROPERTIES`: `reset_numbering_yearly` -> `isNumberingResetYearly`, `auto_issue_on_order` -> `isAutoIssueEnabled`) — story 0103, FD-8/FD-9.
+- New pure reads: `ReadInvoiceSequenceState::__invoke(): array{standard, corrective}` each `{hasIssued, lastNumber, lastYear, lastIssuedAt}` (`hasIssued` follows `last_issued_at`); `PreviewInvoicePdf::__invoke(InvoiceTemplate): PdfBuilder` (unsaved invoice in memory, number only peeked, sample strings in the `ResolveInvoiceLocale` language, `isSample: true`) — story 0103.
+- Preview route `invoice-settings.preview` lives in `routes/invoices.php` (not `routes/invoice-settings.php`) so it shares the `throttle:invoice-downloads` group (one 30/min bucket with real downloads) and has no `can:`: the action's logged refusal gives the 403 — story 0103.
+- FD-11: last write wins on save, no version check — story 0103.
+- Colour fields use `wire:model.live.blur` (plain `.blur` sends no request in Livewire 4); the only colour written into a `style` attribute is `safePrimaryColor`/`safeAccentColor` — story 0103, FD-7/FD-10.
+- Sidebar: `items.invoice_settings` in the `store_settings` cluster after `store_languages`; label "Invoice settings" (not "Billing", owned by 0110) — story 0103.
+- Accepted I-2 (appsec): `setLogo(array $media)` answers 500 on a forged non-array payload; kept consistent with `Products\Editor::setFeaturedImage()`. Optional cross-cutting follow-up: `mixed $media` in both — story 0103.
+- Q-0103-1 (sample PDF preview) and Q-0103-2 (sidebar label) remain open for the owner; built on the recommended options — story 0103.
+- Test note: a refused save still leaves the singleton `invoice_settings` row (insert-ignored before the transaction, 0100); assert unchanged values, not absence — story 0103.
