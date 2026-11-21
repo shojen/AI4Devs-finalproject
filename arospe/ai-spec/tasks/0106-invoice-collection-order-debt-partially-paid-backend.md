@@ -64,11 +64,21 @@ backend | includes database-expert: yes
 
 ## Column added
 `orders.collected_amount decimal(10,2) not null default 0`, after `refunded_amount`, no index,
-written only by `SyncOrderCollection`. Same migration backfills legacy orders in one statement:
-`UPDATE orders SET collected_amount = GREATEST(total - refunded_amount, 0) WHERE payment_status
-IN ('paid', 'refunded', 'partially_refunded')` (values from `PaymentStatus`; cancelled legacy
-orders included; everything else stays 0.00). `down()` drops the column (data-lossy, stated in
-the docblock). `payment_status` needs no schema change (`partially_paid` fits `varchar(20)`).
+written only by `SyncOrderCollection` (and once by this migration). The same migration runs two
+steps, in this order (owner decision B-1 (a), 2026-11-21):
+1. **Carry over collection.** Every live (not voided), uncollected standard invoice of an order
+   whose stored `payment_status` is `paid`, `refunded` or `partially_refunded` is marked
+   collected: `collection_carried_over = true`, `collected_at` = `order_payments.paid_at` or the
+   migration time, method = the payment row's or the order's, type = the payment row's or null,
+   `collected_by` null (no actor). Voided invoices and correctives are untouched.
+2. **Backfill `collected_amount`.** Orders with invoices: net collected (Shared definitions), so
+   the invariant "collected_amount = net collected for orders with invoices" holds afterwards.
+   Orders without invoices: `GREATEST(total - refunded_amount, 0)` when paid-like (cancelled
+   included), else 0.00. Status values come from `PaymentStatus`.
+
+The migration never writes `payment_status` (Q-0106-10). `down()` drops the column and does not
+revert step 1 (data-lossy, stated in the docblock). `payment_status` needs no schema change
+(`partially_paid` fits `varchar(20)`).
 
 ## Derived payment status (truth table)
 `ResolveOrderPaymentStatus`, first matching row wins; inputs read under the order lock.
@@ -93,7 +103,8 @@ table, so the two cannot drift.
   $lockedOrder)` (transaction-bound, idempotent) sets `collected_amount` — orders with invoices:
   net collected; without invoices: `Cancelled` keeps the stored value, legacy paid-like = billable,
   otherwise 0.00 — and then `payment_status` from the truth table, writing both on the locked
-  order. It never touches the order `status`. The backfill is the same rule applied once.
+  order. It never touches the order `status`. The migration's backfill is the same rule applied
+  once, after the collection carry-over (step 1), so it agrees with every later sync.
 - **FD-2 Corrective collection by join.** Correctives carry no collection columns; their state is
   derived from the corrected invoice.
 - **FD-3 Collect.** `CollectInvoice(Invoice, PaymentMethod, OrderPaymentType)`: logged
@@ -138,25 +149,28 @@ table, so the two cannot drift.
   invoice is born collected with `collection_carried_over = true`, `collected_at` =
   `order_payments.paid_at` or now, method = the payment row's or the order's, type = the payment
   row's (null when there is no payment row). Its debt stays 0.00 and its status is unchanged (or a
-  refund state when it has refunds).
+  refund state when it has refunds). Invoices issued before 0106 for paid-like orders get the same
+  carried-over collection from the migration (step 1), so there is one rule for both.
 - **FD-13 Release coupling (QA G-3).** Until 0106a, a `PartiallyPaid` order would show "Mark as
   paid" (`isAwaitingPayment`) while `MarkOrderAsPaid` refuses it; `PartiallyPaid` can only arise
   from `CollectInvoice`, which has no screen before 0109b/0110a. 0106 and 0106a ship in the same
-  release; a test pins today's refusal so 0106a's change is visible.
+  release; a test pins today's refusal so 0106a's change is visible. `MarkOrderAsPaid` is not
+  changed in 0106 (owner decision, 2026-11-21): the interim state in which an order marked paid
+  after 0106 shows its full debt until 0106a lands (same release) is explicitly accepted.
 - **FD-14 Legacy edits (QA G-5).** An order edited before it has any invoice keeps its stored
   status; a legacy paid-like order's collected amount follows its billable amount (debt 0.00), a
   pending one stays 0.00 (accepted).
 - **FD-15 Shared totals hook.** `AfterOrderTotalsChanged(Order $lockedOrder)` is created here and
   called by `RecalculateOrderTotals` (so by all three line-item actions); in 0106 it only runs
   `SyncOrderCollection`. 0108 adds the out-of-date mark and wires the tax and shipping resolvers.
+- **FD-16 Permission.** `invoices.collect` (catalog 48 -> 49); two abilities, `collect` and
+  `uncollect`, on the same permission; Administrator and Super Admin hold it. Refusal log
+  `target_type = invoice`, with the ability name.
 - **FD-17 Collect return value (screen contract).** `CollectInvoice` returns the invoice refreshed
   with its `order` relation loaded, so a screen can show the order's new debt and payment status;
   its state refusals are `ValidationException`s keyed `invoice`. The payment-method list a collect
   dialog offers comes from `ListCollectionPaymentMethods` (owned by
   [0109b](0109b-order-detail-invoices-panel-ui.md)).
-- **FD-16 Permission.** `invoices.collect` (catalog 48 -> 49); two abilities, `collect` and
-  `uncollect`, on the same permission; Administrator and Super Admin hold it. Refusal log
-  `target_type = invoice`, with the ability name.
 
 ## Class contracts
 - `App\Enums\PaymentStatus::PartiallyPaid`.
@@ -231,7 +245,8 @@ Feature: Invoice collection and order debt
 ```
 
 ## Files to create/modify
-- `database/migrations/<ts>_add_collected_amount_to_orders_table.php` (with the backfill).
+- `database/migrations/<ts>_add_collected_amount_to_orders_table.php` (collection carry-over of
+  paid-like orders' invoices, then the backfill).
 - `app/Enums/PaymentStatus.php` — case and matrix arm.
 - `app/Actions/Invoices/{CollectInvoice, UndoInvoiceCollection, ApplyInvoiceCollection,
   SyncOrderCollection, ResolveOrderPaymentStatus, AfterOrderTotalsChanged}.php`.
@@ -292,10 +307,16 @@ Edge
   equals the signed sum afterwards.
 - [ ] T-15 `SyncOrderCollection` three times: same result, no write after the first; outside a
   transaction `LogicException`; a stale order instance is re-derived from rows.
-- [ ] T-16 Backfill on seeded rows (paid, refunded, partially refunded, over-refunded, pending,
-  cancelled legacy paid): `GREATEST(total - refunded, 0)` for paid-like, 0.00 otherwise, never
-  negative; the invariant holds afterwards. Mandatory: `RefreshDatabase` alone runs it on empty
-  tables.
+- [ ] T-16 Migration on seeded rows, as one dataset. Without invoices (paid, refunded, partially
+  refunded, over-refunded, pending, cancelled legacy paid): `GREATEST(total - refunded, 0)` for
+  paid-like, 0.00 otherwise, never negative. With invoices: (a) paid order with an uncollected
+  live invoice -> invoice carried over (`collection_carried_over = true`, `collected_at` from
+  `order_payments.paid_at`, else migration time; method and type from the payment row, else the
+  order's method and null type), `collected_amount` = net collected; (b) partially refunded order
+  with an invoice (and a corrective of it) -> same carry-over, `collected_amount` = signed sum;
+  (c) a voided invoice and a pending order's invoice stay uncollected. Afterwards
+  `collected_amount` = net collected for every order with invoices, and `payment_status` is
+  unchanged. Mandatory: `RefreshDatabase` alone runs it on empty tables.
 - [ ] T-17 Legacy paid order edited before any invoice: collected follows billable, debt 0.00,
   status unchanged; legacy pending edited: stays 0.00 (FD-14).
 - [ ] T-18 `AfterOrderTotalsChanged` runs exactly once per line-item action inside the caller's
@@ -333,7 +354,9 @@ shows a correct collected amount, debt and derived payment status, including "Pa
 orders paid before invoicing keep a debt of 0.00 and get collected invoices.
 
 ## Acceptance criteria
-- [ ] `orders.collected_amount` exists and is backfilled as specified.
+- [ ] `orders.collected_amount` exists; the migration first carries over the collection of
+  paid-like orders' live uncollected invoices, then backfills, so collected amount equals net
+  collected for every order with invoices.
 - [ ] Collected amount, debt and payment status follow the definitions and the truth table.
 - [ ] Collect and undo follow FD-3..FD-6, refusals included, safe under concurrency.
 - [ ] `PartiallyPaid` exists with the FD-7 matrix, labels and badges; derivation never moves the
@@ -379,6 +402,10 @@ orders paid before invoicing keep a debt of 0.00 and get collected invoices.
     beside it (recommended); (b) a combined state.
   - Q-0106-9 Password step-up before undoing a collection: (a) no, consistent with "Mark as
     paid" (recommended); (b) yes.
+  - Q-0106-10 Stored `payment_status` of orders with invoices after the migration: (a) left as
+    stored; the next `SyncOrderCollection` derives it (recommended: the migration only fixes
+    amounts; a paid order invoiced for part of its total keeps "Paid" until its next change);
+    (b) the migration re-derives it with the truth table.
 
 ## Technical tasks
 - [ ] Truth-table dataset, then `ResolveOrderPaymentStatus` and the shared refund helper.
@@ -395,3 +422,22 @@ orders paid before invoicing keep a debt of 0.00 and get collected invoices.
 ## Phase records
 - Phase 1 (Three Amigos) complete on 2026-11-15 — participants: product-owner (facilitator),
   backend-expert, database-expert, backend-qa. Phase 2 (INVEST) pending.
+- Phase 2 (INVEST) — owner decisions of 2026-11-21 on the REJECTED review (blocker B-1; the
+  rejection record was not present in this file when revised): B-1 option (a) adopted (migration
+  carries over collection before the backfill; Column added, FD-1, FD-12, T-16, files list and
+  acceptance criteria updated); `MarkOrderAsPaid` unchanged in 0106 and the interim state accepted
+  (FD-13); non-blocking note fixed (FD-16 now precedes FD-17); Q-0106-10 recorded. Revised by
+  product-owner; returns to code-reviewer for INVEST re-validation.
+- Phase 2 (INVEST) re-validation — **APPROVED** by code-reviewer on 2026-11-21. B-1 resolved:
+  migration step 1 (carry-over) and step 2 (backfill) agree with FD-1 and FD-12, T-16 covers
+  (a)/(b)/(c) plus the invariant and the unchanged `payment_status`, and the acceptance criteria
+  match. Every column reused exists (`invoices.collected_at`, `collected_by`,
+  `collection_payment_method_id`, `collection_type`, `collection_carried_over`, `voided_at`,
+  `corrects_invoice_id`; `order_payments.paid_at`, `payment_method_id`, `type`;
+  `orders.payment_method_id`, `refunded_amount`). Non-blocking notes for Phase 3: (1) under
+  Q-0106-10 (a), a pre-0106 paid order invoiced for only part of its total shows the uninvoiced
+  remainder as debt immediately and is derived to `PartiallyPaid` on its next sync; the manager can
+  clear it by issuing and collecting the remaining invoice (not legacy, so FD-12 does not apply);
+  (2) under FD-13, `MarkOrderAsPaid` does not call `SyncOrderCollection`, so until 0106a an order
+  marked paid keeps `collected_amount` 0.00 and a later line edit on an invoiced one would re-derive
+  it to `PendingPayment` — accepted interim, same release.
