@@ -84,6 +84,7 @@
                                 <flux:badge
                                     :color="match ($order['paymentStatus']) {
                                         'pending_payment' => 'amber',
+                                        'partially_paid' => 'orange',
                                         'paid' => 'lime',
                                         'partially_refunded' => 'blue',
                                         'refunded' => 'zinc',

@@ -77,6 +77,7 @@ return [
         'manage_administrators' => 'Manage administrator-level roles/users',
         'refund' => 'Refund',
         'send' => 'Send',
+        'collect' => 'Collect',
     ],
 
 ];

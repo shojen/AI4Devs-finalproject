@@ -101,6 +101,7 @@ class RecordRefund
     public function __construct(
         private readonly ToNumericString $toNumericString,
         private readonly AdjustOrderStock $adjustOrderStock,
+        private readonly EveryLineFullyRefunded $everyLineFullyRefunded,
     ) {}
 
     /**
@@ -230,9 +231,7 @@ class RecordRefund
                 2,
             );
 
-            $everyLineFullyRefunded = $lockedItems->every(
-                fn (OrderItem $item): bool => $item->refunded_quantity === $item->quantity,
-            );
+            $everyLineFullyRefunded = ($this->everyLineFullyRefunded)($lockedItems);
             $anyLineRefunded = $lockedItems->contains(
                 fn (OrderItem $item): bool => $item->refunded_quantity > 0,
             );

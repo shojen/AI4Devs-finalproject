@@ -26,6 +26,7 @@
                         data-test="dashboard-order-payment-{{ $row['id'] }}"
                         :color="match ($row['paymentStatus']->value) {
                             'pending_payment' => 'amber',
+                            'partially_paid' => 'orange',
                             'paid' => 'lime',
                             'partially_refunded' => 'blue',
                             default => 'zinc',

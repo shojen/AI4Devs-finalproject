@@ -57,7 +57,7 @@ class RolePermissionSeeder extends Seeder
      *
      * @var array<int, string>
      */
-    public const INVOICE_PERMISSIONS = ['invoice-settings.view', 'invoice-settings.manage', 'invoices.view', 'invoices.create', 'invoices.send'];
+    public const INVOICE_PERMISSIONS = ['invoice-settings.view', 'invoice-settings.manage', 'invoices.view', 'invoices.create', 'invoices.send', 'invoices.collect'];
 
     /**
      * Run the database seeds.

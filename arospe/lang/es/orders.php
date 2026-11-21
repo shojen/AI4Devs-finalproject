@@ -18,6 +18,7 @@ return [
         'paid' => 'Pagado',
         'refunded' => 'Reembolsado',
         'partially_refunded' => 'Parcialmente reembolsado',
+        'partially_paid' => 'Parcialmente pagado',
     ],
 
     'errors' => [

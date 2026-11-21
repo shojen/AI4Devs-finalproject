@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Actions\Orders\ToNumericString;
 use App\Enums\OrderPaymentType;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
@@ -103,7 +104,7 @@ class OrderFactory extends Factory
     }
 
     /**
-     * Indicate that the order has been paid in full: `payment_status` Paid plus exactly one
+     * Indicate that the order has been paid in full: `payment_status` Paid, `collected_amount` = total - refunded_amount, plus exactly one
      * `order_payments` row (story 0084) with the order's own payment method, type Transfer and a
      * `paid_at` never earlier than the order's `created_at`. An inline
      * `state(['payment_status' => Paid])` still builds a legacy paid order with no payment row.
@@ -113,6 +114,14 @@ class OrderFactory extends Factory
         return $this->state(fn (): array => [
             'payment_status' => PaymentStatus::Paid,
         ])->afterCreating(function (Order $order): void {
+            $order->forceFill([
+                'collected_amount' => bcsub(
+                    app(ToNumericString::class)($order->total),
+                    app(ToNumericString::class)($order->refunded_amount ?? '0.00'),
+                    2,
+                ),
+            ])->save();
+
             OrderPayment::factory()->create([
                 'order_id' => $order->getKey(),
                 'payment_method_id' => $order->payment_method_id,
@@ -120,6 +129,27 @@ class OrderFactory extends Factory
                 'paid_at' => $order->created_at ?? now(),
             ]);
         });
+    }
+
+    /**
+     * Indicate that the order is partly collected: `payment_status` PartiallyPaid. Pair it with
+     * `withCollectedAmount()` (or invoices) to give it a collected amount.
+     */
+    public function partiallyPaid(): static
+    {
+        return $this->state(fn (): array => [
+            'payment_status' => PaymentStatus::PartiallyPaid,
+        ]);
+    }
+
+    /**
+     * Set the order's stored collected amount (a string, e.g. '400.00').
+     */
+    public function withCollectedAmount(string $amount): static
+    {
+        return $this->state(fn (): array => [
+            'collected_amount' => $amount,
+        ]);
     }
 
     /**
