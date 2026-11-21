@@ -2,13 +2,13 @@
 
 > **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
-> [0101b](done/0101b-issue-standard-invoice-backend.md) (invoices with their collection columns,
+> [0101b](../done/0101b-issue-standard-invoice-backend.md) (invoices with their collection columns,
 > `IssueInvoiceForOrder`, `CreateStandardInvoice`, `AssertInvoicesAreCurrent`). Ships in the same
-> release as [0106a](0106a-mark-as-paid-invoice-shortcut-and-real-income-backend.md) (FD-13).
-> Dependents: [0106a](0106a-mark-as-paid-invoice-shortcut-and-real-income-backend.md),
-> [0107](0107-corrective-invoice-on-refund-and-cancellation-backend.md),
-> [0108](0108-regenerate-invoices-after-order-edit-backend.md),
-> [0110](0110-billing-section-ui.md), [0111](0111-customer-report-read-side-backend.md).
+> release as [0106a](../0106a-mark-as-paid-invoice-shortcut-and-real-income-backend.md) (FD-13).
+> Dependents: [0106a](../0106a-mark-as-paid-invoice-shortcut-and-real-income-backend.md),
+> [0107](../0107-corrective-invoice-on-refund-and-cancellation-backend.md),
+> [0108](../0108-regenerate-invoices-after-order-edit-backend.md),
+> [0110](../0110-billing-section-ui.md), [0111](../0111-customer-report-read-side-backend.md).
 
 ## Description
 Mark an invoice as collected (or undo a mistaken collection), keep each order's collected amount
@@ -170,7 +170,7 @@ table, so the two cannot drift.
   with its `order` relation loaded, so a screen can show the order's new debt and payment status;
   its state refusals are `ValidationException`s keyed `invoice`. The payment-method list a collect
   dialog offers comes from `ListCollectionPaymentMethods` (owned by
-  [0109b](0109b-order-detail-invoices-panel-ui.md)).
+  [0109b](../0109b-order-detail-invoices-panel-ui.md)).
 
 ## Class contracts
 - `App\Enums\PaymentStatus::PartiallyPaid`.
@@ -377,12 +377,12 @@ orders paid before invoicing keep a debt of 0.00 and get collected invoices.
 - [ ] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open technical questions
-- Upstream: [0101b](done/0101b-issue-standard-invoice-backend.md). Downstream:
-  [0106a](0106a-mark-as-paid-invoice-shortcut-and-real-income-backend.md) (same release; reuses
+- Upstream: [0101b](../done/0101b-issue-standard-invoice-backend.md). Downstream:
+  [0106a](../0106a-mark-as-paid-invoice-shortcut-and-real-income-backend.md) (same release; reuses
   `ApplyInvoiceCollection` and `SyncOrderCollection`),
-  [0107](0107-corrective-invoice-on-refund-and-cancellation-backend.md) (U-11 / U-12 predicates,
-  refund correctives), [0108](0108-regenerate-invoices-after-order-edit-backend.md) (adds the mark
-  to `AfterOrderTotalsChanged`), [0111](0111-customer-report-read-side-backend.md) (sums
+  [0107](../0107-corrective-invoice-on-refund-and-cancellation-backend.md) (U-11 / U-12 predicates,
+  refund correctives), [0108](../0108-regenerate-invoices-after-order-edit-backend.md) (adds the mark
+  to `AfterOrderTotalsChanged`), [0111](../0111-customer-report-read-side-backend.md) (sums
   `collected_amount`).
 - Risk: the backfill is a single `UPDATE` over paid-like orders; its lock time on a large table is
   unmeasured (acceptable at back-office scale).

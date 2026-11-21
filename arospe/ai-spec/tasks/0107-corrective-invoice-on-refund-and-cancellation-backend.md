@@ -4,7 +4,7 @@
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
 > [0101b](done/0101b-issue-standard-invoice-backend.md) (invoices, lines, `voided_at`, `reason`,
 > `corrects_invoice_id`), [0101a](done/0101a-invoice-numbering-sequences-backend.md) (corrective
-> series) and [0106](0106-invoice-collection-order-debt-partially-paid-backend.md)
+> series) and [0106](in-progress/0106-invoice-collection-order-debt-partially-paid-backend.md)
 > (`collected_amount`, `SyncOrderCollection`, `PartiallyPaid`). Dependents:
 > [0108](0108-regenerate-invoices-after-order-edit-backend.md) (reuses `CreateCorrectiveInvoice`
 > and `VoidLiveInvoices`), [0109a](0109a-orders-list-invoice-send-ui.md) (the describer reads the
@@ -377,7 +377,7 @@ and the order's figures stay consistent.
 - Story 0101a note (I1): call `AllocateInvoiceNumber::lock()` and `__invoke()` at the **same `DB::transaction` nesting level**; lock both series in one `lock()` call. See [0101a](done/0101a-invoice-numbering-sequences-backend.md).
 - Upstream: [0101a](done/0101a-invoice-numbering-sequences-backend.md),
   [0101b](done/0101b-issue-standard-invoice-backend.md),
-  [0106](0106-invoice-collection-order-debt-partially-paid-backend.md). Downstream:
+  [0106](in-progress/0106-invoice-collection-order-debt-partially-paid-backend.md). Downstream:
   [0108](0108-regenerate-invoices-after-order-edit-backend.md),
   [0109c](0109c-order-detail-regenerate-and-refund-limit-ui.md) (shows `maxRefundableAmount()`), [0109b](0109b-order-detail-invoices-panel-ui.md) (cancel rules).
 - Security: entry gates unchanged and first; amounts come from locked rows; a holder of

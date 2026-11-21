@@ -5,7 +5,7 @@
 > [0100](0100-invoice-settings-backend.md) (the `auto_issue_on_order` flag),
 > [0101b](0101b-issue-standard-invoice-backend.md) (`IssueInvoiceForOrder`) and
 > [0104](0104-send-invoice-by-email-backend.md) (`RecordInvoiceDeliveries`, `InvoiceSent`).
-> Related: [0106](../0106-invoice-collection-order-debt-partially-paid-backend.md) and
+> Related: [0106](../in-progress/0106-invoice-collection-order-debt-partially-paid-backend.md) and
 > [0108](../0108-regenerate-invoices-after-order-edit-backend.md) close the stale-totals limitation
 > (FD-9).
 
@@ -247,7 +247,7 @@ creation behaves exactly as today.
 ## Dependencies, risks, open technical questions
 - Upstream: [0100](0100-invoice-settings-backend.md), [0101b](0101b-issue-standard-invoice-backend.md),
   [0104](0104-send-invoice-by-email-backend.md). The stale-totals limitation is closed by
-  [0106](../0106-invoice-collection-order-debt-partially-paid-backend.md) (hook) and
+  [0106](../in-progress/0106-invoice-collection-order-debt-partially-paid-backend.md) (hook) and
   [0108](../0108-regenerate-invoices-after-order-edit-backend.md) (mark).
 - Contention: automatic issues of one series serialise on its sequence row (short critical
   section); a bulk import issues sequentially.
