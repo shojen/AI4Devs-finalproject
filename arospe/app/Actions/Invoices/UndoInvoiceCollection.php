@@ -46,7 +46,9 @@ class UndoInvoiceCollection
             throw new AuthorizationException('This action is unauthorized.');
         }
 
-        $undone = DB::transaction(function () use ($invoice): Invoice {
+        $previous = [];
+
+        $undone = DB::transaction(function () use ($invoice, &$previous): Invoice {
             $order = Order::query()->lockForUpdate()->findOrFail($invoice->order_id);
 
             ($this->assertInvoicesAreCurrent)($order);
@@ -54,6 +56,14 @@ class UndoInvoiceCollection
             $locked = Invoice::query()->whereKey($invoice->getKey())->lockForUpdate()->firstOrFail();
 
             $this->assertUndoable($locked, $order);
+
+            $previous = [
+                'previous_collected_at' => $locked->collected_at?->toIso8601String(),
+                'previous_collected_by' => $locked->collected_by,
+                'previous_payment_method_id' => $locked->collection_payment_method_id,
+                'previous_collection_type' => $locked->collection_type,
+                'was_carried_over' => (bool) $locked->collection_carried_over,
+            ];
 
             $locked->forceFill([
                 'collected_at' => null,
@@ -72,6 +82,7 @@ class UndoInvoiceCollection
             'actor_id' => $actor->getKey(),
             'invoice_id' => $undone->getKey(),
             'order_id' => $undone->order_id,
+            ...$previous,
         ]);
 
         return $undone;

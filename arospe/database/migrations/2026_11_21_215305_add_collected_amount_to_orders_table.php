@@ -20,9 +20,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('orders', function (Blueprint $table): void {
-            $table->decimal('collected_amount', 10, 2)->default(0.00)->after('refunded_amount');
-        });
+        if (! Schema::hasColumn('orders', 'collected_amount')) {
+            Schema::table('orders', function (Blueprint $table): void {
+                $table->decimal('collected_amount', 10, 2)->default(0.00)->after('refunded_amount');
+            });
+        }
 
         $paidLike = [
             PaymentStatus::Paid->value,
