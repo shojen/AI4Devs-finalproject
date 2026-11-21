@@ -48,3 +48,10 @@ backfilled here (read its `done/` file or `docs/database/schema-other/invoice-se
 - Permission `invoices.send` seeded: catalog 48; refusals logged per FD-14; the permission-catalog assertion in `InvoiceSettingPolicyTest` had to include it — story 0104.
 - Error keys the UI must handle: `invoices.errors.cancelled` and `nothing_to_send` (0109a screen) — story 0104, Phase 5 note.
 - Deferred to UI stories: rate limit on resend (L1); schedule `queue:prune-failed` for customer data in failed-job payloads (L2) — story 0104, Phase 4.
+
+## Story 0105 — Automatic issue and send on order creation (backend)
+
+- `App\Actions\Invoices\IssueAutomaticInvoice::__invoke(string $orderId): void` is called by `CreateOrder` after the order is created; a no-op unless `invoice_settings.auto_issue_on_order` is on, and it never throws or undoes the order (FD-5).
+- Idempotent per order (re-checked under the order row lock), zero-amount orders skipped, earlier orders never touched; issues via `IssueInvoiceForOrder` as the system and sends the original via `RecordInvoiceDeliveries` (`sent_by` null).
+- `AutomaticInvoiceFailed` notification: keys-only payload, hourly dedupe per stage (accepted Low: later failures hidden for 1h); strings in `invoices.automatic.*` (en/es parity).
+- Reachability enforced by architecture tests; known limitation: stale totals after order edits, closed by 0106 (hook) and 0108 (mark) — story 0105, FD-9.
