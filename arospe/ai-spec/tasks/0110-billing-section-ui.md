@@ -5,7 +5,7 @@
 > [0101b](done/0101b-issue-standard-invoice-backend.md) (`IssueInvoice`, `ComputeOrderInvoiceBalance`,
 > amount rules, `InvoicePolicy`), [0102](done/0102-invoice-pdf-rendering-and-templates-backend.md)
 > (`invoices.download`), [0104](done/0104-send-invoice-by-email-backend.md) (`SendInvoice`),
-> [0106](in-progress/0106-invoice-collection-order-debt-partially-paid-backend.md) (collected state, debt,
+> [0106](done/0106-invoice-collection-order-debt-partially-paid-backend.md) (collected state, debt,
 > legacy rule), [0109a](0109a-orders-list-invoice-send-ui.md) (`DescribeOrderInvoicing`, send dialog
 > copy) and [0109b](0109b-order-detail-invoices-panel-ui.md) (shared invoice badges). Dependent:
 > [0110a](0110a-billing-collect-and-undo-ui.md) (collect and undo from the same list).
@@ -397,7 +397,7 @@ what is left to invoice.
 - Upstream: [0101b](done/0101b-issue-standard-invoice-backend.md),
   [0102](done/0102-invoice-pdf-rendering-and-templates-backend.md),
   [0104](done/0104-send-invoice-by-email-backend.md),
-  [0106](in-progress/0106-invoice-collection-order-debt-partially-paid-backend.md),
+  [0106](done/0106-invoice-collection-order-debt-partially-paid-backend.md),
   [0109a](0109a-orders-list-invoice-send-ui.md), [0109b](0109b-order-detail-invoices-panel-ui.md).
   Downstream: [0110a](0110a-billing-collect-and-undo-ui.md).
 - Tampering: filters sanitised every request; page size constant; locked ids re-resolved; every

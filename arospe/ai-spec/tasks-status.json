@@ -1,70 +1,13 @@
 {
-  "generated_at": "2026-11-21T20:00:00Z",
+  "generated_at": "2026-11-21T21:00:00Z",
   "note": "Lightweight claim registry for two parallel Claude Code sessions working ai-spec/tasks/. Covers PENDING tasks only (done tasks are irrelevant to claiming and are never listed here). See ai-spec/tasks-map.md for the human-readable dependency diagram and analysis this file's depends_on/conflict_risk_with data is derived from, and ai-spec/tasks-coordination.md for the protocol that reads and writes this file. Keep both in sync: if tasks-map.md's dependency graph changes, this file's depends_on/status must be regenerated to match, and vice versa.",
   "tasks": [
-    {
-      "id": "0106",
-      "slug": "0106-invoice-collection-order-debt-partially-paid-backend",
-      "title": "Invoice collection, order debt and the \"Partially paid\" status (backend)",
-      "depends_on": [],
-      "status": "claimed",
-      "claimed_by": "worktree-0106-invoice-collection-order-debt-partially-paid-backend",
-      "claimed_at": "2026-11-21T19:00:00Z",
-      "touches": [
-        "database/migrations/<ts>_add_collected_amount_to_orders_table.php",
-        "app/Enums/PaymentStatus.php",
-        "app/Actions/Invoices/CollectInvoice.php",
-        "app/Actions/Invoices/UndoInvoiceCollection.php",
-        "app/Actions/Invoices/ApplyInvoiceCollection.php",
-        "app/Actions/Invoices/SyncOrderCollection.php",
-        "app/Actions/Invoices/ResolveOrderPaymentStatus.php",
-        "app/Actions/Invoices/AfterOrderTotalsChanged.php",
-        "app/Actions/Invoices/ComputeOrderInvoiceBalance.php",
-        "app/Actions/Invoices/IssueInvoiceForOrder.php",
-        "app/Actions/Invoices/CreateStandardInvoice.php",
-        "app/Actions/Orders/RecalculateOrderTotals.php",
-        "app/Actions/Orders/RecordRefund.php",
-        "app/Models/Order.php",
-        "app/Models/Invoice.php",
-        "app/Policies/InvoicePolicy.php",
-        "database/seeders/RolePermissionSeeder.php",
-        "lang/en/roles.php",
-        "lang/es/roles.php",
-        "lang/en/orders.php",
-        "lang/es/orders.php",
-        "lang/en/invoices.php",
-        "lang/es/invoices.php",
-        "resources/views/livewire/orders.blade.php",
-        "database/factories/OrderFactory.php",
-        "tests/Unit/Enums/PaymentStatusTest.php",
-        "resources/views/livewire/orders/show.blade.php",
-        "resources/views/livewire/dashboard/latest-orders-widget.blade.php",
-        "tests/Feature/Invoices/Collection/",
-        "tests/Feature/Seeders/RolePermissionSeederTest.php",
-        "tests/Feature/Orders/TransitionOrderStatusTest.php",
-        "tests/Feature/Orders/IndexRenderingTest.php",
-        "tests/Feature/Orders/ShowRenderingTest.php"
-      ],
-      "conflict_risk_with": [
-        "0095",
-        "0106a",
-        "0107",
-        "0108",
-        "0109a",
-        "0109b",
-        "0109c",
-        "0110",
-        "0110a"
-      ]
-    },
     {
       "id": "0106a",
       "slug": "0106a-mark-as-paid-invoice-shortcut-and-real-income-backend",
       "title": "\"Mark as paid\" as the invoice shortcut, and the dashboard Real income (backend)",
-      "depends_on": [
-        "0106"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -90,7 +33,6 @@
       ],
       "conflict_risk_with": [
         "0095",
-        "0106",
         "0107",
         "0108",
         "0109a",
@@ -102,10 +44,8 @@
       "id": "0107",
       "slug": "0107-corrective-invoice-on-refund-and-cancellation-backend",
       "title": "Corrective invoice on refund and on cancellation (backend)",
-      "depends_on": [
-        "0106"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -134,7 +74,6 @@
       ],
       "conflict_risk_with": [
         "0095",
-        "0106",
         "0106a",
         "0108",
         "0109a",
@@ -149,7 +88,6 @@
       "slug": "0108-regenerate-invoices-after-order-edit-backend",
       "title": "Regenerate invoices after an order edit (backend)",
       "depends_on": [
-        "0106",
         "0107"
       ],
       "status": "blocked",
@@ -180,7 +118,6 @@
       ],
       "conflict_risk_with": [
         "0095",
-        "0106",
         "0106a",
         "0107",
         "0109a",
@@ -215,7 +152,6 @@
       ],
       "conflict_risk_with": [
         "0095",
-        "0106",
         "0106a",
         "0107",
         "0108",
@@ -229,7 +165,6 @@
       "slug": "0109b-order-detail-invoices-panel-ui",
       "title": "Order detail: invoices panel with download, send, collect and undo (frontend)",
       "depends_on": [
-        "0106",
         "0109a"
       ],
       "status": "blocked",
@@ -259,7 +194,6 @@
       ],
       "conflict_risk_with": [
         "0095",
-        "0106",
         "0106a",
         "0107",
         "0108",
@@ -295,7 +229,6 @@
       ],
       "conflict_risk_with": [
         "0095",
-        "0106",
         "0106a",
         "0107",
         "0108",
@@ -308,7 +241,6 @@
       "slug": "0110-billing-section-ui",
       "title": "Billing section: invoice list, filters, send and create invoice (frontend)",
       "depends_on": [
-        "0106",
         "0109a",
         "0109b"
       ],
@@ -332,7 +264,6 @@
         "tests/Browser/Invoices/"
       ],
       "conflict_risk_with": [
-        "0106",
         "0107",
         "0108",
         "0109a",
@@ -345,7 +276,6 @@
       "slug": "0110a-billing-collect-and-undo-ui",
       "title": "Billing: collect and undo a collection from the invoice list (frontend)",
       "depends_on": [
-        "0106",
         "0109b",
         "0110"
       ],
@@ -362,7 +292,6 @@
         "tests/Browser/Invoices/CollectInvoiceTest.php"
       ],
       "conflict_risk_with": [
-        "0106",
         "0107",
         "0108",
         "0109b",
@@ -373,10 +302,8 @@
       "id": "0111",
       "slug": "0111-customer-report-read-side-backend",
       "title": "Customer report read side (backend)",
-      "depends_on": [
-        "0106"
-      ],
-      "status": "blocked",
+      "depends_on": [],
+      "status": "ready",
       "claimed_by": null,
       "claimed_at": null,
       "touches": [
@@ -399,7 +326,6 @@
       "slug": "0112-customer-report-screen-ui",
       "title": "Customer report screen with chart (frontend)",
       "depends_on": [
-        "0106",
         "0111"
       ],
       "status": "blocked",

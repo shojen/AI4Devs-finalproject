@@ -5,7 +5,7 @@
 > (INVEST "Small", approved 2026-11-15). Blocked on
 > [0102](done/0102-invoice-pdf-rendering-and-templates-backend.md) (download route),
 > [0104](done/0104-send-invoice-by-email-backend.md) (send actions),
-> [0106](in-progress/0106-invoice-collection-order-debt-partially-paid-backend.md) (collect, undo, debt) and
+> [0106](done/0106-invoice-collection-order-debt-partially-paid-backend.md) (collect, undo, debt) and
 > [0109a](0109a-orders-list-invoice-send-ui.md) (`DescribeOrderInvoicing`). Dependents:
 > [0109c](0109c-order-detail-regenerate-and-refund-limit-ui.md) (`Show::invoicing`),
 > [0110](0110-billing-section-ui.md) (invoice badge components) and
@@ -383,7 +383,7 @@ sees only the debt.
 ## Dependencies, risks, open questions
 - Upstream (final list): [0102](done/0102-invoice-pdf-rendering-and-templates-backend.md),
   [0104](done/0104-send-invoice-by-email-backend.md),
-  [0106](in-progress/0106-invoice-collection-order-debt-partially-paid-backend.md),
+  [0106](done/0106-invoice-collection-order-debt-partially-paid-backend.md),
   [0109a](0109a-orders-list-invoice-send-ui.md). Downstream:
   [0109c](0109c-order-detail-regenerate-and-refund-limit-ui.md), [0110](0110-billing-section-ui.md),
   [0110a](0110a-billing-collect-and-undo-ui.md).

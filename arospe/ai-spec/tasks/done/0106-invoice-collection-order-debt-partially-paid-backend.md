@@ -2,7 +2,7 @@
 
 > **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
-> [0101b](../done/0101b-issue-standard-invoice-backend.md) (invoices with their collection columns,
+> [0101b](0101b-issue-standard-invoice-backend.md) (invoices with their collection columns,
 > `IssueInvoiceForOrder`, `CreateStandardInvoice`, `AssertInvoicesAreCurrent`). Ships in the same
 > release as [0106a](../0106a-mark-as-paid-invoice-shortcut-and-real-income-backend.md) (FD-13).
 > Dependents: [0106a](../0106a-mark-as-paid-invoice-shortcut-and-real-income-backend.md),
@@ -275,39 +275,39 @@ Real actions and database; second connection for concurrency. Files under
 PaymentStatusConsumersTest}.php`.
 
 Happy path
-- [ ] T-1 Truth table as one dataset (cancelled and legacy unchanged; refund rows; paid; partially
+- [x] T-1 Truth table as one dataset (cancelled and legacy unchanged; refund rows; paid; partially
   paid; pending; billable 0.00; refunded with debt; collected above billable -> paid), rows built to
   satisfy two conditions so first-match is proven.
-- [ ] T-2 Collect 600 of 600 + 400: five columns set, `collected_amount 600.00`, `PartiallyPaid`,
+- [x] T-2 Collect 600 of 600 + 400: five columns set, `collected_amount 600.00`, `PartiallyPaid`,
   order status untouched, one info log.
-- [ ] T-3 Collect the 400 too: 1000.00, debt 0.00, `Paid`, order status untouched.
-- [ ] T-4 Undo: columns cleared, recomputed, status back, one warning log.
-- [ ] T-5 Debt dataset (collected 0 / 600 / 1000; refunded 100 and collected 900; uninvoiced
+- [x] T-3 Collect the 400 too: 1000.00, debt 0.00, `Paid`, order status untouched.
+- [x] T-4 Undo: columns cleared, recomputed, status back, one warning log.
+- [x] T-5 Debt dataset (collected 0 / 600 / 1000; refunded 100 and collected 900; uninvoiced
   pending; legacy paid): billable - net collected, clamped, two-decimal strings.
-- [ ] T-6 Collected invoice plus a corrective of it: net collected is the signed sum; a corrective
+- [x] T-6 Collected invoice plus a corrective of it: net collected is the signed sum; a corrective
   of an uncollected invoice contributes 0.
-- [ ] T-7 Legacy order invoiced whole: born collected, carried over, collection fields from the
+- [x] T-7 Legacy order invoiced whole: born collected, carried over, collection fields from the
   payment row or fallbacks, debt 0.00, status unchanged.
-- [ ] T-8 Every `PaymentStatus` case has en/es labels; the three views render an orange badge for
+- [x] T-8 Every `PaymentStatus` case has en/es labels; the three views render an orange badge for
   `PartiallyPaid`.
-- [ ] T-9 Matrix dataset over all 5 x 5 combinations: `PartiallyPaid` allows `Pending` only; the
+- [x] T-9 Matrix dataset over all 5 x 5 combinations: `PartiallyPaid` allows `Pending` only; the
   other rows equal a frozen copy of today's matrix.
-- [ ] T-10 Legacy pending order gets its first invoice: derived from then on; a legacy partially
+- [x] T-10 Legacy pending order gets its first invoice: derived from then on; a legacy partially
   refunded order with a born-collected whole invoice stays `PartiallyRefunded`.
-- [ ] T-11 `latestCollectedInvoice()` returns the most recent collection; `Order::payment()` still
+- [x] T-11 `latestCollectedInvoice()` returns the most recent collection; `Order::payment()` still
   reads legacy rows and is never written.
-- [ ] T-12b `CollectInvoice` returns the refreshed invoice with `order` loaded (no extra query to
+- [x] T-12b `CollectInvoice` returns the refreshed invoice with `order` loaded (no extra query to
   read its debt and payment status); refusals keyed `invoice`.
-- [ ] T-12 `invoices.collect` alone allows collect and undo; Super Admin allowed; catalog 49.
+- [x] T-12 `invoices.collect` alone allows collect and undo; Super Admin allowed; catalog 49.
 
 Edge
-- [ ] T-13 Two clicks collecting one invoice (second connection holds `orders FOR UPDATE`): the
+- [x] T-13 Two clicks collecting one invoice (second connection holds `orders FOR UPDATE`): the
   waiter fails with 1205, then is refused as already collected; counted once. Top risk.
-- [ ] T-14 Collect vs undo, collect vs refund, collect vs line edit: serialised; collected amount
+- [x] T-14 Collect vs undo, collect vs refund, collect vs line edit: serialised; collected amount
   equals the signed sum afterwards.
-- [ ] T-15 `SyncOrderCollection` three times: same result, no write after the first; outside a
+- [x] T-15 `SyncOrderCollection` three times: same result, no write after the first; outside a
   transaction `LogicException`; a stale order instance is re-derived from rows.
-- [ ] T-16 Migration on seeded rows, as one dataset. Without invoices (paid, refunded, partially
+- [x] T-16 Migration on seeded rows, as one dataset. Without invoices (paid, refunded, partially
   refunded, over-refunded, pending, cancelled legacy paid): `GREATEST(total - refunded, 0)` for
   paid-like, 0.00 otherwise, never negative. With invoices: (a) paid order with an uncollected
   live invoice -> invoice carried over (`collection_carried_over = true`, `collected_at` from
@@ -317,36 +317,36 @@ Edge
   (c) a voided invoice and a pending order's invoice stay uncollected. Afterwards
   `collected_amount` = net collected for every order with invoices, and `payment_status` is
   unchanged. Mandatory: `RefreshDatabase` alone runs it on empty tables.
-- [ ] T-17 Legacy paid order edited before any invoice: collected follows billable, debt 0.00,
+- [x] T-17 Legacy paid order edited before any invoice: collected follows billable, debt 0.00,
   status unchanged; legacy pending edited: stays 0.00 (FD-14).
-- [ ] T-18 `AfterOrderTotalsChanged` runs exactly once per line-item action inside the caller's
+- [x] T-18 `AfterOrderTotalsChanged` runs exactly once per line-item action inside the caller's
   transaction; the three actions' existing tests still pass.
-- [ ] T-19 A `Processing` order becoming `PartiallyPaid` stays `Processing`; `Shipped` refused,
+- [x] T-19 A `Processing` order becoming `PartiallyPaid` stays `Processing`; `Shipped` refused,
   `Pending` allowed; once `Paid`, `Shipped` allowed.
-- [ ] T-20 Cent boundaries: 999.99 and 0.01 of 1000.00 -> `PartiallyPaid`; 1000.00 -> `Paid`.
-- [ ] T-21 Standard 600 collected, corrective -100, standard 400 uncollected: net collected 500,
+- [x] T-20 Cent boundaries: 999.99 and 0.01 of 1000.00 -> `PartiallyPaid`; 1000.00 -> `Paid`.
+- [x] T-21 Standard 600 collected, corrective -100, standard 400 uncollected: net collected 500,
   billable 900, debt 400, `PartiallyPaid`.
-- [ ] T-22 Orders list, detail and latest-orders widget with a `PartiallyPaid` order: no match
+- [x] T-22 Orders list, detail and latest-orders widget with a `PartiallyPaid` order: no match
   error, label shown, `isAwaitingPayment()` true.
-- [ ] T-22b The shared "every line fully refunded" helper gives the same answer as `RecordRefund`
+- [x] T-22b The shared "every line fully refunded" helper gives the same answer as `RecordRefund`
   for a dataset of line states.
 
 Negative
-- [ ] T-23 Without `invoices.collect` (none, view, send, create): refused before any state read,
+- [x] T-23 Without `invoices.collect` (none, view, send, create): refused before any state read,
   same refusal for any invoice state, nothing written.
-- [ ] T-24 One refusal warning per call with `ability` `collect` or `uncollect`,
+- [x] T-24 One refusal warning per call with `ability` `collect` or `uncollect`,
   `target_type = invoice`, no amounts; unauthenticated refused and logged.
-- [ ] T-25 Collect refusals dataset (FD-5): validation error on `invoice`, nothing written.
-- [ ] T-26 Undo refusals dataset (FD-5): validation error, columns unchanged.
-- [ ] T-27 Missing payment method, type `crypto`, `''`, null, array: refused, nothing written.
-- [ ] T-28 Extra keys (`collected_by`, `collected_at`, `amount`, `collected_amount`) ignored:
+- [x] T-25 Collect refusals dataset (FD-5): validation error on `invoice`, nothing written.
+- [x] T-26 Undo refusals dataset (FD-5): validation error, columns unchanged.
+- [x] T-27 Missing payment method, type `crypto`, `''`, null, array: refused, nothing written.
+- [x] T-28 Extra keys (`collected_by`, `collected_at`, `amount`, `collected_amount`) ignored:
   actor and server clock decide; no partial amount exists.
-- [ ] T-29 Legacy order partial invoice refused on `amount`; whole succeeds; a non-legacy order
+- [x] T-29 Legacy order partial invoice refused on `amount`; whole succeeds; a non-legacy order
   may be partial.
-- [ ] T-30 `order_payments` never written by collect, undo or sync; architecture test.
-- [ ] T-31 `TransitionOrderStatus` for every target on a `PartiallyPaid` order: only `Pending`
+- [x] T-30 `order_payments` never written by collect, undo or sync; architecture test.
+- [x] T-31 `TransitionOrderStatus` for every target on a `PartiallyPaid` order: only `Pending`
   accepted.
-- [ ] T-32 Pin: `MarkOrderAsPaid` still refuses a `PartiallyPaid` order (changed by 0106a).
+- [x] T-32 Pin: `MarkOrderAsPaid` still refuses a `PartiallyPaid` order (changed by 0106a).
 
 ## Expected outcome
 Holders of `invoices.collect` can mark invoices collected (or undo a mistake) and every order
@@ -354,30 +354,30 @@ shows a correct collected amount, debt and derived payment status, including "Pa
 orders paid before invoicing keep a debt of 0.00 and get collected invoices.
 
 ## Acceptance criteria
-- [ ] `orders.collected_amount` exists; the migration first carries over the collection of
+- [x] `orders.collected_amount` exists; the migration first carries over the collection of
   paid-like orders' live uncollected invoices, then backfills, so collected amount equals net
   collected for every order with invoices.
-- [ ] Collected amount, debt and payment status follow the definitions and the truth table.
-- [ ] Collect and undo follow FD-3..FD-6, refusals included, safe under concurrency.
-- [ ] `PartiallyPaid` exists with the FD-7 matrix, labels and badges; derivation never moves the
+- [x] Collected amount, debt and payment status follow the definitions and the truth table.
+- [x] Collect and undo follow FD-3..FD-6, refusals included, safe under concurrency.
+- [x] `PartiallyPaid` exists with the FD-7 matrix, labels and badges; derivation never moves the
   order status.
-- [ ] Legacy orders are invoiced only whole and born collected (FD-12).
-- [ ] `AfterOrderTotalsChanged` exists and runs from `RecalculateOrderTotals`.
-- [ ] `invoices.collect` seeded (catalog 49); refusals logged; en/es parity.
-- [ ] No change to `isRefundable()` or `isManuallyCancellable()` (0107).
+- [x] Legacy orders are invoiced only whole and born collected (FD-12).
+- [x] `AfterOrderTotalsChanged` exists and runs from `RecalculateOrderTotals`.
+- [x] `invoices.collect` seeded (catalog 49); refusals logged; en/es parity.
+- [x] No change to `isRefundable()` or `isManuallyCancellable()` (0107).
 
 ## Definition of Done
-- [ ] Tests written and green
-- [ ] Code reviewed (code-reviewer)
-- [ ] No security findings (appsec-auditor)
-- [ ] Documentation updated (docs-keeper): ER (`orders.collected_amount`), the orders schema doc
+- [x] Tests written and green
+- [x] Code reviewed (code-reviewer)
+- [x] No security findings (appsec-auditor)
+- [x] Documentation updated (docs-keeper): ER (`orders.collected_amount`), the orders schema doc
   (`order_payments` frozen as legacy), the orders and invoices API docs (truth table, matrix),
   authorization catalog (49)
-- [ ] Acceptance criteria met
-- [ ] Pint unscoped, Larastan level 7, full suite green
+- [x] Acceptance criteria met
+- [x] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open technical questions
-- Upstream: [0101b](../done/0101b-issue-standard-invoice-backend.md). Downstream:
+- Upstream: [0101b](0101b-issue-standard-invoice-backend.md). Downstream:
   [0106a](../0106a-mark-as-paid-invoice-shortcut-and-real-income-backend.md) (same release; reuses
   `ApplyInvoiceCollection` and `SyncOrderCollection`),
   [0107](../0107-corrective-invoice-on-refund-and-cancellation-backend.md) (U-11 / U-12 predicates,
@@ -408,16 +408,16 @@ orders paid before invoicing keep a debt of 0.00 and get collected invoices.
     (b) the migration re-derives it with the truth table.
 
 ## Technical tasks
-- [ ] Truth-table dataset, then `ResolveOrderPaymentStatus` and the shared refund helper.
-- [ ] Migration with backfill and its seeded-rows test; `Order` cast and methods.
-- [ ] `PaymentStatus` case, matrix, lang, badge arms, factory states.
-- [ ] `SyncOrderCollection`, `AfterOrderTotalsChanged`, `RecalculateOrderTotals` wiring.
-- [ ] `ApplyInvoiceCollection`, `CollectInvoice`, `UndoInvoiceCollection` with authorization,
+- [x] Truth-table dataset, then `ResolveOrderPaymentStatus` and the shared refund helper.
+- [x] Migration with backfill and its seeded-rows test; `Order` cast and methods.
+- [x] `PaymentStatus` case, matrix, lang, badge arms, factory states.
+- [x] `SyncOrderCollection`, `AfterOrderTotalsChanged`, `RecalculateOrderTotals` wiring.
+- [x] `ApplyInvoiceCollection`, `CollectInvoice`, `UndoInvoiceCollection` with authorization,
   logging and concurrency tests.
-- [ ] Legacy issue rule in the 0101b classes.
-- [ ] `invoices.collect`, policy abilities, roles segment, count tests; update every test that
+- [x] Legacy issue rule in the 0101b classes.
+- [x] `invoices.collect`, policy abilities, roles segment, count tests; update every test that
   enumerates payment statuses.
-- [ ] Pint, Larastan, targeted then full suite; hand docs items to docs-keeper.
+- [x] Pint, Larastan, targeted then full suite; hand docs items to docs-keeper.
 
 ## Phase records
 - Phase 1 (Three Amigos) complete on 2026-11-15 — participants: product-owner (facilitator),
@@ -441,3 +441,20 @@ orders paid before invoicing keep a debt of 0.00 and get collected invoices.
   (2) under FD-13, `MarkOrderAsPaid` does not call `SyncOrderCollection`, so until 0106a an order
   marked paid keeps `collected_amount` 0.00 and a later line edit on an invoiced one would re-derive
   it to `PendingPayment` — accepted interim, same release.
+- Phase 3 (TDD) — complete on 2026-11-21. backend-qa wrote the red tests (T-1..T-32); database-expert
+  wrote the `orders.collected_amount` migration with the carry-over and backfill; backend-expert
+  wrote the code (`ResolveOrderPaymentStatus`, `SyncOrderCollection`, `AfterOrderTotalsChanged`,
+  `ApplyInvoiceCollection`, `CollectInvoice`, `UndoInvoiceCollection`, `PaymentStatus::PartiallyPaid`,
+  `invoices.collect`). The orchestrator made the three remaining test fixes. Tests green.
+- Phase 4 (security) — **APPROVED** by appsec-auditor on 2026-11-21. Low findings 1 and 3 were
+  fixed; Low finding 2 is recorded for 0107/0108 in the epic digest
+  (`ai-spec/tasks/_digests/epic-6.md`).
+- Phase 5 (code review) — **APPROVED** by code-reviewer on 2026-11-21 after one Larastan defect in
+  `SyncOrderCollection` was fixed; acceptance criteria, conventions and Definition of Done met.
+- Phase 6 (documentation) — complete on 2026-11-21 by docs-keeper (`docs/`, ER diagram, orders schema,
+  orders and invoices API docs, authorization catalog 49, epic 6 digest).
+- Phase 7 (closure) — 2026-11-21. Full suite in directory chunks: Unit + Orders + Localization
+  1623/1623; Invoices + Dashboard + Models + Policies 1881 (1874 passed, 7 skipped); Blog + Products
+  1950/1950; remaining Feature directories 2103/2103; Browser (after the back-merge of
+  `origin/main`) 344 (341 passed, 3 skipped). Pint unscoped clean; Larastan level 7, 0 errors. Moved
+  to `ai-spec/tasks/done/`; link-integrity check run in both directions.

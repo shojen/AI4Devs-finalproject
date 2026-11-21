@@ -3,7 +3,7 @@
 > **Status: New (Phase 1 complete 2026-11-15).** Epic 3 — Customers and orders (ad-hoc; requested
 > by the owner on 2026-11-14, not yet in docs/PRD), delivered with Epic 6 — Invoicing. Blocked on
 > [0111](0111-customer-report-read-side-backend.md) (both read actions, `viewReport`), and through
-> it on [0106](in-progress/0106-invoice-collection-order-debt-partially-paid-backend.md) (collected amount,
+> it on [0106](done/0106-invoice-collection-order-debt-partially-paid-backend.md) (collected amount,
 > debt, the "Partially paid" status). No dependents.
 
 ## Description
@@ -384,7 +384,7 @@ can share or reload the address with the same period; others never see the butto
 
 ## Dependencies, risks, open questions
 - Upstream: [0111](0111-customer-report-read-side-backend.md);
-  [0106](in-progress/0106-invoice-collection-order-debt-partially-paid-backend.md) for the `partially_paid`
+  [0106](done/0106-invoice-collection-order-debt-partially-paid-backend.md) for the `partially_paid`
   case. No new dependency (Chart.js installed).
 - Tampering: `customerId` and the child props are locked; the three URL properties are validated
   through the actions on every update; spend and debt appear only after both permissions.
