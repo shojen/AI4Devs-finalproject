@@ -399,6 +399,7 @@ erDiagram
         decimal shipping_amount
         decimal total
         decimal refunded_amount
+        decimal collected_amount
         timestamp invoice_out_of_date_at
         boolean flagged_for_review
         string ip_address
@@ -568,6 +569,4 @@ Split by domain into separate files, per [contracts.md](../contracts/token-and-d
 - For migration authoring conventions (naming, `down()` requirements, real examples), see [database/migrations.md](migrations.md).
 - **UUID (v7) primary keys.** Each table's PK type (`uuid` vs `bigint`) is already visible directly in the ER diagram above, and each per-domain schema file states its own table's status against [ADR 0001](../decisions/0001-uuid-primary-keys.md) at the point that table is documented — so this section no longer restates a consolidated status list. The ADR is the single source of truth for the policy and its full history: which entities it covers, the one named `bigint` exception (`geography_entries`), and every amendment since. The model-side convention (`HasUuids`, `@property string $id`, no restated `$keyType`/`$incrementing`) is in [conventions/base-standards.md](../conventions/base-standards/stack-and-model-conventions.md#uuid-primary-keys); the migration-side pattern is in [database/migrations.md](migrations/uuid-primary-keys.md#uuid-primary-keys).
 
-_Last updated: 2026-11-19 — Story 0104: `INVOICE_DELIVERIES` joined the diagram (`INVOICES ||--o{`, `USERS ||--o{`), the model inventory counts thirty-four. Story 0101b: `INVOICES` and `INVOICE_LINES` joined the diagram with their FKs, `ORDERS` gained `invoice_out_of_date_at`, the model inventory counts thirty-three. Story 0101a: standalone `INVOICE_SEQUENCES` joined the diagram (no relationships), the model inventory counts thirty-one. Story 0100a: `CUSTOMERS` gained `tax_id`. Story 0100: `INVOICE_SETTINGS` joined the diagram (`MEDIA ||--o| INVOICE_SETTINGS`). Story 0088: `ORDER_ITEMS` gained `ordered_as_variant`, `stock_undeducted_quantity` and `stock_refunded_not_out_quantity`. Story 0078 (blog posts retrofit, backend): `BLOG_POST_TRANSLATIONS` joined the diagram (`BLOG_POSTS ||--o{`, `STORE_LANGUAGES ||--o{`), `BLOG_POSTS` lost `title`/`slug`/`body`. Story 0076a: `PRODUCT_TRANSLATIONS` gained `slug`, `meta_title` and `meta_description`. Earlier diagram changes (0070-0084, 0076) remain current. Every application table is diagrammed, relationships or not — since story 0058._
-
-_Earlier revision notes: [database--schema.md](../history/database--schema.md)._
+_Last updated: 2026-11-21 — Story 0106: `orders.collected_amount` added to the ER diagram (invoices, `invoice_lines` and `invoice_deliveries` entities unchanged from stories 0100-0104)._

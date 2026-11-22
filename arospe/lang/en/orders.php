@@ -33,6 +33,7 @@ return [
         'paid' => 'Paid',
         'refunded' => 'Refunded',
         'partially_refunded' => 'Partially refunded',
+        'partially_paid' => 'Partially paid',
     ],
 
     // Phase 4 re-audit finding N-1: CreateOrder's column-ceiling guard

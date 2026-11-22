@@ -42,6 +42,7 @@ class OrderItemFactory extends Factory
             'quantity' => fake()->numberBetween(1, 5),
             'unit_price' => '0.00',
             'line_total' => '0.00',
+            'refunded_quantity' => 0,
             'stock_undeducted_quantity' => 0,
             'stock_refunded_not_out_quantity' => 0,
         ];

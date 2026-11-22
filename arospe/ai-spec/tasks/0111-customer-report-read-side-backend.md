@@ -2,7 +2,7 @@
 
 > **Status: New (Phase 1 complete 2026-11-15).** Epic 3 — Customers and orders (ad-hoc; requested
 > by the owner on 2026-11-14, not yet in docs/PRD), delivered with Epic 6 — Invoicing. Blocked on
-> [0106](0106-invoice-collection-order-debt-partially-paid-backend.md) (`orders.collected_amount`,
+> [0106](done/0106-invoice-collection-order-debt-partially-paid-backend.md) (`orders.collected_amount`,
 > debt semantics, `PartiallyPaid`). Dependent: [0112](0112-customer-report-screen-ui.md) (the
 > screen, route, presets and chart).
 
@@ -296,7 +296,7 @@ and a zero-filled chart series, consistent with the dashboard's Real income.
 - [ ] Pint unscoped, Larastan level 7, full suite green
 
 ## Dependencies, risks, open technical questions
-- Upstream: [0106](0106-invoice-collection-order-debt-partially-paid-backend.md); its figures
+- Upstream: [0106](done/0106-invoice-collection-order-debt-partially-paid-backend.md); its figures
   agree with [0106a](0106a-mark-as-paid-invoice-shortcut-and-real-income-backend.md)'s Real
   income. Downstream: [0112](0112-customer-report-screen-ui.md).
 - Correctness depends on every writer maintaining `collected_amount` (0106, 0106a, 0107, 0108);

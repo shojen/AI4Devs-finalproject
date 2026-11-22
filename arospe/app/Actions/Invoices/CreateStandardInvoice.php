@@ -9,7 +9,9 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoiceLine;
 use App\Models\Order;
+use App\Models\OrderPayment;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use LogicException;
@@ -27,6 +29,11 @@ use LogicException;
  * inserts. The sequence lock comes before the invoices read so that two issuers for different
  * orders with no invoices yet never meet in a gap-lock/insert-intention deadlock. `$at` is taken
  * once, after the order lock, and is both the allocation instant and `issued_at`.
+ *
+ * Story 0106: a legacy order (no invoice yet, stored status Paid, Refunded or PartiallyRefunded)
+ * may only be invoiced for its whole uninvoiced amount (a validation error on `amount` otherwise),
+ * and its invoice is born collected and carried over (FD-12); the collection of the order is
+ * synchronised after the inserts.
  */
 class CreateStandardInvoice
 {
@@ -41,6 +48,7 @@ class CreateStandardInvoice
         private readonly ResolveInvoiceLocale $resolveInvoiceLocale,
         private readonly AllocateInvoiceNumber $allocateInvoiceNumber,
         private readonly ToNumericString $toNumericString,
+        private readonly SyncOrderCollection $syncOrderCollection,
     ) {}
 
     /**
@@ -90,6 +98,14 @@ class CreateStandardInvoice
 
         if (bccomp($amount, $balance['uninvoiced'], 2) > 0) {
             throw ValidationException::withMessages(['amount' => [__('invoices.errors.amount_exceeds_remaining', ['remaining' => $balance['uninvoiced']])]]);
+        }
+
+        if ($collected === null && $balance['isLegacy']) {
+            if (bccomp($amount, $balance['uninvoiced'], 2) !== 0) {
+                throw ValidationException::withMessages(['amount' => [__('invoices.errors.legacy_whole_only')]]);
+            }
+
+            $collected = $this->legacyCollection($lockedOrder, $at);
         }
 
         if (blank($settings->issuer_legal_name) || blank($settings->issuer_tax_id) || blank($settings->issuer_address_line1)) {
@@ -154,7 +170,33 @@ class CreateStandardInvoice
             InvoiceLine::forceCreate($line + ['invoice_id' => $invoice->getKey()]);
         }
 
+        ($this->syncOrderCollection)($lockedOrder);
+
         return $invoice;
+    }
+
+    /**
+     * The carried-over collection of the invoice of a legacy order (FD-12): the moment, method and
+     * type of its payment row, else now, the order's own method and no type; no actor.
+     *
+     * @return array{collected_at: mixed, collected_by: null, collection_payment_method_id: string, collection_type: string|null, collection_carried_over: true}
+     */
+    private function legacyCollection(Order $lockedOrder, CarbonInterface $at): array
+    {
+        $payment = OrderPayment::query()
+            ->where('order_id', $lockedOrder->getKey())
+            ->sharedLock()
+            ->orderByDesc('paid_at')
+            ->orderByDesc('id')
+            ->first();
+
+        return [
+            'collected_at' => $payment->paid_at ?? $at,
+            'collected_by' => null,
+            'collection_payment_method_id' => $payment->payment_method_id ?? $lockedOrder->payment_method_id,
+            'collection_type' => $payment?->type->value,
+            'collection_carried_over' => true,
+        ];
     }
 
     /**
@@ -183,7 +225,7 @@ class CreateStandardInvoice
      * one concept line over the proportional split.
      *
      * @param  numeric-string  $amount
-     * @param  array{billable: numeric-string, netInvoiced: numeric-string, uninvoiced: numeric-string, liveCount: int, components: array{base: numeric-string, tax: numeric-string, shipping: numeric-string}, invoicedComponents: array{base: numeric-string, tax: numeric-string, shipping: numeric-string}}  $balance
+     * @param  array{billable: numeric-string, netInvoiced: numeric-string, uninvoiced: numeric-string, liveCount: int, netCollected: numeric-string, debt: numeric-string, isLegacy: bool, components: array{base: numeric-string, tax: numeric-string, shipping: numeric-string}, invoicedComponents: array{base: numeric-string, tax: numeric-string, shipping: numeric-string}}  $balance
      * @return array{0: array{base: numeric-string, tax: numeric-string, shipping: numeric-string}, 1: list<array<string, mixed>>}
      */
     private function partsAndLines(Order $order, string $amount, array $balance): array

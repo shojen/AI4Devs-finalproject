@@ -105,9 +105,10 @@ test('the payment badge cell keeps its own colour and label, independent of the 
         ->and($es['payment'])->toBe(['colour' => $colour, 'label' => $esLabel])
         // The neighbouring status cell is the lime Delivered badge, never the payment colour by accident.
         ->and($en['status'])->toBe(['colour' => 'lime', 'label' => 'Delivered']);
-})->with([
+})->with(fn (): array => [
     'pending payment is amber' => [PaymentStatus::PendingPayment, 'amber', 'Pending payment', 'Pendiente de pago'],
     'paid is lime' => [PaymentStatus::Paid, 'lime', 'Paid', 'Pagado'],
     'partially refunded is blue' => [PaymentStatus::PartiallyRefunded, 'blue', 'Partially refunded', 'Parcialmente reembolsado'],
     'refunded is zinc' => [PaymentStatus::Refunded, 'zinc', 'Refunded', 'Reembolsado'],
+    'partially paid is orange, distinct from pending amber (story 0106)' => [PaymentStatus::PartiallyPaid, 'orange', 'Partially paid', 'Parcialmente pagado'],
 ]);

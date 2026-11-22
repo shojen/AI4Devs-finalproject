@@ -3,7 +3,7 @@
 > **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Blocked on
 > [0101b](done/0101b-issue-standard-invoice-backend.md) (the out-of-date column, `AssertInvoicesAreCurrent`,
-> `CreateStandardInvoice`), [0106](0106-invoice-collection-order-debt-partially-paid-backend.md)
+> `CreateStandardInvoice`), [0106](done/0106-invoice-collection-order-debt-partially-paid-backend.md)
 > (`SyncOrderCollection`, `AfterOrderTotalsChanged`) and
 > [0107](0107-corrective-invoice-on-refund-and-cancellation-backend.md) (`VoidLiveInvoices`).
 > Closes the stale-totals limitation of
@@ -327,7 +327,7 @@ more than the order is worth.
 ## Dependencies, risks, open technical questions
 - Story 0101a note (I1): call `AllocateInvoiceNumber::lock()` and `__invoke()` at the **same `DB::transaction` nesting level**; lock both series in one `lock()` call. See [0101a](done/0101a-invoice-numbering-sequences-backend.md).
 - Upstream: [0101b](done/0101b-issue-standard-invoice-backend.md),
-  [0106](0106-invoice-collection-order-debt-partially-paid-backend.md),
+  [0106](done/0106-invoice-collection-order-debt-partially-paid-backend.md),
   [0107](0107-corrective-invoice-on-refund-and-cancellation-backend.md). Downstream:
   [0109c](0109c-order-detail-regenerate-and-refund-limit-ui.md) (banner, button with the "needs invoices.collect"
   hint, preview dialog).

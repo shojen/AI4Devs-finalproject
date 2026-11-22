@@ -75,6 +75,8 @@ use LogicException;
  * @property-read Invoice|null $corrects
  * @property-read Collection<int, Invoice> $correctives
  * @property-read User|null $issuedBy
+ * @property-read User|null $collectedBy
+ * @property-read PaymentMethod|null $collectionPaymentMethod
  * @property-read Collection<int, InvoiceDelivery> $deliveries
  */
 #[Fillable([])]
@@ -186,6 +188,34 @@ class Invoice extends Model
     }
 
     /**
+     * The user who marked the invoice as collected (null when uncollected or carried over).
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function collectedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'collected_by');
+    }
+
+    /**
+     * The payment method the invoice was collected with.
+     *
+     * @return BelongsTo<PaymentMethod, $this>
+     */
+    public function collectionPaymentMethod(): BelongsTo
+    {
+        return $this->belongsTo(PaymentMethod::class, 'collection_payment_method_id');
+    }
+
+    /**
+     * Has the invoice been collected (story 0106)?
+     */
+    public function isCollected(): bool
+    {
+        return $this->collected_at !== null;
+    }
+
+    /**
      * Every e-mail delivery attempt of this invoice (story 0104).
      *
      * @return HasMany<InvoiceDelivery, $this>
@@ -232,6 +262,28 @@ class Invoice extends Model
     public function scopeCorrective(Builder $query): Builder
     {
         return $query->where('type', InvoiceType::Corrective->value);
+    }
+
+    /**
+     * Only collected invoices.
+     *
+     * @param  Builder<Invoice>  $query
+     * @return Builder<Invoice>
+     */
+    public function scopeCollected(Builder $query): Builder
+    {
+        return $query->whereNotNull('collected_at');
+    }
+
+    /**
+     * Only uncollected invoices.
+     *
+     * @param  Builder<Invoice>  $query
+     * @return Builder<Invoice>
+     */
+    public function scopeUncollected(Builder $query): Builder
+    {
+        return $query->whereNull('collected_at');
     }
 
     /**

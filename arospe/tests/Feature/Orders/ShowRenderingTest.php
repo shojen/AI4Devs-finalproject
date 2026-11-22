@@ -45,6 +45,12 @@ test('the header renders the order number and both status labels', function () {
     $this->get(route('orders.show', $order))->assertOk()->assertSee('ORD-2026-000123');
 });
 
+test('the header renders the Partially paid label for a partially paid order (story 0106)', function () {
+    $order = Order::factory()->partiallyPaid()->withItems()->create(['status' => OrderStatus::Pending]);
+
+    expect(ordersUiShowHtml($order))->toContain(__('orders.payment_statuses.partially_paid'));
+});
+
 test('the five sections all render, in order', function () {
     $order = Order::factory()->withItems()->create();
 

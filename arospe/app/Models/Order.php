@@ -7,6 +7,7 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -48,6 +49,10 @@ use Illuminate\Support\Carbon;
  * App\Actions\Orders\MarkOrderAsPaid. An order marked Paid before that table
  * existed has no such row (`payment` is null).
  *
+ * Story 0106: `collected_amount` is the money collected through the order's invoices, written only
+ * by App\Actions\Invoices\SyncOrderCollection (never fillable); `order_payments` is frozen as the
+ * legacy payment record.
+ *
  * No `SoftDeletes`: orders are never deleted this phase; `Cancelled` is a
  * `status` value, not a soft delete.
  *
@@ -65,6 +70,7 @@ use Illuminate\Support\Carbon;
  * @property string $shipping_amount 'decimal:2' casts to a STRING, not a float
  * @property string $total 'decimal:2' casts to a STRING, not a float
  * @property string $refunded_amount 'decimal:2' casts to a STRING, not a float
+ * @property string $collected_amount 'decimal:2' casts to a STRING, not a float
  * @property Carbon|null $invoice_out_of_date_at
  * @property bool $flagged_for_review
  * @property string|null $ip_address
@@ -121,6 +127,7 @@ class Order extends Model
             'shipping_amount' => 'decimal:2',
             'total' => 'decimal:2',
             'refunded_amount' => 'decimal:2',
+            'collected_amount' => 'decimal:2',
             'invoice_out_of_date_at' => 'datetime',
             'flagged_for_review' => 'boolean',
         ];
@@ -196,6 +203,31 @@ class Order extends Model
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);
+    }
+
+    /**
+     * The invoice most recently collected, by `collected_at` (story 0106, FD-10); null when none is.
+     *
+     * @return HasOne<Invoice, $this>
+     */
+    public function latestCollectedInvoice(): HasOne
+    {
+        return $this->hasOne(Invoice::class)->ofMany(
+            ['collected_at' => 'max'],
+            fn (Builder $query): Builder => $query->whereNotNull('collected_at'),
+        );
+    }
+
+    /**
+     * What the order still owes (story 0106): `max(0.00, billable - collected_amount)`, a
+     * two-decimal string. Read from the stored amounts, so it costs no query.
+     */
+    public function debt(): string
+    {
+        $toNumeric = app(ToNumericString::class);
+        $debt = bcsub($toNumeric($this->billableAmount()), $toNumeric($this->collected_amount), 2);
+
+        return bccomp($debt, '0.00', 2) < 0 ? '0.00' : $debt;
     }
 
     /**
@@ -285,7 +317,7 @@ class Order extends Model
     /**
      * Can this order be marked as paid right now?
      *
-     * Non-throwing predicate: payment still pending and the order not
+     * Non-throwing predicate: payment still pending or partially paid (story 0106) and the order not
      * cancelled (story 0084, D-5). The order-detail control reads this so the
      * UI cannot drift from App\Actions\Orders\MarkOrderAsPaid, which checks
      * the two clauses separately because its two refusals differ. Says nothing
@@ -293,7 +325,7 @@ class Order extends Model
      */
     public function isAwaitingPayment(): bool
     {
-        return $this->payment_status === PaymentStatus::PendingPayment
+        return in_array($this->payment_status, [PaymentStatus::PendingPayment, PaymentStatus::PartiallyPaid], true)
             && $this->status !== OrderStatus::Cancelled;
     }
 }

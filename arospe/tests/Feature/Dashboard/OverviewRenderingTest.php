@@ -431,9 +431,10 @@ test('the payment state resolves through the orders.payment_statuses keys', func
     $html = overviewRenderHtml(['orders.view']);
 
     expect(Ui::text($html, "dashboard-order-payment-{$order->id}"))->toBe(__('orders.payment_statuses.'.$status->value));
-})->with([
+})->with(fn (): array => [
     'pending_payment' => [PaymentStatus::PendingPayment],
     'partially_refunded' => [PaymentStatus::PartiallyRefunded],
+    'partially_paid' => [PaymentStatus::PartiallyPaid],
 ]);
 
 test('an order from a deleted customer still shows that customer name', function () {

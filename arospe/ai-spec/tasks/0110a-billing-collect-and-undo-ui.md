@@ -3,7 +3,7 @@
 > **Status: New (Phase 1 complete 2026-11-15).** Epic 6 — Invoicing (ad-hoc; requested by the
 > owner on 2026-11-14, not yet in docs/PRD). Split out of [0110](0110-billing-section-ui.md) on
 > INVEST "Small". Blocked on [0110](0110-billing-section-ui.md) (the list and its row-actions slot),
-> [0106](0106-invoice-collection-order-debt-partially-paid-backend.md) (`CollectInvoice`,
+> [0106](done/0106-invoice-collection-order-debt-partially-paid-backend.md) (`CollectInvoice`,
 > `UndoInvoiceCollection`) and [0109b](0109b-order-detail-invoices-panel-ui.md) (the collect dialog,
 > `ListCollectionPaymentMethods`, `PaymentMethodCode::defaultPaymentType()`). No dependents.
 
@@ -197,7 +197,7 @@ order, with exactly the rules and dialog of the order panel.
 
 ## Dependencies, risks, open questions
 - Upstream: [0110](0110-billing-section-ui.md),
-  [0106](0106-invoice-collection-order-debt-partially-paid-backend.md),
+  [0106](done/0106-invoice-collection-order-debt-partially-paid-backend.md),
   [0109b](0109b-order-detail-invoices-panel-ui.md) (the two dialog components, reused, never
   copied).
 - Tampering: ids locked and re-resolved; method and type validated by `findOrFail` / `tryFrom` and

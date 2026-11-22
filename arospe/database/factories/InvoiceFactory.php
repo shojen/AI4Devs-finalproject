@@ -5,8 +5,10 @@ namespace Database\Factories;
 use App\Actions\Orders\ToNumericString;
 use App\Enums\InvoiceCorrectionReason;
 use App\Enums\InvoiceType;
+use App\Enums\OrderPaymentType;
 use App\Models\Invoice;
 use App\Models\Order;
+use App\Models\PaymentMethod;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -98,6 +100,21 @@ class InvoiceFactory extends Factory
             'shipping_amount' => $negate($of->shipping_amount),
             'tax_amount' => $negate($of->tax_amount),
             'total' => $negate($of->total),
+        ]);
+    }
+
+    /**
+     * A collected invoice: `collected_at` set, collected through the first existing payment method
+     * (or a new one), by no actor and not carried over unless overridden.
+     */
+    public function collected(): static
+    {
+        return $this->state(fn (): array => [
+            'collected_at' => now(),
+            'collection_payment_method_id' => fn (): string => PaymentMethod::query()->value('id')
+                ?? PaymentMethod::factory()->create()->getKey(),
+            'collection_type' => OrderPaymentType::Transfer,
+            'collection_carried_over' => false,
         ]);
     }
 

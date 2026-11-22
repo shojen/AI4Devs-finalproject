@@ -6,7 +6,7 @@ use App\Models\Invoice;
 use App\Models\User;
 
 /**
- * Authorization rules for invoices (story 0101b, FD-17). Three abilities over two permissions;
+ * Authorization rules for invoices (story 0101b, FD-17). Abilities over three permissions (`collect` and `uncollect` share `invoices.collect`, story 0106);
  * there is deliberately no update or delete ability, invoices are immutable (FD-3).
  */
 class InvoicePolicy
@@ -16,6 +16,8 @@ class InvoicePolicy
     public const CREATE_PERMISSION = 'invoices.create';
 
     public const SEND_PERMISSION = 'invoices.send';
+
+    public const COLLECT_PERMISSION = 'invoices.collect';
 
     /**
      * Determine whether the user can list invoices.
@@ -48,5 +50,21 @@ class InvoicePolicy
     public function send(User $actor, ?Invoice $target = null): bool
     {
         return $actor->hasPermissionTo(self::SEND_PERMISSION);
+    }
+
+    /**
+     * Determine whether the user can mark an invoice as collected (story 0106).
+     */
+    public function collect(User $actor, Invoice $invoice): bool
+    {
+        return $actor->hasPermissionTo(self::COLLECT_PERMISSION);
+    }
+
+    /**
+     * Determine whether the user can undo the collection of an invoice (story 0106).
+     */
+    public function uncollect(User $actor, Invoice $invoice): bool
+    {
+        return $actor->hasPermissionTo(self::COLLECT_PERMISSION);
     }
 }

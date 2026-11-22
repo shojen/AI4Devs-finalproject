@@ -80,6 +80,7 @@ return [
         'manage_administrators' => 'Gestionar roles/usuarios de nivel administrador',
         'refund' => 'Reembolsar',
         'send' => 'Enviar',
+        'collect' => 'Cobrar',
     ],
 
 ];

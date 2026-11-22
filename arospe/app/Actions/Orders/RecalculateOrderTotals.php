@@ -2,6 +2,7 @@
 
 namespace App\Actions\Orders;
 
+use App\Actions\Invoices\AfterOrderTotalsChanged;
 use App\Models\Order;
 use App\Models\OrderItem;
 
@@ -21,6 +22,9 @@ use App\Models\OrderItem;
  * App\Actions\Products\SyncProductGallery / SyncProductSalesRegions
  * already establish (docs/conventions/directory-structure.md). Never
  * independently reachable.
+ *
+ * Story 0106: after the write it calls the shared AfterOrderTotalsChanged hook (FD-15), which
+ * synchronises the order's collected amount and payment status inside the caller's transaction.
  *
  * D-8: `tax_amount` is recomputed as `subtotal x (tax_rate / 100)` -- `tax_rate` is a
  * percentage -- by the shared CalculateTaxAmount, ONLY when `tax_rate` is already
@@ -49,6 +53,7 @@ class RecalculateOrderTotals
         private readonly ToNumericString $toNumericString,
         private readonly AssertWithinColumnCeiling $assertWithinColumnCeiling,
         private readonly CalculateTaxAmount $calculateTaxAmount,
+        private readonly AfterOrderTotalsChanged $afterOrderTotalsChanged,
     ) {}
 
     public function __invoke(Order $order): void
@@ -80,5 +85,7 @@ class RecalculateOrderTotals
             'tax_amount' => $taxAmount,
             'total' => $total,
         ])->save();
+
+        ($this->afterOrderTotalsChanged)($order);
     }
 }

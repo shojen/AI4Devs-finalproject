@@ -18,13 +18,15 @@ enum PaymentStatus: string
     case Paid = 'paid';
     case Refunded = 'refunded';
     case PartiallyRefunded = 'partially_refunded';
+    case PartiallyPaid = 'partially_paid';
 
     /**
      * May an order in this payment state hold the given fulfilment status?
      *
      * An unpaid order cannot be processed, shipped or delivered; a fully
      * refunded one can only be cancelled; a partially refunded one can no
-     * longer be cancelled manually. Non-throwing predicate:
+     * longer be cancelled manually; a partially paid one (story 0106) can only be (or go back to)
+     * Pending until it is fully paid. Non-throwing predicate:
      * App\Actions\Orders\TransitionOrderStatus's guard and the order
      * detail screen both wrap exactly this call.
      */
@@ -35,6 +37,7 @@ enum PaymentStatus: string
             self::Paid => OrderStatus::cases(),
             self::Refunded => [OrderStatus::Cancelled],
             self::PartiallyRefunded => [OrderStatus::Pending, OrderStatus::Processing, OrderStatus::Shipped, OrderStatus::Delivered],
+            self::PartiallyPaid => [OrderStatus::Pending],
         }, true);
     }
 }

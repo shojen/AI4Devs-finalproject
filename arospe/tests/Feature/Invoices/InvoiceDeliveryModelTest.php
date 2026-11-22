@@ -109,10 +109,10 @@ test('send is allowed for a holder of invoices.send only, with or without an inv
         ->and(Gate::forUser($viewer)->allows('send', Invoice::class))->toBeFalse();
 });
 
-test('the seeder gives invoices.send to Administrator and the catalog has 48', function () {
+test('the seeder gives invoices.send to Administrator and the catalog has 49', function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed(RolePermissionSeeder::class);
 
     expect(Role::findByName('Administrator')->hasPermissionTo('invoices.send'))->toBeTrue()
-        ->and(Permission::count())->toBe(48);
+        ->and(Permission::count())->toBe(49);
 });
